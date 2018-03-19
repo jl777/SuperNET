@@ -266,7 +266,7 @@ struct basilisk_swapinfo
 #define BASILISK_ALICERECLAIM 9
 #define BASILISK_ALICECLAIM 10
 //0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0
-char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
+static char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
 
 struct LP_swap_remember
 {
@@ -276,7 +276,7 @@ struct LP_swap_remember
     uint32_t finishtime,tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
-    char Agui[65],Bgui[65],gui[65],src[65],dest[65],bobtomic[128],alicetomic[128],etomicsrc[65],etomicdest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)],bobDepositEthTx[75],bobPaymentEthTx[75];
+    char Agui[65],Bgui[65],gui[65],src[65],dest[65],bobtomic[128],alicetomic[128],etomicsrc[65],etomicdest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)],bobDepositEthTx[75],bobPaymentEthTx[75],alicePaymentEthTx[75];
 };
 
 struct LP_outpoint
@@ -579,5 +579,6 @@ int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *
 int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
 void HashGroestl(void * buf, const void * pbegin, int len);
+bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
 #endif
