@@ -1329,7 +1329,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 if ( spendlen < sizeof(script) )
                 {
                     decode_hex(spendscript,spendlen,scriptstr);
-                    printf("i.%d using external script.(%s) %d\n",i,scriptstr,spendlen);
+                    //printf("i.%d using external script.(%s) %d\n",i,scriptstr,spendlen);
                 }
                 else
                 {

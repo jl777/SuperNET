@@ -444,7 +444,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
                     //char str[65]; printf("prevent utxoadd since gettxout %s %s %s/v%d missing\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
                     return(0);
                 }
-                if ( (sobj= jobj(txout,"scriptPubKey")) != 0 )
+                if ( (sobj= jobj(txobj,"scriptPubKey")) != 0 )
                 {
                     if ( (hexstr= jstr(sobj,"hex")) != 0 )
                     {
