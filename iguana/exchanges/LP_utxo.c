@@ -324,6 +324,18 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
+                    if ( (sobj= jobj(txout,"scriptPubKey")) != 0 )
+                    {
+                        if ( (hexstr= jstr(sobj,"hex")) != 0 )
+                        {
+                            if ( strlen(hexstr) != 25*2 )
+                            {
+                                printf("skip non-standard utxo.(%s)\n",hexstr);
+                                free_json(txout);
+                                continue;
+                            }
+                        }
+                    }
                     if ( LP_value_extract(txout,0) == 0 )
                     {
                         //printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
