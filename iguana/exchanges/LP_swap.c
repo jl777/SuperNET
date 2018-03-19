@@ -107,7 +107,7 @@
  depositspent.(f34e04ad74e290f63f3d0bccb7d0d50abfa54eea58de38816fdc596a19767add) alice.1 bob.0
  
  */
-
+#define TX_WAIT_TIMEOUT 1800
 
 uint32_t LP_atomic_locktime(char *base,char *rel)
 {
@@ -721,15 +721,20 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 if ( swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0 )
                 {
                     char *ethTxId = sendEthTx(swap, rawtx);
-                    strcpy(rawtx->I.ethTxid, ethTxId);
-                    free(ethTxId);
+                    if (ethTxId != NULL) {
+                        strcpy(rawtx->I.ethTxid, ethTxId);
+                        free(ethTxId);
+                    } else {
+                        printf("Error sending ETH tx\n");
+                        return(-1);
+                    }
                 }
 #endif
                 sendlen = 0;
                 sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
                 sendbuf[sendlen++] = rawtx->I.redeemlen;
-                if ( rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66 )
+                if ( rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66  )
                 {
                     uint8_t ethTxidBytes[32];
                     // ETH txid always starts with 0x
@@ -857,7 +862,7 @@ void LP_bobloop(void *_swap)
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             LP_unavailableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
+            if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_otherfee) < 0 )
             {
                 error = 1;
                 err = -2004, printf("error waiting for alicefee\n");
@@ -871,7 +876,7 @@ void LP_bobloop(void *_swap)
                 }
             }
             LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( error == 0 && LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
+            if ( error == 0 && LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
                 err = -2006, printf("error waiting for alicepayment\n");
@@ -945,7 +950,7 @@ void LP_aliceloop(void *_swap)
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 err = -1004, printf("error sending alicefee\n");
-            else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobdeposit) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_bobdeposit) < 0 )
                 err = -1005, printf("error waiting for bobdeposit\n");
             else
             {
@@ -970,7 +975,7 @@ void LP_aliceloop(void *_swap)
                     }
                     //swap->sentflag = 1;
                     LP_swap_critical = (uint32_t)time(NULL);
-                    if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobpayment) < 0 )
+                    if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_bobpayment) < 0 )
                         err = -1007, printf("error waiting for bobpayment\n");
                     else
                     {
@@ -1222,10 +1227,20 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = swap->I.bobmaxconfirms;
     if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
-    if ( bobcoin->isassetchain != 0 )
-        swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS/2;
-    if ( alicecoin->isassetchain != 0 )
-        swap->I.aliceconfirms = BASILISK_DEFAULT_MAXCONFIRMS/2;
+    if ( bobcoin->isassetchain != 0 ) {
+        if (strcmp(bobstr, "ETOMIC") != 0) {
+            swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
+        } else {
+            swap->I.bobconfirms = 1;
+        }
+    }
+    if ( alicecoin->isassetchain != 0 ) {
+        if (strcmp(alicestr, "ETOMIC") != 0) {
+            swap->I.aliceconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
+        } else {
+            swap->I.aliceconfirms = 1;
+        }
+    }
     if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
     {
         swap->I.bobconfirms *= !swap->I.bobistrusted;

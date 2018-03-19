@@ -13,7 +13,6 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
-
 //
 //  LP_transaction.c
 //  marketmaker
@@ -1329,8 +1328,8 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 spendlen = (int32_t)strlen(scriptstr) >> 1;
                 if ( spendlen < sizeof(script) )
                 {
-                    decode_hex(script,spendlen,scriptstr);
-                    printf("i.%d using external script.(%s)\n",i,scriptstr);
+                    decode_hex(spendscript,spendlen,scriptstr);
+                    //printf("i.%d using external script.(%s) %d\n",i,scriptstr,spendlen);
                 }
                 else
                 {
@@ -1522,7 +1521,7 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t allocated_outputs=0,iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t broadcast,allocated_outputs=0,iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
 //printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
@@ -1531,6 +1530,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
+    broadcast = jint(argjson,"broadcast");
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
     {
         if ( jstr(argjson,"opreturn") == 0 )
@@ -1593,7 +1593,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 printf("incomplete signing withdraw (%s)\n",jprint(vins,0));
                 if ( signedtx != 0 )
                     free(signedtx), signedtx = 0;
-            } //else printf("LP_withdraw.%s %s -> %s\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid));
+            }
             if ( signedtx == 0 )
                 break;
             datalen = (int32_t)strlen(signedtx) / 2;
@@ -1622,7 +1622,6 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     {
         if ( completed == 0 && (numvins= cJSON_GetArraySize(vins)) > 0 )
         {
-            
             for (i=0; i<numvins; i++)
             {
                 item = jitem(vins,i);
@@ -1635,9 +1634,23 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         free_json(privkeys);
     retjson = cJSON_CreateObject();
     if ( rawtx != 0 )
+    {
         jaddstr(retjson,"rawtx",rawtx);
+        free(rawtx);
+    }
     if ( signedtx != 0 )
+    {
         jaddstr(retjson,"hex",signedtx);
+        if ( broadcast != 0 )
+        {
+            if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
+            {
+                printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
+                free(signret);
+            }
+        }
+        free(signedtx);
+    }
     if ( txobj != 0 )
         jadd(retjson,"tx",txobj);
     jaddbits256(retjson,"txid",signedtxid);
@@ -1646,6 +1659,31 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         free_json(outputs);
     return(jprint(retjson,1));
 }
+
+#ifndef NOTETOMIC
+
+char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    char *dest_addr, *tx_id, privkey_str[70], amount_str[100];
+    int64_t amount;
+    bits256 privkey;
+
+    dest_addr = jstr(argjson, "to");
+    amount = jdouble(argjson, "amount") * 100000000;
+    privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
+    uint8arrayToHex(privkey_str, privkey.bytes, 32);
+    satoshisToWei(amount_str, amount);
+    if (strcmp(coin->symbol, "ETH") == 0) {
+        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0);
+    } else {
+        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0);
+    }
+    jaddstr(retjson, "tx_id", tx_id);
+    return(jprint(retjson,1));
+}
+
+#endif
 
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {
@@ -2259,6 +2297,13 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
                     //printf("dexfee verified\n");
                 }
                 else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
+#ifndef NOTETOMIC
+                if (swap->otherfee.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->otherfee.I.ethTxid) == 0) {
+                    if (LP_etomic_wait_for_confirmation(swap->otherfee.I.ethTxid) < 0 || LP_etomic_verify_alice_fee(swap) == 0) {
+                        return(-1);
+                    }
+                }
+#endif
                 return(0);
             } else printf("destaddress mismatch in other fee, reject (%s) vs (%s)\n",swap->otherfee.I.destaddr,swap->otherfee.p2shaddr);
         }
@@ -2336,6 +2381,13 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                     printf("%02x",swap->aliceclaim.txbytes[i]);
                 printf(" <- aliceclaim\n");*/
                 //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
+#ifndef NOTETOMIC
+                if (swap->bobdeposit.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->bobdeposit.I.ethTxid) == 0) {
+                    if (LP_etomic_wait_for_confirmation(swap->bobdeposit.I.ethTxid) < 0 || LP_etomic_verify_bob_deposit(swap, swap->bobdeposit.I.ethTxid) == 0) {
+                        return(-1);
+                    }
+                }
+#endif
                 return(LP_waitmempool(coin->symbol,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,60));
             } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);
         }
@@ -2359,6 +2411,13 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
             if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
                 swap->aliceunconf = 1;
             basilisk_dontforget_update(swap,&swap->alicepayment);
+#ifndef NOTETOMIC
+            if (swap->alicepayment.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->alicepayment.I.ethTxid) == 0) {
+                if (LP_etomic_verify_alice_payment(swap, swap->alicepayment.I.ethTxid) == 0) {
+                    return(-1);
+                }
+            }
+#endif
             return(LP_waitmempool(coin->symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,60));
             //printf("import alicepayment address.(%s)\n",swap->alicepayment.p2shaddr);
             //LP_importaddress(coin->symbol,swap->alicepayment.p2shaddr);
@@ -2411,6 +2470,13 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
             memcpy(swap->alicespend.I.pubkey33,swap->persistent_pubkey33,33);
             bitcoin_address(coin->symbol,swap->alicespend.I.destaddr,coin->taddr,coin->pubtype,swap->persistent_pubkey33,33);
             //char str[65],str2[65]; printf("bobpaid privAm.(%s) myprivs[0].(%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
+#ifndef NOTETOMIC
+            if (swap->bobpayment.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->bobpayment.I.ethTxid) == 0) {
+                if (LP_etomic_wait_for_confirmation(swap->bobpayment.I.ethTxid) < 0 || LP_etomic_verify_bob_payment(swap, swap->bobpayment.I.ethTxid) == 0) {
+                    return(-1);
+                }
+            }
+#endif
             if ( (retval= basilisk_rawtx_sign(coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->bobpayment.I.destaddr,coin->zcash)) == 0 )
             {
                 /*for (i=0; i<swap->bobpayment.I.datalen; i++)

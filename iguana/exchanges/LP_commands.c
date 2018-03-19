@@ -118,7 +118,7 @@ inventory(coin, reset=0, [passphrase=])\n\
 lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
-withdraw(coin, outputs[])\n\
+withdraw(coin, outputs[], broadcast=0)\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0, fast=0)\n\
 swapstatus(coin, limit=10)\n\
@@ -611,6 +611,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));
             }
+#ifndef NOTETOMIC
+            else if ( strcmp(method,"eth_withdraw") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 ) {
+                    return LP_eth_withdraw(ptr, argjson);
+                }
+            }
+#endif
             else if ( strcmp(method,"setconfirms") == 0 )
             {
                 int32_t n;

@@ -66,6 +66,8 @@ struct secp256k1_context_struct {
     secp256k1_callback error_callback;
 };
 
+#ifndef EXTERNAL_SECP256
+
 secp256k1_context* secp256k1_context_create(unsigned int flags) {
     secp256k1_context* ret = (secp256k1_context*)checked_malloc(&default_error_callback, sizeof(secp256k1_context));
     ret->illegal_callback = default_illegal_callback;
@@ -577,12 +579,14 @@ int secp256k1_ec_pubkey_combine(const secp256k1_context* ctx, secp256k1_pubkey *
 # include "modules/ecdh/main_impl.h"
 #endif
 
-#ifdef ENABLE_MODULE_SCHNORR
-# include "modules/schnorr/main_impl.h"
-#endif
-
 #ifdef ENABLE_MODULE_RECOVERY
 # include "modules/recovery/main_impl.h"
+#endif
+
+#endif
+
+#ifdef ENABLE_MODULE_SCHNORR
+# include "modules/schnorr/main_impl.h"
 #endif
 
 #ifdef ENABLE_MODULE_RANGEPROOF

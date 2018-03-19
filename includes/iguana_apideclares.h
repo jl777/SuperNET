@@ -20,6 +20,7 @@ emit compiler error if recursively being included
 #define _IGUANA_APIDEC_H_
 
 STRING_ARG(dpow,pending,fiat);
+STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks);
 ZERO_ARGS(dpow,notarychains);
 STRING_ARG(dpow,active,maskhex);
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
