@@ -241,7 +241,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                                             {
                                                 if ( ((1LL << j) & notarymask) == 0 )
                                                 {
-                                                    printf("n%d ",j);
+                                                    //printf("n%d ",j);
                                                     numnotaries++;
                                                     notarymask |= (1LL << j);
                                                     break;
