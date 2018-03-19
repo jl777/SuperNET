@@ -23,7 +23,7 @@
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0781
+#define DPOW_VERSION 0x1781
 #define DPOW_UTXOSIZE 50000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 600
@@ -47,7 +47,7 @@
 #define DPOW_MAXSIGLEN 128
 
 #define DEX_VERSION 0x0105
-#define DPOW_SOCK 7775
+#define DPOW_SOCKPORT 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
 #define REP_SOCK 7772
@@ -104,12 +104,12 @@ struct dpow_checkpoint
 
 struct dpow_block
 {
-    bits256 hashmsg,desttxid,srctxid,beacon,commit;
+    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
-    uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc;
+    uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
@@ -142,11 +142,11 @@ struct dpow_info
     struct dpow_block **blocks;
 };
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth);
 void dex_updateclient(struct supernet_info *myinfo);
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field);
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);
-int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
+int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *merklerootp,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);

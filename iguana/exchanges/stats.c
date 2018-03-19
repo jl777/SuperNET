@@ -516,7 +516,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 cJSON *retitem,*retarray = cJSON_CreateArray();
                 origargjson = argjson;
                 symbol[0] = 0;
-                for (i=0; i<n; i++)
+                for (i=0; i<n; i++) // array cmd path doesnt support event streaming
                 {
                     argjson = jitem(origargjson,i);
                     if ( userpass != 0 && jstr(argjson,"userpass") == 0 )

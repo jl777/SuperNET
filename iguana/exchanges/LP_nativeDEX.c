@@ -830,7 +830,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             item = jitem(coins,i);
             if ( (symbol= jstr(item,"coin")) != 0 )
             {
-                printf("%s, ",jstr(item,"coin"));
+                printf("%s.%d ",jstr(item,"coin"),LP_numpriceinfos);
                 LP_coincreate(item);
                 LP_priceinfoadd(jstr(item,"coin"));
                 if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -848,6 +848,19 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     if ( 0 && strcmp(coin->symbol,"BCH") == 0 )
                     {
                         bech32_tests();
+                    }
+                    else if ( 0 && strcmp(coin->symbol,"SMART") == 0 )
+                    {
+                        uint8_t txdata[8129]; int32_t len; bits256 txid,txid2,ktxid; char str[65];
+                        char *txstr = "0100000005c9a9c56f4e702766c582127587ee49695ba5b9e5c449290a4f8a0505c12beeb7000000006b483045022100867f85d9f8d7f543225448f1d2383ff7d60a325b5f643557ea36325372de9993022034ccd202ee017c3d8a2dfa615b72d661b891d2071b1c15d4d7ab063762c79d2f012103f9be43471012e3e6daaa7a91a68cbc667fa61791e4a93f8e8d53255a93b68d03ffffffffe062eb6845b69856d62ceb3fd9b7e05c383b8b88b9359bc7c8ac49cd7dd2b2bb010000006b483045022100d4ef1c6d5f24ad3877f57f8ae4a1c0f8aa2f6de5ccaa8ed8e10b2937a4316c1402200d41b154a892a98d40c4d39e619992cca1eba4b5939bbf2b418062cd1275a8b101210302649cc91eda9d5fbc9d41b4a14f98917a00cdc6fc952c9fdf8a98a544cfcca9ffffffff561ee4189323bf8f619bcedd1f9e02033adb588db31cb3dc7ec3bda23f73aac4000000006b483045022100d4a5ab03675f585cc055c76fdaa80333757c42583883dfcde08cb0aeb57f256a022063440e24ef4ef5b44dcb0e7aacaa4562effd80f9a1d9b273daa581066c8359fb0121035c0e6d900a5e8c27901ce7edcdc9bfafea44dbfb714274271114245d7e895198ffffffff56cf1fa6d5779fd2bded063d63455809373ff2bf79edf921be7e92f918ef43df010000006b48304502210091d15d5fcb518103f04fdc819513200d30033f9a1e29960458375e7c71247d31022064a233c4073ac88652a0324f6973914b08bfcf76e928afae0099dc2d7eb227750121032946d47c35c0a98ae7ccad30fee846007434fff25cf70973b5c76deb4be2a14fffffffff4754ee214a33da0116730b43238cc6ff0510b8cebc59a42b1f0609e2a10aa8c8000000006b483045022100f3cea95cd6451d706fb1766cec30450ef000649df15d7d7bebcecbfe6ec48e98022016e687a7d956d2ab089d76306046d33ce5ace55fcb4595021de3f97c4293d1b601210367db63755cf13760c81b8cb0c13eee10474064dfacc7c45a8c3271b5b058f0ccffffffff025e489467030000001976a9147283e4813a5e5fb8d723e75403ba10e05a7820db88ac60f71b00000000001976a914d740ff057317d3b12d5a6dadac5bb7ff87e48afe88ac578a0500";
+                        len = (int32_t)strlen(txstr) >> 1;
+                        decode_hex(txdata,len,txstr);
+                        vcalc_sha256(0,txid.bytes,txdata,len);
+                        txid2 = bits256_doublesha256(0,txdata,len);
+                        HashKeccak(ktxid.bytes,txdata,len);
+                        printf("txid %s\n",bits256_str(str,txid));
+                        printf("txid2 %s\n",bits256_str(str,txid2));
+                        printf("ktxid %s\n",bits256_str(str,ktxid));
                     }
                 }
             }
@@ -1428,7 +1441,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;
     //LP_mybussock = LP_coinbus(mybusport);
-    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport,pushaddr);
+    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )

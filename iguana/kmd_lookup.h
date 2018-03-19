@@ -354,7 +354,7 @@ int32_t kmd_height(struct iguana_info *coin)
 {
     char params[64],*curlstr; cJSON *curljson; int32_t height = 0;
     strcpy(params,"[]");
-    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",params)) != 0 )
+    if ( (curlstr= bitcoind_getinfo(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->getinfostr)) != 0 )
     {
         if ( (curljson= cJSON_Parse(curlstr)) != 0 )
         {

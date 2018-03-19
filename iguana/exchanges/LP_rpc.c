@@ -401,7 +401,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxid2)
 {
-    char buf[128],*retstr; struct LP_address *ap; cJSON *retjson; int32_t numconfs,usecache=1; struct iguana_info *coin;
+    char buf[128],*retstr; bits256 txid; struct LP_address *ap; cJSON *retjson,*txjson,*array,*item; int32_t i,n,numconfs,vout,usecache=1; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -431,9 +431,26 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
 //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
-            retstr = jprint(retjson,0);
-            LP_unspents_cache(coin->symbol,coinaddr,retstr,1);
-            free(retstr);
+            if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+            {
+                array = cJSON_CreateArray();
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(retjson,i);
+                    txid = jbits256(item,"txid");
+                    vout = jint(item,"vout");
+                    if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
+                    {
+                        jaddi(array,jduplicate(item));
+                        free_json(txjson);
+                    }
+                }
+                free_json(retjson);
+                retjson = array;
+                retstr = jprint(array,0);
+                LP_unspents_cache(coin->symbol,coinaddr,retstr,1);
+                free(retstr);
+            }
             if ( ap != 0 )
                 ap->unspenttime = (uint32_t)time(NULL);
             return(retjson);
@@ -540,7 +557,8 @@ int32_t LP_importaddress(char *symbol,char *address)
         return(-2);
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
-        return(-2);
+        return(-3);
+    //printf("import.(%s %s)\n",symbol,address);
     if ( coin->electrum != 0 )
     {
         /*if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
@@ -554,6 +572,7 @@ int32_t LP_importaddress(char *symbol,char *address)
     {
         if ( (validatejson= LP_validateaddress(symbol,address)) != 0 )
         {
+            //printf("validated.(%s)\n",jprint(validatejson,0));
             if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
             {
                 if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
@@ -561,6 +580,7 @@ int32_t LP_importaddress(char *symbol,char *address)
             }
             free_json(validatejson);
         }
+        //printf("%s (%s) isvalid.%d doneflag.%d\n",symbol,address,isvalid,doneflag);
         if ( isvalid == 0 )
             return(-1);
         if ( doneflag != 0 )
@@ -590,7 +610,6 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
         ctx = bitcoin_ctx();
     bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
 #ifdef LP_DONT_IMPORTPRIVKEY
-    //bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
     if ( LP_importaddress(symbol,address) < 0 )
     {
         printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));

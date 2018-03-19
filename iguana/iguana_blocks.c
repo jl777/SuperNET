@@ -137,7 +137,7 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
     }
 }
 
-bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
+/*bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
 {
     int32_t i,n=0,prev; uint8_t serialized[sizeof(bits256) * 2];
     if ( txn_count == 1 )
@@ -158,7 +158,7 @@ bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
         txn_count >>= 1;
     }
     return(tree[n]);
-}
+}*/
 
 struct iguana_block *iguana_prevblock(struct iguana_info *coin,struct iguana_block *block,int32_t PoSflag)
 {

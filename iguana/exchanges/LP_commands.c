@@ -160,13 +160,14 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
-calcaddress(passphrase)\n\
+calcaddress(passphrase, coin=KMD)\n\
 convaddress(coin, address, destcoin)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
-getendpoint()\n\
+opreturndecrypt(coin, txid, passphrase)\n\
+getendpoint(port=5555)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
@@ -233,22 +234,25 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
-            int32_t err,mode;
+            int32_t err,mode; uint16_t wsport = 5555; char endpoint[64],bindpoint[64];
+            if ( juint(argjson,"port") != 0 )
+                wsport = juint(argjson,"port");
             retjson = cJSON_CreateObject();
             if ( IPC_ENDPOINT >= 0 )
             {
                 jaddstr(retjson,"error","IPC endpoint already exists");
-                jaddstr(retjson,"endpoint","ws://*:5555");
                 jaddnum(retjson,"socket",IPC_ENDPOINT);
             }
             else
             {
                 if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
                 {
-                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://*:5555")) >= 0 )
+                    sprintf(bindpoint,"ws://*:%u",wsport);
+                    sprintf(endpoint,"ws://127.0.0.1:%u",wsport);
+                    if ( (err= nn_bind(IPC_ENDPOINT,bindpoint)) >= 0 )
                     {
                         jaddstr(retjson,"result","success");
-                        jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
+                        jaddstr(retjson,"endpoint",endpoint);
                         jaddnum(retjson,"socket",IPC_ENDPOINT);
                         mode = NN_WS_MSG_TYPE_TEXT;
                         err = nn_setsockopt(IPC_ENDPOINT,NN_SOL_SOCKET,NN_WS_MSG_TYPE,&mode,sizeof(mode));
@@ -257,6 +261,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     else
                     {
                         jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
+                        jaddstr(retjson,"bind",bindpoint);
                         jaddnum(retjson,"err",err);
                         jaddnum(retjson,"socket",IPC_ENDPOINT);
                         nn_close(IPC_ENDPOINT);
@@ -336,17 +341,39 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"calcaddress") == 0 )
         {
-            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64];
+            bits256 privkey,pub; uint8_t pubtype,wiftaddr,p2shtype,taddr,wiftype,pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64],pubsecp[67];
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
                 privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
-                bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
+                if ( (coin= jstr(argjson,"coin")) == 0 || (ptr= LP_coinfind(coin)) == 0 )
+                {
+                    coin = "KMD";
+                    taddr = 0;
+                    pubtype = 60;
+                    p2shtype = 85;
+                    wiftype = 188;
+                    wiftaddr = 0;
+                }
+                else
+                {
+                    coin = ptr->symbol;
+                    taddr = ptr->taddr;
+                    pubtype = ptr->pubtype;
+                    p2shtype = ptr->p2shtype;
+                    wiftype = ptr->wiftype;
+                    wiftaddr = ptr->wiftaddr;
+                }
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"passphrase",passphrase);
+                bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
+                init_hexbytes_noT(pubsecp,pubkey33,33);
+                jaddstr(retjson,"pubsecp",pubsecp);
                 jaddstr(retjson,"coinaddr",coinaddr);
+                bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,p2shtype);
+                jaddstr(retjson,"p2shaddr",coinaddr);
                 jaddbits256(retjson,"privkey",privkey);
-                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
+                bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
@@ -560,6 +587,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(LP_timelock(coin,juint(argjson,"duration"),jstr(argjson,"destaddr"),jdouble(argjson,"amount")*SATOSHIDEN));
             }
+            else if ( strcmp(method,"opreturndecrypt") == 0 )
+            {
+                return(LP_opreturndecrypt(ctx,coin,jbits256(argjson,"txid"),jstr(argjson,"passphrase")));
+            }
             else if ( strcmp(method,"unlockedspend") == 0 )
             {
                 return(LP_unlockedspend(ctx,coin,jbits256(argjson,"txid")));
@@ -572,8 +603,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( jobj(argjson,"outputs") == 0 )
+                    if ( jobj(argjson,"outputs") == 0 && jstr(argjson,"opreturn") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
+                    else if ( ptr->etomic[0] != 0 )
+                        return(clonestr("{\"error\":\"use eth_withdraw for ETH/ERC20\"}"));
                     else return(LP_withdraw(ptr,argjson));
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));
