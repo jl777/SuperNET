@@ -406,7 +406,7 @@ void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
 
 int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
-    struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
+    struct LP_address *ap; char *hexstr; cJSON *txobj,*sobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
     if ( coin == 0 )
         return(0);
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
@@ -443,7 +443,20 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
                 {
                     //char str[65]; printf("prevent utxoadd since gettxout %s %s %s/v%d missing\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
                     return(0);
-                } else free_json(txobj);
+                }
+                if ( (sobj= jobj(txobj,"scriptPubKey")) != 0 )
+                {
+                    if ( (hexstr= jstr(sobj,"hex")) != 0 )
+                    {
+                        if ( strlen(hexstr) != 25*2 )
+                        {
+                            //printf("skip non-standard utxo.(%s)\n",hexstr);
+                            free_json(txobj);
+                            return(0);
+                        }
+                    }
+                }
+                free_json(txobj);
             }
             up = calloc(1,sizeof(*up));
             up->U.txid = txid;
@@ -524,7 +537,9 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 }
                 LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
-                    printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
+                {
+                    //printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
+                }
                 else
                 {
                     m++;
@@ -626,6 +641,11 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 {
     cJSON *array,*retjson,*item; bits256 zero; int32_t i,n; uint64_t balance = 0;
     memset(zero.bytes,0,sizeof(zero));
+#ifndef NOTETOMIC
+    if (coin->etomic[0] != 0) {
+        balance = LP_etomic_get_balance(coin, coinaddr);
+    } else
+#endif
     if ( coin->electrum == 0 )
     {
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )

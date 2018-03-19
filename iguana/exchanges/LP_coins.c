@@ -236,6 +236,13 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
         jaddnum(item,"balance",dstr(balance));
         jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
     }
+#ifndef NOTETOMIC
+    else if (coin->etomic[0] != 0) {
+        balance = LP_etomic_get_balance(coin, coin->smartaddr);
+        jaddnum(item,"height",-1);
+        jaddnum(item,"balance",dstr(balance));
+    }
+#endif
     else
     {
         jaddnum(item,"height",-1);

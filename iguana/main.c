@@ -2245,6 +2245,7 @@ void iguana_main(void *arg)
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->pending_mutex);
+    portable_mutex_init(&myinfo->MoM_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
     portable_mutex_init(&myinfo->psockmutex);

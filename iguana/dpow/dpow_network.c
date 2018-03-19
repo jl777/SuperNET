@@ -171,7 +171,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
 struct dex_nanomsghdr
 {
     uint32_t crc32,size,datalen,timestamp;
-    char handler[8];
+    char handler[64];
     uint8_t version0,version1,packet[];
 } PACKED;
 
@@ -1901,7 +1901,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 printf("mypaxcrc.%x\n",bp->paxwdcrc);
         }
         char str[65];
-        if ( (rand() % 130) == 0 || strcmp(dp->symbol,"PIZZA") == 0 )
+        if ( (rand() % 130) == 0 )//|| strcmp(dp->symbol,"CHIPS") == 0 )
             printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s [%d]\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM),bp->MoMdepth);
     }
 }
@@ -2243,7 +2243,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
         {
             memcpy(&opret[opretlen],extras,extralen);
             opretlen += extralen;
-            printf("added extra.%d crc.%08x\n",extralen,calc_crc32(0,extras,extralen));
+            //printf("added extra.%d crc.%08x\n",extralen,calc_crc32(0,extras,extralen));
         }
     }
     else
@@ -2363,7 +2363,7 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp)
 }
 
 #define MAX_CURRENCIES 32
-extern char CURRENCIES[][8];
+extern char CURRENCIES[][65];
 
 void komodo_assetcoins(int32_t fullnode,uint64_t mask)
 {
