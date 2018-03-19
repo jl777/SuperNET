@@ -628,11 +628,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     memset(zero.bytes,0,sizeof(zero));
 #ifndef NOTETOMIC
     if (coin->etomic[0] != 0) {
-        if (strcmp(coin->symbol, "ETH") == 0) {
-            balance = getEthBalance(coinaddr);
-        } else {
-            balance = getErc20BalanceSatoshi(coinaddr, coin->etomic);
-        }
+        balance = LP_etomic_get_balance(coin, coinaddr);
     } else
 #endif
     if ( coin->electrum == 0 )
