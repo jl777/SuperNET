@@ -368,7 +368,26 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             }
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
             {
-                utxos[n++] = up;
+                if ( coin->electrum == 0 )
+                {
+                    if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
+                    {
+                        if ( (sobj= jobj(txout,"scriptPubKey")) != 0 )
+                        {
+                            if ( (hexstr= jstr(sobj,"hex")) != 0 )
+                            {
+                                if ( strlen(hexstr) != 25*2 )
+                                {
+                                    printf("skip non-standard utxo.(%s)\n",hexstr);
+                                    free_json(txout);
+                                    continue;
+                                }
+                            }
+                        }
+                        utxos[n++] = up;
+                        free_json(txout);
+                    }
+                } else utxos[n++] = up;
                 if ( n >= max )
                     break;
             } //else printf("LP_allocated skip %u\n",LP_allocated(up->U.txid,up->U.vout));
