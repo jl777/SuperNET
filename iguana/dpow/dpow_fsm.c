@@ -401,7 +401,8 @@ void dpow_statemachinestart(void *ptr)
     {
         kmdheight = dest->longestchain;
         //portable_mutex_lock(&myinfo->MoM_mutex);
-        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+        if ( Notaries_port != DPOW_SOCKPORT )
+            MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
         //portable_mutex_unlock(&myinfo->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
