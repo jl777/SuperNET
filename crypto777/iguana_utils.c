@@ -799,23 +799,23 @@ int32_t nn_base64_decode (const char *in, size_t in_len,uint8_t *out, size_t out
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    
+
     for (io = 0, ii = 0, v = 0, rem = 0; ii < in_len; ii++) {
         if (isspace ((uint32_t)in [ii]))
             continue;
-        
+
         if (in [ii] == '=')
             break;
-        
+
         ch = DECODEMAP [(uint32_t)in [ii]];
-        
+
         // Discard invalid characters as per RFC 2045.
         if (ch == 0xFF)
             break;
-        
+
         v = (v << 6) | ch;
         rem += 6;
-        
+
         if (rem >= 8) {
             rem -= 8;
             if (io >= out_len)
@@ -839,7 +839,7 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
-    
+
     for (io = 0, ii = 0, v = 0, rem = 0; ii < in_len; ii++) {
         ch = in [ii];
         v = (v << 8) | ch;
@@ -851,26 +851,26 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
             out [io++] = ENCODEMAP [(v >> rem) & 63];
         }
     }
-    
+
     if (rem) {
         v <<= (6 - rem);
         if (io >= out_len)
             return -ENOBUFS;
         out [io++] = ENCODEMAP [v & 63];
     }
-    
+
     //  Pad to a multiple of 3
     while (io & 3) {
         if (io >= out_len)
             return -ENOBUFS;
         out [io++] = '=';
     }
-    
+
     if (io >= out_len)
         return -ENOBUFS;
-    
+
     out [io] = '\0';
-    
+
     return io;
 }
 
