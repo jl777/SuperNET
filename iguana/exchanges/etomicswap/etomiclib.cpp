@@ -26,7 +26,7 @@ TransactionSkeleton txDataToSkeleton(BasicTxData txData)
     tx.from = jsToAddress(txData.from);
     tx.to = jsToAddress(txData.to);
     tx.value = jsToU256(txData.amount);
-    tx.gas = 100000;
+    tx.gas = 200000;
     tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(txData.from);
     return tx;
