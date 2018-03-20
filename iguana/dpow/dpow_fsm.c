@@ -265,7 +265,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                         {
                             bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65];//,str[65],str2[65],str3[65];
                             vout = jitem(vouts,numvouts-1);
-                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 36 && len < sizeof(script) )
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 36 && len < sizeof(script)*2 )
                             {
                                 len >>= 1;
                                 decode_hex(script,len,hexstr);
@@ -316,7 +316,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         free_json(blockjson);
         if ( bits256_nonz(merkle) != 0 )
         {
-            merkles = calloc(3*maxdepth+1,sizeof(*merkles));
+            merkles = calloc(4*maxdepth+1,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
             ht = height - MoMdepth;
             while ( MoMdepth < maxdepth && ht > breakht && ht > 0 )
@@ -401,7 +401,8 @@ void dpow_statemachinestart(void *ptr)
     {
         kmdheight = dest->longestchain;
         //portable_mutex_lock(&myinfo->MoM_mutex);
-        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+        if ( Notaries_port != DPOW_SOCKPORT )
+            MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
         //portable_mutex_unlock(&myinfo->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
@@ -637,7 +638,7 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        sleep(13);
+        sleep(30);
         if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )
