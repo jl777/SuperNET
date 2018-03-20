@@ -135,9 +135,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
         }
-        if ( ht > 100 )
+        if ( ht > 1000 )
         {
-            for (i=ht-100; i>=0; i--)
+            for (i=ht-1000; i>=0; i--)
             {
                 if ( (i % 100) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
                 {
