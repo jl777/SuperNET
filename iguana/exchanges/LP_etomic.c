@@ -28,15 +28,23 @@ int32_t LP_etomic_wait_for_confirmation(char *txId)
     return(waitForConfirmation(txId));
 }
 
+void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output)
+{
+    char *address = pubKey2Addr(pubkey);
+    strcpy(output, address);
+    free(address);
+}
+
 char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 {
-    char amount[100], secretKey[70];
+    char amount[100], secretKey[70], dexaddr[50];
     satoshisToWei(amount, swap->myfee.I.amount);
     uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
+    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(sendEth(ETH_FEE_ACCEPTOR, amount, secretKey, 1));
+        return(sendEth(dexaddr, amount, secretKey, 1));
     } else {
-        return(sendErc20(swap->I.alicetomic, ETH_FEE_ACCEPTOR, amount, secretKey, 1));
+        return(sendErc20(swap->I.alicetomic, dexaddr, amount, secretKey, 1));
     }
 }
 
@@ -52,8 +60,10 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         return(0);
     }
 
+    char dexaddr[50];
+    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        if (strcmp(data.to, ETH_FEE_ACCEPTOR) != 0) {
+        if (strcmp(data.to, dexaddr) != 0) {
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
@@ -70,7 +80,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         }
         char weiAmount[70];
         satoshisToWei(weiAmount, swap->otherfee.I.amount);
-        return(verifyAliceErc20FeeData(swap->I.alicetomic, ETH_FEE_ACCEPTOR, weiAmount, data.input));
+        return(verifyAliceErc20FeeData(swap->I.alicetomic, dexaddr, weiAmount, data.input));
     }
 }
 
