@@ -139,7 +139,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         {
             if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
                 printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
-            for (i=ht-500; i>ht-10000; i--)
+            for (i=ht-500; i>ht-10000&&i>100; i--)
             {
                 if ( (i % 100) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
                 {
