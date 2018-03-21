@@ -95,7 +95,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                         if ( height > 0 && blocktime > 0 )
                         {
                             dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
-                            if ( (0) &&strcmp("BEER",dp->symbol) == 0 )
+                            if ( (1) &&strcmp("CHIPS",dp->symbol) == 0 )
                                 printf("dynamic set %s/%s %s <- height.%d\n",dp->symbol,dp->dest,bits256_str(str,hash),height);
                             checkpoint = dp->last;
                         } else return;
@@ -109,7 +109,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                             printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
                             return;
                         }
-                        if ( (0) && strcmp("BEER",dp->symbol) == 0 )
+                        if ( (1) && strcmp("CHIPS",dp->symbol) == 0 )
                             printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
                     } else return;
                 } else return;
@@ -118,7 +118,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     }
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
-        if ( (0) && strcmp("BEER",dp->symbol) == 0 )
+        if ( (1) && strcmp("CHIPS",dp->symbol) == 0 )
             printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
         dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
