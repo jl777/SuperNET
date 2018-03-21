@@ -95,7 +95,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                         if ( height > 0 && blocktime > 0 )
                         {
                             dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
-                            if ( (0) &&strcmp("BEER",dp->symbol) == 0 )
+                            if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
                                 printf("dynamic set %s/%s %s <- height.%d\n",dp->symbol,dp->dest,bits256_str(str,hash),height);
                             checkpoint = dp->last;
                         } else return;
@@ -109,7 +109,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                             printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
                             return;
                         }
-                        if ( (0) && strcmp("BEER",dp->symbol) == 0 )
+                        if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
                             printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
                     } else return;
                 } else return;
@@ -118,14 +118,14 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     }
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
-        if ( (0) && strcmp("BEER",dp->symbol) == 0 )
+        if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
             printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
         dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)minsigs;
-        if ( strcmp(dp->dest,"KMD") != 0 && strcmp(dp->dest,"CHAIN") != 0 )
+        if ( strcmp(dp->dest,"KMD") != 0 )
             ptrs[3] = (void *)DPOW_DURATION;
         else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
         ptrs[4] = 0;
@@ -135,9 +135,11 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
         }
-        if ( ht > 100 )
+        if ( ht > 500 )
         {
-            for (i=ht-100; i>=0; i--)
+            if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
+                printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
+            for (i=ht-500; i>ht-10000; i--)
             {
                 if ( (i % 100) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
                 {

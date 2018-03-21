@@ -16,7 +16,6 @@ extern "C" {
 #endif
 
 #define EMPTY_ETH_TX_ID "0x0000000000000000000000000000000000000000000000000000000000000000"
-#define ETH_FEE_ACCEPTOR "0x485d2cc2d13a9e12e4b53d606db1c8adc884fb8a"
 
 typedef struct {
     char from[65];
