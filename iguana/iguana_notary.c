@@ -137,7 +137,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         }
         if ( ht > 500 )
         {
-            if ( strcmp("CHIPS",dp->symbol) == 0 )
+            if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
                 printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
             for (i=ht-500; i>ht-10000; i--)
             {
@@ -148,7 +148,6 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                     free(bp);
                 }
             }
-            printf("i.%d\n",i);
         }
     }
 }
