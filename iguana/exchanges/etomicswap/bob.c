@@ -330,10 +330,13 @@ int main(int argc, char** argv)
         default:
             return 1;
     }
-    /*
     char *pubkey = getPubKeyFromPriv(getenv("BOB_PK"));
     printf("pubkey: %s\n", pubkey);
     free(pubkey);
+
+    char *address = pubKey2Addr("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06");
+    printf("address: %s\n", address);
+    free(address);
 
     uint64_t satoshis = 100000000;
     char weiBuffer[100];
@@ -346,16 +349,15 @@ int main(int argc, char** argv)
     uint64_t tokenAllowance = getErc20Allowance(bobAddress, bobContractAddress, tokenAddress);
     printf("allowance: %" PRIu64 "\n", tokenAllowance);
 
-    char *sendEthTx = sendEth(bobAddress, "100000000000000", getenv("BOB_PK"));
+    char *sendEthTx = sendEth(bobAddress, "100000000000000", getenv("BOB_PK"), 0);
     printf("sent ETH: %s\n", sendEthTx);
     free(sendEthTx);
 
-    char *sendErc20Tx = sendErc20(tokenAddress, bobAddress, "100000000000000", getenv("BOB_PK"));
+    char *sendErc20Tx = sendErc20(tokenAddress, bobAddress, "100000000000000", getenv("BOB_PK"), 0);
     printf("sent Erc20: %s\n", sendErc20Tx);
     free(sendErc20Tx);
 
     uint64_t gasPrice = getGasPriceFromStation();
     printf("gasPrice: %" PRIu64 "\n", gasPrice);
-    */
     return 0;
 }
