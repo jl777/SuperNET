@@ -404,9 +404,9 @@ void dpow_statemachinestart(void *ptr)
     else if ( strcmp(dest->symbol,"KMD") == 0 )
     {
         kmdheight = dest->longestchain;
-        portable_mutex_lock(&dest->MoM_mutex);
+        portable_mutex_lock(&src->MoM_mutex);
         MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
-        portable_mutex_unlock(&dest->MoM_mutex);
+        portable_mutex_unlock(&src->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
