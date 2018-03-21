@@ -260,19 +260,22 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                     if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
                     {
                         hasnotarization = 1;
-                        *nothtp = height - 10;
+                        *nothtp = 0;
                         if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
                         {
                             bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65];//,str[65],str2[65],str3[65];
                             vout = jitem(vouts,numvouts-1);
-                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 35*2 && len < sizeof(script)*2 )
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 36*2 && len < sizeof(script)*2 )
                             {
                                 len >>= 1;
                                 decode_hex(script,len,hexstr);
                                 if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len) > 0 )
                                 {
-                                    if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
-                                        *nothtp = 0;
+                                    if ( Notaries_port != DPOW_SOCKPORT )
+                                    {
+                                        if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
+                                            *nothtp = 0;
+                                    }
                                     //printf("%s.%d notarizationht.%d %s -> %s MoM.%s [%d]\n",symbol,height,*nothtp,bits256_str(str,blockhash),bits256_str(str2,txid),bits256_str(str3,MoM),MoMdepth);
                                 }
                             }
@@ -329,7 +332,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                     {
                         breakht = notht;
                         //free_json(blockjson);
-                        //printf("%s has notarization at %d for breakht.%d\n",coin->symbol,ht,notht);
+                        printf("%s has notarization at %d for breakht.%d\n",coin->symbol,ht,notht);
                     }
                     merkle = jbits256(blockjson,"merkleroot");
                     free_json(blockjson);
@@ -402,8 +405,7 @@ void dpow_statemachinestart(void *ptr)
     {
         kmdheight = dest->longestchain;
         portable_mutex_lock(&dest->MoM_mutex);
-        //if ( Notaries_port != DPOW_SOCKPORT )
-            MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
         portable_mutex_unlock(&dest->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
