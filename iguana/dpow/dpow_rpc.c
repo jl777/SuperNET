@@ -43,7 +43,7 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
     {
         buf[0] = 0;
         retstr = bitcoind_getinfo(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->getinfostr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -71,11 +71,11 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
     return(json);
 }
 
-char *Notaries_elected[64][2];
+char *Notaries_elected[65][2];
 char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
 int32_t Notaries_numseeds = (int32_t)(sizeof(seeds)/sizeof(*seeds)),Notaries_num,Notaries_BTCminsigs = DPOW_MINSIGS,Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
 uint16_t Notaries_port = DPOW_SOCKPORT;
-char *Notaries_seeds[64];
+char *Notaries_seeds[65];
 
 int32_t komodo_initjson(char *fname)
 {
@@ -94,7 +94,7 @@ int32_t komodo_initjson(char *fname)
                 Notaries_minsigs = num;
             if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
             {
-                for (i=0; i<n; i++)
+                for (i=0; i<n&&i<64; i++)
                 {
                     Notaries_seeds[i] = clonestr(jstri(array,i));
                     printf("%s ",Notaries_seeds[i]);
@@ -103,7 +103,7 @@ int32_t komodo_initjson(char *fname)
             }
             if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
             {
-                for (i=0; i<n; i++)
+                for (i=0; i<n&&i<64; i++)
                 {
                     item = jitem(array,i);
                     field = jfieldname(item);
@@ -275,7 +275,7 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
         sprintf(buf,"%d",height);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblockhash",buf);
         //printf("%s ht.%d -> getblockhash.(%s)\n",coin->symbol,height,retstr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -304,7 +304,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf);
         if ( 0 && strcmp(coin->symbol,"USD") == 0 )
             printf("%s getblock.(%s)\n",coin->symbol,retstr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -329,7 +329,7 @@ char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin
     {
         sprintf(buf,"\"%s\"",address);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"validateaddress",buf);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -349,7 +349,7 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     if ( coin->FULLNODE < 0 )
     {
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"gettxout",buf);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -380,7 +380,7 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"decoderawtransaction",paramstr);
         //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -402,7 +402,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
         {
         }
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -509,7 +509,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"signrawtransaction",paramstr);
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
-        usleep(1000);
+        usleep(10000);
         return(retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
@@ -1298,7 +1298,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
                         printf("error height %d\n",height);
                         break;
                     }
-                    usleep(1000);
+                    usleep(10000);
                 }
                 if ( height >= currentheight )
                     *isrealtimep = (uint32_t)time(NULL);

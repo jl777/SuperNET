@@ -169,6 +169,8 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     int32_t r,h,incr = 100000; struct dpow_block *bp = 0;
     if ( height > dp->maxblocks )
     {
+        if ( dp->maxblocks+incr < height+10000 )
+            incr = (height+10000) - dp->maxblocks;
         dp->blocks = realloc(dp->blocks,sizeof(*dp->blocks) * (dp->maxblocks + incr));
         memset(&dp->blocks[dp->maxblocks],0,sizeof(*dp->blocks) * incr);
         dp->maxblocks += incr;

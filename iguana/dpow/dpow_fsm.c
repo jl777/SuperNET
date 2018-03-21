@@ -263,9 +263,9 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                         *nothtp = height - 10;
                         if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
                         {
-                            bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65],str[65],str2[65],str3[65];
+                            bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65];//,str[65],str2[65],str3[65];
                             vout = jitem(vouts,numvouts-1);
-                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 36 && len < sizeof(script) )
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 35*2 && len < sizeof(script)*2 )
                             {
                                 len >>= 1;
                                 decode_hex(script,len,hexstr);
@@ -273,7 +273,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                                 {
                                     if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
                                         *nothtp = 0;
-                                    printf("%s.%d notarizationht.%d %s -> %s MoM.%s [%d]\n",symbol,height,*nothtp,bits256_str(str,blockhash),bits256_str(str2,txid),bits256_str(str3,MoM),MoMdepth);
+                                    //printf("%s.%d notarizationht.%d %s -> %s MoM.%s [%d]\n",symbol,height,*nothtp,bits256_str(str,blockhash),bits256_str(str2,txid),bits256_str(str3,MoM),MoMdepth);
                                 }
                             }
                         }
@@ -316,7 +316,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         free_json(blockjson);
         if ( bits256_nonz(merkle) != 0 )
         {
-            merkles = calloc(3*maxdepth+1,sizeof(*merkles));
+            merkles = calloc(4*maxdepth+1,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
             ht = height - MoMdepth;
             while ( MoMdepth < maxdepth && ht > breakht && ht > 0 )
@@ -401,7 +401,8 @@ void dpow_statemachinestart(void *ptr)
     {
         kmdheight = dest->longestchain;
         //portable_mutex_lock(&myinfo->MoM_mutex);
-        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+        //if ( Notaries_port != DPOW_SOCKPORT )
+            MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
         //portable_mutex_unlock(&myinfo->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
@@ -604,7 +605,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
-            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             free(ptr);
             return;
@@ -637,12 +638,11 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        sleep(13);
-        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )
             {
-                printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
         }
@@ -659,6 +659,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 printf("%s ht.%d %s got reorged to %s, abort notarization\n",bp->srccoin->symbol,bp->height,bits256_str(str,bp->hashmsg),bits256_str(str2,checkhash));
                 bp->state = 0xffffffff;
+                break;
             }
         }
         if ( bp->state != 0xffffffff )
@@ -676,6 +677,7 @@ void dpow_statemachinestart(void *ptr)
             printf("abort pending ratify\n");
             break;
         }
+        sleep(30);
     }
     printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
