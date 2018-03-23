@@ -8,7 +8,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        build 'Cmake'
+        sh 'docker run -v .:/home/SuperNET -w /home/SuperNET --rm artempikulin/cmake-ubuntu'
       }
     }
   }
