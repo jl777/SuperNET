@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'artempikulin/cmake-ubuntu'
-    }
-    
-  }
+  agent none
   stages {
     stage('Build') {
       steps {
