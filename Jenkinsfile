@@ -2,7 +2,6 @@ pipeline {
   agent {
     docker {
       image 'artempikulin/cmake-ubuntu'
-      args '-v .:/home/SuperNET -w /home/SuperNET'
     }
     
   }
