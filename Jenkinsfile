@@ -8,7 +8,8 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh '''mkdir build
+        sh '''rm -rf build
+mkdir build
 cd build
 cmake ..
 cmake --build . --target marketmaker-testnet'''
