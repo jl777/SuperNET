@@ -1457,12 +1457,12 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.depositspent = deadtxid;
                 }
-                printf("lockduration.%d plocktime.%u lag.%d\n",lockduration,rswap.plocktime,(int32_t)(time(NULL) - (rswap.plocktime-lockduration+1800)));
+                //printf("lockduration.%d plocktime.%u lag.%d\n",lockduration,rswap.plocktime,(int32_t)(time(NULL) - (rswap.plocktime-lockduration+1800)));
                 if ( flag == 0 && (
                                    bits256_nonz(rswap.Apaymentspent) != 0 ||
                                    time(NULL) > rswap.dlocktime-777 ||
                                    (bits256_nonz(rswap.txids[BASILISK_ALICEPAYMENT]) == 0 && time(NULL) > rswap.plocktime-777) ||
-                                   (bits256_nonz(rswap.txids[BASILISK_BOBPAYMENT]) != 0 && rswap.sentflags[BASILISK_BOBPAYMENT] == 0 && time(NULL) > rswap.plocktime-lockduration+1800) ||
+                                   (bits256_nonz(rswap.txids[BASILISK_BOBPAYMENT]) != 0 && rswap.sentflags[BASILISK_BOBPAYMENT] == 0 && time(NULL) > rswap.plocktime-lockduration+1800) || // failed bobpayment
                                    (bits256_nonz(rswap.txids[BASILISK_BOBPAYMENT]) == 0 && time(NULL) > rswap.dlocktime-3*lockduration/2)
                                    ) )
                 {
