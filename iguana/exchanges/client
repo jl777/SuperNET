@@ -3,7 +3,7 @@ source passphrase
 source coins
 ./stop
 git pull;
-cp ../exchanges/updateprices;./updateprices
+cp ../exchanges/updateprices .;./updateprices
 cd ..; 
 ./m_mm;
 pkill -15 marketmaker; 
