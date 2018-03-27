@@ -333,7 +333,7 @@ int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct
         }
         free_json(array);
     }
-    printf("addressmin max %s %.8f %.8f %.8f num.%d\n",coin,dstr(*minp),dstr(*maxp),dstr(*medianp),m);
+    printf("addressmin max %s %.8f %.8f %.8f num.%d\n",coin->symbol,dstr(*minp),dstr(*maxp),dstr(*medianp),m);
     return(m/2);
 }
 
