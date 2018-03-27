@@ -434,7 +434,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
-printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
+//printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
                 array = cJSON_CreateArray();
