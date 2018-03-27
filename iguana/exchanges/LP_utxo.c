@@ -527,7 +527,6 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        //printf("reset %s ap->utxos\n",coin->symbol);
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -539,12 +538,11 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         portable_mutex_unlock(&coin->addrmutex);
         portable_mutex_unlock(&LP_gcmutex);
         now = (uint32_t)time(NULL);
-        if ( (n= cJSON_GetArraySize(array)) > 1 )
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             char str[65];
             for (i=m=0; i<n; i++)
             {
-                //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 if ( bits256_nonz(txid) == 0 )
@@ -553,20 +551,20 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
                     {
-                        //printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
+//printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
                         continue;
                     }
                     else free_json(txobj);
                     if ( (numconfs= LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0)) <= 0 )
                     {
-                        //printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
+//printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
                         continue;
                     }
                 }
                 LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                 {
-                    //printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
+//printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 }
                 else
                 {
