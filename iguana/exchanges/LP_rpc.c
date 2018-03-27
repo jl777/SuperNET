@@ -371,7 +371,7 @@ int32_t LP_address_iswatchonly(char *symbol,char *address)
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( (obj= jobj(retjson,"iswatchonly")) != 0 && is_cJSON_True(obj) != 0 )
+        if ( ((obj= jobj(retjson,"iswatchonly")) != 0 || (obj= jobj(retjson,"iswatchonly")) != 0) && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
             //printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
@@ -579,7 +579,7 @@ int32_t LP_importaddress(char *symbol,char *address)
             //printf("validated.(%s)\n",jprint(validatejson,0));
             if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
             {
-                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"watchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
                     doneflag = 1;
             }
             free_json(validatejson);
