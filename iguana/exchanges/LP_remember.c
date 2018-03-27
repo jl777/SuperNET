@@ -816,7 +816,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
             }
             free_json(txobj);
         }
-        lockduration = LP_atomic_locktime(rswap.bobcoin,rswap,alicecoin);
+        lockduration = LP_atomic_locktime(rswap->bobcoin,rswap->alicecoin);
         rswap->origfinishedflag = basilisk_swap_isfinished(requestid,quoteid,rswap->expiration,rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent,lockduration);
         rswap->finishedflag = rswap->origfinishedflag;
         if ( forceflag != 0 )
@@ -1097,7 +1097,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
     bob = LP_coinfind(rswap.bobcoin);
     LP_etomicsymbol(bobstr,bobtomic,rswap.src);
     LP_etomicsymbol(alicestr,alicetomic,rswap.dest);
-    lockduration = LP_atomic_locktime(rswap.bobcoin,rswap,alicecoin);
+    lockduration = LP_atomic_locktime(rswap->bobcoin,rswap->alicecoin);
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,bobstr) != 0 || strcmp(rswap.alicecoin,alicestr) != 0 )
     {
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
