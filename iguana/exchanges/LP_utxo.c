@@ -668,6 +668,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 {
     cJSON *array,*retjson,*item; bits256 zero; int32_t i,n; uint64_t balance = 0;
     memset(zero.bytes,0,sizeof(zero));
+    printf("address balance call LP_listunspent %s electrum.%p etomic.%d\n",coin->symbol,coin->electrum,coin->etomic[0]);
 #ifndef NOTETOMIC
     if (coin->etomic[0] != 0) {
         balance = LP_etomic_get_balance(coin, coinaddr);
@@ -675,7 +676,6 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 #endif
     if ( coin->electrum == 0 )
     {
-        printf("address balance call LP_listunspent\n");
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
         {
             printf("got address balance (%s)\n",jprint(array,0));
