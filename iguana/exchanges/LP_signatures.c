@@ -424,7 +424,6 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 {
     struct iguana_info *basecoin,*relcoin,*kmd; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,median,minsize,maxsize; bits256 zero; cJSON *reqjson;
     reqjson = cJSON_CreateObject();
-    printf("pricepings %s/%s\n",base,rel);
     if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 )//&& basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
     {
         memset(zero.bytes,0,sizeof(zero));

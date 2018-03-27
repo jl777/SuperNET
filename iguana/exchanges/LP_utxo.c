@@ -313,7 +313,8 @@ int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct
             }
             if ( m > 1 )
             {
-                revsort64s(buf,m,sizeof(*buf));
+                //revsort64s(buf,m,sizeof(*buf));
+                qsort(buf,m,sizeof(*buf),_decreasing_uint64);
                 if ( max == buf[0] && max2 == buf[1] )
                 {
                     for (i=1; i<m; i++)
