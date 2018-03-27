@@ -683,6 +683,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                 {
                     item = jitem(array,i);
                     balance += LP_value_extract(item,1);
+                    printf("i.%d (%s) balance %.8f\n",i,jprint(item,0),dstr(balance));
                 }
             }
             free_json(array);
