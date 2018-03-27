@@ -421,7 +421,9 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             {
                 retjson = cJSON_Parse(retstr);
                 free(retstr);
-                return(retjson);
+                if ( cJSON_GetArraySize(retjson) > 0 )
+                    return(retjson);
+                else free_json(retjson);
             }
         }
         printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
