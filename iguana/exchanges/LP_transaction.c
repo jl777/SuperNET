@@ -1660,6 +1660,39 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     return(jprint(retjson,1));
 }
 
+char *LP_autosplit(struct iguana_info *coin)
+{
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,halfval;
+    if ( coin->etomic[0] == 0 )
+    {
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
+        if ( balance >= 0.001+coin->txfee )
+        {
+            halfval = ((balance - coin->txfee - 0.001) / 100) * 45;
+            argjson = cJSON_CreateObject();
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(balance - 2*halfval));
+            jaddi(outputs,item);
+            jadd(argjson,"outputs",outputs);
+            jaddnum(argjson,"broadcast",1);
+            printf("autosplit.(%s)\n",jprint(argjson,0));
+            retstr = LP_withdraw(coin,argjson);
+            free_json(argjson);
+            return(retstr);
+        } else return(clonestr("{\"error\":\"less than 0.0011 in balance\"}"));
+    }
+    return(clonestr("{\"error\":\"couldnt autosplit\"}"));
+}
+
 #ifndef NOTETOMIC
 
 char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
@@ -1684,6 +1717,8 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
 }
 
 #endif
+
+
 
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {

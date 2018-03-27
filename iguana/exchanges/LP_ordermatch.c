@@ -1491,7 +1491,15 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
-    LP_address_utxo_reset(relcoin);
+    if ( LP_address_utxo_reset(relcoin) == 0 )
+    {
+        if ( time(NULL) > relcoin->lastautosplit+300 )
+        {
+            relcoin->lastautosplit = (uint32_t)time(NULL);
+            return(LP_autosplit(relcoin));
+        }
+        return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
+    }
     autxo = 0;
     for (i=0; i<maxiters; i++)
     {

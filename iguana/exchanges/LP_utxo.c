@@ -538,7 +538,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         portable_mutex_unlock(&coin->addrmutex);
         portable_mutex_unlock(&LP_gcmutex);
         now = (uint32_t)time(NULL);
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        if ( (n= cJSON_GetArraySize(array)) > 1 )
         {
             char str[65];
             for (i=m=0; i<n; i++)
@@ -574,7 +574,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 }
             }
             printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
-        }
+        } else ap = 0;
         free_json(array);
     }
     portable_mutex_unlock(&coin->addressutxo_mutex);
