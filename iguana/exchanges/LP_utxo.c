@@ -290,7 +290,7 @@ int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct
     memset(zero.bytes,0,sizeof(zero));
     if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
     {
-        //printf("address minmax.(%s)\n",jprint(array,0));
+        printf("address minmax.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             buf = calloc(sizeof(*buf),n);
