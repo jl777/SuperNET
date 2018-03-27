@@ -412,7 +412,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
     {
         if ( (ap= LP_addressfind(coin,coinaddr)) != 0 )
         {
-            if ( ap->unspenttime == 0 )
+            if ( ap->unspenttime == 0 || strcmp(coin->symbol,"DYN") == 0 )
                 usecache = 0;
             else if ( time(NULL) > ap->unspenttime+3 )
                 usecache = 0;
