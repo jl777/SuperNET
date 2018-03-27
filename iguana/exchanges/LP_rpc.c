@@ -150,6 +150,7 @@ uint64_t LP_RTsmartbalance(struct iguana_info *coin)
                 item = jitem(array,i);
                 value = LP_value_extract(item,1);
                 valuesum += value;
+                printf("%s -> %.8f\n",jprint(item,0),dstr(value));
             }
         }
         free_json(array);
