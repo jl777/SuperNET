@@ -690,8 +690,9 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
             }
             free_json(array);
         }
-        uint64_t balance2 = LP_balance(&balance2,0,coin->symbol,coin->smartaddr);
-        printf("balance %.8f vs balance2 %.8f\n",dstr(balance),dstr(balance2));
+        uint64_t balance3,balance2 = LP_balance(&balance2,0,coin->symbol,coin->smartaddr);
+        balance3 = LP_RTsmartbalance(coin);
+        printf("balance %.8f vs balance2 %.8f vs balance3 %.8f\n",dstr(balance),dstr(balance2),dstr(balance3));
     }
     else
     {
