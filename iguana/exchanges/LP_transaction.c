@@ -1526,7 +1526,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     if ( coin->etomic[0] != 0 )
     {
         if ( (coin= LP_coinfind("ETOMIC")) == 0 )
-            return(0);
+            return(clonestr("{\"error\":\"use LP_eth_withdraw for ETH or ERC20\"}"));
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
@@ -1569,14 +1569,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     V = malloc(maxV * sizeof(*V));
     for (iter=0; iter<2; iter++)
     {
-        if ( (ap= LP_address_utxo_reset(coin)) == 0 )
-        {
-            printf("LP_withdraw error utxo reset %s\n",coin->symbol);
-            free(V);
-            if ( allocated_outputs != 0 )
-                free_json(outputs);
-            return(0);
-        }
+        LP_address_utxo_reset(coin);
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
@@ -1685,6 +1678,7 @@ char *LP_autosplit(struct iguana_info *coin)
             jaddi(outputs,item);
             jadd(argjson,"outputs",outputs);
             jaddnum(argjson,"broadcast",1);
+            jaddstr(argjson,"coin",coin->symbol);
             printf("autosplit.(%s)\n",jprint(argjson,0));
             retstr = LP_withdraw(coin,argjson);
             free_json(argjson);
