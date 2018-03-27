@@ -1526,7 +1526,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     if ( coin->etomic[0] != 0 )
     {
         if ( (coin= LP_coinfind("ETOMIC")) == 0 )
-            return(0);
+            return(clonestr("{\"error\":\"use LP_eth_withdraw for ETH or ERC20\"}"));
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
@@ -1569,14 +1569,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     V = malloc(maxV * sizeof(*V));
     for (iter=0; iter<2; iter++)
     {
-        if ( (ap= LP_address_utxo_reset(coin)) == 0 )
-        {
-            printf("LP_withdraw error utxo reset %s\n",coin->symbol);
-            free(V);
-            if ( allocated_outputs != 0 )
-                free_json(outputs);
-            return(0);
-        }
+        LP_address_utxo_reset(coin);
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
@@ -1660,6 +1653,42 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     return(jprint(retjson,1));
 }
 
+char *LP_autosplit(struct iguana_info *coin)
+{
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,halfval;
+    if ( coin->etomic[0] == 0 )
+    {
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
+        //printf("%s balance %.8f\n",coin->symbol,dstr(balance));
+        balance -= coin->txfee - 0.001;
+        if ( balance > coin->txfee )
+        {
+            halfval = (balance / 100) * 45;
+            argjson = cJSON_CreateObject();
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(balance - 2*halfval));
+            jaddi(outputs,item);
+            jadd(argjson,"outputs",outputs);
+            jaddnum(argjson,"broadcast",1);
+            jaddstr(argjson,"coin",coin->symbol);
+            //printf("autosplit.(%s)\n",jprint(argjson,0));
+            retstr = LP_withdraw(coin,argjson);
+            free_json(argjson);
+            return(retstr);
+        } else return(clonestr("{\"error\":\"less than 0.0011 in balance\"}"));
+    }
+    return(clonestr("{\"error\":\"couldnt autosplit\"}"));
+}
+
 #ifndef NOTETOMIC
 
 char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
@@ -1684,6 +1713,8 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
 }
 
 #endif
+
+
 
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {
