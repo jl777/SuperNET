@@ -442,7 +442,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
             jaddnum(reqjson,"credits",dstr(ap->instantdex_credits));
         if ( (numutxos= LP_address_minmax(&median,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
         {
-            printf("send %s numutxos.%d median %.8f min %.8f max %.8f\n",base,numutxos,dstr(median),dstr(minsize),dstr(maxsize));
+            //printf("send %s numutxos.%d median %.8f min %.8f max %.8f\n",base,numutxos,dstr(median),dstr(minsize),dstr(maxsize));
             jaddstr(reqjson,"utxocoin",base);
             jaddnum(reqjson,"n",numutxos);
             jaddnum(reqjson,"bal",dstr(median) * numutxos);
