@@ -666,14 +666,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             if ( strcmp(method,"inventory") == 0 )
             {
-                struct iguana_info *ptr;
+                struct iguana_info *ptr; int32_t num;
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
                     LP_address(ptr,ptr->smartaddr);
                     if ( jint(argjson,"reset") != 0 )
                     {
                         ptr->privkeydepth = 0;
-                        LP_address_utxo_reset(ptr);
+                        LP_address_utxo_reset(&num,ptr);
                         LP_passphrase_init(jstr(argjson,"passphrase"),G.gui,G.netid,G.seednode);
                     }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
@@ -687,7 +687,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     //jadd(retjson,"alice",LP_inventory(coin));
                     //jadd(retjson,"bob",LP_inventory(coin,1));
                     //LP_smartutxos_push(ptr);
-                    LP_address_utxo_reset(ptr);
+                    LP_address_utxo_reset(&num,ptr);
                     return(jprint(retjson,1));
                 }
             }

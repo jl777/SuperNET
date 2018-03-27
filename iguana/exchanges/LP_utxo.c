@@ -509,11 +509,12 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
     return(retval);
 }
 
-struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
+struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
     LP_address(coin,coin->smartaddr);
     memset(zero.bytes,0,sizeof(zero));
+    *nump = 0;
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2,zero,zero);
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
     {
@@ -540,6 +541,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             char str[65];
+            *nump = n;
             for (i=m=0; i<n; i++)
             {
                 item = jitem(array,i);
@@ -573,8 +575,6 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             }
             printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
         }
-        if ( n <= 1 )
-            ap = 0;
         free_json(array);
     }
     portable_mutex_unlock(&coin->addressutxo_mutex);
