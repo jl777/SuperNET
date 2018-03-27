@@ -300,7 +300,7 @@ int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 if ( LP_allocated(txid,vout) != 0 )
                     continue;
-                m++;
+                buf[m++] = value;
                 if ( value > max )
                 {
                     max2 = max;
@@ -313,8 +313,7 @@ int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct
             }
             if ( m > 1 )
             {
-                //revsort64s(buf,m,sizeof(*buf));
-                qsort(buf,m,sizeof(*buf),_decreasing_uint64);
+                revsort64s(buf,m,sizeof(*buf));
                 if ( max == buf[0] && max2 == buf[1] )
                 {
                     for (i=1; i<m; i++)
