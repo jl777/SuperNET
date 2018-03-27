@@ -677,7 +677,7 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
         refrel = jstr(argjson,"refrel");
         fundvalue_bid = jstr(argjson,"fundvalue_bid");
         fundvalue_ask = jstr(argjson,"fundvalue_ask");
-        if ( fundvalue_bid != 0 || fundvalue_ask != 0 || fixedprice > SMALLVAL || (refbase != 0 && refrel != 0) )
+        if ( fundvalue_bid != 0 || fundvalue_ask != 0 || fixedprice > SMALLVAL || (refbase != 0 && refrel != 0 && strlen(refbase) > 0 && strlen(refrel) > 0) )
         {
             if ( fixedprice > SMALLVAL )
             {
