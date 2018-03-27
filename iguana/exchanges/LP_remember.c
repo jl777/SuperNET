@@ -1097,7 +1097,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
     bob = LP_coinfind(rswap.bobcoin);
     LP_etomicsymbol(bobstr,bobtomic,rswap.src);
     LP_etomicsymbol(alicestr,alicetomic,rswap.dest);
-    lockduration = LP_atomic_locktime(rswap->bobcoin,rswap->alicecoin);
+    lockduration = LP_atomic_locktime(rswap.bobcoin,rswap.alicecoin);
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,bobstr) != 0 || strcmp(rswap.alicecoin,alicestr) != 0 )
     {
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
@@ -1218,7 +1218,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
         rswap.paymentspent = basilisk_swap_spendupdate(rswap.iambob,rswap.bobcoin,rswap.bobpaymentaddr,rswap.sentflags,rswap.txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
         rswap.Apaymentspent = basilisk_swap_spendupdate(rswap.iambob,rswap.alicecoin,rswap.alicepaymentaddr,rswap.sentflags,rswap.txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,destAdest,destBdest,rswap.Adestaddr,rswap.destaddr);
         rswap.depositspent = basilisk_swap_spendupdate(rswap.iambob,rswap.bobcoin,rswap.bobdepositaddr,rswap.sentflags,rswap.txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
-        rswap.finishedflag = basilisk_swap_isfinished(requestid,quoteid,rswap.expiration,rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
+        rswap.finishedflag = basilisk_swap_isfinished(requestid,quoteid,rswap.expiration,rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent,lockduration);
         LP_spends_set(&rswap);
         if ( rswap.iambob == 0 )
         {
@@ -1517,7 +1517,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
     LP_totals_update(rswap.iambob,rswap.alicecoin,rswap.bobcoin,KMDtotals,BTCtotals,rswap.sentflags,rswap.values);
     if ( (numspent= LP_spends_set(&rswap)) == 3 )
         rswap.finishedflag = 1;
-    else rswap.finishedflag = basilisk_swap_isfinished(requestid,quoteid,rswap.expiration,rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
+    else rswap.finishedflag = basilisk_swap_isfinished(requestid,quoteid,rswap.expiration,rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent,lockduration);
     if ( rswap.origfinishedflag == 0 && rswap.finishedflag != 0 )
     {
         char fname[1024],*itemstr; FILE *fp;
