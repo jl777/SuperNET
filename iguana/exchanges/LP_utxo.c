@@ -677,6 +677,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     {
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
         {
+            printf("got address balance (%s)\n",jprint(array,0));
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
                 for (i=0; i<n; i++)
@@ -688,6 +689,8 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
             }
             free_json(array);
         }
+        uint64_t balance2 = LP_balance(&balance2,0,coin->symbol,coin->coinaddr);
+        printf("balance %.8f vs balance2 %.8f\n",dstr(balance),dstr(balance2));
     }
     else
     {
