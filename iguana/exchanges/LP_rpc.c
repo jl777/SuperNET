@@ -371,7 +371,7 @@ int32_t LP_address_iswatchonly(char *symbol,char *address)
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( ((obj= jobj(retjson,"iswatchonly")) != 0 || (obj= jobj(retjson,"iswatchonly")) != 0) && is_cJSON_True(obj) != 0 )
+        if ( ((obj= jobj(retjson,"iswatchonly")) != 0 || (obj= jobj(retjson,"watchonly")) != 0) && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
             //printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
