@@ -573,7 +573,9 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 }
             }
             printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
-        } else ap = 0;
+        }
+        if ( n <= 1 )
+            ap = 0;
         free_json(array);
     }
     portable_mutex_unlock(&coin->addressutxo_mutex);
