@@ -1661,10 +1661,11 @@ char *LP_autosplit(struct iguana_info *coin)
         if ( coin->electrum != 0 )
             balance = LP_unspents_load(coin->symbol,coin->smartaddr);
         else balance = LP_RTsmartbalance(coin);
-        printf("%s balance %.8f\n",coin->symbol,dstr(balance));
-        if ( balance >= 0.001*SATOSHIDEN+coin->txfee )
+        //printf("%s balance %.8f\n",coin->symbol,dstr(balance));
+        balance -= coin->txfee - 0.001;
+        if ( balance > coin->txfee )
         {
-            halfval = ((balance - coin->txfee - 0.001) / 100) * 45;
+            halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
             outputs = cJSON_CreateArray();
             item = cJSON_CreateObject();
@@ -1679,7 +1680,7 @@ char *LP_autosplit(struct iguana_info *coin)
             jadd(argjson,"outputs",outputs);
             jaddnum(argjson,"broadcast",1);
             jaddstr(argjson,"coin",coin->symbol);
-            printf("autosplit.(%s)\n",jprint(argjson,0));
+            //printf("autosplit.(%s)\n",jprint(argjson,0));
             retstr = LP_withdraw(coin,argjson);
             free_json(argjson);
             return(retstr);
