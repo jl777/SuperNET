@@ -1492,6 +1492,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
     LP_address_utxo_reset(&num,relcoin);
+    printf("got num.%d from utxo reset\n",num);
     if ( num <= 1 )
     {
         if ( time(NULL) > relcoin->lastautosplit+300 )
