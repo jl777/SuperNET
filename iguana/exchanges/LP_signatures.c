@@ -446,7 +446,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
             printf("send %s numutxos.%d median %.8f min %.8f max %.8f\n",base,numutxos,dstr(median),dstr(minsize),dstr(maxsize));
             jaddstr(reqjson,"utxocoin",base);
             jaddnum(reqjson,"n",numutxos);
-            jaddnum(reqjson,"bal",dstr(median) * n);
+            jaddnum(reqjson,"bal",dstr(median) * numutxos);
             jaddnum(reqjson,"min",dstr(minsize));
             jaddnum(reqjson,"max",dstr(maxsize));
         }
