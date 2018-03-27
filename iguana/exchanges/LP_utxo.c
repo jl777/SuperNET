@@ -675,6 +675,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 #endif
     if ( coin->electrum == 0 )
     {
+        printf("address balance call LP_listunspent\n");
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
         {
             printf("got address balance (%s)\n",jprint(array,0));
