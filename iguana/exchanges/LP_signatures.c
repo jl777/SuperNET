@@ -422,9 +422,8 @@ int32_t LP_price_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pub
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
 {
-    struct iguana_info *basecoin,*relcoin,*kmd; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,balance,minsize,maxsize; bits256 zero; cJSON *reqjson;
+    struct iguana_info *basecoin,*relcoin,*kmd; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,median,minsize,maxsize; bits256 zero; cJSON *reqjson;
     reqjson = cJSON_CreateObject();
-    // LP_addsig
     if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 )//&& basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
@@ -441,12 +440,12 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddstr(reqjson,"pubsecp",pubsecpstr);
         if ( (kmd= LP_coinfind("KMD")) != 0 && (ap= LP_address(kmd,kmd->smartaddr)) != 0 && ap->instantdex_credits != 0 )
             jaddnum(reqjson,"credits",dstr(ap->instantdex_credits));
-        if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
+        if ( (numutxos= LP_address_minmax(&median,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
         {
-            //printf("send %s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+            //printf("send %s numutxos.%d median %.8f min %.8f max %.8f\n",base,numutxos,dstr(median),dstr(minsize),dstr(maxsize));
             jaddstr(reqjson,"utxocoin",base);
             jaddnum(reqjson,"n",numutxos);
-            jaddnum(reqjson,"bal",dstr(balance));
+            jaddnum(reqjson,"bal",dstr(median) * numutxos);
             jaddnum(reqjson,"min",dstr(minsize));
             jaddnum(reqjson,"max",dstr(maxsize));
         }

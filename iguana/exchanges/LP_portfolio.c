@@ -459,6 +459,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
     static cJSON *tickerjson; static uint32_t lasttime;
     char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
+    printf("AUTOPRICE numautorefs.%d\n",num_LP_autorefs);
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
@@ -570,7 +571,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         }
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
-            //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
+            printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
@@ -677,7 +678,7 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
         refrel = jstr(argjson,"refrel");
         fundvalue_bid = jstr(argjson,"fundvalue_bid");
         fundvalue_ask = jstr(argjson,"fundvalue_ask");
-        if ( fundvalue_bid != 0 || fundvalue_ask != 0 || fixedprice > SMALLVAL || (refbase != 0 && refrel != 0) )
+        if ( fundvalue_bid != 0 || fundvalue_ask != 0 || fixedprice > SMALLVAL || (refbase != 0 && refrel != 0 && strlen(refbase) > 0 && strlen(refrel) > 0) )
         {
             if ( fixedprice > SMALLVAL )
             {
