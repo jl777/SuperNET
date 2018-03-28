@@ -971,7 +971,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
 
 double LP_fomoprice(char *base,char *rel,double relvolume)
 {
-    char *retstr; cJSON *retjson,*asks; int32_t i,numasks; double biggest,price,fomoprice = 0.;
+    char *retstr; cJSON *retjson,*asks,*item; int32_t i,numasks; double biggest,price,fomoprice = 0.;
     if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
