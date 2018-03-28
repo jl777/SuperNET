@@ -496,7 +496,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 {
                     fomo = 1;
                     price = 1.;
-                    vol = jdouble(argjson,"fomo");
+                    vol = jdouble(argjson,"dump");
                 } else vol = jdouble(argjson,"basevolume");
                 if ( price > SMALLVAL )
                 {
