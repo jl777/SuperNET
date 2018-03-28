@@ -1501,7 +1501,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         LP_address_minmax(&median,&minutxo,&maxutxo,relcoin,relcoin->smartaddr); // limit to largest utxo
         if ( maxutxo > 0 )
         {
-            relvolume = dstr(maxutxo) - desttxfee*3;
+            relvolume = dstr(maxutxo) - dstr(desttxfee)*3;
             maxprice = LP_fomoprice(base,rel,relvolume);
         } else printf("no utxo available\n");
     }
