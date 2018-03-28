@@ -1277,6 +1277,8 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     if ( height <= 0 )
         height = 1;
     *isrealtimep = 0;
+    if ( coin->getinfostr[0] == 0 )
+        strcpy(coin->getinfostr,"getinfo");
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)coin->getinfostr,0,port)) != 0 )
     {
         if ( (infoobj= cJSON_Parse(retstr)) != 0 )
