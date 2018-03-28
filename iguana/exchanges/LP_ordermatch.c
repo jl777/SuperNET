@@ -1494,6 +1494,10 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
     }
     LP_txfees(&txfee,&desttxfee,base,rel);
+    if ( txfee != 0 && txfee < 10000 )
+        txfee = 10000;
+    if ( desttxfee != 0 && desttxfee < 10000 )
+        desttxfee = 10000;
     if ( fomoflag != 0 )
     {
         uint64_t median,minutxo,maxutxo;
