@@ -969,6 +969,30 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     return(jprint(retjson,1));
 }
 
+double LP_fomoprice(char *base,char *rel,double relvolume)
+{
+    char *retstr; cJSON *retjson,*asks; int32_t i,numasks; double biggest,price,fomoprice = 0.;
+    if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (asks= jarray(&numasks,retjson,"asks")) != 0 && numasks > 0 )
+            {
+                for (i=0; i<numasks; i++)
+                {
+                    item = jitem(asks,i);
+                    biggest = jdouble(item,"maxvolume");
+                    price = jdouble(item,"price");
+                    printf("fomoprice i.%d %.8f vol %.8f\n",i,biggest,price);
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(fomoprice);
+}
+
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
 {
     double price = 0.; int64_t KMDvalue=0;
