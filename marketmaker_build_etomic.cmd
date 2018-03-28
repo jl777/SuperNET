@@ -2,10 +2,7 @@
 rem (c) Decker
 
 echo [#1] Build nanomsg, curl and pthreads ...
-Choice /M "Rebuild it?
-If Errorlevel 2 Goto continue_build
 call marketmaker_build_depends.cmd
-:continue_build
 copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.lib marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\curl.lib
 copy marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread.lib
 
