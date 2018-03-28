@@ -996,10 +996,11 @@ double LP_fomoprice(char *base,char *rel,double *relvolumep)
         }
         free(retstr);
     }
-    if ( maxvol > 0. && maxvol < relvolume && fomoprice > 0. )
+    if ( maxvol > 0. && fomoprice > 0. )
     {
-        relvolume = maxvol * 0.98;
-        fomoprice /= 0.99;
+        if ( maxvol < relvolume )
+            relvolume = maxvol * 0.98;
+        fomoprice /= 0.95;
     } else fomoprice = 0.;
     *relvolumep = relvolume;
     return(fomoprice);
