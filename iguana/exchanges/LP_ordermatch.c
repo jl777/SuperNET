@@ -1502,7 +1502,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         if ( maxutxo > 0 )
         {
             relvolume = dstr(maxutxo) - dstr(desttxfee)*3;
-            printf("maxutxo %.8f relvolume %.8f\n",dstr(maxutxo),relvolume);
+            printf("maxutxo %.8f relvolume %.8f desttxfee %.8f\n",dstr(maxutxo),relvolume,dstr(desttxfee));
             maxprice = LP_fomoprice(base,rel,relvolume);
         } else printf("no utxo available\n");
     }
