@@ -983,7 +983,7 @@ double LP_fomoprice(char *base,char *rel,double relvolume)
                     item = jitem(asks,i);
                     biggest = jdouble(item,"maxvolume");
                     price = jdouble(item,"price");
-                    printf("fomoprice i.%d %.8f vol %.8f\n",i,biggest,price);
+                    printf("fomoprice (%.8f) i.%d %.8f vol %.8f\n",relvolume,i,price,biggest);
                 }
             }
             free_json(retjson);

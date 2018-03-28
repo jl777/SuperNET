@@ -1446,7 +1446,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
 
 char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid)
 {
-    uint64_t desttxfee,txfee; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t num=0,maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    uint64_t desttxfee,txfee,balance; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t num=0,maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( gui == 0 )
@@ -1493,10 +1493,17 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         }
         return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
     }
+    LP_txfees(&txfee,&desttxfee,base,rel);
     if ( fomoflag != 0 )
     {
-        // fomo -> price is 1. and needs to be set
-        maxprice = LP_fomoprice(base,rel,relvolume);
+        uint64_t median,minutxo,maxutxo;
+        maxprice = 0.; // fomo -> price is 1. and needs to be set
+        LP_address_minmax(&median,&minutxo,&maxutxo,relcoin,relcoin->smartaddr); // limit to largest utxo
+        if ( maxutxo > 0 )
+        {
+            relvolume = dstr(maxutxo) - desttxfee*3;
+            maxprice = LP_fomoprice(base,rel,relvolume);
+        } else printf("no utxo available\n");
     }
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
@@ -1504,7 +1511,6 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         maxprice *= 1.01;
     else maxprice *= 1.001;
     memset(pubkeys,0,sizeof(pubkeys));
-    LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
     autxo = 0;
     for (i=0; i<maxiters; i++)
