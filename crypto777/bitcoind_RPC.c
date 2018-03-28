@@ -141,8 +141,6 @@ char *Jay_NXTrequest(char *command,char *params)
     return(retstr);
 }
 
-int32_t zeroval() { return(0); }
-
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
