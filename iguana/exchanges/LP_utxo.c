@@ -285,7 +285,7 @@ struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr)
 
 int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *array,*item; bits256 txid,zero; int64_t max,max2,value; uint64 *buf; int32_t i,m=0,vout,height,n = 0;
+    cJSON *array,*item; bits256 txid,zero; int64_t max,max2,value; uint64_t *buf; int32_t i,m=0,vout,height,n = 0;
     *minp = *maxp = *medianp = max = max2 = 0;
     memset(zero.bytes,0,sizeof(zero));
     if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
