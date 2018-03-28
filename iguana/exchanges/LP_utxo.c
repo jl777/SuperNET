@@ -333,13 +333,13 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
                 {
                     *maxp = buf[0];
                     *medianp = buf[m/2];
+                    printf("alice addressmin max %s %.8f %.8f %.8f num.%d\n",coin->symbol,dstr(*minp),dstr(*maxp),dstr(*medianp),m);
                 }
             } else *minp = *maxp = *medianp = 0;
             free(buf);
         }
         free_json(array);
     }
-    //printf("addressmin max %s %.8f %.8f %.8f num.%d\n",coin->symbol,dstr(*minp),dstr(*maxp),dstr(*medianp),m);
     return(m/2);
 }
 
