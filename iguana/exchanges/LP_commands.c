@@ -375,6 +375,11 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 jaddbits256(retjson,"privkey",privkey);
                 bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
+#ifndef NOTETOMIC
+                char ethaddr[50];
+                LP_etomic_pubkeystr_to_addr(pubsecp, ethaddr);
+                jaddstr(retjson,"ethaddr",ethaddr);
+#endif
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }
@@ -477,18 +482,30 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"buy") == 0 )
             {
-                //*
+                int32_t fomo = 0; double vol;
+                if ( jobj(argjson,"fomo") != 0 )
+                {
+                    fomo = 1;
+                    price = 1.;
+                    vol = jdouble(argjson,"fomo");
+                } else vol = jdouble(argjson,"relvolume");
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
+                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
             {
-                //*
+                int32_t fomo = 0; double vol;
+                if ( jobj(argjson,"dump") != 0 )
+                {
+                    fomo = 1;
+                    price = 1.;
+                    vol = jdouble(argjson,"dump");
+                } else vol = jdouble(argjson,"basevolume");
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
+                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -661,14 +678,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             if ( strcmp(method,"inventory") == 0 )
             {
-                struct iguana_info *ptr;
+                struct iguana_info *ptr; int32_t num;
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
                     LP_address(ptr,ptr->smartaddr);
                     if ( jint(argjson,"reset") != 0 )
                     {
                         ptr->privkeydepth = 0;
-                        LP_address_utxo_reset(ptr);
+                        LP_address_utxo_reset(&num,ptr);
                         LP_passphrase_init(jstr(argjson,"passphrase"),G.gui,G.netid,G.seednode);
                     }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
@@ -682,7 +699,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     //jadd(retjson,"alice",LP_inventory(coin));
                     //jadd(retjson,"bob",LP_inventory(coin,1));
                     //LP_smartutxos_push(ptr);
-                    LP_address_utxo_reset(ptr);
+                    LP_address_utxo_reset(&num,ptr);
                     return(jprint(retjson,1));
                 }
             }

@@ -1444,9 +1444,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     return(retval);
 }
 
-char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid)
+char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid)
 {
-    uint64_t desttxfee,txfee; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    uint64_t desttxfee,txfee,balance; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t num=0,maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( gui == 0 )
@@ -1483,15 +1483,41 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         jaddnum(retjson,"wait",Alice_expiration-time(NULL));
         return(jprint(retjson,1));
     } else LP_alicequery_clear();
+    LP_address_utxo_reset(&num,relcoin);
+    if ( num <= 1 )
+    {
+        if ( time(NULL) > relcoin->lastautosplit+300 )
+        {
+            relcoin->lastautosplit = (uint32_t)time(NULL);
+            return(LP_autosplit(relcoin));
+        }
+        return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
+    }
+    LP_txfees(&txfee,&desttxfee,base,rel);
+    if ( txfee != 0 && txfee < 10000 )
+        txfee = 10000;
+    if ( desttxfee != 0 && desttxfee < 10000 )
+        desttxfee = 10000;
+    if ( fomoflag != 0 )
+    {
+        uint64_t median,minutxo,maxutxo;
+        maxprice = 0.; // fomo -> price is 1. and needs to be set
+        LP_address_minmax(0,&median,&minutxo,&maxutxo,relcoin,relcoin->smartaddr); // limit to largest utxo
+        if ( maxutxo > 0 )
+        {
+            relvolume = MIN(relvolume,dstr(maxutxo) - dstr(desttxfee)*3);
+            printf("maxutxo %.8f relvolume %.8f desttxfee %.8f\n",dstr(maxutxo),relvolume,dstr(desttxfee));
+            maxprice = LP_fomoprice(base,rel,&relvolume);
+            printf("fomoprice %.8f relvolume %.8f\n",maxprice,relvolume);
+        } else printf("no utxo available\n");
+    }
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     if ( strcmp("BTC",rel) == 0 )
         maxprice *= 1.01;
     else maxprice *= 1.001;
     memset(pubkeys,0,sizeof(pubkeys));
-    LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
-    LP_address_utxo_reset(relcoin);
     autxo = 0;
     for (i=0; i<maxiters; i++)
     {

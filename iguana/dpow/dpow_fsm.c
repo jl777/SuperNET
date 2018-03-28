@@ -312,7 +312,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; uint64_t signedmask; int32_t breakht=0,notht=0,ht,maxdepth = 1440,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
-    printf("start MoM calc %s height.%d\n",coin->symbol,height);
+    //printf("start MoM calc %s height.%d\n",coin->symbol,height);
     if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
     {
         merkle = jbits256(blockjson,"merkleroot");
@@ -368,7 +368,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         } else printf("%s.ht%d null merkles\n",coin->symbol,height);
     } else printf("%s.ht%d null block\n",coin->symbol,height);
     *MoMdepthp = MoMdepth;
-    printf("done MoM calc %s height.%d MoMdepth.%d\n",coin->symbol,height,MoMdepth);
+    //printf("done MoM calc %s height.%d MoMdepth.%d\n",coin->symbol,height,MoMdepth);
     return(MoM);
 }
 

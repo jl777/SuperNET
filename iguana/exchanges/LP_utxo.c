@@ -283,30 +283,64 @@ struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-int32_t LP_address_minmax(uint64_t *balancep,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr)
+int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *array,*item; bits256 txid,zero; int64_t value; int32_t i,vout,height,n = 0;
-    *minp = *maxp = *balancep = 0;
+    cJSON *array,*item; bits256 txid,zero; int64_t max,max2,value; uint64_t *buf; int32_t i,m=0,vout,height,n = 0;
+    *minp = *maxp = *medianp = max = max2 = 0;
     memset(zero.bytes,0,sizeof(zero));
     if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
     {
         //printf("address minmax.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
-            for (i=0; i<n; i++)
+            buf = calloc(sizeof(*buf),n);
+            for (i=m=0; i<n; i++)
             {
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
-                if ( value > *maxp )
-                    *maxp = value;
+                if ( LP_allocated(txid,vout) != 0 )
+                    continue;
+                buf[m++] = value;
+                if ( value > max )
+                {
+                    max2 = max;
+                    max = value;
+                }
+                else if ( value > max2 )
+                    max2 = value;
                 if ( *minp == 0 || value < *minp )
                     *minp = value;
-                *balancep += value;
             }
+            if ( m > 1 )
+            {
+                revsort64s(buf,m,sizeof(*buf));
+                if ( iambob != 0 )
+                {
+                    if ( max == buf[0] && max2 == buf[1] )
+                    {
+                        for (i=1; i<m; i++)
+                        {
+                            if ( max >= LP_DEPOSITSATOSHIS(buf[i]) )
+                            {
+                                *maxp = buf[i];
+                                *medianp = buf[m/2];
+                                break;
+                            }
+                        }
+                    } else printf("sort error? max %.8f != %.8f\n",dstr(max),dstr(buf[0]));
+                }
+                else
+                {
+                    *maxp = buf[0];
+                    *medianp = buf[m/2];
+                    printf("alice addressmin max %s %.8f %.8f %.8f num.%d\n",coin->symbol,dstr(*minp),dstr(*maxp),dstr(*medianp),m);
+                }
+            } else *minp = *maxp = *medianp = 0;
+            free(buf);
         }
         free_json(array);
     }
-    return(n);
+    return(m/2);
 }
 
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
@@ -326,7 +360,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 {
                     if ( LP_value_extract(txout,0) == 0 )
                     {
-                        //printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
+//char str[65]; printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
                         free_json(txout);
                         up->spendheight = 1;
                         if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
@@ -337,7 +371,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 }
                 else
                 {
-                    //printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
+//char str[65]; printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
                     up->spendheight = 1;
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
@@ -482,11 +516,12 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
     return(retval);
 }
 
-struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
+struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
     LP_address(coin,coin->smartaddr);
     memset(zero.bytes,0,sizeof(zero));
+    *nump = 0;
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2,zero,zero);
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
     {
@@ -499,7 +534,6 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        //printf("reset %s ap->utxos\n",coin->symbol);
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -514,9 +548,9 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             char str[65];
+            *nump = n;
             for (i=m=0; i<n; i++)
             {
-                //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 if ( bits256_nonz(txid) == 0 )
@@ -525,20 +559,20 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
                     {
-                        //printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
+//printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
                         continue;
                     }
                     else free_json(txobj);
                     if ( (numconfs= LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0)) <= 0 )
                     {
-                        //printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
+//printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
                         continue;
                     }
                 }
                 LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                 {
-                    //printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
+//printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 }
                 else
                 {
@@ -641,6 +675,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 {
     cJSON *array,*retjson,*item; bits256 zero; int32_t i,n; uint64_t balance = 0;
     memset(zero.bytes,0,sizeof(zero));
+    //printf("address balance call LP_listunspent %s electrum.%p etomic.%d\n",coin->symbol,coin->electrum,coin->etomic[0]);
 #ifndef NOTETOMIC
     if (coin->etomic[0] != 0) {
         balance = LP_etomic_get_balance(coin, coinaddr);
@@ -650,16 +685,21 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     {
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
         {
+            //printf("got address balance (%s)\n",jprint(array,0));
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
                     balance += LP_value_extract(item,1);
+                    //printf("i.%d (%s) balance %.8f\n",i,jprint(item,0),dstr(balance));
                 }
             }
             free_json(array);
         }
+        //uint64_t balance3,balance2 = LP_balance(&balance2,0,coin->symbol,coin->smartaddr);
+        //balance3 = LP_RTsmartbalance(coin);
+        //printf("balance %.8f vs balance2 %.8f vs balance3 %.8f\n",dstr(balance),dstr(balance2),dstr(balance3));
     }
     else
     {

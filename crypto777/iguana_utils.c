@@ -557,7 +557,7 @@ int _increasing_uint64(const void *a,const void *b)
 #undef uint64_b
 }
 
-static int _decreasing_uint64(const void *a,const void *b)
+int _decreasing_uint64(const void *a,const void *b)
 {
 #define uint64_a (*(uint64_t *)a)
 #define uint64_b (*(uint64_t *)b)
@@ -570,7 +570,7 @@ static int _decreasing_uint64(const void *a,const void *b)
 #undef uint64_b
 }
 
-static int _decreasing_uint32(const void *a,const void *b)
+int _decreasing_uint32(const void *a,const void *b)
 {
 #define uint32_a (*(uint32_t *)a)
 #define uint32_b (*(uint32_t *)b)

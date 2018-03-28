@@ -566,7 +566,8 @@ void LP_coinsloop(void *_coins)
                 continue;
             if ( coin->did_addrutxo_reset == 0 )
             {
-                LP_address_utxo_reset(coin);
+                int32_t num;
+                LP_address_utxo_reset(&num,coin);
                 coin->did_addrutxo_reset = 1;
             }
             if ( coin->longestchain == 1 ) // special init value
