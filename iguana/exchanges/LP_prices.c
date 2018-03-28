@@ -1000,7 +1000,7 @@ double LP_fomoprice(char *base,char *rel,double *relvolumep)
     {
         relvolume = maxvol * 0.98;
         fomoprice /= 0.99;
-    } else *fomoprice = 0.;
+    } else fomoprice = 0.;
     *relvolumep = relvolume;
     return(fomoprice);
 }
