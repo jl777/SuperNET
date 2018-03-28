@@ -1498,7 +1498,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
     {
         uint64_t median,minutxo,maxutxo;
         maxprice = 0.; // fomo -> price is 1. and needs to be set
-        LP_address_minmax(&median,&minutxo,&maxutxo,relcoin,relcoin->smartaddr); // limit to largest utxo
+        LP_address_minmax(0,&median,&minutxo,&maxutxo,relcoin,relcoin->smartaddr); // limit to largest utxo
         if ( maxutxo > 0 )
         {
             relvolume = dstr(maxutxo) - dstr(desttxfee)*3;

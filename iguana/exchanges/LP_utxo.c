@@ -283,7 +283,7 @@ struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr)
+int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr)
 {
     cJSON *array,*item; bits256 txid,zero; int64_t max,max2,value,*buf; int32_t i,m=0,vout,height,n = 0;
     *minp = *maxp = *medianp = max = max2 = 0;
@@ -314,19 +314,26 @@ int32_t LP_address_minmax(uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct
             if ( m > 1 )
             {
                 revsort64s(buf,m,sizeof(*buf));
-                if ( max == buf[0] && max2 == buf[1] )
+                if ( iambob != 0 )
                 {
-                    for (i=1; i<m; i++)
+                    if ( max == buf[0] && max2 == buf[1] )
                     {
-                        if ( max >= LP_DEPOSITSATOSHIS(buf[i]) )
+                        for (i=1; i<m; i++)
                         {
-                            *maxp = buf[i];
-                            *medianp = buf[m/2];
-                            break;
+                            if ( max >= LP_DEPOSITSATOSHIS(buf[i]) )
+                            {
+                                *maxp = buf[i];
+                                *medianp = buf[m/2];
+                                break;
+                            }
                         }
-                    }
+                    } else printf("sort error? max %.8f != %.8f\n",dstr(max),dstr(buf[0]));
                 }
-                else printf("sort error? max %.8f != %.8f\n",dstr(max),dstr(buf[0]));
+                else
+                {
+                    *maxp = buf[0];
+                    *medianp = buf[m/2];
+                }
             } else *minp = *maxp = *medianp = 0;
             free(buf);
         }
