@@ -969,6 +969,43 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     return(jprint(retjson,1));
 }
 
+double LP_fomoprice(char *base,char *rel,double *relvolumep)
+{
+    char *retstr; cJSON *retjson,*asks,*item; int32_t i,numasks; double maxvol=0.,relvolume,biggest,price,fomoprice = 0.;
+    relvolume = *relvolumep;
+    if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (asks= jarray(&numasks,retjson,"asks")) != 0 && numasks > 0 )
+            {
+                for (i=0; i<numasks; i++)
+                {
+                    item = jitem(asks,i);
+                    biggest = jdouble(item,"maxvolume");
+                    price = jdouble(item,"price");
+                    if ( biggest > maxvol )
+                    {
+                        maxvol = biggest;
+                        fomoprice = price;
+                    }
+                    printf("fomoprice (%.8f) i.%d %.8f vol %.8f [max %.8f @ %.8f]\n",relvolume,i,price,biggest,maxvol,fomoprice);
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    if ( maxvol > 0. && fomoprice > 0. )
+    {
+        if ( maxvol < relvolume )
+            relvolume = maxvol * 0.98;
+        fomoprice /= 0.95;
+    } else fomoprice = 0.;
+    *relvolumep = relvolume;
+    return(fomoprice);
+}
+
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
 {
     double price = 0.; int64_t KMDvalue=0;
