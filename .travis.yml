@@ -18,6 +18,7 @@ matrix:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update && sudo apt-get install libleveldb-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew install leveldb; fi
   - git submodule update --init --recursive
 
 script:
@@ -25,3 +26,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake ..; fi
   - cmake --build . --target marketmaker-mainnet
+
+cache:
+    directories:
+     - - $HOME/.hunter
