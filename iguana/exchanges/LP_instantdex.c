@@ -678,13 +678,13 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
     struct iguana_info *bob,*alice; int32_t flag = 0; char *retstr,*swapstr; bits256 zero; cJSON *item,*reqjson,*swapjson;
     item = cJSON_CreateObject();
     jaddnum(item,"iambob",iambob);
-    jaddnum(item,"aliceid",sp->aliceid);
+    jadd64bits(item,"aliceid",sp->aliceid);
     jaddnum(item,"requestid",sp->Q.R.requestid);
     jaddnum(item,"quoteid",sp->Q.R.quoteid);
     jaddstr(item,"base",sp->Q.srccoin);
-    jaddnum(item,"satoshis",sp->Q.satoshis);
+    jadd64bits(item,"satoshis",sp->Q.satoshis);
     jaddstr(item,"rel",sp->Q.destcoin);
-    jaddnum(item,"destsatoshis",sp->Q.destsatoshis);
+    jadd64bits(item,"destsatoshis",sp->Q.destsatoshis);
     jaddnum(item,"price",sp->Q.destsatoshis/((double)sp->Q.satoshis+1));
     if ( LP_swap_finished(sp,1) == 0 )
     {
