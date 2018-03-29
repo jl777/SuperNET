@@ -4,7 +4,13 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      env: OS_NAME=Linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env: OS_NAME=Linux MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
     - os: osx
       compiler: clang
       env: OS_NAME=Darwin
