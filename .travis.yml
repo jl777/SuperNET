@@ -1,0 +1,18 @@
+language: c
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      env: OS_NAME=Linux
+    - os: osx
+      compiler: clang
+      env: OS_NAME=Darwin
+
+before_install:
+  - git submodule update --init --recursive
+
+script:
+  - mkdir build && cd build
+  - cmake ..
+  - cmake --build . --target marketmaker-mainnet
