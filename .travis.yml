@@ -10,6 +10,7 @@ matrix:
       env: OS_NAME=Darwin
 
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get update && apt-get install libleveldb-dev; fi
   - git submodule update --init --recursive
 
 script:
