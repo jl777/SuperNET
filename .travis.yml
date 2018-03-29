@@ -21,5 +21,6 @@ before_install:
 
 script:
   - mkdir build && cd build
-  - cmake ..
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake ..; fi
   - cmake --build . --target marketmaker-mainnet
