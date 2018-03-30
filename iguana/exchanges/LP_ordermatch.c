@@ -1489,9 +1489,9 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         if ( time(NULL) > relcoin->lastautosplit+300 )
         {
             relcoin->lastautosplit = (uint32_t)time(NULL);
-            //return(LP_autosplit(relcoin));
+            return(LP_autosplit(relcoin));
         }
-        //return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
+        return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
     }
     LP_txfees(&txfee,&desttxfee,base,rel);
     if ( txfee != 0 && txfee < 10000 )
