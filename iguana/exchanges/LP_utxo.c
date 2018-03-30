@@ -519,9 +519,11 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
 struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
+    *nump = 0;
+    if ( coin == 0 )
+        return(0);
     LP_address(coin,coin->smartaddr);
     memset(zero.bytes,0,sizeof(zero));
-    *nump = 0;
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2,zero,zero);
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
     {
