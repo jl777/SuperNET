@@ -6,3 +6,4 @@ build_script:
 - cmd: marketmaker_build_etomic.cmd
 cache:
   - C:\.hunter
+  - cpp-ethereum
