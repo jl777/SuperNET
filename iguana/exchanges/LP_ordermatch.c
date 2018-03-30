@@ -1483,15 +1483,20 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         jaddnum(retjson,"wait",Alice_expiration-time(NULL));
         return(jprint(retjson,1));
     } else LP_alicequery_clear();
-    LP_address_utxo_reset(&num,relcoin);
-    if ( num <= 1 )
+    if ( relcoin->etomic[0] != 0 )
+        LP_address_utxo_reset(&num,LP_coinfind("ETOMIC"));
+    else
     {
-        if ( time(NULL) > relcoin->lastautosplit+300 )
+        LP_address_utxo_reset(&num,relcoin);
+        if ( num <= 1 )
         {
-            relcoin->lastautosplit = (uint32_t)time(NULL);
-            return(LP_autosplit(relcoin));
+            if ( time(NULL) > relcoin->lastautosplit+300 )
+            {
+                relcoin->lastautosplit = (uint32_t)time(NULL);
+                return(LP_autosplit(relcoin));
+            }
+            return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
         }
-        return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
     }
     LP_txfees(&txfee,&desttxfee,base,rel);
     if ( txfee != 0 && txfee < 10000 )
