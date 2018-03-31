@@ -607,6 +607,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(LP_unlockedspend(ctx,coin,jbits256(argjson,"txid")));
             }
+            // cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
+            else if ( strcmp(method,"listtransactions") == 0 )
+            {
+                if ( (ptr= LP_coinfind(coin)) != 0 )
+                    return(jprint(LP_listtransactions(coin,ptr->smartaddr,juint(argjson,"count"),juint(argjson,"skip")),1));
+            }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
                 return(jprint(LP_gettx("stats_JSON",coin,jbits256(argjson,"txid"),0),1));
