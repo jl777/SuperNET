@@ -463,19 +463,25 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
-        sleep(60);
-        return;
+        sleep(40);
+        //return;
     }
-    nxtkmd = LP_pricesparse(ctx,1,retstr,btcpp);
-    free(retstr);
+    else
+    {
+        nxtkmd = LP_pricesparse(ctx,1,retstr,btcpp);
+        free(retstr);
+    }
     if ( (retstr= issue_curlt("https://www.cryptopia.co.nz/api/GetMarkets",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("cryptopia error getting marketsummaries\n");
-        sleep(60);
-        return;
+        sleep(40);
+        //return;
     }
-    LP_pricesparse(ctx,0,retstr,btcpp);
-    free(retstr);
+    else
+    {
+        LP_pricesparse(ctx,0,retstr,btcpp);
+        free(retstr);
+    }
     if ( (kmdpp= LP_priceinfofind("KMD")) != 0 )
     {
         for (i=0; i<32; i++)
