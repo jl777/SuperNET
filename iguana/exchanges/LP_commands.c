@@ -168,10 +168,10 @@ timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint(port=5555)\n\
+listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
-    //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
-    
+
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
     if ((rel= jstr(argjson,"rel")) == 0 )
@@ -611,6 +611,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             else if ( strcmp(method,"unlockedspend") == 0 )
             {
                 return(LP_unlockedspend(ctx,coin,jbits256(argjson,"txid")));
+            }
+            // cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
+            else if ( strcmp(method,"listtransactions") == 0 )
+            {
+                if ( (ptr= LP_coinfind(coin)) != 0 )
+                    return(jprint(LP_listtransactions(coin,jstr(argjson,"address"),juint(argjson,"count"),juint(argjson,"skip")),1));
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
