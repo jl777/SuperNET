@@ -592,7 +592,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 }
                 if ( factor > 0. )
                 {
-                    printf("USD %.8f KMDBTC %.8f pricebtc %.8f price %.8f -> factor %.8f %.8f\n",price_usd,kmd_btc,price_btc,price,factor,(price * factor) + offset);
+                    //printf("USD %.8f KMDBTC %.8f pricebtc %.8f price %.8f -> factor %.8f %.8f\n",price_usd,kmd_btc,price_btc,price,factor,(price * factor) + offset);
                     price = (price * factor) + offset;
                 }
                 newprice = (price * (1. + buymargin));
