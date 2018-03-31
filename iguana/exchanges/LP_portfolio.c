@@ -577,7 +577,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 if ( LP_autorefs[i].usdpeg != 0 )
                 {
                     if ( price_usd > SMALLVAL )
-                        price = price_usd;
+                        price = 1. / price_usd;
                     else continue;
                 }
                 else
