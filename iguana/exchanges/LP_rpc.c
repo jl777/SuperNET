@@ -512,7 +512,7 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
         sprintf(buf,"[\"\", %d, %d, true]",count,skip);
         if ( (array= bitcoin_json(coin,"listtransactions",buf)) != 0 )
             return(array);
-        elsereturn(cJSON_Parse("[]"));
+        else return(cJSON_Parse("[]"));
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
 }
 
