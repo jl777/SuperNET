@@ -616,7 +616,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = LP_autorefs[i].lastask;
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
-            } else printf("null return from CMC\n");
+            } //else printf("null return from CMC\n");
         }
         else
         {
@@ -880,7 +880,7 @@ void prices_loop(void *ctx)
     printf("start prices_loop\n");
     while ( LP_STOP_RECEIVED == 0 )
     {
-        printf("G.initializing.%d prices loop autoprices.%d autorefs.%d\n",G.initializing,LP_autoprices,num_LP_autorefs);
+        //printf("G.initializing.%d prices loop autoprices.%d autorefs.%d\n",G.initializing,LP_autoprices,num_LP_autorefs);
         if ( G.initializing != 0 )
         {
             sleep(30);
