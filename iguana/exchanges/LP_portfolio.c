@@ -457,11 +457,9 @@ double LP_tickered_price(int32_t bidask,char *base,char *rel,double price,cJSON 
 
 int32_t LP_autoref_clear(char *base,char *rel)
 {
-    int32_t i; char *base,*rel;
+    int32_t i;
     for (i=0; i<num_LP_autorefs; i++)
     {
-        rel = LP_autorefs[i].rel;
-        base = LP_autorefs[i].base;
         if ( (strcmp(rel,LP_autorefs[i].rel) == 0 && strcmp(base,LP_autorefs[i].base) == 0) ||
             (strcmp(base,LP_autorefs[i].rel) == 0 && strcmp(rel,LP_autorefs[i].base) == 0) )
         {
