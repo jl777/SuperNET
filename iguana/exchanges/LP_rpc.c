@@ -519,7 +519,7 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
                 {
                     item = jitem(array,i);
                     if ( (addr= jstr(item,"address")) != 0 && strcmp(addr,coinaddr) == 0 )
-                        jaddi(retjso,jduplicate(item));
+                        jaddi(retjson,jduplicate(item));
                 }
             }
             free_json(array);
