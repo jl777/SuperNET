@@ -582,7 +582,10 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                     price = 1. / price_btc;
                 else continue;
                 if ( factor > 0. )
+                {
+                    printf("price %.8f -> factor %.8f %.8f\n",price,factor,(price * factor) + offset);
                     price = (price * factor) + offset;
+                }
                 newprice = (price * (1. + buymargin));
                 if ( LP_autorefs[i].lastbid < SMALLVAL )
                     LP_autorefs[i].lastbid = newprice;
