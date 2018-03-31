@@ -1230,7 +1230,7 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
             item = jitem(ticker,0);
             price_btc = jdouble(item,"price_btc");
             *price_usdp = jdouble(item,"price_usd");
-            //printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
+//printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
             free_json(ticker);
         }
         free(retstr);
