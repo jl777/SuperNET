@@ -576,6 +576,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             {
                 if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
                     price = kmd_btc / price_btc;
+                else if ( strcmp(rel,"USD") == 0 && price_usd > SMALLVAL )
+                    price = 1. / price_usd;
                 else if ( strcmp(rel,"BCH") == 0 && bch_btc > SMALLVAL )
                     price = bch_btc / price_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
@@ -583,22 +585,26 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 else continue;
                 if ( factor > 0. )
                 {
-                    printf("price %.8f -> factor %.8f %.8f\n",price,factor,(price * factor) + offset);
+                    printf("USD %.8f KMDBTC %.8f pricebtc %.8f price %.8f -> factor %.8f %.8f\n",price_usd,kmd_btc,price_btc,price,factor,(price * factor) + offset);
                     price = (price * factor) + offset;
                 }
                 newprice = (price * (1. + buymargin));
+                printf("b newprice %.8f\n",newprice);
                 if ( LP_autorefs[i].lastbid < SMALLVAL )
                     LP_autorefs[i].lastbid = newprice;
                 else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.99) + (0.01 * newprice);
                 newprice = LP_autorefs[i].lastbid;
+                printf("b2 newprice %.8f\n",newprice);
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
                 //printf("%s/%s price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",base,rel,price,buymargin,sellmargin,newprice,(1. / newprice) * (1. + sellmargin));
                 newprice = (1. / price) * (1. + sellmargin);
+                printf("a newprice %.8f\n",newprice);
                 if ( LP_autorefs[i].lastask < SMALLVAL )
                     LP_autorefs[i].lastask = newprice;
                 else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.99) + (0.01 * newprice);
                 newprice = LP_autorefs[i].lastask;
+                printf("a2 newprice %.8f\n",newprice);
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
             }
