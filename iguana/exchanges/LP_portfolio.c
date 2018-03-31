@@ -455,6 +455,23 @@ double LP_tickered_price(int32_t bidask,char *base,char *rel,double price,cJSON 
     return(price);
 }
 
+int32_t LP_autoref_clear(char *base,char *rel)
+{
+    int32_t i; char *base,*rel;
+    for (i=0; i<num_LP_autorefs; i++)
+    {
+        rel = LP_autorefs[i].rel;
+        base = LP_autorefs[i].base;
+        if ( (strcmp(rel,LP_autorefs[i].rel) == 0 && strcmp(base,LP_autorefs[i].base) == 0) ||
+            (strcmp(base,LP_autorefs[i].rel) == 0 && strcmp(rel,LP_autorefs[i].base) == 0) )
+        {
+            memset(&LP_autorefs[i],0,sizeof(LP_autorefs[i]));
+            return(i);
+        }
+    }
+    return(-1);
+}
+
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
     static cJSON *tickerjson; static uint32_t lasttime;
@@ -540,6 +557,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     {
         rel = LP_autorefs[i].rel;
         base = LP_autorefs[i].base;
+        if ( rel[0] == 0 || base[0] == 0 )
+            continue;
         buymargin = LP_autorefs[i].buymargin;
         sellmargin = LP_autorefs[i].sellmargin;
         offset = LP_autorefs[i].offset;
