@@ -571,7 +571,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         }
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
-            //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
+            printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( LP_autorefs[i].usdpeg != 0 )
@@ -610,7 +610,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = LP_autorefs[i].lastask;
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
-            }
+            } else printf("null return from CMC\n");
         }
         else
         {
