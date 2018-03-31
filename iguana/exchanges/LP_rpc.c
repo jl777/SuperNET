@@ -510,9 +510,21 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
         if ( count == 0 )
             count = 10;
         sprintf(buf,"[\"\", %d, %d, true]",count,skip);
+        retjson = cJSON_CreateArray();
         if ( (array= bitcoin_json(coin,"listtransactions",buf)) != 0 )
-            return(array);
-        else return(cJSON_Parse("[]"));
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (addr= jstr(item,"address")) != 0 && strcmp(addr,coinaddr) == 0 )
+                        jaddi(retjso,jduplicate(item));
+                }
+            }
+            free_json(array);
+        }
+        return(retjson);
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
 }
 
