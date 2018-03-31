@@ -22,7 +22,7 @@ struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 
 struct LP_autoprice_ref
 {
-    char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16];
+    char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
     double buymargin,sellmargin,factor,offset,lastbid,lastask;
     cJSON *fundvalue;
     uint32_t count;
@@ -574,15 +574,22 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
-                if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
-                    price = kmd_btc / price_btc;
-                else if ( strcmp(rel,"USD") == 0 && price_usd > SMALLVAL )
-                    price = 1. / price_usd;
-                else if ( strcmp(rel,"BCH") == 0 && bch_btc > SMALLVAL )
-                    price = bch_btc / price_btc;
-                else if ( strcmp(rel,"BTC") == 0 )
-                    price = 1. / price_btc;
-                else continue;
+                if ( LP_autorefs[i].usdpeg != 0 )
+                {
+                    if ( price_usd > SMALLVAL )
+                        price = 1. / price_usd;
+                    else continue;
+                }
+                else
+                {
+                    if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
+                        price = kmd_btc / price_btc;
+                    else if ( strcmp(rel,"BCH") == 0 && bch_btc > SMALLVAL )
+                        price = bch_btc / price_btc;
+                    else if ( strcmp(rel,"BTC") == 0 )
+                        price = 1. / price_btc;
+                    else continue;
+                }
                 if ( factor > 0. )
                 {
                     printf("USD %.8f KMDBTC %.8f pricebtc %.8f price %.8f -> factor %.8f %.8f\n",price_usd,kmd_btc,price_btc,price,factor,(price * factor) + offset);
@@ -728,8 +735,9 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
                     safecopy(LP_autorefs[num_LP_autorefs].fundbid,fundvalue_bid,sizeof(LP_autorefs[num_LP_autorefs].fundbid));
                     safecopy(LP_autorefs[num_LP_autorefs].fundask,fundvalue_ask,sizeof(LP_autorefs[num_LP_autorefs].fundask));
                 }
-                LP_autorefs[i].buymargin = buymargin;
-                LP_autorefs[i].sellmargin = sellmargin;
+                LP_autorefs[num_LP_autorefs].usdpeg = juint(argjson,"usdpeg");
+                LP_autorefs[num_LP_autorefs].buymargin = buymargin;
+                LP_autorefs[num_LP_autorefs].sellmargin = sellmargin;
                 LP_autorefs[num_LP_autorefs].factor = factor;
                 LP_autorefs[num_LP_autorefs].offset = offset;
                 safecopy(LP_autorefs[num_LP_autorefs].refbase,refbase,sizeof(LP_autorefs[num_LP_autorefs].refbase));
