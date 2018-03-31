@@ -571,7 +571,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         }
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
-            printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
+            //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( LP_autorefs[i].usdpeg != 0 )
@@ -871,14 +871,15 @@ void prices_loop(void *ctx)
     char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
     strcpy(prices_loop_stats.name,"prices_loop");
     prices_loop_stats.threshold = 600000.;
+    printf("start prices_loop\n");
     while ( LP_STOP_RECEIVED == 0 )
     {
+        printf("G.initializing.%d prices loop autoprices.%d autorefs.%d\n",G.initializing,LP_autoprices,num_LP_autorefs);
         if ( G.initializing != 0 )
         {
-            sleep(1);
+            sleep(30);
             continue;
         }
-        //printf("prices loop autoprices.%d autorefs.%d\n",LP_autoprices,num_LP_autorefs);
         LP_millistats_update(&prices_loop_stats);
         LP_tradebots_timeslice(ctx);
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
