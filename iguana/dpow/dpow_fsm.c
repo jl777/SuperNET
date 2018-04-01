@@ -271,7 +271,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                                 decode_hex(script,len,hexstr);
                                 if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len) > 0 )
                                 {
-                                    if ( Notaries_port != DPOW_SOCKPORT )
+                                    //if ( Notaries_port != DPOW_SOCKPORT )
                                     {
                                         if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
                                             *nothtp = 0;
