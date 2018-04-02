@@ -564,7 +564,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     if ( is_cJSON_Array(arg) != 0 && cJSON_GetArraySize(arg) == 1 )
                         arg = jitem(arg,0);
                 } else arg = argjson;
-                //printf("ARGJSON.(%s)\n",jprint(arg,0));
+                printf("ARGJSON.(%s)\n",jprint(arg,0));
                 if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                     jaddstr(arg,"userpass",userpass);
 #ifdef FROM_MARKETMAKER
@@ -573,6 +573,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
                     {
                         buf = jprint(arg,0);
+                        printf("Q command\n");
                         LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                         free(buf);
                         retstr = clonestr("{\"result\":\"success\",\"status\":\"queued\"}");
@@ -854,7 +855,7 @@ void stats_rpcloop(void *args)
             continue;
         }
         req = calloc(1,sizeof(*req));
-        //printf("alloc req.%p\n",req);
+        printf("LP_rpc_processreq req.%p\n",req);
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
