@@ -331,6 +331,10 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 
 extern void *bitcoin_ctx();
 extern int32_t IPC_ENDPOINT;
+extern portable_mutex_t LP_gcmutex,LP_commandmutex;
+extern struct rpcrequest_info *LP_garbage_collector;
+uint16_t RPC_port;
+static int32_t spawned,maxspawned;
 
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
@@ -557,7 +561,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             else
             {
-                cJSON *arg; char *buf;
+                cJSON *arg; char *buf,*method; int32_t fastflag;
                 if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
                 {
                     arg = jobj(argjson,"params");
@@ -567,6 +571,13 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 //printf("ARGJSON.(%s)\n",jprint(arg,0));
                 if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                     jaddstr(arg,"userpass",userpass);
+                if ( (fastflag= jint(arg,"fast")) == 0 )
+                {
+                    if ( (method= jstr(arg,"method")) != 0 && (strcmp(method,"orderbook") == 0 || strcmp(method,"portfolio") == 0) )
+                        fastflag = 1;
+                }
+                if ( fastflag == 0 )
+                    portable_mutex_lock(&LP_commandmutex);
 #ifdef FROM_MARKETMAKER
                 if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
                 {
@@ -587,6 +598,8 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     free(buf);
                 } else retstr = stats_JSON(ctx,jint(arg,"fast"),myipaddr,-1,arg,remoteaddr,port);
 #endif
+                if ( fastflag == 0 )
+                    portable_mutex_unlock(&LP_commandmutex);
             }
             free_json(argjson);
         }
@@ -626,11 +639,6 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
     return(recvlen);
 }
 
-uint16_t RPC_port;
-extern portable_mutex_t LP_gcmutex;
-extern struct rpcrequest_info *LP_garbage_collector;
-static int32_t spawned,maxspawned;
-
 void LP_rpc_processreq(void *_ptr)
 {
     char filetype[128],content_type[128];
@@ -642,9 +650,7 @@ void LP_rpc_processreq(void *_ptr)
     sock = req->sock;
     recvlen = flag = 0;
     retstr = 0;
-    //space = calloc(1,size);
     jsonbuf = calloc(1,size);
-    //printf("alloc jsonbuf.%p\n",jsonbuf);
     remains = size-1;
     buf = jsonbuf;
     if ( spawned < 0 )
@@ -711,9 +717,7 @@ void LP_rpc_processreq(void *_ptr)
     if ( recvlen > 0 )
     {
         jsonflag = postflag = 0;
-        //portable_mutex_lock(&LP_commandmutex);
         retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,req->port);
-        //portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
             static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
@@ -888,7 +892,7 @@ void stats_rpcloop(void *args)
 
 #ifndef FROM_MARKETMAKER
 
-//portable_mutex_t LP_commandmutex;
+portable_mutex_t LP_commandmutex;
 uint16_t LP_RPCPORT = 7763;
 
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
