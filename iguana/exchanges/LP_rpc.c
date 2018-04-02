@@ -495,6 +495,39 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
 }
 
+
+cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
+{
+    char buf[128],*addr; bits256 zero; cJSON *retjson,*array,*item; int32_t i,n; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
+        return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    memset(zero.bytes,0,sizeof(zero));
+    if ( coin->electrum == 0 )
+    {
+        if ( count == 0 )
+            count = 10;
+        sprintf(buf,"[\"\", %d, %d, true]",count,skip);
+        retjson = cJSON_CreateArray();
+        if ( (array= bitcoin_json(coin,"listtransactions",buf)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (addr= jstr(item,"address")) != 0 && strcmp(addr,coinaddr) == 0 )
+                        jaddi(retjson,jduplicate(item));
+                }
+            }
+            free_json(array);
+        }
+        return(retjson);
+    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
+}
+
 int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item)
 {
     int64_t satoshis = 0;
