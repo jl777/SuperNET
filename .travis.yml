@@ -35,7 +35,7 @@ before_deploy:
   - mkdir deploy
   - strip iguana/exchanges/marketmaker-mainnet
   - strip iguana/exchanges/marketmaker-testnet
-  - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz iguana/exchanges/marketmaker-mainnet iguana/exchanges/marketmaker-testnet
+  - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges marketmaker-mainnet marketmaker-testnet
 deploy:
   provider: releases
   api_key:
