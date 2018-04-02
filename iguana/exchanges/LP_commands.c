@@ -168,6 +168,7 @@ timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint(port=5555)\n\
+getfee(coin)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
@@ -578,6 +579,19 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"getfee") == 0 )
+            {
+                uint64_t txfee;
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
+                    txfee = LP_txfeecalc(ptr,0,0);
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"coin",coin);
+                    jaddnum(retjson,"txfee",dstr(txfee));
+                    return(jprint(retjson,1));
+                } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"electrum") == 0 )
             {
