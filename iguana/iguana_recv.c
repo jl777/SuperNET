@@ -704,7 +704,7 @@ int32_t iguana_txmerkle(struct iguana_info *coin,bits256 *tree,int32_t treesize,
     {
         for (i=0; i<origtxdata->zblock.RO.txn_count; i++)
             tree[i] = txarray[i].txid;
-        merkle_root = iguana_merkle(tree,origtxdata->zblock.RO.txn_count);
+        merkle_root = iguana_merkle(coin->symbol,tree,origtxdata->zblock.RO.txn_count);
         if ( bits256_cmp(merkle_root,origtxdata->zblock.RO.merkle_root) != 0 )
         {
             char str[65],str2[65];

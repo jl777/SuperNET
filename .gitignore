@@ -3,6 +3,11 @@ x64
 agents/iguana.exe
 Debug/*
 
+iguana/nanomsglib
+iguana/nanomsgsrc
+OSlibs/linux
+OSlibs/osx
+
 iguana/pnacl/Release/iguana_unstripped.pexe
 
 iguana/pnacl/Release/iguana.pexe
@@ -48,7 +53,6 @@ iguana/help.json
 iguana/autoAPI.md
 
 iguana/basilisk.o-2ad8cb38
-=======
 *.pbxproj
 
 iguana/tmp/.tmpmarker
@@ -250,3 +254,11 @@ iguana/DB/UNSPENTS/.tmpmarker
 iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg_append.json
 
 iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg.json
+
+build
+
+.idea
+Release/*
+
+build_win64_release/*
+DB/*

@@ -1,0 +1,46 @@
+language: c
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env: OS_NAME=Linux MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+    - os: osx
+      compiler: clang
+      env: OS_NAME=Darwin
+      osx_image: xcode9.2
+
+before_install:
+  - git submodule update --init --recursive
+
+script:
+  - mkdir build && cd build
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake ..; fi
+  - cmake --build . --target marketmaker-mainnet
+  - cmake --build . --target marketmaker-testnet
+
+cache:
+    directories:
+     - $HOME/.hunter
+
+before_deploy:
+  - export TAG=`echo "$(git rev-parse --short HEAD)"`
+  - mkdir deploy
+  - cp build/iguana/exchanges/marketmaker-mainnet deploy/marketmaket-mainnet-"$TRAVIS_OS_NAME"-"$TAG"
+  - cp build/iguana/exchanges/marketmaker-testnet deploy/marketmaket-testnet-"$TRAVIS_OS_NAME"-"$TAG"
+deploy:
+  provider: releases
+  api_key:
+    secure: "KT5rtFexiRqOE39yeEXHa23cL1h4tPIKdWtlDoLr/E8eLA+X+4C6tyYuoZc1tqB/ZD3Wx3YovffAX0iHei61Je+So2mFp79+7XFPh08U1xi1g92KvGrjVnZcF+2KEwh6Yan+IcpQKvSlJAEYB2BPmxLNdYKSc1NNOT5vcjaPNhoDzqmz2V01bcePj8QbipgB2aeWl0Wvp+2mt/NsYF12DYLKHWKFITEXrAbgTp9jzczIhRBH4o83ZQhWZKAMl+X8Bo15WLGMTvd5dnjfix85LQIBJZ2D+piVDdjIIXJhdKK3/zVQMMGwrSvv/a0H5UOktpbUWpnK/W5TkkB3LWOdIifNY35KTics6PQevJq61fX8lWP0t4fMLzwqTNyMZnZmHUt/+eLPbFFmM0Kvje1x+FkQ5279OnNG1EMdfqwhmxs1j4G+37yz9+9hfqODhg70sqSDSzx+sWtBDl0/2EmdIsVq+UcT2xOWqwUqNLkO5/1LNHpNrB1UVQTnYIrF7tE1WoZcZy/9E9vxz1bQguzllv6boNtHdSejsDRKvAgUYivVqmrgjgIUfBFQxvxtrZJvmk8BHlI81AcxKc4Xf3H3sAEq7ssC8gQIBs6AcZdofdx/XSHQnq+EnMDBBNz2whV3BjsxN839AtM9C8yHZJbnue7dZwjp/vXE/s7eRwF094I="
+  file:
+    - deploy/marketmaket-mainnet-"$TRAVIS_OS_NAME"-"$TAG"
+    - deploy/marketmaket-testnet-"$TRAVIS_OS_NAME"-"$TAG"
+  on:
+    tags: false

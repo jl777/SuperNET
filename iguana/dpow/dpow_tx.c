@@ -169,6 +169,8 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     int32_t r,h,incr = 100000; struct dpow_block *bp = 0;
     if ( height > dp->maxblocks )
     {
+        if ( dp->maxblocks+incr < height+10000 )
+            incr = (height+10000) - dp->maxblocks;
         dp->blocks = realloc(dp->blocks,sizeof(*dp->blocks) * (dp->maxblocks + incr));
         memset(&dp->blocks[dp->maxblocks],0,sizeof(*dp->blocks) * incr);
         dp->maxblocks += incr;
@@ -224,11 +226,17 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         }
         printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
     }
-    if ( 0 && (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras,&paxwdcrc)) > 0 )
+    if ( 0 && (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth)) > 0 )
     {
         for (i=0; i<n; i++)
             printf("%02x",extras[i]);
         printf(" <- withdraw.%d %08x\n",n,paxwdcrc);
+    }
+    else if ( Notaries_port != DPOW_SOCKPORT && bp->MoMdepth > 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) // only testnets for now
+    {
+        n = dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth);
+        //n += iguana_rwbignum(1,&extras[n],sizeof(bp->MoM),bp->MoM.bytes);
+        //n += iguana_rwnum(1,&extras[n],sizeof(bp->MoMdepth),(uint32_t *)&bp->MoMdepth);
     }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);

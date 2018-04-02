@@ -511,7 +511,7 @@ struct iguana_info
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
     queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ,jsonQ,finishedQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
-    portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex,allcoins_mutex;
+    portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex,allcoins_mutex,MoM_mutex;
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct OS_memspace RTrawmem,RTmem,RThashmem; // struct iguana_ramchain RTramchain; 
@@ -528,7 +528,7 @@ struct iguana_info
 #ifdef DEPRECATED_HHUTXO
     struct iguana_hhaccount *accountstable;
 #endif
-    char lastdispstr[2048];
+    char lastdispstr[2048],getinfostr[64];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     int32_t notarychain,didaddresses;

@@ -159,7 +159,7 @@ struct supernet_info
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex,smart_mutex;
+    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex,smart_mutex,MoM_mutex;
     struct queueitem *DEX_quotes; cJSON *Cunspents,*Cspends;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
@@ -167,7 +167,7 @@ struct supernet_info
     uint8_t *pingbuf;
     struct basilisk_request DEXaccept;
     FILE *dexfp;
-    struct dpow_info DPOWS[128]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
+    struct dpow_info DPOWS[1024]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     char bindaddr[64];

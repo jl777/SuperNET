@@ -46,17 +46,17 @@
 #define MMJSON_ARRAY8 228
 #define MMJSON_ARRAY16 227
 #define MMJSON_ARRAY32 226
-#define MMJSON_BOUNDARY 98
 
 int32_t MM_numfields;
-char *MM_fields[256] =
+char *MM_fields[] =
 {
-    "timestamp", "getdPoW", "dPoW", "aliceid", "src", "base", "basevol", "dest", "rel", "relvol", "price", "requestid", "quoteid", "finished", "expired", "bobdeposit", "alicepayment", "bobpayment", "paymentspent", "Apaymentspent", "depositspent", "ind", "method", "swapstatus", "method2", "gettradestatus", "coin", "rmd160", "pub", "pubsecp", "sig", "session", "notify", "pubkey", "price64", "credits", "utxocoin", "n", "bal", "min", "max", "postprice", "notarized", "notarizedhash", "notarizationtxid", "wantnotify", "isLP", "gui", "nogui", "tradeid", "address", "txid", "vout", "srchash", "txfee", "quotetime", "satoshis", "desthash", "txid2", "vout2", "destaddr", "desttxid", "destvout", "feetxid", "feevout", "desttxfee", "destsatoshis", "pending", "reserved", "broadcast", "ismine", "simplegui", "request", "proof", "connect", "expiration", "iambob", "Bgui", "", "Agui", "bob", "srcamount", "bobtxfee", "alice", "destamount", "alicetxfee", "sentflags", "values", "result", "success", "status", "finishtime", "tradestatus", "pair", "connected", "warning", "critical", "endcritical",
+    "timestamp", "getdPoW", "dPoW", "aliceid", "src", "base", "basevol", "dest", "rel", "relvol", "price", "requestid", "quoteid", "finished", "expired", "bobdeposit", "alicepayment", "bobpayment", "paymentspent", "Apaymentspent", "depositspent", "ind", "method", "swapstatus", "method2", "gettradestatus", "coin", "rmd160", "pub", "pubsecp", "sig", "session", "notify", "pubkey", "price64", "credits", "utxocoin", "n", "bal", "min", "max", "postprice", "notarized", "notarizedhash", "notarizationtxid", "wantnotify", "isLP", "gui", "nogui", "tradeid", "address", "txid", "vout", "srchash", "txfee", "quotetime", "satoshis", "desthash", "txid2", "vout2", "destaddr", "desttxid", "destvout", "feetxid", "feevout", "desttxfee", "destsatoshis", "pending", "reserved", "broadcast", "ismine", "simplegui", "request", "proof", "connect", "expiration", "iambob", "Bgui", "", "Agui", "bob", "srcamount", "bobtxfee", "alice", "destamount", "alicetxfee", "sentflags", "values", "result", "success", "status", "finishtime", "tradestatus", "pair", "connected", "warning", "critical", "endcritical", "cli", "etomic", "bobtomic", "alicetomic", "etomicsrc", "etomicdest"
 };
+#define MMJSON_BOUNDARY ((int32_t)(sizeof(MM_fields)/sizeof(*MM_fields)))
 
-char *MM_coins[256] =
+char *MM_coins[] =
 {
-    "KMD", "BTC", "CRC", "VOT", "INN", "MOON", "CRW", "EFL", "GBX", "BCO", "BLK", "BTG", "BCH", "ABY", "STAK", "XZC", "QTUM", "PURA", "DSR", "MNZ", "BTCZ", "MAGA", "BSD", "IOP", "BLOCK", "CHIPS", "888", "ARG", "GLT", "ZER", "HODLC", "UIS", "HUC", "PIVX", "BDL", "ARC", "ZCL", "VIA", "ERC", "FAIR", "FLO", "SXC", "CREA", "TRC", "BTA", "SMC", "NMC", "NAV", "EMC2", "SYS", "I0C", "DASH", "STRAT", "MUE", "MONA", "XMY", "MAC", "BTX", "XRE", "LBC", "SIB", "VTC", "REVS", "JUMBLR", "DOGE", "HUSH", "ZEC", "DGB", "ZET", "GAME", "LTC", "SUPERNET", "WLC", "PANGEA", "DEX", "BET", "CRYPTO", "HODL", "MSHARK", "BOTS", "MGW", "COQUI", "KV", "CEAL", "MESH",
+    "KMD", "BTC", "CRC", "VOT", "INN", "MOON", "CRW", "EFL", "GBX", "BCO", "BLK", "BTG", "BCH", "ABY", "STAK", "XZC", "QTUM", "PURA", "DSR", "MNZ", "BTCZ", "MAGA", "BSD", "IOP", "BLOCK", "CHIPS", "888", "ARG", "GLT", "ZER", "HODLC", "UIS", "HUC", "PIVX", "BDL", "ARC", "ZCL", "VIA", "ERC", "FAIR", "FLO", "SXC", "CREA", "TRC", "BTA", "SMC", "NMC", "NAV", "EMC2", "SYS", "I0C", "DASH", "STRAT", "MUE", "MONA", "XMY", "MAC", "BTX", "XRE", "LBC", "SIB", "VTC", "REVS", "JUMBLR", "DOGE", "HUSH", "ZEC", "DGB", "ZET", "GAME", "LTC", "SUPERNET", "WLC", "PANGEA", "DEX", "BET", "CRYPTO", "HODL", "MSHARK", "BOTS", "MGW", "COQUI", "KV", "CEAL", "MESH", "ETOMIC", "BTCH", "ETH"
 };
 
 int32_t mmjson_coinfind(char *symbol)
@@ -516,7 +516,9 @@ int32_t MMJSON_encodeval(uint8_t *linebuf,int32_t k,int32_t ind,char *v,uint32_t
             }
             if ( v[j] == 0 )
             {
-                printf("unexpected missing string value.(%s)\n",v);
+                static uint32_t counter;
+                if ( counter++ < 3 )
+                    printf("unexpected missing string value.(%s)\n",v);
                 //ind = mmadd(v);
                 //printf("%s.<%s>.%d ",s,v,ind);
                 //linebuf[k++] = ind;

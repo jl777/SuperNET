@@ -1342,7 +1342,7 @@ ZERO_ARGS(bitcoinrpc,walletlock)
 
 TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
 {
-    char *retstr;
+    char *retstr,*tmpstr; cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( timeout <= 0 )
@@ -1368,9 +1368,22 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
         if ( coin->FULLNODE < 0 )
         {
-            char wifstr[64];
-            bitcoin_priv2wif(wifstr,myinfo->persistent_priv,coin->chain->wiftype);
-            jumblr_importprivkey(myinfo,coin,wifstr);
+            char wifstr[64]; int32_t destvalid = 0; cJSON *ismine;
+            if ( (tmpstr= dpow_validateaddress(myinfo,coin,coin->changeaddr)) != 0 )
+            {
+                retjson = cJSON_Parse(tmpstr);
+                if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+                    destvalid = 1;
+                else destvalid = 0;
+                free(tmpstr);
+                free(retjson);
+                tmpstr = 0;
+            }
+            if ( destvalid == 0 )
+            {
+                bitcoin_priv2wif(wifstr,myinfo->persistent_priv,coin->chain->wiftype);
+                jumblr_importprivkey(myinfo,coin,wifstr);
+            }
         }
     }
     if ( bits256_nonz(myinfo->persistent_priv) != 0 )

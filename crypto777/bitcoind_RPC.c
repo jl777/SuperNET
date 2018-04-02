@@ -73,8 +73,8 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     long i,j,len;
     char *retstr = 0;
     cJSON *json,*result,*error;
-#ifdef FROM_MARKETMAKER
-    //usleep(500);
+#ifndef FROM_MARKETMAKER
+    usleep(1000);
 #endif
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
@@ -164,7 +164,11 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     if ( url[0] == 0 )
         strcpy(url,"http://127.0.0.1:7776");
     if ( specialcase != 0 && (0) )
+    {
+        //int32_t zeroval();
         printf("<<<<<<<<<<< bitcoind_RPC: userpass.(%s) url.(%s) command.(%s) params.(%s)\n",userpass,url,command,params);
+        //printf("die.%d\n",1/zeroval());
+    }
 try_again:
     if ( retstrp != 0 )
         *retstrp = 0;
