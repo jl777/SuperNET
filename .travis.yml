@@ -44,6 +44,3 @@ deploy:
     - deploy/marketmaket-testnet-"$TRAVIS_OS_NAME"-"$TAG"
   on:
     tags: false
-    branches:
-      only:
-        - etomic
