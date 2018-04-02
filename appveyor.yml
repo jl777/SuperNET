@@ -7,3 +7,14 @@ build_script:
 cache:
   - C:\.hunter
   - cpp-ethereum
+
+deploy:
+  release: marketmaker-v$(appveyor_build_version)
+  provider: GitHub
+  auth_token:
+    secure: iabzoz73JgtOIyE/Nmz4a4XefmK+7pIeup+1Hunj4hGKrdfesFN+176DMApgfu8t
+  artifact: build_win64_release\iguana\exchanges\marketmaker-mainnet.exe
+  draft: false
+  prerelease: false
+  on:
+    branch: master
