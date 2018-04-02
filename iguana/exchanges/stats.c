@@ -28,7 +28,7 @@
 #define STATS_DESTDIR "/var/www/html"
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
-char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 extern uint32_t DOCKERFLAG;
 
@@ -530,7 +530,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                         //free(buf);
                         //while ( retstr == 0 )
                         //    usleep(10000);
-                        if ( (retstr= stats_JSON(ctx,"127.0.0.1",-1,argjson,remoteaddr,port)) != 0 )
+                        if ( (retstr= stats_JSON(ctx,0,"127.0.0.1",-1,argjson,remoteaddr,port)) != 0 )
                         {
                             if ( (retitem= cJSON_Parse(retstr)) != 0 )
                                 jaddi(retarray,retitem);
@@ -543,7 +543,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     //free(buf);
                     //while ( retstr == 0 )
                     //    usleep(10000);
-                    if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                    if ( (retstr= stats_JSON(ctx,0,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                     {
                         if ( (retitem= cJSON_Parse(retstr)) != 0 )
                             jaddi(retarray,retitem);
@@ -576,7 +576,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                         LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                         free(buf);
                         retstr = clonestr("{\"result\":\"success\",\"status\":\"queued\"}");
-                    } else retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
+                    } else retstr = stats_JSON(ctx,jint(arg,"fast"),"127.0.0.1",-1,arg,remoteaddr,port);
                 } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
                 if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
@@ -584,7 +584,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     buf = jprint(arg,0);
                     LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                     free(buf);
-                } else retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+                } else retstr = stats_JSON(ctx,jint(arg,"fast"),myipaddr,-1,arg,remoteaddr,port);
 #endif
             }
             free_json(argjson);
@@ -626,7 +626,7 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 }
 
 uint16_t RPC_port;
-extern portable_mutex_t LP_commandmutex,LP_gcmutex;
+extern portable_mutex_t LP_gcmutex;
 extern struct rpcrequest_info *LP_garbage_collector;
 
 void LP_rpc_processreq(void *_ptr)
@@ -884,7 +884,7 @@ void stats_rpcloop(void *args)
 
 #ifndef FROM_MARKETMAKER
 
-portable_mutex_t LP_commandmutex;
+//portable_mutex_t LP_commandmutex;
 uint16_t LP_RPCPORT = 7763;
 
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
