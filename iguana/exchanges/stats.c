@@ -629,10 +629,10 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 uint16_t RPC_port;
 extern portable_mutex_t LP_gcmutex;
 extern struct rpcrequest_info *LP_garbage_collector;
+static int32_t spawned,maxspawned;
 
 void LP_rpc_processreq(void *_ptr)
 {
-    static uint32_t spawned,maxspawned;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
     char helpname[512],remoteaddr[64],*buf,*retstr,space[8192],space2[32786],*jsonbuf; struct rpcrequest_info *req = _ptr;
@@ -647,6 +647,8 @@ void LP_rpc_processreq(void *_ptr)
     //printf("alloc jsonbuf.%p\n",jsonbuf);
     remains = size-1;
     buf = jsonbuf;
+    if ( spawned < 0 )
+        spawned = 0;
     spawned++;
     if ( spawned > maxspawned )
     {
@@ -796,7 +798,8 @@ void LP_rpc_processreq(void *_ptr)
         //printf("free req.%p\n",req);
         free(req);
     }
-    spawned--;
+    if ( spawned > 0 )
+        spawned--;
 }
 
 extern int32_t IAMLP,LP_STOP_RECEIVED;
@@ -859,10 +862,10 @@ void stats_rpcloop(void *args)
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        LP_rpc_processreq(req);
-        continue;
+        if ( spawned > 1 )
+            LP_rpc_processreq(req);
         // this might lead to "cant open file errors"
-        if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
+        else if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
             LP_rpc_processreq(req);
