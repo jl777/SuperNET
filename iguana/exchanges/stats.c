@@ -862,7 +862,7 @@ void stats_rpcloop(void *args)
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        if ( spawned > 1 )
+        if ( spawned > 0 )
             LP_rpc_processreq(req);
         // this might lead to "cant open file errors"
         else if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
