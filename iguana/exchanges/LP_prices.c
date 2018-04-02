@@ -532,6 +532,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             relpp->sellmargins[basepp->ind] = 0.;
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
+            LP_autoref_clear(base,rel);
             margin = 0.;
         }
         else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
@@ -1230,7 +1231,7 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
             item = jitem(ticker,0);
             price_btc = jdouble(item,"price_btc");
             *price_usdp = jdouble(item,"price_usd");
-            //printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
+//printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
             free_json(ticker);
         }
         free(retstr);

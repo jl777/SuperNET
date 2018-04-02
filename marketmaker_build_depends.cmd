@@ -75,7 +75,7 @@ cd curl
 mkdir build_msvc_2015_win32
 mkdir build_msvc_2015_win64
 cd build_msvc_2015_win64
-cmake -G "Visual Studio 14 2015 Win64" ..
+cmake -G "Visual Studio 14 2015 Win64" -DCMAKE_USE_WINSSL:BOOL=ON ..
 cmake --build . --config Release --target libcurl
 
 rem cmake .. -G"Visual Studio 14 2015 Win64" -DCURL_STATICLIB=ON -DCURL_DISABLE_LDAP=ON -DCURL_STATIC_CRT=ON

@@ -259,3 +259,6 @@ build
 
 .idea
 Release/*
+
+build_win64_release/*
+DB/*

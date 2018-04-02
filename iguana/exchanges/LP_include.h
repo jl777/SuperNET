@@ -556,6 +556,7 @@ uint16_t LP_randpeer(char *destip);
 void LP_tradebot_pauseall();
 int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64]);
 void LP_portfolio_reset();
+int32_t LP_autoref_clear(char *base,char *rel);
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey);
 uint32_t LP_atomic_locktime(char *base,char *rel);
