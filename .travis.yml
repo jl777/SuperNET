@@ -39,9 +39,8 @@ deploy:
   provider: releases
   api_key:
     secure: "JDwFBGO4WLra9bXr2dsovet8y/ymC0Y+LJNr5/qlUIDt97zVytGbIlUc8BuI2VZFcnAvrtfOGdCs9m/PcLzZd4bMxXSsuaU0AJk/Vj9KzrIIGPJ4uS39KpO1USUpPW+5e0Bisf30JN3N2NypwMbMu42TKjVqaXSbVQfh79Iu6PdnyfiFbbTEfMeiRRrD72c00rwAw7kmndf7Sv9MiMN8WTFe0cQz5eH8GU/BSbnDorSrtClU4r7McR98zXaig/8XVcT543tcqdYW95QO7OqOjAid3XzzA/bPUTjC/nF/AyTJDco26nts0bCrCYeZRXIWdEInFLIeRHhHD7sW7dILRT/I7WlaLWnRtwo8e1L+U1k1yZ84dQMpgBznttdwH3vSj0crwCbFuMaRMMbPeW0H8C1VitLy1mlapw3RDI9yKlcw4V6WjPbz0YKhAoZgT/M/SaGr4ZkoWNCPoV5+Gub78p24Y8Y9BptJgj5t9KAcmDwbJ9wPt006ObWnbXvapo+6N5Dk2zuyQe9seoupzy4CAiNdluzAAVWsV/SjnN2aapjXoxaAaLQC6T8C1l1BpYri9LSKrjerr4QLVl/nw2yovAKNEobLLBVpSwfg4R72fu1BMS65gVsOqtFfs+R47CY+1D1Slev+UmKNMdE51+aXM+1XeC6wDUS5d13mW1NLhOE="
-  file:
-    - deploy/marketmaket-mainnet-"$TRAVIS_OS_NAME"-"$TAG"
-    - deploy/marketmaket-testnet-"$TRAVIS_OS_NAME"-"$TAG"
+  file_glob: true
+  file: "deploy/*"
   on:
     tags: false
   skip_cleanup: true
