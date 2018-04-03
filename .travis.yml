@@ -43,5 +43,5 @@ deploy:
   file_glob: true
   file: "deploy/*"
   on:
-    tags: false
+    tags: true
   skip_cleanup: true
