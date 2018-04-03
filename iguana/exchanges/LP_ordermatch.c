@@ -579,7 +579,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
     LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = destpubkey;
     char str[65]; printf("LP_trade %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s)\n",qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),maxprice,qp->etomicdest);
-    return(LP_recent_swaps(0,qp->requestid));
+    return(LP_recent_swaps(0,qp->R.requestid));
 }
 
 int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)

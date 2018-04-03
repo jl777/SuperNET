@@ -1778,7 +1778,7 @@ char *LP_recent_swaps(int32_t limit,uint32_t origrequestid)
     if ( origrequestid != 0 )
     {
         jaddnum(retjson,"requestid",origrequestid);
-        jaddnum(retjson,"desthash",G.LP_mypub25519);
+        jaddbits256(retjson,"desthash",G.LP_mypub25519);
     }
     return(jprint(retjson,1));
 }
