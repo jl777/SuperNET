@@ -32,7 +32,7 @@ char *LP_numutxos()
     return(jprint(retjson,1));
 }
 
-char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
+char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*userpass,*base,*rel,*coin,*passphrase,*retstr = 0; int32_t authenticated=0,changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     method = jstr(argjson,"method");
@@ -168,6 +168,8 @@ timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint(port=5555)\n\
+getfee(coin)\n\
+sleep(seconds=60)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
@@ -316,6 +318,13 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             LP_millistats_update(0);
             return(clonestr("{\"result\":\"success\"}"));
+        }
+        else if ( strcmp(method,"sleep") == 0 )
+        {
+            if ( jint(argjson,"seconds") == 0 )
+                sleep(60);
+            else sleep(jint(argjson,"seconds"));
+            return(clonestr("{\"result\":\"success\",\"status\":\"feeling good after sleeping\"}"));
         }
         else if ( strcmp(method,"getprices") == 0 )
             return(LP_prices());
@@ -583,6 +592,19 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"getfee") == 0 )
+            {
+                uint64_t txfee;
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
+                    txfee = LP_txfeecalc(ptr,0,0);
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"coin",coin);
+                    jaddnum(retjson,"txfee",dstr(txfee));
+                    return(jprint(retjson,1));
+                } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"electrum") == 0 )
             {
