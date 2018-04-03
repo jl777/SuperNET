@@ -1681,7 +1681,7 @@ char *basilisk_swapentry(int32_t fastflag,uint32_t requestid,uint32_t quoteid,in
 extern struct LP_quoteinfo LP_Alicequery;
 extern uint32_t Alice_expiration;
 
-char *LP_recent_swaps(int32_t limit)
+char *LP_recent_swaps(int32_t limit,uint32_t origrequestid)
 {
     char fname[512],*retstr,*base,*rel,*statusstr; long fsize,offset; FILE *fp; int32_t baseind,relind,i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson,*subitem,*swapjson; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS]; double srcamount,destamount,netamounts[LP_MAXPRICEINFOS];
     memset(KMDtotals,0,sizeof(KMDtotals));
@@ -1775,6 +1775,11 @@ char *LP_recent_swaps(int32_t limit)
         jadd64bits(item,"aliceid",LP_aliceid_calc(LP_Alicequery.desttxid,LP_Alicequery.destvout,LP_Alicequery.feetxid,LP_Alicequery.feevout));
         jadd(retjson,"pending",item);
     } else Alice_expiration = 0;
+    if ( origrequestid != 0 )
+    {
+        jaddnum(retjson,"requestid",origrequestid);
+        jaddnum(retjson,"desthash",G.LP_mypub25519);
+    }
     return(jprint(retjson,1));
 }
 
@@ -1833,7 +1838,7 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
         }
         free(liststr);
     }
-    if ( (liststr= LP_recent_swaps(limit)) != 0 )
+    if ( (liststr= LP_recent_swaps(limit,0)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
         {
@@ -1894,7 +1899,7 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
 int32_t LP_pendingswap(uint32_t requestid,uint32_t quoteid)
 {
     cJSON *retjson,*array,*pending,*item; uint32_t r,q; char *retstr; int32_t i,n,retval = 0;
-    if ( (retstr= LP_recent_swaps(1000)) != 0 )
+    if ( (retstr= LP_recent_swaps(1000,0)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
