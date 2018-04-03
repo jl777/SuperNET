@@ -1,8 +1,5 @@
 version: 1.0.{build}
 shallow_clone: true
-branches:
-  only:
-  - master
 build_script:
 - cmd: marketmaker_build_etomic.cmd
 cache:
@@ -26,4 +23,5 @@ deploy:
   draft: false
   prerelease: false
   on:
-    appveyor_repo_tag: true
+    branch: master
+    appveyor_repo_tag: false
