@@ -8,12 +8,16 @@ cache:
   - C:\.hunter
   - cpp-ethereum
 
+artifacts:
+  - path: build_win64_release\iguana\exchanges\Release\marketmaker-mainnet.exe
+    name: marketmaker-mainnet.exe
+
 deploy:
   release: marketmaker-v$(appveyor_build_version)
   provider: GitHub
   auth_token:
     secure: iabzoz73JgtOIyE/Nmz4a4XefmK+7pIeup+1Hunj4hGKrdfesFN+176DMApgfu8t
-  artifact: build_win64_release\iguana\exchanges\Release\marketmaker-mainnet.exe
+  artifact: marketmaker-mainnet.exe
   draft: false
   prerelease: false
   on:
