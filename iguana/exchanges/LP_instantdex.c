@@ -88,6 +88,7 @@ void LP_instantdex_filescreate(char *coinaddr)
     {
         if ( (fp= fopen(fname,"wb+")) != 0 )
         {
+            printf("created %s\n");
             for (i=0; i<2; i++)
             {
                 if ( (array= LP_instantdex_txids(i,coinaddr)) != 0 )
@@ -97,10 +98,12 @@ void LP_instantdex_filescreate(char *coinaddr)
                         for (j=0; j<n; j++)
                         {
                             txid = jbits256i(array,j);
+                            printf("j.%d of %d: %s\n",j,n,bits256_str(str,txid));
                             LP_instantdex_deposituniq(fp,txid);
                             fflush(fp);
                         }
                     }
+                    printf("i.%d n.%d\n",i,n);
                     free_json(array);
                 }
             }
