@@ -453,7 +453,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         jaddbits256(item,"txid",utxotxid);
                         jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
                         if ( coin->electrum == 0 )
-                            interest = dstr(satoshis) - dstr(LP_value_extract(vout0,0);
+                            interest = dstr(satoshis) - dstr(LP_value_extract(vout0,0));
                         else
                         {
                             interest = dstr(LP_komodo_interest(utxotxid,satoshis));
