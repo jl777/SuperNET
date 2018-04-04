@@ -312,7 +312,7 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits25
     if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"instantdexclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
     {
         printf("signedtx.(%s)\n",signedtx);
-        //sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
+        sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
         if ( bits256_cmp(sendtxid,signedtxid) == 0 )
         {
             *claimtxidp = sendtxid;
