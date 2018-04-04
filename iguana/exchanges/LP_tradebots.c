@@ -322,7 +322,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
     LP_tradebot_calcstats(bot);
     if ( bot->dead == 0 && bot->pause == 0 && bot->userpause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
     {
-        if ( (liststr= LP_recent_swaps(0)) != 0 )
+        if ( (liststr= LP_recent_swaps(0,0)) != 0 )
         {
             if ( (retjson= cJSON_Parse(liststr)) != 0 )
             {

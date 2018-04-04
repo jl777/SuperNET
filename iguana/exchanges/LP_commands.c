@@ -306,7 +306,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }*/
         else if ( strcmp(method,"recentswaps") == 0 )
         {
-            return(LP_recent_swaps(jint(argjson,"limit")));
+            return(LP_recent_swaps(jint(argjson,"limit"),0));
         }
         else if ( strcmp(method,"stop") == 0 )
         {
