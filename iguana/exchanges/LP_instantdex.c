@@ -422,7 +422,7 @@ char *LP_timelock(char *symbol,uint32_t duration,char *destaddr,uint64_t satoshi
 
 int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info *coin,bits256 utxotxid)
 {
-    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki,iter; int64_t weeksatoshis,satoshis; uint32_t expiration,claimtime;
+    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki,iter; int64_t weeksatoshis,satoshis,interest; uint32_t expiration,claimtime;
     if ( (txjson= LP_gettx("LP_claim_submit",coin->symbol,utxotxid,1)) != 0 )
     {
         if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 3 )
