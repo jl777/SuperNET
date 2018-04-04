@@ -204,7 +204,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
         return(0);
     if ( stats_JSONonly != 0 || LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
-        if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
+        if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
         {
             //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
@@ -425,7 +425,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                                 //portable_mutex_lock(&LP_commandmutex);
                                 if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                                 {
-                                    if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
+                                    if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                                         free(retstr);
                                 }
                                 //portable_mutex_unlock(&LP_commandmutex);
@@ -566,7 +566,8 @@ void LP_coinsloop(void *_coins)
                 continue;
             if ( coin->did_addrutxo_reset == 0 )
             {
-                LP_address_utxo_reset(coin);
+                int32_t num;
+                LP_address_utxo_reset(&num,coin);
                 coin->did_addrutxo_reset = 1;
             }
             if ( coin->longestchain == 1 ) // special init value

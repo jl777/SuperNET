@@ -532,6 +532,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             relpp->sellmargins[basepp->ind] = 0.;
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
+            LP_autoref_clear(base,rel);
             margin = 0.;
         }
         else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
@@ -755,9 +756,9 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
-        jaddnum(item,"avevolume",dstr(op->avesatoshis)*0.8);
-        jaddnum(item,"maxvolume",dstr(op->maxsatoshis)*0.8);
-        jaddnum(item,"depth",dstr(op->depth)*0.8);
+        jaddnum(item,"avevolume",dstr(op->avesatoshis));
+        jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
+        jaddnum(item,"depth",dstr(op->depth));
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
         jaddnum(item,"zcredits",dstr(op->dynamictrust));
@@ -967,6 +968,43 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     if ( asks != 0 )
         free(asks);
     return(jprint(retjson,1));
+}
+
+double LP_fomoprice(char *base,char *rel,double *relvolumep)
+{
+    char *retstr; cJSON *retjson,*asks,*item; int32_t i,numasks; double maxvol=0.,relvolume,biggest,price,fomoprice = 0.;
+    relvolume = *relvolumep;
+    if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (asks= jarray(&numasks,retjson,"asks")) != 0 && numasks > 0 )
+            {
+                for (i=0; i<numasks; i++)
+                {
+                    item = jitem(asks,i);
+                    biggest = jdouble(item,"maxvolume");
+                    price = jdouble(item,"price");
+                    if ( biggest > maxvol )
+                    {
+                        maxvol = biggest;
+                        fomoprice = price;
+                    }
+                    printf("fomoprice (%.8f) i.%d %.8f vol %.8f [max %.8f @ %.8f]\n",relvolume,i,price,biggest,maxvol,fomoprice);
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    if ( maxvol > 0. && fomoprice > 0. )
+    {
+        if ( maxvol < relvolume )
+            relvolume = maxvol * 0.98;
+        fomoprice /= 0.95;
+    } else fomoprice = 0.;
+    *relvolumep = relvolume;
+    return(fomoprice);
 }
 
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
@@ -1193,7 +1231,7 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
             item = jitem(ticker,0);
             price_btc = jdouble(item,"price_btc");
             *price_usdp = jdouble(item,"price_usd");
-            //printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
+//printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
             free_json(ticker);
         }
         free(retstr);

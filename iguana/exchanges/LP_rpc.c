@@ -150,6 +150,7 @@ uint64_t LP_RTsmartbalance(struct iguana_info *coin)
                 item = jitem(array,i);
                 value = LP_value_extract(item,1);
                 valuesum += value;
+                //printf("%s -> %.8f\n",jprint(item,0),dstr(value));
             }
         }
         free_json(array);
@@ -370,7 +371,7 @@ int32_t LP_address_iswatchonly(char *symbol,char *address)
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( (obj= jobj(retjson,"iswatchonly")) != 0 && is_cJSON_True(obj) != 0 )
+        if ( ((obj= jobj(retjson,"iswatchonly")) != 0 || (obj= jobj(retjson,"watchonly")) != 0) && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
             //printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
@@ -411,15 +412,18 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
     {
         if ( (ap= LP_addressfind(coin,coinaddr)) != 0 )
         {
-            if ( ap->unspenttime == 0 )
+            if ( ap->unspenttime == 0 || strcmp(coin->symbol,"DYN") == 0 )
                 usecache = 0;
-            else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+1 )
+            else if ( time(NULL) > ap->unspenttime+3 )
                 usecache = 0;
+            //printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
             if ( usecache != 0 && (retstr= LP_unspents_filestr(symbol,coinaddr)) != 0 )
             {
                 retjson = cJSON_Parse(retstr);
                 free(retstr);
-                return(retjson);
+                if ( cJSON_GetArraySize(retjson) > 0 )
+                    return(retjson);
+                else free_json(retjson);
             }
         }
         //printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
@@ -429,8 +433,8 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 numconfs = 0;
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-//printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
+//printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
                 array = cJSON_CreateArray();
@@ -488,6 +492,39 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
             free_json(array);
         }
         return(cJSON_Parse("[]"));
+    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
+}
+
+
+cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
+{
+    char buf[128],*addr; bits256 zero; cJSON *retjson,*array,*item; int32_t i,n; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
+        return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    memset(zero.bytes,0,sizeof(zero));
+    if ( coin->electrum == 0 )
+    {
+        if ( count == 0 )
+            count = 10;
+        sprintf(buf,"[\"\", %d, %d, true]",count,skip);
+        retjson = cJSON_CreateArray();
+        if ( (array= bitcoin_json(coin,"listtransactions",buf)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (addr= jstr(item,"address")) != 0 && strcmp(addr,coinaddr) == 0 )
+                        jaddi(retjson,jduplicate(item));
+                }
+            }
+            free_json(array);
+        }
+        return(retjson);
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
 }
 
@@ -575,7 +612,7 @@ int32_t LP_importaddress(char *symbol,char *address)
             //printf("validated.(%s)\n",jprint(validatejson,0));
             if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
             {
-                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"watchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
                     doneflag = 1;
             }
             free_json(validatejson);

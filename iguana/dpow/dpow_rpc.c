@@ -230,7 +230,7 @@ int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t Mo
 {
     struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
-    if ( Notaries_port != DPOW_SOCKPORT )
+    //if ( Notaries_port != DPOW_SOCKPORT )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
@@ -1277,6 +1277,8 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     if ( height <= 0 )
         height = 1;
     *isrealtimep = 0;
+    if ( coin->getinfostr[0] == 0 )
+        strcpy(coin->getinfostr,"getinfo");
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)coin->getinfostr,0,port)) != 0 )
     {
         if ( (infoobj= cJSON_Parse(retstr)) != 0 )
