@@ -228,7 +228,7 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
             else
             {
                 interest = LP_komodo_interest(txid,value);
-                char str[65]; printf("txid.%s %.8f + %.8f\n",bits256_str(str,txid),dstr(value),dstr(interest));
+                char str[65]; printf("(%s) txid.%s %.8f + %.8f\n",jprint(obj,0),bits256_str(str,txid),dstr(value),dstr(interest));
                 value += interest;
             }
         }
