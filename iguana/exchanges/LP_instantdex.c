@@ -286,7 +286,7 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits25
     if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"instantdexclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
     {
         printf("signedtx.(%s)\n",signedtx);
-        sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
+        //sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
         if ( bits256_cmp(sendtxid,signedtxid) == 0 )
         {
             *claimtxidp = sendtxid;
@@ -429,6 +429,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         if ( coin->electrum == 0 )
                             jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
                         else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
+                        printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0)),dstr(LP_komodo_interest(utxotxid,satoshis)));
                         if ( claimtime <= expiration )
                         {
                             printf("iter.%d j.%d claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",iter,j,claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
