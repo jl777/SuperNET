@@ -818,6 +818,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 {
                     LP_importaddress("KMD",BOTS_BONDADDRESS);
                     LP_dPoW_request(coin);
+                    LP_instantdex_filescreate(coin->smartaddr);
                 }
             }
             if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
