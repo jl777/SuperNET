@@ -208,8 +208,11 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
-    double val = 0.; uint64_t value = 0; int32_t electrumflag;
+    double val = 0.; uint64_t value = 0; int32_t electrumflag; bits256 txid;
     electrumflag = (jobj(obj,"tx_hash") != 0);
+    if ( electrumflag != 0 )
+        txid = jbits256(obj,"tx_hash");
+    else txid = jbits256(obj,"txid");
     if ( electrumflag == 0 )
     {
         if ( (val= jdouble(obj,"amount")) < SMALLVAL )
@@ -218,8 +221,12 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
     } else value = j64bits(obj,"value");
     if ( value != 0 )
     {
-        if ( addinterest != 0 && jobj(obj,"interest") != 0 )
-            value += (jdouble(obj,"interest") * SATOSHIDEN);
+        if ( addinterest != 0 )
+        {
+            if ( jobj(obj,"interest") != 0 )
+                value += (jdouble(obj,"interest") * SATOSHIDEN);
+            else value += LP_komodo_interest(txid,value);
+        }
     }
     return(value);
 }
