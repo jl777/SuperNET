@@ -84,6 +84,29 @@ void LP_instantdex_filescreate(char *coinaddr)
 {
     char fname[512]; FILE *fp; bits256 txid; int32_t i,n; cJSON *array,*newarray,*txobj;
     sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb")) == 0 )
+    {
+        if ( (fp= fopen(fname,"wb+")) != 0 )
+        {
+            for (i=0; i<2; i++)
+            {
+                if ( (array= LP_instantdex_txids(i,coinaddr)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
+                    {
+                        for (j=0; j<n; j++)
+                        {
+                            txid = jbits256i(array,j);
+                            LP_instantdex_deposituniq(fp,txid);
+                            fflush(fp);
+                        }
+                    }
+                    free_json(array);
+                }
+            }
+            fclose(fp);
+        } else printf("couldnt create %s\n",fname);
+    } else fclose(fp);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         array = cJSON_CreateArray();
@@ -94,7 +117,7 @@ void LP_instantdex_filescreate(char *coinaddr)
         {
             fseek(fp,sizeof(txid) * i,SEEK_SET);
             if ( fread(&txid,1,sizeof(txid),fp) != sizeof(txid) )
-                printf("error reating %s\n",fname);
+                printf("error creating %s\n",fname);
             jaddibits256(array,txid);
             if ( (txobj= LP_gettxout("KMD",coinaddr,txid,0)) != 0 )
                 free_json(txobj);
