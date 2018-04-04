@@ -82,7 +82,7 @@ void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
 
 void LP_instantdex_filescreate(char *coinaddr)
 {
-    char fname[512]; FILE *fp; bits256 txid; int32_t i,n; cJSON *array,*newarray,*txobj;
+    char fname[512]; FILE *fp; bits256 txid; int32_t i,j,n; cJSON *array,*newarray,*txobj;
     sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"rb")) == 0 )
     {
