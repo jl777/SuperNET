@@ -833,7 +833,6 @@ void stats_rpcloop(void *args)
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
-//#ifdef _WIN32
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept port.%u usock.%d errno %d %s\n",port,sock,errno,strerror(errno));
@@ -841,16 +840,6 @@ void stats_rpcloop(void *args)
             bindsock = -1;
             continue;
         }
-/*#else
-        if ( sock < 0 )
-        {
-            //fprintf(stderr,".");
-            if ( IAMLP == 0 )
-                usleep(50000);
-            else usleep(2500);
-            continue;
-        }
-#endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
 //printf("port.%u got incoming from %x\n",port,ipbits);
         if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
@@ -873,18 +862,6 @@ void stats_rpcloop(void *args)
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
             LP_rpc_processreq(req);
-            /*portable_mutex_lock(&LP_gcmutex);
-            DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
-            {
-                DL_DELETE(LP_garbage_collector,req2);
-                free(req2);
-            }
-            portable_mutex_unlock(&LP_gcmutex);
-            if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
-            {
-                printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
-                LP_rpc_processreq(req);
-            }*/
        }
     }
     printf("i got killed\n");
