@@ -338,7 +338,7 @@ char *LP_unlockedspend(void *ctx,char *symbol,bits256 utxotxid)
         {
             vout0 = jitem(vouts,0);
             LP_destaddr(vinaddr,vout0);
-            satoshis = LP_value_extract(vout0,0);
+            satoshis = LP_value_extract(vout0,0,utxotxid);
             opret = jitem(vouts,numvouts - 1);
             jaddstr(retjson,"result","success");
             jaddbits256(retjson,"lockedtxid",utxotxid);
@@ -429,13 +429,13 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
         {
             vout0 = jitem(vouts,0);
             LP_destaddr(vinaddr,vout0);
-            satoshis = LP_value_extract(vout0,1);
+            satoshis = LP_value_extract(vout0,1,utxotxid);
             vout2 = jitem(vouts,2);
             LP_destaddr(destaddr,vout2);
             if ( strcmp(destaddr,coin->smartaddr) == 0 )
             {
                 vout1 = jitem(vouts,1);
-                weeksatoshis = LP_value_extract(vout1,0);
+                weeksatoshis = LP_value_extract(vout1,0,utxotxid);
                 weeki = (int32_t)(weeksatoshis % 10000);
                 for (iter=0; iter<2; iter++)
                 for (j=-168; j<=168; j++)
@@ -451,12 +451,12 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         //claimtime = LP_claimtime(coin,expiration);
                         item = cJSON_CreateObject();
                         jaddbits256(item,"txid",utxotxid);
-                        jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
+                        jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0,utxotxid)));
                         if ( coin->electrum == 0 )
-                            interest = dstr(satoshis) - dstr(LP_value_extract(vout0,0));
+                            interest = dstr(satoshis) - dstr(LP_value_extract(vout0,0,utxotxid));
                         else interest = dstr(LP_komodo_interest(utxotxid,satoshis));
                         jaddnum(item,"interest",interest);
-                        printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0)),dstr(LP_komodo_interest(utxotxid,satoshis)));
+                        printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0,utxotxid)),dstr(LP_komodo_interest(utxotxid,satoshis)));
                         if ( claimtime <= expiration )
                         {
                             printf("iter.%d j.%d claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",iter,j,claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
@@ -554,10 +554,10 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
             }
             else
             {
-                amount64 = LP_value_extract(jitem(vouts,1),0);
+                amount64 = LP_value_extract(jitem(vouts,1),0,txid);
                 weeki = (amount64 % 10000);
                 item = jitem(vouts,0);
-                satoshis = LP_value_extract(item,0);
+                satoshis = LP_value_extract(item,0,txid);
                 //char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
                 if ( LP_destaddr(p2shaddr,item) == 0 )
                 {

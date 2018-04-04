@@ -795,7 +795,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
             if ( (vouts= jarray(&n,txobj,"vout")) != 0 && utxovout < n )
             {
                 obj = jitem(vouts,utxovout);
-                value = LP_value_extract(obj,1);
+                value = LP_value_extract(obj,1,utxotxid);
                 //printf("value in vout.%d %.8f (%s)\n",vout,dstr(value),jprint(txobj,0));
             }
             free_json(txobj);
@@ -2155,7 +2155,7 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
         {
             vout = jitem(vouts,v);
             if ( valuep != 0 )
-                *valuep = LP_value_extract(vout,1);
+                *valuep = LP_value_extract(vout,1,signedtxid);
             LP_destaddr(coinaddr,vout);
         }
         free_json(txobj);

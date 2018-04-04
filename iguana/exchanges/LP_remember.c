@@ -940,7 +940,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     rswap->Dredeemlen >>= 1;
                     decode_hex(rswap->Dredeemscript,rswap->Dredeemlen,rstr);
                 }
-                rswap->values[i] = value = LP_value_extract(txobj,1);
+                rswap->values[i] = value = LP_value_extract(txobj,1,txid);
                 if ( (symbol= jstr(txobj,"src")) != 0 )
                 {
                     safecopy(rswap->src,symbol,sizeof(rswap->src));

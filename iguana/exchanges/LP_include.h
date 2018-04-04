@@ -479,7 +479,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
 void LP_quotesinit(char *base,char *rel);
 int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char *jsonstr,int32_t freeflag);
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
-uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
+uint64_t LP_value_extract(cJSON *obj,int32_t addinterest,bits256 txid);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly);
 int64_t LP_kmdvalue(char *symbol,int64_t satoshis);

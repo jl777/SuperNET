@@ -296,7 +296,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
             {
                 txid = jbits256(item,"txid");
                 v = jint(item,"vout");
-                value = LP_value_extract(item,0);
+                value = LP_value_extract(item,0,txid);
                 ht = LP_txheight(coin,txid);
                 if ( (retjson= LP_gettxout(coin->symbol,coinaddr,txid,v)) != 0 )
                     free_json(retjson);
