@@ -458,7 +458,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         {
                             interest = dstr(LP_komodo_interest(utxotxid,satoshis));
                         }
-                        jaddnum(item,"interest",interest));
+                        jaddnum(item,"interest",interest);
                         printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0)),dstr(LP_komodo_interest(utxotxid,satoshis)));
                         if ( claimtime <= expiration )
                         {
