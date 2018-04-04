@@ -453,9 +453,14 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         jaddbits256(item,"txid",utxotxid);
                         jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
                         if ( coin->electrum == 0 )
-                            jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
-                        else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
-                        printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0)),dstr(LP_komodo_interest(utxotxid,satoshis)));
+                            interest = dstr(satoshis) - dstr(LP_value_extract(vout0,0);
+                        else
+                        {
+                            interest = dstr(LP_komodo_interest(utxotxid,satoshis));
+                            satoshis += interest;
+                        }
+                        jaddnum(item,"interest",interest));
+                        //printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0)),dstr(LP_komodo_interest(utxotxid,satoshis)));
                         if ( claimtime <= expiration )
                         {
                             printf("iter.%d j.%d claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",iter,j,claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
