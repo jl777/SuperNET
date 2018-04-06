@@ -164,6 +164,7 @@ int main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
     OS_init();
+    printf("main\n");
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
@@ -372,6 +373,7 @@ int main(int argc, const char * argv[])
         sleep(3);
         return(0);
     }
+    printf("main2\n");
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( jint(retjson,"docker") == 1 )
@@ -390,7 +392,7 @@ int main(int argc, const char * argv[])
         incr = 100.;
         while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
-    }
+    } else printf("couldnt parse.(%s)\n",argv[1]);
 #endif
     return 0;
 }
