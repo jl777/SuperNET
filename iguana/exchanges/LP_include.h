@@ -35,7 +35,7 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "27773"
+#define LP_BUILD_NUMBER "27774"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -276,7 +276,7 @@ struct LP_swap_remember
     uint32_t finishtime,tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
-    char Agui[65],Bgui[65],gui[65],src[65],dest[65],bobtomic[128],alicetomic[128],etomicsrc[65],etomicdest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)],bobDepositEthTx[75],bobPaymentEthTx[75],alicePaymentEthTx[75];
+    char uuidstr[65],Agui[65],Bgui[65],gui[65],src[65],dest[65],bobtomic[128],alicetomic[128],etomicsrc[65],etomicdest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)],bobDepositEthTx[75],bobPaymentEthTx[75],alicePaymentEthTx[75];
 };
 
 struct LP_outpoint
@@ -379,7 +379,7 @@ struct LP_quoteinfo
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime,tradeid;
     int32_t vout,vout2,destvout,feevout,pair;
-    char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65];
+    char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65],uuidstr[65];
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
@@ -397,7 +397,7 @@ struct basilisk_swap
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
     bits256 privkeys[INSTANTDEX_DECKSIZE];
     //struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
-    char Bdeposit[64],Bpayment[64];
+    char Bdeposit[64],Bpayment[64],uuidstr[65];
     uint64_t aliceid,otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
 };
