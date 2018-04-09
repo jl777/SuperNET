@@ -8,7 +8,12 @@ cache:
   - marketmaker_depends
 
 after_build:
-  - 7z a mm-win.zip .\build_win64_release\iguana\exchanges\Release\marketmaker-mainnet.exe .\marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl.dll .\marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.dll
+  - '7z a mm-win.zip
+     .\build_win64_release\iguana\exchanges\Release\marketmaker-mainnet.exe
+     .\marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl.dll
+     .\marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.dll
+     "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\redist\\x64\\Microsoft.VC140.CRT\\msvcp140.dll"
+     "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\redist\\x64\\Microsoft.VC140.CRT\\vcruntime140.dll"'
 
 artifacts:
   - path: mm-win.zip

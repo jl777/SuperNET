@@ -206,9 +206,9 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
     return(mini);
 }
 
-uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
+uint64_t LP_value_extract(cJSON *obj,int32_t addinterest,bits256 utxotxid)
 {
-    double val = 0.; uint64_t value = 0; int32_t electrumflag;
+    double val = 0.; uint64_t interest,value = 0; int32_t electrumflag;
     electrumflag = (jobj(obj,"tx_hash") != 0);
     if ( electrumflag == 0 )
     {
@@ -218,8 +218,17 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
     } else value = j64bits(obj,"value");
     if ( value != 0 )
     {
-        if ( addinterest != 0 && jobj(obj,"interest") != 0 )
-            value += (jdouble(obj,"interest") * SATOSHIDEN);
+        if ( addinterest != 0 )
+        {
+            if ( jobj(obj,"interest") != 0 )
+                value += (jdouble(obj,"interest") * SATOSHIDEN);
+            else
+            {
+                interest = LP_komodo_interest(utxotxid,value);
+                //char str[65]; printf("(%s) txid.%s %.8f + %.8f\n",jprint(obj,0),bits256_str(str,utxotxid),dstr(value),dstr(interest));
+                value += interest;
+            }
+        }
     }
     return(value);
 }
@@ -320,14 +329,17 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
                     {
                         for (i=1; i<m; i++)
                         {
+                            //printf("%.8f ",dstr(LP_DEPOSITSATOSHIS(buf[i])));
                             if ( max >= LP_DEPOSITSATOSHIS(buf[i]) )
                             {
                                 *maxp = buf[i];
                                 *medianp = buf[m/2];
+                                //printf("buf[%d] %.8f -> maxp, m.%d/2 %.8f -> median\n",i,dstr(*maxp),m,dstr(*medianp));
                                 break;
                             }
                         }
                     } else printf("sort error? max %.8f != %.8f\n",dstr(max),dstr(buf[0]));
+                    //printf("vs. max %.8f %s maxp %.8f median %.8f\n",dstr(max),coin->symbol,dstr(*maxp),dstr(*medianp));
                 }
                 else
                 {
@@ -358,7 +370,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
-                    if ( LP_value_extract(txout,0) == 0 )
+                    if ( LP_value_extract(txout,0,up->U.txid) == 0 )
                     {
 //char str[65]; printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
                         free_json(txout);
@@ -693,7 +705,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    balance += LP_value_extract(item,1);
+                    balance += LP_value_extract(item,1,zero);
                     //printf("i.%d (%s) balance %.8f\n",i,jprint(item,0),dstr(balance));
                 }
             }
@@ -813,7 +825,7 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         val = j64bits(item,"value");
         if ( coin->electrum == 0 && (txobj= LP_gettxout(coin->symbol,coinaddr,txid,v)) != 0 )
         {
-            value = LP_value_extract(txobj,0);
+            value = LP_value_extract(txobj,0,txid);
             if ( value != 0 && value != val )
             {
                 char str[65]; printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",coin->symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(txobj,0));
@@ -893,7 +905,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
             for (i=0; i<numvouts; i++)
             {
                 vout = jitem(vouts,i);
-                tx->outpoints[i].value = LP_value_extract(vout,0);
+                tx->outpoints[i].value = LP_value_extract(vout,0,txid);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
                 //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
@@ -1046,7 +1058,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     destaddr[0] = 0;
     if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) != 0 )
     {
-        if ( (value= LP_value_extract(txobj,0)) == 0 )
+        if ( (value= LP_value_extract(txobj,0,txid)) == 0 )
         {
             char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);
         }
@@ -1123,7 +1135,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         uint64_t value; char str[65];
         if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) != 0 )
         {
-            value = LP_value_extract(txobj,0);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
+            value = LP_value_extract(txobj,0,txid);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr != 0 )
                 LP_destaddr(coinaddr,txobj);
             //printf("LP_txvalue %s tx %s/v%d value %.8f\n",coin->symbol,bits256_str(str,txid),vout,dstr(value));
@@ -1150,7 +1162,7 @@ int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout)
         if ( (txjson= LP_gettx("LP_outpoint_amount",symbol,txid,1)) != 0 )
         {
             if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && vout < numvouts )
-                amount = LP_value_extract(jitem(vouts,vout),0);
+                amount = LP_value_extract(jitem(vouts,vout),0,txid);
             free_json(txjson);
         }
     }
