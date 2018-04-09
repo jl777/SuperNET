@@ -44,6 +44,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     double price; char etomic[64],activesymbol[65]; cJSON *retjson = cJSON_CreateObject();
     if ( jobj(retjson,"gui") == 0 )
         jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
+    jaddstr(retjson,"uuid",qp->uuidstr);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
@@ -114,6 +115,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     memset(qp,0,sizeof(*qp));
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
+    safecopy(qp->uuidstr,jstr(argjson,"uuid"),sizeof(qp->uuidstr));
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
     {
         if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || strcmp(etomicstr,etomic) != 0 )

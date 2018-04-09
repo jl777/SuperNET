@@ -914,7 +914,7 @@ void LP_bobloop(void *_swap)
     } else printf("swap timed out\n");
     LP_swap_endcritical = (uint32_t)time(NULL);
     if ( err < 0 )
-        LP_failedmsg(swap->I.req.requestid,swap->I.req.quoteid,err);
+        LP_failedmsg(swap->I.req.requestid,swap->I.req.quoteid,err,swap->uuidstr);
     sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
@@ -994,7 +994,7 @@ void LP_aliceloop(void *_swap)
     }
     LP_swap_endcritical = (uint32_t)time(NULL);
     if ( err < 0 )
-        LP_failedmsg(swap->I.req.requestid,swap->I.req.quoteid,err);
+        LP_failedmsg(swap->I.req.requestid,swap->I.req.quoteid,err,swap->uuidstr);
     sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
@@ -1305,6 +1305,7 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     swap = calloc(1,sizeof(*swap));
+    memcpy(swap->uuidstr,qp->uuidstr,sizeof(swap->uuidstr));
     swap->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     swap->I.req.quoteid = rp->quoteid;
     swap->ctx = ctx;

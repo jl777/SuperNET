@@ -136,8 +136,9 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
 
 uint64_t LP_RTsmartbalance(struct iguana_info *coin)
 {
-    cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
+    cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value; bits256 zero;
     valuesum = 0;
+    memset(zero.bytes,0,sizeof(zero));
     sprintf(buf,"[0, 99999999, [\"%s\"]]",coin->smartaddr);
     retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"listunspent",buf);
     if ( retstr != 0 && retstr[0] != 0 )
@@ -148,7 +149,7 @@ uint64_t LP_RTsmartbalance(struct iguana_info *coin)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                value = LP_value_extract(item,1);
+                value = LP_value_extract(item,0,zero);
                 valuesum += value;
                 //printf("%s -> %.8f\n",jprint(item,0),dstr(value));
             }
@@ -535,7 +536,7 @@ int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t
     {
         *txidp = jbits256(item,"txid");
         *voutp = juint(item,"vout");
-        satoshis = LP_value_extract(item,0);
+        satoshis = LP_value_extract(item,0,*txidp);
         *heightp = LP_txheight(coin,*txidp);
     }
     else
