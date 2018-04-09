@@ -1305,6 +1305,7 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     swap = calloc(1,sizeof(*swap));
+    memcpy(swap->uuidstr,qp->uuidstr,sizeof(swap->uuidstr));
     swap->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     swap->I.req.quoteid = rp->quoteid;
     swap->ctx = ctx;

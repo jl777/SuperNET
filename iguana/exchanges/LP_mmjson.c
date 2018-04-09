@@ -581,7 +581,9 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
                 s = jfieldname(ptr);
                 if ( (ind= mmfind(s)) < 0 )
                 {
-                    printf("missing field.(%s) add to MM_fields[]\n",s);
+                    static uint32_t counter;
+                    if ( counter++ < 3 )
+                        printf("missing field.(%s) add to MM_fields[]\n",s);
                     linebuf[k++] = MMJSON_STRING;
                     memcpy(&linebuf[k],s,strlen(s)+1);
                     k += (int32_t)strlen(s) + 1;
