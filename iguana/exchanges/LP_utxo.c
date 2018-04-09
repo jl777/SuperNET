@@ -334,6 +334,7 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
                             {
                                 *maxp = buf[i];
                                 *medianp = buf[m/2];
+                                printf("buf[%d] %.8f -> maxp, m.%d/2 %.8f -> median\n",i,dstr(*maxp),m,dstr(*medianp));
                                 break;
                             }
                         }
