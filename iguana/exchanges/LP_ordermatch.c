@@ -1332,7 +1332,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         rq = ((uint64_t)Q.R.requestid << 32) | Q.R.quoteid;
         if ( Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets, some old timestamps floating about?
         {
-            printf("aliceid.%llu is expired by %d\n",(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
+            printf("uuid.%s aliceid.%llu is expired by %d\n",Q.uuidstr+32,(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
             return(1);
         }
         LP_tradecommand_log(argjson);
@@ -1598,7 +1598,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         vcalc_sha256(0,hash.bytes,uuidhash,len);
         uuidstr = _uuidstr;
         bits256_str(uuidstr,hash);
-        char str[65]; printf("%s %llu %s %s -> uuid.%s\n",bits256_str(str,G.LP_mypub25519),(long long)millis,base,rel,uuidstr);
+        //char str[65]; printf("%s %llu %s %s -> uuid.%s\n",bits256_str(str,G.LP_mypub25519),(long long)millis,base,rel,uuidstr);
     }
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey,uuidstr));
 }
