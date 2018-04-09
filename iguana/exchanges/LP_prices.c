@@ -114,7 +114,7 @@ void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t reli
         DL_APPEND(pubp->quotes,pq); // already serialized as only path is via stats_JSON()
         //printf("create pubp quotes %d/%d\n",baseind,relind);
     }
-    //printf("%d/%d price %.8f balance %.8f %s num.%d %.8f %.8f\n",baseind,relind,price,dstr(balance),utxocoin,numutxos,dstr(minutxo),dstr(maxutxo));
+//printf("%d/%d price %.8f balance %.8f %s num.%d min %.8f max %.8f\n",baseind,relind,price,dstr(balance),utxocoin,numutxos,dstr(minutxo),dstr(maxutxo));
     pq->price = price;
     if ( utxocoin != 0 && utxocoin[0] != 0 )
     {
@@ -1169,7 +1169,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *utxocoin,int32_t numrelutxos,int64_t balance,int64_t minutxo,int64_t maxutxo,int64_t unconfcredits)
 {
     struct LP_priceinfo *basepp,*relpp; uint32_t now; int64_t price64; struct LP_pubkey_info *pubp; char str[65],fname[512]; FILE *fp;
-    //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
+//printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s balance %.8f min %.8f max %.8f\n",base,rel,price,bits256_str(str,pubkey),dstr(balance),dstr(minutxo),dstr(maxutxo));
     if ( LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         //if ( (fp= basepp->fps[relpp->ind]) == 0 )

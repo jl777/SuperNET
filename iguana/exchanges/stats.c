@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "../../crypto777/OS_portable.h"
+#define IGUANA_MAXRPCTHREADS 1
+
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
 #define STATS_DEST "/var/www/html/DEXstats.json"
@@ -855,7 +857,7 @@ void stats_rpcloop(void *args)
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        if ( spawned > 0 )
+        if ( spawned >= (IGUANA_MAXRPCTHREADS-1) )
             LP_rpc_processreq(req);
         // this might lead to "cant open file errors"
         else if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )

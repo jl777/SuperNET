@@ -329,14 +329,17 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
                     {
                         for (i=1; i<m; i++)
                         {
+                            //printf("%.8f ",dstr(LP_DEPOSITSATOSHIS(buf[i])));
                             if ( max >= LP_DEPOSITSATOSHIS(buf[i]) )
                             {
                                 *maxp = buf[i];
                                 *medianp = buf[m/2];
+                                //printf("buf[%d] %.8f -> maxp, m.%d/2 %.8f -> median\n",i,dstr(*maxp),m,dstr(*medianp));
                                 break;
                             }
                         }
                     } else printf("sort error? max %.8f != %.8f\n",dstr(max),dstr(buf[0]));
+                    //printf("vs. max %.8f %s maxp %.8f median %.8f\n",dstr(max),coin->symbol,dstr(*maxp),dstr(*medianp));
                 }
                 else
                 {

@@ -500,7 +500,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 } else vol = jdouble(argjson,"relvolume");
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
+                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -514,7 +514,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 } else vol = jdouble(argjson,"basevolume");
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
+                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
