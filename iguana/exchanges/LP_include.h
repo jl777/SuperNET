@@ -490,7 +490,7 @@ int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsoc
 int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item);
 void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag);
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_t cmdchannel,char *ipaddr);
-void LP_failedmsg(uint32_t requestid,uint32_t quoteid,double val);
+void LP_failedmsg(uint32_t requestid,uint32_t quoteid,double val,char *uuidstr);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 //int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
