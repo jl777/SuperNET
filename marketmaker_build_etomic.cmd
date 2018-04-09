@@ -16,7 +16,7 @@ call scripts\install_deps.bat
 cd ..
 mkdir build_win64_release
 cd build_win64_release
-cmake .. -G "Visual Studio 14 2015 Win64"
+cmake .. -G "Visual Studio 14 2015 Win64" -DMM_VERSION="%APPVEYOR_BUILD_VERSION%"
 
 rem Steps before build:
 rem 

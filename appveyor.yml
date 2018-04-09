@@ -15,7 +15,7 @@ artifacts:
     name: marketmaker-mainnet
 
 deploy:
-  release: marketmaker-v$(appveyor_build_version)
+  release: v$(appveyor_build_version)
   provider: GitHub
   auth_token:
     secure: iabzoz73JgtOIyE/Nmz4a4XefmK+7pIeup+1Hunj4hGKrdfesFN+176DMApgfu8t
