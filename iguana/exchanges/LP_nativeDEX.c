@@ -30,6 +30,9 @@
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
 #include <stdio.h>
+#ifndef MM_VERSION
+#define MM_VERSION "UNKNOWN"
+#endif
 
 long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
 
@@ -1290,8 +1293,7 @@ extern int32_t bitcoind_RPC_inittime;
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
-    sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
+    char *myipaddr=0; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     bitcoind_RPC_inittime = 1;
     if ( LP_MAXPRICEINFOS > 256 )
     {
@@ -1299,7 +1301,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     LP_showwif = juint(argjson,"wif");
-    printf("showwif.%d %s %u\n",LP_showwif,version,calc_crc32(0,version,(int32_t)strlen(version)));
+    printf("showwif.%d version: %s %u\n",LP_showwif,MM_VERSION,calc_crc32(0,MM_VERSION,(int32_t)strlen(MM_VERSION)));
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
