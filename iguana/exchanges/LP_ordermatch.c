@@ -899,7 +899,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     double price=0.,p=0.,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin,*othercoin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[4096]; int32_t i,r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
-printf("bob %s received REQUEST.(%s)\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32);
+//printf("bob %s received REQUEST.(%s)\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 || (othercoin= LP_coinfind(qp->destcoin)) == 0 )
         return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
@@ -1015,7 +1015,7 @@ printf("bob %s received REQUEST.(%s)\n",bits256_str(str,G.LP_mypub25519),qp->uui
         }
         i++;
     }
-    printf("i.%d qprice %.8f myprice %.8f price %.8f [%.8f]\n",i,qprice,myprice,price,p);
+    printf("%s/%s i.%d qprice %.8f myprice %.8f price %.8f [%.8f]\n",qp->srccoin,qp->destcoin,i,qprice,myprice,price,p);
     if ( LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
         //printf("found unallocated txids\n");
@@ -1041,7 +1041,7 @@ printf("bob %s received REQUEST.(%s)\n",bits256_str(str,G.LP_mypub25519),qp->uui
 struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp)
 {
     char *retstr; double qprice;
-    char str[65]; printf("alice %s received RESERVED.(%s) %.8f\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32,(double)qp->destsatoshis/(qp->satoshis+1));
+    //char str[65]; printf("alice %s received RESERVED.(%s) %.8f\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32,(double)qp->destsatoshis/(qp->satoshis+1));
     *newqp = *qp;
     qp = newqp;
     if ( (qprice= LP_trades_alicevalidate(ctx,qp)) > 0. )
@@ -1088,7 +1088,7 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
     qp = newqp;
     if ( (val= LP_trades_alicevalidate(ctx,qp)) > 0. )
     {
-        printf("CONNECTED ALICE uuid.%s\n",qp->uuidstr);
+        //printf("CONNECTED ALICE uuid.%s\n",qp->uuidstr);
         LP_aliceid(qp->tradeid,qp->aliceid,"connected",0,0);
         if ( (retstr= LP_connectedalice(qp,pairstr)) != 0 )
             free(retstr);
@@ -1149,7 +1149,7 @@ void LP_tradesloop(void *ctx)
         {
             if ( tp->negotiationdone != 0 )
                 continue;
-            printf("check %s\n",tp->Q.uuidstr+32);
+            //printf("check %s\n",tp->Q.uuidstr+32);
             timeout = LP_AUTOTRADE_TIMEOUT;
             if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
                 timeout += LP_AUTOTRADE_TIMEOUT * .5;
@@ -1312,7 +1312,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
     DL_APPEND(LP_tradesQ,qtp);
     portable_mutex_unlock(&LP_tradesmutex);
-    printf("queue.%d uuid.(%s)\n",funcid,qtp->Q.uuidstr);
+    //printf("queue.%d uuid.(%s)\n",funcid,qtp->Q.uuidstr);
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
@@ -1386,7 +1386,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-printf("CONNECTED.(%s)\n",jprint(argjson,0));
+//printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
@@ -1575,7 +1575,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         else if (basecoin->etomic[0] != 0 )
         {
             strcpy(Q.etomicdest,basecoin->smartaddr);
-            printf("Q.etomicdest (%s)\n",Q.etomicdest);
+            //printf("Q.etomicdest (%s)\n",Q.etomicdest);
         }
         if ( relcoin->etomic[0] != 0 )
         {
