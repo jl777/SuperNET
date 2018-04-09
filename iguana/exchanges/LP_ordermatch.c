@@ -1585,10 +1585,10 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
     int32_t changed;
     LP_mypriceset(&changed,rel,base,1. / maxprice);
     LP_mypriceset(&changed,base,rel,0.);
-    if ( (uuidstr= jsr(argjson,"uuid")) == 0 )
+    if ( (uuidstr= jstr(argjson,"uuid")) == 0 )
     {
         uint8_t uuidhash[256]; bits256 hash; uint64_t millis; int32_t len = 0;
-        memcpy(uuidhash,G.LP_mypub25519,sizeof(bits256)), len += sizeof(bits256);
+        memcpy(uuidhash,&G.LP_mypub25519,sizeof(bits256)), len += sizeof(bits256);
         millis = OS_milliseconds();
         memcpy(&uuidhash[len],&millis,sizeof(millis)), len += sizeof(millis);
         memcpy(&uuidhash[len],base,(int32_t)strlen(base)), len += (int32_t)strlen(base);
@@ -1596,7 +1596,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         vcalc_sha256(0,hash.bytes,uuidhash,len);
         uuidstr = _uuidstr;
         bits256_str(uuidstr,hash);
-        printf("%s %llu %s %s -> uuid.%s\n",bits256_str(str,G.LP_mypub25519),(long long)millis,base,rel,uuidstr);
+        char str[65]; printf("%s %llu %s %s -> uuid.%s\n",bits256_str(str,G.LP_mypub25519),(long long)millis,base,rel,uuidstr);
     }
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey,uuidstr));
 }
