@@ -338,7 +338,7 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
                             }
                         }
                     } else printf("sort error? max %.8f != %.8f\n",dstr(max),dstr(buf[0]));
-                    printf("vs. max %.8f %s\n",dstr(max),coin->symbol);
+                    printf("vs. max %.8f %s maxp %.8f median %.8f\n",dstr(max),coin->symbol,*maxp,*medianp);
                 }
                 else
                 {
