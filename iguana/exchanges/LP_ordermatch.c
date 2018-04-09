@@ -1041,7 +1041,7 @@ printf("bob %s received REQUEST.(%s)\n",bits256_str(str,G.LP_mypub25519),qp->uui
 struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp)
 {
     char *retstr; double qprice;
-    char str[65]; printf("alice %s received RESERVED.(%llu) %.8f\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid,(double)qp->destsatoshis/(qp->satoshis+1));
+    char str[65]; printf("alice %s received RESERVED.(%s) %.8f\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32,(double)qp->destsatoshis/(qp->satoshis+1));
     *newqp = *qp;
     qp = newqp;
     if ( (qprice= LP_trades_alicevalidate(ctx,qp)) > 0. )
@@ -1068,7 +1068,7 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
         return(0);
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
-        char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
+        char str[65]; printf("bob %s received CONNECT.(%s)\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32);
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
         return(qp);
     }
@@ -1149,6 +1149,7 @@ void LP_tradesloop(void *ctx)
         {
             if ( tp->negotiationdone != 0 )
                 continue;
+            printf("check %s\n",tp->Q.uuidstr+32);
             timeout = LP_AUTOTRADE_TIMEOUT;
             if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
                 timeout += LP_AUTOTRADE_TIMEOUT * .5;
@@ -1311,7 +1312,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
     DL_APPEND(LP_tradesQ,qtp);
     portable_mutex_unlock(&LP_tradesmutex);
-    //printf("queue.%d %p\n",funcid,qtp);
+    printf("queue.%d %s\n",funcid,qtp->Q.uuidstr);
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
