@@ -1597,7 +1597,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 for (i=0; i<numvins; i++)
                 {
                     item = jitem(vins,i);
-                    //printf("set available %s\n",jprint(item,0));
+printf("set available %s\n",jprint(item,0));
                     LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
                 }
                 free_json(vins), vins = 0;
