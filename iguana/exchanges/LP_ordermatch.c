@@ -1312,7 +1312,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
     DL_APPEND(LP_tradesQ,qtp);
     portable_mutex_unlock(&LP_tradesmutex);
-    printf("queue.%d %s\n",funcid,qtp->Q.uuidstr);
+    printf("queue.%d uuid.(%s)\n",funcid,qtp->Q.uuidstr);
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
@@ -1386,7 +1386,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-  //printf("CONNECTED.(%s)\n",jprint(argjson,0));
+printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
