@@ -11,7 +11,7 @@ git submodule init
 git submodule update --init --recursive
 cd cpp-ethereum
 call scripts\install_deps.bat
-cd ..
+cd .
 mkdir build_win64_release
 cd build_win64_release
 cmake .. -G "Visual Studio 14 2015 Win64" -DMM_VERSION="%APPVEYOR_BUILD_VERSION%"
