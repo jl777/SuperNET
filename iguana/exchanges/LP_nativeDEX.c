@@ -512,6 +512,7 @@ void command_rpcloop(void *ctx)
 
 void LP_coinsloop(void *_coins)
 {
+    static int32_t didfilescreate;
     struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
@@ -560,6 +561,11 @@ void LP_coinsloop(void *_coins)
             {
                 //printf("%s has no smartaddress??\n",coin->symbol);
                 continue;
+            }
+            if ( didfilescreate == 0 && strcmp("KMD",coin->symbol) == 0 )
+            {
+                LP_instantdex_filescreate(coin->smartaddr);
+                didfilescreate = 1;
             }
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )

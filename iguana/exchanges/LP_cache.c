@@ -53,7 +53,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         for (i=0; i<numvouts; i++)
         {
             vout = jitem(vouts,i);
-            tx->outpoints[i].value = LP_value_extract(vout,0);
+            tx->outpoints[i].value = LP_value_extract(vout,0,txid);
             tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
             LP_destaddr(tx->outpoints[i].coinaddr,vout);
             //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));

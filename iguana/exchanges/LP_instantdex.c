@@ -82,8 +82,34 @@ void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
 
 void LP_instantdex_filescreate(char *coinaddr)
 {
-    char fname[512]; FILE *fp; bits256 txid; int32_t i,n; cJSON *array,*newarray,*txobj;
+    char fname[512]; FILE *fp; bits256 txid; int32_t i,j,n; cJSON *array,*newarray,*txobj;
     sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb")) == 0 )
+    {
+        if ( (fp= fopen(fname,"wb+")) != 0 )
+        {
+            //printf("created %s\n",fname);
+            for (i=0; i<2; i++)
+            {
+                if ( (array= LP_instantdex_txids(i,coinaddr)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
+                    {
+                        for (j=0; j<n; j++)
+                        {
+                            txid = jbits256i(array,j);
+                            //char str[65]; printf("j.%d of %d: %s\n",j,n,bits256_str(str,txid));
+                            LP_instantdex_deposituniq(fp,txid);
+                            fflush(fp);
+                        }
+                    }
+                    //printf("i.%d n.%d\n",i,n);
+                    free_json(array);
+                }
+            }
+            fclose(fp);
+        } else printf("couldnt create %s\n",fname);
+    } else fclose(fp);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         array = cJSON_CreateArray();
@@ -94,7 +120,7 @@ void LP_instantdex_filescreate(char *coinaddr)
         {
             fseek(fp,sizeof(txid) * i,SEEK_SET);
             if ( fread(&txid,1,sizeof(txid),fp) != sizeof(txid) )
-                printf("error reating %s\n",fname);
+                printf("error creating %s\n",fname);
             jaddibits256(array,txid);
             if ( (txobj= LP_gettxout("KMD",coinaddr,txid,0)) != 0 )
                 free_json(txobj);
@@ -312,7 +338,7 @@ char *LP_unlockedspend(void *ctx,char *symbol,bits256 utxotxid)
         {
             vout0 = jitem(vouts,0);
             LP_destaddr(vinaddr,vout0);
-            satoshis = LP_value_extract(vout0,0);
+            satoshis = LP_value_extract(vout0,0,utxotxid);
             opret = jitem(vouts,numvouts - 1);
             jaddstr(retjson,"result","success");
             jaddbits256(retjson,"lockedtxid",utxotxid);
@@ -396,20 +422,20 @@ char *LP_timelock(char *symbol,uint32_t duration,char *destaddr,uint64_t satoshi
 
 int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info *coin,bits256 utxotxid)
 {
-    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki,iter; int64_t weeksatoshis,satoshis; uint32_t expiration,claimtime;
+    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki,iter; int64_t weeksatoshis,satoshis,interest; uint32_t expiration,claimtime;
     if ( (txjson= LP_gettx("LP_claim_submit",coin->symbol,utxotxid,1)) != 0 )
     {
         if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 3 )
         {
             vout0 = jitem(vouts,0);
             LP_destaddr(vinaddr,vout0);
-            satoshis = LP_value_extract(vout0,1);
+            satoshis = LP_value_extract(vout0,1,utxotxid);
             vout2 = jitem(vouts,2);
             LP_destaddr(destaddr,vout2);
             if ( strcmp(destaddr,coin->smartaddr) == 0 )
             {
                 vout1 = jitem(vouts,1);
-                weeksatoshis = LP_value_extract(vout1,0);
+                weeksatoshis = LP_value_extract(vout1,0,utxotxid);
                 weeki = (int32_t)(weeksatoshis % 10000);
                 for (iter=0; iter<2; iter++)
                 for (j=-168; j<=168; j++)
@@ -425,10 +451,12 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         //claimtime = LP_claimtime(coin,expiration);
                         item = cJSON_CreateObject();
                         jaddbits256(item,"txid",utxotxid);
-                        jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
+                        jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0,utxotxid)));
                         if ( coin->electrum == 0 )
-                            jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
-                        else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
+                            interest = dstr(satoshis) - dstr(LP_value_extract(vout0,0,utxotxid));
+                        else interest = dstr(LP_komodo_interest(utxotxid,satoshis));
+                        jaddnum(item,"interest",interest);
+                        //printf("%.8f %.8f %.8f\n",dstr(satoshis),dstr(LP_value_extract(vout0,0,utxotxid)),dstr(LP_komodo_interest(utxotxid,satoshis)));
                         if ( claimtime <= expiration )
                         {
                             printf("iter.%d j.%d claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",iter,j,claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
@@ -526,10 +554,10 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
             }
             else
             {
-                amount64 = LP_value_extract(jitem(vouts,1),0);
+                amount64 = LP_value_extract(jitem(vouts,1),0,txid);
                 weeki = (amount64 % 10000);
                 item = jitem(vouts,0);
-                satoshis = LP_value_extract(item,0);
+                satoshis = LP_value_extract(item,0,txid);
                 //char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
                 if ( LP_destaddr(p2shaddr,item) == 0 )
                 {
