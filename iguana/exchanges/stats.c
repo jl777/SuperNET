@@ -576,7 +576,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( (fastflag= jint(arg,"fast")) == 0 )
                 {
                     if ( (method= jstr(arg,"method")) != 0 && (strcmp(method,"orderbook") == 0 || strcmp(method,"portfolio") == 0) )
-                        fastflag = 1;
+                        fastflag = 1*0;
                 }
                 if ( fastflag == 0 )
                     portable_mutex_lock(&LP_commandmutex);
@@ -857,7 +857,7 @@ void stats_rpcloop(void *args)
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        if ( spawned >= (IGUANA_MAXRPCTHREADS-1) )
+        if ( 1 || spawned >= (IGUANA_MAXRPCTHREADS-1) )
             LP_rpc_processreq(req);
         // this might lead to "cant open file errors"
         else if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
