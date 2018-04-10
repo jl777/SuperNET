@@ -4,7 +4,6 @@ build_script:
 - cmd: marketmaker_build_etomic.cmd
 cache:
   - C:\.hunter
-  - cpp-ethereum
   - marketmaker_depends
 
 after_build:
