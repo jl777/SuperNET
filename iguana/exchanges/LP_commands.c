@@ -440,7 +440,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 #ifndef NOTETOMIC
         else if ( strcmp(method,"eth_gas_price") == 0 )
         {
-            return LP_eth_gas_price(ptr);
+            return LP_eth_gas_price();
         }
 #endif
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
