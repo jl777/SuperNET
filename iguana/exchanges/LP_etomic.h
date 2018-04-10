@@ -51,4 +51,6 @@ uint8_t LP_etomic_is_empty_tx_id(char *txId);
 
 uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr);
 
+void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output);
+
 #endif //SUPERNET_LP_ETOMIC_H

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9.6)
+cmake_minimum_required(VERSION 3.9.2)
 include("cmake/HunterGate.cmake")
 HunterGate(
         URL "https://github.com/ruslo/hunter/archive/v0.19.173.tar.gz"
@@ -23,7 +23,7 @@ download_project(PROJ nanomsg
         UPDATE_DISCONNECTED 1
         )
 
-find_library(NANOMSG_LIBRARY NAMES nanomsg PATHS ${DEPS_INSTALL_PREFIX}/lib)
+find_library(NANOMSG_LIBRARY NAMES nanomsg PATHS ${DEPS_INSTALL_PREFIX}/lib NO_DEFAULT_PATH)
 include_directories("${CMAKE_SOURCE_DIR}")
 add_subdirectory(cpp-ethereum)
 add_subdirectory(iguana/exchanges)
