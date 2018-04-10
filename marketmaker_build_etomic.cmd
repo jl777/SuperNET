@@ -10,9 +10,7 @@ echo [#2] Prepare build etomic needed things ...
 git submodule init
 git submodule update --init --recursive
 cd cpp-ethereum
-rem git submodule init
-rem git submodule update --init
-call scripts\install_deps.bat 
+call scripts\install_deps.bat
 cd ..
 mkdir build_win64_release
 cd build_win64_release
