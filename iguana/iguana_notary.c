@@ -34,7 +34,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; 
+    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE];
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
@@ -501,9 +501,9 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN" 
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY" 
 };
-  
+
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
 
 void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
@@ -1136,5 +1136,3 @@ STRING_ARG(dex,explorer,symbol)
 }
 
 #include "../includes/iguana_apiundefs.h"
-
-
