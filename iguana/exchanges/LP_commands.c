@@ -437,6 +437,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"inuse") == 0 )
             return(jprint(LP_inuse_json(),1));
+#ifndef NOTETOMIC
+        else if ( strcmp(method,"eth_gas_price") == 0 )
+        {
+            return LP_eth_gas_price(ptr);
+        }
+#endif
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )

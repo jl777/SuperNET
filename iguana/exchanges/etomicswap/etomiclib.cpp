@@ -582,15 +582,23 @@ uint64_t weiToSatoshi(char *wei)
     return static_cast<uint64_t>(satoshi);
 }
 
-char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm)
+char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice)
 {
     TransactionSkeleton tx;
     char *from = privKey2Addr(privKey), *result;
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(to);
     tx.value = jsToU256(amount);
-    tx.gas = 21000;
-    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+    if (gas > 0) {
+        tx.gas = gas;
+    } else {
+        tx.gas = 21000;
+    }
+    if (gasPrice > 0) {
+        tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
+    } else {
+        tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+    }
     tx.nonce = getNonce(from);
     free(from);
 
@@ -620,7 +628,7 @@ std::stringstream getErc20TransferData(char *tokenAddress, char *to, char *amoun
     return ss;
 }
 
-char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm)
+char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice)
 {
     TransactionSkeleton tx;
     char *from = privKey2Addr(privKey), *result;
@@ -629,13 +637,21 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
-    uint64_t gas = estimateGas(from, tokenAddress, ss.str().c_str());
     if (gas > 0) {
         tx.gas = gas;
     } else {
-        tx.gas = 150000;
+        uint64_t gasEstimation = estimateGas(from, tokenAddress, ss.str().c_str());
+        if (gasEstimation > 0) {
+            tx.gas = gasEstimation;
+        } else {
+            tx.gas = 150000;
+        }
     }
-    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+    if (gasPrice > 0) {
+        tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
+    } else {
+        tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+    }
     tx.nonce = getNonce(from);
     free(from);
 

@@ -1694,27 +1694,53 @@ char *LP_autosplit(struct iguana_info *coin)
 char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     cJSON *retjson = cJSON_CreateObject();
+    cJSON *gas_json = cJSON_GetObjectItem(argjson, "gas");
+    cJSON *gas_price_json = cJSON_GetObjectItem(argjson, "gas_price");
     char *dest_addr, *tx_id, privkey_str[70], amount_str[100];
-    int64_t amount;
+    int64_t amount = 0, gas = 0, gas_price = 0;
     bits256 privkey;
 
     dest_addr = jstr(argjson, "to");
+    if (dest_addr == NULL) {
+        return(clonestr("{\"error\":\"param 'to' is required!\"}"));
+    }
     amount = jdouble(argjson, "amount") * 100000000;
+    if (amount == 0) {
+        return(clonestr("{\"error\":\"'amount' is not set or equal to zero!\"}"));
+    }
+    if (gas_json != NULL && is_cJSON_Number(gas_json)) {
+        gas = gas_json->valueint;
+        if (gas < 21000) {
+            return (clonestr("{\"error\":\"'gas' can't be lower than 21000!\"}"));
+        }
+    }
+    if (gas_price_json != NULL && is_cJSON_Number(gas_price_json)) {
+        gas_price = gas_price_json->valueint;
+        if (gas_price < 1) {
+            return (clonestr("{\"error\":\"'gas_price' can't be lower than 1!\"}"));
+        }
+    }
     privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
     uint8arrayToHex(privkey_str, privkey.bytes, 32);
     satoshisToWei(amount_str, amount);
     if (strcmp(coin->symbol, "ETH") == 0) {
-        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0);
+        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0, gas, gas_price);
     } else {
-        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0);
+        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price);
     }
     jaddstr(retjson, "tx_id", tx_id);
+    free(tx_id);
     return(jprint(retjson,1));
 }
 
+char *LP_eth_gas_price()
+{
+    cJSON *retjson = cJSON_CreateObject();
+    uint64_t gas_price = getGasPriceFromStation();
+    cJSON_AddNumberToObject(retjson, "gas_price", gas_price);
+    return(jprint(retjson,1));
+}
 #endif
-
-
 
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {
