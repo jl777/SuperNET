@@ -624,15 +624,21 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
 {
     TransactionSkeleton tx;
     char *from = privKey2Addr(privKey), *result;
+    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount);
+
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
-    tx.gas = 60000;
+    uint64_t gas = estimateGas(from, tokenAddress, ss.str().c_str());
+    if (gas > 0) {
+        tx.gas = gas;
+    } else {
+        tx.gas = 150000;
+    }
     tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(from);
     free(from);
 
-    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount);
     tx.data = jsToBytes(ss.str());
 
     char *rawTx = signTx(tx, privKey);

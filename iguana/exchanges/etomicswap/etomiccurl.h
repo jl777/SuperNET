@@ -39,6 +39,7 @@ typedef struct
 char* sendRawTx(char* rawTx);
 char* sendRawTxWaitConfirm(char* rawTx);
 char* ethCall(char* to, const char* data);
+uint64_t estimateGas(char *from, char *to, const char *data);
 int64_t getNonce(char* address);
 char* getEthBalanceRequest(char* address);
 EthTxReceipt getEthTxReceipt(char *txId);

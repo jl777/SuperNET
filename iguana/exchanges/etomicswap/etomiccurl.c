@@ -186,7 +186,7 @@ char* getEthBalanceRequest(char* address)
     return balance;
 }
 
-char* ethCall(char* to, const char* data)
+char *ethCall(char *to, const char *data)
 {
     cJSON *params = cJSON_CreateArray();
     cJSON *txObject = cJSON_CreateObject();
@@ -200,6 +200,26 @@ char* ethCall(char* to, const char* data)
     if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
         result = (char *) malloc(strlen(resultJson->valuestring) + 1);
         strcpy(result, resultJson->valuestring);
+    }
+    cJSON_Delete(resultJson);
+    return result;
+}
+
+uint64_t estimateGas(char *from, char *to, const char *data)
+{
+    cJSON *params = cJSON_CreateArray();
+    cJSON *txObject = cJSON_CreateObject();
+    cJSON_AddStringToObject(txObject, "from", from);
+    cJSON_AddStringToObject(txObject, "to", to);
+    cJSON_AddStringToObject(txObject, "data", data);
+    cJSON_AddItemToArray(params, txObject);
+    cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
+    cJSON *resultJson = sendRpcRequest("eth_estimateGas", params);
+    cJSON_Delete(params);
+    uint64_t result = 0;
+    if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
+        result = (uint64_t)strtoul(resultJson->valuestring, NULL, 0);
+        result = (result / 100) * 120; // add 20% because real gas usage might differ from estimate
     }
     cJSON_Delete(resultJson);
     return result;
