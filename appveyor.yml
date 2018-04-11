@@ -1,5 +1,4 @@
 version: 1.0.{build}
-shallow_clone: true
 build_script:
 - cmd: marketmaker_build_etomic.cmd
 cache:
