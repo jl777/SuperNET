@@ -4,13 +4,6 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
-      env: OS_NAME=Linux MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
     - os: osx
       compiler: clang
       env: OS_NAME=Darwin
@@ -22,7 +15,7 @@ before_install:
 script:
   - export VERSION=`echo "$(git tag -l --points-at HEAD)"`
   - mkdir build && cd build
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
   - cmake --build . --target marketmaker-mainnet
   - cmake --build . --target marketmaker-testnet
