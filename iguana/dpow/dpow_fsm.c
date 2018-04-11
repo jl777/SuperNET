@@ -399,15 +399,13 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     MoMdepth = 0;
+    portable_mutex_lock(&src->MoM_mutex);
+    MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+    portable_mutex_unlock(&src->MoM_mutex);
     if ( strcmp(src->symbol,"KMD") == 0 )
         kmdheight = checkpoint.blockhash.height;
     else if ( strcmp(dest->symbol,"KMD") == 0 )
-    {
         kmdheight = dest->longestchain;
-        portable_mutex_lock(&src->MoM_mutex);
-        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
-        portable_mutex_unlock(&src->MoM_mutex);
-    }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
