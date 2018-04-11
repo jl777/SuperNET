@@ -1330,7 +1330,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             return(1);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         rq = ((uint64_t)Q.R.requestid << 32) | Q.R.quoteid;
-        if ( Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets, some old timestamps floating about?
+        if ( Q.uuidstr[0] == 0 || (Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20) ) // eat expired packets, some old timestamps floating about?
         {
             printf("uuid.%s aliceid.%llu is expired by %d\n",Q.uuidstr+32,(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
             return(1);
