@@ -285,7 +285,7 @@ char *MMJSON_decode(uint8_t *linebuf,int32_t len)
         {
             if ( ind != MMJSON_STRING )
             {
-                printf("illegal field ind.%d (%s)\n",ind,jprint(lineobj,0));
+                printf("illegal field i.%d ind.%d (%s) boundary.%d\n",i,ind,jprint(lineobj,0),MMJSON_BOUNDARY);
                 free_json(lineobj);
                 return(0);
             }

@@ -1770,6 +1770,8 @@ char *LP_recent_swaps(int32_t limit,char *uuidstr)
     if ( time(NULL) < Alice_expiration )
     {
         item = cJSON_CreateObject();
+        if ( uuidstr != 0 )
+            jaddstr(item,"uuid",uuidstr);
         jaddnum(item,"expiration",Alice_expiration);
         jaddnum(item,"timeleft",Alice_expiration-time(NULL));
         jaddnum(item,"tradeid",LP_Alicequery.tradeid);

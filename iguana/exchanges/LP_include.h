@@ -29,6 +29,7 @@
 
 #ifdef FROMGUI
 #define printf dontprintf
+#define fprintf dontprintf
 
 voind dontprintf(char *formatstr,...) {}
 #endif
