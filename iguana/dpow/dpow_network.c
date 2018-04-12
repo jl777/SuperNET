@@ -1947,7 +1947,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
             src_or_dest = 0;
         else src_or_dest = 1;
-        extralen = dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
+        extralen = dpow_paxpending(extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
         //dpow_bestconsensus(bp);
         dpow_nanoutxoset(myinfo,dp,&np->notarize,bp,0);
