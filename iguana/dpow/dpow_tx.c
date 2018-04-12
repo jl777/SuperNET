@@ -226,17 +226,23 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         }
         printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
     }
-    /*if ( 0 && (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth)) > 0 )
+    if ( bp->MoMdepth > 0 && (strcmp(bp->destcoin->symbol,"KMD") == 0 || strcmp(bp->srccoin->symbol,"KMD") == 0) )
     {
-        for (i=0; i<n; i++)
-            printf("%02x",extras[i]);
-        printf(" <- withdraw.%d %08x\n",n,paxwdcrc);
-    }
-    else*/ if ( bp->MoMdepth > 0 && (strcmp(bp->destcoin->symbol,"KMD") == 0 || strcmp(bp->srccoin->symbol,"KMD") == 0) )
-    {
+        cJSON *retjson; char *hexstr; int32_t hexlen; struct iguana_info *kmdcoin = 0;
         n = dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth);
-        //n += iguana_rwbignum(1,&extras[n],sizeof(bp->MoM),bp->MoM.bytes);
-        //n += iguana_rwnum(1,&extras[n],sizeof(bp->MoMdepth),(uint32_t *)&bp->MoMdepth);
+        if ( src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        {
+            kmdcoin = bp->destcoin;
+            if ( kmdcoin->lastbestheight > 10 && (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdcoin->lastbestheight-10)) != 0 )
+            {
+                if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= sizeof(extras) )
+                {
+                    hexlen >>= 1;
+                    decode_hex(&extras[n],hexlen,hexstr), n += hexlen;
+                }
+                free_json(retjson);
+            }
+        }
     }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);

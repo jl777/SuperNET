@@ -499,7 +499,7 @@ struct iguana_info
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
-    int32_t MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,FULLNODE,VALIDATENODE,origbalanceswritten,balanceswritten,lastRTheight,RTdatabad;
+    int32_t MoMoMheight,MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,FULLNODE,VALIDATENODE,origbalanceswritten,balanceswritten,lastRTheight,RTdatabad;
     bits256 balancehash,allbundles;
     uint32_t lastsync,parsetime,numiAddrs,lastpossible,bundlescount,savedblocks,backlog,spendvectorsaved,laststats,lastinv2,symbolcrc,spendvalidated; char VALIDATEDIR[512];
     int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy,stuckiters,virtualchain,RTheight,RTreset_needed;

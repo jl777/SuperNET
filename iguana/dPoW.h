@@ -141,6 +141,16 @@ struct dpow_info
     uint32_t ipbits[128],numipbits;
     struct dpow_block **blocks;
 };
+
+struct komodo_ccdatapair { int32_t notarization_height; uint32_t MoMoMoffset; };
+
+struct komodo_ccdataMoMoM
+{
+    bits256 MoMoM;
+    int32_t kmdstarti,kmdendi,MoMoMdepth,numpairs,len;
+    struct komodo_ccdatapair *pairs;
+};
+
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth);
 void dex_updateclient(struct supernet_info *myinfo);

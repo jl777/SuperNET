@@ -60,7 +60,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht,notht; uint64_t signedmask; struct dpow_block *bp;
+    struct komodo_ccdataMoMoM mdata; void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht,notht; uint64_t signedmask; struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -88,8 +88,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                 if ( (blockjson= dpow_getblock(myinfo,coin,hash)) != 0 )
                 {
                     height = jint(blockjson,"height");
-                    if ( dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,height) <= 0 )
+                    if ( dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,height,&mdata) <= 0 )
                     {
+                        if ( mdata.pairs != 0 )
+                            free(mdata.pairs);
                         blocktime = juint(blockjson,"time");
                         free_json(blockjson);
                         if ( height > 0 && blocktime > 0 )
@@ -579,7 +581,7 @@ void iguana_notarystats(int32_t totals[64],int32_t dispflag)
 
 STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
 {
-    int32_t i,j,ht,maxheight,notht,masksums[64]; uint64_t signedmask; cJSON *retjson,*blockjson,*item,*array; bits256 blockhash;
+    struct komodo_ccdataMoMoM mdata; int32_t i,j,ht,maxheight,notht,masksums[64]; uint64_t signedmask; cJSON *retjson,*blockjson,*item,*array; bits256 blockhash;
     memset(masksums,0,sizeof(masksums));
     ht = height;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
@@ -597,8 +599,10 @@ STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
             blockhash = dpow_getblockhash(myinfo,coin,ht);
             if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
             {
-                if ( dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,ht) > 0 )
+                if ( dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,ht,&mdata) > 0 )
                 {
+                    if ( mdata.pairs != 0 )
+                        free(mdata.pairs);
                     for (j=0; j<64; j++)
                         if ( ((1LL << j) & signedmask) != 0 )
                             masksums[j]++;

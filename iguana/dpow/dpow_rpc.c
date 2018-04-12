@@ -226,6 +226,24 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
+
+cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
+{
+    char buf[128],*retstr=0; cJSON *retjson = 0; struct iguana_info *src;
+    if ( coin->FULLNODE < 0 && strcmp(coin->symbol,"KMD") == 0 && (src= iguana_coinfind(symbol)) != 0 )
+    {
+        sprintf(buf,"[\"%s\", %d, %d]",symbol,kmdheight,src->MoMoMheight);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
+        {
+            retjson = cJSON_Parse(retstr);
+            printf("MoMoM.(%s %d %d) -> %s\n",symbol,kmdheight,src->MoMoMheight,retstr);
+            free(retstr);
+        }
+        usleep(10000);
+    }
+    return(retjson);
+}
+
 int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth)
 {
     struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0; uint32_t paxwdcrc;
