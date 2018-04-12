@@ -236,7 +236,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
-            printf("MoMoM.(%s %d %d) -> %s\n",symbol,kmdheight,src->MoMoMheight,retstr);
+            printf("MoMoM.%s -> %s\n",buf,retstr);
             free(retstr);
         }
         usleep(10000);
@@ -246,7 +246,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
 
 int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,int32_t src_or_dest,struct dpow_block *bp)
 {
-    struct iguana_info *coin,*kmdcoin; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen,n=0; uint32_t paxwdcrc;
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
     //if ( Notaries_port != DPOW_SOCKPORT )
     {
@@ -269,7 +269,7 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
         paxwdcrc |= (n & 0xff);
     }
     *paxwdcrcp = paxwdcrc;
-    printf("opretlen.%d\n",n);
+    printf("opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d\n",n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?kmdcoin->lastbestheight:-1);
     return(n);
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
