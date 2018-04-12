@@ -269,7 +269,7 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
         paxwdcrc |= (n & 0xff);
     }
     *paxwdcrcp = paxwdcrc;
-    printf("opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d\n",n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?kmdcoin->lastbestheight:-1);
+    printf("opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?kmdcoin->lastbestheight:-1,paxwdcrc);
     return(n);
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
