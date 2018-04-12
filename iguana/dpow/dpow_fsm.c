@@ -416,7 +416,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     memset(&zero,0,sizeof(zero));
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -656,9 +656,11 @@ void dpow_statemachinestart(void *ptr)
     starttime = (uint32_t)time(NULL);
     if ( bp->isratify == 0 )
     {
-        //if ( (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime;
-        extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
+        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+            src_or_dest = 0;
+        else src_or_dest = 1;
+        extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
     printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL));
@@ -676,7 +678,10 @@ void dpow_statemachinestart(void *ptr)
                 printf("break due to already ratifying\n");
                 break;
             }
-            extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
+            if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+                src_or_dest = 0;
+            else src_or_dest = 1;
+            extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
