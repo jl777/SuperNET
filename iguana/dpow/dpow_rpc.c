@@ -232,7 +232,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
     char buf[128],*retstr=0; cJSON *retjson = 0; struct iguana_info *src;
     if ( coin->FULLNODE < 0 && strcmp(coin->symbol,"KMD") == 0 && (src= iguana_coinfind(symbol)) != 0 )
     {
-        sprintf(buf,"[\"%s\", %d, %d]",symbol,kmdheight,src->MoMoMheight);
+        sprintf(buf,"[\"%s\", \"%d\", \"%d\"]",symbol,kmdheight,src->MoMoMheight);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
