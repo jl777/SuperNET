@@ -1,6 +1,11 @@
 pipeline {
   agent any
   stages {
+    stage('Prepare') {
+      steps {
+        cp -r /root/.env .env
+        cat .env
+      }
     stage('Build') {
       steps {
         sh '''git submodule update --init --recursive
