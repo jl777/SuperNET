@@ -5,6 +5,7 @@ pipeline {
       steps {
         sh '''cp -r /root/.env .env && cat .env'''
       }
+    }
     stage('Build') {
       steps {
         sh '''echo $HOME
