@@ -3,8 +3,7 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        cp -r /root/.env .env
-        cat .env
+        sh '''cp -r /root/.env .env && cat .env'''
       }
     stage('Build') {
       steps {
