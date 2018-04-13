@@ -255,7 +255,7 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
         if ( src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
             kmdcoin = bp->destcoin;
-            if ( kmdcoin->lastbestheight > 10 && (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdcoin->lastbestheight-10)) != 0 )
+            if ( (bp->height % 10) == 0 && kmdcoin->lastbestheight > 100 && (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,(kmdcoin->lastbestheight/10)*10 - 5)) != 0 )
             {
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
@@ -269,7 +269,7 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
         paxwdcrc |= (n & 0xff);
     }
     *paxwdcrcp = paxwdcrc;
-    printf("opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?kmdcoin->lastbestheight:-1,paxwdcrc);
+    printf("ht.%d opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",bp->height,n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?((kmdcoin->lastbestheight/10)*10 - 5):-1,paxwdcrc);
     return(n);
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
