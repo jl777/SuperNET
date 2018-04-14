@@ -346,7 +346,7 @@ int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supern
 
 bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
-    struct komodo_ccdataMoMoM mdata; bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; uint64_t signedmask; int32_t breakht=0,notht=0,ht,maxdepth = 1440,MoMdepth = 0;
+    struct komodo_ccdataMoMoM mdata; bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; uint64_t signedmask; int32_t breakht=0,notht=0,ht,maxdepth = DPOW_MAXMOMDEPTH,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
     //printf("start MoM calc %s height.%d\n",coin->symbol,height);

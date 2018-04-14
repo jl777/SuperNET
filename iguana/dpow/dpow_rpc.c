@@ -246,7 +246,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
 
 int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,int32_t src_or_dest,struct dpow_block *bp)
 {
-    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen,n=0; uint32_t paxwdcrc;
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
     //if ( Notaries_port != DPOW_SOCKPORT )
     {
@@ -267,9 +267,10 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
         }
         paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
         paxwdcrc |= (n & 0xff);
+        if ( hexlen > 0 )
+            printf("%s.ht.%d opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",bp->srccoin->symbol,bp->height,n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?((kmdcoin->lastbestheight/10)*10 - 5):-1,paxwdcrc);
     }
     *paxwdcrcp = paxwdcrc;
-    printf("ht.%d opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",bp->height,n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?((kmdcoin->lastbestheight/10)*10 - 5):-1,paxwdcrc);
     return(n);
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
