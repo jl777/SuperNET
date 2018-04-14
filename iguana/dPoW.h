@@ -16,6 +16,8 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
+#define DPOW_MAXMOMDEPTH (1440 * 7)
+
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
@@ -141,8 +143,18 @@ struct dpow_info
     uint32_t ipbits[128],numipbits;
     struct dpow_block **blocks;
 };
+
+struct komodo_ccdatapair { int32_t notarization_height; uint32_t MoMoMoffset; };
+
+struct komodo_ccdataMoMoM
+{
+    bits256 MoMoM;
+    int32_t kmdstarti,kmdendi,MoMoMdepth,numpairs,len;
+    struct komodo_ccdatapair *pairs;
+};
+
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth);
+int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,int32_t src_or_dest,struct dpow_block *bp);
 void dex_updateclient(struct supernet_info *myinfo);
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field);
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);

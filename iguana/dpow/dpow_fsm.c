@@ -162,7 +162,8 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 uint32_t Numallocated;
 
-int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txidp,char *symbol,bits256 *MoMp,uint32_t *MoMdepthp,uint8_t *opret,int32_t opretlen)
+int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txidp,char *symbol,bits256 *MoMp,uint32_t *MoMdepthp,uint8_t *opret,int32_t opretlen,struct komodo_ccdataMoMoM
+ *mdata)
 {
     int32_t i,c,len,offset = 0; uint8_t op;
     symbol[0] = 0;
@@ -171,6 +172,7 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
     memset(txidp->bytes,0,sizeof(*txidp));
     memset(MoMp->bytes,0,sizeof(*MoMp));
     memset(MoMdepthp,0,sizeof(*MoMdepthp));
+    memset(mdata,0,sizeof(*mdata));
     if ( opret[offset++] == 0x6a )
     {
         if ( (op= opret[offset++]) < 0x4c )
@@ -198,16 +200,37 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
         }
         if ( offset+sizeof(bits256)+sizeof(uint32_t) <= opretlen )
         {
+            uint32_t CCid,k;
             offset += iguana_rwbignum(0,&opret[offset],sizeof(*MoMp),MoMp->bytes);
             offset += iguana_rwnum(0,&opret[offset],sizeof(*MoMdepthp),(uint32_t *)MoMdepthp);
+                // MoMoM, depth, numpairs, (notarization ht, MoMoM offset)
+            if ( offset+52 <= opretlen )
+            {
+                offset += iguana_rwnum(0,&opret[offset],sizeof(CCid),(uint8_t *)&CCid);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->kmdstarti);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->kmdendi);
+                offset += iguana_rwbignum(0,&opret[offset],sizeof(mdata->MoMoM),(uint8_t *)&mdata->MoMoM);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->MoMoMdepth);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->numpairs);
+                mdata->len += sizeof(mdata->MoMoM) + sizeof(uint32_t)*4;
+                if ( offset+mdata->numpairs*8 == opretlen )
+                {
+                    mdata->pairs = (struct komodo_ccdatapair *)calloc(mdata->numpairs,sizeof(*mdata->pairs));
+                    for (k=0; k<mdata->numpairs; k++)
+                    {
+                        offset += iguana_rwnum(0,&opret[offset],sizeof(int32_t),(uint8_t *)&mdata->pairs[k].notarization_height);
+                        offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->pairs[k].MoMoMoffset);
+                        mdata->len += sizeof(uint32_t) * 2;
+                    }
+                } else if ( mdata->numpairs > 0 )
+                    printf("offset.%d + %d*8 != opretlen.%d\n",offset,mdata->numpairs,opretlen);
+            }
         }
-        ///printf("offset.%d vs len.%d\n",offset,len);
-        return(len);
     }
     return(-1);
 }
 
-int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height)
+int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height,struct komodo_ccdataMoMoM *mdata)
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[256]; bits256 spenttxid; uint64_t notarymask=0; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
@@ -269,12 +292,25 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                             {
                                 len >>= 1;
                                 decode_hex(script,len,hexstr);
-                                if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len) > 0 )
+                                if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len,mdata) > 0 && strcmp(symbol,coin->symbol) == 0 )
                                 {
-                                    if ( Notaries_port != DPOW_SOCKPORT )
+                                    // if ( Notaries_port != DPOW_SOCKPORT ) // keep going till valid MoM found, useful for new chains without any MoM
                                     {
                                         if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
+                                        {
                                             *nothtp = 0;
+                                        }
+                                    }
+                                    if ( mdata->pairs != 0 && mdata->numpairs > 0 )
+                                    {
+                                        for (j=0; j<mdata->numpairs; j++)
+                                        {
+                                            if ( mdata->pairs[j].notarization_height > coin->MoMoMheight )
+                                            {
+                                                coin->MoMoMheight = mdata->pairs[j].notarization_height;
+                                                printf("set %s MoMoMheight <- %d\n",coin->symbol,coin->MoMoMheight);
+                                            }
+                                        }
                                     }
                                     //printf("%s.%d notarizationht.%d %s -> %s MoM.%s [%d]\n",symbol,height,*nothtp,bits256_str(str,blockhash),bits256_str(str2,txid),bits256_str(str3,MoM),MoMdepth);
                                 }
@@ -291,17 +327,18 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
     return(hasnotarization);
 }
 
-int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht)
+int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht,struct komodo_ccdataMoMoM *mdata)
 {
     int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
     *nothtp = 0;
     *signedmaskp = 0;
+    memset(mdata,0,sizeof(*mdata));
     if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
     {
         for (i=0; i<n; i++)
         {
             txid = jbits256i(txarray,i);
-            hasnotarization += dpow_txhasnotarization(signedmaskp,nothtp,myinfo,coin,txid,ht);
+            hasnotarization += dpow_txhasnotarization(signedmaskp,nothtp,myinfo,coin,txid,ht,mdata);
         }
     }
     return(hasnotarization);
@@ -309,7 +346,7 @@ int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supern
 
 bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
-    bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; uint64_t signedmask; int32_t breakht=0,notht=0,ht,maxdepth = 1440,MoMdepth = 0;
+    struct komodo_ccdataMoMoM mdata; bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; uint64_t signedmask; int32_t breakht=0,notht=0,ht,maxdepth = DPOW_MAXMOMDEPTH,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
     //printf("start MoM calc %s height.%d\n",coin->symbol,height);
@@ -328,10 +365,9 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
-                    if ( breakht == 0 && dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,ht) > 0 )
+                    if ( breakht == 0 && dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,ht,&mdata) > 0 )
                     {
                         breakht = notht;
-                        //free_json(blockjson);
                         printf("%s has notarization at %d for breakht.%d\n",coin->symbol,ht,notht);
                     }
                     merkle = jbits256(blockjson,"merkleroot");
@@ -342,6 +378,8 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                     {
                         printf("%s MoMdepth.%d ht.%d from height.%d, null merkleroot\n",coin->symbol,MoMdepth,ht,height);
                         MoMdepth = 0;
+                        if ( mdata.pairs != 0 )
+                            free(mdata.pairs);
                         break;
                     }
                 }
@@ -349,6 +387,8 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 {
                     printf("%s MoMdepth.%d ht.%d from height.%d, no blockhash\n",coin->symbol,MoMdepth,ht,height);
                     MoMdepth = 0;
+                    if ( mdata.pairs != 0 )
+                        free(mdata.pairs);
                     break;
                 }
                 ht = height - MoMdepth;
@@ -376,7 +416,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     memset(&zero,0,sizeof(zero));
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -616,9 +656,11 @@ void dpow_statemachinestart(void *ptr)
     starttime = (uint32_t)time(NULL);
     if ( bp->isratify == 0 )
     {
-        //if ( (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime;
-        extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
+        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+            src_or_dest = 0;
+        else src_or_dest = 1;
+        extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
     printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL));
@@ -636,7 +678,10 @@ void dpow_statemachinestart(void *ptr)
                 printf("break due to already ratifying\n");
                 break;
             }
-            extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
+            if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+                src_or_dest = 0;
+            else src_or_dest = 1;
+            extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
