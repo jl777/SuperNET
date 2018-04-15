@@ -2273,12 +2273,12 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
-            char *retstr;
+            /*char *retstr;
             if ( (retstr= _dex_getnotaries(myinfo,"KMD")) != 0 )
             {
                 printf("INITIAL NOTARIES.(%s)\n",retstr);
                 free(retstr);
-            }
+            }*/
         }
     }
     else

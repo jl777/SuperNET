@@ -984,7 +984,7 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol)
     return(height);
 }
 
-char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
+/*char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
 {
     struct dex_request dexreq; char *retstr,*pubkeystr; cJSON *retjson,*array,*item; int32_t i,n;
     memset(&dexreq,0,sizeof(dexreq));
@@ -1018,7 +1018,7 @@ char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
         }
     }
     return(retstr);
-}
+}*/
 
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
 {
