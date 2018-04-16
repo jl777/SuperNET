@@ -11,8 +11,6 @@ services:
     tty: true
     env_file:
       - .env.seed
-    user:
-      - jenkins:jenkins
     networks:
       default:
         ipv4_address: 10.100.0.2
@@ -27,8 +25,6 @@ services:
       - .:/usr/mm
     links:
       - seednode
-    user:
-      - jenkins:jenkins
     tty: true
     env_file:
       - .env.client
