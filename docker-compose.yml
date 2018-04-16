@@ -5,8 +5,8 @@ services:
       context: ./
       dockerfile: Dockerfile.seednode
     volumes:
-      - ~/.zcash-params:/root/.zcash-params
-      - ~/.komodo:/root/.komodo
+      - ~/.zcash-params:/home/jenkins/.zcash-params
+      - ~/.komodo:/home/jenkins/.komodo
       - .:/usr/mm
     tty: true
     env_file:
@@ -20,8 +20,8 @@ services:
       context: ./
       dockerfile: Dockerfile.clientnode
     volumes:
-      - ~/.zcash-params:/root/.zcash-params
-      - ~/.komodo:/root/.komodo
+      - ~/.zcash-params:/home/jenkins/.zcash-params
+      - ~/.komodo:/home/jenkins/.komodo
       - .:/usr/mm
     links:
       - seednode
