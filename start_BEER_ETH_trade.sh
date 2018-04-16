@@ -1,12 +1,12 @@
 #!/bin/bash
-docker-compose exec clientnode ./setpassphrase
+docker-compose exec -T clientnode ./setpassphrase
 sleep 1
-docker-compose exec clientnode ./enable
+docker-compose exec -T clientnode ./enable
 sleep 1
-docker-compose exec seednode ./setpassphrase
+docker-compose exec -T seednode ./setpassphrase
 sleep 1
-docker-compose exec seednode ./enable
+docker-compose exec -T seednode ./enable
 sleep 1
-docker-compose exec seednode ./sell_BEER_ETH
+docker-compose exec -T seednode ./sell_BEER_ETH
 sleep 3
-docker-compose exec clientnode ./buy_BEER_ETH
+docker-compose exec -T clientnode ./buy_BEER_ETH
