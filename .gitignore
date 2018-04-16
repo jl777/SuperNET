@@ -262,3 +262,6 @@ Release/*
 
 build_win64_release/*
 DB/*
+
+.env.client
+.env.seed
