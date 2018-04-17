@@ -29,3 +29,4 @@ curl --url "http://127.0.0.1:7776" --data "{\"conf\":\"PIZZA.conf\",\"path\":\"$
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
 #curl --url "http://127.0.0.1:7776" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"BEER\",\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"PIZZA\",\"pubkey\":\"$pubkey\"}"
+

@@ -226,18 +226,51 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
-int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth)
+
+cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
 {
-    struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0; uint32_t paxwdcrc;
+    char buf[128],*retstr=0; cJSON *retjson = 0; struct iguana_info *src;
+    if ( coin->FULLNODE < 0 && strcmp(coin->symbol,"KMD") == 0 && (src= iguana_coinfind(symbol)) != 0 )
+    {
+        sprintf(buf,"[\"%s\", \"%d\", \"%d\"]",symbol,kmdheight,src->MoMoMheight);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
+        {
+            retjson = cJSON_Parse(retstr);
+            printf("MoMoM.%s -> %s\n",buf,retstr);
+            free(retstr);
+        }
+        usleep(10000);
+    }
+    return(retjson);
+}
+
+int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,int32_t src_or_dest,struct dpow_block *bp)
+{
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
     //if ( Notaries_port != DPOW_SOCKPORT )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
+        if ( strcmp(bp->srccoin->symbol,"PIZZA") == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        {
+            kmdcoin = bp->destcoin;
+            if ( (bp->height % 10) == 0 && kmdcoin->lastbestheight > 100 && (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,(kmdcoin->lastbestheight/10)*10 - 5)) != 0 )
+            {
+                if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
+                {
+                    hexlen >>= 1;
+                    decode_hex(&hex[n],hexlen,hexstr), n += hexlen;
+                }
+                free_json(retjson);
+            }
+        }
         paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
         paxwdcrc |= (n & 0xff);
+        if ( hexlen > 0 )
+            printf("%s.ht.%d opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",bp->srccoin->symbol,bp->height,n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?((kmdcoin->lastbestheight/10)*10 - 5):-1,paxwdcrc);
     }
-     *paxwdcrcp = paxwdcrc;
+    *paxwdcrcp = paxwdcrc;
     return(n);
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
