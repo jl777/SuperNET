@@ -980,7 +980,7 @@ void LP_pendswap_add(uint32_t expiration,uint32_t requestid,uint32_t quoteid)
 
 void LP_swapsloop(void *ctx)
 {
-    char *retstr; cJSON *retjson; uint32_t requestid,quoteid; int32_t nonz; struct LP_pendswap *sp,*tmp;
+    char *retstr; cJSON *retjson; uint32_t requestid,quoteid; int32_t i,nonz; struct LP_pendswap *sp,*tmp;
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
     LP_swapsloop_stats.threshold = 605000.;
     if ( (retstr= basilisk_swapentry(0,0,0,1)) != 0 )
@@ -1012,7 +1012,13 @@ void LP_swapsloop(void *ctx)
             }
         }
         if ( nonz == 0 )
-            sleep(60);
+        {
+            for (i=0; i<10; i++)
+            {
+                LP_alice_eligible((uint32_t)time(NULL));
+                sleep(6);
+            }
+        }
     }
 }
 
