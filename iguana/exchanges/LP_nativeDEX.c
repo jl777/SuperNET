@@ -1015,6 +1015,7 @@ void LP_swapsloop(void *ctx)
         {
             for (i=0; i<10; i++)
             {
+                fprintf(stderr,"check on alice expiration\n");
                 LP_alice_eligible((uint32_t)time(NULL));
                 sleep(6);
             }
