@@ -20,6 +20,19 @@
 
 char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 
+int32_t LP_is_slowcoin(char *symbol)
+{
+    if ( strcmp(symbol,"BTC") == 0 )
+        return(2);
+    else if ( strcmp(symbol,"BCH") == 0 )
+        return(1);
+    else if ( strcmp(symbol,"BTG") == 0 )
+        return(1);
+    else if ( strcmp(symbol,"SBTC") == 0 )
+        return(1);
+    else return(0);
+}
+
 uint16_t LP_rpcport(char *symbol)
 {
     int32_t i;
