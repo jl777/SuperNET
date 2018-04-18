@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -2273,12 +2273,12 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
-            char *retstr;
+            /*char *retstr;
             if ( (retstr= _dex_getnotaries(myinfo,"KMD")) != 0 )
             {
                 printf("INITIAL NOTARIES.(%s)\n",retstr);
                 free(retstr);
-            }
+            }*/
         }
     }
     else
