@@ -623,6 +623,17 @@ int32_t LP_alice_eligible(uint32_t quotetime)
     return(Alice_expiration == 0 || time(NULL) < Alice_expiration);
 }
 
+char *LP_cancel_order(char *uuidstr)
+{
+    if ( uuidstr != 0 && strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
+    {
+        LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
+        LP_alicequery_clear();
+        return(clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}"));
+    }
+    return(clonestr("{\"error\":\"uuid not cancellable\"}"));
+}
+
 char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
 {
     cJSON *retjson; char otheraddr[64],*msg; double bid,ask,price,qprice; int32_t pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
