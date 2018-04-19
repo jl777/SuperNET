@@ -629,7 +629,7 @@ char *LP_cancel_order(char *uuidstr)
     {
         LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
         LP_alicequery_clear();
-        clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}");
+        return(clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}"));
     }
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
 }
