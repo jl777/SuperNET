@@ -625,11 +625,11 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 
 char *LP_cancel_order(char *uuidstr)
 {
-    if ( uuidstr != 0 && strcmp(LP_Alicequery.uuidstr[0],uuidstr) == 0 )
+    if ( uuidstr != 0 && strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
     {
         LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
         LP_alicequery_clear();
-        clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}")
+        clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}");
     }
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
 }
