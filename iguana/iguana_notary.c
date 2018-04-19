@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -20,7 +20,7 @@
 #define CHECKSIG 0xac
 
 #include "iguana777.h"
-#include "notaries.h"
+//#include "notaries.h"
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
@@ -722,16 +722,23 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
 
 STRING_ARG(dpow,active,maskhex)
 {
-    uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
+    uint8_t data[8],revdata[8],pubkeys[64][33]; char pubkeystr[67]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array = cJSON_CreateArray();
+    if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+    {
+        current = jint(infojson,"blocks");
+        free_json(infojson);
+    } else return(clonestr("{\"error\":\"cant get current height\"}"));
+    n = komodo_notaries("KMD",pubkeys,current);
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         mask = myinfo->DPOWS[0].lastrecvmask;
-        for (i=0; i<64; i++)
+        for (i=0; i<n; i++)
         {
             if ( ((1LL << i) & mask) != 0 )
             {
-                printf("(%d %llx %s) ",i,(long long)(1LL << i),Notaries[i][0]);
-                jaddistr(array,Notaries[i][0]);
+                init_hexbytes_noT(pubkeystr,pubkeys[i],33);
+                printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
+                jaddistr(array,pubkeystr);
             }
         }
         retjson = cJSON_CreateObject();
@@ -755,8 +762,9 @@ STRING_ARG(dpow,active,maskhex)
         for (i=0; i<(len<<3); i++)
             if ( ((1LL << i) & mask) != 0 )
             {
-                printf("(%d %llx %s) ",i,(long long)(1LL << i),Notaries[i][0]);
-                jaddistr(array,Notaries[i][0]);
+                init_hexbytes_noT(pubkeystr,pubkeys[i],33);
+                printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
+                jaddistr(array,pubkeystr);
             }
         return(jprint(array,1));
     } else return(clonestr("{\"error\":\"maskhex too long\"}"));
@@ -968,7 +976,8 @@ STRING_ARG(dex,psock,argstr)
 
 STRING_ARG(dex,getnotaries,symbol)
 {
-    return(_dex_getnotaries(myinfo,symbol));
+    return(clonestr("{\"error\":\"dexgetnotaries deprecated\"}"));
+    //return(_dex_getnotaries(myinfo,symbol));
 }
 
 TWO_STRINGS(dex,kvsearch,symbol,key)

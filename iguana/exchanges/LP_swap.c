@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -18,9 +18,6 @@
 //  marketmaker
 //
 
-/*
- make sure to broadcast deposit before claiming refund, or to just skip it if neither is done
- */
 
 
 // included from basilisk.c
@@ -107,13 +104,15 @@
  depositspent.(f34e04ad74e290f63f3d0bccb7d0d50abfa54eea58de38816fdc596a19767add) alice.1 bob.0
  
  */
-#define TX_WAIT_TIMEOUT 1800
+#define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
 
 uint32_t LP_atomic_locktime(char *base,char *rel)
 {
-    if ( strcmp(base,"BTC") != 0 && strcmp(rel,"BTC") != 0 )
-        return(INSTANTDEX_LOCKTIME);
-    else return(INSTANTDEX_LOCKTIME * 10);
+    if ( strcmp(base,"BTC") == 0 && strcmp(rel,"BTC") == 0 )
+        return(INSTANTDEX_LOCKTIME * 10);
+    else if ( LP_is_slowcoin(base) > 0 || LP_is_slowcoin(rel) > 0 )
+        return(INSTANTDEX_LOCKTIME * 4);
+    else return(INSTANTDEX_LOCKTIME);
 }
 
 void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
@@ -832,9 +831,19 @@ uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int
     }
 }
 
+int32_t LP_calc_waittimeout(char *symbol)
+{
+    int32_t waittimeout = TX_WAIT_TIMEOUT;
+    if ( strcmp(symbol,"BTC") == 0 )
+        waittimeout *= 8;
+    else if ( LP_is_slowcoin(symbol) != 0 )
+        waittimeout *= 4;
+    return(waittimeout);
+}
+
 void LP_bobloop(void *_swap)
 {
-    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,m,n,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; char bobstr[65],alicestr[65]; int32_t bobwaittimeout,alicewaittimeout,maxlen,m,n,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
     //printf("start swap iambob\n");
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
@@ -842,6 +851,8 @@ void LP_bobloop(void *_swap)
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
+    bobwaittimeout = LP_calc_waittimeout(bobstr);
+    alicewaittimeout = LP_calc_waittimeout(alicestr);
     if ( swap != 0 )
     {
         if ( LP_waitsend("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
@@ -862,7 +873,7 @@ void LP_bobloop(void *_swap)
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             LP_unavailableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_otherfee) < 0 )
+            if ( LP_waitfor(swap->N.pair,swap,bobwaittimeout,LP_verify_otherfee) < 0 )
             {
                 error = 1;
                 err = -2004, printf("error waiting for alicefee\n");
@@ -876,7 +887,7 @@ void LP_bobloop(void *_swap)
                 }
             }
             LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( error == 0 && LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_alicepayment) < 0 )
+            if ( error == 0 && LP_waitfor(swap->N.pair,swap,alicewaittimeout,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
                 err = -2006, printf("error waiting for alicepayment\n");
@@ -926,13 +937,15 @@ void LP_bobloop(void *_swap)
 
 void LP_aliceloop(void *_swap)
 {
-    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,n,m,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; char bobstr[65],alicestr[65]; int32_t bobwaittimeout,alicewaittimeout,maxlen,n,m,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
     LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
+    bobwaittimeout = LP_calc_waittimeout(bobstr);
+    alicewaittimeout = LP_calc_waittimeout(alicestr);
     if ( swap != 0 )
     {
         printf("start swap iamalice pair.%d\n",swap->N.pair);
@@ -950,7 +963,7 @@ void LP_aliceloop(void *_swap)
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 err = -1004, printf("error sending alicefee\n");
-            else if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_bobdeposit) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,bobwaittimeout,LP_verify_bobdeposit) < 0 )
                 err = -1005, printf("error waiting for bobdeposit\n");
             else
             {
@@ -975,7 +988,7 @@ void LP_aliceloop(void *_swap)
                     }
                     //swap->sentflag = 1;
                     LP_swap_critical = (uint32_t)time(NULL);
-                    if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_bobpayment) < 0 )
+                    if ( LP_waitfor(swap->N.pair,swap,bobwaittimeout,LP_verify_bobpayment) < 0 )
                         err = -1007, printf("error waiting for bobpayment\n");
                     else
                     {

@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -615,6 +615,8 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 {
     if ( Alice_expiration != 0 && quotetime > Alice_expiration )
     {
+        if ( LP_Alicequery.uuidstr[0] != 0 )
+            LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9999,LP_Alicequery.uuidstr);
         printf("time expired for Alice_request\n");
         LP_alicequery_clear();
     }
