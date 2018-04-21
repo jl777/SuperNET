@@ -1521,7 +1521,7 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
 char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **txobjp,cJSON **vinsp,struct vin_info *V,struct iguana_info *coin,bits256 utxotxid,int32_t utxovout,uint64_t utxovalue,bits256 privkey,cJSON *outputs,int64_t txfee)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr,spendscriptstr[128],wifstr[64]; bits256 txid; uint32_t crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,offset,len,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0;
+    cJSON *txobj,*item,*vins; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr,spendscriptstr[128],wifstr[64]; bits256 txid; uint32_t locktime,crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,offset,len,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *txobjp = *vinsp = 0;
@@ -1658,7 +1658,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
     starttime = (uint32_t)time(NULL);
     for (i=0; i<numblast; i++)
     {
-        if ( (rawtx= LP_createblasttransaction(&change,&changeout,&txobj,&V,coin,utxotxid,utxovout,utxovalue,privkey,outputs,txfee)) != 0 )
+        if ( (rawtx= LP_createblasttransaction(&change,&changeout,&txobj,&vins,&V,coin,utxotxid,utxovout,utxovalue,privkey,outputs,txfee)) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
