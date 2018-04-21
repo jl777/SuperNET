@@ -1529,7 +1529,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
     *changeoutp = -1;
     if ( coin == 0 || outputs == 0 || (numvouts= cJSON_GetArraySize(outputs)) <= 0 )
     {
-        printf("LP_createrawtransaction: illegal coin.%p outputs.%p or arraysize.%d, error\n",coin,outputs,numvouts);
+        printf("LP_createblasttransaction: illegal coin.%p outputs.%p or arraysize.%d, error\n",coin,outputs,numvouts);
         return(0);
     }
     amount = txfee;
@@ -1538,14 +1538,14 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         item = jitem(outputs,i);
         if ( (coinaddr= jfieldname(item)) != 0 )
         {
-            if ( LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
+            if ( 0 && LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
             {
-                printf("%s LP_createrawtransaction %s i.%d of %d is invalid\n",coin->symbol,coinaddr,i,numvouts);
+                printf("%s LP_createblasttransaction %s i.%d of %d is invalid\n",coin->symbol,coinaddr,i,numvouts);
                 return(0);
             }
             if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
             {
-                printf("cant get value %s i.%d of %d %s\n",coinaddr,i,numvouts,jprint(outputs,0));
+                printf("LP_createblasttransaction: cant get value %s i.%d of %d %s\n",coinaddr,i,numvouts,jprint(outputs,0));
                 return(0);
             }
             amount += value;
@@ -1553,7 +1553,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         }
         else
         {
-            printf("cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+            printf("LP_createblasttransaction: cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
             return(0);
         }
     }
@@ -1583,7 +1583,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         {
             if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
             {
-                printf("cant get value i.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+                printf("LP_createblasttransaction: cant get value i.%d of %d %s\n",i,numvouts,jprint(outputs,0));
                 free_json(txobj);
                 return(0);
             }
@@ -1597,7 +1597,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
                 }
                 else
                 {
-                    printf("custom script.%d too long %d\n",i,spendlen);
+                    printf("LP_createblasttransaction: custom script.%d too long %d\n",i,spendlen);
                     free_json(txobj);
                     return(0);
                 }
@@ -1618,7 +1618,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         }
         else
         {
-            printf("cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+            printf("LP_createblasttransaction: cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
             free_json(txobj);
             return(0);
         }
@@ -1632,7 +1632,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         *changeoutp = numvouts;
     }
     if ( (rawtxbytes= bitcoin_json2hex(coin->symbol,coin->isPoS,&txid,txobj,V)) == 0 )
-        printf("error making rawtx suppress.%d\n",suppress_pubkeys);
+        printf("LP_createblasttransaction: error making rawtx suppress.%d\n",suppress_pubkeys);
     *txobjp = txobj;
     return(rawtxbytes);
 }
@@ -1670,10 +1670,10 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
             if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,&V,1,rawtx,vins,privkeys,coin->zcash)) < 0 )
-                printf("couldnt sign withdraw %s\n",bits256_str(str,signedtxid));
+                printf("LP_txblast: couldnt sign blast tx %s\n",bits256_str(str,signedtxid));
             else if ( completed == 0 )
             {
-                printf("incomplete signing withdraw (%s)\n",jprint(vins,0));
+                printf("LP_txblast incomplete signing blast tx (%s)\n",jprint(vins,0));
                 break;
             }
             else
@@ -1682,7 +1682,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
                 {
                     if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
                     {
-                        printf("LP_txblast.%s broadcast (%s) vs %s\n",coin->symbol,bits256_str(str,signedtxid),signret);
+                        //printf("LP_txblast.%s broadcast (%s) vs %s\n",coin->symbol,bits256_str(str,signedtxid),signret);
                         if ( is_hexstr(signret,0) == 64 )
                         {
                             decode_hex(checktxid.bytes,32,signret);
