@@ -1652,6 +1652,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
         numblast = 1000000;
     utxovalue = j64bits(argjson,"utxovalue");
     txfee = juint(argjson,"txfee");
+    broadcast = juint(argjson,"broadcast");
     conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
     bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
@@ -1712,6 +1713,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"blastaddr",blastaddr);
+    jaddnum(retjson,"broadcast",broadcast);
     jaddnum(retjson,"numblast",numblast);
     jaddnum(retjson,"completed",i);
     jaddbits256(retjson,"lastutxo",utxotxid);
