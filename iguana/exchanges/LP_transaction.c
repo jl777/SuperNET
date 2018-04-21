@@ -1643,8 +1643,8 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
     int32_t broadcast,i,num,numblast,utxovout,completed=0,numvouts,changeout; char *passphrase,changeaddr[64],vinaddr[64],wifstr[65],blastaddr[65],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info V; uint32_t locktime,starttime; uint8_t pubkey33[33]; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 privkey,pubkey,checktxid,utxotxid,signedtxid; uint64_t txfee,utxovalue,change;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (passphrase= jstr(argjson,"passphrase")) == 0 )
-        return(clonestr("{\"error\":\"need passphrase\"}"));
+    if ( (passphrase= jstr(argjson,"password")) == 0 )
+        return(clonestr("{\"error\":\"need password\"}"));
     outputs = jarray(&numvouts,argjson,"outputs");
     utxotxid = jbits256(argjson,"utxotxid");
     utxovout = jint(argjson,"utxovout");
