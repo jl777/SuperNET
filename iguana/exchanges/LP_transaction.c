@@ -1709,7 +1709,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
     jaddnum(retjson,"numblast",numblast);
     jaddnum(retjson,"completed",i);
     jaddbits256(retjson,"lastutxo",utxotxid);
-    jaddint(retjson,"lastutxovout",utxovout);
+    jaddnum(retjson,"lastutxovout",utxovout);
     jaddnum(retjson,"lastutxovalue",dstr(utxovalue));
     jaddnum(retjson,"elapsed",(uint32_t)time(NULL) - starttime);
     jaddnum(retjson,"tx/sec",(double)i / ((uint32_t)time(NULL) - starttime + 1));
