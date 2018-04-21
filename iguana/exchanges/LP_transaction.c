@@ -1640,19 +1640,23 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
 char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t broadcast,i,num,numblast,utxovout,completed=0,numvouts,changeout; bits256 privkey; char changeaddr[64],vinaddr[64],wifstr[65],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info V; uint32_t locktime,starttime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 checktxid,utxotxid,signedtxid; uint64_t txfee,utxovalue,change;
+    int32_t broadcast,i,num,numblast,utxovout,completed=0,numvouts,changeout; char *passphrase,changeaddr[64],vinaddr[64],wifstr[65],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info V; uint32_t locktime,starttime; uint8_t pubkey33[33]; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 privkey,pubkey,checktxid,utxotxid,signedtxid; uint64_t txfee,utxovalue,change;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
+    if ( (passphrase= jstr(argjson,"passphrase")) == 0 )
+        return(clonestr("{\"error\":\"need passphrase\"}"));
     outputs = jarray(&numvouts,argjson,"outputs");
     utxotxid = jbits256(argjson,"utxotxid");
     utxovout = jint(argjson,"utxovout");
     numblast = jint(argjson,"numblast");
     utxovalue = j64bits(argjson,"utxovalue");
     txfee = juint(argjson,"txfee");
-    safecopy(vinaddr,coin->smartaddr,sizeof(vinaddr));
-    safecopy(changeaddr,coin->smartaddr,sizeof(changeaddr));
-    privkey = LP_privkey(coin->symbol,vinaddr,coin->taddr);
+    conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
     bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
+    bitcoin_priv2pub(ctx,coin->symbol,pubkey33,blastaddr,privkey,coin->taddr,coin->pubtype);
+    safecopy(vinaddr,blastaddr,sizeof(vinaddr));
+    safecopy(changeaddr,blastaddr,sizeof(changeaddr));
     privkeys = cJSON_CreateArray();
     jaddistr(privkeys,wifstr);
     starttime = (uint32_t)time(NULL);
@@ -1676,7 +1680,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
                 {
                     if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
                     {
-                        printf("LP_txblast.%s broadcast (%s)\n",coin->symbol,bits256_str(str,signedtxid),signret);
+                        printf("LP_txblast.%s broadcast (%s) vs %s\n",coin->symbol,bits256_str(str,signedtxid),signret);
                         if ( is_hexstr(signret,0) == 64 )
                         {
                             decode_hex(checktxid.bytes,32,signret);
@@ -1687,7 +1691,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
                         } else break;
                         free(signret);
                     } else break;
-                } else printf("blaster i.%d of %d: %s/v%d %.8f\n",i,numblast,bits256_str(str,signedtxid),changeout,dstr(change));
+                } else printf("blaster i.%d of %d: %s/v%d %.8f %s\n",i,numblast,bits256_str(str,signedtxid),changeout,dstr(change),signedtx);
             }
         } else break;
         if ( txobj != 0 )
