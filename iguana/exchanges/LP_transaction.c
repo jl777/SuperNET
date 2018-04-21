@@ -1640,7 +1640,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
 char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t broadcast,i,num,numblast,utxovout,completed=0,numvouts,changeout; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info V; uint32_t locktime,starttime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,utxovalue,change;
+    int32_t broadcast,i,num,numblast,utxovout,completed=0,numvouts,changeout; bits256 privkey; char changeaddr[64],vinaddr[64],wifstr[65],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info V; uint32_t locktime,starttime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 checktxid,utxotxid,signedtxid; uint64_t txfee,utxovalue,change;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     outputs = jarray(&numvouts,argjson,"outputs");
@@ -1679,7 +1679,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
                         printf("LP_txblast.%s broadcast (%s)\n",coin->symbol,bits256_str(str,signedtxid),signret);
                         if ( is_hexstr(signret,0) == 64 )
                         {
-                            decode_hex(checktxid.bytes,32,signeret);
+                            decode_hex(checktxid.bytes,32,signret);
                             if ( bits256_cmp(checktxid,signedtxid) == 0 )
                             {
                                 printf("blaster i.%d of %d: %s/v%d %.8f\n",i,numblast,bits256_str(str,signedtxid),changeout,dstr(change));
