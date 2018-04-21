@@ -1648,7 +1648,8 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
     outputs = jarray(&numvouts,argjson,"outputs");
     utxotxid = jbits256(argjson,"utxotxid");
     utxovout = jint(argjson,"utxovout");
-    numblast = jint(argjson,"numblast");
+    if ( (numblast= jint(argjson,"numblast")) == 0 )
+        numblast = 1000000;
     utxovalue = j64bits(argjson,"utxovalue");
     txfee = juint(argjson,"txfee");
     conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
