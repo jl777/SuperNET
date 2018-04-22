@@ -1639,7 +1639,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
 
 char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct iguana_info *coin,char *rawtx,char *wifstr)
 {
-    char *retstr,*paramstr,*hexstr,*signedtx = 0; int32_t len; uint8_t *data; cJSON *retjson,*array,*params,*signedjson,*nullarray;
+    char *retstr,*paramstr,*hexstr,*signedtx = 0; int32_t len; uint8_t *data; cJSON *array,*params,*signedjson,*nullarray;
     *completedp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     params = cJSON_CreateArray();
@@ -1647,7 +1647,7 @@ char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct
     nullarray = cJSON_CreateArray();
     jaddi(params,nullarray);
     array = cJSON_CreateArray();
-    jaddstr(array,wifstr);
+    jaddistr(array,wifstr);
     paramstr = jprint(params,1);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
     {
@@ -1658,7 +1658,7 @@ char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct
                 len = (int32_t)strlen(hexstr);
                 signedtx = calloc(1,len+1);
                 strcpy(signedtx,hexstr);
-                *completedp = is_cJSON_True(jobj(json,"complete"));
+                *completedp = is_cJSON_True(jobj(signedjson,"complete"));
                 len >>= 1;
                 data = malloc(len);
                 decode_hex(data,len,hexstr);
@@ -1705,7 +1705,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
-            if ( (signedtx= bitcoin_signrawtransaction(&completed,&signedtxidcoin,rawtx,wifstr)) == 0 )
+            if ( (signedtx= bitcoin_signrawtransaction(&completed,&signedtxid,coin,rawtx,wifstr)) == 0 )
             //if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,&V,1,rawtx,vins,privkeys,coin->zcash)) < 0 )
                 printf("LP_txblast: couldnt sign blast tx %s\n",bits256_str(str,signedtxid));
             else if ( completed == 0 )
