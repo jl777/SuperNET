@@ -1690,7 +1690,12 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
                             {
                                 printf("blaster i.%d of %d: %s/v%d %.8f\n",i,numblast,bits256_str(str,signedtxid),changeout,dstr(change));
                             } else break;
-                        } else break;
+                        }
+                        else
+                        {
+                            printf("error sending tx %s '[\"%s\"]'\n",rawtx,wifstr);
+                            break;
+                        }
                         free(signret);
                     }
                     else
