@@ -1639,19 +1639,14 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
 
 char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct iguana_info *coin,char *rawtx,char *wifstr)
 {
-    char *retstr,*paramstr,*hexstr,*signedtx = 0; int32_t len; uint8_t *data; cJSON *array,*params,*signedjson,*nullarray;
+    char *retstr,*paramstr,*hexstr,*signedtx = 0; int32_t len; uint8_t *data; cJSON *signedjson;
     *completedp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
-    params = cJSON_CreateArray();
-    jaddistr(params,rawtx);
-    nullarray = cJSON_CreateArray();
-    jaddi(params,nullarray);
-    array = cJSON_CreateArray();
-    jaddistr(array,wifstr);
-    paramstr = jprint(params,1);
+    paramstr = calloc(1,200000+1);
+    sprintf(paramstr,"[\"%s\", 0, [\"%s\"]]",rawtx,wifstr);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
     {
-        printf("signed -> %s\n",retstr);
+        printf("%s signed -> %s\n",coin->symbol,retstr);
         if ( (signedjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (hexstr= jstr(signedjson,"hex")) != 0 )
