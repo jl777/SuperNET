@@ -1639,7 +1639,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
 
 char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct iguana_info *coin,char *rawtx,char *wifstr)
 {
-    char *retstr,*paramstr,*nullarray,*signedtx = 0; cJSON *retjson,*array,*params,signedjson;
+    char *retstr,*paramstr,*hexstr,*signedtx = 0; int32_t len; uint8_t *data; cJSON *retjson,*array,*params,*signedjson,*nullarray;
     *completedp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     params = cJSON_CreateArray();
@@ -1653,7 +1653,7 @@ char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct
     {
         if ( (signedjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (hexstr= jstr(json,"hex")) != 0 )
+            if ( (hexstr= jstr(signedjson,"hex")) != 0 )
             {
                 len = (int32_t)strlen(hexstr);
                 signedtx = calloc(1,len+1);
