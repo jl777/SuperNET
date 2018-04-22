@@ -1643,7 +1643,7 @@ char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct
     *completedp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     paramstr = calloc(1,200000+1);
-    sprintf(paramstr,"[\"%s\", 0, [\"%s\"]]",rawtx,wifstr);
+    sprintf(paramstr,"[\"%s\", null, [\"%s\"]]",rawtx,wifstr);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
     {
         printf("%s signed -> %s\n",coin->symbol,retstr);
