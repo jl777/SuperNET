@@ -1693,7 +1693,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
                         }
                         else
                         {
-                            printf("error sending tx %s '[\"%s\"]'\n",rawtx,wifstr);
+                            printf("error sending tx:\n \"%s\" null '[\"%s\"]'\n",rawtx,wifstr);
                             break;
                         }
                         free(signret);
