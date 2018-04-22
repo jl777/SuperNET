@@ -1646,7 +1646,7 @@ char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct
     sprintf(paramstr,"[\"%s\", null, [\"%s\"]]",rawtx,wifstr);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
     {
-        printf("%s signed -> %s\n",coin->symbol,retstr);
+        //printf("%s signed -> %s\n",coin->symbol,retstr);
         if ( (signedjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (hexstr= jstr(signedjson,"hex")) != 0 )
