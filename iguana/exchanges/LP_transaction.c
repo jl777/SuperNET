@@ -1521,7 +1521,7 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
 char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **txobjp,cJSON **vinsp,struct vin_info *V,struct iguana_info *coin,bits256 utxotxid,int32_t utxovout,uint64_t utxovalue,bits256 privkey,cJSON *outputs,int64_t txfee)
 {
     static void *ctx;
-    cJSON *txobj,*item,*vins; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr,spendscriptstr[128],wifstr[64]; bits256 txid; uint32_t locktime,crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,offset,len,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0;
+    cJSON *txobj,*item,*vins; uint8_t addrtype,rmd160[20],pubkey33[33],tmptype,data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr,spendscriptstr[128],blastaddr[64],wifstr[64]; bits256 txid; uint32_t locktime,crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,offset,len,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *txobjp = *vinsp = 0;
@@ -1563,13 +1563,15 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
     V->N = V->M = 1;
     V->signers[0].privkey = privkey;
     bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
+    bitcoin_priv2pub(ctx,coin->symbol,pubkey33,blastaddr,privkey,coin->taddr,coin->pubtype);
+    bitcoin_addr2rmd160("KMD",taddr,&tmptype,rmd160,blastaddr);
     V->suppress_pubkeys = suppress_pubkeys;
     V->ignore_cltverr = ignore_cltverr;
     change = (utxovalue - amount);
     timestamp = (uint32_t)time(NULL);
     locktime = 0;
     txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,coin->txversion,timestamp);
-    scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
+    scriptlen = bitcoin_standardspend(script,0,rmd160);
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
     vins = cJSON_CreateArray();
     jaddi(vins,LP_inputjson(utxotxid,utxovout,spendscriptstr));
