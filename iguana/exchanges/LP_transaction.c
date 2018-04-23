@@ -1564,7 +1564,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
     V->signers[0].privkey = privkey;
     bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
     bitcoin_priv2pub(ctx,coin->symbol,pubkey33,blastaddr,privkey,coin->taddr,coin->pubtype);
-    bitcoin_addr2rmd160("KMD",taddr,&tmptype,rmd160,blastaddr);
+    bitcoin_addr2rmd160("KMD",coin->taddr,&tmptype,rmd160,blastaddr);
     V->suppress_pubkeys = suppress_pubkeys;
     V->ignore_cltverr = ignore_cltverr;
     change = (utxovalue - amount);
