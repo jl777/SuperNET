@@ -116,6 +116,7 @@ pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebi
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\
 lastnonce()\n\
+cancel(uuid)\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[], broadcast=0)\n\
@@ -304,6 +305,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }*/
+        else if ( strcmp(method,"cancel") == 0 )
+        {
+            return(LP_cancel_order(jstr(argjson,"uuid")));
+        }
         else if ( strcmp(method,"recentswaps") == 0 )
         {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
