@@ -625,6 +625,7 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 
 char *LP_cancel_order(char *uuidstr)
 {
+    LP_trades_canceluuid(uuidstr);
     if ( uuidstr != 0 && strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
     {
         LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
@@ -1148,6 +1149,30 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
     return(0);
 }
 
+int32_t LP_trades_canceluuid(char *uuidstr)
+{
+    int32_t num = 0; struct LP_trade *qtp,*tp,*tmp;
+    HASH_ITER(hh,LP_trades,tp,tmp)
+    {
+        if ( strcmp(tp->Q.uuidstr,uuidstr) == 0 )
+        {
+            tp->cancelled = (uint32_t)time(NULL);
+            num++;
+        }
+    }
+    DL_FOREACH_SAFE(LP_tradesQ,qtp,tmp)
+    {
+        if ( strcmp(qtp->Q.uuidstr,uuidstr) == 0 )
+        {
+            qtp->cancelled = (uint32_t)time(NULL);
+            num++;
+        }
+    }
+    if ( num > 0 )
+        fprintf(stderr,"uuid.%s %d cancelled\n",num);
+    return(num);
+}
+
 void LP_tradesloop(void *ctx)
 {
     struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t timeout,funcid,flag,nonz; struct iguana_info *coin; struct LP_pubkey_info *pubp;
@@ -1160,7 +1185,7 @@ void LP_tradesloop(void *ctx)
         nonz = 0;
         HASH_ITER(hh,LP_trades,tp,tmp)
         {
-            if ( tp->negotiationdone != 0 )
+            if ( tp->negotiationdone != 0 || tp->cancelled != 0 )
                 continue;
             //printf("check %s\n",tp->Q.uuidstr+32);
             timeout = LP_AUTOTRADE_TIMEOUT;
@@ -1202,7 +1227,7 @@ void LP_tradesloop(void *ctx)
                 timeout += LP_AUTOTRADE_TIMEOUT * .5;
             if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
                 timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( now > tp->firstprocessed+timeout*10 )
+            if ( now > tp->firstprocessed+timeout*10 || tp->cancelled != 0 )
             {
                 //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                 portable_mutex_lock(&LP_tradesmutex);
@@ -1220,9 +1245,17 @@ void LP_tradesloop(void *ctx)
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
+            if ( tp->cancelled != 0 )
+                
+            {
+                fprintf(stderr,"purging cancelled %s funcid.%d\n",tp->uuidstr,tp->funcid);
+                HASH_DELETE(hh,LP_trades,tp);
+                free(tp);
+                continue;
+            }
             if ( tp == 0 )
             {
-                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*2 ) // eat expired
+                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*2 || qtp->cancelled != 0 ) // eat expired
                     free(qtp);
                 else
                 {
