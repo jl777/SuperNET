@@ -49,8 +49,8 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     // bitcoind_passthru callers: "importaddress", "estimatefee", "getblockhash", "sendrawtransaction", "signrawtransaction"
     if ( coin != 0 )
     {
-        if ( strcmp(method,"listunspent") == 0 )
-            printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
+        //if ( strcmp(method,"listunspent") == 0 )
+        //    printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
         if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 || strcmp(method,"getblockchaininfo") == 0 )
@@ -60,9 +60,9 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
-                    if ( strcmp(method,"listunspent") == 0 )
-                        printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
-                   retjson = cJSON_Parse(retstr);
+                    //if ( strcmp(method,"listunspent") == 0 )
+                    //    printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
+                    retjson = cJSON_Parse(retstr);
                     free(retstr);
                 }
             }
@@ -437,7 +437,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
-printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+//printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
                 char str[65];
@@ -451,7 +451,7 @@ printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
                     {
                         jaddi(array,jduplicate(item));
                         free_json(txjson);
-                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
