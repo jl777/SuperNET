@@ -439,7 +439,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
 printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
-                chat str[65];
+                char str[65];
                 array = cJSON_CreateArray();
                 for (i=0; i<n; i++)
                 {
