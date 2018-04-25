@@ -1169,7 +1169,7 @@ int32_t LP_trades_canceluuid(char *uuidstr)
         }
     }
     if ( num > 0 )
-        fprintf(stderr,"uuid.%s %d cancelled\n",num);
+        fprintf(stderr,"uuid.%s %d cancelled\n",uuidstr,num);
     return(num);
 }
 
@@ -1248,7 +1248,7 @@ void LP_tradesloop(void *ctx)
             if ( tp->cancelled != 0 )
                 
             {
-                fprintf(stderr,"purging cancelled %s funcid.%d\n",tp->uuidstr,tp->funcid);
+                fprintf(stderr,"purging cancelled %s funcid.%d\n",tp->Q.uuidstr,tp->funcid);
                 HASH_DELETE(hh,LP_trades,tp);
                 free(tp);
                 continue;
