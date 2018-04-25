@@ -625,15 +625,20 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 
 char *LP_cancel_order(char *uuidstr)
 {
+    int32_t num = 0; cJSON *retjson;
     if ( uuidstr != 0 )
     {
-        LP_trades_canceluuid(uuidstr);
+        num = LP_trades_canceluuid(uuidstr);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"numentries",num);
         if ( strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
         {
             LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
             LP_alicequery_clear();
-            return(clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}"));
-        } else return(clonestr("{\"result\":\"success\",\"status\":\"will stop trade negotiation, but if swap started it wont cancel\"}"));
+            jaddstr(retjson,"status","uuid canceled");
+        } else jaddstr(retjson,"status","will stop trade negotiation, but if swap started it wont cancel");
+        return(jprint(retjson,1));
     }
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
 }
