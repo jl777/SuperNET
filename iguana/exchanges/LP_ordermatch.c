@@ -1245,7 +1245,7 @@ void LP_tradesloop(void *ctx)
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
-            if ( tp->cancelled != 0 )
+            if ( tp != 0 && tp->cancelled != 0 )
                 
             {
                 fprintf(stderr,"purging cancelled %s funcid.%d\n",tp->Q.uuidstr,tp->funcid);
