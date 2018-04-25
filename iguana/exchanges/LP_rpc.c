@@ -417,6 +417,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 usecache = 0;
             else if ( time(NULL) > ap->unspenttime+3 )
                 usecache = 0;
+            usecache = 0; // disable unspents cache for native
             //printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
             if ( usecache != 0 && (retstr= LP_unspents_filestr(symbol,coinaddr)) != 0 )
             {
@@ -435,9 +436,10 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
-//printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
+printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
+                chat str[65];
                 array = cJSON_CreateArray();
                 for (i=0; i<n; i++)
                 {
@@ -448,7 +450,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                     {
                         jaddi(array,jduplicate(item));
                         free_json(txjson);
-                    }
+                    } else fprintf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
