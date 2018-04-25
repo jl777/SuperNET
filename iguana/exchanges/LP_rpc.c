@@ -450,7 +450,7 @@ printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
                     {
                         jaddi(array,jduplicate(item));
                         free_json(txjson);
-                    } else fprintf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
