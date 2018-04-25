@@ -57,11 +57,11 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             if ( coin->electrum == 0 )
             {
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
-                if ( 0 && strcmp("KMD",coin->symbol) == 0 )
-                    printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
-                    retjson = cJSON_Parse(retstr);
+                    if ( strcmp(method,"listunspent") == 0 )
+                        printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
+                   retjson = cJSON_Parse(retstr);
                     free(retstr);
                 }
             }
@@ -436,7 +436,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
-printf("LP_listunspent.(%s %s) -> %s\n",symbol,coinaddr,jprint(retjson,0));
+printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
                 char str[65];
