@@ -625,12 +625,15 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 
 char *LP_cancel_order(char *uuidstr)
 {
-    LP_trades_canceluuid(uuidstr);
-    if ( uuidstr != 0 && strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
+    if ( uuidstr != 0 )
     {
-        LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
-        LP_alicequery_clear();
-        return(clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}"));
+        LP_trades_canceluuid(uuidstr);
+        if ( strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
+        {
+            LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
+            LP_alicequery_clear();
+            return(clonestr("{\"result\":\"success\",\"status\":\"uuid canceled\"}"));
+        } else return(clonestr("{\"result\":\"success\",\"status\":\"will stop trade negotiation, but if swap started it wont cancel\"}"));
     }
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
 }
