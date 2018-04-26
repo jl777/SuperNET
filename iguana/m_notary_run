@@ -18,7 +18,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"
 sleep 3
 tests/addnotarys_7776
 coins/btc_7776
-coins/ltc_7776
+#coins/ltc_7776
 coins/kmd_7776
 coins/chips_7776
 ./wp_7776
@@ -53,4 +53,5 @@ coins/prlpay_7776
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
+sleep 30
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"

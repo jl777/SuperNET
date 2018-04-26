@@ -439,9 +439,12 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     MoMdepth = 0;
-    portable_mutex_lock(&src->MoM_mutex);
-    MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
-    portable_mutex_unlock(&src->MoM_mutex);
+    if ( strcmp(dp->dest,"KMD") == 0 )
+    {
+        portable_mutex_lock(&src->MoM_mutex);
+        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+        portable_mutex_unlock(&src->MoM_mutex);
+    } else memset(&MoM,0,sizeof(MoM));
     if ( strcmp(src->symbol,"KMD") == 0 )
         kmdheight = checkpoint.blockhash.height;
     else if ( strcmp(dest->symbol,"KMD") == 0 )
