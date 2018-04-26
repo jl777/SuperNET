@@ -294,7 +294,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                                 decode_hex(script,len,hexstr);
                                 if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len,mdata) > 0 && strcmp(symbol,coin->symbol) == 0 )
                                 {
-                                    // if ( Notaries_port != DPOW_SOCKPORT ) // keep going till valid MoM found, useful for new chains without any MoM
+                                    //if ( Notaries_port != DPOW_SOCKPORT ) // keep going till valid MoM found, useful for new chains without any MoM
                                     {
                                         if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
                                         {
@@ -439,7 +439,7 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     MoMdepth = 0;
-    if ( strcmp(dp->dest,"KMD") == 0 )
+    if ( 0 && strcmp(dp->dest,"KMD") == 0 )
     {
         portable_mutex_lock(&src->MoM_mutex);
         MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
