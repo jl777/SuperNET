@@ -439,7 +439,7 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     MoMdepth = 0;
-    if ( strcmp(dp->dest,"KMD") == 0 )
+    if ( 0 && strcmp(dp->dest,"KMD") == 0 )
     {
         portable_mutex_lock(&src->MoM_mutex);
         MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
