@@ -619,6 +619,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+13 )
             usecache = 0;
     }
+    usecache = 0; // disable unspents cache
     if ( usecache == 0 || electrumflag > 1 )
     {
         if ( strcmp(symbol,"BCH") == 0 )
