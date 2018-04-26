@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -512,6 +512,7 @@ void command_rpcloop(void *ctx)
 
 void LP_coinsloop(void *_coins)
 {
+    static int32_t didfilescreate;
     struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
@@ -560,6 +561,11 @@ void LP_coinsloop(void *_coins)
             {
                 //printf("%s has no smartaddress??\n",coin->symbol);
                 continue;
+            }
+            if ( didfilescreate == 0 && strcmp("KMD",coin->symbol) == 0 )
+            {
+                LP_instantdex_filescreate(coin->smartaddr);
+                didfilescreate = 1;
             }
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
@@ -974,7 +980,7 @@ void LP_pendswap_add(uint32_t expiration,uint32_t requestid,uint32_t quoteid)
 
 void LP_swapsloop(void *ctx)
 {
-    char *retstr; cJSON *retjson; uint32_t requestid,quoteid; int32_t nonz; struct LP_pendswap *sp,*tmp;
+    char *retstr; cJSON *retjson; uint32_t requestid,quoteid; int32_t i,nonz; struct LP_pendswap *sp,*tmp;
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
     LP_swapsloop_stats.threshold = 605000.;
     if ( (retstr= basilisk_swapentry(0,0,0,1)) != 0 )
@@ -1006,7 +1012,14 @@ void LP_swapsloop(void *ctx)
             }
         }
         if ( nonz == 0 )
-            sleep(60);
+        {
+            for (i=0; i<10; i++)
+            {
+                //fprintf(stderr,"check on alice expiration\n");
+                LP_alice_eligible((uint32_t)time(NULL));
+                sleep(6);
+            }
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -984,7 +984,7 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol)
     return(height);
 }
 
-char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
+/*char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
 {
     struct dex_request dexreq; char *retstr,*pubkeystr; cJSON *retjson,*array,*item; int32_t i,n;
     memset(&dexreq,0,sizeof(dexreq));
@@ -1018,7 +1018,7 @@ char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
         }
     }
     return(retstr);
-}
+}*/
 
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
 {
@@ -1923,7 +1923,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
-    struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
+    struct dpow_nanomsghdr *np; int32_t i,src_or_dest,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
         return;
     if ( time(NULL) < myinfo->nanoinit+5 )
@@ -1944,7 +1944,10 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     //printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
     if ( bp->isratify == 0 )
     {
-        extralen = dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth);
+        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+            src_or_dest = 0;
+        else src_or_dest = 1;
+        extralen = dpow_paxpending(extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
         //dpow_bestconsensus(bp);
         dpow_nanoutxoset(myinfo,dp,&np->notarize,bp,0);

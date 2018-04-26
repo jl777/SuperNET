@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -50,7 +50,7 @@
 int32_t MM_numfields;
 char *MM_fields[] =
 {
-    "timestamp", "getdPoW", "dPoW", "aliceid", "src", "base", "basevol", "dest", "rel", "relvol", "price", "requestid", "quoteid", "finished", "expired", "bobdeposit", "alicepayment", "bobpayment", "paymentspent", "Apaymentspent", "depositspent", "ind", "method", "swapstatus", "method2", "gettradestatus", "coin", "rmd160", "pub", "pubsecp", "sig", "session", "notify", "pubkey", "price64", "credits", "utxocoin", "n", "bal", "min", "max", "postprice", "notarized", "notarizedhash", "notarizationtxid", "wantnotify", "isLP", "gui", "nogui", "tradeid", "address", "txid", "vout", "srchash", "txfee", "quotetime", "satoshis", "desthash", "txid2", "vout2", "destaddr", "desttxid", "destvout", "feetxid", "feevout", "desttxfee", "destsatoshis", "pending", "reserved", "broadcast", "ismine", "simplegui", "request", "proof", "connect", "expiration", "iambob", "Bgui", "", "Agui", "bob", "srcamount", "bobtxfee", "alice", "destamount", "alicetxfee", "sentflags", "values", "result", "success", "status", "finishtime", "tradestatus", "pair", "connected", "warning", "critical", "endcritical", "cli", "etomic", "bobtomic", "alicetomic", "etomicsrc", "etomicdest"
+    "timestamp", "getdPoW", "dPoW", "aliceid", "src", "base", "basevol", "dest", "rel", "relvol", "price", "requestid", "quoteid", "finished", "expired", "bobdeposit", "alicepayment", "bobpayment", "paymentspent", "Apaymentspent", "depositspent", "ind", "method", "swapstatus", "method2", "gettradestatus", "coin", "rmd160", "pub", "pubsecp", "sig", "session", "notify", "pubkey", "price64", "credits", "utxocoin", "n", "bal", "min", "max", "postprice", "notarized", "notarizedhash", "notarizationtxid", "wantnotify", "isLP", "gui", "nogui", "tradeid", "address", "txid", "vout", "srchash", "txfee", "quotetime", "satoshis", "desthash", "txid2", "vout2", "destaddr", "desttxid", "destvout", "feetxid", "feevout", "desttxfee", "destsatoshis", "pending", "reserved", "broadcast", "ismine", "simplegui", "request", "proof", "connect", "expiration", "iambob", "Bgui", "", "Agui", "bob", "srcamount", "bobtxfee", "alice", "destamount", "alicetxfee", "sentflags", "values", "result", "success", "status", "finishtime", "tradestatus", "pair", "connected", "warning", "critical", "endcritical", "cli", "etomic", "bobtomic", "alicetomic", "etomicsrc", "etomicdest", "hyperdex", "uuid"
 };
 #define MMJSON_BOUNDARY ((int32_t)(sizeof(MM_fields)/sizeof(*MM_fields)))
 
@@ -285,7 +285,7 @@ char *MMJSON_decode(uint8_t *linebuf,int32_t len)
         {
             if ( ind != MMJSON_STRING )
             {
-                printf("illegal field ind.%d (%s)\n",ind,jprint(lineobj,0));
+                printf("illegal field i.%d ind.%d (%s) boundary.%d\n",i,ind,jprint(lineobj,0),MMJSON_BOUNDARY);
                 free_json(lineobj);
                 return(0);
             }
@@ -581,7 +581,9 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
                 s = jfieldname(ptr);
                 if ( (ind= mmfind(s)) < 0 )
                 {
-                    printf("missing field.(%s) add to MM_fields[]\n",s);
+                    static uint32_t counter;
+                    if ( counter++ < 3 )
+                        printf("missing field.(%s) add to MM_fields[]\n",s);
                     linebuf[k++] = MMJSON_STRING;
                     memcpy(&linebuf[k],s,strlen(s)+1);
                     k += (int32_t)strlen(s) + 1;

@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -63,6 +63,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         if ( swap->Bpayment[0] != 0 )
             fprintf(fp,",\"%s\":\"%s\"","Bpayment",swap->Bpayment);
         fprintf(fp,",\"expiration\":%u",swap->I.expiration);
+        fprintf(fp,",\"uuid\":\"%s\"",swap->uuidstr);
         fprintf(fp,",\"iambob\":%d",swap->I.iambob);
         fprintf(fp,",\"bobcoin\":\"%s\"",swap->I.bobstr);
         if ( swap->I.bobtomic[0] != 0 )
@@ -117,6 +118,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"Agui\":\"%s\"",G.gui);
         else fprintf(fp,",\"Bgui\":\"%s\"",G.gui);
         fprintf(fp,",\"gui\":\"%s\"",G.gui);
+        fprintf(fp,",\"uuid\":\"%s\"",swap->uuidstr);
         if ( memcmp(zeroes,swap->I.secretAm,20) != 0 )
         {
             init_hexbytes_noT(secretAmstr,swap->I.secretAm,20);
@@ -629,6 +631,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
         jaddnum(item,"critical",LP_swap_critical);
         jaddnum(item,"endcritical",LP_swap_endcritical);
     }
+    jaddstr(item,"uuid",rswap->uuidstr);
     jaddnum(item,"expiration",rswap->expiration);// - INSTANTDEX_LOCKTIME*2);
     jaddnum(item,"tradeid",rswap->tradeid);
     jaddnum(item,"requestid",rswap->requestid);
@@ -693,6 +696,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
         if ( (item= cJSON_Parse(fstr)) != 0 )
         {
             rswap->iambob = jint(item,"iambob");
+            safecopy(rswap->uuidstr,jstr(item,"uuid"),sizeof(rswap->uuidstr));
             safecopy(rswap->Bgui,jstr(item,"Bgui"),sizeof(rswap->Bgui));
             safecopy(rswap->Agui,jstr(item,"Agui"),sizeof(rswap->Agui));
             safecopy(rswap->gui,jstr(item,"gui"),sizeof(rswap->gui));
@@ -940,7 +944,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     rswap->Dredeemlen >>= 1;
                     decode_hex(rswap->Dredeemscript,rswap->Dredeemlen,rstr);
                 }
-                rswap->values[i] = value = LP_value_extract(txobj,1);
+                rswap->values[i] = value = LP_value_extract(txobj,1,txid);
                 if ( (symbol= jstr(txobj,"src")) != 0 )
                 {
                     safecopy(rswap->src,symbol,sizeof(rswap->src));
@@ -1103,6 +1107,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         cJSON *retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","swap never started");
+        jaddstr(retjson,"uuid",rswap.uuidstr);
         jaddstr(retjson,"status","finished");
         jaddstr(retjson,"bob",rswap.bobcoin);
         jaddstr(retjson,"src",rswap.src);
@@ -1127,6 +1132,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                 printf("this isnt my swap! alice.(%s vs %s)\n",alice->smartaddr,rswap.Adestaddr);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","swap for different account");
+                jaddstr(retjson,"uuid",rswap.uuidstr);
                 jaddstr(retjson,"alice",alice->symbol);
                 jaddstr(retjson,"aliceaddr",alice->smartaddr);
                 jaddstr(retjson,"dest",rswap.dest);
@@ -1139,6 +1145,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                 printf("need to scan %s first\n",alice->symbol);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","need to scan coin first");
+                jaddstr(retjson,"uuid",rswap.uuidstr);
                 jaddstr(retjson,"coin",alice->symbol);
                 jaddnum(retjson,"scanned",alice->lastscanht);
                 jaddnum(retjson,"longest",alice->longestchain);
@@ -1166,6 +1173,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                 printf("this isnt my swap! bob.(%s vs %s)\n",bob->smartaddr,rswap.destaddr);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","swap for different account");
+                jaddstr(retjson,"uuid",rswap.uuidstr);
                 jaddstr(retjson,"bob",bob->symbol);
                 jaddstr(retjson,"bobaddr",bob->smartaddr);
                 jaddstr(retjson,"src",rswap.src);
@@ -1178,6 +1186,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                 printf("need to scan %s first\n",bob->symbol);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","need to scan coin first");
+                jaddstr(retjson,"uuid",rswap.uuidstr);
                 jaddstr(retjson,"coin",bob->symbol);
                 jaddnum(retjson,"scanned",bob->lastscanht);
                 jaddnum(retjson,"longest",bob->longestchain);
@@ -1681,7 +1690,7 @@ char *basilisk_swapentry(int32_t fastflag,uint32_t requestid,uint32_t quoteid,in
 extern struct LP_quoteinfo LP_Alicequery;
 extern uint32_t Alice_expiration;
 
-char *LP_recent_swaps(int32_t limit)
+char *LP_recent_swaps(int32_t limit,char *uuidstr)
 {
     char fname[512],*retstr,*base,*rel,*statusstr; long fsize,offset; FILE *fp; int32_t baseind,relind,i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson,*subitem,*swapjson; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS]; double srcamount,destamount,netamounts[LP_MAXPRICEINFOS];
     memset(KMDtotals,0,sizeof(KMDtotals));
@@ -1761,6 +1770,8 @@ char *LP_recent_swaps(int32_t limit)
     if ( time(NULL) < Alice_expiration )
     {
         item = cJSON_CreateObject();
+        if ( uuidstr != 0 )
+            jaddstr(item,"uuid",uuidstr);
         jaddnum(item,"expiration",Alice_expiration);
         jaddnum(item,"timeleft",Alice_expiration-time(NULL));
         jaddnum(item,"tradeid",LP_Alicequery.tradeid);
@@ -1772,9 +1783,12 @@ char *LP_recent_swaps(int32_t limit)
         jaddstr(item,"alice",LP_Alicequery.destcoin);
         jaddstr(item,"rel",LP_Alicequery.destcoin);
         jaddnum(item,"relvalue",dstr(LP_Alicequery.destsatoshis));
+        jaddbits256(item,"desthash",G.LP_mypub25519);
         jadd64bits(item,"aliceid",LP_aliceid_calc(LP_Alicequery.desttxid,LP_Alicequery.destvout,LP_Alicequery.feetxid,LP_Alicequery.feevout));
         jadd(retjson,"pending",item);
     } else Alice_expiration = 0;
+    if ( uuidstr != 0 )
+        jaddstr(retjson,"uuid",uuidstr);
     return(jprint(retjson,1));
 }
 
@@ -1833,7 +1847,7 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
         }
         free(liststr);
     }
-    if ( (liststr= LP_recent_swaps(limit)) != 0 )
+    if ( (liststr= LP_recent_swaps(limit,0)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
         {
@@ -1894,7 +1908,7 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
 int32_t LP_pendingswap(uint32_t requestid,uint32_t quoteid)
 {
     cJSON *retjson,*array,*pending,*item; uint32_t r,q; char *retstr; int32_t i,n,retval = 0;
-    if ( (retstr= LP_recent_swaps(1000)) != 0 )
+    if ( (retstr= LP_recent_swaps(1000,0)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {

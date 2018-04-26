@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -336,16 +336,28 @@ int main(int argc, const char * argv[])
     }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( ensure_writable(dirname) < 0 )
+    {
+        printf("couldnt write to (%s)\n",dirname);
         exit(0);
+    }
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( ensure_writable(dirname) < 0 )
+    {
+        printf("couldnt write to (%s)\n",dirname);
         exit(0);
+    }
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( ensure_writable(dirname) < 0 )
+    {
+        printf("couldnt write to (%s)\n",dirname);
         exit(0);
+    }
     sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( ensure_writable(dirname) < 0 )
+    {
+        printf("couldnt write to (%s)\n",dirname);
         exit(0);
+    }
 #ifdef FROM_JS
     argc = 2;
     retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
@@ -378,7 +390,7 @@ int main(int argc, const char * argv[])
         incr = 100.;
         while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
-    }
+    } else printf("couldnt parse.(%s)\n",argv[1]);
 #endif
     return 0;
 }

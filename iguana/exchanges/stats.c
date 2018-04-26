@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "../../crypto777/OS_portable.h"
+#define IGUANA_MAXRPCTHREADS 1
+
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
 #define STATS_DEST "/var/www/html/DEXstats.json"
@@ -574,7 +576,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( (fastflag= jint(arg,"fast")) == 0 )
                 {
                     if ( (method= jstr(arg,"method")) != 0 && (strcmp(method,"orderbook") == 0 || strcmp(method,"portfolio") == 0) )
-                        fastflag = 1;
+                        fastflag = 1*0;
                 }
                 if ( fastflag == 0 )
                     portable_mutex_lock(&LP_commandmutex);
@@ -833,7 +835,6 @@ void stats_rpcloop(void *args)
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
-//#ifdef _WIN32
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept port.%u usock.%d errno %d %s\n",port,sock,errno,strerror(errno));
@@ -841,16 +842,6 @@ void stats_rpcloop(void *args)
             bindsock = -1;
             continue;
         }
-/*#else
-        if ( sock < 0 )
-        {
-            //fprintf(stderr,".");
-            if ( IAMLP == 0 )
-                usleep(50000);
-            else usleep(2500);
-            continue;
-        }
-#endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
 //printf("port.%u got incoming from %x\n",port,ipbits);
         if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
@@ -866,25 +857,13 @@ void stats_rpcloop(void *args)
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        if ( spawned > 0 )
+        if ( 1 || spawned >= (IGUANA_MAXRPCTHREADS-1) )
             LP_rpc_processreq(req);
         // this might lead to "cant open file errors"
         else if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
             LP_rpc_processreq(req);
-            /*portable_mutex_lock(&LP_gcmutex);
-            DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
-            {
-                DL_DELETE(LP_garbage_collector,req2);
-                free(req2);
-            }
-            portable_mutex_unlock(&LP_gcmutex);
-            if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
-            {
-                printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
-                LP_rpc_processreq(req);
-            }*/
        }
     }
     printf("i got killed\n");
