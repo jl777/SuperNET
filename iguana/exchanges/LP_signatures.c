@@ -484,9 +484,14 @@ char *LP_postprice_recv(cJSON *argjson)
             {
                 if ( jstr(argjson,"pubsecp") != 0 )
                 {
+                    static char lasterror[64];
                     decode_hex(pubkey33,33,jstr(argjson,"pubsecp"));
                     bitcoin_address("KMD",coinaddr,0,60,pubkey33,33);
-                    printf("sig failure.(%s) %s\n",jprint(argjson,0),coinaddr);
+                    if ( strcmp(coinaddr,lasterror) != 0 )
+                    {
+                        printf("sig failure.(%s) %s\n",jprint(argjson,0),coinaddr);
+                        strcpy(lasterror,coinaddr);
+                    }
                 }
                 return(clonestr("{\"error\":\"sig failure\"}"));
             }
