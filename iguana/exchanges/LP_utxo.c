@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -548,6 +548,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
+        //printf("%s array.%s\n",coin->symbol,jprint(array,0));
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)

@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -116,9 +116,11 @@ pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebi
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\
 lastnonce()\n\
+cancel(uuid)\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[], broadcast=0)\n\
+txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0, fast=0)\n\
 swapstatus(coin, limit=10)\n\
@@ -304,6 +306,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }*/
+        else if ( strcmp(method,"cancel") == 0 )
+        {
+            return(LP_cancel_order(jstr(argjson,"uuid")));
+        }
         else if ( strcmp(method,"recentswaps") == 0 )
         {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
@@ -643,6 +649,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
                 return(jprint(LP_gettx("stats_JSON",coin,jbits256(argjson,"txid"),0),1));
+            }
+            else if ( strcmp(method,"txblast") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    return(LP_txblast(ptr,argjson));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
