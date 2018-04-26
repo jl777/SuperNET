@@ -459,7 +459,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 
 char *LP_postprice_recv(cJSON *argjson)
 {
-    bits256 pubkey; double price; char *base,*rel,*argstr;
+    bits256 pubkey; double price; uint8_t pubkey33[33]; char *base,*rel,*argstr,coinaddr[64];
     //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
@@ -482,7 +482,17 @@ char *LP_postprice_recv(cJSON *argjson)
             }
             else
             {
-                printf("sig failure.(%s)\n",jprint(argjson,0));
+                if ( jstr(argjson,"pubsecp") != 0 )
+                {
+                    static char lasterror[64];
+                    decode_hex(pubkey33,33,jstr(argjson,"pubsecp"));
+                    bitcoin_address("KMD",coinaddr,0,60,pubkey33,33);
+                    if ( strcmp(coinaddr,lasterror) != 0 )
+                    {
+                        printf("sig failure.(%s) %s\n",jprint(argjson,0),coinaddr);
+                        strcpy(lasterror,coinaddr);
+                    }
+                }
                 return(clonestr("{\"error\":\"sig failure\"}"));
             }
         }
