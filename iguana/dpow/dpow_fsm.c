@@ -237,9 +237,13 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     memset(MoM.bytes,0,sizeof(MoM));
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
-        if ( (prevMoMheight= jint(infojson,"prevMoMheight")) != 0 )
+        if ( (prevMoMheight= jint(infojson,"prevMoMheight")) >= 0 )
         {
+            if ( prevMoMheight == 0 )
+                prevMoMheight = 1;
             *MoMdepthp = (height - prevMoMheight);
+            if ( *MoMdepthp > 1440*30 )
+                *MoMdepthp = 1440*30;
             if ( *MoMdepthp > 0 && (MoMjson= issue_calcMoM(coin,height,*MoMdepthp)) != 0 )
             {
                 MoM = jbits256(MoMjson,"MoM");
