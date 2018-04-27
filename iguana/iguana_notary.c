@@ -76,7 +76,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         else freq = 1;
     }
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
-    if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
+    /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
     {
         //if ( dp->SRCREALTIME == 0 )
         //    return;
@@ -117,7 +117,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                 } else return;
             } else return;
         } else return;
-    }
+    }*/
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
         if ( (0) && strcmp("KMD",dp->symbol) == 0 )
@@ -577,6 +577,121 @@ void iguana_notarystats(int32_t totals[64],int32_t dispflag)
         sprintf(fname,"%s/signedmasks",NOTARY_CURRENCIES[i]);
         _iguana_notarystats(fname,totals,dispflag);
     }
+}
+
+// slow and should be redone to use calc_MoM rpc
+int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height,struct komodo_ccdataMoMoM *mdata)
+{
+    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[256]; bits256 spenttxid; uint64_t notarymask=0; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
+    {
+        if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
+        {
+            if ( numvins >= DPOW_MIN_ASSETCHAIN_SIGS )
+            {
+                notarymask = numnotaries = 0;
+                for (i=0; i<numvins; i++)
+                {
+                    vin = jitem(vins,i);
+                    spenttxid = jbits256(vin,"txid");
+                    spentvout = jint(vin,"vout");
+                    if ( (spentobj= dpow_gettransaction(myinfo,coin,spenttxid)) != 0 )
+                    {
+                        if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
+                        {
+                            if ( spentvout < numvouts )
+                            {
+                                vout = jitem(vouts,spentvout);
+                                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == 35*2 )
+                                {
+                                    len >>= 1;
+                                    decode_hex(script,len,hexstr);
+                                    if ( script[0] == 33 && script[34] == 0xac )
+                                    {
+                                        for (j=0; j<Notaries_num; j++)
+                                        {
+                                            if ( strncmp(Notaries_elected[j][1],hexstr+2,66) == 0 )
+                                            {
+                                                if ( ((1LL << j) & notarymask) == 0 )
+                                                {
+                                                    //printf("n%d ",j);
+                                                    numnotaries++;
+                                                    notarymask |= (1LL << j);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        free_json(spentobj);
+                    }
+                }
+                if ( numnotaries > 0 )
+                {
+                    if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
+                    {
+                        hasnotarization = 1;
+                        *nothtp = 0;
+                        if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
+                        {
+                            bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65];//,str[65],str2[65],str3[65];
+                            vout = jitem(vouts,numvouts-1);
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 36*2 && len < sizeof(script)*2 )
+                            {
+                                len >>= 1;
+                                decode_hex(script,len,hexstr);
+                                if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len,mdata) > 0 && strcmp(symbol,coin->symbol) == 0 )
+                                {
+                                    // if ( Notaries_port != DPOW_SOCKPORT ) // keep going till valid MoM found, useful for new chains without any MoM
+                                    {
+                                        if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
+                                        {
+                                            *nothtp = 0;
+                                        }
+                                    }
+                                    if ( mdata->pairs != 0 && mdata->numpairs > 0 )
+                                    {
+                                        for (j=0; j<mdata->numpairs; j++)
+                                        {
+                                            if ( mdata->pairs[j].notarization_height > coin->MoMoMheight )
+                                            {
+                                                coin->MoMoMheight = mdata->pairs[j].notarization_height;
+                                                printf("set %s MoMoMheight <- %d\n",coin->symbol,coin->MoMoMheight);
+                                            }
+                                        }
+                                    }
+                                    //printf("%s.%d notarizationht.%d %s -> %s MoM.%s [%d]\n",symbol,height,*nothtp,bits256_str(str,blockhash),bits256_str(str2,txid),bits256_str(str3,MoM),MoMdepth);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        free_json(txobj);
+    }
+    if ( hasnotarization != 0 )
+        (*signedmaskp) = notarymask;
+    return(hasnotarization);
+}
+
+int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht,struct komodo_ccdataMoMoM *mdata)
+{
+    int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
+    *nothtp = 0;
+    *signedmaskp = 0;
+    memset(mdata,0,sizeof(*mdata));
+    if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            txid = jbits256i(txarray,i);
+            hasnotarization += dpow_txhasnotarization(signedmaskp,nothtp,myinfo,coin,txid,ht,mdata);
+        }
+    }
+    return(hasnotarization);
 }
 
 STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
