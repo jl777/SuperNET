@@ -60,7 +60,8 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    struct komodo_ccdataMoMoM mdata; void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht,notht; uint64_t signedmask; struct dpow_block *bp;
+    //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht;  struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
