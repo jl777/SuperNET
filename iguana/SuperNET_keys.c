@@ -310,13 +310,22 @@ int32_t _SuperNET_encryptjson(struct supernet_info *myinfo,char *destfname,char 
     return(0);
 }
 
+int32_t LP_wifstr_valid(char *symbol,char *wifstr);
+int32_t curve25519_donna(uint8_t *mypublic,const uint8_t *secret,const uint8_t *basepoint);
+
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256)
 {
-    bits256 hash;
+    static uint8_t basepoint[32] = {9}; bits256 hash; uint8_t addrtype,usedwif = 0;
     if ( dosha256 != 0 )
     {
         memcpy(myinfo->secret,pass,passlen+1);
-        myinfo->myaddr.nxt64bits = conv_NXTpassword(myinfo->persistent_priv.bytes,myinfo->myaddr.persistent.bytes,pass,passlen);
+        if ( LP_wifstr_valid("KMD",pass) > 0 )
+        {
+            usedwif = 1;
+            bitcoin_wif2priv(&addrtype,&myinfo->persistent_priv,(char *)pass);
+            curve25519_donna(myinfo->myaddr.persistent.bytes,myinfo->persistent_priv.bytes,basepoint);
+        }
+        else myinfo->myaddr.nxt64bits = conv_NXTpassword(myinfo->persistent_priv.bytes,myinfo->myaddr.persistent.bytes,pass,passlen);
     }
     else
     {
@@ -329,6 +338,8 @@ void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,in
     bitcoin_pubkey33(myinfo->ctx,myinfo->persistent_pubkey33,myinfo->persistent_priv);
     bitcoin_address(myinfo->myaddr.BTC,0,myinfo->persistent_pubkey33,33);
     bitcoin_address(myinfo->myaddr.BTCD,60,myinfo->persistent_pubkey33,33);
+    if ( usedwif != 0 )
+        printf("usedwif for %s %s\n",myinfo->myaddr.BTCD,myinfo->myaddr.BTC);
 }
 
 void SuperNET_parsemyinfo(struct supernet_info *myinfo,cJSON *msgjson)
