@@ -235,7 +235,7 @@ cJSON *issue_calcMoM(struct iguana_info *coin,int32_t height,int32_t MoMdepth)
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"calc_MoM",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
-            printf("MoM.%s -> %s\n",buf,retstr);
+            //printf("MoM.%s -> %s\n",buf,retstr);
             free(retstr);
         }
     }

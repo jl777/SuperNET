@@ -237,9 +237,13 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     memset(MoM.bytes,0,sizeof(MoM));
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
-        if ( (prevMoMheight= jint(infojson,"prevMoMheight")) != 0 )
+        if ( (prevMoMheight= jint(infojson,"prevMoMheight")) >= 0 )
         {
+            if ( prevMoMheight == 0 )
+                prevMoMheight = 1;
             *MoMdepthp = (height - prevMoMheight);
+            if ( *MoMdepthp > 1440*30 )
+                *MoMdepthp = 1440*30;
             if ( *MoMdepthp > 0 && (MoMjson= issue_calcMoM(coin,height,*MoMdepthp)) != 0 )
             {
                 MoM = jbits256(MoMjson,"MoM");
@@ -427,7 +431,7 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     bp->myind = myind;
-    printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
+    printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u MoM[%d] %s\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp,bp->MoMdepth,bits256_str(str2,bp->MoM));
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
         for (i=0; i<33; i++)
