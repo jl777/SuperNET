@@ -386,7 +386,7 @@ void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,in
     bitcoin_pubkey33(myinfo->ctx,myinfo->persistent_pubkey33,myinfo->persistent_priv);
     bitcoin_address(myinfo->myaddr.BTC,0,myinfo->persistent_pubkey33,33);
     bitcoin_address(myinfo->myaddr.BTCD,60,myinfo->persistent_pubkey33,33);
-    if ( usedwif != 0 )
+    if ( (0) && usedwif != 0 )
         printf("usedwif for %s %s\n",myinfo->myaddr.BTCD,myinfo->myaddr.BTC);
 }
 
