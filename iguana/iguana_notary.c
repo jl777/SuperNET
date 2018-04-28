@@ -424,7 +424,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     myinfo->numdpows++;
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d/max.%d freq.%d minsigs.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,myinfo->maxdpows,dp->freq,dp->minsigs);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
