@@ -402,9 +402,6 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         free(retstr);
         retstr = 0;
     }
-    for (i=0; i<33; i++)
-        printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d/max.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,myinfo->maxdpows);
     if ( srcvalid <= 0 || destvalid <= 0 )
     {
         dp->symbol[0] = 0;
@@ -427,6 +424,9 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     //uint8_t buf[32768];
     //dpow_paxpending(buf);
     myinfo->numdpows++;
+    for (i=0; i<33; i++)
+        printf("%02x",dp->minerkey33[i]);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d/max.%d freq.%d minsigs.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,myinfo->maxdpows,dp->freq,dp->minsigs);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
