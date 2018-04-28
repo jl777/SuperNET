@@ -242,6 +242,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             if ( prevMoMheight == 0 )
                 prevMoMheight = 1;
             *MoMdepthp = (height - prevMoMheight);
+            printf("%s ht.%d prevMoM.%d -> depth %d\n",coin->symbol,height,prevMoMheight,*MoMdepthp);
             if ( *MoMdepthp > 1440*30 )
                 *MoMdepthp = 1440*30;
             if ( *MoMdepthp > 0 && (MoMjson= issue_calcMoM(coin,height,*MoMdepthp)) != 0 )
