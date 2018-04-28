@@ -2066,9 +2066,9 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                         dp = 0;
                         for (i=0; i<myinfo->numdpows; i++)
                         {
-                            if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
+                            if ( strcmp(np->symbol,myinfo->DPOWS[i]->symbol) == 0 )
                             {
-                                dp = &myinfo->DPOWS[i];
+                                dp = myinfo->DPOWS[i];
                                 break;
                             }
                         }

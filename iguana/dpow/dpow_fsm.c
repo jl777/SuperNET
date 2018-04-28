@@ -519,7 +519,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( bp->isratify == 0 )
         {
-            if ( myinfo->DPOWS[0].ratifying != 0 )
+            if ( myinfo->DPOWS[0]->ratifying != 0 )
             {
                 printf("break due to already ratifying\n");
                 break;

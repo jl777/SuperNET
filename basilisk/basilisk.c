@@ -947,17 +947,17 @@ void basilisks_loop(void *arg)
 //fprintf(stderr,"E ");
             if ( myinfo->numdpows == 1 )
             {
-                iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
                 endmilli = startmilli + 100;
             }
             else if ( myinfo->numdpows > 1 )
             {
-                dp = &myinfo->DPOWS[counter % myinfo->numdpows];
+                dp = myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 //if ( (counter % myinfo->numdpows) != 0 )
                 {
                     //fprintf(stderr,"F ");
-                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                    iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
                 }
                 endmilli = startmilli + 30;
             }

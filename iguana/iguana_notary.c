@@ -298,12 +298,10 @@ void dpow_addresses()
 THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
 {
     char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*destcoin; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp;
-    if ( myinfo->numdpows == myinfo->maxdpows )
-    {
-        myinfo->maxdpows++;
-        myinfo->DPOWS = realloc(myinfo->DPOWS,sizeof(*myinfo->DPOWS) * myinfo->maxdpows);
-    }
-    dp = &myinfo->DPOWS[myinfo->numdpows];
+    if ( (dp= myinfo->DPOWS[myinfo->numdpows]) == 0 )
+        myinfo->DPOWS[myinfo->numdpows] = calloc(1,sizeof(*dp));
+    if ( (dp= myinfo->DPOWS[myinfo->numdpows]) == 0 )
+        return(clonestr("{\"error\":\"dPoW cant allocate memory\"}"));
     memset(dp,0,sizeof(*dp));
     destvalid = srcvalid = 0;
     if ( myinfo->NOTARY.RELAYID < 0 )
@@ -339,7 +337,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     if ( myinfo->numdpows > 1 )
     {
         for (i=1; i<myinfo->numdpows; i++)
-            if ( strcmp(symbol,myinfo->DPOWS[i].symbol) == 0 )
+            if ( strcmp(symbol,myinfo->DPOWS[i]->symbol) == 0 )
             {
                 dp->symbol[0] = 0;
                 return(clonestr("{\"error\":\"cant dPoW same coin again\"}"));
@@ -490,7 +488,7 @@ STRING_ARG(dpow,pending,fiat)
         base[i] = 0;
         for (i=0; i<myinfo->numdpows; i++)
         {
-            dp = &myinfo->DPOWS[i];
+            dp = myinfo->DPOWS[i];
             if ( strcmp(dp->symbol,base) == 0  )
                 return(jprint(dpow_withdraws_pending(dp),1));
         }
@@ -870,7 +868,7 @@ STRING_ARG(dpow,active,maskhex)
     n = komodo_notaries("KMD",pubkeys,current);
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
-        mask = myinfo->DPOWS[0].lastrecvmask;
+        mask = myinfo->DPOWS[0]->lastrecvmask;
         for (i=0; i<n; i++)
         {
             if ( ((1LL << i) & mask) != 0 )
@@ -911,7 +909,7 @@ STRING_ARG(dpow,active,maskhex)
 
 ZERO_ARGS(dpow,cancelratify)
 {
-    myinfo->DPOWS[0].cancelratify = 1;
+    myinfo->DPOWS[0]->cancelratify = 1;
     return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
 }
 
@@ -926,18 +924,18 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
     ptrs[0] = (void *)myinfo;
     if ( (source= jstr(json,"source")) == 0 )
         source = "KMD";
-    ptrs[1] = (void *)&myinfo->DPOWS[0];
+    ptrs[1] = (void *)myinfo->DPOWS[0];
     for (i=0; i<myinfo->numdpows; i++)
-        if ( strcmp(myinfo->DPOWS[0].symbol,source) == 0 )
+        if ( strcmp(myinfo->DPOWS[0]->symbol,source) == 0 )
         {
-            ptrs[1] = (void *)&myinfo->DPOWS[i];
+            ptrs[1] = (void *)myinfo->DPOWS[i];
             break;
         }
     ptrs[2] = (void *)(long)minsigs;
     ptrs[3] = (void *)DPOW_RATIFYDURATION;
     ptrs[4] = (void *)jprint(ratified,0);
     memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
-    myinfo->DPOWS[0].cancelratify = 0;
+    myinfo->DPOWS[0]->cancelratify = 0;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
     {
     }
