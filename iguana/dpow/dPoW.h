@@ -21,6 +21,7 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
+#define DPOW_MAXFREQ 100
 #define DPOW_MINSIGS 13
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
@@ -137,7 +138,7 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 activehash,lastnotarized,srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t SRCREALTIME,lastsrcupdate,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
-    int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
+    int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying,minsigs,freq;
     struct pax_transaction *PAX;
     portable_mutex_t paxmutex,dexmutex;
     uint32_t ipbits[128],numipbits;

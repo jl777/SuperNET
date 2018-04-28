@@ -61,10 +61,10 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht;  struct dpow_block *bp;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht;  struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
-    /*if ( strcmp("BTC",dp->dest) == 0 )
+    if ( strcmp("BTC",dp->dest) == 0 )
     {
         freq = DPOW_CHECKPOINTFREQ;
         minsigs = Notaries_BTCminsigs; //DPOW_MINSIGS;
@@ -72,10 +72,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     else
     {
         minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
-        if ( strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0)
-            freq = DPOW_MAXFREQ;
+        if ( strcmp("CHIPS",dp->symbol) == 0 )
+            freq = 100;
         else freq = 1;
-    }*/
+    }
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
     {
@@ -119,9 +119,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             } else return;
         } else return;
     }*/
-    if ( dp->freq <= 0 )
-        dp->freq = 1;
-    if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
+    if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
         if ( (0) && strcmp("KMD",dp->symbol) == 0 )
             printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
@@ -129,7 +127,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
-        ptrs[2] = (void *)(uint64_t)dp->minsigs;
+        ptrs[2] = (void *)(uint64_t)minsigs;
         if ( strcmp(dp->dest,"KMD") != 0 )
             ptrs[3] = (void *)DPOW_DURATION;
         else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
@@ -140,13 +138,13 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
         }
-        if ( ht > DPOW_MAXFREQ*5 )
+        if ( ht > 500 )
         {
             if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
                 printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
-            for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
+            for (i=ht-500; i>ht-10000&&i>100; i--)
             {
-                if ( (i % DPOW_MAXFREQ) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
+                if ( (i % 100) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
                 {
                     dp->blocks[i] = 0;
                     Numallocated--;
@@ -295,16 +293,9 @@ void dpow_addresses()
 #include "../includes/iguana_apideclares.h"
 #include "../includes/iguana_apideclares2.h"
 
-THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
+THREE_STRINGS(iguana,dpow,symbol,dest,pubkey)
 {
-    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*destcoin; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp;
-    if ( myinfo->numdpows == myinfo->maxdpows )
-    {
-        myinfo->maxdpows++;
-        myinfo->DPOWS = realloc(myinfo->DPOWS,sizeof(*myinfo->DPOWS) * myinfo->maxdpows);
-    }
-    dp = &myinfo->DPOWS[myinfo->numdpows];
-    memset(dp,0,sizeof(*dp));
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*destcoin; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     destvalid = srcvalid = 0;
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
@@ -368,8 +359,6 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         dp->minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
         if ( strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0)
             dp->freq = DPOW_MAXFREQ;
-        else if ( freq >= 2 )
-            dp->freq = freq;
         else dp->freq = 1;
     }
     src = iguana_coinfind(dp->symbol);
@@ -404,7 +393,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     }
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d/max.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,myinfo->maxdpows);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
     if ( srcvalid <= 0 || destvalid <= 0 )
     {
         dp->symbol[0] = 0;
