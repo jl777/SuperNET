@@ -509,7 +509,7 @@ void dpow_statemachinestart(void *ptr)
         extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
-    printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL));
+    printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld MoM[%d] %s\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL),bp->MoMdepth,bits256_str(str2,bp->MoM));
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
