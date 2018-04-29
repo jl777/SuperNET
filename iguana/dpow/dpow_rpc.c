@@ -101,6 +101,7 @@ int32_t komodo_initjson(char *fname)
                     Notaries_seeds[i] = clonestr(jstri(array,i));
                     printf("%s ",Notaries_seeds[i]);
                 }
+                Notaries_numseeds = i;
                 printf("Notaries_numseeds.%d\n",Notaries_numseeds);
             }
             if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
