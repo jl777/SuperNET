@@ -420,6 +420,7 @@ void dpow_statemachinestart(void *ptr)
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             free(ptr);
             dp->ratifying -= bp->isratify;
+            exit(-1);
             return;
         }
         printf("myind.%d\n",myind);
