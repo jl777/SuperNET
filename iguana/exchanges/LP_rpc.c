@@ -649,7 +649,7 @@ int32_t LP_importaddress(char *symbol,char *address)
 cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 {
     static void *ctx;
-    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
+    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t i,doneflag = 0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -663,9 +663,16 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 #ifdef LP_DONT_IMPORTPRIVKEY
     if ( LP_importaddress(symbol,address) < 0 )
     {
-        printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));
-        return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
-    } else return(cJSON_Parse("{\"result\":\"success\"}"));
+        for (i=0; i<3; i++)
+        {
+            printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));
+            if ( LP_importaddress(symbol,address) >= 0 )
+                break;
+        }
+        if ( i == 3 )
+            return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
+    }
+    return(cJSON_Parse("{\"result\":\"success\"}"));
 #endif
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
