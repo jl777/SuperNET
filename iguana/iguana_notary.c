@@ -910,7 +910,7 @@ STRING_ARG(dpow,active,maskhex)
             }
             else jaddistr(notarray,Notaries_elected[i][0]);
         }
-        retjson = cJSON_CreateArray();
+        retjson = cJSON_CreateObject();
         jadd(retjson,"set",array);
         jadd(retjson,"not",notarray);
         return(jprint(retjson,1));
