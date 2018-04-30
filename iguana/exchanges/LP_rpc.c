@@ -53,7 +53,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         //    printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
-        if ( coin->inactive == 0 && (strcmp(method,"importprivkey") != 0  && strcmp(method,"validateaddress") != 0 && strcmp(method,"getaddressinfo") != 0 &&  strcmp(method,"importaddress") != 0 && strcmp(method,"getrawtransaction") != 0 && strcmp(method,"getblock") != 0 && strcmp(method,"getinfo") != 0 && strcmp(method,"getblockchaininfo") == 0) )
+        //if ( coin->inactive == 0 && (strcmp(method,"importprivkey") != 0  && strcmp(method,"validateaddress") != 0 && strcmp(method,"getaddressinfo") != 0 &&  strcmp(method,"importaddress") != 0 && strcmp(method,"getrawtransaction") != 0 && strcmp(method,"getblock") != 0 && strcmp(method,"getinfo") != 0 && strcmp(method,"getblockchaininfo") == 0) )
         {
             if ( coin->electrum == 0 )
             {
@@ -77,7 +77,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
                     }
                 }
             }
-        } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
+        } //else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
     } else printf("bitcoin_json cant talk to NULL coin\n");
     return(retjson);
 }
@@ -346,7 +346,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
         sprintf(buf,"[\"%s\"]",address);
         if ( (retjson= bitcoin_json(coin,coin->validateaddress,buf)) != 0 )
         {
-            if ( jobj(retjson,"ismine") == 0 && strcmp(coin->validateaddress,"validateaddress") == 0 )
+            if ( jobj(retjson,"error") == 0 && jobj(retjson,"ismine") == 0 && strcmp(coin->validateaddress,"validateaddress") == 0 )
             {
                 printf("autochange %s validateaddress -> getaddressinfo\n",coin->symbol);
                 strcpy(coin->validateaddress,"getaddressinfo");
