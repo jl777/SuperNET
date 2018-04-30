@@ -1167,7 +1167,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
         if ( script[offset] == 'W' && strcmp(dp->symbol,"KMD") != 0 )
         {
             // if valid add to pricefeed for issue
-            printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(fiatoshis),opretlen);
+            printf("notary vout.%s ht.%d txi.%d vout.%d %.8f opretlen.%d\n",symbol,height,txi,vout,dstr(fiatoshis),opretlen);
             if ( opretlen == 38 ) // any KMD tx
             {
                 offset++;
