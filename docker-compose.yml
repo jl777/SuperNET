@@ -8,7 +8,6 @@ services:
       - ~/.zcash-params:/home/jenkins/.zcash-params
       - ~/.komodo:/home/jenkins/.komodo
       - .:/usr/mm
-    tty: true
     env_file:
       - .env.seed
     networks:
@@ -25,7 +24,6 @@ services:
       - .:/usr/mm
     links:
       - seednode
-    tty: true
     env_file:
       - .env.client
     networks:
