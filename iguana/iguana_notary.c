@@ -857,6 +857,8 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     return(clonestr("{\"result\":\"success\"}"));
 }
 
+extern char *Notaries_elected[65][2];
+
 STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8],revdata[8],pubkeys[64][33]; char pubkeystr[67]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array = cJSON_CreateArray();
@@ -874,7 +876,7 @@ STRING_ARG(dpow,active,maskhex)
             if ( ((1LL << i) & mask) != 0 )
             {
                 init_hexbytes_noT(pubkeystr,pubkeys[i],33);
-                printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
+                //printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
                 jaddistr(array,pubkeystr);
             }
         }
@@ -883,7 +885,7 @@ STRING_ARG(dpow,active,maskhex)
         jadd(retjson,"notaries",array);
         return(jprint(retjson,1));
     }
-    printf("dpow active (%s)\n",maskhex);
+    //printf("dpow active (%s)\n",maskhex);
     if ( (len= (int32_t)strlen(maskhex)) <= 16 )
     {
         len >>= 1;
@@ -893,15 +895,15 @@ STRING_ARG(dpow,active,maskhex)
             revdata[i] = data[len-1-i];
         mask = 0;
         memcpy(&mask,revdata,sizeof(revdata));
-        for (i=0; i<len; i++)
-            printf("%02x",data[i]);
-        printf(" <- hex mask.%llx\n",(long long)mask);
+        //for (i=0; i<len; i++)
+        //    printf("%02x",data[i]);
+        //printf(" <- hex mask.%llx\n",(long long)mask);
         for (i=0; i<(len<<3); i++)
             if ( ((1LL << i) & mask) != 0 )
             {
-                init_hexbytes_noT(pubkeystr,pubkeys[i],33);
-                printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
-                jaddistr(array,pubkeystr);
+                //init_hexbytes_noT(pubkeystr,pubkeys[i],33);
+                //printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
+                jaddistr(array,Notaries_elected[i][0]);
             }
         return(jprint(array,1));
     } else return(clonestr("{\"error\":\"maskhex too long\"}"));
