@@ -623,7 +623,7 @@ int32_t LP_importaddress(char *symbol,char *address)
     {
         if ( (validatejson= LP_validateaddress(symbol,address)) != 0 )
         {
-            //printf("validated.(%s)\n",jprint(validatejson,0));
+            printf("validated.(%s)\n",jprint(validatejson,0));
             if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
             {
                 if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"watchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
@@ -631,7 +631,7 @@ int32_t LP_importaddress(char *symbol,char *address)
             }
             free_json(validatejson);
         }
-        //printf("%s (%s) isvalid.%d doneflag.%d\n",symbol,address,isvalid,doneflag);
+        printf("%s (%s) isvalid.%d doneflag.%d\n",symbol,address,isvalid,doneflag);
         if ( isvalid == 0 )
             return(-1);
         if ( doneflag != 0 )
@@ -639,7 +639,7 @@ int32_t LP_importaddress(char *symbol,char *address)
         sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
         if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"importaddress",buf)) != 0 )
         {
-            //printf("importaddress.(%s %s) -> (%s)\n",symbol,address,retstr);
+            printf("importaddress.(%s %s) -> (%s)\n",symbol,address,retstr);
             free(retstr);
         } //else printf("importaddress.(%s %s)\n",symbol,address);
         return(1);
