@@ -861,7 +861,9 @@ extern char *Notaries_elected[65][2];
 
 STRING_ARG(dpow,active,maskhex)
 {
-    uint8_t data[8],revdata[8],pubkeys[64][33]; char pubkeystr[67]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array = cJSON_CreateArray();
+    uint8_t data[8],revdata[8],pubkeys[64][33]; char pubkeystr[67]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array,*notarray;
+    array = cJSON_CreateArray();
+    notarray = cJSON_CreateArray();
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
         current = jint(infojson,"blocks");
@@ -899,13 +901,19 @@ STRING_ARG(dpow,active,maskhex)
         //    printf("%02x",data[i]);
         //printf(" <- hex mask.%llx\n",(long long)mask);
         for (i=0; i<(len<<3); i++)
+        {
             if ( ((1LL << i) & mask) != 0 )
             {
                 //init_hexbytes_noT(pubkeystr,pubkeys[i],33);
                 //printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
                 jaddistr(array,Notaries_elected[i][0]);
             }
-        return(jprint(array,1));
+            else jaddistr(notarray,Notaries_elected[i][0]);
+        }
+        retjson = cJSON_CreateObject();
+        jadd(retjson,"set",array);
+        jadd(retjson,"not",notarray);
+        return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"maskhex too long\"}"));
 }
 
