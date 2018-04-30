@@ -348,7 +348,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
         {
             if ( jobj(retjson,"ismine") == 0 && strcmp(coin->validateaddress,"validateaddress") == 0 )
             {
-                printf("autochange validateaddress -> getaddressinfo\n",coin->symbol);
+                printf("autochange %s validateaddress -> getaddressinfo\n",coin->symbol);
                 strcpy(coin->validateaddress,"getaddressinfo");
                 free(retjson);
                 return(bitcoin_json(coin,coin->validateaddress,buf));
