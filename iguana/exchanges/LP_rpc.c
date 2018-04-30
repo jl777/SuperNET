@@ -53,7 +53,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         //    printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
-        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 || strcmp(method,"getaddressinfo") == 0 ||  strcmp(method,"importaddress") == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 || strcmp(method,"getblockchaininfo") == 0 )
+        if ( coin->inactive == 0 && (strcmp(method,"importprivkey") != 0  && strcmp(method,"validateaddress") != 0 && strcmp(method,"getaddressinfo") != 0 &&  strcmp(method,"importaddress") != 0 && strcmp(method,"getrawtransaction") != 0 && strcmp(method,"getblock") != 0 && strcmp(method,"getinfo") != 0 && strcmp(method,"getblockchaininfo") == 0) )
         {
             if ( coin->electrum == 0 )
             {
@@ -649,7 +649,7 @@ int32_t LP_importaddress(char *symbol,char *address)
 cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 {
     static void *ctx;
-    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t i,doneflag = 0;
+    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -663,16 +663,9 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 #ifdef LP_DONT_IMPORTPRIVKEY
     if ( LP_importaddress(symbol,address) < 0 )
     {
-        for (i=0; i<3; i++)
-        {
-            printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));
-            if ( LP_importaddress(symbol,address) >= 0 )
-                break;
-        }
-        if ( i == 3 )
-            return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
-    }
-    return(cJSON_Parse("{\"result\":\"success\"}"));
+        printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));
+        return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
+    } else return(cJSON_Parse("{\"result\":\"success\"}"));
 #endif
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
