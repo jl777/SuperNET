@@ -1518,6 +1518,262 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
     return(jprint(retjson,1));
 }
 
+char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **txobjp,cJSON **vinsp,struct vin_info *V,struct iguana_info *coin,bits256 utxotxid,int32_t utxovout,uint64_t utxovalue,bits256 privkey,cJSON *outputs,int64_t txfee)
+{
+    static void *ctx;
+    cJSON *txobj,*item,*vins; uint8_t addrtype,rmd160[20],pubkey33[33],tmptype,data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr,spendscriptstr[128],blastaddr[64],wifstr[64]; bits256 txid; uint32_t locktime,crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,offset,len,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0;
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    *txobjp = *vinsp = 0;
+    *changep = 0;
+    *changeoutp = -1;
+    if ( coin == 0 || outputs == 0 || (numvouts= cJSON_GetArraySize(outputs)) <= 0 )
+    {
+        fprintf(stderr,"LP_createblasttransaction: illegal coin.%p outputs.%p or arraysize.%d, error\n",coin,outputs,numvouts);
+        return(0);
+    }
+    amount = txfee;
+    for (i=0; i<numvouts; i++)
+    {
+        item = jitem(outputs,i);
+        if ( (coinaddr= jfieldname(item)) != 0 )
+        {
+            if ( 0 && LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
+            {
+                fprintf(stderr,"%s LP_createblasttransaction %s i.%d of %d is invalid\n",coin->symbol,coinaddr,i,numvouts);
+                return(0);
+            }
+            if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
+            {
+                fprintf(stderr,"LP_createblasttransaction: cant get value %s i.%d of %d %s\n",coinaddr,i,numvouts,jprint(outputs,0));
+                return(0);
+            }
+            amount += value;
+            //printf("vout.%d %.8f -> total %.8f\n",i,dstr(value),dstr(amount));
+        }
+        else
+        {
+            fprintf(stderr,"LP_createblasttransaction: cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+            return(0);
+        }
+    }
+    ignore_cltverr = 0;
+    suppress_pubkeys = 1;
+    memset(V,0,sizeof(*V));
+    V->N = V->M = 1;
+    V->signers[0].privkey = privkey;
+    bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
+    bitcoin_priv2pub(ctx,coin->symbol,pubkey33,blastaddr,privkey,coin->taddr,coin->pubtype);
+    bitcoin_addr2rmd160("KMD",coin->taddr,&tmptype,rmd160,blastaddr);
+    V->suppress_pubkeys = suppress_pubkeys;
+    V->ignore_cltverr = ignore_cltverr;
+    change = (utxovalue - amount);
+    timestamp = (uint32_t)time(NULL);
+    locktime = 0;
+    txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,coin->txversion,timestamp);
+    scriptlen = bitcoin_standardspend(script,0,rmd160);
+    init_hexbytes_noT(spendscriptstr,script,scriptlen);
+    vins = cJSON_CreateArray();
+    jaddi(vins,LP_inputjson(utxotxid,utxovout,spendscriptstr));
+    jdelete(txobj,"vin");
+    jadd(txobj,"vin",jduplicate(vins));
+    *vinsp = vins;
+    for (i=0; i<numvouts; i++)
+    {
+        item = jitem(outputs,i);
+        if ( (coinaddr= jfieldname(item)) != 0 )
+        {
+            if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
+            {
+                fprintf(stderr,"LP_createblasttransaction: cant get value i.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+                free_json(txobj);
+                return(0);
+            }
+            if ( (scriptstr= jstr(item,"script")) != 0 )
+            {
+                spendlen = (int32_t)strlen(scriptstr) >> 1;
+                if ( spendlen < sizeof(script) )
+                {
+                    decode_hex(spendscript,spendlen,scriptstr);
+                    //printf("i.%d using external script.(%s) %d\n",i,scriptstr,spendlen);
+                }
+                else
+                {
+                    fprintf(stderr,"LP_createblasttransaction: custom script.%d too long %d\n",i,spendlen);
+                    free_json(txobj);
+                    return(0);
+                }
+            }
+            else
+            {
+                bitcoin_addr2rmd160(coin->symbol,coin->taddr,&addrtype,rmd160,coinaddr);
+                if ( addrtype == coin->pubtype )
+                    spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+                else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
+                if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
+                {
+                    value += change;
+                    change = 0;
+                }
+            }
+            txobj = bitcoin_txoutput(txobj,spendscript,spendlen,value + adjust);
+        }
+        else
+        {
+            fprintf(stderr,"LP_createblasttransaction: cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+            free_json(txobj);
+            return(0);
+        }
+    }
+    if ( change < 6000 )
+        change = 0;
+    *changep = change;
+    if ( change != 0 )
+    {
+        txobj = bitcoin_txoutput(txobj,script,scriptlen,change);
+        *changeoutp = numvouts;
+    }
+    if ( (rawtxbytes= bitcoin_json2hex(coin->symbol,coin->isPoS,&txid,txobj,V)) == 0 )
+        fprintf(stderr,"LP_createblasttransaction: error making rawtx suppress.%d\n",suppress_pubkeys);
+    *txobjp = txobj;
+    return(rawtxbytes);
+}
+
+char *bitcoin_signrawtransaction(int32_t *completedp,bits256 *signedtxidp,struct iguana_info *coin,char *rawtx,char *wifstr)
+{
+    char *retstr,*paramstr,*hexstr,*signedtx = 0; int32_t len; uint8_t *data; cJSON *signedjson;
+    *completedp = 0;
+    memset(signedtxidp,0,sizeof(*signedtxidp));
+    paramstr = calloc(1,200000+1);
+    sprintf(paramstr,"[\"%s\", null, [\"%s\"]]",rawtx,wifstr);
+    if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
+    {
+        //printf("%s signed -> %s\n",coin->symbol,retstr);
+        if ( (signedjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (hexstr= jstr(signedjson,"hex")) != 0 )
+            {
+                len = (int32_t)strlen(hexstr);
+                signedtx = calloc(1,len+1);
+                strcpy(signedtx,hexstr);
+                *completedp = is_cJSON_True(jobj(signedjson,"complete"));
+                len >>= 1;
+                data = malloc(len);
+                decode_hex(data,len,hexstr);
+                *signedtxidp = bits256_calctxid(coin->symbol,data,len);
+                free(data);
+            }
+            free_json(signedjson);
+        }
+        free(retstr);
+    }
+    free(paramstr);
+    return(signedtx);
+}
+
+char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
+{
+    static void *ctx;
+    int32_t broadcast,i,num,numblast,utxovout,completed=0,numvouts,changeout; char *passphrase,changeaddr[64],vinaddr[64],wifstr[65],blastaddr[65],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info V; uint32_t locktime,starttime; uint8_t pubkey33[33]; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 privkey,pubkey,checktxid,utxotxid,signedtxid; uint64_t txfee,utxovalue,change;
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    if ( (passphrase= jstr(argjson,"password")) == 0 )
+        return(clonestr("{\"error\":\"need password\"}"));
+    outputs = jarray(&numvouts,argjson,"outputs");
+    utxotxid = jbits256(argjson,"utxotxid");
+    utxovout = jint(argjson,"utxovout");
+    if ( (numblast= jint(argjson,"numblast")) == 0 )
+        numblast = 1000000;
+    utxovalue = j64bits(argjson,"utxovalue");
+    txfee = juint(argjson,"txfee");
+    broadcast = juint(argjson,"broadcast");
+    conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+    bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
+    bitcoin_priv2pub(ctx,coin->symbol,pubkey33,blastaddr,privkey,coin->taddr,coin->pubtype);
+    safecopy(vinaddr,blastaddr,sizeof(vinaddr));
+    safecopy(changeaddr,blastaddr,sizeof(changeaddr));
+    privkeys = cJSON_CreateArray();
+    jaddistr(privkeys,wifstr);
+    starttime = (uint32_t)time(NULL);
+    for (i=0; i<numblast; i++)
+    {
+        if ( (rawtx= LP_createblasttransaction(&change,&changeout,&txobj,&vins,&V,coin,utxotxid,utxovout,utxovalue,privkey,outputs,txfee)) != 0 )
+        {
+            completed = 0;
+            memset(&msgtx,0,sizeof(msgtx));
+            memset(signedtxid.bytes,0,sizeof(signedtxid));
+            if ( (signedtx= bitcoin_signrawtransaction(&completed,&signedtxid,coin,rawtx,wifstr)) == 0 )
+            //if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,&V,1,rawtx,vins,privkeys,coin->zcash)) < 0 )
+                printf("LP_txblast: couldnt sign blast tx %s\n",bits256_str(str,signedtxid));
+            else if ( completed == 0 )
+            {
+                printf("LP_txblast incomplete signing blast tx (%s)\n",jprint(vins,0));
+                break;
+            }
+            else
+            {
+                if ( broadcast != 0 )
+                {
+                    if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
+                    {
+                        printf("LP_txblast.%s broadcast (%s) vs %s\n",coin->symbol,bits256_str(str,signedtxid),signret);
+                        if ( is_hexstr(signret,0) == 64 )
+                        {
+                            decode_hex(checktxid.bytes,32,signret);
+                            if ( bits256_cmp(checktxid,signedtxid) == 0 )
+                            {
+                                printf("blaster i.%d of %d: %s/v%d %.8f\n",i,numblast,bits256_str(str,signedtxid),changeout,dstr(change));
+                            } else break;
+                        }
+                        else
+                        {
+                            printf("error sending tx:\n \"%s\" null '[\"%s\"]'\n",rawtx,wifstr);
+                            break;
+                        }
+                        free(signret);
+                    }
+                    else
+                    {
+                        fprintf(stderr,"null return from LP_sendrawtransaction\n");
+                        break;
+                    }
+                } else printf("blaster i.%d of %d: %s/v%d %.8f %s\n",i,numblast,bits256_str(str,signedtxid),changeout,dstr(change),signedtx);
+            }
+        }
+        else
+        {
+            fprintf(stderr,"error creating txblast rawtransaction\n");
+            break;
+        }
+        if ( txobj != 0 )
+            free_json(txobj), txobj = 0;
+        if ( rawtx != 0 )
+            free(rawtx), rawtx = 0;
+        if ( signedtx != 0 )
+            free(signedtx), signedtx = 0;
+        if ( changeout < 0 || change == 0 )
+            break;
+        utxotxid = signedtxid;
+        utxovout = changeout;
+        utxovalue = change;
+        // good place to update outputs[] for a fully programmable blast
+    }
+    free_json(privkeys), privkeys = 0;
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddstr(retjson,"blastaddr",blastaddr);
+    jaddnum(retjson,"broadcast",broadcast);
+    jaddnum(retjson,"numblast",numblast);
+    jaddnum(retjson,"completed",i);
+    jaddbits256(retjson,"lastutxo",utxotxid);
+    jaddnum(retjson,"lastutxovout",utxovout);
+    jaddnum(retjson,"lastutxovalue",dstr(utxovalue));
+    jaddnum(retjson,"elapsed",(uint32_t)time(NULL) - starttime);
+    jaddnum(retjson,"tx/sec",(double)i / ((uint32_t)time(NULL) - starttime + 1));
+    return(jprint(retjson,1));
+}
+
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;

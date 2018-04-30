@@ -306,7 +306,7 @@ struct iguana_info
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
-    char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64];
+    char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64],validateaddress[64];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
@@ -459,7 +459,7 @@ struct LP_trade
     uint64_t aliceid;
     int64_t besttrust,bestunconfcredits;
     double bestprice;
-    uint32_t negotiationdone,bestresponse,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
+    uint32_t negotiationdone,bestresponse,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime,cancelled;
     char pairstr[64],funcid,iambob;
     struct LP_quoteinfo Qs[4],Q;
 };
@@ -575,6 +575,7 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue);
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr);
 int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,uint16_t netid,char *seednode);
+int32_t LP_trades_canceluuid(char *uuidstr);
 int _decreasing_uint64(const void *a,const void *b);
 int32_t LP_alice_eligible(uint32_t quotetime);
 int32_t LP_is_slowcoin(char *symbol);

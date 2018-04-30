@@ -72,16 +72,18 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 }
 
 char *Notaries_elected[65][2];
-char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
-int32_t Notaries_numseeds = (int32_t)(sizeof(seeds)/sizeof(*seeds)),Notaries_num,Notaries_BTCminsigs = DPOW_MINSIGS,Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
+//char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
+int32_t Notaries_numseeds;// = (int32_t)(sizeof(seeds)/sizeof(*seeds))
+int32_t Notaries_num,Notaries_BTCminsigs = DPOW_MINSIGS;
+int32_t Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
 uint16_t Notaries_port = DPOW_SOCKPORT;
 char *Notaries_seeds[65];
 
 int32_t komodo_initjson(char *fname)
 {
     char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; uint16_t port; int32_t i,n,num,retval = -1;
-    for (i=0; i<Notaries_numseeds; i++)
-        Notaries_seeds[i] = seeds[i];
+    //for (i=0; i<Notaries_numseeds; i++)
+    //    Notaries_seeds[i] = seeds[i];
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
         if ( (argjson= cJSON_Parse(fstr)) != 0 )
@@ -99,6 +101,7 @@ int32_t komodo_initjson(char *fname)
                     Notaries_seeds[i] = clonestr(jstri(array,i));
                     printf("%s ",Notaries_seeds[i]);
                 }
+                Notaries_numseeds = i;
                 printf("Notaries_numseeds.%d\n",Notaries_numseeds);
             }
             if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
@@ -226,6 +229,21 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
+cJSON *issue_calcMoM(struct iguana_info *coin,int32_t height,int32_t MoMdepth)
+{
+    char buf[128],*retstr=0; cJSON *retjson = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"[\"%d\", \"%d\"]",height,MoMdepth);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"calc_MoM",buf)) != 0 )
+        {
+            retjson = cJSON_Parse(retstr);
+            //printf("MoM.%s -> %s\n",buf,retstr);
+            free(retstr);
+        }
+    }
+    return(retjson);
+}
 
 cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
 {
@@ -1149,7 +1167,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
         if ( script[offset] == 'W' && strcmp(dp->symbol,"KMD") != 0 )
         {
             // if valid add to pricefeed for issue
-            printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(fiatoshis),opretlen);
+            printf("notary vout.%s ht.%d txi.%d vout.%d %.8f opretlen.%d\n",symbol,height,txi,vout,dstr(fiatoshis),opretlen);
             if ( opretlen == 38 ) // any KMD tx
             {
                 offset++;

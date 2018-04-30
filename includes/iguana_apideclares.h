@@ -174,7 +174,7 @@ STRING_AND_INT(iguana,snapshot,symbol,height);
 INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
 THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(iguana,initfastfind,activecoin);
-THREE_STRINGS(iguana,dpow,symbol,dest,pubkey);
+THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq);
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);
