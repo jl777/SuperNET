@@ -53,7 +53,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         //    printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
-        //if ( coin->inactive == 0 && (strcmp(method,"importprivkey") != 0  && strcmp(method,"validateaddress") != 0 && strcmp(method,"getaddressinfo") != 0 &&  strcmp(method,"importaddress") != 0 && strcmp(method,"getrawtransaction") != 0 && strcmp(method,"getblock") != 0 && strcmp(method,"getinfo") != 0 && strcmp(method,"getblockchaininfo") != 0) )
+        if ( coin->inactive == 0 && (strcmp(method,"importprivkey") != 0  && strcmp(method,"validateaddress") != 0 && strcmp(method,"getaddressinfo") != 0 &&  strcmp(method,"importaddress") != 0 && strcmp(method,"getrawtransaction") != 0 && strcmp(method,"getblock") != 0 && strcmp(method,"getinfo") != 0 && strcmp(method,"getblockchaininfo") != 0) )
         {
             if ( coin->electrum == 0 )
             {
@@ -625,7 +625,7 @@ int32_t LP_importaddress(char *symbol,char *address)
     {
         if ( (validatejson= LP_validateaddress(symbol,address)) != 0 )
         {
-            printf("validated.(%s)\n",jprint(validatejson,0));
+            //printf("validated.(%s)\n",jprint(validatejson,0));
             if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
             {
                 if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"watchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
@@ -633,7 +633,7 @@ int32_t LP_importaddress(char *symbol,char *address)
             }
             free_json(validatejson);
         }
-        printf("%s (%s) isvalid.%d doneflag.%d\n",symbol,address,isvalid,doneflag);
+        //printf("%s (%s) isvalid.%d doneflag.%d\n",symbol,address,isvalid,doneflag);
         if ( isvalid == 0 )
             return(-1);
         if ( doneflag != 0 )
