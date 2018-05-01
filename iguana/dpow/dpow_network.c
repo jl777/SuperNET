@@ -1801,7 +1801,7 @@ cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
 {
-    bits256 srchash; int32_t i,flag,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0;
+    bits256 srchash; int32_t i,flag,mybestk,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0;
     if ( bp->myind < 0 )
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -1855,14 +1855,15 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             bp->notaries[bp->myind].bestmask = bp->bestmask;
         if ( bp->recvmask != 0 )
             bp->notaries[bp->myind].recvmask = bp->recvmask;
-        if ( bp->bestk >= 0 )
+        mybestk = bp->notaries[bp->myind].bestk;
+        if ( mybestk >= 0 )
         {
             flag = -1;
             for (i=0; i<bp->numnotaries; i++)
             {
                 if ( bp->paxwdcrc == bp->notaries[i].paxwdcrc )
                     paxmatches++;
-                if ( bp->bestk >= 0 && bp->notaries[i].bestk == bp->bestk && bp->notaries[i].bestmask == bp->bestmask )
+                if ( mybestk >= 0 && bp->notaries[i].bestk == mybestk && bp->notaries[i].bestmask == bp->bestmask )
                 {
                     matches++;
                     if ( ((1LL << i) & bp->bestmask) != 0 )
@@ -1887,27 +1888,27 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             }
             if ( 0 && bp->myind <= 1 )
-                printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
+                printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,mybestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
-                if ( bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
+                if ( bp->pendingbestk != mybestk || bp->pendingbestmask != bp->bestmask )
                 {
-                    printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
-                    bp->pendingbestk = bp->bestk;
+                    printf("new PENDING BESTK (%d %llx) state.%d\n",mybestk,(long long)bp->bestmask,bp->state);
+                    bp->pendingbestk = mybestk;
                     bp->pendingbestmask = bp->bestmask;
-                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
+                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,mybestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
                     //printf("finished signing\n");
                 }
-                if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                if ( bp->destsigsmasks[mybestk] == bp->bestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
-                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->bestk,bp->bestmask,0,0);
-                    if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,mybestk,bp->bestmask,0,0);
+                    if ( bp->srcsigsmasks[mybestk] == bp->bestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
-                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->bestk,bp->bestmask,0,0);
-                    } //else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->bestmask);
-                } //else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,mybestk,bp->bestmask,0,0);
+                    } //else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[mybestk],(long long)bp->bestmask);
+                } //else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[mybestk],(long long)bp->bestmask);
             }
         }
         else
@@ -1924,7 +1925,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         }
         char str[65];
         if ( (rand() % 130) == 0 )//|| strcmp(dp->symbol,"KMD") == 0 )
-            printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s [%d]\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM),bp->MoMdepth);
+            printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s [%d]\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,mybestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(mybestk>=0?bp->destsigsmasks[mybestk]:0),(long long)(mybestk>=0?bp->srcsigsmasks[mybestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM),bp->MoMdepth);
     }
 }
 
