@@ -360,6 +360,7 @@ void dpow_statemachinestart(void *ptr)
         }
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
+        dp->currentbp = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
     }
