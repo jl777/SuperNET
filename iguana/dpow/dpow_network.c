@@ -1781,7 +1781,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 
 cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp)
 {
-    int32_t i,j; cJSON *retjson,*item; char hexstr[64];
+    int32_t i; cJSON *retjson,*item; char hexstr[64];
     retjson = cJSON_CreateArray();
     if ( dp == 0 || bp == 0 )
         return(retjson);
@@ -1790,13 +1790,9 @@ cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct d
         item = cJSON_CreateObject();
         jaddstr(item,"notary",Notaries_elected[i][0]);
         jaddnum(item,"bestk",bp->notaries[i].bestk);
-        for (j=7; j>=0; j--)
-            sprintf(hexstr,"%02x",((uint8_t *)&bp->notaries[i].recvmask)[j]);
-        hexstr[16] = 0;
+        sprintf(hexstr,"%16llx",(long long)bp->notaries[i].recvmask);
         jaddstr(item,"recvmask",hexstr);
-        for (j=7; j>=0; j--)
-            sprintf(hexstr,"%02x",((uint8_t *)&bp->notaries[i].bestmask)[j]);
-        hexstr[16] = 0;
+        sprintf(hexstr,"%16llx",(long long)bp->notaries[i].bestmask);
         jaddstr(item,"bestmask",hexstr);
         jaddi(retjson,item);
     }
