@@ -1946,9 +1946,15 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
 {
     struct dpow_nanomsghdr *np; int32_t i,maxiters,src_or_dest,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
+    {
+        printf("bp->myind.%d error\n",bp->myind);
         return;
+    }
     if ( time(NULL) < myinfo->nanoinit+5 )
+    {
+        printf("dpow_send waiting for init\n");
         return;
+    }
     crc32 = calc_crc32(0,data,datalen);
      //dp->crcs[firstz] = crc32;
     size = (int32_t)(sizeof(*np) + datalen);
@@ -2009,7 +2015,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         usleep(1000);
     }
     if ( i == maxiters )
-        printf("maxiters expired for signed_nn_send\n");
+        printf("maxiters expired for signed_nn_send dpowsock.%d\n",myinfo->dpowsock);
     //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
     if ( 0 && bp->myind <= 2 )
