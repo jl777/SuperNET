@@ -29,7 +29,7 @@
 #define DPOW_VERSION 0x1782
 #define DPOW_UTXOSIZE 10000//50000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 600
+#define DPOW_DURATION 1200
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
@@ -142,7 +142,7 @@ struct dpow_info
     struct pax_transaction *PAX;
     portable_mutex_t paxmutex,dexmutex;
     uint32_t ipbits[128],numipbits;
-    struct dpow_block **blocks;
+    struct dpow_block **blocks,*currentbp;
 };
 
 struct komodo_ccdatapair { int32_t notarization_height; uint32_t MoMoMoffset; };
