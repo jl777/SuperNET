@@ -1944,7 +1944,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
-    struct dpow_nanomsghdr *np; int32_t i,src_or_dest,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
+    struct dpow_nanomsghdr *np; int32_t i,maxiters,src_or_dest,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
         return;
     if ( time(NULL) < myinfo->nanoinit+5 )
@@ -1995,18 +1995,21 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     memcpy(np->packet,data,datalen);
     sentbytes = -1;
     // deadlocks! portable_mutex_lock(&myinfo->dpowmutex);
-    for (i=0; i<100; i++)
+    maxiters = 100;
+    for (i=0; i<maxiters; i++)
     {
         struct nn_pollfd pfd;
         pfd.fd = myinfo->dpowsock;
         pfd.events = NN_POLLOUT;
-        if ( nn_poll(&pfd,1,100) > 0 )
+        if ( nn_poll(&pfd,1,1) > 0 )
         {
             sentbytes = signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
             break;
         }
         usleep(1000);
     }
+    if ( i == maxiters )
+        printf("maxiters expired for signed_nn_send\n");
     //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
     if ( 0 && bp->myind <= 2 )
@@ -2123,7 +2126,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         } else flags |= 1;
         if ( freeptr != 0 )
             nn_freemsg(freeptr), np = 0, freeptr = 0;
-        if ( 0 && myinfo->dexsock >= 0 ) // from servers
+        /*if ( 0 && myinfo->dexsock >= 0 ) // from servers
         {
             freeptr = 0;
             if ( (flags & 2) == 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
@@ -2140,8 +2143,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             } else flags |= 2;
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), dexp = 0, freeptr = 0;
-        }
-        if ( 0 && myinfo->repsock >= 0 ) // from clients
+        }*/
+        /*if ( 0 && myinfo->repsock >= 0 ) // from clients
         {
             dexp = 0;
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
@@ -2184,7 +2187,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             } else flags |= 4;
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
-        }
+        }*/
         if ( (num + n + num2) != lastval )
         {
             //printf("lastval.%d: num.%d n.%d num2.%d rep packets\n",lastval,num,n,num2);
