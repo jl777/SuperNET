@@ -1830,14 +1830,14 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             if ( (bp->notaries[senderind].src.siglens[bestk]= siglens[0]) != 0 )
             {
                 memcpy(bp->notaries[senderind].src.sigs[bestk],sigs[0],siglens[0]);
-                if ( bestk == bp->notaries[bp->myind].bestk && bestmask == bp->bestmask )
+                if ( bestk == bp->bestk && bestmask == bp->bestmask )
                     bp->srcsigsmasks[bestk] |= (1LL << senderind);
                 else bp->srcsigsmasks[bestk] &= ~(1LL << senderind);
             }
             if ( (bp->notaries[senderind].dest.siglens[bestk]= siglens[1]) != 0 )
             {
                 memcpy(bp->notaries[senderind].dest.sigs[bestk],sigs[1],siglens[1]);
-                if ( bestk == bp->notaries[bp->myind].bestk && bestmask == bp->bestmask )
+                if ( bestk == bp->bestk && bestmask == bp->bestmask )
                     bp->destsigsmasks[bestk] |= (1LL << senderind);
                 else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
             }
@@ -1862,7 +1862,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 if ( bp->paxwdcrc == bp->notaries[i].paxwdcrc )
                     paxmatches++;
-                if ( bp->notaries[bp->myind].bestk >= 0 && bp->notaries[i].bestk == bp->notaries[bp->myind].bestk && bp->notaries[i].bestmask == bp->bestmask )
+                if ( bp->bestk >= 0 && bp->notaries[i].bestk == bp->bestk && bp->notaries[i].bestmask == bp->bestmask )
                 {
                     matches++;
                     if ( ((1LL << i) & bp->bestmask) != 0 )
@@ -1890,22 +1890,22 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
-                if ( bp->pendingbestk != bp->notaries[bp->myind].bestk || bp->pendingbestmask != bp->bestmask )
+                if ( bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
                     printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
-                    bp->pendingbestk = bp->notaries[bp->myind].bestk;
+                    bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
-                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->notaries[bp->myind].bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
+                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
                     //printf("finished signing\n");
                 }
-                if ( bp->destsigsmasks[bp->notaries[bp->myind].bestk] == bp->bestmask ) // have all sigs
+                if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
-                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->notaries[bp->myind].bestk,bp->bestmask,0,0);
-                    if ( bp->srcsigsmasks[bp->notaries[bp->myind].bestk] == bp->bestmask ) // have all sigs
+                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->bestk,bp->bestmask,0,0);
+                    if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
-                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->notaries[bp->myind].bestk,bp->bestmask,0,0);
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->bestk,bp->bestmask,0,0);
                     } //else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->bestmask);
                 } //else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
             }
