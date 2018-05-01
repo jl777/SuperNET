@@ -82,9 +82,9 @@ int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,in
                     if ( memcmp(pubkey33,signpubkey33,33) == 0 )
                     {
                         sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
-                        //for (i=0; i<size+sizeof(*sigpacket); i++)
-                        //    printf("%02x",((uint8_t *)sigpacket)[i]);
-                        //printf(" <- nnsend\n");
+                        for (i=0; i<size+sizeof(*sigpacket); i++)
+                            printf("%02x",((uint8_t *)sigpacket)[i]);
+                        printf(" <- nnsend.%d\n",sock);
                         free(sigpacket);
                         return(sentbytes - siglen);
                     }
