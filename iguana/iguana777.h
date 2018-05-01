@@ -180,7 +180,7 @@ struct supernet_info
 #ifdef NOTARY_TESTMODE
     char dexseed_ipaddrs[1][64];
 #else
-    char dexseed_ipaddrs[4][64];
+    char dexseed_ipaddrs[8][64];
 #endif
     uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
     // compatibility
