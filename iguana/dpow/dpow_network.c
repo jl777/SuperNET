@@ -81,7 +81,19 @@ int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,in
                     //printf(" signed pubkey\n");
                     if ( memcmp(pubkey33,signpubkey33,33) == 0 )
                     {
-                        sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
+                        sentbytes = 0;
+                        for (j=0; j<100; j++)
+                        {
+                            struct nn_pollfd pfd;
+                            pfd.fd = sock;
+                            pfd.events = NN_POLLOUT;
+                            if ( nn_poll(&pfd,1,10) > 0 )
+                            {
+                                sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
+                                break;
+                            }
+                            usleep(1000);
+                        }
                         //for (i=0; i<size+sizeof(*sigpacket); i++)
                         //    printf("%02x",((uint8_t *)sigpacket)[i]);
                         //printf(" <- nnsend.%d\n",sock);
@@ -2007,7 +2019,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         struct nn_pollfd pfd;
         pfd.fd = myinfo->dpowsock;
         pfd.events = NN_POLLOUT;
-        if ( nn_poll(&pfd,1,1) > 0 )
+        if ( nn_poll(&pfd,1,10) > 0 )
         {
             sentbytes = signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
             break;
