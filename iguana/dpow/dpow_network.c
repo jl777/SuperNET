@@ -1510,7 +1510,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
                 bestmatches++;
         }
     }
-    if ( (bestmatches > bp->bestmatches || (bestmatches == bp->bestmatches && matches > bp->matches) && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    if ( (bestmatches > bp->bestmatches || (bestmatches == bp->bestmatches && matches > bp->matches)) && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
     {
         bp->matches = matches;
         bp->bestmatches = bestmatches;
