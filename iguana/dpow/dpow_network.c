@@ -1464,7 +1464,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
-    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     memset(masks,0,sizeof(masks));
     memset(bestks,0xff,sizeof(bestks));
     memset(counts,0,sizeof(counts));
@@ -1492,23 +1492,32 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             numdiff++;
         }
     }
-    besti = -1, best = 0;
+    besti = -1, matches = 0;
     for (i=0; i<numdiff; i++)
     {
         //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
         if ( counts[i] > best && bitweight(masks[i]) >= bp->minsigs )
         {
-            best = counts[i];
+            matches = counts[i];
             besti = i;
         }
     }
-    if ( best > bp->bestmatches && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    for (i=0; i<bp->numnotaries; i++)
     {
-        bp->bestmatches = best;
+        if ( ((1LL << i) & masks[besti]) != 0 )
+        {
+            if ( bp->notaries[i].bestmask == masks[i] )
+                bestmatches++;
+        }
+    }
+    if ( (bestmatches > bp->bestmatches || (bestmatches == bp->bestmatches && matches > bp->matches) && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    {
+        bp->matches = matches;
+        bp->bestmatches = bestmatches;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
         if ( bp->myind == 0 )
-            printf("%s.%d set best.%d to (%d %llx) recv.%llx\n",dp->symbol,bp->height,best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+            printf("%s.%d set matches.%d best.%d to (%d %llx) recv.%llx\n",dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
     bp->recvmask |= recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
