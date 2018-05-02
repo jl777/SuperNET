@@ -336,9 +336,9 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         return(clonestr("{\"error\":\"cant dPoW KMD without BTC\"}"));
     else if ( iguana_coinfind(dest) == 0 )
         return(clonestr("{\"error\":\"cant dPoW without KMD (dest)\"}"));
-    if ( myinfo->numdpows > 1 )
+    if ( myinfo->numdpows > 0 )
     {
-        for (i=1; i<myinfo->numdpows; i++)
+        for (i=0; i<myinfo->numdpows; i++)
             if ( strcmp(symbol,myinfo->DPOWS[i]->symbol) == 0 )
             {
                 dp->symbol[0] = 0;
