@@ -1496,7 +1496,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
     for (i=0; i<numdiff; i++)
     {
         //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
-        if ( counts[i] > best && bitweight(masks[i]) >= bp->minsigs )
+        if ( counts[i] > matches && bitweight(masks[i]) >= bp->minsigs )
         {
             matches = counts[i];
             besti = i;
