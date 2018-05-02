@@ -105,12 +105,15 @@ struct dpow_checkpoint
     bits256 miner; uint32_t blocktime,timestamp;
 };
 
+struct dpow_recvdata { uint64_t recvmask,bestmask; int8_t bestk; };
+
 struct dpow_block
 {
     bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
+    struct dpow_recvdata recv[64];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];

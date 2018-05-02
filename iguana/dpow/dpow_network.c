@@ -1507,13 +1507,14 @@ void dpow_bestconsensus(struct dpow_block *bp)
         bp->bestmatches = best;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
-        printf("set best.%d to (%d %llx) recv.%llx\n",best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+        if ( bp->myind == 0 )
+            printf("%s.%d set best.%d to (%d %llx) recv.%llx\n",dp->symbol,bp->height,best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
     bp->recvmask |= recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
-        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
+        if ( 0 && (time(NULL) / 180) != bp->lastepoch ) // diverges too fast
         {
             bp->lastepoch = (uint32_t)(time(NULL) / 180);
             printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
@@ -1955,7 +1956,21 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     {
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
         if ( bp->myind == 0 )
-            printf("%s.%d lag.[%d] RECV.%d %llx (%d %llx) %llx/%llx\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
+        {
+            int32_t i,matches = 0;
+            if ( np->bestk >= 0 )
+            {
+                bp->recv[senderind].recvmask = np->recvmask;
+                bp->recv[senderind].bestk = np->bestk;
+                bp->recv[senderind].bestmask = np->bestmask;
+                for (i=0; i<bp->numnotaries; i++)
+                {
+                    if ( bp->recv[i].recvmask == np->recvmask && bp->recv[i].bestmask == np->bestmask && bp->recv[i].bestk == np->bestk )
+                        matches++;
+                }
+            }
+            printf("%s.%d lag.[%2d] RECV.%d %llx (%2d %llx) %llx/%llx\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches);
+        }
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
