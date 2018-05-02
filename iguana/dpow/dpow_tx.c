@@ -54,7 +54,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
         {
             bp->recvmask |= (1LL << k);
             mask |= (1LL << k);
-            if ( ++m >= bp->minsigs )
+            if ( ++m == bp->minsigs )
             {
                 *lastkp = k;
                 break;

@@ -1478,7 +1478,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
         //    continue;
         for (j=0; j<numdiff; j++)
-            if ( bp->notaries[i].bestk == bestks[j] && bp->notaries[i].bestmask == masks[j] )
+            if ( bp->notaries[i].bestk == bestks[j] && bp->notaries[i].bestmask == masks[j] && bitweight(bp->notaries[i].bestmask) == bp->minsigs )
             {
                 counts[j]++;
                 break;
@@ -1496,7 +1496,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
     for (i=0; i<numdiff; i++)
     {
         //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
-        if ( counts[i] > matches && bitweight(masks[i]) >= bp->minsigs )
+        if ( counts[i] > matches && bitweight(masks[i]) == bp->minsigs )
         {
             matches = counts[i];
             besti = i;
@@ -1739,7 +1739,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
             //printf("crcval.%x numcrcs.%d bestmatches.%d matchesmask.%llx\n",crcval,numcrcs,bestmatches,(long long)matchesmask);
-            if ( bestmatches >= bp->minsigs )//&& numcrcs >= bp->minsigs )
+            if ( bestmatches == bp->minsigs )//&& numcrcs == bp->minsigs )
             {
                 if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
                 {
@@ -1916,7 +1916,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             }
             if ( 0 && bp->myind <= 1 )
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
-            if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
+            if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
                 if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
