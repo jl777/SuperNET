@@ -1985,7 +1985,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
         }
         if ( bp->myind == 0 && dispflag != 0 )
         {
-            printf("%s.%d lag.[%2d] %s RECV.%d %llx (%2d %llx) %llx/%llx matches.%d best.%d\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),Notaries_elected[senderind][0],senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches,bestmatches);
+            printf("%s.%d RECV.%-2d %llx (%2d %llx) %llx/%llx matches.%-2d best.%-2d %s\n",dp->symbol,bp->height,senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches,bestmatches,Notaries_elected[senderind][0]);
         }
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
