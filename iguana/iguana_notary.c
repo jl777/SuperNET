@@ -64,18 +64,6 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht;  struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
-    /*if ( strcmp("BTC",dp->dest) == 0 )
-    {
-        freq = DPOW_CHECKPOINTFREQ;
-        minsigs = Notaries_BTCminsigs; //DPOW_MINSIGS;
-    }
-    else
-    {
-        minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
-        if ( strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0)
-            freq = DPOW_MAXFREQ;
-        else freq = 1;
-    }*/
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
     {
@@ -368,9 +356,9 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         dp->minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
         if ( strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0)
             dp->freq = DPOW_MAXFREQ;
-        else if ( freq >= 2 )
+        else if ( freq > 2 )
             dp->freq = freq;
-        else dp->freq = 1;
+        else dp->freq = 2;
     }
     src = iguana_coinfind(dp->symbol);
     destcoin = iguana_coinfind(dp->dest);
