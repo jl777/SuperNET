@@ -1954,22 +1954,26 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
+        int32_t i,bestmatches=0,matches = 0;
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
-        if ( bp->myind == 0 )
+        if ( np->bestk >= 0 )
         {
-            int32_t i,matches = 0;
-            if ( np->bestk >= 0 )
+            bp->recv[senderind].recvmask = np->recvmask;
+            bp->recv[senderind].bestk = np->bestk;
+            bp->recv[senderind].bestmask = np->bestmask;
+            for (i=0; i<bp->numnotaries; i++)
             {
-                bp->recv[senderind].recvmask = np->recvmask;
-                bp->recv[senderind].bestk = np->bestk;
-                bp->recv[senderind].bestmask = np->bestmask;
-                for (i=0; i<bp->numnotaries; i++)
+                if ( bp->recv[i].recvmask == np->recvmask && bp->recv[i].bestmask == np->bestmask && bp->recv[i].bestk == np->bestk )
                 {
-                    if ( bp->recv[i].recvmask == np->recvmask && bp->recv[i].bestmask == np->bestmask && bp->recv[i].bestk == np->bestk )
-                        matches++;
+                    matches++;
+                    if ( ((1LL << i) & np->bestmask) != 0 )
+                        bestmatches++;
                 }
             }
-            printf("%s.%d lag.[%2d] RECV.%d %llx (%2d %llx) %llx/%llx matches.%d\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches);
+        }
+        if ( bp->myind == 0 )
+        {
+            printf("%s.%d lag.[%2d] RECV.%d %llx (%2d %llx) %llx/%llx matches.%d best.%d\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches,bestmatches);
         }
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
