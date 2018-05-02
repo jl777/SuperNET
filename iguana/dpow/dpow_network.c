@@ -1462,7 +1462,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     dpow_addnotary(myinfo,0,ipaddr);
 }
 
-void dpow_bestconsensus(struct dpow_block *bp)
+void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
     int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     memset(masks,0,sizeof(masks));
@@ -1502,17 +1502,19 @@ void dpow_bestconsensus(struct dpow_block *bp)
             besti = i;
         }
     }
-    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    if ( best > bp->bestmatches && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
     {
+        bp->bestmatches = best;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
-        //printf("set best.%d to (%d %llx) recv.%llx\n",best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+        if ( bp->myind == 0 )
+            printf("%s.%d set best.%d to (%d %llx) recv.%llx\n",dp->symbol,bp->height,best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
     bp->recvmask |= recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
-        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
+        if ( 0 && (time(NULL) / 180) != bp->lastepoch ) // diverges too fast
         {
             bp->lastepoch = (uint32_t)(time(NULL) / 180);
             printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
@@ -1588,7 +1590,7 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
-        dpow_bestconsensus(bp);
+        dpow_bestconsensus(dp,bp);
         np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
@@ -1859,7 +1861,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         }
-        dpow_bestconsensus(bp);
+        dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
         if ( bp->bestmask != 0 )
@@ -1904,9 +1906,9 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             }
             if ( 0 && bp->myind <= 1 )
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
-            if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
+            if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
-                if ( bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
+                if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
                     printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
                     bp->pendingbestk = bp->bestk;
@@ -1952,9 +1954,27 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
+        int32_t i,bestmatches=0,matches = 0;
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
+        if ( np->bestk >= 0 )
+        {
+            bp->recv[senderind].recvmask = np->recvmask;
+            bp->recv[senderind].bestk = np->bestk;
+            bp->recv[senderind].bestmask = np->bestmask;
+            for (i=0; i<bp->numnotaries; i++)
+            {
+                if ( bp->recv[i].recvmask == np->recvmask && bp->recv[i].bestmask == np->bestmask && bp->recv[i].bestk == np->bestk )
+                {
+                    matches++;
+                    if ( ((1LL << i) & np->bestmask) != 0 )
+                        bestmatches++;
+                }
+            }
+        }
         if ( bp->myind == 0 )
-            printf("%s.%d lag.[%d] RECV.%d %llx (%d %llx) %llx/%llx\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
+        {
+            printf("%s.%d lag.[%2d] RECV.%d %llx (%2d %llx) %llx/%llx matches.%d best.%d\n",dp->symbol,bp->height,(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches,bestmatches);
+        }
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
@@ -1993,7 +2013,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         else src_or_dest = 1;
         extralen = dpow_paxpending(extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
-        //dpow_bestconsensus(bp);
+        //dpow_bestconsensus(dp,bp);
         dpow_nanoutxoset(myinfo,dp,&np->notarize,bp,0);
     }
     else

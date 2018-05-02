@@ -358,7 +358,7 @@ void dpow_statemachinestart(void *ptr)
             }
             free_json(ratified);
         }
-        bp->bestk = -1;
+        bp->pendingbestk = bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         dp->currentbp = bp;
         bp->beacon = rand256(0);
