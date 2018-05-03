@@ -1464,7 +1464,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
-    int8_t bestks[64]; int32_t wts[64],owts[64],counts[64],i,j,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     memset(wts,0,sizeof(wts));
     memset(owts,0,sizeof(owts));
     for (i=0; i<bp->numnotaries; i++)
@@ -1475,6 +1475,9 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             if ( ((1LL << j) & recvmask) != 0 )
                 owts[j]++;
     }
+    for (i=0; i<bp->numnotaries; i++)
+        sortbuf[i] = (wts[i] * owts[i]);
+    revsort32(sortbuf,bp->numnotaries,sizeof(*sortbuf));
     memset(masks,0,sizeof(masks));
     memset(bestks,0xff,sizeof(bestks));
     memset(counts,0,sizeof(counts));
@@ -1529,8 +1532,12 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         if ( bp->myind == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
-                printf("%d:%d ",wts[i],owts[i]);
-            printf("%s.%d set matches.%d best.%d to (%d %llx) recv.%llx\n",dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+                printf("(%d:%d %d)%s ",wts[i],owts[i],wts[i]*owts[i],wts[i]*owts[i]>sortbuf[bp->numnotaries/2]?"*":"");
+            printf("median.%d %s.%d set matches.%d best.%d to (%d %llx) recv.%llx\n",sortbuf[bp->numnotaries/2],dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+            for (i=0; i<bp->numnotaries; i++)
+                if ( wts[i] == 0 || owts[i] == 0 )
+                    printf("%s.%d:%d ",Notaries_elected[i][0],wts[i],owts[i]);
+            printf(" <- problem nodes\n");
         }
     }
     bp->recvmask |= recvmask;
