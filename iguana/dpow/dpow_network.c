@@ -1464,7 +1464,11 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
-    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    int8_t bestks[64]; int32_t wts[64],counts[64],i,j,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    memset(wts,0,sizeof(wts));
+    for (i=0; i<bp->numnotaries; i++)
+        wts[i] = bitweight(bp->notaries[i].recvmask);
+    
     memset(masks,0,sizeof(masks));
     memset(bestks,0xff,sizeof(bestks));
     memset(counts,0,sizeof(counts));
@@ -1517,7 +1521,11 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
         if ( bp->myind == 0 )
+        {
+            for (i=0; i<bp->numnotaries; i++)
+                printf("%d ",wts[i]);
             printf("%s.%d set matches.%d best.%d to (%d %llx) recv.%llx\n",dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+        }
     }
     bp->recvmask |= recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
