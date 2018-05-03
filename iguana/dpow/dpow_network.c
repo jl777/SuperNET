@@ -1929,7 +1929,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 }
                 else if ( i != bp->myind && i == senderind && ((1LL << bp->myind) & bp->bestmask) != 0 && ((1LL << i) & bp->bestmask) != 0 && ((1LL << bp->myind) & bp->notaries[i].recvmask) == 0 )
                 {
-                    if ( now > bp->lastnanosend )
+                    if ( now > bp->lastnanosend+1 )
                         flag = senderind;
                 }
                 if ( 0 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
