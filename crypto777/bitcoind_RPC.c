@@ -80,13 +80,13 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
         if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"getrawtransaction") != 0 )
-            printf("<<<<<<<<<<< A bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,params);
+            printf("<<<<<<<<<<< A bitcoind_RPC: %s post_process_bitcoind_RPC.%s\n",debugstr,command);
         return(rpcstr);
     }
     json = cJSON_Parse(rpcstr);
     if ( json == 0 )
     {
-        printf("<<<<<<<<<<< B bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s) params.(%s)\n",debugstr,command,rpcstr,params);
+        printf("<<<<<<<<<<< B bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s)\n",debugstr,command,rpcstr);
         free(rpcstr);
         return(0);
     }
