@@ -151,6 +151,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     {
         didinit = 1;
         curl_global_init(CURL_GLOBAL_ALL); //init the curl session
+        curl_handle = curl_easy_init();
     }
     if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
     {
@@ -173,7 +174,7 @@ try_again:
     if ( retstrp != 0 )
         *retstrp = 0;
     starttime = OS_milliseconds();
-    curl_handle = curl_easy_init();
+    //curl_handle = curl_easy_init();
     headers = curl_slist_append(0,"Expect:");
     
   	curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
