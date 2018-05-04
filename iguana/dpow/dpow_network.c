@@ -1540,7 +1540,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         if ( bp->myind == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
-                printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>sortbuf[median]?"*":"");
+                printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>median?"*":"");
             printf("median.%d %s.%d set matches.%d best.%d to (%d %llx) recv.%llx topmask.%llx\n",sortbuf[bp->numnotaries/2],dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask,(long long)topmask);
             for (i=0; i<bp->numnotaries; i++)
                 if ( wts[i] == 0 || owts[i] == 0 )
