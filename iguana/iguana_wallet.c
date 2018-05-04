@@ -980,7 +980,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
             if ( address != 0 )
             {
                 strcpy(&addresses[64 * n++],address);
-            } else printf("cant get address from.(%s)\n",jprint(item,0));
+            } //else printf("cant get address from.(%s)\n",jprint(item,0));
         }
         for (i=0; i<n; i++)
         {
