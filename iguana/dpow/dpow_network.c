@@ -1545,7 +1545,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             for (i=0; i<bp->numnotaries; i++)
                 if ( wts[i] == 0 || owts[i] == 0 )
                     printf("%s.%d:%d ",Notaries_elected[i][0],wts[i],owts[i]);
-            printf(" <- problem nodes\n");
+            printf(" <- problem nodes.%s\n",dp->symbol);
         }
     }
     bp->recvmask |= recvmask;
