@@ -770,9 +770,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
 
 int32_t LP_aliceonly(char *symbol)
 {
-    if ( strcmp(symbol,"GAME") == 0 )
-        return(1);
-    else return(0);
+    return(0);
 }
 
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
