@@ -255,6 +255,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
                 {
                     while ( dp->lastheight <= height )
                     {
+                        printf("dp->lastheight.%d <= height.%d\n",dp->lastheight,height);
                         blockhash = dpow_getblockhash(myinfo,src,dp->lastheight);
                         dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
                     }
