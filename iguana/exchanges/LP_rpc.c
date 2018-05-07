@@ -251,6 +251,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
+        printf("LP_gettxout.%s\n",buf);
         return(bitcoin_json(coin,"gettxout",buf));
     }
     else
