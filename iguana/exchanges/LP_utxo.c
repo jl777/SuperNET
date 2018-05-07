@@ -1139,7 +1139,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             value = LP_value_extract(txobj,0,txid);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr != 0 )
                 LP_destaddr(coinaddr,txobj);
-            //printf("LP_txvalue %s tx %s/v%d value %.8f\n",coin->symbol,bits256_str(str,txid),vout,dstr(value));
+            printf("LP_txvalue %s tx %s/v%d value %.8f (%s)\n",coin->symbol,bits256_str(str,txid),vout,dstr(value),jprint(txobj,0));
             if ( value != 0 )
             {
                 free_json(txobj);
