@@ -1831,26 +1831,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
     }
 }
 
-cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp)
-{
-    int32_t i; cJSON *retjson,*item; char hexstr[64];
-    retjson = cJSON_CreateArray();
-    if ( dp == 0 || bp == 0 )
-        return(retjson);
-    for (i=0; i<bp->numnotaries; i++)
-    {
-        item = cJSON_CreateObject();
-        jaddstr(item,"notary",Notaries_elected[i][0]);
-        jaddnum(item,"bestk",bp->notaries[i].bestk);
-        sprintf(hexstr,"%16llx",(long long)bp->notaries[i].recvmask);
-        jaddstr(item,"recvmask",hexstr);
-        sprintf(hexstr,"%16llx",(long long)bp->notaries[i].bestmask);
-        jaddstr(item,"bestmask",hexstr);
-        jaddi(retjson,item);
-    }
-    return(retjson);
-}
-
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
 {
     bits256 srchash; uint32_t now; int32_t i,flag,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0;
