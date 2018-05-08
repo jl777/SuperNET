@@ -391,11 +391,6 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 jaddbits256(retjson,"privkey",privkey);
                 bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
-#ifndef NOTETOMIC
-                char ethaddr[50];
-                LP_etomic_pubkeystr_to_addr(pubsecp, ethaddr);
-                jaddstr(retjson,"ethaddr",ethaddr);
-#endif
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }
