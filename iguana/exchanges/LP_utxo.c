@@ -1139,14 +1139,14 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             value = LP_value_extract(txobj,0,txid);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr != 0 )
                 LP_destaddr(coinaddr,txobj);
-            //printf("LP_txvalue %s tx %s/v%d value %.8f\n",coin->symbol,bits256_str(str,txid),vout,dstr(value));
+            //printf("LP_txvalue %s tx %s/v%d value %.8f (%s)\n",coin->symbol,bits256_str(str,txid),vout,dstr(value),jprint(txobj,0));
             if ( value != 0 )
             {
                 free_json(txobj);
                 return(value);
             }
-        }
-        printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
+        } //else printf("null return from LP_gettxout %s %s %s/v%d\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
+        printf("pruned node or rpc access broken? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
         if ( txobj != 0 )
             free_json(txobj);
     }
