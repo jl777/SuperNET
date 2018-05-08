@@ -1389,7 +1389,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         LP_tradecommand_log(argjson);
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee); //jdouble(argjson,"price");
-        //printf("%s\n",jprint(argjson,0));
+        printf("%s\n",jprint(argjson,0));
         printf("%-4d uuid.%32s %12s %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.uuidstr+32,method,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),qprice,LP_RTcount,LP_swapscount,G.netid);
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");
@@ -1410,7 +1410,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     } else printf("got reserved response from destpubkey %s\n",bits256_str(str,Q.srchash));
                 }
             }
-            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 ) // alice
+            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && (Q.vout != Q.vout2 || bits256_cmp(Q.txid,Q.txid2) != 0) ) // alice
             {
                 if ( Qtrades == 0 )
                 {
@@ -1466,10 +1466,13 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         {
             //if ( LP_Alicemaxprice != 0. )
             //    return(retval);
-            bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
-            if ( Qtrades == 0 )//|| (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
-                LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
-            else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
+            if ( Q.destvout != Q.feevout || bits256_cmp(Q.desttxid,Q.feetxid) != 0 )
+            {
+                bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
+                if ( Qtrades == 0 )//|| (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
+                    LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
+                else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
+            }
         }
         else if ( strcmp(method,"connect") == 0 )
         {
