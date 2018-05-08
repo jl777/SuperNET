@@ -305,6 +305,8 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->myind = -1;
+        for (i=0; i<sizeof(bp->notaries)/sizeof(*bp->notaries); i++)
+            bp->notaries[i].bestk = -1;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -358,8 +360,9 @@ void dpow_statemachinestart(void *ptr)
             }
             free_json(ratified);
         }
-        bp->bestk = -1;
+        bp->pendingbestk = bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
+        dp->currentbp = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
     }

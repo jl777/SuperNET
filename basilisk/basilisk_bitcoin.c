@@ -585,7 +585,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
     bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    txfee = (coin->txfee + duplicates*coin->txfee*2);
+    txfee = (coin->txfee + duplicates*coin->txfee/10);
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
         if ( duplicates <= 0 )

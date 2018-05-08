@@ -127,6 +127,7 @@ swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
 swapstatus(requestid, quoteid, pending=0, fast=0)\n\
 recentswaps(limit=3)\n\
+kickstart(requestid, quoteid)\n\
 notarizations(coin)\n\
 public API:\n \
 getcoins()\n\
@@ -412,6 +413,13 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
             taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
             return(LP_secretaddresses(ctx,jstr(argjson,"prefix"),jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
+        }
+        else if ( strcmp(method,"kickstart") == 0 )
+        {
+            uint32_t requestid,quoteid;
+            if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
+                return(LP_kickstart(requestid,quoteid));
+            else return(clonestr("{\"error\":\"kickstart needs requestid and quoteid\"}"));
         }
         else if ( strcmp(method,"swapstatus") == 0 )
         {

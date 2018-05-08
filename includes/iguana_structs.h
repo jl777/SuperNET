@@ -528,7 +528,7 @@ struct iguana_info
 #ifdef DEPRECATED_HHUTXO
     struct iguana_hhaccount *accountstable;
 #endif
-    char lastdispstr[2048],getinfostr[64];
+    char lastdispstr[2048],getinfostr[64],validateaddress[64],estimatefeestr[64];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     int32_t notarychain,didaddresses;

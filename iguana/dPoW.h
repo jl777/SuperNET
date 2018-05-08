@@ -29,7 +29,7 @@
 #define DPOW_VERSION 0x1782
 #define DPOW_UTXOSIZE 10000//50000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 600
+#define DPOW_DURATION 1200
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
@@ -49,7 +49,7 @@
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
 
-#define DEX_VERSION 0x0105
+#define DEX_VERSION 0x0106
 #define DPOW_SOCKPORT 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
@@ -105,16 +105,19 @@ struct dpow_checkpoint
     bits256 miner; uint32_t blocktime,timestamp;
 };
 
+struct dpow_recvdata { uint64_t recvmask,bestmask; int8_t bestk; };
+
 struct dpow_block
 {
     bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
+    struct dpow_recvdata recv[64];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
-    uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc;
+    uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
-    int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk;
+    int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk,matches,bestmatches;
     cJSON *ratified;
     uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
@@ -138,11 +141,11 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 activehash,lastnotarized,srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t SRCREALTIME,lastsrcupdate,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
-    int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying,minsigs,freq;
+    int32_t lastheight,maxblocks,SRCHEIGHT,DESTHEIGHT,prevDESTHEIGHT,SHORTFLAG,ratifying,minsigs,freq;
     struct pax_transaction *PAX;
     portable_mutex_t paxmutex,dexmutex;
     uint32_t ipbits[128],numipbits;
-    struct dpow_block **blocks;
+    struct dpow_block **blocks,*currentbp;
 };
 
 struct komodo_ccdatapair { int32_t notarization_height; uint32_t MoMoMoffset; };

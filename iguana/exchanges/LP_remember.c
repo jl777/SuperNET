@@ -1687,6 +1687,14 @@ char *basilisk_swapentry(int32_t fastflag,uint32_t requestid,uint32_t quoteid,in
     else return(clonestr("{\"error\":\"cant find requestid-quoteid\"}"));
 }
 
+char *LP_kickstart(uint32_t requestid,uint32_t quoteid)
+{
+    char fname[512];
+    sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+    OS_portable_removefile(fname);
+    return(basilisk_swapentry(0,requestid,quoteid,1));
+}
+           
 extern struct LP_quoteinfo LP_Alicequery;
 extern uint32_t Alice_expiration;
 

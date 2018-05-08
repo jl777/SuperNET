@@ -54,7 +54,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
         {
             bp->recvmask |= (1LL << k);
             mask |= (1LL << k);
-            if ( ++m >= bp->minsigs )
+            if ( ++m == bp->minsigs )
             {
                 *lastkp = k;
                 break;
@@ -101,9 +101,8 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t m,j,k; uint64_t bestmask,mask = 0;//bp->require0;
+    int32_t m,j,k; int8_t bestk = -1; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
-    *lastkp = -1;
     for (m=j=0; j<bp->numnotaries; j++)
     {
         //k = (j + ((uint32_t)time(NULL) / 180)) % bp->numnotaries;
@@ -115,12 +114,14 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
             mask |= (1LL << k);
             if ( ++m == bp->minsigs )//-bp->require0 )
             {
-                *lastkp = k;
+                bestk = k;
                 bestmask = mask;// | bp->require0;
                 //printf("m.%d == minsigs.%d (%d %llx)\n",m,bp->minsigs,k,(long long)bestmask);
             }
         }
     }
+    if ( bestk >= 0 )
+        *lastkp = bestk;
     return(bestmask);
 }
 
