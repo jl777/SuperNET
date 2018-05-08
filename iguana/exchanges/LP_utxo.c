@@ -1146,7 +1146,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                 return(value);
             }
         } //else printf("null return from LP_gettxout %s %s %s/v%d\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
-        printf("pruned node or special chars in .conf file? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
+        printf("pruned node or rpc access broken? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
         if ( txobj != 0 )
             free_json(txobj);
     }
