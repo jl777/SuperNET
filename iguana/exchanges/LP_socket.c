@@ -1065,7 +1065,7 @@ void LP_dedicatedloop(void *arg)
                     else
                     {
 #ifndef _WIN32
-                        printf("no more electrum data when expected2\n");
+                        printf("no more electrum data when expected2 len.%d n.%d\n",len,n);
                         electrum_kickstart(ep);
 #endif
                         break;

@@ -58,7 +58,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             if ( coin->electrum == 0 )
             {
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
-                if ( strcmp("BCH",coin->symbol) == 0 )
+                if ( 0 && strcmp("BCH",coin->symbol) == 0 )
                     printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr!=0?retstr:"");
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
