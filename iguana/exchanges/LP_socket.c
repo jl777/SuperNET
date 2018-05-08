@@ -619,7 +619,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+13 )
             usecache = 0;
     }
-    usecache = 0; // disable unspents cache
+    //usecache = 0; // disable unspents cache
     if ( usecache == 0 || electrumflag > 1 )
     {
         if ( strcmp(symbol,"BCH") == 0 )
@@ -1065,7 +1065,7 @@ void LP_dedicatedloop(void *arg)
                     else
                     {
 #ifndef _WIN32
-                        printf("no more electrum data when expected2\n");
+                        printf("no more electrum data when expected2 len.%d n.%d\n",len,n);
                         electrum_kickstart(ep);
 #endif
                         break;

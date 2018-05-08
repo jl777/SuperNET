@@ -49,8 +49,8 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     // bitcoind_passthru callers: "importaddress", "estimatefee", "getblockhash", "sendrawtransaction", "signrawtransaction"
     if ( coin != 0 )
     {
-        //if ( strcmp(method,"listunspent") == 0 )
-        //    printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
+        if ( 0 && strcmp(method,"gettxout") == 0 && strcmp("BCH",coin->symbol) == 0 )
+            printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
         if ( coin->inactive == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 || strcmp(method,"getblockchaininfo") == 0 || strcmp(method,"importprivkey") == 0 || strcmp(method,"validateaddress") == 0 || strcmp(method,"getaddressinfo") == 0 || strcmp(method,"importaddress") == 0 )
@@ -58,10 +58,10 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             if ( coin->electrum == 0 )
             {
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
+                if ( 0 && strcmp("BCH",coin->symbol) == 0 )
+                    printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr!=0?retstr:"");
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
-                    //if ( strcmp(method,"listunspent") == 0 )
-                    //    printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
                     retjson = cJSON_Parse(retstr);
                     free(retstr);
                 }
