@@ -31,7 +31,7 @@
 #define printf dontprintf
 #define fprintf dontprintf
 
-voind dontprintf(char *formatstr,...) {}
+void dontprintf(char *formatstr,...) {}
 #endif
 
 #define LP_MAJOR_VERSION "0"
