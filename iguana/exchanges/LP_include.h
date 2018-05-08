@@ -29,9 +29,10 @@
 
 #ifdef FROMGUI
 #define printf dontprintf
-#define fprintf dontprintf
+#define fprintf fdontprintf
 
 void dontprintf(char *formatstr,...) {}
+void fdontprintf(FILE *fp,char *formatstr,...) {}
 #endif
 
 #define LP_MAJOR_VERSION "0"
