@@ -357,7 +357,7 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
 
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
 {
-    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t n = 0;
+    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t i,n = 0;
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
     //portable_mutex_lock(&LP_utxomutex);
@@ -402,9 +402,15 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             }
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
             {
-                utxos[n++] = up;
-                if ( n >= max )
-                    break;
+                for (i=0; i<n; i++)
+                    if ( utxos[i]->U.vout == up->U.vout && bits256_cmp(utxos[i]->U.txid,up->U.txid) == 0 )
+                        break;
+                if ( i == n )
+                {
+                    utxos[n++] = up;
+                    if ( n >= max )
+                        break;
+                }
             } //else printf("LP_allocated skip %u\n",LP_allocated(up->U.txid,up->U.vout));
         }
         else
