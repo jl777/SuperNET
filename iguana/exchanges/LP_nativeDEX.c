@@ -570,8 +570,6 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
-            coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
-            coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
             if ( coin->did_addrutxo_reset == 0 )
             {
                 int32_t num;
