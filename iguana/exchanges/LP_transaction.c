@@ -1035,6 +1035,8 @@ uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime
         //printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
+        if ( nLockTime > 1536000000 && minutes > 31*24*60 )
+            minutes = 31 * 24 * 60;
         minutes -= 59;
         interest = ((nValue / 10512000) * minutes);
     }

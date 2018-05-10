@@ -613,7 +613,11 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     if ( (ap= LP_address(coin,addr)) != 0 )
     {
         if ( ap->unspenttime == 0 )
-            usecache = 0;
+        {
+            ap->unspenttime = (uint32_t)time(NULL);
+            ap->unspentheight = height;
+            usecache = 1;
+        }
         else if ( ap->unspentheight < height )
             usecache = 0;
         else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+13 )
