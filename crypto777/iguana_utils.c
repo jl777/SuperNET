@@ -1147,7 +1147,7 @@ void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
 char *cmc_ticker(char *base)
 {
     char url[512];
-    sprintf(url,"https://api.coinmarketcap.com/v2/ticker/%s/",base);
+    sprintf(url,"https://api.coinmarketcap.com/v1/ticker/%s/",base);
     return(issue_curl(url));
 }
 
