@@ -143,14 +143,14 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
-            if ( coin->inactive != 0 || coin->balanceA == 0 || coin->balanceB == 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
+            if ( coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
                 continue;
             if ( iter == 0 )
             {
                 //printf("from portfolio\n");
                 //LP_privkey_init(-1,coin,G.LP_privkey,G.LP_mypub25519);
-                //coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
-                //coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
+                coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
+                coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") != 0 )
                     coin->price_kmd = LP_price(coin->symbol,"KMD");
                 else coin->price_kmd = 1.;
