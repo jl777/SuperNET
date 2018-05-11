@@ -388,7 +388,11 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         json = cJSON_Parse(retstr);
         if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
             srcvalid = 1;
-        else srcvalid = 0;
+        else
+        {
+            srcvalid = 0;
+            printf("src validation error %s %s %s\n",src->symbol,srcaddr,retstr);
+        }
         free(retstr);
         retstr = 0;
     }
@@ -398,7 +402,11 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         json = cJSON_Parse(retstr);
         if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
             destvalid = 1;
-        else destvalid = 0;
+        else
+        {
+            destvalid = 0;
+            printf("dest validation error %s %s %s\n",src->symbol,srcaddr,retstr);
+        }
         free(retstr);
         retstr = 0;
     }
