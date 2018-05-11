@@ -395,7 +395,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         }
         free(retstr);
         retstr = 0;
-    } else printf("%s didnt return anything\n",src->symbol);
+    } else printf("%s %s didnt return anything\n",src->symbol,srcaddr);
     bitcoin_address(destaddr,destcoin->chain->pubtype,dp->minerkey33,33);
     if ( (retstr= dpow_validateaddress(myinfo,destcoin,destaddr)) != 0 )
     {
@@ -409,7 +409,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         }
         free(retstr);
         retstr = 0;
-    } else printf("%s didnt return anything\n",destcoin->symbol);
+    } else printf("%s %s didnt return anything\n",destcoin->symbol,destaddr);
     if ( srcvalid <= 0 || destvalid <= 0 )
     {
         dp->symbol[0] = 0;
