@@ -143,7 +143,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                 printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
             for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
             {
-                if ( (i % DPOW_MAXFREQ) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
+                if ( (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff ) //(i % DPOW_MAXFREQ) != 0 && 
                 {
                     if ( dp->currentbp == dp->blocks[i] )
                         dp->currentbp = 0;
