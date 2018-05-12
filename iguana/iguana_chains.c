@@ -468,7 +468,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             }
         }
         sprintf(chain->messagemagic,"%s Signed Message:\n",chain->name);
-        printf("COIN.%s serverport.(%s) RPCport.%u P2P.%u magic.%08x txfee %.8f\n",chain->symbol,chain->serverport,chain->rpcport,chain->portp2p,*(uint32_t *)chain->netmagic,dstr(coin->txfee));
+        printf("COIN.%s serverport.(%s) RPCport.%u P2P.%u magic.%08x txfee %.8f\n",chain->symbol,chain->serverport,chain->rpcport,chain->portp2p,*(uint32_t *)chain->netmagic,dstr(chain->txfee));
     }
 }
 
