@@ -380,6 +380,8 @@ char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin
     {
         sprintf(buf,"\"%s\"",address);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->validateaddress,buf);
+//printf("%s %s %s %s %s\n",coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->validateaddress,buf);
+        //printf("%s -> (%s)\n",buf,retstr!=0?retstr:"null");
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( strcmp(coin->symbol,"BTC") == 0 && jobj(retjson,"error") == 0 && jobj(retjson,"ismine") == 0 && strcmp(coin->validateaddress,"validateaddress") == 0 )

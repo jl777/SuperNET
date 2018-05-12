@@ -495,7 +495,7 @@ void dpow_statemachinestart(void *ptr)
     bp->myind = myind;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
-        if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
             //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
@@ -535,7 +535,7 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
             if ( bp->isratify == 0 )
             {

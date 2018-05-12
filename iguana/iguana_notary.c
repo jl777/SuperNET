@@ -143,7 +143,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                 printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
             for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
             {
-                if ( (i % DPOW_MAXFREQ) != 0 && (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
+                if ( (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff ) //(i % DPOW_MAXFREQ) != 0 && 
                 {
                     if ( dp->currentbp == dp->blocks[i] )
                         dp->currentbp = 0;
@@ -388,20 +388,28 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         json = cJSON_Parse(retstr);
         if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
             srcvalid = 1;
-        else srcvalid = 0;
+        else
+        {
+            srcvalid = 0;
+            printf("src validation error %s %s %s\n",src->symbol,srcaddr,retstr);
+        }
         free(retstr);
         retstr = 0;
-    }
+    } else printf("%s %s didnt return anything\n",src->symbol,srcaddr);
     bitcoin_address(destaddr,destcoin->chain->pubtype,dp->minerkey33,33);
     if ( (retstr= dpow_validateaddress(myinfo,destcoin,destaddr)) != 0 )
     {
         json = cJSON_Parse(retstr);
         if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
             destvalid = 1;
-        else destvalid = 0;
+        else
+        {
+            destvalid = 0;
+            printf("dest validation error %s %s %s\n",src->symbol,srcaddr,retstr);
+        }
         free(retstr);
         retstr = 0;
-    }
+    } else printf("%s %s didnt return anything\n",destcoin->symbol,destaddr);
     if ( srcvalid <= 0 || destvalid <= 0 )
     {
         dp->symbol[0] = 0;
