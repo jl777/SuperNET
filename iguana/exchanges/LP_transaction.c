@@ -1982,20 +1982,28 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
     uint8arrayToHex(privkey_str, privkey.bytes, 32);
     satoshisToWei(amount_str, amount);
     if (strcmp(coin->symbol, "ETH") == 0) {
-        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0, gas, gas_price);
+        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0);
     } else {
-        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price);
+        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0);
     }
-    jaddstr(retjson, "tx_id", tx_id);
-    free(tx_id);
+    if (tx_id != NULL) {
+        jaddstr(retjson, "tx_id", tx_id);
+        free(tx_id);
+    } else {
+        jaddstr(retjson, "error", "Error sending transaction");
+    }
     return(jprint(retjson,1));
 }
 
 char *LP_eth_gas_price()
 {
     cJSON *retjson = cJSON_CreateObject();
-    uint64_t gas_price = getGasPriceFromStation();
-    cJSON_AddNumberToObject(retjson, "gas_price", gas_price);
+    uint64_t gas_price = getGasPriceFromStation(0);
+    if (gas_price > 0) {
+        cJSON_AddNumberToObject(retjson, "gas_price", gas_price);
+    } else {
+        cJSON_AddStringToObject(retjson, "error", "Could not get gas price from station!");
+    }
     return(jprint(retjson,1));
 }
 #endif

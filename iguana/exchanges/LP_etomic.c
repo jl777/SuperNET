@@ -42,9 +42,9 @@ char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
     uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
     LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(sendEth(dexaddr, amount, secretKey, 1, 0, 0));
+        return(sendEth(dexaddr, amount, secretKey, 1, 0, 0, 1));
     } else {
-        return(sendErc20(swap->I.alicetomic, dexaddr, amount, secretKey, 1, 0, 0));
+        return(sendErc20(swap->I.alicetomic, dexaddr, amount, secretKey, 1, 0, 0, 1));
     }
 }
 

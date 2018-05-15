@@ -177,8 +177,8 @@ void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
 uint64_t weiToSatoshi(char *wei);
 
-char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice);
-char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice);
+char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr);
+char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr);
 
 uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data);
 // Your prototype or Definition

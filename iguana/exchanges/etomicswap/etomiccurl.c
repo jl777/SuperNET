@@ -285,7 +285,7 @@ EthTxData getEthTxData(char *txId)
     return result;
 }
 
-uint64_t getGasPriceFromStation()
+uint64_t getGasPriceFromStation(uint8_t defaultOnErr)
 {
     CURL *curl;
     CURLcode res;
@@ -303,6 +303,12 @@ uint64_t getGasPriceFromStation()
         curl_easy_setopt(curl, CURLOPT_URL, "https://ethgasstation.info/json/ethgasAPI.json");
         /* Perform the request, res will get the return code */
         res = curl_easy_perform(curl);
+        uint64_t result;
+        if (defaultOnErr == 1) {
+            result = DEFAULT_GAS_PRICE;
+        } else {
+            result = 0;
+        }
         /* Check for errors */
         if (res != CURLE_OK) {
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
@@ -312,7 +318,6 @@ uint64_t getGasPriceFromStation()
         /* always cleanup */
         curl_easy_cleanup(curl);
         cJSON *resultJson = cJSON_Parse(s.ptr);
-        uint64_t result = DEFAULT_GAS_PRICE;
         free(s.ptr);
         if (resultJson == NULL) {
             return result;

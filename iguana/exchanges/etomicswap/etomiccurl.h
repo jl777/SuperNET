@@ -16,7 +16,7 @@ extern "C"{
 #define DEFAULT_GAS_PRICE 100
 #else
 #define ETOMIC_URL "http://195.201.0.6:8555"
-#define DEFAULT_GAS_PRICE 4
+#define DEFAULT_GAS_PRICE 10
 #endif
 
 typedef struct
@@ -45,7 +45,7 @@ char* getEthBalanceRequest(char* address);
 EthTxReceipt getEthTxReceipt(char *txId);
 EthTxData getEthTxData(char *txId);
 uint64_t getEthBlockNumber();
-uint64_t getGasPriceFromStation();
+uint64_t getGasPriceFromStation(uint8_t defaultOnErr);
 int32_t waitForConfirmation(char *txId);
 
 #ifdef __cplusplus

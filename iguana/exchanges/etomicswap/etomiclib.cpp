@@ -27,7 +27,7 @@ TransactionSkeleton txDataToSkeleton(BasicTxData txData)
     tx.to = jsToAddress(txData.to);
     tx.value = jsToU256(txData.amount);
     tx.gas = 200000;
-    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+    tx.gasPrice = getGasPriceFromStation(1) * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(txData.from);
     return tx;
 }
@@ -50,7 +50,7 @@ char *approveErc20(ApproveErc20Input input)
     tx.to = jsToAddress(input.tokenAddress);
     tx.value = 0;
     tx.gas = 300000;
-    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+    tx.gasPrice = getGasPriceFromStation(1) * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(input.owner);
     std::stringstream ss;
     ss << "0x095ea7b3"
@@ -582,13 +582,15 @@ uint64_t weiToSatoshi(char *wei)
     return static_cast<uint64_t>(satoshi);
 }
 
-char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice)
+char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr)
 {
     TransactionSkeleton tx;
     char *from = privKey2Addr(privKey), *result;
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(to);
     tx.value = jsToU256(amount);
+    tx.nonce = getNonce(from);
+    free(from);
     if (gas > 0) {
         tx.gas = gas;
     } else {
@@ -597,10 +599,11 @@ char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_
     if (gasPrice > 0) {
         tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
     } else {
-        tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+        tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
+        if (!defaultGasOnErr) {
+            return NULL;
+        }
     }
-    tx.nonce = getNonce(from);
-    free(from);
 
     char *rawTx = signTx(tx, privKey);
     if (waitConfirm == 0) {
@@ -628,7 +631,7 @@ std::stringstream getErc20TransferData(char *tokenAddress, char *to, char *amoun
     return ss;
 }
 
-char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice)
+char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr)
 {
     TransactionSkeleton tx;
     char *from = privKey2Addr(privKey), *result;
@@ -637,6 +640,9 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
+    tx.nonce = getNonce(from);
+    free(from);
+
     if (gas > 0) {
         tx.gas = gas;
     } else {
@@ -650,10 +656,11 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
     if (gasPrice > 0) {
         tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
     } else {
-        tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
+        tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
+        if (!defaultGasOnErr) {
+            return NULL;
+        }
     }
-    tx.nonce = getNonce(from);
-    free(from);
 
     tx.data = jsToBytes(ss.str());
 
