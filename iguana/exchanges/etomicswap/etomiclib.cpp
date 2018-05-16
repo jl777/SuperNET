@@ -600,7 +600,8 @@ char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_
         tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
     } else {
         tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
-        if (!defaultGasOnErr) {
+        if (tx.gasPrice == 0 && !defaultGasOnErr) {
+            unlock_send_tx_mutex();
             return NULL;
         }
     }
@@ -657,7 +658,8 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
         tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
     } else {
         tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
-        if (!defaultGasOnErr) {
+        if (tx.gasPrice == 0 && !defaultGasOnErr) {
+            unlock_send_tx_mutex();
             return NULL;
         }
     }

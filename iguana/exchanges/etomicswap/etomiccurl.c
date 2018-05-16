@@ -367,3 +367,8 @@ int32_t waitForConfirmation(char *txId)
 
     return((int32_t)receipt.confirmations);
 }
+
+void unlock_send_tx_mutex()
+{
+    pthread_mutex_unlock(&sendTxMutex);
+}

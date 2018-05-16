@@ -47,6 +47,7 @@ EthTxData getEthTxData(char *txId);
 uint64_t getEthBlockNumber();
 uint64_t getGasPriceFromStation(uint8_t defaultOnErr);
 int32_t waitForConfirmation(char *txId);
+void unlock_send_tx_mutex();
 
 #ifdef __cplusplus
 }
