@@ -1921,7 +1921,7 @@ char *LP_autosplit(struct iguana_info *coin)
         else balance = LP_RTsmartbalance(coin);
         //printf("%s balance %.8f\n",coin->symbol,dstr(balance));
         balance -= coin->txfee - 0.001;
-        if ( balance > coin->txfee && balance > 1000000 )
+        if ( balance > coin->txfee && balance >= 1000000 )
         {
             halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
