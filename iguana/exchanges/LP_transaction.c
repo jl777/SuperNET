@@ -1922,7 +1922,7 @@ char *LP_autosplit(struct iguana_info *coin)
         if ( (txfee= coin->txfee) == 0 ) // BTC
             txfee = LP_txfeecalc(coin,0,500);
         balance -= (txfee + 100000);
-        printf("balance %.8f, txfee %.8f, threshold %.8f\n",dstr(balance),dstr(txfee),dstr((1000000 - (txfee + 100000))));
+        //printf("balance %.8f, txfee %.8f, threshold %.8f\n",dstr(balance),dstr(txfee),dstr((1000000 - (txfee + 100000))));
         if ( balance > txfee && balance >= (1000000 - (txfee + 100000)) )
         {
             halfval = (balance / 100) * 45;
@@ -1938,7 +1938,7 @@ char *LP_autosplit(struct iguana_info *coin)
             jaddnum(item,coin->smartaddr,dstr(balance - 2*halfval));
             jaddi(outputs,item);
             jadd(argjson,"outputs",outputs);
-            jaddnum(argjson,"broadcast",strcmp(coin->symbol,"BTC") != 0);
+            jaddnum(argjson,"broadcast",1);
             jaddstr(argjson,"coin",coin->symbol);
             //printf("halfval %.8f autosplit.(%s)\n",dstr(halfval),jprint(argjson,0));
             retstr = LP_withdraw(coin,argjson);
