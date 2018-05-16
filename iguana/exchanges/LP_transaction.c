@@ -1913,15 +1913,17 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 
 char *LP_autosplit(struct iguana_info *coin)
 {
-    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,halfval;
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,halfval,txfee;
     if ( coin->etomic[0] == 0 )
     {
         if ( coin->electrum != 0 )
             balance = LP_unspents_load(coin->symbol,coin->smartaddr);
         else balance = LP_RTsmartbalance(coin);
-        //printf("%s balance %.8f\n",coin->symbol,dstr(balance));
-        balance -= coin->txfee - 0.001;
-        if ( balance > coin->txfee && balance > 1000000 )
+        if ( (txfee= coin->txfee) == 0 ) // BTC
+            txfee = LP_txfeecalc(coin,0,500);
+        balance -= (txfee + 100000);
+        //printf("balance %.8f, txfee %.8f, threshold %.8f\n",dstr(balance),dstr(txfee),dstr((1000000 - (txfee + 100000))));
+        if ( balance > txfee && balance >= (1000000 - (txfee + 100000)) )
         {
             halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
@@ -1938,7 +1940,7 @@ char *LP_autosplit(struct iguana_info *coin)
             jadd(argjson,"outputs",outputs);
             jaddnum(argjson,"broadcast",1);
             jaddstr(argjson,"coin",coin->symbol);
-            //printf("autosplit.(%s)\n",jprint(argjson,0));
+            //printf("halfval %.8f autosplit.(%s)\n",dstr(halfval),jprint(argjson,0));
             retstr = LP_withdraw(coin,argjson);
             free_json(argjson);
             return(retstr);
