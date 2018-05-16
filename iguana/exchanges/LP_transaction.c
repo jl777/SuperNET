@@ -1936,7 +1936,7 @@ char *LP_autosplit(struct iguana_info *coin)
             jaddnum(item,coin->smartaddr,dstr(balance - 2*halfval));
             jaddi(outputs,item);
             jadd(argjson,"outputs",outputs);
-            jaddnum(argjson,"broadcast",1);
+            jaddnum(argjson,"broadcast",strcmp(coin->symbol,"BTC") != 0);
             jaddstr(argjson,"coin",coin->symbol);
             //printf("autosplit.(%s)\n",jprint(argjson,0));
             retstr = LP_withdraw(coin,argjson);
