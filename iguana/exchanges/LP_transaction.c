@@ -1922,7 +1922,7 @@ char *LP_autosplit(struct iguana_info *coin)
         if ( (txfee= coin->txfee) == 0 ) // BTC
             txfee = LP_txfeecalc(coin,0,500);
         balance -= txfee - 0.001;
-        if ( balance > txfee && balance >= 1000000 )
+        if ( balance > txfee && balance >= (1000000 - (txfee - 0.001)) )
         {
             halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
