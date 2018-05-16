@@ -1627,7 +1627,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
             return(0);
         }
     }
-    if ( change < 6000 )
+    if ( change < 6000 || change < txfee )
         change = 0;
     *changep = change;
     if ( change != 0 )
@@ -1921,7 +1921,7 @@ char *LP_autosplit(struct iguana_info *coin)
         else balance = LP_RTsmartbalance(coin);
         //printf("%s balance %.8f\n",coin->symbol,dstr(balance));
         balance -= coin->txfee - 0.001;
-        if ( balance > coin->txfee )
+        if ( balance > coin->txfee && balance > 1000000 )
         {
             halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
@@ -1942,7 +1942,7 @@ char *LP_autosplit(struct iguana_info *coin)
             retstr = LP_withdraw(coin,argjson);
             free_json(argjson);
             return(retstr);
-        } else return(clonestr("{\"error\":\"less than 0.0011 in balance\"}"));
+        } else return(clonestr("{\"error\":\"balance too small to autosplit, please make more deposits\"}"));
     }
     return(clonestr("{\"error\":\"couldnt autosplit\"}"));
 }
