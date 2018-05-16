@@ -473,7 +473,7 @@ int32_t LP_autoref_clear(char *base,char *rel)
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
     static cJSON *tickerjson; static uint32_t lasttime;
-    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
+    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,ltc_btc,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     printf("AUTOPRICE numautorefs.%d\n",num_LP_autorefs);
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
@@ -551,6 +551,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     }
     kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
     bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
+    ltc_btc = LP_CMCbtcprice(&bch_usd,"litecoin");
     for (i=0; i<num_LP_autorefs; i++)
     {
         rel = LP_autorefs[i].rel;
@@ -609,6 +610,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         price = kmd_btc / price_btc;
                     else if ( strcmp(rel,"BCH") == 0 && bch_btc > SMALLVAL )
                         price = bch_btc / price_btc;
+                    else if ( strcmp(rel,"LTC") == 0 && ltc_btc > SMALLVAL )
+                        price = ltc_btc / price_btc;
                     else if ( strcmp(rel,"BTC") == 0 )
                         price = 1. / price_btc;
                     else continue;
