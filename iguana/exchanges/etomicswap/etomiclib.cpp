@@ -642,7 +642,6 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
     tx.nonce = getNonce(from);
-    free(from);
 
     if (gas > 0) {
         tx.gas = gas;
@@ -654,6 +653,7 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8
             tx.gas = 150000;
         }
     }
+    free(from);
     if (gasPrice > 0) {
         tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
     } else {
