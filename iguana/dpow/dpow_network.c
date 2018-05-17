@@ -1923,8 +1923,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
                 bp->lastnanosend = now;
             }
-            if ( 0 && bp->myind <= 1 )
-                printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
+            if ( strcmp("CHIPS",dp->symbol) == 0 && bp->myind == 0 )
+                printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs);
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
                 if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
