@@ -1935,6 +1935,12 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
                     //printf("finished signing\n");
                 }
+                if ( (bp->pendingbestmask & (1LL << bp->myind)) != 0 && bits256_nonz(bp->desttxid) != 0 && bp->destsigsmasks[bp->pendingbestk] == 0 )
+                {
+                    printf("generate sigs for bestk.%d %llx\n",bp->pendingbestk,(long long)bp->pendingbestmask);
+                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGCHANNEL,0,0);
+                }
+                dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
                 if ( bp->destsigsmasks[bp->pendingbestk] == bp->pendingbestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
