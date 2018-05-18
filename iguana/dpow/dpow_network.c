@@ -1802,7 +1802,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                             else if ( strcmp(dp->symbol,"CHIPS") == 0 )
                             {
                                 char str[65];
-                                printf("myind.%d %s/v%d\n",i,bits256_str(str,bp->notaries[i].src.prev_hash),bp->notaries[i].src.prev_vout);
+                                printf(">>>>>>> CHIPS myind.%d %s/v%d\n",i,bits256_str(str,bp->notaries[i].src.prev_hash),bp->notaries[i].src.prev_vout);
                             }
                         }
                     }
