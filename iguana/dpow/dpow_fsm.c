@@ -486,13 +486,13 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
     }
-    if ( strcmp(dp->symbol,"CHIPS") == 0 && myind == 0 )
+    /*if ( strcmp(dp->symbol,"CHIPS") == 0 && myind == 0 )
     {
         char str[65];
         printf(">>>>>>> CHIPS myind.%d %s/v%d\n",myind,bits256_str(str,bp->notaries[myind].src.prev_hash),bp->notaries[myind].src.prev_vout);
         bp->desttxid = bp->notaries[myind].src.prev_hash;
         dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
-    }
+    }*/
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
