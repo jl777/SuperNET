@@ -262,7 +262,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
                     }
                 }
             }
-            else if ( strcmp(dp->symbol,"KMD") == 0 )
+            else //if ( strcmp(dp->symbol,"KMD") == 0 )
             {
                 while ( dp->lastheight <= height )
                 {
@@ -270,13 +270,13 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
                     dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
                 }
             }
-            else if ( time(NULL) > dp->lastsrcupdate+60 || height != dp->lastheight )
+            /*else if ( time(NULL) > dp->lastsrcupdate+60 || height != dp->lastheight )
             {
                 dp->lastsrcupdate = (uint32_t)time(NULL);
                 dp->lastheight = height;
                 blockhash = dpow_getblockhash(myinfo,src,dp->lastheight);
                 dpow_srcupdate(myinfo,dp,dp->lastheight,blockhash,(uint32_t)time(NULL),blocktime);
-            }
+            }*/
         } //else printf("error getchaintip for %s\n",dp->symbol);
     } else printf("iguana_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
 }
@@ -366,7 +366,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     else
     {
         dp->minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
-        if ( strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0)
+        if ( freq == 0 && (strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0) )
             dp->freq = DPOW_MAXFREQ;
         else if ( freq > 2 )
             dp->freq = freq;
