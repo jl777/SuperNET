@@ -1641,7 +1641,7 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
                 np->bestmask = bp->bestmask, np->bestk = bp->bestk;
             else np->bestk = bp->notaries[bp->myind].bestk;
         } else np->bestk = bp->pendingbestk;
-        if ( (bestk= (int8_t)np->pendingbestk) >= 0 || (bestk= (int8_t)np->bestk) >= 0 )
+        if ( (bestk= (int8_t)bp->pendingbestk) >= 0 || (bestk= (int8_t)np->bestk) >= 0 )
         {
             if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bestk]) > 0 )
                 memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bestk],np->siglens[0]);
