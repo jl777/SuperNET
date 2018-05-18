@@ -1563,7 +1563,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 
 void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
-    int32_t i,err,vout; cJSON *ujson; char coinaddr[64],str[65];
+    int32_t i,err,vout,bestk; cJSON *ujson; char coinaddr[64],str[65];
     if ( bp->myind < 0 )
         return;
     if ( isratify != 0 )
@@ -1641,12 +1641,12 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
                 np->bestmask = bp->bestmask, np->bestk = bp->bestk;
             else np->bestk = bp->notaries[bp->myind].bestk;
         } else np->bestk = bp->pendingbestk;
-        if ( (int8_t)np->bestk >= 0 )
+        if ( (bestk= (int8_t)np->pendingbestk) >= 0 || (bestk= (int8_t)np->bestk) >= 0 )
         {
-            if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
-                memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
-            if ( (np->siglens[1]= bp->notaries[bp->myind].dest.siglens[bp->bestk]) > 0 )
-                memcpy(np->sigs[1],bp->notaries[bp->myind].dest.sigs[bp->bestk],np->siglens[1]);
+            if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bestk]) > 0 )
+                memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bestk],np->siglens[0]);
+            if ( (np->siglens[1]= bp->notaries[bp->myind].dest.siglens[bestk]) > 0 )
+                memcpy(np->sigs[1],bp->notaries[bp->myind].dest.sigs[bestk],np->siglens[1]);
         }
     }
 }
