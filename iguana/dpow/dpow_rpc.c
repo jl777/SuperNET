@@ -576,7 +576,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         {
             if ( jobj(retjson,"error") != 0 )
             {
-                strcpy(coin->signtxstr,"signrawtransactionwallet");
+                strcpy(coin->signtxstr,"signrawtransactionwithwallet");
                 free(retstr);
                 retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->signtxstr,paramstr);
             }
