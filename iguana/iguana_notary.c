@@ -366,7 +366,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     else
     {
         dp->minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
-        if ( strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0)
+        if ( freq == 0 && (strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0) )
             dp->freq = DPOW_MAXFREQ;
         else if ( freq > 2 )
             dp->freq = freq;
