@@ -508,7 +508,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified*bp->numratified);
-        char str[65]; printf("%s signedtxgen %s src_or_dest.%d (%d %llx) useratified.%d raw.(%s)\n",dp->symbol,bits256_str(str,txid),src_or_dest,bestk,(long long)bestmask,useratified,rawtx);
+        //char str[65]; printf("%s signedtxgen %s src_or_dest.%d (%d %llx) useratified.%d raw.(%s)\n",dp->symbol,bits256_str(str,txid),src_or_dest,bestk,(long long)bestmask,useratified,rawtx);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             if ( useratified != 0 )
