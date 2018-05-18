@@ -264,22 +264,24 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             }
             else if ( strcmp(dp->symbol,"KMD") == 0 )
             {
+                printf("%s start dp->last.blockhash.height.%d height.%d\n",dp->symbol,dp->last.blockhash.height,height);
                 while ( dp->last.blockhash.height <= height )
                 {
                     blockhash = dpow_getblockhash(myinfo,src,dp->last.blockhash.height);
                     dpow_srcupdate(myinfo,dp,dp->last.blockhash.height++,blockhash,(uint32_t)time(NULL),blocktime);
                 }
+                printf("%s end dp->last.blockhash.height.%d height.%d\n",dp->symbol,dp->last.blockhash.height,height);
                 dp->lastsrcupdate = (uint32_t)time(NULL);
             }
             else if ( time(NULL) > dp->lastsrcupdate+60 || height != dp->last.blockhash.height )
             {
-                printf("start dp->last.blockhash.height.%d height.%d\n",dp->last.blockhash.height,height);
+                printf("%s start dp->last.blockhash.height.%d height.%d\n",dp->symbol,dp->last.blockhash.height,height);
                 while ( dp->last.blockhash.height <= height )
                 {
                     blockhash = dpow_getblockhash(myinfo,src,dp->last.blockhash.height);
                     dpow_srcupdate(myinfo,dp,dp->last.blockhash.height++,blockhash,(uint32_t)time(NULL),blocktime);
                 }
-                printf("end dp->last.blockhash.height.%d height.%d\n",dp->last.blockhash.height,height);
+                printf("%s end dp->last.blockhash.height.%d height.%d\n",dp->symbol,dp->last.blockhash.height,height);
                 dp->lastsrcupdate = (uint32_t)time(NULL);
             }
         } //else printf("error getchaintip for %s\n",dp->symbol);
