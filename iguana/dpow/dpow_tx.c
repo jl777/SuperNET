@@ -483,17 +483,17 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                     retval = 0;
                                     break;
                                 } else printf("sig.%d of %d didnt match pubkey? (%s)\n",j,m,jprint(vinitem,0));
-                            } // else printf("notmine.(%s)\n",jprint(item,0));
+                            } else printf("notmine.(%s)\n",jprint(item,0));
                         }
                     } else printf("no vin[] (%s)\n",jprint(txobj2,0));
                     free_json(txobj2);
                 } else printf("cant parse.(%s)\n",rawtx2);
                 free(rawtx2);
-            } //else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
+            } else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
             free_json(signobj);
         } else printf("error parsing.(%s)\n",jsonstr);
         free(jsonstr);
-    }
+    } else printf("%s null signature in dpow_rawtxsign\n",dp->symbol);
 }
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified)
@@ -508,7 +508,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified*bp->numratified);
-        //char str[65]; printf("signedtxgen %s src_or_dest.%d (%d %llx) useratified.%d raw.(%s)\n",bits256_str(str,txid),src_or_dest,bestk,(long long)bestmask,useratified,rawtx);
+        char str[65]; printf("%s signedtxgen %s src_or_dest.%d (%d %llx) useratified.%d raw.(%s)\n",dp->symbol,bits256_str(str,txid),src_or_dest,bestk,(long long)bestmask,useratified,rawtx);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             if ( useratified != 0 )
