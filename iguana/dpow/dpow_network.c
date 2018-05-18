@@ -1537,7 +1537,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->bestmatches = bestmatches;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
-        if ( 0 && bp->myind == 0 && strcmp("KMD",dp->symbol) == 0 )
+        if ( bp->myind == 0 && strcmp("CHIPS",dp->symbol) == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
                 printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>median?"*":"");
@@ -1948,7 +1948,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->pendingbestk,bp->pendingbestmask,0,0);
-                    } else if ( strcmp(dp->symbol,"CHIPS") == 0  || strcmp(dp->symbol,"GAME") == 0 )printf("srcmask.[%d:%d] %llx %llx != bestmask.%llx\n",bp->bestk,bp->pendingbestk,(long long)bp->srcsigsmasks[bp->pendingbestk],(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->pendingbestmask);
+                    } // else if ( strcmp(dp->symbol,"CHIPS") == 0  || strcmp(dp->symbol,"GAME") == 0 )printf("srcmask.[%d:%d] %llx %llx != bestmask.%llx\n",bp->bestk,bp->pendingbestk,(long long)bp->srcsigsmasks[bp->pendingbestk],(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->pendingbestmask);
                 } else if ( strcmp(dp->symbol,"CHIPS") == 0  || strcmp(dp->symbol,"GAME") == 0 )
                     printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
             }
