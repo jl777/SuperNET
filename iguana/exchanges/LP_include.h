@@ -29,9 +29,10 @@
 
 #ifdef FROMGUI
 #define printf dontprintf
-#define fprintf dontprintf
+//#define fprintf fdontprintf dont do this!
 
-voind dontprintf(char *formatstr,...) {}
+void dontprintf(char *formatstr,...) {}
+//void fdontprintf(FILE *fp,char *formatstr,...) {}
 #endif
 
 #define LP_MAJOR_VERSION "0"
@@ -306,7 +307,7 @@ struct iguana_info
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
-    char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64];
+    char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64],validateaddress[64];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;

@@ -705,6 +705,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
     {
         if ( bits256_nonz(rawtx->I.signedtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
         {
+            basilisk_dontforget_update(swap,rawtx);
             rawtx->I.actualtxid = LP_broadcast_tx(rawtx->name,rawtx->symbol,rawtx->txbytes,rawtx->I.datalen);
             if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
             {

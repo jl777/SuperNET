@@ -585,7 +585,9 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
     bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    txfee = (coin->txfee + duplicates*coin->txfee*2);
+    txfee = (coin->txfee + duplicates*coin->txfee/10);
+    if ( strcmp(coin->symbol,"GAME") == 0 )
+        printf("GAME txfee %.8f\n",dstr(txfee));
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
         if ( duplicates <= 0 )
@@ -609,7 +611,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
             {
                 if ( *completedp != 0 )
                 {
-                    printf("splitfunds signedtx.(%s)\n",signedtx);
+                    printf("splitfunds %s signedtx.(%s)\n",coin->symbol,signedtx);
                     if ( sendflag != 0 )
                         iguana_sendrawtransaction(myinfo,coin,signedtx);
                     free(rawtx);
