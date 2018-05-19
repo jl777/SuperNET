@@ -80,13 +80,13 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
         if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"getrawtransaction") != 0 )
-            printf("<<<<<<<<<<< A bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,params);
+            printf("<<<<<<<<<<< A bitcoind_RPC: %s post_process_bitcoind_RPC.%s\n",debugstr,command);
         return(rpcstr);
     }
     json = cJSON_Parse(rpcstr);
     if ( json == 0 )
     {
-        printf("<<<<<<<<<<< B bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s) params.(%s)\n",debugstr,command,rpcstr,params);
+        printf("<<<<<<<<<<< B bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s)\n",debugstr,command,rpcstr);
         free(rpcstr);
         return(0);
     }
@@ -143,14 +143,15 @@ char *Jay_NXTrequest(char *command,char *params)
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
-    static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+    CURL *curl_handle; static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct MemoryStruct chunk;
-    struct curl_slist *headers = NULL; struct return_string s; CURLcode res; CURL *curl_handle;
+    struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
     char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
     if ( didinit == 0 )
     {
         didinit = 1;
         curl_global_init(CURL_GLOBAL_ALL); //init the curl session
+        //curl_handle = curl_easy_init();
     }
     if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
     {

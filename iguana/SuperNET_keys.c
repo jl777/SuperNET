@@ -339,7 +339,7 @@ int32_t iguana_wifstr_valid(char *wifstr)
         return(0);
     if ( A > 5*a || a > 5*A || a > n*20 || A > n*20 ) // unlikely it is a real wif
     {
-        printf("reject wif %s due to n.%d a.%d A.%d (%d %d %d %d)\n",wifstr,n,a,A,A > 5*a,a < 5*A,a > n*20,A > n*20);
+        //printf("reject wif %s due to n.%d a.%d A.%d (%d %d %d %d)\n",wifstr,n,a,A,A > 5*a,a < 5*A,a > n*20,A > n*20);
         return(0);
     }
     bitcoin_wif2priv(&wiftype,&privkey,wifstr);
@@ -355,9 +355,9 @@ int32_t iguana_wifstr_valid(char *wifstr)
         bitcoin_priv2wiflong(cmpstr2,privkey,wiftype);
         if ( bits256_cmp(privkey,cmpkey) == 0 )
             return(1);
-        char str[65],str2[65]; printf("mismatched wifstr %s -> %s -> %s %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey),cmpstr2);
+       // char str[65],str2[65]; printf("mismatched wifstr %s -> %s -> %s %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey),cmpstr2);
     }
-    char str[65]; printf("%s is not a wif, privkey.%s\n",wifstr,bits256_str(str,privkey));
+    //char str[65]; printf("%s is not a wif, privkey.%s\n",wifstr,bits256_str(str,privkey));
     return(0);
 }
 

@@ -305,6 +305,8 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->myind = -1;
+        for (i=0; i<sizeof(bp->notaries)/sizeof(*bp->notaries); i++)
+            bp->notaries[i].bestk = -1;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -358,7 +360,7 @@ void dpow_statemachinestart(void *ptr)
             }
             free_json(ratified);
         }
-        bp->bestk = -1;
+        bp->pendingbestk = bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         dp->currentbp = bp;
         bp->beacon = rand256(0);
@@ -406,9 +408,9 @@ void dpow_statemachinestart(void *ptr)
             {
                 myind = i;
                 ep = &bp->notaries[myind];
-                for (j=0; j<33; j++)
-                    printf("%02x",dp->minerkey33[j]);
-                printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
+                //for (j=0; j<33; j++)
+                //    printf("%02x",dp->minerkey33[j]);
+                //printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
             }
         }
         if ( strcmp("KMD",src->symbol) == 0 )
@@ -424,7 +426,7 @@ void dpow_statemachinestart(void *ptr)
             exit(-1);
             return;
         }
-        printf("myind.%d\n",myind);
+        //printf("myind.%d\n",myind);
     }
     else
     {
@@ -484,6 +486,13 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
     }
+    /*if ( strcmp(dp->symbol,"CHIPS") == 0 && myind == 0 )
+    {
+        char str[65];
+        printf(">>>>>>> CHIPS myind.%d %s/v%d\n",myind,bits256_str(str,bp->notaries[myind].src.prev_hash),bp->notaries[myind].src.prev_vout);
+        bp->desttxid = bp->notaries[myind].src.prev_hash;
+        dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
+    }*/
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
@@ -493,7 +502,7 @@ void dpow_statemachinestart(void *ptr)
     bp->myind = myind;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
-        if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
             //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
@@ -533,7 +542,7 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
             if ( bp->isratify == 0 )
             {

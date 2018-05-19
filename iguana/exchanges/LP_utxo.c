@@ -357,7 +357,7 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
 
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
 {
-    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t n = 0;
+    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t i,n = 0;
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
     //portable_mutex_lock(&LP_utxomutex);
@@ -402,9 +402,15 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             }
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
             {
-                utxos[n++] = up;
-                if ( n >= max )
-                    break;
+                for (i=0; i<n; i++)
+                    if ( utxos[i]->U.vout == up->U.vout && bits256_cmp(utxos[i]->U.txid,up->U.txid) == 0 )
+                        break;
+                if ( i == n )
+                {
+                    utxos[n++] = up;
+                    if ( n >= max )
+                        break;
+                }
             } //else printf("LP_allocated skip %u\n",LP_allocated(up->U.txid,up->U.vout));
         }
         else
@@ -1139,14 +1145,14 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             value = LP_value_extract(txobj,0,txid);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr != 0 )
                 LP_destaddr(coinaddr,txobj);
-            //printf("LP_txvalue %s tx %s/v%d value %.8f\n",coin->symbol,bits256_str(str,txid),vout,dstr(value));
+            //printf("LP_txvalue %s tx %s/v%d value %.8f (%s)\n",coin->symbol,bits256_str(str,txid),vout,dstr(value),jprint(txobj,0));
             if ( value != 0 )
             {
                 free_json(txobj);
                 return(value);
             }
-        }
-        printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
+        } //else printf("null return from LP_gettxout %s %s %s/v%d\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
+        printf("pruned node or rpc access broken? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
         if ( txobj != 0 )
             free_json(txobj);
     }
