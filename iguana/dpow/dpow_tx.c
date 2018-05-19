@@ -483,7 +483,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                     retval = 0;
                                     break;
                                 } else printf("sig.%d of %d didnt match pubkey? (%s)\n",j,m,jprint(vinitem,0));
-                            } else printf("notmine.(%s)\n",jprint(item,0));
+                            } //else printf("notmine.(%s)\n",jprint(item,0));
                         }
                     } else printf("no vin[] (%s)\n",jprint(txobj2,0));
                     free_json(txobj2);
