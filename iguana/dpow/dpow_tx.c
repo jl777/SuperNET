@@ -195,10 +195,13 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t paxwdcrc=0,locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
+    uint32_t paxwdcrc=0,locktime=0,numvouts; struct iguana_info *coin; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
     numvouts = 2;
     if ( pubkeys == 0 || numratified <= 0 )
     {
+        if ( src_or_dest != 0 )
+            coin = bp->destcoin;
+        else coin = bp->srccoin;
         satoshis = DPOW_UTXOSIZE * m * .76;
         if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
             satoshis = satoshisB;
@@ -572,7 +575,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,pubkeys,numratified); // setcrcval
         signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,1,src_or_dest,pubkeys,numratified);
-        if ( strcmp("CHIPS",coin->symbol) == 0 )
+        if ( strcmp("GAME",coin->symbol) == 0 )
             printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
