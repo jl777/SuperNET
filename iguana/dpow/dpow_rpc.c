@@ -15,6 +15,13 @@
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
 
+uint64_t dpow_utxosize(char *symbol)
+{
+    if ( strcmp(symbol,"GAME") == 0 )
+        return(100000);
+    else return(10000);
+}
+
 char *bitcoind_getinfo(char *symbol,char *serverport,char *userpass,char *getinfostr)
 {
     char buf[1],*retstr; cJSON *retjson;
@@ -266,7 +273,7 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
 {
     struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
-    if ( strcmp(bp->srccoin->symbol,"GAME") != 0 )
+    if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || src_or_dest != 0 )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
