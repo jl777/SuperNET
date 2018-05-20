@@ -941,7 +941,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     {
                         bech32_tests();
                     }
-                    else if ( strcmp(coin->symbol,"GAME") == 0 )
+                    else if ( 0 && strcmp(coin->symbol,"GAME") == 0 )
                     {
                         gameaddrs();
                     }
