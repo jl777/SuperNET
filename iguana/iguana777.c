@@ -51,6 +51,7 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             strcpy(coin->getinfostr,"getinfo");
             strcpy(coin->validateaddress,"validateaddress");
             strcpy(coin->estimatefeestr,"estimatefee");
+            strcpy(coin->signtxstr,"signrawtransaction");
             coin->blockspacesize = IGUANA_MAXPACKETSIZE + 8192;
             coin->blockspace = calloc(1,coin->blockspacesize);
             if ( virtcoin != 0 || ((privatechain= jstr(argjson,"geckochain")) != 0 && privatechain[0] != 0) )

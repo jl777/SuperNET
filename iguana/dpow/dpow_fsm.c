@@ -235,6 +235,8 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
     *MoMdepthp = 0;
     memset(MoM.bytes,0,sizeof(MoM));
+    if ( strcmp(coin->symbol,"GAME") == 0 ) // 80 byte OP_RETURN limit
+        return(MoM);
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
         if ( (prevMoMheight= jint(infojson,"prevMoMheight")) >= 0 )
@@ -408,9 +410,9 @@ void dpow_statemachinestart(void *ptr)
             {
                 myind = i;
                 ep = &bp->notaries[myind];
-                for (j=0; j<33; j++)
-                    printf("%02x",dp->minerkey33[j]);
-                printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
+                //for (j=0; j<33; j++)
+                //    printf("%02x",dp->minerkey33[j]);
+                //printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
             }
         }
         if ( strcmp("KMD",src->symbol) == 0 )
@@ -426,7 +428,7 @@ void dpow_statemachinestart(void *ptr)
             exit(-1);
             return;
         }
-        printf("myind.%d\n",myind);
+        //printf("myind.%d\n",myind);
     }
     else
     {
@@ -486,6 +488,13 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
     }
+    /*if ( strcmp(dp->symbol,"CHIPS") == 0 && myind == 0 )
+    {
+        char str[65];
+        printf(">>>>>>> CHIPS myind.%d %s/v%d\n",myind,bits256_str(str,bp->notaries[myind].src.prev_hash),bp->notaries[myind].src.prev_vout);
+        bp->desttxid = bp->notaries[myind].src.prev_hash;
+        dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
+    }*/
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;

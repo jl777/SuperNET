@@ -54,12 +54,13 @@ coins/mnz_7776
 coins/axo_7776
 coins/etomic_7776
 coins/btch_7776
-coins/vote2018_7776
+#coins/vote2018_7776
 coins/ninja_7776
 coins/oot_7776
 coins/bntn_7776
 coins/chain_7776
 coins/prlpay_7776
+coins/dsec_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 

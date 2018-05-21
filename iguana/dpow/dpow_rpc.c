@@ -15,6 +15,13 @@
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
 
+uint64_t dpow_utxosize(char *symbol)
+{
+    if ( strcmp(symbol,"GAME") == 0 )
+        return(100000);
+    else return(10000);
+}
+
 char *bitcoind_getinfo(char *symbol,char *serverport,char *userpass,char *getinfostr)
 {
     char buf[1],*retstr; cJSON *retjson;
@@ -266,7 +273,7 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
 {
     struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
-    //if ( Notaries_port != DPOW_SOCKPORT )
+    if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || src_or_dest != 0 )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
@@ -563,7 +570,7 @@ cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *co
 
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
 {
-    cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
+    cJSON *array,*privkeys,*item,*retjson; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
     if ( coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
@@ -571,7 +578,17 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddi(array,jduplicate(vins));
         paramstr = jprint(array,1);
         //printf("signrawtransaction\n");
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"signrawtransaction",paramstr);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->signtxstr,paramstr);
+        if ( strcmp(coin->signtxstr,"signrawtransaction") == 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( jobj(retjson,"error") != 0 )
+            {
+                strcpy(coin->signtxstr,"signrawtransactionwithwallet");
+                free(retstr);
+                retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->signtxstr,paramstr);
+            }
+            free_json(retjson);
+        }
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
         usleep(10000);

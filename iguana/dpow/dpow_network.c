@@ -1537,7 +1537,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->bestmatches = bestmatches;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
-        if ( 0 && bp->myind == 0 && strcmp("KMD",dp->symbol) == 0 )
+        if ( 0 && bp->myind == 0 && strcmp("CHIPS",dp->symbol) == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
                 printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>median?"*":"");
@@ -1563,7 +1563,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 
 void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
-    int32_t i,err,vout; cJSON *ujson; char coinaddr[64],str[65];
+    int32_t i,err,vout,bestk; cJSON *ujson; char coinaddr[64],str[65];
     if ( bp->myind < 0 )
         return;
     if ( isratify != 0 )
@@ -1641,12 +1641,12 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
                 np->bestmask = bp->bestmask, np->bestk = bp->bestk;
             else np->bestk = bp->notaries[bp->myind].bestk;
         } else np->bestk = bp->pendingbestk;
-        if ( (int8_t)np->bestk >= 0 )
+        if ( (bestk= (int8_t)bp->pendingbestk) >= 0 || (bestk= (int8_t)np->bestk) >= 0 )
         {
-            if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
-                memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
-            if ( (np->siglens[1]= bp->notaries[bp->myind].dest.siglens[bp->bestk]) > 0 )
-                memcpy(np->sigs[1],bp->notaries[bp->myind].dest.sigs[bp->bestk],np->siglens[1]);
+            if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bestk]) > 0 )
+                memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bestk],np->siglens[0]);
+            if ( (np->siglens[1]= bp->notaries[bp->myind].dest.siglens[bestk]) > 0 )
+                memcpy(np->sigs[1],bp->notaries[bp->myind].dest.sigs[bestk],np->siglens[1]);
         }
     }
 }
@@ -1842,6 +1842,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             bp->notaries[senderind].src.prev_hash = srcutxo;
             bp->notaries[senderind].src.prev_vout = srcvout;
+            //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
         }
         if ( bits256_nonz(destutxo) != 0 )
         {
@@ -1923,8 +1924,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
                 bp->lastnanosend = now;
             }
-            if ( 0 && bp->myind <= 1 )
-                printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
+            if ( 0 && strcmp("CHIPS",dp->symbol) == 0 && bp->myind == 0 )
+                printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs);
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
                 if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
@@ -1935,6 +1936,11 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
                     //printf("finished signing\n");
                 }
+                if ( (bp->pendingbestmask & (1LL << bp->myind)) != 0 && bits256_nonz(bp->desttxid) != 0 && bp->srcsigsmasks[bp->pendingbestk] == 0 )
+                {
+                    printf("generate sigs for bestk.%d %llx\n",bp->pendingbestk,(long long)bp->pendingbestmask);
+                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGCHANNEL,0,0);
+                }
                 if ( bp->destsigsmasks[bp->pendingbestk] == bp->pendingbestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
@@ -1943,8 +1949,9 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->pendingbestk,bp->pendingbestmask,0,0);
-                    } //else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->bestmask);
-                } //else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
+                    } // else if ( strcmp(dp->symbol,"CHIPS") == 0  || strcmp(dp->symbol,"GAME") == 0 )printf("srcmask.[%d:%d] %llx %llx != bestmask.%llx\n",bp->bestk,bp->pendingbestk,(long long)bp->srcsigsmasks[bp->pendingbestk],(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->pendingbestmask);
+                } //else if ( strcmp(dp->symbol,"CHIPS") == 0  || strcmp(dp->symbol,"GAME") == 0 )
+                    //printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
             }
         }
         else
@@ -1960,8 +1967,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 printf("mypaxcrc.%x\n",bp->paxwdcrc);
         }
         char str[65];
-        if ( (rand() % 1024) == 0 )//|| strcmp(dp->symbol,"KMD") == 0 )
-            printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s [%d]\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM),bp->MoMdepth);
+        if ( (rand() % 1024) == 0 || (bp->myind == 0 && (rand() % 50) == 0 && (strcmp(dp->symbol,"CHIPS") == 0  || strcmp(dp->symbol,"GAME") == 0)) )
+            printf("%x ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d:%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s [%d]\n",bp->paxwdcrc,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,bp->pendingbestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM),bp->MoMdepth);
     }
 }
 

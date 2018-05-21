@@ -27,7 +27,7 @@
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
 #define DPOW_VERSION 0x1782
-#define DPOW_UTXOSIZE 10000//50000
+#define DPOW_UTXOSIZE dpow_utxosize(coin->symbol) //10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 1200
 #define DPOW_RATIFYDURATION (3600 * 24)
