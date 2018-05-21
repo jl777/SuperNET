@@ -122,7 +122,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
         //char str[65]; printf("LP_broadcast.%d %s (%s) %s i.%d sentflag.%d %s\n",i,txname,symbol,bits256_str(str,expectedtxid),i,sentflag,txbytes);
         if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
-        if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
+        if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes,0)) != 0 )
         {
             if ( is_hexstr(retstr,0) == 64 )
             {
@@ -1717,7 +1717,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
             {
                 if ( broadcast != 0 )
                 {
-                    if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
+                    if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
                     {
                         printf("LP_txblast.%s broadcast (%s) vs %s\n",coin->symbol,bits256_str(str,signedtxid),signret);
                         if ( is_hexstr(signret,0) == 64 )
@@ -1894,7 +1894,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         jaddstr(retjson,"hex",signedtx);
         if ( broadcast != 0 )
         {
-            if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
+            if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
             {
                 printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
                 free(signret);

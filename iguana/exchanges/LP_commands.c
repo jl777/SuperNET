@@ -631,7 +631,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
-                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx"),jint(argjson,"needjson")));
             }
             else if ( strcmp(method,"convaddress") == 0 )
             {
