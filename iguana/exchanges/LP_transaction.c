@@ -1289,11 +1289,11 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     {
         if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,utxotxid,utxovout)) != 0 )
         {
-            utxos[0].txid = utxotxid;
-            utxos[0].vout = utxovout;
-            utxos[0].value = LP_value_extract(txobj,0,utxotxid);
-            free_json(txout);
-            printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0].value));
+            utxos[0].U.txid = utxotxid;
+            utxos[0].U.vout = utxovout;
+            utxos[0].U.value = LP_value_extract(txobj,0,utxotxid);
+            free_json(txobj);
+            printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0].U.value));
         }
         numutxos = 1;
     }
