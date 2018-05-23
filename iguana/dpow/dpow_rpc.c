@@ -277,10 +277,10 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-        if ( strcmp(bp->srccoin->symbol,"PIZZA") == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        if ( strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
             kmdcoin = bp->destcoin;
-            if ( (bp->height % 10) == 0 && kmdcoin->lastbestheight > 100 && (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,(kmdcoin->lastbestheight/10)*10 - 5)) != 0 )
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,(kmdcoin->lastbestheight/10)*10 - 5)) != 0 )
             {
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
