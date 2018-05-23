@@ -1289,13 +1289,21 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     {
         if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,utxotxid,utxovout)) != 0 )
         {
-            utxos[0].U.txid = utxotxid;
-            utxos[0].U.vout = utxovout;
-            utxos[0].U.value = LP_value_extract(txobj,0,utxotxid);
+            struct LP_address_utxo U;
+            memset(&U,0,sizeof(U));
+            utxos[0] = &U;
+            utxos[0]->U.txid = utxotxid;
+            utxos[0]->U.vout = utxovout;
+            utxos[0]->U.value = LP_value_extract(txobj,0,utxotxid);
             free_json(txobj);
-            char str[65]; printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0].U.value));
+            char str[65]; printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0]->U.value));
+            numutxos = 1;
         }
-        numutxos = 1;
+        else
+        {
+            printf("LP_createrawtransaction: onevin spent already\n");
+            return(0);
+        }
     }
     else
     {
@@ -1311,7 +1319,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     ignore_cltverr = 0;
     suppress_pubkeys = 1;
     scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
-    numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,onevin,dustcombine);
+    numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,dustcombine);
     if ( numvins <= 0 || total < amount )
     {
         printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d, txfee %.8f\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts,dstr(txfee));
