@@ -380,6 +380,13 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
+int32_t dpow_is015(char *symbol)
+{
+    if ( strcmp("BTC",symbol) == 0 || strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 )
+        return(1);
+    else return(0);
+}
+
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
     char buf[128],*retstr=0; cJSON *retjson;
@@ -391,7 +398,7 @@ char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin
         //printf("%s -> (%s)\n",buf,retstr!=0?retstr:"null");
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( strcmp(coin->symbol,"BTC") == 0 && jobj(retjson,"error") == 0 && jobj(retjson,"ismine") == 0 && strcmp(coin->validateaddress,"validateaddress") == 0 )
+            if ( dpow_is015(coin->symbol) != 0 && jobj(retjson,"error") == 0 && jobj(retjson,"ismine") == 0 && strcmp(coin->validateaddress,"validateaddress") == 0 )
             {
                 printf("autochange %s validateaddress -> getaddressinfo\n",coin->symbol);
                 strcpy(coin->validateaddress,"getaddressinfo");
@@ -581,7 +588,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->signtxstr,paramstr);
         if ( strcmp(coin->signtxstr,"signrawtransaction") == 0 && (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( jobj(retjson,"error") != 0 )
+            if ( jobj(retjson,"error") != 0 && dpow_is015(coin->symbol) != 0 )
             {
                 strcpy(coin->signtxstr,"signrawtransactionwithwallet");
                 free(retstr);
