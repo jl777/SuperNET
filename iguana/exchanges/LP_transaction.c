@@ -1950,6 +1950,61 @@ char *LP_autosplit(struct iguana_info *coin)
     return(clonestr("{\"error\":\"couldnt autosplit\"}"));
 }
 
+char *LP_movecoinbases(char *symbol)
+{
+    static bits256 zero; bits256 utxotxid,txid; struct iguana_info *coin; cJSON *retjson,*outputs,*argjson,*txids,*unspents,*item,*gen; int32_t i,n,utxovout; char *retstr,*hexstr;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( coin->electrum == 0 )
+        {
+            txids = cJSON_CreateArray();
+            if ( (unspents= LP_listunspent(symbol,coin->smartaddr,zero,zero)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(unspents)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(unspents,i);
+                        if ( is_cJSON_True(jobj(item,"generated")) != 0 )
+                        {
+                            utxotxid = jbits256(item,"txid");
+                            utxovout = jint(item,"vout");
+                            argjson = cJSON_CreateObject();
+                            outputs = cJSON_CreateArray();
+                            item = cJSON_CreateObject();
+                            jaddnum(item,coin->smartaddr,0.0001);
+                            jaddi(outputs,item);
+                            jadd(argjson,"outputs",outputs);
+                            jaddnum(argjson,"broadcast",0);
+                            jaddstr(argjson,"coin",coin->symbol);
+                            if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
+                            {
+                                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                                {
+                                    txid = jbits256(retjson,"txid");
+                                    hexstr = jstr(retjson,"hex");
+                                    if ( bits256_nonz(txid) != 0 && hexstr != 0 )
+                                    {
+                                        printf("%s -> %s\n",jprint(item,0),hexstr);
+                                        jaddbits256(txids,txid);
+                                    }
+                                    free_json(retjson);
+                                }
+                                free(retstr);
+                            }
+                            free_json(argjson);
+                        }
+                    }
+                }
+                free_json(unspents);
+            }
+            return(jprint(txids,1));
+        }
+        return(clonestr("{\"error\":\"LP_movecoinbases cant be electrum\"}"));
+    }
+    return(clonestr("{\"error\":\"LP_movecoinbases couldnt find coin\"}"));
+}
+
 #ifndef NOTETOMIC
 
 char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
