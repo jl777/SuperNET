@@ -1293,7 +1293,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             utxos[0].U.vout = utxovout;
             utxos[0].U.value = LP_value_extract(txobj,0,utxotxid);
             free_json(txobj);
-            printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0].U.value));
+            char str[65]; printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0].U.value));
         }
         numutxos = 1;
     }
