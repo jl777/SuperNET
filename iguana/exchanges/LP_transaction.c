@@ -1952,7 +1952,7 @@ char *LP_autosplit(struct iguana_info *coin)
 
 char *LP_movecoinbases(char *symbol)
 {
-    static bits256 zero; bits256 utxotxid,txid; struct iguana_info *coin; cJSON *retjson,*outputs,*argjson,*txids,*unspents,*item,*gen; int32_t i,n,utxovout; char *retstr,*hexstr;
+    static bits256 zero; bits256 utxotxid,txid; struct iguana_info *coin; cJSON *retjson,*outputs,*argjson,*txids,*unspents,*item,*gen,*output; int32_t i,n,utxovout; char *retstr,*hexstr;
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( coin->electrum == 0 )
@@ -1971,12 +1971,14 @@ char *LP_movecoinbases(char *symbol)
                             utxovout = jint(item,"vout");
                             argjson = cJSON_CreateObject();
                             outputs = cJSON_CreateArray();
-                            item = cJSON_CreateObject();
-                            jaddnum(item,coin->smartaddr,0.0001);
-                            jaddi(outputs,item);
+                            output = cJSON_CreateObject();
+                            jaddnum(output,coin->smartaddr,0.0001);
+                            jaddi(outputs,output);
                             jadd(argjson,"outputs",outputs);
                             jaddnum(argjson,"broadcast",0);
                             jaddstr(argjson,"coin",coin->symbol);
+                            jaddbits256(argjson,"utxotxid",utxotxid);
+                            jaddnum(argjson,"utxovout",utxovout);
                             if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
                             {
                                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
