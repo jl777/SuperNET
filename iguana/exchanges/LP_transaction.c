@@ -1857,7 +1857,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
-            if ( onevin != 0 )
+            if ( jint(argjson,"onevin") != 0 )
                 V[0].suppress_pubkeys = 1;
             //printf("created V[0].suppress %d\n",V[0].suppress_pubkeys);
             if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
