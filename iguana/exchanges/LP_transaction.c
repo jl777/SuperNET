@@ -1117,7 +1117,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             preselected[numpre++] = up;
         else
         {
-            printf("couldnt add address_utxo after not finding\n");
+            printf("couldnt add address_utxo %s/v%d after not finding\n",bits256_str(str,utxotxid),utxovout);
             sleep(1);
             value = LP_txvalue(0,coin->symbol,utxotxid,utxovout);
             LP_address_utxoadd(0,(uint32_t)time(NULL),"withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
