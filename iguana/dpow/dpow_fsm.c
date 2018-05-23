@@ -143,7 +143,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
-        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
+        if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
             if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
             {
