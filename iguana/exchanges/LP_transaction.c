@@ -1986,7 +1986,7 @@ char *LP_movecoinbases(char *symbol)
                                     if ( bits256_nonz(txid) != 0 && hexstr != 0 )
                                     {
                                         printf("%s -> %s\n",jprint(item,0),hexstr);
-                                        jaddbits256(txids,txid);
+                                        jaddibits256(txids,txid);
                                     }
                                     free_json(retjson);
                                 }
