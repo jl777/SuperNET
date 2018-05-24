@@ -22,8 +22,8 @@ cmake --build . --target marketmaker-testnet'''
         sh '''docker-compose build
 docker-compose up -d
 ./start_BEER_ETH_trade.sh
-timeout 600 grep -q "SWAP completed" <(docker-compose logs -f clientnode)
-timeout 600 grep -q "SWAP completed" <(docker-compose logs -f seednode)
+COMPOSE_HTTP_TIMEOUT=601 timeout 600 grep -q "SWAP completed" <(docker-compose logs -f clientnode)
+COMPOSE_HTTP_TIMEOUT=601 timeout 600 grep -q "SWAP completed" <(docker-compose logs -f seednode)
 docker-compose down'''
       }
     }
