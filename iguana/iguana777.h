@@ -193,6 +193,7 @@ struct supernet_info
     FILE *swapsfp;
     double DEXratio;
     struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh,runsilent,DEXtrades;
+    int32_t nosplit;
 };
 
 struct basilisk_swapmessage
