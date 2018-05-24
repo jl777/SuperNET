@@ -554,6 +554,27 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
+#ifndef NOT_ETOMIC
+                    if (ptr->etomic[0] != 0) {
+                        struct iguana_info *etomic_coin = LP_coinsearch("ETOMIC");
+                        if (etomic_coin->inactive != 0) {
+                            return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
+                        }
+
+                        if (ptr->inactive != 0) {
+                            uint64_t balance = LP_etomic_get_balance(ptr, ptr->smartaddr);
+                            uint64_t new_required = G.LP_required_etomic_balance + (balance * 9) / 4;
+                            uint64_t etomic_balance = LP_RTsmartbalance(etomic_coin);
+                            if (etomic_balance < new_required) {
+                                printf("Need additional ETOMIC amount: %" PRIu64 "\n", new_required - etomic_balance);
+                                if (get_etomic_from_faucet(ptr->smartaddr, etomic_coin->smartaddr, ptr->etomic) != 1) {
+                                    return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
+                                }
+                            }
+                            G.LP_required_etomic_balance = new_required;
+                        }
+                    }
+#endif
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         cJSON *array;

@@ -120,7 +120,7 @@ struct LP_globals
 {
     //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
     bits256 LP_mypub25519,LP_privkey,LP_mypriv25519,LP_passhash;
-    uint64_t LP_skipstatus[10000];
+    uint64_t LP_skipstatus[10000], LP_required_etomic_balance;
     uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;

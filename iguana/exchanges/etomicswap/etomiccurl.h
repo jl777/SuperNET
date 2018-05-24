@@ -19,6 +19,8 @@ extern "C"{
 #define DEFAULT_GAS_PRICE 10
 #endif
 
+#define FAUCET_URL "http://195.201.116.176:8000/getEtomic"
+
 typedef struct
 {
     uint64_t blockNumber;
@@ -48,6 +50,7 @@ uint64_t getEthBlockNumber();
 uint64_t getGasPriceFromStation(uint8_t defaultOnErr);
 int32_t waitForConfirmation(char *txId);
 void unlock_send_tx_mutex();
+uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr, char *token_addr);
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,6 @@
 #include "etomiccurl.h"
 #include <curl/curl.h>
 
-static char *ethRpcUrl = ETOMIC_URL;
 pthread_mutex_t sendTxMutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct string {
@@ -56,7 +55,7 @@ cJSON *parseEthRpcResponse(char *requestResult)
     return result;
 }
 
-char* sendRequest(char* request)
+char* sendRequest(char *request, char *url)
 {
     CURL *curl;
     CURLcode res;
@@ -72,13 +71,15 @@ char* sendRequest(char* request)
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
-        curl_easy_setopt(curl, CURLOPT_URL, ethRpcUrl);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request);
         /* Perform the request, res will get the return code */
         res = curl_easy_perform(curl);
         /* Check for errors */
         if (res != CURLE_OK) {
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            curl_easy_cleanup(curl);
+            return NULL;
         }
 
         /* always cleanup */
@@ -98,7 +99,7 @@ cJSON *sendRpcRequest(char *method, cJSON *params)
     cJSON_AddItemToObject(request, "params", cJSON_Duplicate(params, 1));
     cJSON_AddNumberToObject(request, "id", 1);
     string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string);
+    char* requestResult = sendRequest(string, ETOMIC_URL);
     free(string);
     cJSON_Delete(request);
     cJSON *result = parseEthRpcResponse(requestResult);
@@ -151,8 +152,8 @@ char* sendRawTx(char* rawTx)
 
 int64_t getNonce(char* address)
 {
-    // we should lock this mutex and unlock it only when transaction was already sent.
-    // make sure that sendRawTx is called after getting a nonce!
+    // we should lock this mutex and unlock it only when transaction was already sent or failed.
+    // make sure that sendRawTx or unlock_send_tx_mutex is called after getting a nonce!
     if (pthread_mutex_lock(&sendTxMutex) != 0) {
         printf("Nonce mutex lock failed\n");
     };
@@ -371,4 +372,40 @@ int32_t waitForConfirmation(char *txId)
 void unlock_send_tx_mutex()
 {
     pthread_mutex_unlock(&sendTxMutex);
+}
+
+uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr, char *token_addr)
+{
+    char* string;
+    cJSON *request = cJSON_CreateObject();
+    cJSON_AddStringToObject(request, "ethAddress", eth_addr);
+    cJSON_AddStringToObject(request, "etomicAddress", etomic_addr);
+    if (strcmp(token_addr, "0x0000000000000000000000000000000000000000") != 0) {
+        cJSON_AddStringToObject(request, "tokenAddress", token_addr);
+    }
+    string = cJSON_PrintUnformatted(request);
+    char* requestResult = sendRequest(string, FAUCET_URL);
+    free(string);
+    cJSON_Delete(request);
+
+    if (requestResult == NULL) {
+        return 0;
+    }
+
+    cJSON *json = cJSON_Parse(requestResult);
+    if (json == NULL) {
+        printf("ETOMIC faucet response parse failed!\n");
+        return 0;
+    }
+    cJSON *error = cJSON_GetObjectItem(json, "error");
+    uint8_t result = 0;
+    if (error != NULL && !is_cJSON_Null(error)) {
+        char *errorString = cJSON_PrintUnformatted(error);
+        printf("Got ETOMIC faucet error: %s\n", errorString);
+        free(errorString);
+    } else {
+        result = 1;
+    }
+    cJSON_Delete(json);
+    return result;
 }
