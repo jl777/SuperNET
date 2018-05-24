@@ -2010,7 +2010,7 @@ char *LP_movecoinbases(char *symbol)
                             jaddnum(output,coin->smartaddr,0.0001);
                             jaddi(outputs,output);
                             jadd(argjson,"outputs",outputs);
-                            jaddnum(argjson,"broadcast",0);
+                            jaddnum(argjson,"broadcast",1);
                             jaddstr(argjson,"coin",coin->symbol);
                             jaddbits256(argjson,"utxotxid",utxotxid);
                             jaddnum(argjson,"utxovout",utxovout);
