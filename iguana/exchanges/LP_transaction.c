@@ -1799,7 +1799,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t broadcast,allocated_outputs=0,iter,i,num,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee=0,newtxfee=10000;
+    int32_t broadcast,allocated_outputs=0,iter,i,num,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],wifstr[64],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee=0,newtxfee=10000;
 //printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
@@ -1858,15 +1858,27 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
             if ( jint(argjson,"onevin") != 0 )
-                V[0].suppress_pubkeys = 1;
-            //printf("created V[0].suppress %d\n",V[0].suppress_pubkeys);
-            if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
-                printf("couldnt sign withdraw %s\n",bits256_str(str,signedtxid));
-            else if ( completed == 0 )
             {
-                printf("incomplete signing withdraw (%s)\n",jprint(vins,0));
-                if ( signedtx != 0 )
-                    free(signedtx), signedtx = 0;
+                V[0].suppress_pubkeys = 1;
+                bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
+                if ( (signedtx= bitcoin_signrawtransaction(&completed,&signedtxid,coin,rawtx,wifstr)) != 0 && completed == 0 )
+                {
+                    printf("incomplete signing\n");
+                    free(signedtx);
+                    signedtx = 0;
+                }
+            }
+            else
+            {
+                //printf("created V[0].suppress %d\n",V[0].suppress_pubkeys);
+                if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
+                    printf("couldnt sign withdraw %s\n",bits256_str(str,signedtxid));
+                else if ( completed == 0 )
+                {
+                    printf("incomplete signing withdraw (%s)\n",jprint(vins,0));
+                    if ( signedtx != 0 )
+                        free(signedtx), signedtx = 0;
+                }
             }
             if ( signedtx == 0 )
                 break;
