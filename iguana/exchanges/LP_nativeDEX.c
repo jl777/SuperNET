@@ -955,13 +955,15 @@ void verusblocks(struct iguana_info *coin)
                             if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&z,sobj,"addresses")) != 0 )
                             {
                                 lastaddr = jstri(addresses,0);
-                                printf("ht.%d found staking address.(%s)\n",height,lastaddr);
+                                if ( lastaddr == 0 )
+                                    lastaddr = "";
+                                else printf("ht.%d found staking address.(%s)\n",height,lastaddr);
                             } else printf("no addresses[0] in (%s) %s\n",jprint(vout,0),sobj!=0?jprint(sobj,0):"");
                         } //else printf("n.%d m.%d no first out in lastvout.(%s)\n",n,m,jprint(txobj,0));
-                    } else printf("cant find vout.(%s)\n",jprint(txobj,0));
+                    } // else printf("cant find vout.(%s)\n",jprint(txobj,0));
                     free_json(txobj);
                 }
-                if ( lastaddr != 0 && addr0 != 0 && strcmp(lastaddr,addr0) == 0 )
+                if ( strcmp(lastaddr,addr0) == 0 )
                 {
                     numpos++;
                     printf("height.%d locked.%d PoS addr0.%s %s %.8f\n",height,locked,addr0,lastaddr,value);
@@ -971,7 +973,7 @@ void verusblocks(struct iguana_info *coin)
                 else
                 {
                     numpow++;
-                    printf("height.%d locked.%d PoW addr0.%s %s %.8f\n",height,locked,addr0,lastaddr,value);
+                    printf("height.%d locked.%d PoW addr0.(%s) (%s) %.8f\n",height,locked,addr0,lastaddr,value);
                     if ( strcmp(coin->smartaddr,addr0) == 0 )
                         powsum += value;
                 }
