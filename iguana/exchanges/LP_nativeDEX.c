@@ -928,7 +928,7 @@ void verusblocks(struct iguana_info *coin)
                                 {
                                     decode_hex(script,44,hexstr);
                                     locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
-                                    bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->addrtype,&script[10],33);
+                                    bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
                                 }
                             }
                         }
