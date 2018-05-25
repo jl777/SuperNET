@@ -892,10 +892,10 @@ void gameaddrs()
 
 void verusblocks(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     possum = powsum = supply = 0.;
-    numpow = numpos = num = 0;
+    numpow = numpos = num = npos = npow = 0;
     if ( bits256_nonz(hash) != 0 )
     {
         bits256_str(hashstr,hash);
@@ -975,14 +975,14 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                     numpos++;
                     printf("ht.%d lock.%d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
                     if ( strcmp(coinaddr,stakingaddr) == 0 )
-                        possum += value;
+                        possum += value, npos++;
                 }
                 else
                 {
                     numpow++;
                     printf("ht.%d lock.%d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
                     if ( strcmp(coinaddr,addr0) == 0 )
-                        powsum += value;
+                        powsum += value, npow++;
                 }
             }
             bits256_str(hashstr,jbits256(blockjson,"previousblockhash"));
@@ -992,7 +992,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
         }
     }
     if ( num > 0 )
-        printf("(%s).%d PoW %.2f%% %.8f PoS %.2f%% %.8f -> %.8f supply %.8f %.1%%\n",coinaddr,num,100.*(double)numpow/num,powsum,100.*(double)numpos/num,possum,powsum+possum,supply,100.*(powsum+possum)/supply);
+        printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*(powsum+possum)/supply);
 }
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
