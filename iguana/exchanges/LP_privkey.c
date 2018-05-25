@@ -417,8 +417,10 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 
 void verusblocks(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
+    memset(histo,0,sizeof(histo));
+    memset(myhisto,0,sizeof(myhisto));
     possum = powsum = supply = 0.;
     numpow = numpos = num = npos = npow = 0;
     if ( bits256_nonz(hash) != 0 )
@@ -509,6 +511,9 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                     if ( strcmp(coinaddr,addr0) == 0 )
                         powsum += value, npow++;
                 }
+                histo[height/1000] += value;
+                if ( strcmp(coinaddr,addr0) == 0 )
+                    myhisto[height/1000] += value;
             }
             bits256_str(hashstr,jbits256(blockjson,"previousblockhash"));
             free_json(blockjson);
@@ -521,7 +526,17 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
         }
     }
     if ( num > 0 )
+    {
+        for (i=0; i<sizeof(histo)/sizeof(*histo); i++)
+            if ( histo[i] != 0 )
+                printf("%d %.8f, ",i*1000,histo[i]);
+        printf("timelocked\n");
+        for (i=0; i<sizeof(myhisto)/sizeof(*myhisto); i++)
+            if ( myhisto[i] != 0 )
+                printf("%d %.8f, ",i*1000,myhisto[i]);
+        printf("mytimelocked\n");
         printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply);
+    }
 }
 
 void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
