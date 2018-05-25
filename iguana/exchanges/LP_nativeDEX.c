@@ -932,12 +932,13 @@ void verusblocks(struct iguana_info *coin)
                                     locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
                                     bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
                                     addr0 = firstaddr;
-                                } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",jdouble(vout1,"value"));
-                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0),(int32_t)strlen(hexstr));
+                                } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",(int32_t)strlen(hexstr),jdouble(vout1,"value"));
+                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
                         }
                     }
                     free_json(txobj);
                 }
+                txid = jbits256i(txs,n-1);
                 if ( (txobj= LP_gettx("verus",coin->symbol,txid,n-1)) != 0 )
                 {
                     if ( (vouts= jarray(&m,txobj,"vout")) != 0 )
