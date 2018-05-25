@@ -892,7 +892,7 @@ void gameaddrs()
 
 void verusblocks(struct iguana_info *coin)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     possum = powsum = 0.;
     numpow = numpos = num = 0;
@@ -913,6 +913,7 @@ void verusblocks(struct iguana_info *coin)
                 lastaddr = addr0 = "";
                 memset(script,0,sizeof(script));
                 memset(firstaddr,0,sizeof(firstaddr));
+                memset(stakingaddr,0,sizeof(stakingaddr));
                 if ( (txobj= LP_gettx("verus",coin->symbol,txid,0)) != 0 )
                 {
                     //printf("TX.(%s)\n",jprint(txobj,0));
@@ -957,23 +958,27 @@ void verusblocks(struct iguana_info *coin)
                                 lastaddr = jstri(addresses,0);
                                 if ( lastaddr == 0 )
                                     lastaddr = "";
-                                else printf("ht.%d found staking address.(%s)\n",height,lastaddr);
+                                else
+                                {
+                                    strcpy(stakingaddr,lastaddr);
+                                    printf("ht.%d found staking address.(%s)\n",height,stakingaddr);
+                                }
                             } else printf("no addresses[0] in (%s) %s\n",jprint(vout,0),sobj!=0?jprint(sobj,0):"");
                         } //else printf("n.%d m.%d no first out in lastvout.(%s)\n",n,m,jprint(txobj,0));
                     } // else printf("cant find vout.(%s)\n",jprint(txobj,0));
                     free_json(txobj);
                 }
-                if ( strcmp(lastaddr,addr0) == 0 )
+                if ( strcmp(stakingaddr,addr0) == 0 )
                 {
                     numpos++;
-                    printf("height.%d locked.%d PoS addr0.%s %s %.8f\n",height,locked,addr0,lastaddr,value);
-                    if ( strcmp(coin->smartaddr,lastaddr) == 0 )
+                    printf("height.%d locked.%d PoS addr0.%s %s %.8f\n",height,locked,addr0,stakingaddr,value);
+                    if ( strcmp(coin->smartaddr,stakingaddr) == 0 )
                         possum += value;
                 }
                 else
                 {
                     numpow++;
-                    printf("height.%d locked.%d PoW addr0.(%s) (%s) %.8f\n",height,locked,addr0,lastaddr,value);
+                    printf("height.%d locked.%d PoW addr0.(%s) (%s) %.8f\n",height,locked,addr0,stakingaddr,value);
                     if ( strcmp(coin->smartaddr,addr0) == 0 )
                         powsum += value;
                 }
