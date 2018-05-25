@@ -890,6 +890,85 @@ void gameaddrs()
     }
 }
 
+void verusblocks(struct iguana_info *coin)
+{
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t locked,height,i,n,z,posflag; char hashstr[64],firstaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses;
+    hash = LP_getbestblockhash(coin);
+    possum = powsum = 0.;
+    if ( bits256_nonz(hash) != 0 )
+    {
+        bits256_str(hashstr,hash);
+        height = 0;
+        while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
+        {
+            if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
+            {
+                txid = jbits256i(txs,0);
+                value = 0;
+                posflag = 0;
+                locked = 0;
+                memset(script,0,sizeof(script));
+                memset(firstaddr,0,sizeof(firstaddr));
+                if ( (txobj= LP_gettx("verus",coin->symbol,txid,0)) != 0 )
+                {
+                    if ( (vouts= jarray(&m,txobj,"vout")) != 0 )
+                    {
+                        if ( (vout= jitem(vouts,0)) != 0 )
+                        {
+                            value = jdouble(vout,"value");
+                            addr0 = jstr(vout,"address");
+                            if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
+                            {
+                                /*"scriptPubKey": {
+                                    "asm": "OP_RETURN 0103546e10b1752103c8ec85735614495aa2fcf755675edea901ad1869d7833770d8f97a40325399d4ac",
+                                    "hex": "6a2a0103546e10b1752103c8ec85735614495aa2fcf755675edea901ad1869d7833770d8f97a40325399d4ac",
+                                    "type": "nulldata"
+                                }*/
+                                if ( jdouble(vout1,"value") == 0 && (sobj= jobj(vout1,"scriptPubKey")) != 0 && (hexstr= jstr(vout1,"hex")) != 0 && strlen(hexstr) == 88 )
+                                {
+                                    decode_hex(script,44,hexstr);
+                                    locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
+                                    bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->addrtype,&script[10],33);
+                                }
+                            }
+                        }
+                    }
+                    free_json(txobj);
+                }
+                if ( (txobj= LP_gettx("verus",coin->symbol,txid,n-1)) != 0 )
+                {
+                    if ( (vouts= jarray(&m,txobj,"vout")) != 0 )
+                    {
+                        if ( (vout= jitem(vouts,0)) != 0 && m == 1 )
+                        {
+                            if ( (sobj= jobj(vout1,"scriptPubKey")) != 0 && (addresses= jarray(&z,sobj,"addresses")) != 0 )
+                                lastaddr = jstri(addresses,0);
+                        }
+                    }
+                    free_json(txobj);
+                }
+                if ( lastaddr != 0 && addr0 != 0 && strcmp(lastaddr,addr0) == 0 )
+                {
+                    printf("height.%d locked.%d PoS %s %.8f\n",height,locked,lastaddr,value);
+                    if ( strcmp(coin->smartaddr,lastaddr) == 0 )
+                        possum += value;
+                }
+                else
+                {
+                    printf("height.%d locked.%d PoW %s %.8f\n",height,locked,lastaddr,value);
+                    if ( strcmp(coin->smartaddr,addr0) == 0 )
+                        powsum += value;
+                }
+            }
+            bits256_str(hashstr,jbits256(blockjson,"previousblockhash"));
+            free_json(blockjson);
+            if ( height == 5040 )
+                break;
+        }
+    }
+    printf("%s PoWsum %.8f PoSsum %.8f -> %.8f\n",powsum,possum,powsum+possum);
+}
+
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
     int32_t i,n,notarized; cJSON *item; char *symbol,*etomic; struct iguana_info *coin;
@@ -940,6 +1019,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     if ( 0 && strcmp(coin->symbol,"BCH") == 0 )
                     {
                         bech32_tests();
+                    }
+                    else if ( strcmp(coin->symbol,"VRSC") == 0 && strcmp(coin->smartaddr,"RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj") == 0 )
+                    {
+                        verusblocks();
                     }
                     else if ( 0 && strcmp(coin->symbol,"GAME") == 0 )
                     {
