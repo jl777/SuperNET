@@ -1046,9 +1046,9 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     {
                         bech32_tests();
                     }
-                    else if ( strcmp(coin->symbol,"VRSC") == 0 )
+                    else if ( strcmp(coin->symbol,"VRSC") == 0 && strcmp("RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj",coin->smartaddr) == 0 )
                     {
-                        verusblocks(coin,"RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj");
+                        verusblocks(coin,coin->smartaddr);
                     }
                     else if ( 0 && strcmp(coin->symbol,"GAME") == 0 )
                     {
