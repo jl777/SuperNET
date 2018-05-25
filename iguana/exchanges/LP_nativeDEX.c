@@ -892,7 +892,7 @@ void gameaddrs()
 
 void verusblocks(struct iguana_info *coin)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t locked,height,i,n,z,posflag; char hashstr[64],firstaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses;
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     possum = powsum = 0.;
     if ( bits256_nonz(hash) != 0 )
@@ -966,7 +966,7 @@ void verusblocks(struct iguana_info *coin)
                 break;
         }
     }
-    printf("%s PoWsum %.8f PoSsum %.8f -> %.8f\n",powsum,possum,powsum+possum);
+    printf("%s PoWsum %.8f PoSsum %.8f -> %.8f\n",coin->smartaddr,powsum,possum,powsum+possum);
 }
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
@@ -1020,9 +1020,9 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     {
                         bech32_tests();
                     }
-                    else if ( strcmp(coin->symbol,"VRSC") == 0 && strcmp(coin->smartaddr,"RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj") == 0 )
+                    else if ( strcmp(coin->symbol,"VRSC") == 0 )
                     {
-                        verusblocks();
+                        verusblocks(coin);
                     }
                     else if ( 0 && strcmp(coin->symbol,"GAME") == 0 )
                     {
