@@ -901,6 +901,7 @@ void verusblocks(struct iguana_info *coin)
         height = -1;
         while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
         {
+            height = juint(json,"height");
             if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
             {
                 txid = jbits256i(txs,0);
@@ -911,6 +912,7 @@ void verusblocks(struct iguana_info *coin)
                 memset(firstaddr,0,sizeof(firstaddr));
                 if ( (txobj= LP_gettx("verus",coin->symbol,txid,0)) != 0 )
                 {
+                    printf("TX.(%s)\n",jprint(txobj,0));
                     if ( (vouts= jarray(&m,txobj,"vout")) != 0 )
                     {
                         if ( (vout= jitem(vouts,0)) != 0 )

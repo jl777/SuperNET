@@ -1045,7 +1045,7 @@ cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t hei
     {
         if ( (json= LP_getblockhashstr(symbol,blockhashstr)) != 0 )
         {
-            if ( heightp != 0 )
+            if ( *heightp != 0 )
             {
                 *heightp = juint(json,"height");
                 if ( height >= 0 && *heightp != height )
