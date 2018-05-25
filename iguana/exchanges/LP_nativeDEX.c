@@ -898,7 +898,7 @@ void verusblocks(struct iguana_info *coin)
     if ( bits256_nonz(hash) != 0 )
     {
         bits256_str(hashstr,hash);
-        height = 0;
+        height = -1;
         while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
         {
             if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
@@ -929,8 +929,8 @@ void verusblocks(struct iguana_info *coin)
                                     decode_hex(script,44,hexstr);
                                     locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
                                     bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
-                                }
-                            }
+                                } else printf("unexpected lastvout.(%s)\n",jprint(vout1,0));
+                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
                         }
                     }
                     free_json(txobj);
@@ -955,7 +955,7 @@ void verusblocks(struct iguana_info *coin)
                 }
                 else
                 {
-                    printf("height.%d locked.%d PoW %s %.8f\n",height,locked,lastaddr,value);
+                    printf("height.%d locked.%d PoW %s %.8f\n",height,locked,addr0,value);
                     if ( strcmp(coin->smartaddr,addr0) == 0 )
                         powsum += value;
                 }
