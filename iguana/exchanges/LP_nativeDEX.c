@@ -892,9 +892,9 @@ void gameaddrs()
 
 void verusblocks(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
-    possum = powsum = 0.;
+    possum = powsum = supply = 0.;
     numpow = numpos = num = 0;
     if ( bits256_nonz(hash) != 0 )
     {
@@ -922,6 +922,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                         if ( (vout= jitem(vouts,0)) != 0 )
                         {
                             value = jdouble(vout,"value");
+                            supply += value;
                             hexstr = 0;
                             if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
                             {
@@ -972,14 +973,14 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 if ( posflag != 0 )
                 {
                     numpos++;
-                    printf("height.%d locked.%d PoS coinbase.%s staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
+                    printf("ht.%d lock.%d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
                     if ( strcmp(coinaddr,stakingaddr) == 0 )
                         possum += value;
                 }
                 else
                 {
                     numpow++;
-                    printf("height.%d locked.%d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
+                    printf("ht.%d lock.%d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
                     if ( strcmp(coinaddr,addr0) == 0 )
                         powsum += value;
                 }
@@ -991,7 +992,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
         }
     }
     if ( num > 0 )
-        printf("(%s) numblocks.%d PoWsum %.2f%% %.8f PoSsum %.2f%% %.8f -> %.8f\n",coinaddr,num,100.*(double)numpow/num,powsum,100.*(double)numpos/num,possum,powsum+possum);
+        printf("(%s).%d PoW %.2f%% %.8f PoS %.2f%% %.8f -> %.8f supply %.8f %.1%%\n",coinaddr,num,100.*(double)numpow/num,powsum,100.*(double)numpos/num,possum,powsum+possum,supply,100.*(powsum+possum)/supply);
 }
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
