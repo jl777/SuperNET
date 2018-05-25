@@ -511,9 +511,9 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                     if ( strcmp(coinaddr,addr0) == 0 )
                         powsum += value, npow++;
                 }
-                histo[height/1000] += value;
+                histo[locked/1000] += value;
                 if ( strcmp(coinaddr,addr0) == 0 )
-                    myhisto[height/1000] += value;
+                    myhisto[locked/1000] += value;
             }
             bits256_str(hashstr,jbits256(blockjson,"previousblockhash"));
             free_json(blockjson);
