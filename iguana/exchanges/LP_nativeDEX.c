@@ -926,14 +926,14 @@ void verusblocks(struct iguana_info *coin)
                                     "hex": "6a2a0103546e10b1752103c8ec85735614495aa2fcf755675edea901ad1869d7833770d8f97a40325399d4ac",
                                     "type": "nulldata"
                                 }*/
-                                if ( jdouble(vout1,"value") == 0 && (sobj= jobj(vout1,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && strlen(hexstr) == 88 )
+                                if ( jdouble(vout1,"value") == 0. && (sobj= jobj(vout1,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && strlen(hexstr) == 88 )
                                 {
                                     decode_hex(script,44,hexstr);
                                     locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
                                     bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
                                     addr0 = firstaddr;
-                                } else printf("unexpected lastvout.(%s) (%s)\n",jprint(vout1,0),hexstr!=0?hexstr:"");
-                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
+                                } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",jdouble(vout1,"value"));
+                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0),(int32_t)strlen(hexstr));
                         }
                     }
                     free_json(txobj);
