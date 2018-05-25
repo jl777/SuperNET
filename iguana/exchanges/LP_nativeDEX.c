@@ -910,6 +910,7 @@ void verusblocks(struct iguana_info *coin)
                 value = 0;
                 posflag = 0;
                 locked = 0;
+                addr0 = "";
                 memset(script,0,sizeof(script));
                 memset(firstaddr,0,sizeof(firstaddr));
                 if ( (txobj= LP_gettx("verus",coin->symbol,txid,0)) != 0 )
@@ -953,8 +954,9 @@ void verusblocks(struct iguana_info *coin)
                         {
                             if ( (sobj= jobj(vout1,"scriptPubKey")) != 0 && (addresses= jarray(&z,sobj,"addresses")) != 0 )
                                 lastaddr = jstri(addresses,0);
-                        }
-                    }
+                            else printf("no addresses[0] in (%s)\n",jprint(vout,0));
+                        } else printf("no first out in lastvout.(%s)\n",jprint(txobj,0));
+                    } else printf("cant find vout.(%s)\n",jprint(txobj,0));
                     free_json(txobj);
                 }
                 if ( lastaddr != 0 && addr0 != 0 && strcmp(lastaddr,addr0) == 0 )
