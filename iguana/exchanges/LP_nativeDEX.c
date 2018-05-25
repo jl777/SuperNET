@@ -892,15 +892,17 @@ void gameaddrs()
 
 void verusblocks(struct iguana_info *coin)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag; char hashstr[64],firstaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     possum = powsum = 0.;
+    numpow = numpos = num = 0;
     if ( bits256_nonz(hash) != 0 )
     {
         bits256_str(hashstr,hash);
         height = -1;
         while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
         {
+            num++;
             height = juint(blockjson,"height");
             if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
             {
@@ -921,16 +923,20 @@ void verusblocks(struct iguana_info *coin)
                             hexstr = 0;
                             if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
                             {
-                                /*"scriptPubKey": {
-                                    "asm": "OP_RETURN 0103546e10b1752103c8ec85735614495aa2fcf755675edea901ad1869d7833770d8f97a40325399d4ac",
-                                    "hex": "6a2a0103546e10b1752103c8ec85735614495aa2fcf755675edea901ad1869d7833770d8f97a40325399d4ac",
-                                    "type": "nulldata"
-                                }*/
-                                if ( jdouble(vout1,"value") == 0. && (sobj= jobj(vout1,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && strlen(hexstr) == 88 )
+                                // 6a2001039bbc0bb17576a9149a3af738444dd86b55c86752247aec2e7deb842688ac
+                                if ( jdouble(vout1,"value") == 0. && (sobj= jobj(vout1,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && strlen(hexstr) <= 88 )
                                 {
-                                    decode_hex(script,44,hexstr);
+                                    if ( strlen(hexstr) == 68 )
+                                    {
+                                        decode_hex(script,34,hexstr);
+                                        bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[12],20);
+                                    }
+                                    else
+                                    {
+                                        decode_hex(script,44,hexstr);
+                                        bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
+                                    }
                                     locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
-                                    bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
                                     addr0 = firstaddr;
                                 } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",(int32_t)strlen(hexstr),jdouble(vout1,"value"));
                             } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
@@ -953,12 +959,14 @@ void verusblocks(struct iguana_info *coin)
                 }
                 if ( lastaddr != 0 && addr0 != 0 && strcmp(lastaddr,addr0) == 0 )
                 {
+                    numpos++;
                     printf("height.%d locked.%d PoS %s %.8f\n",height,locked,lastaddr,value);
                     if ( strcmp(coin->smartaddr,lastaddr) == 0 )
                         possum += value;
                 }
                 else
                 {
+                    numpow++;
                     printf("height.%d locked.%d PoW %s %.8f\n",height,locked,addr0,value);
                     if ( strcmp(coin->smartaddr,addr0) == 0 )
                         powsum += value;
@@ -970,7 +978,8 @@ void verusblocks(struct iguana_info *coin)
                 break;
         }
     }
-    printf("%s PoWsum %.8f PoSsum %.8f -> %.8f\n",coin->smartaddr,powsum,possum,powsum+possum);
+    if ( num > 0 )
+        printf("%s numblocks.%d PoWsum %.2f%% %.8f PoSsum %.2f%% %.8f -> %.8f\n",coin->smartaddr,num,100.*(double)numpow/num,powsum,100.*(double)numpos/num,possum,powsum+possum);
 }
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
