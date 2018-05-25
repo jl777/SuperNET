@@ -940,7 +940,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                                         decode_hex(script,44,hexstr);
                                         bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
                                     }
-                                    locked = ((int32_t)script[5] << 16) + ((int32_t)script[4] << 8) + script[3];
+                                    locked = ((int32_t)script[6] << 16) + ((int32_t)script[5] << 8) + script[4];
                                     addr0 = firstaddr;
                                 } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",(int32_t)strlen(hexstr),jdouble(vout1,"value"));
                             } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
