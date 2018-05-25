@@ -917,6 +917,7 @@ void verusblocks(struct iguana_info *coin)
                         {
                             value = jdouble(vout,"value");
                             addr0 = jstr(vout,"address");
+                            hexstr = 0;
                             if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
                             {
                                 /*"scriptPubKey": {
@@ -929,7 +930,7 @@ void verusblocks(struct iguana_info *coin)
                                     decode_hex(script,44,hexstr);
                                     locked = ((int32_t)script[3] << 16) + ((int32_t)script[4] << 8) + script[5];
                                     bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
-                                } else printf("unexpected lastvout.(%s)\n",jprint(vout1,0));
+                                } else printf("unexpected lastvout.(%s) (%s)\n",jprint(vout1,0),hexstr!=0?hexstr:"");
                             } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
                         }
                     }
