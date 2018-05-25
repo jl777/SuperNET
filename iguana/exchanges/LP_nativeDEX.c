@@ -951,7 +951,7 @@ void verusblocks(struct iguana_info *coin)
                     {
                         if ( (vout= jitem(vouts,0)) != 0 && m == 1 )
                         {
-                            if ( (sobj= jobj(vout1,"scriptPubKey")) != 0 && (addresses= jarray(&z,sobj,"addresses")) != 0 )
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&z,sobj,"addresses")) != 0 )
                                 lastaddr = jstri(addresses,0);
                             else printf("no addresses[0] in (%s) %s\n",jprint(vout,0),sobj!=0?jprint(sobj,0):"");
                         } else printf("n.%d m.%d no first out in lastvout.(%s)\n",n,m,jprint(txobj,0));
