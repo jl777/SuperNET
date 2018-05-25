@@ -901,7 +901,7 @@ void verusblocks(struct iguana_info *coin)
         height = -1;
         while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
         {
-            height = juint(json,"height");
+            height = juint(blockjson,"height");
             if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
             {
                 txid = jbits256i(txs,0);
