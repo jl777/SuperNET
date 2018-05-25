@@ -415,6 +415,115 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     return(privkey);
 }
 
+void verusblocks(struct iguana_info *coin,char *coinaddr)
+{
+    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    hash = LP_getbestblockhash(coin);
+    possum = powsum = supply = 0.;
+    numpow = numpos = num = npos = npow = 0;
+    if ( bits256_nonz(hash) != 0 )
+    {
+        bits256_str(hashstr,hash);
+        height = -1;
+        while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
+        {
+            num++;
+            height = juint(blockjson,"height");
+            if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
+            {
+                txid = jbits256i(txs,0);
+                value = 0;
+                posflag = 0;
+                locked = 0;
+                lastaddr = addr0 = "";
+                memset(script,0,sizeof(script));
+                memset(firstaddr,0,sizeof(firstaddr));
+                memset(stakingaddr,0,sizeof(stakingaddr));
+                if ( (txobj= LP_gettx("verus",coin->symbol,txid,0)) != 0 )
+                {
+                    //printf("TX.(%s)\n",jprint(txobj,0));
+                    if ( (vouts= jarray(&m,txobj,"vout")) != 0 )
+                    {
+                        if ( (vout= jitem(vouts,0)) != 0 )
+                        {
+                            value = jdouble(vout,"value");
+                            supply += value;
+                            hexstr = 0;
+                            if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
+                            {
+                                // 6a2001039bbc0bb17576a9149a3af738444dd86b55c86752247aec2e7deb842688ac
+                                if ( jdouble(vout1,"value") == 0. && (sobj= jobj(vout1,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && strlen(hexstr) <= 88 )
+                                {
+                                    if ( strlen(hexstr) == 68 )
+                                    {
+                                        decode_hex(script,34,hexstr);
+                                        bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[12],20);
+                                        //printf("%s\n",&hexstr[24]);
+                                    }
+                                    else
+                                    {
+                                        decode_hex(script,44,hexstr);
+                                        bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[10],33);
+                                    }
+                                    locked = ((int32_t)script[6] << 16) + ((int32_t)script[5] << 8) + script[4];
+                                    addr0 = firstaddr;
+                                } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",(int32_t)strlen(hexstr),jdouble(vout1,"value"));
+                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
+                        }
+                    }
+                    free_json(txobj);
+                }
+                if ( n > 1 && (txobj= LP_gettx("verus",coin->symbol,jbits256i(txs,n-1),0)) != 0 )
+                {
+                    if ( (vouts= jarray(&m,txobj,"vout")) != 0 )
+                    {
+                        if ( (vout= jitem(vouts,0)) != 0 && m == 1 )
+                        {
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&z,sobj,"addresses")) != 0 )
+                            {
+                                lastaddr = jstri(addresses,0);
+                                if ( lastaddr == 0 )
+                                    lastaddr = "";
+                                else
+                                {
+                                    strcpy(stakingaddr,lastaddr);
+                                    posflag = 1;
+                                    //printf("ht.%d found staking address.(%s)\n",height,stakingaddr);
+                                }
+                            } else printf("no addresses[0] in (%s) %s\n",jprint(vout,0),sobj!=0?jprint(sobj,0):"");
+                        } //else printf("n.%d m.%d no first out in lastvout.(%s)\n",n,m,jprint(txobj,0));
+                    } // else printf("cant find vout.(%s)\n",jprint(txobj,0));
+                    free_json(txobj);
+                }
+                if ( posflag != 0 )
+                {
+                    numpos++;
+                    printf("ht.%-5d lock.%-7d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
+                    if ( strcmp(coinaddr,stakingaddr) == 0 )
+                        possum += value, npos++;
+                }
+                else
+                {
+                    numpow++;
+                    printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
+                    if ( strcmp(coinaddr,addr0) == 0 )
+                        powsum += value, npow++;
+                }
+            }
+            bits256_str(hashstr,jbits256(blockjson,"previousblockhash"));
+            free_json(blockjson);
+            if ( height == 5040 )
+                break;
+            else if ( num == 1000 )
+            {
+                printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply);
+            }
+        }
+    }
+    if ( num > 0 )
+        printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply);
+}
+
 void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 {
     struct iguana_info *coin,*tmp; bits256 pubkey,privkey; uint8_t pubkey33[33]; int32_t initonly;
@@ -431,7 +540,13 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
             coin->counter = 0;
             memset(coin->smartaddr,0,sizeof(coin->smartaddr));
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
+            {
                 privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
+                if ( strcmp(coin->symbol,"VRSC") == 0 && strcmp("RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj",coin->smartaddr) == 0 )
+                {
+                    verusblocks(coin,coin->smartaddr);
+                }
+            }
         }
         //printf("i.%d of %d\n",i,LP_numcoins);
         else if ( IAMLP == 0 || coin->inactive == 0 )
