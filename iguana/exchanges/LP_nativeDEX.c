@@ -931,6 +931,7 @@ void verusblocks(struct iguana_info *coin)
                                     {
                                         decode_hex(script,34,hexstr);
                                         bitcoin_address(coin->symbol,firstaddr,coin->taddr,coin->pubtype,&script[12],20);
+                                        printf("%s\n",&hexstr[24]);
                                     }
                                     else
                                     {
@@ -963,14 +964,14 @@ void verusblocks(struct iguana_info *coin)
                 if ( lastaddr != 0 && addr0 != 0 && strcmp(lastaddr,addr0) == 0 )
                 {
                     numpos++;
-                    printf("height.%d locked.%d PoS %s %.8f\n",height,locked,lastaddr,value);
+                    printf("height.%d locked.%d PoS addr0.%s %s %.8f\n",height,locked,addr0,lastaddr,value);
                     if ( strcmp(coin->smartaddr,lastaddr) == 0 )
                         possum += value;
                 }
                 else
                 {
                     numpow++;
-                    printf("height.%d locked.%d PoW %s %.8f\n",height,locked,addr0,value);
+                    printf("height.%d locked.%d PoW addr0.%s %s %.8f\n",height,locked,addr0,lastaddr,value);
                     if ( strcmp(coin->smartaddr,addr0) == 0 )
                         powsum += value;
                 }
