@@ -890,6 +890,7 @@ void gameaddrs()
     }
 }
 
+
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
     int32_t i,n,notarized; cJSON *item; char *symbol,*etomic; struct iguana_info *coin;
