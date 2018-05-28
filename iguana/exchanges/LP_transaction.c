@@ -1987,7 +1987,7 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
     if (strcmp(coin->symbol, "ETH") == 0) {
         tx_id = sendEth(dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0);
     } else {
-        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0);
+        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0, coin->decimals);
     }
     if (tx_id != NULL) {
         jaddstr(retjson, "tx_id", tx_id);

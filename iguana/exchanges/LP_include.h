@@ -312,7 +312,7 @@ struct iguana_info
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
-    uint8_t pubkey33[33],zcash;
+    uint8_t pubkey33[33],zcash,decimals;
     int32_t privkeydepth;
     bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;

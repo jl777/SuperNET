@@ -38,6 +38,7 @@ typedef struct {
     char bobAddress[65];
     char aliceHash[65];
     char bobHash[65];
+    uint8_t decimals;
 } AliceSendsErc20PaymentInput;
 
 typedef struct {
@@ -47,6 +48,7 @@ typedef struct {
     char bobAddress[65];
     char aliceHash[65];
     char bobSecret[70];
+    uint8_t decimals;
 } AliceReclaimsAlicePaymentInput;
 
 typedef struct {
@@ -56,6 +58,7 @@ typedef struct {
     char aliceAddress[65];
     char aliceSecret[70];
     char bobHash[65];
+    uint8_t decimals;
 } BobSpendsAlicePaymentInput;
 
 typedef struct {
@@ -72,6 +75,7 @@ typedef struct {
     char aliceAddress[65];
     char bobHash[65];
     uint64_t lockTime;
+    uint8_t decimals;
 } BobSendsErc20DepositInput;
 
 typedef struct {
@@ -80,6 +84,7 @@ typedef struct {
     char tokenAddress[65];
     char aliceAddress[65];
     char bobSecret[70];
+    uint8_t decimals;
 } BobRefundsDepositInput;
 
 typedef struct {
@@ -88,6 +93,7 @@ typedef struct {
     char tokenAddress[65];
     char bobAddress[65];
     char bobHash[65];
+    uint8_t decimals;
 } AliceClaimsBobDepositInput;
 
 typedef struct {
@@ -104,6 +110,7 @@ typedef struct {
     char aliceAddress[65];
     char aliceHash[65];
     uint64_t lockTime;
+    uint8_t decimals;
 } BobSendsErc20PaymentInput;
 
 typedef struct {
@@ -112,6 +119,7 @@ typedef struct {
     char tokenAddress[65];
     char aliceAddress[65];
     char aliceHash[65];
+    uint8_t decimals;
 } BobReclaimsBobPaymentInput;
 
 typedef struct {
@@ -120,6 +128,7 @@ typedef struct {
     char tokenAddress[65];
     char aliceSecret[70];
     char bobAddress[65];
+    uint8_t decimals;
 } AliceSpendsBobPaymentInput;
 
 typedef struct {
@@ -165,22 +174,32 @@ char* getPubKeyFromPriv(char* privKey);
 
 // returns satoshis, not wei!
 uint64_t getEthBalance(char* address);
-uint64_t getErc20BalanceSatoshi(char* address, char tokenAddress[65]);
+uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals);
 char *getErc20BalanceHexWei(char* address, char tokenAddress[65]);
 
 uint8_t getErc20Decimals(char *tokenAddress);
 
 // returns satoshis, not wei!
-uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress);
+uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8_t set_decimals);
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
 uint64_t weiToSatoshi(char *wei);
 
 char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr);
-char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr);
+char *sendErc20(
+        char *tokenAddress,
+        char *to,
+        char *amount,
+        char *privKey,
+        uint8_t waitConfirm,
+        int64_t gas,
+        int64_t gasPrice,
+        uint8_t defaultGasOnErr,
+        uint8_t decimals
+);
 
-uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data);
+uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data, uint8_t decimals);
 // Your prototype or Definition
 #ifdef __cplusplus
 }
