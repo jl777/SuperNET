@@ -60,6 +60,8 @@ coins/bntn_7776
 coins/chain_7776
 coins/prlpay_7776
 coins/dsec_7776
+coins/glxt_7776
+coins/eql_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
