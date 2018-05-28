@@ -429,6 +429,11 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->zcash = LP_IS_BITCOINGOLD;
         printf("set coin.%s <- LP_IS_BITCOINGOLD %d\n",symbol,coin->zcash);
     }
+    else if ( strcmp(symbol,"CMM") == 0 )
+    {
+        coin->zcash = LP_IS_BITCOINCASH;
+        //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
+    }
     return(port);
 }
 
