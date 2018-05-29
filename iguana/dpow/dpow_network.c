@@ -1478,13 +1478,13 @@ int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t be
                 if ( ((1LL << j) & bestmask) != 0 && (mask & bp->notaries[j].recvmask) != 0 )
                     n++;
             }
-            printf("%d ",n);
+            //printf("%d ",n);
             if ( n == bp->minsigs )
                 num++;
             else *badmaskp |= mask;
         }
     }
-    printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
+    //printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
     return(num);
 }
 
