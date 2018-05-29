@@ -1490,7 +1490,7 @@ int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t be
 
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
-    int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,median,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask,topmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,median,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],badmask,matchesmask,recvmask,topmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     memset(wts,0,sizeof(wts));
     memset(owts,0,sizeof(owts));
     for (i=0; i<bp->numnotaries; i++)
@@ -1545,7 +1545,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
         if ( counts[i] > matches && bitweight(masks[i]) == bp->minsigs )
         {
-            if ( dpow_crossconnected(dp,bp,masks[i]) == bp->minsigs )
+            if ( dpow_crossconnected(&badmask,bp,masks[i]) == bp->minsigs )
             {
                 matches = counts[i];
                 besti = i;
