@@ -1521,8 +1521,11 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
         if ( counts[i] > matches && bitweight(masks[i]) == bp->minsigs )
         {
-            matches = counts[i];
-            besti = i;
+            if ( dpow_crossconnected(dp,bp,masks[i]) == bp->minsigs )
+            {
+                matches = counts[i];
+                besti = i;
+            }
         }
     }
     for (i=0; i<bp->numnotaries; i++)
@@ -1539,6 +1542,8 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->bestmatches = bestmatches;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
+        if ( bp->myind == 0 )
+            printf("matches.%d bestmatches.%d recv.%llx (%d %llx)\n",matches,bestmatches,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
         if ( 0 && bp->myind == 0 && strcmp("CHIPS",dp->symbol) == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
@@ -1930,7 +1935,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d pend.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs,bp->pendingbestk);
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
-                //if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
+                if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
                     printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
                     bp->pendingbestk = bp->bestk;

@@ -500,14 +500,14 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 if ( posflag != 0 )
                 {
                     numpos++;
-                    printf("ht.%-5d lock.%-7d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
+                    //printf("ht.%-5d lock.%-7d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
                     if ( strcmp(coinaddr,stakingaddr) == 0 || strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
                         possum += value, npos++;
                 }
                 else
                 {
                     numpow++;
-                    printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
+                    //printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
                     if ( strcmp(coinaddr,addr0) == 0 || strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
                         powsum += value, npow++;
                 }
