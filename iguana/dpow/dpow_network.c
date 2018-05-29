@@ -1475,7 +1475,7 @@ int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t be
         {
             for (n=j=0; j<bp->numnotaries; j++)
             {
-                if ( (mask & bp->notaries[j].recvmask) != 0 )
+                if ( ((1LL << j) & bestmask) != 0 && (mask & bp->notaries[j].recvmask) != 0 )
                     n++;
             }
             printf("%d ",n);
