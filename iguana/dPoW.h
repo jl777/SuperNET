@@ -21,7 +21,7 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_MAXFREQ 100
-#define DPOW_CHECKPOINTFREQ 10
+#define DPOW_CHECKPOINTFREQ 5
 #define DPOW_MINSIGS 13
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
