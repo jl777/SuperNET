@@ -1926,11 +1926,11 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
                 bp->lastnanosend = now;
             }
-            if ( 0 && strcmp("CHIPS",dp->symbol) == 0 && bp->myind == 0 )
-                printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs);
+            if ( 1 && strcmp("KMD",dp->symbol) == 0 && bp->myind == 0 )
+                printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d pend.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs,bp->pendingbestk);
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
-                if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
+                //if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
                     printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
                     bp->pendingbestk = bp->bestk;
