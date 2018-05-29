@@ -211,9 +211,10 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
 
-    struct iguana_info *ecoin;
+    struct iguana_info *ecoin, *alice_coin;
     bits256 privkey;
     ecoin = LP_coinfind("ETOMIC");
+    alice_coin = LP_coinfind(swap->dest);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
@@ -233,7 +234,6 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     }
     uint8arrayToHex(input.bobSecret, invertedSecret.bytes, 32);
 
-    struct iguana_info *alice_coin = LP_coinfind(swap->alicecoin);
     input.decimals = alice_coin->decimals;
 
     strcpy(txData.from, swap->etomicdest);
@@ -281,7 +281,7 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
     }
     uint8arrayToHex(input.aliceSecret, invertedSecret.bytes, 32);
     uint8arrayToHex(input.bobHash, swap->secretBn, 20);
-    struct iguana_info *alice_coin = LP_coinfind(swap->alicecoin);
+    struct iguana_info *alice_coin = LP_coinfind(swap->dest);
     input.decimals = alice_coin->decimals;
 
     strcpy(txData.from, swap->etomicsrc);
@@ -408,7 +408,7 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
     struct iguana_info *ecoin, *bobcoin;
     bits256 privkey;
     ecoin = LP_coinfind("ETOMIC");
-    bobcoin = LP_coinfind(swap->bobcoin);
+    bobcoin = LP_coinfind(swap->src);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
@@ -558,7 +558,7 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
     struct iguana_info *ecoin, *bobcoin;
     bits256 privkey;
     ecoin = LP_coinfind("ETOMIC");
-    bobcoin = LP_coinfind(swap->bobcoin);
+    bobcoin = LP_coinfind(swap->src);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
@@ -604,7 +604,7 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     struct iguana_info *ecoin, *bobcoin;
     bits256 privkey;
     ecoin = LP_coinfind("ETOMIC");
-    bobcoin = LP_coinfind(swap->bobcoin);
+    bobcoin = LP_coinfind(swap->src);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
@@ -652,7 +652,7 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
     struct iguana_info *ecoin, *bobcoin;
     bits256 privkey;
     ecoin = LP_coinfind("ETOMIC");
-    bobcoin = LP_coinfind(swap->bobcoin);
+    bobcoin = LP_coinfind(swap->src);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);

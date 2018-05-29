@@ -17,13 +17,23 @@ cmake ..
 cmake --build . --target marketmaker-testnet'''
       }
     }
-    stage('Trade') {
+    stage('Trade BEER/ETH') {
       steps {
         sh '''docker-compose build
 docker-compose up -d
-./start_BEER_ETH_trade.sh
-COMPOSE_HTTP_TIMEOUT=601 timeout 600 grep -q "SWAP completed" <(docker-compose logs -f clientnode)
-COMPOSE_HTTP_TIMEOUT=601 timeout 600 grep -q "SWAP completed" <(docker-compose logs -f seednode)
+./start_BEER_OTHER_trade.sh ETH
+timeout 600 grep -q "SWAP completed" <(docker-compose logs -f clientnode)
+timeout 600 grep -q "SWAP completed" <(docker-compose logs -f seednode)
+docker-compose down'''
+      }
+    }
+    stage('Trade ETH/BEER') {
+      steps {
+        sh '''docker-compose build
+docker-compose up -d
+./start_BEER_OTHER_trade_inverted.sh ETH
+timeout 600 grep -q "SWAP completed" <(docker-compose logs -f clientnode)
+timeout 600 grep -q "SWAP completed" <(docker-compose logs -f seednode)
 docker-compose down'''
       }
     }
