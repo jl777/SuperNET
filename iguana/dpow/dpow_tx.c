@@ -99,30 +99,6 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     return(bestmask);
 }
 
-int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t bestmask)
-{
-    int32_t i,j,n,num = 0; uint64_t mask;
-    *badmaskp = 0;
-    for (i=0; i<bp->numnotaries; i++)
-    {
-        mask = ((1LL << i) & bestmask);
-        if ( mask != 0 )
-        {
-            for (n=j=0; j<bp->numnotaries; j++)
-            {
-                if ( (mask & bp->notaries[j].recvmask) != 0 )
-                    n++;
-            }
-            printf("%d ",n);
-            if ( n == bp->minsigs )
-                num++;
-            else *badmaskp |= mask;
-        }
-    }
-    printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
-    return(num);
-}
-
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t m,j,k,z,n; int8_t bestk = -1; uint64_t bestmask,mask = 0;//bp->require0;

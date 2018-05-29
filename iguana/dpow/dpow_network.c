@@ -1464,6 +1464,30 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     dpow_addnotary(myinfo,0,ipaddr);
 }
 
+int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t bestmask)
+{
+    int32_t i,j,n,num = 0; uint64_t mask;
+    *badmaskp = 0;
+    for (i=0; i<bp->numnotaries; i++)
+    {
+        mask = ((1LL << i) & bestmask);
+        if ( mask != 0 )
+        {
+            for (n=j=0; j<bp->numnotaries; j++)
+            {
+                if ( (mask & bp->notaries[j].recvmask) != 0 )
+                    n++;
+            }
+            printf("%d ",n);
+            if ( n == bp->minsigs )
+                num++;
+            else *badmaskp |= mask;
+        }
+    }
+    printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
+    return(num);
+}
+
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
     int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,median,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask,topmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
