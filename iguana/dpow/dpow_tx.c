@@ -99,9 +99,10 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     return(bestmask);
 }
 
-int32_t dpow_crossconnected(struct dpow_info *dp,struct dpow_block *bp,uint64_t bestmask)
+int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t bestmask)
 {
     int32_t i,j,n,num = 0; uint64_t mask;
+    *badmaskp = 0;
     for (i=0; i<bp->numnotaries; i++)
     {
         mask = ((1LL << i) & bestmask);
@@ -115,6 +116,7 @@ int32_t dpow_crossconnected(struct dpow_info *dp,struct dpow_block *bp,uint64_t 
             printf("%d ",n);
             if ( n == bp->minsigs )
                 num++;
+            else *badmaskp |= mask;
         }
     }
     printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
@@ -123,7 +125,7 @@ int32_t dpow_crossconnected(struct dpow_info *dp,struct dpow_block *bp,uint64_t 
 
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t m,j,k; int8_t bestk = -1; uint64_t bestmask,mask = 0;//bp->require0;
+    int32_t m,j,k,z,n; int8_t bestk = -1; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
     for (m=j=0; j<bp->numnotaries; j++)
     {
@@ -133,12 +135,18 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
         //    continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
         {
-            mask |= (1LL << k);
-            if ( ++m == bp->minsigs )//-bp->require0 )
+            for (z=n=0; z<bp->numnotaries; z++)
+                if ( (bp->notaries[z].recvmask & (1LL << k)) != 0 )
+                    n++;
+            if ( n >= bp->numnotaries/2 )
             {
-                bestk = k;
-                bestmask = mask;// | bp->require0;
-                //printf("m.%d == minsigs.%d (%d %llx)\n",m,bp->minsigs,k,(long long)bestmask);
+                mask |= (1LL << k);
+                if ( ++m == bp->minsigs )//-bp->require0 )
+                {
+                    bestk = k;
+                    bestmask = mask;// | bp->require0;
+                    //printf("m.%d == minsigs.%d (%d %llx)\n",m,bp->minsigs,k,(long long)bestmask);
+                }
             }
         }
     }
