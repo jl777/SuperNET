@@ -35,10 +35,9 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
 
 cJSON *parseEthRpcResponse(char *requestResult)
 {
-    printf("Trying to parse ETH RPC response: %s\n", requestResult);
     cJSON *json = cJSON_Parse(requestResult);
     if (json == NULL) {
-        printf("ETH RPC response parse failed!\n");
+        printf("ETH RPC response parse failed: %s!\n", requestResult);
         return NULL;
     }
     cJSON *tmp = cJSON_GetObjectItem(json, "result");
