@@ -880,14 +880,16 @@ char *LP_psock(int32_t *pullsockp,char *ipaddr,int32_t ispaired,int32_t cmdchann
     
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel)
 {
-    char str[65],url[512],*retstr; bits256 pub25519;
+    char str[65],url[512],*retstr; bits256 pub25519; int32_t netid;
 #ifdef FROM_MARKETMAKER
     pub25519 = G.LP_mypub25519;
+    netid = G.netid;
 #else
     extern bits256 BET_mypub25519;
     pub25519 = BET_mypub25519;
+    netid = 0;
 #endif
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&pubkey=%s&netid=%d",destip,destport-1,ispaired,cmdchannel,bits256_str(str,pub25519),G.netid);
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&pubkey=%s&netid=%d",destip,destport-1,ispaired,cmdchannel,bits256_str(str,pub25519),netid);
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*10);
     printf("issue_LP_psock got (%s) from %s\n",retstr,url); // this is needed?!
