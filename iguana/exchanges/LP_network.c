@@ -28,7 +28,6 @@ struct psock
 
 uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT,Pcmdport = MAX_PSOCK_PORT;
 extern portable_mutex_t LP_commandQmutex;
-extern char *myipaddr;
 
 #ifdef FROM_JS
 

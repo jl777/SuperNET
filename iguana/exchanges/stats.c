@@ -549,7 +549,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     //free(buf);
                     //while ( retstr == 0 )
                     //    usleep(10000);
-                    if ( (retstr= stats_JSON(ctx,0,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                    if ( (retstr= stats_JSON(ctx,0,LP_myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                     {
                         if ( (retitem= cJSON_Parse(retstr)) != 0 )
                             jaddi(retarray,retitem);
