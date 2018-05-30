@@ -525,7 +525,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 break;
             else if ( (num % 1000) == 0 || (num < 1000 && (num % 100) == 0) )
             {
-                printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3 %.8f\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum);
+                printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3 %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
             }
         }
     }
@@ -539,7 +539,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
             if ( myhisto[i] != 0 )
                 printf("%d %.8f, ",i*1000,myhisto[i]);
         printf("mytimelocked\n");
-        printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3sum %.8f\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum);
+        printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3sum %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
     }
 }
 
