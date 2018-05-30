@@ -99,8 +99,7 @@ int32_t komodo_initjson(char *fname)
                 Notaries_port = port;
             if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
                 Notaries_BTCminsigs = num;
-            if ( (num= juint(argjson,"minsigs")) > Notaries_minsigs )
-                Notaries_minsigs = num;
+            Notaries_minsigs = juint(argjson,"minsigs");
             if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
             {
                 for (i=0; i<n&&i<64; i++)
