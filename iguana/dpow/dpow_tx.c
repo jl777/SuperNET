@@ -238,7 +238,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     }
     if ( bp->MoMdepth > 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) // || strcmp(bp->srccoin->symbol,"KMD") == 0) )
     {
-        n = dpow_paxpending(extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
+        n = dpow_paxpending(extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
     }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
