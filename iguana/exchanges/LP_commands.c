@@ -144,6 +144,7 @@ fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 inuse()\n\
+movecoinbases(coin)\n\
 getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -476,6 +477,32 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
             }
+            else if ( strcmp(method,"getprice") == 0 || strcmp(method,"getmyprice") == 0 )
+            {
+                double price,bid,ask;
+                if ( strcmp(method,"getprice") == 0 )
+                {
+                    ask = LP_price(base,rel);
+                    if ( (bid= LP_price(rel,base)) > SMALLVAL )
+                        bid = 1./bid;
+                }
+                else
+                {
+                    ask = LP_getmyprice(base,rel);
+                    if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+                        bid = 1./bid;
+                }
+                price = _pairaved(bid,ask);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"base",base);
+                jaddstr(retjson,"rel",rel);
+                jaddnum(retjson,"timestamp",time(NULL));
+                jaddnum(retjson,"bid",bid);
+                jaddnum(retjson,"ask",ask);
+                jaddnum(retjson,"price",price);
+                return(jprint(retjson,1));
+            }
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
@@ -630,7 +657,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
-                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx"),jint(argjson,"needjson")));
             }
             else if ( strcmp(method,"convaddress") == 0 )
             {
@@ -663,6 +690,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(LP_txblast(ptr,argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"movecoinbases") == 0 )
+            {
+                return(LP_movecoinbases(coin));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {

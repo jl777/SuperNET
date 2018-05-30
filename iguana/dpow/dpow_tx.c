@@ -101,7 +101,7 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t m,j,k; int8_t bestk = -1; uint64_t bestmask,mask = 0;//bp->require0;
+    int32_t m,j,k,z,n; int8_t bestk = -1; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
     for (m=j=0; j<bp->numnotaries; j++)
     {
@@ -111,12 +111,18 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
         //    continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
         {
-            mask |= (1LL << k);
-            if ( ++m == bp->minsigs )//-bp->require0 )
+            for (z=n=0; z<bp->numnotaries; z++)
+                if ( (bp->notaries[z].recvmask & (1LL << k)) != 0 )
+                    n++;
+            if ( n >= bp->numnotaries/2 )
             {
-                bestk = k;
-                bestmask = mask;// | bp->require0;
-                //printf("m.%d == minsigs.%d (%d %llx)\n",m,bp->minsigs,k,(long long)bestmask);
+                mask |= (1LL << k);
+                if ( ++m == bp->minsigs )//-bp->require0 )
+                {
+                    bestk = k;
+                    bestmask = mask;// | bp->require0;
+                    //printf("m.%d == minsigs.%d (%d %llx)\n",m,bp->minsigs,k,(long long)bestmask);
+                }
             }
         }
     }
@@ -195,10 +201,13 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t paxwdcrc=0,locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
+    uint32_t paxwdcrc=0,locktime=0,numvouts; struct iguana_info *coin; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
     numvouts = 2;
     if ( pubkeys == 0 || numratified <= 0 )
     {
+        if ( src_or_dest != 0 )
+            coin = bp->destcoin;
+        else coin = bp->srccoin;
         satoshis = DPOW_UTXOSIZE * m * .76;
         if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
             satoshis = satoshisB;
@@ -572,7 +581,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,pubkeys,numratified); // setcrcval
         signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,1,src_or_dest,pubkeys,numratified);
-        if ( strcmp("CHIPS",coin->symbol) == 0 )
+        if ( strcmp("GAME",coin->symbol) == 0 )
             printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )

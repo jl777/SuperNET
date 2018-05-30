@@ -791,19 +791,19 @@ double LP_getestimatedrate(struct iguana_info *coin)
     return(rate);
 }
 
-char *LP_sendrawtransaction(char *symbol,char *signedtx)
+char *LP_sendrawtransaction(char *symbol,char *signedtx,int32_t needjson)
 {
     cJSON *array,*errobj; char *paramstr,*tmpstr,*retstr=0; int32_t n,alreadyflag = 0; cJSON *retjson; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 || signedtx == 0 || signedtx[0] == 0 )
     {
         printf("LP_sendrawtransaction null symbol %p or signedtx.%p\n",symbol,signedtx);
-        return(0);
+        return(clonestr("{\"error\":\"invalid param\"}"));
     }
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("LP_sendrawtransaction null coin\n");
-        return(0);
+        return(clonestr("{\"error\":\"invalid coin\"}"));
     }
     if ( coin->electrum == 0 )
     {
@@ -843,6 +843,14 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
                 }
             }
         }
+    }
+    if ( needjson != 0 && is_hexstr(retstr,0) > 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"txid",retstr);
+        free(retstr);
+        retstr = jprint(retjson,1);
     }
     return(retstr);
 }
@@ -1022,6 +1030,7 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
 cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
 {
     cJSON *json = 0; int32_t flag = 0; struct iguana_info *coin;
+    *heightp = 0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
