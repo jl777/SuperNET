@@ -854,7 +854,16 @@ void LP_bobloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     bobwaittimeout = LP_calc_waittimeout(bobstr);
     alicewaittimeout = LP_calc_waittimeout(alicestr);
-    if ( swap != 0 )
+#ifndef NOTETOMIC
+    if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic != 0) {
+        uint64_t eth_balance = getEthBalance(swap->I.etomicsrc);
+        if (eth_balance < 500000) {
+            err = -5000, printf("Bob ETH balance too low, aborting swap!\n");
+        }
+    }
+#endif
+
+    if ( swap != 0 && err == 0)
     {
         if ( LP_waitsend("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             err = -2000, printf("error waitsend pubkeys\n");
@@ -947,7 +956,17 @@ void LP_aliceloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     bobwaittimeout = LP_calc_waittimeout(bobstr);
     alicewaittimeout = LP_calc_waittimeout(alicestr);
-    if ( swap != 0 )
+
+#ifndef NOTETOMIC
+    if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic != 0) {
+        uint64_t eth_balance = getEthBalance(swap->I.etomicdest);
+        if (eth_balance < 500000) {
+            err = -5001, printf("Alice ETH balance too low, aborting swap!\n");
+        }
+    }
+#endif
+
+    if ( swap != 0 && err == 0)
     {
         printf("start swap iamalice pair.%d\n",swap->N.pair);
         if ( LP_sendwait("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )

@@ -373,15 +373,12 @@ void unlock_send_tx_mutex()
     pthread_mutex_unlock(&sendTxMutex);
 }
 
-uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr, char *token_addr)
+uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr)
 {
     char* string;
     cJSON *request = cJSON_CreateObject();
     cJSON_AddStringToObject(request, "ethAddress", eth_addr);
     cJSON_AddStringToObject(request, "etomicAddress", etomic_addr);
-    if (strcmp(token_addr, "0x0000000000000000000000000000000000000000") != 0) {
-        cJSON_AddStringToObject(request, "tokenAddress", token_addr);
-    }
     string = cJSON_PrintUnformatted(request);
     char* requestResult = sendRequest(string, FAUCET_URL);
     free(string);

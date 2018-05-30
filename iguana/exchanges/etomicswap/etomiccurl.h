@@ -50,7 +50,7 @@ uint64_t getEthBlockNumber();
 uint64_t getGasPriceFromStation(uint8_t defaultOnErr);
 int32_t waitForConfirmation(char *txId);
 void unlock_send_tx_mutex();
-uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr, char *token_addr);
+uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr);
 
 #ifdef __cplusplus
 }
