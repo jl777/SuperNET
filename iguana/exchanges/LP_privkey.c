@@ -491,7 +491,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                                 {
                                     strcpy(stakingaddr,lastaddr);
                                     stakedval = jdouble(vout,"value");
-                                    printf("stakedval %f\n",stakedval);
+                                    //printf("stakedval %f\n",stakedval);
                                     posflag = 1;
                                     //printf("ht.%d found staking address.(%s) %.8f (%s)\n",height,stakingaddr,stakedval,jprint(vout,0));
                                 }
@@ -503,7 +503,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 if ( posflag != 0 )
                 {
                     numpos++;
-                    if ( num < 1000 )
+                    if ( num < 100 )
                         printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                     if ( strcmp(coinaddr,stakingaddr) == 0 )
                         possum += value, npos++;
