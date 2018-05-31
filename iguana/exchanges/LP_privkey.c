@@ -503,11 +503,11 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 if ( posflag != 0 )
                 {
                     numpos++;
-                    if ( strcmp(coinaddr,stakingaddr) == 0 )
-                        possum += value, npos++;
-                    if ( strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
+                    if ( strcmp(coinaddr,stakingaddr) == 0 || strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
                     {
-                        RTu3sum += value, possum += value, npos++;
+                        if (strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
+                            RTu3sum += value;
+                        possum += value, npos++;
                         printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                     }
                     else if ( num < 0 )
