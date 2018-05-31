@@ -511,15 +511,15 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                         if ( num < 1500 )
                             printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                     }
-                    else if ( num < 100 )
+                    else if ( 0 && num < 100 )
                         printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                 }
                 else
                 {
                     numpow++;
-                    if ( num < 100 )
+                    if ( num < 100 && strcmp(coinaddr,addr0) == 0 )
                         printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
-                    if ( strcmp(coinaddr,addr0) == 0 || strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",addr0) == 0 )
+                    if ( strcmp(coinaddr,addr0) == 0 )
                         powsum += value, npow++;
                 }
                 histo[locked/1000] += value;
