@@ -417,7 +417,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 
 void verusblocks(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,stakedval,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
