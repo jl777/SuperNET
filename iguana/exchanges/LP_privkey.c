@@ -513,12 +513,15 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                             printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                         if ( height > 15000 )
                         {
-                            if ( fabs(value - 64.) < SMALLVAL )
+                            char strbuf[64];
+                            sprintf(strbuf,"%.0f",value);
+                            if ( strcmp(strbuf,"64") == 0 )
                                 num64++;
-                            else if ( fabs(value - 32.) < SMALLVAL )
+                            else if ( strcmp(strbuf,"32") == 0 )
                                 num32++;
-                            else if ( fabs(value - 16.) < SMALLVAL )
+                            else if ( strcmp(strbuf,"16") == 0 )
                                 num16++;
+                            else printf("got strbuf.(%s)\n",strbuf);
                         }
                     }
                     else if ( 0 && num < 100 )
