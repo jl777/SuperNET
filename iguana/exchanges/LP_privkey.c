@@ -491,8 +491,9 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                                 {
                                     strcpy(stakingaddr,lastaddr);
                                     stakedval = jdouble(vout,"value");
+                                    printf("stakedval %f\n",stakedval);
                                     posflag = 1;
-                                    printf("ht.%d found staking address.(%s) %.8f (%s)\n",height,stakingaddr,stakedval,jprint(vout,0));
+                                    //printf("ht.%d found staking address.(%s) %.8f (%s)\n",height,stakingaddr,stakedval,jprint(vout,0));
                                 }
                             } else printf("no addresses[0] in (%s) %s\n",jprint(vout,0),sobj!=0?jprint(sobj,0):"");
                         } //else printf("n.%d m.%d no first out in lastvout.(%s)\n",n,m,jprint(txobj,0));
