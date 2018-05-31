@@ -56,7 +56,8 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
     portable_mutex_unlock(&LP_blockinit_mutex);
     if ( checkht == height )
         return(0);
-    else return(-1);
+    printf("%s blockinit error checkht.%d vs height.%d\n",ASSETCHAINS_SYMBOL,checkht,height);
+    return(-1);
 }
 
 int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t endheight)
