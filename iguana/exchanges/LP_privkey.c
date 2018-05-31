@@ -417,7 +417,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 
 void verusblocks(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,stakedval,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
@@ -430,6 +430,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
         while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
         {
             num++;
+            stakedval = 0.;
             height = juint(blockjson,"height");
             if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
             {
@@ -489,6 +490,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                                 else
                                 {
                                     strcpy(stakingaddr,lastaddr);
+                                    stakedval = jdouble(vout,"value");
                                     posflag = 1;
                                     //printf("ht.%d found staking address.(%s)\n",height,stakingaddr);
                                 }
@@ -500,8 +502,8 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 if ( posflag != 0 )
                 {
                     numpos++;
-                    if ( num < 100 )
-                        printf("ht.%-5d lock.%-7d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
+                    if ( num < 1000 )
+                        printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                     if ( strcmp(coinaddr,stakingaddr) == 0 )
                         possum += value, npos++;
                     if ( strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
