@@ -546,7 +546,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
             else if ( height == 15000 )
             {
                 num15000 = num;
-                printf("num16.%d num32.%d num64.%d / num15000.%d -> %.2f%% %.2f%% %.2f%%\n",num16,num32,num64,num15000,100.*(double)num16/num15000,100.*(double)num32/num15000,100.*(double)num64/num15000);
+                printf("num16.%d num32.%d num64.%d / num15000.%d -> %.2f%% %.2f%% %.2f%% [%.3f %.3f %.3f]\n",num16,num32,num64,num15000,100.*(double)num16/num15000,100.*(double)num32/num15000,100.*(double)num64/num15000,(100.*(double)num16/num15000)/5.32,(100.*(double)num32/num15000)/8.24,(100.*(double)num64/num15000)/10.4);
             }
             else if ( (num % 1000) == 0 || (num < 4000 && (num % 100) == 0) )
             {
