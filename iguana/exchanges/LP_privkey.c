@@ -417,10 +417,11 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 
 void verusblocks(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num16,num32,num64,num15000,numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
+    num15000 = num16 = num32 = num64 = 0;
     possum = powsum = supply = RTu3sum = 0.;
     numpow = numpos = num = npos = npow = 0;
     if ( bits256_nonz(hash) != 0 )
@@ -510,6 +511,15 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                         possum += value, npos++;
                         if ( num < 1500 )
                             printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
+                        if ( height > 15000 )
+                        {
+                            if ( value == 64. )
+                                num64++;
+                            else if ( value == 32. )
+                                num32++;
+                            else if ( value == 16. )
+                                num16++;
+                        }
                     }
                     else if ( 0 && num < 100 )
                         printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
@@ -530,6 +540,8 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
             free_json(blockjson);
             if ( height == 5040 )
                 break;
+            else if ( height == 15000 )
+                num15000 = num;
             else if ( (num % 1000) == 0 || (num < 4000 && (num % 100) == 0) )
             {
                 printf("num.%d PoW %.2f%% %.0f %d v %d PoS %.2f%% %.0f -> %.0f supply %.0f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3 %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
@@ -550,6 +562,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
             printf("mytimelocked\n");
         }
         printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3sum %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
+        printf("num16.%d num32.%d num64.%d / num15000.%d -> %.2f%% %.2f%% %.2f%%\n",num16,num32,num64,num15000,100.*(double)num16/num15000,100.*(double)num32/num15000,100.*(double)num64/num15000);
     }
 }
 
