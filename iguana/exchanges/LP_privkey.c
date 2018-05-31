@@ -514,7 +514,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                         if ( height > 15000 )
                         {
                             char strbuf[64];
-                            sprintf(strbuf,"%.0f",value);
+                            sprintf(strbuf,"%.0f",stakedval);
                             if ( strcmp(strbuf,"64") == 0 )
                                 num64++;
                             else if ( strcmp(strbuf,"32") == 0 )
