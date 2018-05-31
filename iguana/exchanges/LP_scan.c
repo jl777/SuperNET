@@ -54,7 +54,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
         free_json(blockobj);
     }
     portable_mutex_unlock(&LP_blockinit_mutex);
-    if ( checkht == height )
+    if ( checkht == 0 || checkht == height )
         return(0);
     printf("%s blockinit error checkht.%d vs height.%d\n",ASSETCHAINS_SYMBOL,checkht,height);
     return(-1);
