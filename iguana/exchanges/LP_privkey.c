@@ -415,9 +415,15 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     return(privkey);
 }
 
-void verusblocks(struct iguana_info *coin,char *coinaddr)
+char *verusblocks()
 {
     bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num16,num32,num64,num15000,numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    struct iguana_info *coin = LP_coinfind("VRSC");
+    if ( coin == 0 )
+        return(clonestr("{\"error\":\"VRSC not active\"}"));
+    char *coinaddr = "RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj";
+    if ( strcmp(coinaddr,coin->smartaddr) != 0 )
+        return(clonestr("{\"error\":\"mismatched smartaddr\"}"));
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
@@ -590,10 +596,6 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
             {
                 privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
-                if ( strcmp(coin->symbol,"VRSC") == 0 && strcmp("RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj",coin->smartaddr) == 0 )
-                {
-                    verusblocks(coin,coin->smartaddr);
-                }
             }
         }
         //printf("i.%d of %d\n",i,LP_numcoins);
