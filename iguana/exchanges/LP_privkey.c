@@ -443,18 +443,18 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
 
 char *verusblocks()
 {
-    bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num2,num4,num8,num16,num32,num64,num16200,numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num2,num4,num8,num16,num32,num64,num17500,numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     struct iguana_info *coin = LP_coinfind("VRSC");
     if ( coin == 0 )
         return(clonestr("{\"error\":\"VRSC not active\"}"));
     char *coinaddr = "RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj";
     if ( strcmp(coinaddr,coin->smartaddr) != 0 && strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",coin->smartaddr) != 0 )
         return(clonestr("{\"error\":\"mismatched smartaddr\"}"));
-    verus_utxos(coin,coin->smartaddr);
+    //verus_utxos(coin,coin->smartaddr);
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
-    num16200 = num16 = num32 = num64 = num2 = num4 = num8 = 0;
+    num17500 = num16 = num32 = num64 = num2 = num4 = num8 = 0;
     possum = powsum = supply = RTu3sum = 0.;
     numpow = numpos = num = npos = npow = 0;
     if ( bits256_nonz(hash) != 0 )
@@ -544,10 +544,10 @@ char *verusblocks()
                         possum += value, npos++;
                         if ( num < 1500 )
                             printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
-                        if ( height > 16200 )
+                        if ( height > 17500 )
                         {
                             char strbuf[64];
-                            sprintf(strbuf,"%.0f",stakedval+0.00011);
+                            sprintf(strbuf,"%.0f",stakedval);
                             if ( strcmp(strbuf,"64") == 0 )
                                 num64++;
                             else if ( strcmp(strbuf,"32") == 0 )
@@ -582,10 +582,10 @@ char *verusblocks()
             free_json(blockjson);
             if ( height == 5040 )
                 break;
-            else if ( height == 16200 )
+            else if ( height == 17500 )
             {
-                num16200 = num;
-                printf("num2.%d num4.%d num8.%d num16.%d num64.%d / num16200.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% %.2f%% [%.3f %.3f %.3f %.3f %.3f]\n",num2,num4,num8,num16,num64,num16200,100.*(double)num2/num16200,100.*(double)num4/num16200,100.*(double)num8/num16200,100.*(double)num16/num16200,100.*(double)num64/num16200,(100.*(double)num2/num16200)/2.75,(100.*(double)num4/num16200)/3.4,(100.*(double)num8/num16200)/2.75,(100.*(double)num16/num16200)/5.32,(100.*(double)num64/num16200)/10.4);
+                num17500 = num;
+                printf("num2.%d num4.%d num8.%d num16.%d / num17500.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% [%.3f %.3f %.3f %.3f]\n",num2,num4,num8,num16,num17500,100.*(double)num2/num17500,100.*(double)num4/num17500,100.*(double)num8/num17500,100.*(double)num16/num17500,(100.*(double)num2/num17500)/2.75,(100.*(double)num4/num17500)/3.4,(100.*(double)num8/num17500)/2.75,(100.*(double)num16/num17500)/5.32);
             }
             else if ( (num % 1000) == 0 || (num < 1000 && (num % 100) == 0) )
             {
@@ -607,7 +607,7 @@ char *verusblocks()
             printf("mytimelocked\n");
         }
         printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3sum %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
-        printf("num2.%d num4.%d num8.%d num16.%d num64.%d / num16200.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% %.2f%% [%.3f %.3f %.3f %.3f %.3f]\n",num2,num4,num8,num16,num64,num16200,100.*(double)num2/num16200,100.*(double)num4/num16200,100.*(double)num8/num16200,100.*(double)num16/num16200,100.*(double)num64/num16200,(100.*(double)num2/num16200)/2.75,(100.*(double)num4/num16200)/3.4,(100.*(double)num8/num16200)/2.75,(100.*(double)num16/num16200)/5.32,(100.*(double)num64/num16200)/10.4);
+        printf("num2.%d num4.%d num8.%d num16.%d num64.%d / num17500.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% %.2f%% [%.3f %.3f %.3f %.3f %.3f]\n",num2,num4,num8,num16,num64,num17500,100.*(double)num2/num17500,100.*(double)num4/num17500,100.*(double)num8/num17500,100.*(double)num16/num17500,100.*(double)num64/num17500,(100.*(double)num2/num17500)/2.75,(100.*(double)num4/num17500)/3.4,(100.*(double)num8/num17500)/2.75,(100.*(double)num16/num17500)/5.32,(100.*(double)num64/num17500)/10.4);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
