@@ -427,7 +427,7 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( fabs(jdouble(item,"value")-64.) < 0.0006 )
+                //if ( fabs(jdouble(item,"value") - 64.) < 0.0006 )
                     printf("%s\n",jprint(item,0));
             }
         }
