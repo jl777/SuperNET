@@ -1831,6 +1831,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     locktime = juint(argjson,"locktime");
     txfee = juint(argjson,"txfee");
     autofee = (strcmp(coin->symbol,"BTC") == 0);
+    printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid),utxovout,jprint(outputs,0));
     if ( txfee == 0 )
     {
         autofee = 1;
