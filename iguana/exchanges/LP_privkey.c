@@ -427,7 +427,7 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
             for (i=m=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( fabs(jdouble(item,"amount") - 64.) < 0.0006 )
+                if ( fabs(jdouble(item,"amount") - 64.) < 0.00011 )
                 {
                     txid = jbits256(item,"txid");
                     vout = jint(item,"vout");
@@ -547,7 +547,7 @@ char *verusblocks()
                         if ( height > 16200 )
                         {
                             char strbuf[64];
-                            sprintf(strbuf,"%.0f",stakedval+0.00005);
+                            sprintf(strbuf,"%.0f",stakedval+0.00011);
                             if ( strcmp(strbuf,"64") == 0 )
                                 num64++;
                             else if ( strcmp(strbuf,"32") == 0 )
