@@ -420,7 +420,7 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
     cJSON *array,*item; char buf[64]; int32_t i,n;
     sprintf(buf,"[%d, 99999999, [\"%s\"]]",0,coinaddr);
     array = bitcoin_json(coin,"listunspent",buf);
-    if ( (array= LP_listunspent(coin)) != 0 )
+    if ( array != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
