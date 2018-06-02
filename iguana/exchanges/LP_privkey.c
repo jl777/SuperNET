@@ -427,12 +427,13 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( jdouble(item,"value") == 64 )
+                if ( fabs(jdouble(item,"value")-64.) < 0.0006 )
                     printf("%s\n",jprint(item,0));
             }
         }
         free_json(array);
     }
+    printf("scanned %d utxos\n",n);
 }
 
 char *verusblocks()
@@ -541,7 +542,7 @@ char *verusblocks()
                         if ( height > 16200 )
                         {
                             char strbuf[64];
-                            sprintf(strbuf,"%.0f",stakedval);
+                            sprintf(strbuf,"%.0f",stakedval+0.00005);
                             if ( strcmp(strbuf,"64") == 0 )
                                 num64++;
                             else if ( strcmp(strbuf,"32") == 0 )
