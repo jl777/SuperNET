@@ -417,8 +417,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 
 void verus_utxos(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *array,*item; char buf[64]; int32_t i,n;
-    sprintf(buf,"[%d, 99999999, [\"%s\"]]",0,coinaddr);
+    cJSON *array,*item; char buf[64],str[65]; int32_t i,vout,n=0; bits256 txid;
+    sprintf(buf,"[%d, 99999999, [\"%s\"]]",1,coinaddr);
     array = bitcoin_json(coin,"listunspent",buf);
     if ( array != 0 )
     {
@@ -427,8 +427,12 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                //if ( fabs(jdouble(item,"value") - 64.) < 0.0006 )
-                    printf("%s\n",jprint(item,0));
+                if ( fabs(jdouble(item,"amount") - 64.) < 0.0006 )
+                {
+                    txid = jbits256(item,"txid");
+                    vout = jint(item,"vout");
+                    printf("%s/v%d\n",bits256_str(str,txid),vout);
+                }
             }
         }
         free_json(array);
