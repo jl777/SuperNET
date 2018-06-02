@@ -415,6 +415,26 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     return(privkey);
 }
 
+void verus_utxos(struct iguana_info *coin,char *coinaddr)
+{
+    cJSON *array,*item; char buf[64]; int32_t i,n;
+    sprintf(buf,"[%d, 99999999, [\"%s\"]]",0,coinaddr);
+    array = bitcoin_json(coin,"listunspent",buf);
+    if ( (array= LP_listunspent(coin)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( jdouble(item,"value") == 64 )
+                    printf("%s\n",jprint(item,0));
+            }
+        }
+        free_json(array);
+    }
+}
+
 char *verusblocks()
 {
     bits256 hash,txid; uint8_t script[44]; double value,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num2,num4,num8,num16,num32,num64,num16200,numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
@@ -422,8 +442,9 @@ char *verusblocks()
     if ( coin == 0 )
         return(clonestr("{\"error\":\"VRSC not active\"}"));
     char *coinaddr = "RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj";
-    if ( strcmp(coinaddr,coin->smartaddr) != 0 )
+    if ( strcmp(coinaddr,coin->smartaddr) != 0 && strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",coin->smartaddr) != 0 )
         return(clonestr("{\"error\":\"mismatched smartaddr\"}"));
+    verus_utxos(coin,coin->smartaddr);
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
