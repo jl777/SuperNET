@@ -587,7 +587,7 @@ char *verusblocks()
             else if ( height == 17500 )
             {
                 num17500 = num;
-                printf("num2.%d num4.%d num8.%d num16.%d / num17500.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% [%.3f %.3f %.3f %.3f] %.3f \n",num2,num4,num8,num16,num17500,100.*(double)num2/num17500,100.*(double)num4/num17500,100.*(double)num8/num17500,100.*(double)num16/num17500,(100.*(double)num2/num17500)/2.75,(100.*(double)num4/num17500)/2.75,(100.*(double)num8/num17500)/4.5,(100.*(double)num16/num17500)/14,(100.*(double)(num2+num4+num8+num16)/num17500)/24);
+                printf("num2.%d num4.%d num8.%d num16.%d / num17500.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% [%.3f %.3f %.3f %.3f] %.3f ave %.8f\n",num2,num4,num8,num16,num17500,100.*(double)num2/num17500,100.*(double)num4/num17500,100.*(double)num8/num17500,100.*(double)num16/num17500,(100.*(double)num2/num17500)/2.75,(100.*(double)num4/num17500)/2.75,(100.*(double)num8/num17500)/4.5,(100.*(double)num16/num17500)/14,(100.*(double)(num2+num4+num8+num16)/num17500)/24,avestakedsize/numstaked);
             }
             else if ( (num % 1000) == 0 || (num < 1000 && (num % 100) == 0) )
             {
