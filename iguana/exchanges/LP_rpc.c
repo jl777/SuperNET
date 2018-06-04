@@ -750,7 +750,9 @@ again:
                 }
                 if ( strcmp(coin->estimatefeestr,"estimatesmartfee") == 0 && (rate= jdouble(errjson,"feerate")) != 0 )
                 {
-                    printf("extracted feerate %.8f from estimatesmartfee\n",rate);
+                    static uint32_t counter;
+                    if ( counter++ < 10 )
+                        printf("extracted feerate %.8f from estimatesmartfee\n",rate);
                     rate /= 1024.;
                 }
                 free_json(errjson);
