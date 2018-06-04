@@ -14,7 +14,8 @@
  ******************************************************************************/
 
 
-#define KEEPALIVE
+//#define KEEPALIVE breaks marketmaker api
+
 #ifndef FROM_JS
 #include "OS_portable.h"
 #define LIQUIDITY_PROVIDER 1
