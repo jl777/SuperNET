@@ -144,7 +144,11 @@ char *Jay_NXTrequest(char *command,char *params)
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
-    static CURL *curl_handle; static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+#ifdef KEEPALIVE
+    static
+#endif
+    CURL *curl_handle = 0;
+    static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
     char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
