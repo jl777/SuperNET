@@ -262,16 +262,16 @@ cJSON *issue_calcMoM(struct iguana_info *coin,int32_t height,int32_t MoMdepth)
     return(retjson);
 }
 
-cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
+cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,uint16_t CCid)
 {
     char buf[128],*retstr=0; cJSON *retjson = 0; struct iguana_info *src;
     if ( coin->FULLNODE < 0 && strcmp(coin->symbol,"KMD") == 0 && (src= iguana_coinfind(symbol)) != 0 )
     {
-        sprintf(buf,"[\"%s\", \"%d\", \"%d\"]",symbol,kmdheight,src->MoMoMheight);
+        sprintf(buf,"[\"%s\", \"%d\", \"%d\"]",symbol,kmdheight,CCid);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
-            printf("MoMoM.%s -> %s\n",buf,retstr);
+            printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
             free(retstr);
         }
         usleep(10000);
@@ -279,9 +279,9 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
     return(retjson);
 }
 
-int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp)
+int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp)
 {
-    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen=0,n=0; uint32_t paxwdcrc;
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson; int32_t kmdheight=0,hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
     if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || src_or_dest != 0 )
     {
@@ -291,11 +291,17 @@ int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256
         if ( strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
             kmdcoin = bp->destcoin;
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,(kmdcoin->lastbestheight/10)*10 - 5)) != 0 )
+            if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
+            {
+                kmdheight = jint(infojson,"blocks");
+                free_json(infojson);
+            }
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;
+                    printf("add MoMoMdata.(%s)\n",hexstr);
                     decode_hex(&hex[n],hexlen,hexstr), n += hexlen;
                 }
                 free_json(retjson);
