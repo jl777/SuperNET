@@ -2028,7 +2028,7 @@ char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *meth
 {
     if ( userpass[0] == 0 )
         return(clonestr("{\"error\":\"no rpcusername rpcpassword in coin.conf\"}"));
-    return(bitcoind_passthrut(0,coinstr,serverport,userpass,method,params,4));
+    return(bitcoind_passthrut(coinstr,serverport,userpass,method,params,4));
     //return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,4));
 }
 

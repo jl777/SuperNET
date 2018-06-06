@@ -311,7 +311,7 @@ try_again:
     }
 }
 
-char *bitcoind_RPCnew(CURL *curl_handle,char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
+char *bitcoind_RPCnew(void *curl_handle,char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static int count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct MemoryStruct chunk;
