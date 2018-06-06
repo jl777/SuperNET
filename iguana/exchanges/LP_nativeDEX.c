@@ -667,7 +667,7 @@ void LP_coinsloop(void *_coins)
                 {
                     if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                     {
-                        printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                        printf("please ignore this blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
                         sleep(10);
                         break;
                     }
@@ -892,6 +892,7 @@ void gameaddrs()
         }
     }
 }
+
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {

@@ -750,7 +750,9 @@ again:
                 }
                 if ( strcmp(coin->estimatefeestr,"estimatesmartfee") == 0 && (rate= jdouble(errjson,"feerate")) != 0 )
                 {
-                    printf("extracted feerate %.8f from estimatesmartfee\n",rate);
+                    static uint32_t counter;
+                    if ( counter++ < 10 )
+                        printf("extracted feerate %.8f from estimatesmartfee\n",rate);
                     rate /= 1024.;
                 }
                 free_json(errjson);
@@ -1030,6 +1032,7 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
 cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
 {
     cJSON *json = 0; int32_t flag = 0; struct iguana_info *coin;
+    *heightp = 0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);

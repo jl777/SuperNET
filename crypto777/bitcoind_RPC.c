@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 
+//#define KEEPALIVE breaks marketmaker api
 
 #ifndef FROM_JS
 #include "OS_portable.h"
@@ -143,7 +144,11 @@ char *Jay_NXTrequest(char *command,char *params)
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
-    CURL *curl_handle; static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+#ifdef KEEPALIVE
+    static
+#endif
+    CURL *curl_handle = 0;
+    static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
     char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
@@ -151,7 +156,6 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     {
         didinit = 1;
         curl_global_init(CURL_GLOBAL_ALL); //init the curl session
-        //curl_handle = curl_easy_init();
     }
     if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
     {
@@ -174,7 +178,8 @@ try_again:
     if ( retstrp != 0 )
         *retstrp = 0;
     starttime = OS_milliseconds();
-    curl_handle = curl_easy_init();
+    if ( curl_handle == 0 )
+        curl_handle = curl_easy_init();
     headers = curl_slist_append(0,"Expect:");
     
   	curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
@@ -244,7 +249,10 @@ try_again:
     //laststart = milliseconds();
     res = curl_easy_perform(curl_handle);
     curl_slist_free_all(headers);
+#ifndef KEEPALIVE
     curl_easy_cleanup(curl_handle);
+    curl_handle = 0;
+#endif
     if ( databuf != 0 ) // clean up temporary buffer
     {
         free(databuf);

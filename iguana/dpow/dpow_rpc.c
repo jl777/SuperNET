@@ -78,6 +78,17 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
     return(json);
 }
 
+uint32_t dpow_CCid(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    uint32_t CCid = 0; cJSON *retjson;
+    if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
+    {
+        CCid = juint(retjson,"CCid");
+        free_json(retjson);
+    }
+    return(CCid);
+}
+
 char *Notaries_elected[65][2];
 //char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
 int32_t Notaries_numseeds;// = (int32_t)(sizeof(seeds)/sizeof(*seeds))
@@ -99,8 +110,7 @@ int32_t komodo_initjson(char *fname)
                 Notaries_port = port;
             if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
                 Notaries_BTCminsigs = num;
-            if ( (num= juint(argjson,"minsigs")) > Notaries_minsigs )
-                Notaries_minsigs = num;
+            Notaries_minsigs = juint(argjson,"minsigs");
             if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
             {
                 for (i=0; i<n&&i<64; i++)
@@ -252,16 +262,16 @@ cJSON *issue_calcMoM(struct iguana_info *coin,int32_t height,int32_t MoMdepth)
     return(retjson);
 }
 
-cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
+cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,uint16_t CCid)
 {
     char buf[128],*retstr=0; cJSON *retjson = 0; struct iguana_info *src;
     if ( coin->FULLNODE < 0 && strcmp(coin->symbol,"KMD") == 0 && (src= iguana_coinfind(symbol)) != 0 )
     {
-        sprintf(buf,"[\"%s\", \"%d\", \"%d\"]",symbol,kmdheight,src->MoMoMheight);
+        sprintf(buf,"[\"%s\", \"%d\", \"%d\"]",symbol,kmdheight,CCid);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
-            printf("MoMoM.%s -> %s\n",buf,retstr);
+            printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
             free(retstr);
         }
         usleep(10000);
@@ -269,22 +279,29 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight)
     return(retjson);
 }
 
-int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,int32_t src_or_dest,struct dpow_block *bp)
+int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp)
 {
-    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson; int32_t hexlen=0,n=0; uint32_t paxwdcrc;
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson; int32_t kmdheight=0,hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
     if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || src_or_dest != 0 )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
+        MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
         if ( strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
             kmdcoin = bp->destcoin;
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,(kmdcoin->lastbestheight/10)*10 - 5)) != 0 )
+            if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
+            {
+                kmdheight = jint(infojson,"blocks");
+                free_json(infojson);
+            }
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;
+                    printf("add MoMoMdata.(%s)\n",hexstr);
                     decode_hex(&hex[n],hexlen,hexstr), n += hexlen;
                 }
                 free_json(retjson);

@@ -432,6 +432,11 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->zcash = LP_IS_BITCOINGOLD;
         printf("set coin.%s <- LP_IS_BITCOINGOLD %d\n",symbol,coin->zcash);
     }
+    else if ( strcmp(symbol,"CMM") == 0 )
+    {
+        coin->zcash = LP_IS_BITCOINCASH;
+        //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
+    }
     coin->decimals = decimals;
     return(port);
 }
@@ -500,7 +505,6 @@ struct iguana_info *LP_coinfind(char *symbol)
 struct iguana_info *LP_coincreate(cJSON *item)
 {
     struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
-
     if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
         isPoS = jint(item,"isPoS");

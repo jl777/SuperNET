@@ -144,6 +144,7 @@ fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 inuse()\n\
+movecoinbases(coin)\n\
 getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -275,6 +276,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 } else jaddstr(retjson,"error","couldnt get NN_PAIR socket");
             }
             return(jprint(retjson,1));
+        }
+        else if ( strcmp(method,"verus") == 0 )
+        {
+            return(verusblocks());
         }
         else if ( strcmp(method,"instantdex_claim") == 0 )
         {
@@ -707,6 +712,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(LP_txblast(ptr,argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"movecoinbases") == 0 )
+            {
+                return(LP_movecoinbases(coin));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {

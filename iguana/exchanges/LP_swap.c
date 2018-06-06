@@ -897,7 +897,7 @@ void LP_bobloop(void *_swap)
                 }
             }
             LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( error == 0 && LP_waitfor(swap->N.pair,swap,alicewaittimeout,LP_verify_alicepayment) < 0 )
+            if ( error == 0 && LP_waitfor(swap->N.pair,swap,bobwaittimeout + alicewaittimeout,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
                 err = -2006, printf("error waiting for alicepayment\n");

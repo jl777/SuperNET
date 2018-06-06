@@ -360,7 +360,9 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         dp->srcconfirms = DPOW_FIFOSIZE;
     if ( strcmp("BTC",dp->dest) == 0 )
     {
-        dp->freq = DPOW_CHECKPOINTFREQ;
+        if ( freq == 0 )
+            dp->freq = DPOW_CHECKPOINTFREQ;
+        else dp->freq = freq;
         dp->minsigs = Notaries_BTCminsigs; //DPOW_MINSIGS;
     }
     else
@@ -428,13 +430,11 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     portable_mutex_init(&dp->paxmutex);
     portable_mutex_init(&dp->dexmutex);
     PAX_init();
-    //printf(">>>>>>>>>>>>>>> call paxpending\n");
-    //uint8_t buf[32768];
-    //dpow_paxpending(buf);
+    dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d CCid.%u\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs,dp->fullCCid);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -535,7 +535,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY" 
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL" 
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
