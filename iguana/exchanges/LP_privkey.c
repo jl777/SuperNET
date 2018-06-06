@@ -454,7 +454,7 @@ char *verusblocks()
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
-    num23000 = num16 = num32 = num64 = num2 = num4 = num8 = numstaked = 0;
+    num23000 = num16 = num17 = num10 = num20 = numstaked = 0;
     avestakedsize = possum = powsum = supply = RTu3sum = 0.;
     numpow = numpos = num = npos = npow = 0;
     if ( bits256_nonz(hash) != 0 )
