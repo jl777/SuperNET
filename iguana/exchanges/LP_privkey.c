@@ -415,13 +415,47 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     return(privkey);
 }
 
-void verusblocks(struct iguana_info *coin,char *coinaddr)
+void verus_utxos(struct iguana_info *coin,char *coinaddr)
 {
-    bits256 hash,txid; uint8_t script[44]; double value,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t numpow,numpos,num,locked,height,i,m,n,z,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    cJSON *array,*item; char buf[64],str[65]; int32_t i,m,vout,n=0; bits256 txid;
+    sprintf(buf,"[%d, 99999999, [\"%s\"]]",1,coinaddr);
+    array = bitcoin_json(coin,"listunspent",buf);
+    if ( array != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=m=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( fabs(jdouble(item,"amount") - 64.) < 0.00011 )
+                {
+                    txid = jbits256(item,"txid");
+                    vout = jint(item,"vout");
+                    printf("%d: %s/v%d\n",m,bits256_str(str,txid),vout);
+                    m++;
+                }
+            }
+        }
+        free_json(array);
+    }
+    printf("scanned %d utxos m.%d\n",n,m);
+}
+
+char *verusblocks()
+{
+    bits256 hash,txid; uint8_t script[44]; double value,avestakedsize,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num10,num17,num20,num16,num23000,numpow,numpos,num,locked,height,i,m,n,z,numstaked,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    struct iguana_info *coin = LP_coinfind("VRSC");
+    if ( coin == 0 )
+        return(clonestr("{\"error\":\"VRSC not active\"}"));
+    char *coinaddr = "RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj";
+    if ( strcmp(coinaddr,coin->smartaddr) != 0 )
+        return(clonestr("{\"error\":\"mismatched smartaddr\"}"));
+    //verus_utxos(coin,coin->smartaddr);
     hash = LP_getbestblockhash(coin);
     memset(histo,0,sizeof(histo));
     memset(myhisto,0,sizeof(myhisto));
-    possum = powsum = supply = 0.;
+    num23000 = num16 = num17 = num10 = num20 = numstaked = 0;
+    avestakedsize = possum = powsum = supply = RTu3sum = 0.;
     numpow = numpos = num = npos = npow = 0;
     if ( bits256_nonz(hash) != 0 )
     {
@@ -430,6 +464,7 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
         while ( (blockjson= LP_blockjson(&height,coin->symbol,hashstr,0)) != 0 )
         {
             num++;
+            stakedval = 0.;
             height = juint(blockjson,"height");
             if ( (txs= jarray(&n,blockjson,"tx")) != 0 )
             {
@@ -489,8 +524,12 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                                 else
                                 {
                                     strcpy(stakingaddr,lastaddr);
+                                    stakedval = jdouble(vout,"value");
+                                    avestakedsize += stakedval;
+                                    numstaked++;
+                                    //printf("stakedval %f\n",stakedval);
                                     posflag = 1;
-                                    //printf("ht.%d found staking address.(%s)\n",height,stakingaddr);
+                                    //printf("ht.%d found staking address.(%s) %.8f (%s)\n",height,stakingaddr,stakedval,jprint(vout,0));
                                 }
                             } else printf("no addresses[0] in (%s) %s\n",jprint(vout,0),sobj!=0?jprint(sobj,0):"");
                         } //else printf("n.%d m.%d no first out in lastvout.(%s)\n",n,m,jprint(txobj,0));
@@ -500,17 +539,37 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
                 if ( posflag != 0 )
                 {
                     numpos++;
-                    if ( num < 100 )
-                        printf("ht.%-5d lock.%-7d PoS coinbase.(%s) staked.(%s) %.8f\n",height,locked,addr0,stakingaddr,value);
                     if ( strcmp(coinaddr,stakingaddr) == 0 || strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
+                    {
+                        if (strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
+                            RTu3sum += value;
                         possum += value, npos++;
+                        if ( num < 1500 )
+                            printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
+                        if ( height > 23000 )
+                        {
+                            char strbuf[64];
+                            sprintf(strbuf,"%.0f",stakedval);
+                            if ( strcmp(strbuf,"20") == 0 )
+                                num20++;
+                            else if ( strcmp(strbuf,"17") == 0 )
+                                num17++;
+                            else if ( strcmp(strbuf,"16") == 0 )
+                                num16++;
+                            else if ( strcmp(strbuf,"10") == 0 )
+                                num10++;
+                            else printf("got strbuf.(%s)\n",strbuf);
+                        }
+                    }
+                    else if ( 0 && num < 100 )
+                        printf("ht.%-5d lock.%-7d PoS cb.(%s) stake.(%s) %.8f %.8f\n",height,locked,addr0,stakingaddr,value,stakedval);
                 }
                 else
                 {
                     numpow++;
-                    if ( num < 100 )
+                    if ( num < 100 && strcmp(coinaddr,addr0) == 0 )
                         printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
-                    if ( strcmp(coinaddr,addr0) == 0 || strcmp("RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC",stakingaddr) == 0 )
+                    if ( strcmp(coinaddr,addr0) == 0 )
                         powsum += value, npow++;
                 }
                 histo[locked/1000] += value;
@@ -521,24 +580,34 @@ void verusblocks(struct iguana_info *coin,char *coinaddr)
             free_json(blockjson);
             if ( height == 5040 )
                 break;
-            else if ( num == 1000 )
+            else if ( height == 23000 )
             {
-                printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply);
+                num23000 = num;
+                printf("num10.%d num16.%d num17.%d num20.%d / num23000.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% [%.3f %.3f %.3f %.3f] %.3f ave %.8f\n",num10,num16,num17,num20,num23000,100.*(double)num10/num23000,100.*(double)num16/num23000,100.*(double)num17/num23000,100.*(double)num20/num23000,(100.*(double)num10/num23000)/2.87,(100.*(double)num16/num23000)/10.5,(100.*(double)num17/num23000)/4.88,(100.*(double)num20/num23000)/5.74,(100.*(double)(num10+num16+num17+num20)/num23000)/24,avestakedsize/numstaked);
+            }
+            else if ( (num % 1000) == 0 || (num < 1000 && (num % 100) == 0) )
+            {
+                printf("num.%d PoW %.2f%% %.0f %d v %d PoS %.2f%% %.0f -> %.0f supply %.0f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3 %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
             }
         }
     }
     if ( num > 0 )
     {
-        for (i=0; i<sizeof(histo)/sizeof(*histo); i++)
-            if ( histo[i] != 0 )
-                printf("%d %.8f, ",i*1000,histo[i]);
-        printf("timelocked\n");
-        for (i=0; i<sizeof(myhisto)/sizeof(*myhisto); i++)
-            if ( myhisto[i] != 0 )
-                printf("%d %.8f, ",i*1000,myhisto[i]);
-        printf("mytimelocked\n");
-        printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply);
+        if ( 0 )
+        {
+            for (i=0; i<sizeof(histo)/sizeof(*histo); i++)
+                if ( histo[i] != 0 )
+                    printf("%d %.8f, ",i*1000,histo[i]);
+            printf("timelocked\n");
+            for (i=0; i<sizeof(myhisto)/sizeof(*myhisto); i++)
+                if ( myhisto[i] != 0 )
+                    printf("%d %.8f, ",i*1000,myhisto[i]);
+            printf("mytimelocked\n");
+        }
+        printf("num.%d PoW %.2f%% %.8f %d v %d PoS %.2f%% %.8f -> %.8f supply %.8f PoW %.1f%% PoS %.1f%% both %.1f%% RTu3sum %.8f %.1f%%\n",num,100.*(double)numpow/num,powsum,npow,npos,100.*(double)numpos/num,possum,powsum+possum,supply,100.*powsum/supply,100.*possum/supply,100.*(powsum+possum)/supply,RTu3sum,100.*RTu3sum/supply);
+        printf("num10.%d num16.%d num17.%d num20.%d / num23000.%d -> %.2f%%  %.2f%%  %.2f%% %.2f%% [%.3f %.3f %.3f %.3f] %.3f ave %.8f\n",num10,num16,num17,num20,num23000,100.*(double)num10/num23000,100.*(double)num16/num23000,100.*(double)num17/num23000,100.*(double)num20/num23000,(100.*(double)num10/num23000)/2.87,(100.*(double)num16/num23000)/10.5,(100.*(double)num17/num23000)/4.88,(100.*(double)num20/num23000)/5.74,(100.*(double)(num10+num16+num17+num20)/num23000)/24,avestakedsize/numstaked);
     }
+    return(clonestr("{\"result\":\"success\"}"));
 }
 
 void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
@@ -559,10 +628,6 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
             {
                 privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
-                if ( strcmp(coin->symbol,"VRSC") == 0 && strcmp("RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj",coin->smartaddr) == 0 )
-                {
-                    verusblocks(coin,coin->smartaddr);
-                }
             }
         }
         //printf("i.%d of %d\n",i,LP_numcoins);

@@ -664,7 +664,7 @@ void LP_coinsloop(void *_coins)
                 {
                     if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                     {
-                        printf("pleae ignore this blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                        printf("please ignore this blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
                         sleep(10);
                         break;
                     }

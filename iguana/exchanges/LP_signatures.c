@@ -721,9 +721,12 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     if ( IPC_ENDPOINT >= 0 )
         LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
     memset(&zero,0,sizeof(zero));
-    if ( bits256_nonz(qp->srchash) != 0 )
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+    //if ( bits256_nonz(qp->srchash) != 0 )
+    {
+        sleep(1);
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
+    }
     free(msg);
 }
 

@@ -277,6 +277,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             return(jprint(retjson,1));
         }
+        else if ( strcmp(method,"verus") == 0 )
+        {
+            return(verusblocks());
+        }
         else if ( strcmp(method,"instantdex_claim") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
