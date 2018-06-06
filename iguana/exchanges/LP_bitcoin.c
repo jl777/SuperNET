@@ -2017,7 +2017,7 @@ char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *met
     if ( (coin= LP_coinfind(coinstr)) != 0 )
     {
         portable_mutex_lock(&coin->curl_mutex);
-        retstr = bitcoind_RPCnew(coin->curl_handle,0,coinstr,serverport,userpass,method,params,timeout));
+        retstr = bitcoind_RPCnew(coin->curl_handle,0,coinstr,serverport,userpass,method,params,timeout);
         portable_mutex_unlock(&coin->curl_mutex);
         return(retstr);
     }
