@@ -75,7 +75,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     char *retstr = 0;
     cJSON *json,*result,*error;
 #ifndef FROM_MARKETMAKER
-    usleep(1000);
+    //usleep(1000);
 #endif
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
@@ -132,7 +132,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
  *
  ************************************************************************/
 
-static int32_t USE_JAY;
+//static int32_t USE_JAY;
 
 char *Jay_NXTrequest(char *command,char *params)
 {
@@ -142,26 +142,28 @@ char *Jay_NXTrequest(char *command,char *params)
     return(retstr);
 }
 
+
+static void bitcoind_init()
+{
+    static int32_t didinit;
+    if ( didinit == 0 )
+    {
+        didinit = 1;
+        curl_global_init(CURL_GLOBAL_ALL); //init the curl session
+    }
+}
+
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
 #ifdef KEEPALIVE
     static
 #endif
     CURL *curl_handle = 0;
-    static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+    static int count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
     char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
-    if ( didinit == 0 )
-    {
-        didinit = 1;
-        curl_global_init(CURL_GLOBAL_ALL); //init the curl session
-    }
-    if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
-    {
-        if ( (databuf= Jay_NXTrequest(command,params)) != 0 )
-            return(databuf);
-    }
+    bitcoind_init();
     numretries = 0;
     if ( debugstr != 0 && strcmp(debugstr,"BTCD") == 0 && command != 0 && strcmp(command,"SuperNET") ==  0 )
         specialcase = 1;
@@ -294,6 +296,153 @@ try_again:
                 return(retstr);
             }
 //printf("%s <- %s\n",url,command);
+            return(post_process_bitcoind_RPC(debugstr,command,retstr,params));
+        }
+        else
+        {
+            if ( (0) && specialcase != 0 )
+                fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,retstr);
+            count2++;
+            elapsedsum2 += (OS_milliseconds() - starttime);
+            if ( (count2 % 10000) == 0)
+                printf("%d: ave %9.6f | elapsed %.3f millis | NXT calls.(%s) cmd.(%s)\n",count2,elapsedsum2/count2,(double)(OS_milliseconds() - starttime),url,command);
+            return(retstr);
+        }
+    }
+}
+
+char *bitcoind_RPCnew(void *curl_handle,char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
+{
+    static int count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+    struct MemoryStruct chunk;
+    struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
+    char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t flag=0,specialcase,numretries; double starttime;
+    bitcoind_init();
+    numretries = 0;
+    if ( url[0] == 0 )
+        strcpy(url,"http://127.0.0.1:7776");
+try_again:
+    if ( curl_handle == 0 )
+    {
+        curl_handle = curl_easy_init();
+        flag = 1;
+    }
+    if ( retstrp != 0 )
+        *retstrp = 0;
+    starttime = OS_milliseconds();
+    headers = curl_slist_append(0,"Expect:");
+    curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
+    curl_easy_setopt(curl_handle,CURLOPT_HTTPHEADER,	headers);
+    curl_easy_setopt(curl_handle,CURLOPT_URL,		url);
+    if ( (0) )
+    {
+        init_string(&s);
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
+    }
+    else
+    {
+        memset(&chunk,0,sizeof(chunk));
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,WriteMemoryCallback);
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,(void *)&chunk);
+        
+    }
+    curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
+    curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
+    if ( timeout > 0 )
+    {
+        if ( bitcoind_RPC_inittime != 0 )
+        {
+#ifndef _WIN32
+            curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,1);
+#else
+            curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, timeout*100);
+#endif
+        } else curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,timeout); // causes problems with iguana timeouts
+    }
+    if ( strncmp(url,"https",5) == 0 )
+    {
+        curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);
+        curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYHOST,0);
+    }
+    if ( userpass != 0 )
+        curl_easy_setopt(curl_handle,CURLOPT_USERPWD,	userpass);
+    databuf = 0;
+    if ( params != 0 )
+    {
+        if ( command != 0 )
+        {
+            len = strlen(params);
+            if ( len > 0 && params[0] == '[' && params[len-1] == ']' ) {
+                bracket0 = bracket1 = (char *)"";
+            }
+            else
+            {
+                bracket0 = (char *)"[";
+                bracket1 = (char *)"]";
+            }
+            char agentstr[64];
+            databuf = (char *)malloc(256 + strlen(command) + strlen(params));
+            if ( debugstr[0] != 0 )
+                sprintf(agentstr,"\"agent\":\"%s\",",debugstr);
+            else agentstr[0] = 0;
+            sprintf(databuf,"{\"id\":\"jl777\",%s\"method\":\"%s\",\"params\":%s%s%s}",agentstr,command,bracket0,params,bracket1);
+            //printf("url.(%s) userpass.(%s) databuf.(%s)\n",url,userpass,databuf);
+            //
+        } //else if ( specialcase != 0 ) fprintf(stderr,"databuf.(%s)\n",params);
+        curl_easy_setopt(curl_handle,CURLOPT_POST,1L);
+        if ( databuf != 0 )
+            curl_easy_setopt(curl_handle,CURLOPT_POSTFIELDS,databuf);
+        else curl_easy_setopt(curl_handle,CURLOPT_POSTFIELDS,params);
+    }
+    res = curl_easy_perform(curl_handle);
+    curl_slist_free_all(headers);
+    if ( databuf != 0 ) // clean up temporary buffer
+    {
+        free(databuf);
+        databuf = 0;
+    }
+    if ( flag != 0 )
+    {
+        curl_easy_cleanup(curl_handle);
+        curl_handle = 0;
+    }
+    retstr = chunk.memory; // retstr = s.ptr;
+    if ( res != CURLE_OK )
+    {
+        numretries++;
+        if ( timeout != 0 )
+        {
+            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,retstr,res);
+            free(retstr);
+            return(0);
+        }
+        else if ( numretries >= 4 )
+        {
+            printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
+            //printf("Maximum number of retries exceeded!\n");
+            free(retstr);
+            return(0);
+        }
+        free(retstr);
+        sleep((1<<numretries));
+        goto try_again;
+        
+    }
+    else
+    {
+        if ( command != 0 )
+        {
+            count++;
+            elapsedsum += (OS_milliseconds() - starttime);
+            if ( (count % 100000) == 0)
+                printf("%d: ave %9.6f | elapsed %.3f millis | bitcoind_RPC.(%s) url.(%s)\n",count,elapsedsum/count,(OS_milliseconds() - starttime),command,url);
+            if ( retstrp != 0 )
+            {
+                *retstrp = retstr;
+                return(retstr);
+            }
+            //printf("%s <- %s\n",url,command);
             return(post_process_bitcoind_RPC(debugstr,command,retstr,params));
         }
         else

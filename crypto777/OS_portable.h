@@ -425,6 +425,7 @@ bits256 bits256_sha256(bits256 data);
 void bits256_rmd160(uint8_t rmd160[20],bits256 data);
 void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
 double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep);
+char *bitcoind_RPCnew(void *curl_handle,char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
