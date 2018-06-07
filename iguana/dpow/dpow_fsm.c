@@ -235,7 +235,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
     *MoMdepthp = 0;
     memset(MoM.bytes,0,sizeof(MoM));
-    if ( strcmp(coin->symbol,"GAME") == 0 ) // 80 byte OP_RETURN limit
+    if ( strcmp(coin->symbol,"GAME") == 0 || strcmp(coin->symbol,"HUSH") == 0 ) // 80 byte OP_RETURN limit
         return(MoM);
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
