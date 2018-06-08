@@ -176,7 +176,13 @@ getfee(coin)\n\
 sleep(seconds=60)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
+version\n\
 \"}"));
+    if ( strcmp(method,"version") == 0 ) {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result",MM_VERSION);
+        return(jprint(retjson,1));
+    }
 
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
