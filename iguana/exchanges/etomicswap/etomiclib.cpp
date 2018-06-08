@@ -758,7 +758,7 @@ char *sendErc20(
     return result;
 }
 
-uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data, uint8_t decimals)
+uint8_t verifyAliceErc20FeeData(char *tokenAddress, char *to, char *amount, char *data, uint8_t decimals)
 {
     std::stringstream ss = getErc20TransferData(tokenAddress, to, amount, decimals);
     if (strcmp(ss.str().c_str(), data) != 0) {
@@ -766,4 +766,40 @@ uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char
         return 0;
     }
     return 1;
+}
+
+uint8_t alicePaymentStatus(char *paymentId)
+{
+    char buffer[100];
+    memset(buffer, 0, sizeof(buffer));
+    strcpy(buffer, "0x81cd872a");
+    strcat(buffer, paymentId);
+    char *hexStatus = ethCall(ETOMIC_ALICECONTRACT, buffer);
+    auto status = (uint8_t) strtol(hexStatus + 66, NULL, 0);
+    free(hexStatus);
+    return status;
+}
+
+uint8_t bobDepositStatus(char *depositId)
+{
+    char buffer[100];
+    memset(buffer, 0, sizeof(buffer));
+    strcpy(buffer, "0x3d4dff7b");
+    strcat(buffer, depositId);
+    char *hexStatus = ethCall(ETOMIC_BOBCONTRACT, buffer);
+    auto status = (uint8_t) strtol(hexStatus + 130, NULL, 0);
+    free(hexStatus);
+    return status;
+}
+
+uint8_t bobPaymentStatus(char *paymentId)
+{
+    char buffer[100];
+    memset(buffer, 0, sizeof(buffer));
+    strcpy(buffer, "0x0716326d");
+    strcat(buffer, paymentId);
+    char *hexStatus = ethCall(ETOMIC_BOBCONTRACT, buffer);
+    auto status = (uint8_t) strtol(hexStatus + 130, NULL, 0);
+    free(hexStatus);
+    return status;
 }

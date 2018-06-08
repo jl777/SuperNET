@@ -22,6 +22,9 @@
 // Created by artem on 24.01.18.
 //
 #include "LP_etomic.h"
+#define ALICE_PAYMENT_SENT 1
+#define BOB_DEPOSIT_SENT 1
+#define BOB_PAYMENT_SENT 1
 
 int32_t LP_etomic_wait_for_confirmation(char *txId)
 {
@@ -218,6 +221,10 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
+    if (alicePaymentStatus(input.dealId + 2) != ALICE_PAYMENT_SENT) {
+        printf("Alice payment smart contract status check failed, can't spend\n");
+        return NULL;
+    }
     satoshisToWei(input.amount, swap->destamount);
 
     if (swap->alicetomic[0] != 0) {
@@ -266,6 +273,11 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
+    if (alicePaymentStatus(input.dealId + 2) != ALICE_PAYMENT_SENT) {
+        printf("Alice payment smart contract status check failed, can't spend\n");
+        return NULL;
+    }
+
     satoshisToWei(input.amount, swap->destamount);
 
     if (swap->alicetomic[0] != 0) {
@@ -417,6 +429,11 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
         return NULL;
     }
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
+    if (bobDepositStatus(input.depositId + 2) != BOB_DEPOSIT_SENT) {
+        printf("Bob deposit smart contract status check failed, can't claim\n");
+        return NULL;
+    }
+
     strcpy(input.aliceAddress, swap->etomicdest);
 
     bits256 invertedSecret;
@@ -567,6 +584,10 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
         return NULL;
     }
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
+    if (bobPaymentStatus(input.paymentId + 2) != BOB_PAYMENT_SENT) {
+        printf("Bob payment smart contract status check failed, can't spend\n");
+        return NULL;
+    }
     strcpy(input.aliceAddress, swap->etomicdest);
     uint8arrayToHex(input.aliceHash, swap->secretAm, 20);
 
@@ -608,6 +629,10 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
+    if (bobPaymentStatus(input.paymentId + 2) != BOB_PAYMENT_SENT) {
+        printf("Bob payment smart contract status check failed, can't spend\n");
+        return NULL;
+    }
     satoshisToWei(input.amount, swap->values[BASILISK_BOBPAYMENT]);
 
     if (swap->bobtomic[0] != 0) {
@@ -656,6 +681,11 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
+    if (bobDepositStatus(input.depositId + 2) != BOB_DEPOSIT_SENT) {
+        printf("Bob deposit smart contract status check failed, can't claim\n");
+        return NULL;
+    }
+
     satoshisToWei(input.amount, swap->values[BASILISK_BOBDEPOSIT]);
 
     if (swap->bobtomic[0] != 0) {

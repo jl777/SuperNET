@@ -196,7 +196,7 @@ char *ethCall(char *to, const char *data)
     cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
     cJSON *resultJson = sendRpcRequest("eth_call", params);
     cJSON_Delete(params);
-    char* result = NULL;
+    char *result = NULL;
     if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
         result = (char *) malloc(strlen(resultJson->valuestring) + 1);
         strcpy(result, resultJson->valuestring);
