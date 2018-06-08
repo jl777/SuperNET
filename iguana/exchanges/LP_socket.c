@@ -124,9 +124,10 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     if ( bindflag == 0 )
     {
-        //printf("call connect sock.%d\n",sock);
+        uint32_t starttime = (uint32_t)time(NULL);
+        printf("call connect sock.%d\n",sock);
         result = connect(sock,(struct sockaddr *)&saddr,addrlen);
-        //printf("called connect result.%d\n",result);
+        printf("called connect result.%d lag.%d\n",result,(int32_t)(time(NULL) - starttime));
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
         setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
@@ -422,7 +423,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("timeout.%d exp.%d %s %s",timeout,(int32_t)(expiration-time(NULL)),symbol,stratumreq);
+//printf("timeout.%d exp.%d %s %s",timeout,(int32_t)(expiration-time(NULL)),symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
             portable_mutex_lock(&ep->mutex); // this helps performance!
