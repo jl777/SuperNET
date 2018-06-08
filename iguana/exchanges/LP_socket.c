@@ -45,7 +45,7 @@ int32_t set_blocking_mode(int32_t sock,int32_t is_blocking) // from https://stac
     else return(0);
 }
 
-int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,int32_t addrlen)
+int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
 {
     struct timeval tv; fd_set wfd,efd; int32_t res,so_error,len;
     fcntl(sock,F_SETFL,O_NONBLOCK);
@@ -185,9 +185,9 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
     if ( bindflag == 0 )
     {
         uint32_t starttime = (uint32_t)time(NULL);
-        printf("call connect sock.%d\n",sock);
+        //printf("call connect sock.%d\n",sock);
         result = komodo_connect(sock,(struct sockaddr *)&saddr,addrlen);
-        printf("called connect result.%d lag.%d\n",result,(int32_t)(time(NULL) - starttime));
+        //printf("called connect result.%d lag.%d\n",result,(int32_t)(time(NULL) - starttime));
         if ( result < 0 )
             return(-1);
         timeout.tv_sec = 2;
