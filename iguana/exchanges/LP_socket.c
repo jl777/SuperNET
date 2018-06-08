@@ -26,6 +26,66 @@
 #include <WinSock2.h>
 #endif
 
+int32_t set_blocking_mode(int32_t sock,bool is_blocking) // from https://stackoverflow.com/questions/2149798/how-to-reset-a-socket-back-to-blocking-mode-after-i-set-it-to-nonblocking-mode?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+{
+    bool ret = true;
+#ifdef WIN32
+    /// @note windows sockets are created in blocking mode by default
+    // currently on windows, there is no easy way to obtain the socket's current blocking mode since WSAIsBlocking was deprecated
+    u_long non_blocking = is_blocking ? 0 : 1;
+    ret = NO_ERROR == ioctlsocket(sock,FIONBIO,&non_blocking);
+#else
+    const int flags = fcntl(socket, F_GETFL, 0);
+    if ((flags & O_NONBLOCK) && !is_blocking) { fprintf(stderr,"set_blocking_mode(): socket was already in non-blocking mode\n"); return ret; }
+    if (!(flags & O_NONBLOCK) && is_blocking) { fprintf(stderr,"set_blocking_mode(): socket was already in blocking mode\n"); return ret; }
+    ret = 0 == fcntl(sock, F_SETFL, is_blocking ? flags ^ O_NONBLOCK : flags | O_NONBLOCK));
+#endif
+    if ( ret == 0 )
+        return(-1);
+    else return(0);
+}
+
+int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,int32_t addrlen)
+{
+    timeval tv; fd_set wfd,efd; int32_t res,so_error,len;
+    fcntl(sock,F_SETFL,O_NONBLOCK);
+    res = connect(sock,saddr,addrlen);
+    if ( res == -1 )
+    {
+        if ( errno != EINPROGRESS ) // connect failed, do something...
+        {
+            closesocket(sock);
+            return(-1);
+        }
+        FD_ZERO(&wfd);
+        FD_SET(sock,&wfd);
+        FD_ZERO(&efd);
+        FD_SET(sock,&efd);
+        tv.tv_sec = 5;
+        tv.tv_usec = 0;
+        res = select(sock+1,NULL,&wfd,&efd,&tv);
+        if ( res == -1 ) // select failed, do something...
+        {
+            closesocket(sock);
+            return(-1);
+        }
+        if ( res == 0 ) // connect timed out...
+        {
+            closesocket(sock);
+            return(-1);
+        }
+        if ( FD_ISSET(sock,&efd) )
+        {
+            // connect failed, do something...
+            getsockopt(sock,SOL_SOCKET,SO_ERROR,&so_error,&len);
+            closesocket(sock);
+            return(-1);
+        }
+    }
+    set_blocking_mode(sock,1);
+    return(sock);
+}
+
 int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
     int32_t opt,sock,result; char ipaddr[64],checkipaddr[64]; struct timeval timeout;
@@ -126,8 +186,10 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
     {
         uint32_t starttime = (uint32_t)time(NULL);
         printf("call connect sock.%d\n",sock);
-        result = connect(sock,(struct sockaddr *)&saddr,addrlen);
+        result = komodo_connect(sock,(struct sockaddr *)&saddr,addrlen);
         printf("called connect result.%d lag.%d\n",result,(int32_t)(time(NULL) - starttime));
+        if ( result < 0 )
+            return(-1);
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
         setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
