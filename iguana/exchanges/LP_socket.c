@@ -28,8 +28,8 @@
 
 int32_t set_blocking_mode(int32_t sock,int32_t is_blocking) // from https://stackoverflow.com/questions/2149798/how-to-reset-a-socket-back-to-blocking-mode-after-i-set-it-to-nonblocking-mode?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
 {
-    bool ret;
-#ifdef WIN32
+    int32_t ret;
+#ifdef _WIN32
     /// @note windows sockets are created in blocking mode by default
     // currently on windows, there is no easy way to obtain the socket's current blocking mode since WSAIsBlocking was deprecated
     u_long non_blocking = is_blocking ? 0 : 1;
