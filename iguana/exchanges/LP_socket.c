@@ -28,17 +28,17 @@
 
 int32_t set_blocking_mode(int32_t sock,int32_t is_blocking) // from https://stackoverflow.com/questions/2149798/how-to-reset-a-socket-back-to-blocking-mode-after-i-set-it-to-nonblocking-mode?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
 {
-    bool ret = true;
+    bool ret;
 #ifdef WIN32
     /// @note windows sockets are created in blocking mode by default
     // currently on windows, there is no easy way to obtain the socket's current blocking mode since WSAIsBlocking was deprecated
     u_long non_blocking = is_blocking ? 0 : 1;
-    ret = NO_ERROR == ioctlsocket(sock,FIONBIO,&non_blocking);
+    ret = (NO_ERROR == ioctlsocket(sock,FIONBIO,&non_blocking));
 #else
-    const int flags = fcntl(socket, F_GETFL, 0);
+    const int flags = fcntl(sock, F_GETFL, 0);
     if ((flags & O_NONBLOCK) && !is_blocking) { fprintf(stderr,"set_blocking_mode(): socket was already in non-blocking mode\n"); return ret; }
     if (!(flags & O_NONBLOCK) && is_blocking) { fprintf(stderr,"set_blocking_mode(): socket was already in blocking mode\n"); return ret; }
-    ret = 0 == fcntl(sock, F_SETFL, is_blocking ? flags ^ O_NONBLOCK : flags | O_NONBLOCK));
+    ret = (0 == fcntl(sock, F_SETFL, is_blocking ? (flags ^ O_NONBLOCK) : (flags | O_NONBLOCK)));
 #endif
     if ( ret == 0 )
         return(-1);
