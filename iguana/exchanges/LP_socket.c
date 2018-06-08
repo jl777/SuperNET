@@ -47,7 +47,7 @@ int32_t set_blocking_mode(int32_t sock,int32_t is_blocking) // from https://stac
 
 int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
 {
-    struct timeval tv; fd_set wfd,efd; int32_t res,so_error,len;
+    struct timeval tv; fd_set wfd,efd; int32_t res,so_error; socklen_t len;
     fcntl(sock,F_SETFL,O_NONBLOCK);
     res = connect(sock,saddr,addrlen);
     if ( res == -1 )
