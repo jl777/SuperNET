@@ -428,7 +428,7 @@ struct LP_swapstats
 
 struct LP_pubswap { struct LP_pubswap *next,*prev; struct LP_swapstats *swap; };
 
-#define LP_MAXPRICEINFOS 256
+#define LP_MAXPRICEINFOS 512
 struct LP_pubkey_info
 {
     UT_hash_handle hh;
