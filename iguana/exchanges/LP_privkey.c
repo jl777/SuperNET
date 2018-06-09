@@ -593,7 +593,7 @@ char *verusblocks()
     }
     if ( num > 0 )
     {
-        if ( 0 )
+        if ( 1 )
         {
             for (i=0; i<sizeof(histo)/sizeof(*histo); i++)
                 if ( histo[i] != 0 )
