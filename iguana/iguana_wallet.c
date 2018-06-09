@@ -1402,7 +1402,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
 
 THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
 {
-    char *retstr,buf[128],wifstr[128]; cJSON *retjson; int32_t need_KMD = 0,need_BTC = 0,need_GAME = 0;
+    char *retstr,buf[128],wifstr[128]; cJSON *retjson; int32_t need_HUSH = 0,need_KMD = 0,need_BTC = 0,need_GAME = 0;
     if ( remoteaddr != 0 || coin == 0 )
         return(clonestr("{\"error\":\"no remote encrypt or no coin\"}"));
     iguana_walletlock(myinfo,coin);
@@ -1441,10 +1441,17 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
             need_BTC = 1;
         if ( strcmp(coin->symbol,"GAME") != 0 )
             need_GAME = 1;
+        if ( strcmp(coin->symbol,"HUSH") != 0 )
+            need_HUSH = 1;
         if ( need_KMD != 0 && (coin= iguana_coinfind("KMD")) != 0 )
         {
             bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
             jaddstr(retjson,"KMDwif",wifstr);
+        }
+        if ( need_HUSH != 0 && (coin= iguana_coinfind("HUSH")) != 0 )
+        {
+            bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
+            jaddstr(retjson,"HUSHwif",wifstr);
         }
         if ( (coin= iguana_coinfind("LTC")) != 0 )
         {

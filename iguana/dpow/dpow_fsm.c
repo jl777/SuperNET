@@ -235,7 +235,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
     *MoMdepthp = 0;
     memset(MoM.bytes,0,sizeof(MoM));
-    if ( strcmp(coin->symbol,"GAME") == 0 ) // 80 byte OP_RETURN limit
+    if ( strcmp(coin->symbol,"GAME") == 0 || strcmp(coin->symbol,"HUSH") == 0 ) // 80 byte OP_RETURN limit
         return(MoM);
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
@@ -521,7 +521,7 @@ void dpow_statemachinestart(void *ptr)
         if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
             src_or_dest = 0;
         else src_or_dest = 1;
-        extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
+        extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
     printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld MoM[%d] %s\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL),bp->MoMdepth,bits256_str(str2,bp->MoM));
@@ -542,7 +542,7 @@ void dpow_statemachinestart(void *ptr)
             if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
                 src_or_dest = 0;
             else src_or_dest = 1;
-            extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
+            extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&

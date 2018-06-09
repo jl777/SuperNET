@@ -430,9 +430,6 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     portable_mutex_init(&dp->paxmutex);
     portable_mutex_init(&dp->dexmutex);
     PAX_init();
-    //printf(">>>>>>>>>>>>>>> call paxpending\n");
-    //uint8_t buf[32768];
-    //dpow_paxpending(buf);
     dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
     for (i=0; i<33; i++)
