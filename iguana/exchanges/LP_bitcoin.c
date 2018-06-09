@@ -2013,14 +2013,14 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
 
 char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *method,char *params,int32_t timeout)
 {
-    struct iguana_info *coin; char *retstr;
+    /*struct iguana_info *coin; char *retstr;
     if ( (coin= LP_coinfind(coinstr)) != 0 )
     {
         portable_mutex_lock(&coin->curl_mutex);
         retstr = bitcoind_RPCnew(coin->curl_handle,0,coinstr,serverport,userpass,method,params,timeout);
         portable_mutex_unlock(&coin->curl_mutex);
         return(retstr);
-    }
+    }*/
     return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,timeout));
 }
 
