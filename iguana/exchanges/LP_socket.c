@@ -57,9 +57,15 @@ int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
     fcntl(sock, F_SETFL, O_NONBLOCK);
 #endif // _WIN32
     res = connect(sock,saddr,addrlen);
+
     if ( res == -1 )
     {
-        if ( errno != EINPROGRESS ) // connect failed, do something...
+#ifdef _WIN32
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/ms737625%28v=vs.85%29.aspx - read about WSAEWOULDBLOCK return
+        if (!(( errno == EINPROGRESS) || ( errno = WSAEWOULDBLOCK))) // connect failed, do something...
+#else
+		if (errno != EINPROGRESS) // connect failed, do something...
+#endif
         {
             closesocket(sock);
             return(-1);
