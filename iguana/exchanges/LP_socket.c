@@ -62,15 +62,19 @@ int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
     {
 #ifdef _WIN32
 		// https://msdn.microsoft.com/en-us/library/windows/desktop/ms737625%28v=vs.85%29.aspx - read about WSAEWOULDBLOCK return
-        if ( errno != EINPROGRESS && errno != WSAEWOULDBLOCK ) // connect failed, do something...
+		errno = WSAGetLastError();
+		printf("[Decker] errno.%d --> ", errno);
+		if ( errno != EINPROGRESS && errno != WSAEWOULDBLOCK ) // connect failed, do something...
 #else
 		if ( errno != EINPROGRESS ) // connect failed, do something...
 #endif
         {
-            closesocket(sock);
+			printf("close socket ...\n");
+			closesocket(sock);
             return(-1);
         }
-        FD_ZERO(&wfd);
+		printf("continue with select ...\n");
+		FD_ZERO(&wfd);
         FD_SET(sock,&wfd);
         FD_ZERO(&efd);
         FD_SET(sock,&efd);
