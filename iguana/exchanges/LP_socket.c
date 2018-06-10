@@ -200,7 +200,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
         setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
-        if ( result != 0 )
+        /*if ( result != 0 )
         {
             if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
             {
@@ -209,7 +209,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
             if ( sock >= 0 )
                 closesocket(sock);
             return(-1);
-        }
+        }*/
         timeout.tv_sec = 10;
         timeout.tv_usec = 0;
         setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
