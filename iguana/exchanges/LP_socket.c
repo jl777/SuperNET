@@ -90,7 +90,7 @@ int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
         }
     }
     set_blocking_mode(sock,1);
-    return(sock);
+    return(0);
 }
 
 int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
