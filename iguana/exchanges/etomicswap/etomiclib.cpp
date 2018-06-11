@@ -704,6 +704,21 @@ std::stringstream getErc20TransferData(char *tokenAddress, char *to, char *amoun
     return ss;
 }
 
+uint64_t estimate_erc20_gas(
+    char *tokenAddress,
+    char *to,
+    char *amount,
+    char *privKey,
+    uint8_t decimals
+)
+{
+    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount, decimals);
+    char *from = privKey2Addr(privKey);
+    uint64_t result = estimateGas(from, tokenAddress, ss.str().c_str());
+    free(from);
+    return result;
+}
+
 char *sendErc20(
         char *tokenAddress,
         char *to,

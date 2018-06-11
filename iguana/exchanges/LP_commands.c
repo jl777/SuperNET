@@ -120,6 +120,7 @@ cancel(uuid)\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[], broadcast=0)\n\
+eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)\n\
 txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0, fast=0)\n\
