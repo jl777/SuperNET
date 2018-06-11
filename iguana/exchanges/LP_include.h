@@ -314,6 +314,7 @@ struct iguana_info
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash,decimals;
     int32_t privkeydepth;
+    void *curl_handle; portable_mutex_t curl_mutex;
     bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
 };
@@ -427,7 +428,7 @@ struct LP_swapstats
 
 struct LP_pubswap { struct LP_pubswap *next,*prev; struct LP_swapstats *swap; };
 
-#define LP_MAXPRICEINFOS 256
+#define LP_MAXPRICEINFOS 255
 struct LP_pubkey_info
 {
     UT_hash_handle hh;
