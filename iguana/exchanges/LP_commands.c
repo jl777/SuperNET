@@ -239,9 +239,14 @@ version\n\
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
-                if ( jint(argjson,"weeks") <= 0 || jdouble(argjson,"amount") < 10. )
-                    return(clonestr("{\"error\":\"instantdex_deposit needs to have weeks and amount\"}"));
-                else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
+                if ( jint(argjson,"weeks") <= 0 ) {
+                    return(clonestr("{\"error\":\"instantdex_deposit weeks param must be greater than zero\"}"));
+                }
+                if ( jdouble(argjson,"amount") < 10. ) {
+                    return(clonestr("{\"error\":\"instantdex_deposit amount param must be equal or greater than 10\"}"));
+                }
+
+                return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
