@@ -201,7 +201,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     if ( bindflag == 0 )
     {
-        if ( 0 )
+        if ( 1 ) // connect using async to allow timeout, then switch to sync
         {
             uint32_t starttime = (uint32_t)time(NULL);
             //printf("call connect sock.%d\n",sock);
