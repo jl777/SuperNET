@@ -201,6 +201,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     if ( bindflag == 0 )
     {
+//#ifdef _WIN32
         if ( 1 ) // connect using async to allow timeout, then switch to sync
         {
             uint32_t starttime = (uint32_t)time(NULL);
@@ -213,6 +214,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
             timeout.tv_usec = 0;
             setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
         }
+//#else
         else
         {
             result = connect(sock,(struct sockaddr *)&saddr,addrlen);
@@ -227,6 +229,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
+//#endif
     }
     else
     {
