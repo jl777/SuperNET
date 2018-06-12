@@ -78,7 +78,7 @@ int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
         FD_SET(sock,&wfd);
         FD_ZERO(&efd);
         FD_SET(sock,&efd);
-        tv.tv_sec = 5;
+        tv.tv_sec = 10;
         tv.tv_usec = 0;
         res = select(sock+1,NULL,&wfd,&efd,&tv);
         if ( res == -1 ) // select failed, do something...
