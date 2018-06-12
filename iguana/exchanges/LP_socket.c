@@ -201,28 +201,32 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     if ( bindflag == 0 )
     {
-        uint32_t starttime = (uint32_t)time(NULL);
-        //printf("call connect sock.%d\n",sock);
-        result = komodo_connect(sock,(struct sockaddr *)&saddr,addrlen);
-        //printf("called connect result.%d lag.%d\n",result,(int32_t)(time(NULL) - starttime));
-        if ( result < 0 )
-            return(-1);
-        timeout.tv_sec = 2;
-        timeout.tv_usec = 0;
-        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
-        /*if ( result != 0 )
+        if ( 1 ) // connect using async to allow timeout, then switch to sync
         {
-            if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
+            uint32_t starttime = (uint32_t)time(NULL);
+            //printf("call connect sock.%d\n",sock);
+            result = komodo_connect(sock,(struct sockaddr *)&saddr,addrlen);
+            //printf("called connect result.%d lag.%d\n",result,(int32_t)(time(NULL) - starttime));
+            if ( result < 0 )
+                return(-1);
+            timeout.tv_sec = 10;
+            timeout.tv_usec = 0;
+            setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+        }
+        else
+        {
+            result = connect(sock,(struct sockaddr *)&saddr,addrlen);
+            if ( result != 0 )
             {
-                //printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+                if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
+                {
+                    //printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+                }
+                if ( sock >= 0 )
+                    closesocket(sock);
+                return(-1);
             }
-            if ( sock >= 0 )
-                closesocket(sock);
-            return(-1);
-        }*/
-        timeout.tv_sec = 10;
-        timeout.tv_usec = 0;
-        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+        }
     }
     else
     {
