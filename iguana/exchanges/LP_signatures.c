@@ -442,6 +442,16 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddstr(reqjson,"pubsecp",pubsecpstr);
         if ( (kmd= LP_coinfind("KMD")) != 0 && (ap= LP_address(kmd,kmd->smartaddr)) != 0 && ap->instantdex_credits != 0 )
             jaddnum(reqjson,"credits",dstr(ap->instantdex_credits));
+#ifndef NOTETOMIC
+        if (basecoin->etomic[0] != 0) {
+            uint64_t etomic_coin_balance = LP_etomic_get_balance(basecoin, basecoin->smartaddr);
+            jaddstr(reqjson,"utxocoin","ETH_OR_ERC20");
+            jaddnum(reqjson,"bal",dstr(etomic_coin_balance));
+            jaddnum(reqjson,"min",dstr(etomic_coin_balance));
+            jaddnum(reqjson,"max",dstr(etomic_coin_balance));
+            jaddnum(reqjson,"n",1);
+        } else
+#endif
         if ( (numutxos= LP_address_minmax(1,&median,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
         {
             //printf("send %s numutxos.%d median %.8f min %.8f max %.8f\n",base,numutxos,dstr(median),dstr(minsize),dstr(maxsize));
