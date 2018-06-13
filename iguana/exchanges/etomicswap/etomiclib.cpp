@@ -554,10 +554,14 @@ char* getPubKeyFromPriv(char* privKey)
 uint64_t getEthBalance(char* address)
 {
     char* hexBalance = getEthBalanceRequest(address);
-    // convert wei to satoshi
-    u256 balance = jsToU256(hexBalance) / boost::multiprecision::pow(u256(10), 10);
-    free(hexBalance);
-    return static_cast<uint64_t>(balance);
+    if (hexBalance != NULL) {
+        // convert wei to satoshi
+        u256 balance = jsToU256(hexBalance) / boost::multiprecision::pow(u256(10), 10);
+        free(hexBalance);
+        return static_cast<uint64_t>(balance);
+    } else {
+        return 0;
+    }
 }
 
 uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals)
@@ -569,19 +573,23 @@ uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDe
     char* hexBalance = ethCall(tokenAddress, ss.str().c_str());
     // convert wei to satoshi
     uint8_t decimals;
-    if (setDecimals > 0) {
-        decimals = setDecimals;
-    } else {
-        decimals = getErc20Decimals(tokenAddress);
-    }
+    if (hexBalance != NULL) {
+        if (setDecimals > 0) {
+            decimals = setDecimals;
+        } else {
+            decimals = getErc20Decimals(tokenAddress);
+        }
 
-    u256 balance = jsToU256(hexBalance);
-    if (decimals < 18) {
-        balance *= boost::multiprecision::pow(u256(10), 18 - decimals);
+        u256 balance = jsToU256(hexBalance);
+        if (decimals < 18) {
+            balance *= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+        balance /= boost::multiprecision::pow(u256(10), 10);
+        free(hexBalance);
+        return static_cast<uint64_t>(balance);
+    } else {
+        return 0;
     }
-    balance /= boost::multiprecision::pow(u256(10), 10);
-    free(hexBalance);
-    return static_cast<uint64_t>(balance);
 }
 
 char *getErc20BalanceHexWei(char *address, char *tokenAddress)
