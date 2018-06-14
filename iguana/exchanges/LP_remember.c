@@ -80,6 +80,9 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"alicePaymentEthTx\":\"%s\"", swap->alicepayment.I.ethTxid);
         }
 
+        fprintf(fp,",\"aliceRealSat\":\"%" PRId64 "\"", swap->I.alicerealsat);
+        fprintf(fp,",\"bobRealSat\":\"%" PRId64 "\"", swap->I.bobrealsat);
+
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
             fprintf(fp,",\"alicetomic\":\"%s\"",swap->I.alicetomic);
@@ -920,6 +923,9 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                 if (jstr(txobj,"alicetomic") != 0) {
                     strcpy(rswap->alicetomic, jstr(txobj,"alicetomic"));
                 }
+
+                rswap->bobrealsat = jint(txobj, "bobRealSat");
+                rswap->alicerealsat = jint(txobj, "aliceRealSat");
 
                 rswap->txids[i] = txid;
                 if ( jstr(txobj,"Apayment") != 0 )

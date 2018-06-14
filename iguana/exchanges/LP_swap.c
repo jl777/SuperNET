@@ -1199,9 +1199,11 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     }
 #ifndef NOTETOMIC
     if (strcmp(alicestr, "ETOMIC") == 0) {
+        swap->I.alicerealsat = swap->I.alicesatoshis;
         swap->I.alicesatoshis = 100000000;
     }
     if (strcmp(bobstr, "ETOMIC") == 0) {
+        swap->I.bobrealsat = swap->I.bobsatoshis;
         swap->I.bobsatoshis = 100000000;
     }
 #endif
