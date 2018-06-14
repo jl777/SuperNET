@@ -1459,7 +1459,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( LP_aliceonly(Q.srccoin) > 0 )
         {
-            printf("{\"error\":\"GAME can only be alice coin\"}\n");
+            printf("{\"error\":\"alice only coins can only be alice coin\"}\n");
             return(retval);
         }
         if ( strcmp(method,"request") == 0 ) // bob
