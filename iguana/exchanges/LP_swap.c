@@ -1197,6 +1197,14 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         free(swap);
         return(0);
     }
+#ifndef NOTETOMIC
+    if (strcmp(alicestr, "ETOMIC") == 0) {
+        swap->I.alicesatoshis = 100000000;
+    }
+    if (strcmp(bobstr, "ETOMIC") == 0) {
+        swap->I.bobsatoshis = 100000000;
+    }
+#endif
     if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
