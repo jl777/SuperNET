@@ -676,6 +676,7 @@ char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_
     } else {
         tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
         if (tx.gasPrice == 0 && !defaultGasOnErr) {
+            printf("Could not get gas price from station!\n");
             unlock_send_tx_mutex();
             return NULL;
         }
@@ -764,6 +765,7 @@ char *sendErc20(
     } else {
         tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
         if (tx.gasPrice == 0 && !defaultGasOnErr) {
+            printf("Could not get gas price from station!\n");
             unlock_send_tx_mutex();
             return NULL;
         }

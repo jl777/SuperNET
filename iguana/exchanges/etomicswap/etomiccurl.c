@@ -320,6 +320,7 @@ uint64_t getGasPriceFromStation(uint8_t defaultOnErr)
         cJSON *resultJson = cJSON_Parse(s.ptr);
         free(s.ptr);
         if (resultJson == NULL) {
+            printf("Could not parse gas station response!\n");
             return result;
         }
 
