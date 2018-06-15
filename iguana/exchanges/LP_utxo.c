@@ -787,7 +787,14 @@ cJSON *LP_balances(char *coinaddr)
         }
         else
         {
-            if ( (balance= LP_RTsmartbalance(coin)) != 0 )
+#ifndef NOTETOMIC
+            if (coin->etomic[0] == 0 || coin->inactive == 0) {
+#endif
+                balance = LP_RTsmartbalance(coin);
+#ifndef NOTETOMIC
+            }
+#endif
+            if ( balance != 0 )
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"coin",coin->symbol);
