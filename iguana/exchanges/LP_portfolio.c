@@ -95,14 +95,12 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
     cJSON *array,*item; bits256 zero; int32_t i,n; uint64_t valuesum,satoshisum,value;
     valuesum = satoshisum = 0;
     memset(zero.bytes,0,sizeof(zero));
-/*
 #ifndef NOTETOMIC
     struct iguana_info *coin = LP_coinfind(symbol);
-    if (coin->etomic[0] != 0) {
+    if (coin->etomic[0] != 0 && coin->inactive == 0) {
         valuesum = LP_etomic_get_balance(coin, coinaddr);
     } else
 #endif
-*/
     if ( (array= LP_listunspent(symbol,coinaddr,zero,zero)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )

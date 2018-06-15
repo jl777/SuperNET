@@ -120,6 +120,7 @@ cancel(uuid)\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[], broadcast=0)\n\
+eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)\n\
 txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0, fast=0)\n\
@@ -176,7 +177,13 @@ getfee(coin)\n\
 sleep(seconds=60)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
+version\n\
 \"}"));
+    if ( strcmp(method,"version") == 0 ) {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result",MM_VERSION);
+        return(jprint(retjson,1));
+    }
 
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
@@ -232,9 +239,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
-                if ( jint(argjson,"weeks") <= 0 || jdouble(argjson,"amount") < 10. )
-                    return(clonestr("{\"error\":\"instantdex_deposit needs to have weeks and amount\"}"));
-                else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
+                if ( jint(argjson,"weeks") <= 0 ) {
+                    return(clonestr("{\"error\":\"instantdex_deposit weeks param must be greater than zero\"}"));
+                }
+                if ( jdouble(argjson,"amount") < 10. ) {
+                    return(clonestr("{\"error\":\"instantdex_deposit amount param must be equal or greater than 10\"}"));
+                }
+
+                return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
@@ -396,11 +408,6 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 jaddbits256(retjson,"privkey",privkey);
                 bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
-#ifndef NOTETOMIC
-                char ethaddr[50];
-                LP_etomic_pubkeystr_to_addr(pubsecp, ethaddr);
-                jaddstr(retjson,"ethaddr",ethaddr);
-#endif
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }
@@ -456,6 +463,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"inuse") == 0 )
             return(jprint(LP_inuse_json(),1));
+#ifndef NOTETOMIC
+        else if ( strcmp(method,"eth_gas_price") == 0 )
+        {
+            return LP_eth_gas_price();
+        }
+#endif
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
@@ -584,6 +597,23 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
+#ifndef NOT_ETOMIC
+                    if (strcmp(coin, "ETOMIC") == 0) {
+                        char eth_addr[100];
+                        bits256 privkey = LP_privkey("ETOMIC", ptr->smartaddr, ptr->taddr);
+                        LP_etomic_priv2addr(eth_addr, privkey);
+                        if (get_etomic_from_faucet(eth_addr, ptr->smartaddr) != 1) {
+                            return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
+                        }
+                    }
+
+                    if (ptr->etomic[0] != 0) {
+                        struct iguana_info *etomic_coin = LP_coinsearch("ETOMIC");
+                        if (etomic_coin->inactive != 0) {
+                            return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
+                        }
+                    }
+#endif
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         cJSON *array;

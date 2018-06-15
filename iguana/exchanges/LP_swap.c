@@ -854,7 +854,16 @@ void LP_bobloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     bobwaittimeout = LP_calc_waittimeout(bobstr);
     alicewaittimeout = LP_calc_waittimeout(alicestr);
-    if ( swap != 0 )
+#ifndef NOTETOMIC
+    if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0) {
+        uint64_t eth_balance = getEthBalance(swap->I.etomicsrc);
+        if (eth_balance < 500000) {
+            err = -5000, printf("Bob ETH balance too low, aborting swap!\n");
+        }
+    }
+#endif
+
+    if ( swap != 0 && err == 0)
     {
         if ( LP_waitsend("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             err = -2000, printf("error waitsend pubkeys\n");
@@ -948,7 +957,17 @@ void LP_aliceloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     bobwaittimeout = LP_calc_waittimeout(bobstr);
     alicewaittimeout = LP_calc_waittimeout(alicestr);
-    if ( swap != 0 )
+
+#ifndef NOTETOMIC
+    if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0) {
+        uint64_t eth_balance = getEthBalance(swap->I.etomicdest);
+        if (eth_balance < 500000) {
+            err = -5001, printf("Alice ETH balance too low, aborting swap!\n");
+        }
+    }
+#endif
+
+    if ( swap != 0 && err == 0)
     {
         printf("start swap iamalice pair.%d\n",swap->N.pair);
         if ( LP_sendwait("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
@@ -1179,6 +1198,16 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         free(swap);
         return(0);
     }
+#ifndef NOTETOMIC
+    if (strcmp(alicestr, "ETOMIC") == 0) {
+        swap->I.alicerealsat = swap->I.alicesatoshis;
+        swap->I.alicesatoshis = 100000000;
+    }
+    if (strcmp(bobstr, "ETOMIC") == 0) {
+        swap->I.bobrealsat = swap->I.bobsatoshis;
+        swap->I.bobsatoshis = 100000000;
+    }
+#endif
     if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )

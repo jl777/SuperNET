@@ -4,12 +4,6 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
       env: OS_NAME=Linux MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
     - os: osx
       compiler: clang
@@ -17,14 +11,34 @@ matrix:
       osx_image: xcode9.2
 
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7; fi
   - git submodule update --init --recursive
 
 script:
+  - export VERSION=`echo "$(git tag -l --points-at HEAD)"`
   - mkdir build && cd build
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
   - cmake --build . --target marketmaker-mainnet
+  - cmake --build . --target marketmaker-testnet
 
 cache:
-    directories:
-     - $HOME/.hunter
+  apt: true
+  directories:
+   - $HOME/.hunter
+
+before_deploy:
+  - export TAG=`echo "$(git rev-parse --short HEAD)"`
+  - mkdir deploy
+  - strip iguana/exchanges/marketmaker-mainnet
+  - strip iguana/exchanges/marketmaker-testnet
+  - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges marketmaker-mainnet marketmaker-testnet
+deploy:
+  provider: releases
+  api_key:
+    secure: "JDwFBGO4WLra9bXr2dsovet8y/ymC0Y+LJNr5/qlUIDt97zVytGbIlUc8BuI2VZFcnAvrtfOGdCs9m/PcLzZd4bMxXSsuaU0AJk/Vj9KzrIIGPJ4uS39KpO1USUpPW+5e0Bisf30JN3N2NypwMbMu42TKjVqaXSbVQfh79Iu6PdnyfiFbbTEfMeiRRrD72c00rwAw7kmndf7Sv9MiMN8WTFe0cQz5eH8GU/BSbnDorSrtClU4r7McR98zXaig/8XVcT543tcqdYW95QO7OqOjAid3XzzA/bPUTjC/nF/AyTJDco26nts0bCrCYeZRXIWdEInFLIeRHhHD7sW7dILRT/I7WlaLWnRtwo8e1L+U1k1yZ84dQMpgBznttdwH3vSj0crwCbFuMaRMMbPeW0H8C1VitLy1mlapw3RDI9yKlcw4V6WjPbz0YKhAoZgT/M/SaGr4ZkoWNCPoV5+Gub78p24Y8Y9BptJgj5t9KAcmDwbJ9wPt006ObWnbXvapo+6N5Dk2zuyQe9seoupzy4CAiNdluzAAVWsV/SjnN2aapjXoxaAaLQC6T8C1l1BpYri9LSKrjerr4QLVl/nw2yovAKNEobLLBVpSwfg4R72fu1BMS65gVsOqtFfs+R47CY+1D1Slev+UmKNMdE51+aXM+1XeC6wDUS5d13mW1NLhOE="
+  file_glob: true
+  file: "deploy/*"
+  on:
+    tags: true
+  skip_cleanup: true

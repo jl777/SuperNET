@@ -137,6 +137,11 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
 
 uint64_t LP_RTsmartbalance(struct iguana_info *coin)
 {
+#ifndef NOTETOMIC
+    if (coin->etomic[0] != 0) {
+        return LP_etomic_get_balance(coin, coin->smartaddr);
+    }
+#endif
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value; bits256 zero;
     valuesum = 0;
     memset(zero.bytes,0,sizeof(zero));

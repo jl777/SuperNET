@@ -1,7 +1,6 @@
 #include "etomiccurl.h"
 #include <curl/curl.h>
 
-static char *ethRpcUrl = ETOMIC_URL;
 pthread_mutex_t sendTxMutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct string {
@@ -36,10 +35,9 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
 
 cJSON *parseEthRpcResponse(char *requestResult)
 {
-    printf("Trying to parse ETH RPC response: %s\n", requestResult);
     cJSON *json = cJSON_Parse(requestResult);
     if (json == NULL) {
-        printf("ETH RPC response parse failed!\n");
+        printf("ETH RPC response parse failed: %s!\n", requestResult);
         return NULL;
     }
     cJSON *tmp = cJSON_GetObjectItem(json, "result");
@@ -56,7 +54,7 @@ cJSON *parseEthRpcResponse(char *requestResult)
     return result;
 }
 
-char* sendRequest(char* request)
+char* sendRequest(char *request, char *url)
 {
     CURL *curl;
     CURLcode res;
@@ -72,13 +70,15 @@ char* sendRequest(char* request)
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
-        curl_easy_setopt(curl, CURLOPT_URL, ethRpcUrl);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request);
         /* Perform the request, res will get the return code */
         res = curl_easy_perform(curl);
         /* Check for errors */
         if (res != CURLE_OK) {
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            curl_easy_cleanup(curl);
+            return NULL;
         }
 
         /* always cleanup */
@@ -98,7 +98,7 @@ cJSON *sendRpcRequest(char *method, cJSON *params)
     cJSON_AddItemToObject(request, "params", cJSON_Duplicate(params, 1));
     cJSON_AddNumberToObject(request, "id", 1);
     string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string);
+    char* requestResult = sendRequest(string, ETOMIC_URL);
     free(string);
     cJSON_Delete(request);
     cJSON *result = parseEthRpcResponse(requestResult);
@@ -151,8 +151,8 @@ char* sendRawTx(char* rawTx)
 
 int64_t getNonce(char* address)
 {
-    // we should lock this mutex and unlock it only when transaction was already sent.
-    // make sure that sendRawTx is called after getting a nonce!
+    // we should lock this mutex and unlock it only when transaction was already sent or failed.
+    // make sure that sendRawTx or unlock_send_tx_mutex is called after getting a nonce!
     if (pthread_mutex_lock(&sendTxMutex) != 0) {
         printf("Nonce mutex lock failed\n");
     };
@@ -186,7 +186,7 @@ char* getEthBalanceRequest(char* address)
     return balance;
 }
 
-char* ethCall(char* to, const char* data)
+char *ethCall(char *to, const char *data)
 {
     cJSON *params = cJSON_CreateArray();
     cJSON *txObject = cJSON_CreateObject();
@@ -196,10 +196,30 @@ char* ethCall(char* to, const char* data)
     cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
     cJSON *resultJson = sendRpcRequest("eth_call", params);
     cJSON_Delete(params);
-    char* result = NULL;
+    char *result = NULL;
     if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
         result = (char *) malloc(strlen(resultJson->valuestring) + 1);
         strcpy(result, resultJson->valuestring);
+    }
+    cJSON_Delete(resultJson);
+    return result;
+}
+
+uint64_t estimateGas(char *from, char *to, const char *data)
+{
+    cJSON *params = cJSON_CreateArray();
+    cJSON *txObject = cJSON_CreateObject();
+    cJSON_AddStringToObject(txObject, "from", from);
+    cJSON_AddStringToObject(txObject, "to", to);
+    cJSON_AddStringToObject(txObject, "data", data);
+    cJSON_AddItemToArray(params, txObject);
+    cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
+    cJSON *resultJson = sendRpcRequest("eth_estimateGas", params);
+    cJSON_Delete(params);
+    uint64_t result = 0;
+    if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
+        result = (uint64_t)strtoul(resultJson->valuestring, NULL, 0);
+        result = (result / 100) * 120; // add 20% because real gas usage might differ from estimate
     }
     cJSON_Delete(resultJson);
     return result;
@@ -265,7 +285,7 @@ EthTxData getEthTxData(char *txId)
     return result;
 }
 
-uint64_t getGasPriceFromStation()
+uint64_t getGasPriceFromStation(uint8_t defaultOnErr)
 {
     CURL *curl;
     CURLcode res;
@@ -283,6 +303,12 @@ uint64_t getGasPriceFromStation()
         curl_easy_setopt(curl, CURLOPT_URL, "https://ethgasstation.info/json/ethgasAPI.json");
         /* Perform the request, res will get the return code */
         res = curl_easy_perform(curl);
+        uint64_t result;
+        if (defaultOnErr == 1) {
+            result = DEFAULT_GAS_PRICE;
+        } else {
+            result = 0;
+        }
         /* Check for errors */
         if (res != CURLE_OK) {
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
@@ -292,9 +318,9 @@ uint64_t getGasPriceFromStation()
         /* always cleanup */
         curl_easy_cleanup(curl);
         cJSON *resultJson = cJSON_Parse(s.ptr);
-        uint64_t result = DEFAULT_GAS_PRICE;
         free(s.ptr);
         if (resultJson == NULL) {
+            printf("Could not parse gas station response!\n");
             return result;
         }
 
@@ -341,4 +367,42 @@ int32_t waitForConfirmation(char *txId)
     }
 
     return((int32_t)receipt.confirmations);
+}
+
+void unlock_send_tx_mutex()
+{
+    pthread_mutex_unlock(&sendTxMutex);
+}
+
+uint8_t get_etomic_from_faucet(char *eth_addr, char *etomic_addr)
+{
+    char* string;
+    cJSON *request = cJSON_CreateObject();
+    cJSON_AddStringToObject(request, "ethAddress", eth_addr);
+    cJSON_AddStringToObject(request, "etomicAddress", etomic_addr);
+    string = cJSON_PrintUnformatted(request);
+    char* requestResult = sendRequest(string, FAUCET_URL);
+    free(string);
+    cJSON_Delete(request);
+
+    if (requestResult == NULL) {
+        return 0;
+    }
+
+    cJSON *json = cJSON_Parse(requestResult);
+    if (json == NULL) {
+        printf("ETOMIC faucet response parse failed!\n");
+        return 0;
+    }
+    cJSON *error = cJSON_GetObjectItem(json, "error");
+    uint8_t result = 0;
+    if (error != NULL && !is_cJSON_Null(error)) {
+        char *errorString = cJSON_PrintUnformatted(error);
+        printf("Got ETOMIC faucet error: %s\n", errorString);
+        free(errorString);
+    } else {
+        result = 1;
+    }
+    cJSON_Delete(json);
+    return result;
 }
