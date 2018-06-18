@@ -190,7 +190,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         if ( strcmp(autxo->coinaddr,qp->destaddr) != 0 )
             return(-10);
     }
-    if ( autxo != 0 && destvalue < qp->desttxfee+qp->destsatoshis )
+    if ( strcmp(destcoin, "ETOMIC") != 0 && autxo != 0 && destvalue < qp->desttxfee+qp->destsatoshis )
     {
         printf("destvalue %.8f  destsatoshis %.8f is too small txfee %.8f?\n",dstr(destvalue),dstr(qp->destsatoshis),dstr(qp->desttxfee));
         return(-11);
@@ -1616,7 +1616,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         autxo->swap_satoshis = destsatoshis;
         //printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->swap_satoshis));
     }
-    else if ( autxo->swap_satoshis - desttxfee < destsatoshis )
+    else if ( autxo->swap_satoshis - desttxfee < destsatoshis && relcoin->etomic[0] == 0)
     {
         autxo->swap_satoshis -= desttxfee;
         destsatoshis = autxo->swap_satoshis;
