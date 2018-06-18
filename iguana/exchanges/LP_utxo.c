@@ -787,7 +787,14 @@ cJSON *LP_balances(char *coinaddr)
         }
         else
         {
-            if ( (balance= LP_RTsmartbalance(coin)) != 0 )
+#ifndef NOTETOMIC
+            if (coin->etomic[0] == 0 || coin->inactive == 0) {
+#endif
+                balance = LP_RTsmartbalance(coin);
+#ifndef NOTETOMIC
+            }
+#endif
+            if ( balance != 0 )
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"coin",coin->symbol);
@@ -1185,7 +1192,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         return(-1);
     }
     destaddr[0] = destaddr2[0] = 0;
-    if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
+    if ( coin != 0 && (strcmp(coin->symbol, "ETOMIC") == 0 || (coin->inactive != 0 && IAMLP != 0)))
         bypass = 1;
     if ( bypass != 0 )
         val = satoshis;
