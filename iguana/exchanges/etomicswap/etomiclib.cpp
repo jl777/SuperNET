@@ -4,6 +4,7 @@
 #include "etomiclib.h"
 #include "etomiccurl.h"
 #include <iostream>
+#include <regex>
 #include <cpp-ethereum/libethcore/Common.h>
 #include <cpp-ethereum/libethcore/CommonJS.h>
 #include <cpp-ethereum/libethcore/TransactionBase.h>
@@ -834,4 +835,10 @@ uint8_t compareAddresses(char *address1, char *address2)
     auto addr_bytes_1 = jsToAddress(address1);
     auto addr_bytes_2 = jsToAddress(address2);
     return static_cast<uint8_t>(addr_bytes_1 == addr_bytes_2);
+}
+
+uint8_t isValidAddress(char *address)
+{
+    std::regex r("^(0x|0X)?[a-fA-F0-9]{40}$");
+    return static_cast<uint8_t>(std::regex_match(address, r));
 }

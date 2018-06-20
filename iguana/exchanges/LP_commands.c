@@ -608,6 +608,10 @@ version\n\
                     }
 
                     if (ptr->etomic[0] != 0) {
+                        if (isValidAddress(ptr->etomic) == 0) {
+                            return(clonestr("{\"error\":\"'etomic' field is not valid address!\"}"));
+                        }
+
                         struct iguana_info *etomic_coin = LP_coinsearch("ETOMIC");
                         if (etomic_coin->inactive != 0) {
                             return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
