@@ -444,7 +444,8 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
             jaddnum(reqjson,"credits",dstr(ap->instantdex_credits));
 #ifndef NOTETOMIC
         if (basecoin->etomic[0] != 0) {
-            uint64_t etomic_coin_balance = LP_etomic_get_balance(basecoin, basecoin->smartaddr);
+            int error = 0;
+            uint64_t etomic_coin_balance = LP_etomic_get_balance(basecoin, basecoin->smartaddr, &error);
             jaddstr(reqjson,"utxocoin","ETH_OR_ERC20");
             jaddnum(reqjson,"bal",dstr(etomic_coin_balance));
             jaddnum(reqjson,"min",dstr(etomic_coin_balance));

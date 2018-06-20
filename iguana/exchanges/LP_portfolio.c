@@ -98,7 +98,13 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 #ifndef NOTETOMIC
     struct iguana_info *coin = LP_coinfind(symbol);
     if (coin->etomic[0] != 0 && coin->inactive == 0) {
-        valuesum = LP_etomic_get_balance(coin, coinaddr);
+        int error = 0;
+        uint64_t etomic_balance = LP_etomic_get_balance(coin, coinaddr, &error);
+        if (error == 0) {
+            valuesum = etomic_balance;
+        } else {
+            valuesum = *valuep;
+        }
     } else
 #endif
     if ( (array= LP_listunspent(symbol,coinaddr,zero,zero)) != 0 )

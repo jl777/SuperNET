@@ -773,7 +773,7 @@ uint8_t LP_etomic_is_empty_tx_id(char *txId)
     return 0;
 }
 
-uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr)
+uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *error)
 {
     if (coin->etomic[0] == 0) {
         printf("Trying to get etomic balance for non-etomic coin %s!", coin->symbol);
@@ -781,8 +781,8 @@ uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr)
     }
 
     if (strcmp(coin->symbol, "ETH") == 0) {
-        return getEthBalance(coinaddr);
+        return getEthBalance(coinaddr, error);
     } else {
-        return getErc20BalanceSatoshi(coinaddr, coin->etomic, coin->decimals);
+        return getErc20BalanceSatoshi(coinaddr, coin->etomic, coin->decimals, error);
     }
 }

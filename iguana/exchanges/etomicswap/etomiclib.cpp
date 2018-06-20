@@ -544,7 +544,7 @@ char* pubKey2Addr(char* pubKey)
     return stringStreamToChar(ss);
 };
 
-char* getPubKeyFromPriv(char* privKey)
+char* getPubKeyFromPriv(char *privKey)
 {
     Public publicKey = toPublic(Secret(privKey));
     std::stringstream ss;
@@ -552,7 +552,7 @@ char* getPubKeyFromPriv(char* privKey)
     return stringStreamToChar(ss);
 }
 
-uint64_t getEthBalance(char* address)
+uint64_t getEthBalance(char *address, int *error)
 {
     char* hexBalance = getEthBalanceRequest(address);
     if (hexBalance != NULL) {
@@ -561,11 +561,12 @@ uint64_t getEthBalance(char* address)
         free(hexBalance);
         return static_cast<uint64_t>(balance);
     } else {
+        *error = 1;
         return 0;
     }
 }
 
-uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals)
+uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error)
 {
     std::stringstream ss;
     ss << "0x70a08231"
@@ -589,6 +590,7 @@ uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDe
         free(hexBalance);
         return static_cast<uint64_t>(balance);
     } else {
+        *error = 1;
         return 0;
     }
 }
