@@ -616,6 +616,13 @@ version\n\
                         if (etomic_coin->inactive != 0) {
                             return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
                         }
+
+                        if (ptr->decimals == 0 && strcmp(coin, "ETH") != 0) {
+                            ptr->decimals = getErc20DecimalsZeroOnError(ptr->etomic);
+                            if (ptr->decimals == 0) {
+                                return(clonestr("{\"error\":\"Could not get token decimals or token has zero decimals which is not supported!\"}"));
+                            }
+                        }
                     }
 #endif
                     if ( LP_conflicts_find(ptr) == 0 )

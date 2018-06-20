@@ -636,6 +636,18 @@ uint8_t getErc20Decimals(char *tokenAddress)
     return decimals;
 }
 
+uint8_t getErc20DecimalsZeroOnError(char *tokenAddress)
+{
+    char* hexDecimals = ethCall(tokenAddress, "0x313ce567");
+    if (hexDecimals != NULL) {
+        auto decimals = (uint8_t) strtol(hexDecimals, NULL, 0);
+        free(hexDecimals);
+        return decimals;
+    } else {
+        return 0;
+    }
+}
+
 void uint8arrayToHex(char *dest, uint8_t *input, int len)
 {
     strcpy(dest, "0x");
