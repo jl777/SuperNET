@@ -599,10 +599,7 @@ version\n\
                     }
 #ifndef NOT_ETOMIC
                     if (strcmp(coin, "ETOMIC") == 0) {
-                        char eth_addr[100];
-                        bits256 privkey = LP_privkey("ETOMIC", ptr->smartaddr, ptr->taddr);
-                        LP_etomic_priv2addr(eth_addr, privkey);
-                        if (get_etomic_from_faucet(eth_addr, ptr->smartaddr) != 1) {
+                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
                             return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
                         }
                     }
@@ -696,6 +693,13 @@ version\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
+#ifndef NOTETOMIC
+                    if (strcmp(coin, "ETOMIC") == 0) {
+                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
+                            return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
+                        }
+                    }
+#endif
                     ptr->inactive = 0;
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
