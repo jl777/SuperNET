@@ -1950,7 +1950,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 
 char *LP_autosplit(struct iguana_info *coin)
 {
-    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,halfval,txfee;
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,txfee;
     if ( coin->etomic[0] == 0 )
     {
         if ( coin->electrum != 0 )
@@ -1962,17 +1962,21 @@ char *LP_autosplit(struct iguana_info *coin)
         //printf("balance %.8f, txfee %.8f, threshold %.8f\n",dstr(balance),dstr(txfee),dstr((1000000 - (txfee + 100000))));
         if ( balance > txfee && balance >= (1000000 - (txfee + 100000)) )
         {
-            halfval = (balance / 100) * 45;
+            // .95 / .02 / .02 / 0.005
+            //halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
             outputs = cJSON_CreateArray();
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddnum(item,coin->smartaddr,dstr(balance/100) * 95);
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddnum(item,coin->smartaddr,dstr(balance/50));
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(balance - 2*halfval));
+            jaddnum(item,coin->smartaddr,dstr(balance/50));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,0.0001);
             jaddi(outputs,item);
             jadd(argjson,"outputs",outputs);
             jaddnum(argjson,"broadcast",1);
