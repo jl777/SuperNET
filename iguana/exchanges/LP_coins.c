@@ -251,8 +251,9 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     }
 #ifndef NOTETOMIC
     else if (coin->etomic[0] != 0) {
+        int error = 0;
         if (coin->inactive == 0) {
-            balance = LP_etomic_get_balance(coin, coin->smartaddr);
+            balance = LP_etomic_get_balance(coin, coin->smartaddr, &error);
         } else {
             balance = 0;
         }
