@@ -970,7 +970,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     }
     else
     {
-        //printf("ignore as qprice %.8f vs myprice %.8f\n",qprice,myprice);
+        printf("ignore as qprice %.8f vs myprice %.8f\n",qprice,myprice);
         return(0);
     }
     //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
@@ -1469,6 +1469,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             if ( Q.destvout != Q.feevout || bits256_cmp(Q.desttxid,Q.feetxid) != 0 )
             {
                 bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
+                printf("bestprice %.8f\n",bestprice);
                 if ( Qtrades == 0 )//|| (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
                     LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
