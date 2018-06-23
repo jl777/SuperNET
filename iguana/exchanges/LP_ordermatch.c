@@ -1645,8 +1645,8 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         }
     }
     int32_t changed;
-    Q.gtcflag = gtcflag;
-    Q.fillflag = fillflag;
+    Q.gtc = gtcflag;
+    Q.fill = fillflag;
     LP_mypriceset(&changed,rel,base,1. / maxprice);
     LP_mypriceset(&changed,base,rel,0.);
     if ( uuidstr == 0 || uuidstr[0] == 0 )

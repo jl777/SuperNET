@@ -28,7 +28,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     rp->timestamp = timestamp;
     rp->DEXselector = DEXselector;
     rp->fill = fillflag;
-    rp->gtc = gtc;
+    rp->gtc = gtcflag;
     safecopy(rp->src,src,sizeof(rp->src));
     safecopy(rp->dest,dest,sizeof(rp->dest));
     R = *rp;
