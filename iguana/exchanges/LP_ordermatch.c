@@ -1003,6 +1003,7 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
     {
         for (j=0; j<voliters; j++)
         {
+            printf("priceiter.%d voliter.%d price %.8f vol %.8f\n",i,j,price,dstr(qp->destsatoshis));
             if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
             {
                 strcpy(qp->gui,G.gui);
@@ -1018,7 +1019,7 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
             }
             qp->destsatoshis = (qp->destsatoshis * 7) >> 3;
         }
-        if ( j < voliters )
+        if ( butxo != 0 && j < voliters )
         {
             if ( qp->satoshis <= qp->txfee )
                 return(0);
@@ -1051,9 +1052,14 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
             printf("i.%d cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",i,(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis));
             return(0);
         }
+        else
+        {
+            price *= 0.995;
+            i++;
+        }
     }
     printf("%s/%s i.%d j.%d qprice %.8f myprice %.8f price %.8f [%.8f]\n",qp->srccoin,qp->destcoin,i,j,qprice,myprice,price,p);
-    if ( bits256_nonz(qp->txid) != 0 && bits256_nonz(qp->txid2) != 0 && LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
+    if ( butxo != 0 && bits256_nonz(qp->txid) != 0 && bits256_nonz(qp->txid2) != 0 && LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
         //printf("found unallocated txids\n");
         reqjson = LP_quotejson(qp);
