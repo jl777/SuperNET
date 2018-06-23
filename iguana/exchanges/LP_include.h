@@ -220,7 +220,7 @@ struct basilisk_request
     bits256 desthash;
     char src[68],dest[68];
     uint64_t destamount;
-    int32_t optionhours,DEXselector;
+    uint32_t optionhours,DEXselector;
 };
 
 struct basilisk_rawtx
@@ -380,7 +380,7 @@ struct LP_quoteinfo
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     int64_t othercredits;
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
-    uint32_t timestamp,quotetime,tradeid;
+    uint32_t timestamp,quotetime,tradeid,gtc,fill;
     int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65],uuidstr[65];
 };
