@@ -220,7 +220,7 @@ struct basilisk_request
     bits256 desthash;
     char src[68],dest[68];
     uint64_t destamount;
-    uint32_t optionhours,DEXselector:30,gtc:1,fill:1;
+    uint32_t optionhours,DEXselector;
 };
 
 struct basilisk_rawtx
