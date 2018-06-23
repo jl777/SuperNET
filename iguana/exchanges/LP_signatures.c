@@ -19,7 +19,7 @@
 //  marketmaker
 //
 
-struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector)
+struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector,int32_t fillflag,int32_t gtcflag)
 {
     struct basilisk_request R;
     memset(rp,0,sizeof(*rp));
@@ -27,6 +27,8 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     rp->srcamount = srcsatoshis;
     rp->timestamp = timestamp;
     rp->DEXselector = DEXselector;
+    rp->fill = fillflag;
+    rp->gtc = gtc;
     safecopy(rp->src,src,sizeof(rp->src));
     safecopy(rp->dest,dest,sizeof(rp->dest));
     R = *rp;
@@ -45,6 +47,10 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     if ( jobj(retjson,"gui") == 0 )
         jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jaddstr(retjson,"uuid",qp->uuidstr);
+    if ( qp->R.gtc != 0 )
+        jaddnum(retjson,"gtc",qp->R.gtc);
+    if ( qp->R.fill != 0 )
+        jaddnum(retjson,"fill",qp->R.fill);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
@@ -113,6 +119,8 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
     uint32_t rid,qid; char etomic[64],activesymbol[65],*etomicstr;
     memset(qp,0,sizeof(*qp));
+    qp->gtc = qp->R.gtc = juint(argjson,"gtc");
+    qp->fill = qp->R.fill = juint(argjson,"fill");
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->uuidstr,jstr(argjson,"uuid"),sizeof(qp->uuidstr));
