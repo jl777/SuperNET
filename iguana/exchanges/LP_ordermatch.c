@@ -1004,7 +1004,7 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
         for (j=0; j<voliters; j++)
         {
             printf("priceiter.%d voliter.%d price %.8f vol %.8f\n",i,j,price,dstr(qp->destsatoshis));
-            if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
+            if ( (butxo= LP_address_myutxopair(&B,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
             {
                 strcpy(qp->gui,G.gui);
                 strcpy(qp->coinaddr,coin->smartaddr);
@@ -1017,7 +1017,7 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
                 qp->quotetime = (uint32_t)time(NULL);
                 break;
             }
-            qp->destsatoshis = (qp->destsatoshis * 7) >> 3;
+            qp->destsatoshis = (qp->destsatoshis * 2) / 3;
         }
         if ( butxo != 0 && j < voliters )
         {
