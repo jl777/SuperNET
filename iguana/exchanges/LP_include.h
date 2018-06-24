@@ -380,7 +380,7 @@ struct LP_quoteinfo
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     int64_t othercredits;
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
-    uint32_t timestamp,quotetime,tradeid,gtc,fill;
+    uint32_t timestamp,quotetime,tradeid,gtc,fill,mpnet;
     int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65],uuidstr[65];
 };
