@@ -173,8 +173,8 @@ char* pubKey2Addr(char* pubKey);
 char* getPubKeyFromPriv(char* privKey);
 
 // returns satoshis, not wei!
-uint64_t getEthBalance(char* address);
-uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals);
+uint64_t getEthBalance(char* address, int *error);
+uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error);
 char *getErc20BalanceHexWei(char* address, char tokenAddress[65]);
 
 uint8_t getErc20Decimals(char *tokenAddress);
@@ -212,6 +212,10 @@ uint64_t estimate_erc20_gas(
         char *privKey,
         uint8_t decimals
 );
+
+uint8_t compareAddresses(char *address1, char *address2);
+uint8_t isValidAddress(char *address);
+uint8_t getErc20DecimalsZeroOnError(char *tokenAddress);
 
 #ifdef __cplusplus
 }

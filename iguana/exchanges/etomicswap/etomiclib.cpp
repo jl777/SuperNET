@@ -4,6 +4,7 @@
 #include "etomiclib.h"
 #include "etomiccurl.h"
 #include <iostream>
+#include <regex>
 #include <cpp-ethereum/libethcore/Common.h>
 #include <cpp-ethereum/libethcore/CommonJS.h>
 #include <cpp-ethereum/libethcore/TransactionBase.h>
@@ -543,7 +544,7 @@ char* pubKey2Addr(char* pubKey)
     return stringStreamToChar(ss);
 };
 
-char* getPubKeyFromPriv(char* privKey)
+char* getPubKeyFromPriv(char *privKey)
 {
     Public publicKey = toPublic(Secret(privKey));
     std::stringstream ss;
@@ -551,7 +552,7 @@ char* getPubKeyFromPriv(char* privKey)
     return stringStreamToChar(ss);
 }
 
-uint64_t getEthBalance(char* address)
+uint64_t getEthBalance(char *address, int *error)
 {
     char* hexBalance = getEthBalanceRequest(address);
     if (hexBalance != NULL) {
@@ -560,11 +561,12 @@ uint64_t getEthBalance(char* address)
         free(hexBalance);
         return static_cast<uint64_t>(balance);
     } else {
+        *error = 1;
         return 0;
     }
 }
 
-uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals)
+uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error)
 {
     std::stringstream ss;
     ss << "0x70a08231"
@@ -588,6 +590,7 @@ uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDe
         free(hexBalance);
         return static_cast<uint64_t>(balance);
     } else {
+        *error = 1;
         return 0;
     }
 }
@@ -633,6 +636,18 @@ uint8_t getErc20Decimals(char *tokenAddress)
     auto decimals = (uint8_t) strtol(hexDecimals, NULL, 0);
     free(hexDecimals);
     return decimals;
+}
+
+uint8_t getErc20DecimalsZeroOnError(char *tokenAddress)
+{
+    char* hexDecimals = ethCall(tokenAddress, "0x313ce567");
+    if (hexDecimals != NULL) {
+        auto decimals = (uint8_t) strtol(hexDecimals, NULL, 0);
+        free(hexDecimals);
+        return decimals;
+    } else {
+        return 0;
+    }
 }
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len)
@@ -827,4 +842,17 @@ uint8_t bobPaymentStatus(char *paymentId)
     auto status = (uint8_t) strtol(hexStatus + 130, NULL, 0);
     free(hexStatus);
     return status;
+}
+
+uint8_t compareAddresses(char *address1, char *address2)
+{
+    auto addr_bytes_1 = jsToAddress(address1);
+    auto addr_bytes_2 = jsToAddress(address2);
+    return static_cast<uint8_t>(addr_bytes_1 == addr_bytes_2);
+}
+
+uint8_t isValidAddress(char *address)
+{
+    std::regex r("^(0x|0X)?[a-fA-F0-9]{40}$");
+    return static_cast<uint8_t>(std::regex_match(address, r));
 }

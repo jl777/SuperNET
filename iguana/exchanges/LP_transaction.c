@@ -2136,6 +2136,11 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
     if (dest_addr == NULL) {
         return(clonestr("{\"error\":\"param 'to' is required!\"}"));
     }
+
+    if (isValidAddress(dest_addr) == 0) {
+        return(clonestr("{\"error\":\"'to' address is not valid!\"}"));
+    }
+
     amount = jdouble(argjson, "amount") * 100000000;
     if (amount == 0) {
         return(clonestr("{\"error\":\"'amount' is not set or equal to zero!\"}"));

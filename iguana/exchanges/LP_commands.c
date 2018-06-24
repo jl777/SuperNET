@@ -599,18 +599,26 @@ version\n\
                     }
 #ifndef NOT_ETOMIC
                     if (strcmp(coin, "ETOMIC") == 0) {
-                        char eth_addr[100];
-                        bits256 privkey = LP_privkey("ETOMIC", ptr->smartaddr, ptr->taddr);
-                        LP_etomic_priv2addr(eth_addr, privkey);
-                        if (get_etomic_from_faucet(eth_addr, ptr->smartaddr) != 1) {
+                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
                             return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
                         }
                     }
 
                     if (ptr->etomic[0] != 0) {
+                        if (isValidAddress(ptr->etomic) == 0) {
+                            return(clonestr("{\"error\":\"'etomic' field is not valid address!\"}"));
+                        }
+
                         struct iguana_info *etomic_coin = LP_coinsearch("ETOMIC");
                         if (etomic_coin->inactive != 0) {
                             return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
+                        }
+
+                        if (ptr->decimals == 0 && strcmp(coin, "ETH") != 0) {
+                            ptr->decimals = getErc20DecimalsZeroOnError(ptr->etomic);
+                            if (ptr->decimals == 0) {
+                                return(clonestr("{\"error\":\"Could not get token decimals or token has zero decimals which is not supported!\"}"));
+                            }
                         }
                     }
 #endif
@@ -685,6 +693,13 @@ version\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
+#ifndef NOTETOMIC
+                    if (strcmp(coin, "ETOMIC") == 0) {
+                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
+                            return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
+                        }
+                    }
+#endif
                     ptr->inactive = 0;
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
