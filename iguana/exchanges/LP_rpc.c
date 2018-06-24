@@ -1038,7 +1038,7 @@ cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t hei
     coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
     {
-        printf("unexpected electrum path for %s\n",symbol);
+        //printf("unexpected electrum path for %s\n",symbol);
         return(0);
     }
     if ( blockhashstr == 0 )
