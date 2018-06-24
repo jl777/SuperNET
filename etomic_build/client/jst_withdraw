@@ -1,3 +1,0 @@
-#!/bin/bash
-source userpass
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"eth_withdraw\",\"coin\":\"JST\",\"amount\":0.01,\"to\":\"0xdf90cbdd4e3ad2b76114a252424b08fc34a7b66c\",\"broadcast\":1,\"gas\":44280,\"gas_price\":3}"
