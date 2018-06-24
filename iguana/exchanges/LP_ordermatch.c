@@ -578,9 +578,14 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
 
 void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
 {
-    struct LP_gtcorder *gtc,*tmp; struct LP_quoteinfo *qp; uint64_t destvalue,destvalue2;
+    struct LP_gtcorder *gtc,*tmp; struct LP_quoteinfo *qp; uint64_t destvalue,destvalue2; uint32_t oldest = 0;
     if ( Alice_expiration != 0 )
         return;
+    DL_FOREACH_SAFE(GTCorders,gtc,tmp)
+    {
+        if ( gtc->cancelled == 0 && (oldest == 0 || gtc->pending < oldest) )
+            oldest = gtc->pending;
+    }
     DL_FOREACH_SAFE(GTCorders,gtc,tmp)
     {
         qp = &gtc->Q;
@@ -598,9 +603,9 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
         }
         else
         {
-            if ( time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
+            if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
             {
-                qp->timestamp = (uint32_t)time(NULL);
+                gtc->pending = qp->timestamp = (uint32_t)time(NULL);
                 LP_query(ctx,myipaddr,mypubsock,"request",qp);
                 LP_Alicequery = *qp, LP_Alicemaxprice = gtc->maxprice, Alice_expiration = qp->timestamp + 2*LP_AUTOTRADE_TIMEOUT, LP_Alicedestpubkey = qp->srchash;
                 char str[65]; printf("LP_gtc fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),gtc->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
