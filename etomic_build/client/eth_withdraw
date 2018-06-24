@@ -1,0 +1,3 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"eth_withdraw\",\"coin\":\"ETH\",\"amount\":0.01,\"to\":\"0xbab36286672fbdc7b250804bf6d14be0df69fa29\",\"broadcast\":1}"

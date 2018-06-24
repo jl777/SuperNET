@@ -220,7 +220,7 @@ struct basilisk_request
     bits256 desthash;
     char src[68],dest[68];
     uint64_t destamount;
-    int32_t optionhours,DEXselector;
+    uint32_t optionhours,DEXselector;
 };
 
 struct basilisk_rawtx
@@ -313,7 +313,7 @@ struct iguana_info
     void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash,decimals;
-    int32_t privkeydepth;
+    int32_t privkeydepth,bobfillheight;
     void *curl_handle; portable_mutex_t curl_mutex;
     bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
@@ -380,7 +380,7 @@ struct LP_quoteinfo
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     int64_t othercredits;
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
-    uint32_t timestamp,quotetime,tradeid;
+    uint32_t timestamp,quotetime,tradeid,gtc,fill;
     int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65],uuidstr[65];
 };
@@ -532,6 +532,7 @@ void HashKeccak(uint8_t *hash,void *data,size_t len);
 void test_validate(struct iguana_info *coin,char *signedtx);
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid);
 int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr,char *origcoinaddr);
+char *LP_autofillbob(struct iguana_info *coin,uint64_t satoshis);
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid);
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);

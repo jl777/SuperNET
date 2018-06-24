@@ -1887,7 +1887,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             if ( autofee != 0 && iter == 0 && strcmp(coin->symbol,"BTC") == 0 )
             {
                 txfee = newtxfee = LP_txfeecalc(coin,0,datalen);
-                printf("txfee %.8f -> newtxfee %.8f, numvins.%d\n",dstr(txfee),dstr(newtxfee),numvins);
+                printf("txfee %.8f -> newtxfee %.8f, numvins.%d datalen.%d\n",dstr(txfee),dstr(newtxfee),numvins,datalen);
                 for (i=0; i<numvins; i++)
                 {
                     item = jitem(vins,i);
@@ -1950,7 +1950,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 
 char *LP_autosplit(struct iguana_info *coin)
 {
-    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,halfval,txfee;
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,txfee;
     if ( coin->etomic[0] == 0 )
     {
         if ( coin->electrum != 0 )
@@ -1962,17 +1962,21 @@ char *LP_autosplit(struct iguana_info *coin)
         //printf("balance %.8f, txfee %.8f, threshold %.8f\n",dstr(balance),dstr(txfee),dstr((1000000 - (txfee + 100000))));
         if ( balance > txfee && balance >= (1000000 - (txfee + 100000)) )
         {
-            halfval = (balance / 100) * 45;
+            // .95 / .02 / .02 / 0.005
+            //halfval = (balance / 100) * 45;
             argjson = cJSON_CreateObject();
             outputs = cJSON_CreateArray();
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddnum(item,coin->smartaddr,dstr(balance/100) * 95);
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(halfval));
+            jaddnum(item,coin->smartaddr,dstr(balance/50));
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(balance - 2*halfval));
+            jaddnum(item,coin->smartaddr,dstr(balance/50));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,0.0001);
             jaddi(outputs,item);
             jadd(argjson,"outputs",outputs);
             jaddnum(argjson,"broadcast",1);
@@ -1984,6 +1988,43 @@ char *LP_autosplit(struct iguana_info *coin)
         } else return(clonestr("{\"error\":\"balance too small to autosplit, please make more deposits\"}"));
     }
     return(clonestr("{\"error\":\"couldnt autosplit\"}"));
+}
+
+char *LP_autofillbob(struct iguana_info *coin,uint64_t satoshis)
+{
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,txfee;
+    if ( coin->etomic[0] == 0 )
+    {
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
+        if ( strcmp("BTC",coin->symbol) == 0 )
+            txfee = LP_txfeecalc(coin,0,1000);
+        balance -= (txfee + 1000000);
+        if ( balance < (satoshis<<2) )
+            return(clonestr("{\"error\":\"couldnt autofill balance too small\"}"));
+        if ( balance > satoshis+3*txfee && balance >= (txfee + 1000000) )
+        {
+            argjson = cJSON_CreateObject();
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(satoshis + 3000000));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(LP_DEPOSITSATOSHIS(satoshis) + 3000000));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,0.0001);
+            jaddi(outputs,item);
+            jadd(argjson,"outputs",outputs);
+            jaddnum(argjson,"broadcast",0);
+            jaddstr(argjson,"coin",coin->symbol);
+            retstr = LP_withdraw(coin,argjson);
+            free_json(argjson);
+            return(retstr);
+        } else return(clonestr("{\"error\":\"balance too small to autosplit, please make more deposits\"}"));
+    }
+    return(clonestr("{\"error\":\"couldnt autofill etomic needs separate support\"}"));
 }
 
 char *LP_movecoinbases(char *symbol)

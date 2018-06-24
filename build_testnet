@@ -1,0 +1,6 @@
+docker-compose down
+cd build
+cmake --build . --target marketmaker-testnet
+cd ../
+docker-compose up -d
+./start_BEER_OTHER_trade.sh ETH
