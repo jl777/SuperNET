@@ -1145,7 +1145,7 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
                     {
                         if ( (hexstr= jstr(retjson,"hex")) != 0 )
                         {
-                            if ( (txidstr= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
+                            if ( (txidstr= LP_sendrawtransaction(coin->symbol,hexstr,0)) != 0 )
                             {
                                 printf("autofill created %s\n",txidstr);
                                 free(txidstr);
