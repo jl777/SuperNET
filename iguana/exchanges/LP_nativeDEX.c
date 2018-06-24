@@ -588,8 +588,8 @@ void LP_coinsloop(void *_coins)
                             {
                                 printf("autofill created %s\n",txidstr);
                                 free(txidstr);
+                                coin->fillsatoshis = coin->do_autofill_merge;
                                 coin->do_autofill_merge = 0;
-                                coin->fillsatoshis = satoshis;
                                 coin->bobfillheight = LP_getheight(&notarized,coin);
                             }
                         }
