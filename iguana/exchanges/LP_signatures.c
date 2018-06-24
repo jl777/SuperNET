@@ -726,7 +726,6 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
     }
     msg = jprint(reqjson,1);
-    if ( qp->mpnet == 0 || qp->fill == 0 || qp->gtc == 0 )
     {
         //printf("QUERY.(%s)\n",msg);
         if ( IPC_ENDPOINT >= 0 )
@@ -739,7 +738,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
         }
     }
-    else
+    if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
     {
         // send to mpnet
     }

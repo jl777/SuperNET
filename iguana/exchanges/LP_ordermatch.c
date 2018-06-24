@@ -526,7 +526,6 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 LP_importaddress(qp->destcoin,qp->destaddr);
                 LP_otheraddress(qp->srccoin,otheraddr,qp->destcoin,qp->destaddr);
                 LP_importaddress(qp->srccoin,otheraddr);
-                if ( qp->mpnet == 0 || qp->fill == 0 || qp->gtc == 0 )
                 {
                     bits256 zero;
                     memset(zero.bytes,0,sizeof(zero));
@@ -547,14 +546,13 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                     printf("send CONNECT for %u-%u\n",qp->R.requestid,qp->R.quoteid);
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                     if ( IPC_ENDPOINT >= 0 )
-                        LP_queuecommand(0,jprint(reqjson,1),IPC_ENDPOINT,-1,0);
-                    else free_json(reqjson);
+                        LP_queuecommand(0,jprint(reqjson,0),IPC_ENDPOINT,-1,0);
                 }
-                else
+                if ( qp->mpnet != 0 && qp->fill != 0 && qp->gtc != 0 )
                 {
                     // send to mpnet
-                    free_json(reqjson);
                 }
+                free_json(reqjson);
                 retval = 0;
             }
             else
@@ -592,7 +590,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
     DL_FOREACH_SAFE(GTCorders,gtc,tmp)
     {
         qp = &gtc->Q;
-        if ( (qp->mpnet == 0 || qp->fill == 0) && gtc->cancelled == 0 && (oldest == 0 || gtc->pending < oldest) )
+        if ( gtc->cancelled == 0 && (oldest == 0 || gtc->pending < oldest) )
             oldest = gtc->pending;
     }
     DL_FOREACH_SAFE(GTCorders,gtc,tmp)
@@ -612,7 +610,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
         }
         else
         {
-            if ( (qp->mpnet == 0 || qp->fill == 0) && gtc->pending <= oldest+60 && time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
+            if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
             {
                 gtc->pending = qp->timestamp = (uint32_t)time(NULL);
                 LP_query(ctx,myipaddr,mypubsock,"request",qp);
@@ -646,12 +644,11 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         DL_APPEND(GTCorders,gtc);
         portable_mutex_unlock(&LP_gtcmutex);
     }
-    if ( qp->mpnet == 0 || qp->gtc == 0 || qp->fill == 0 )
     {
         LP_query(ctx,myipaddr,mypubsock,"request",qp);
         LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
     }
-    else
+    if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
     {
         // send to mpnet
     }
@@ -680,6 +677,11 @@ int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quotein
 
 void LP_alicequery_clear()
 {
+    if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 )
+    {
+        LP_mypriceset(&changed,LP_Alicequery.destcoin,LP_Alicequery.srccoin,0.);
+        LP_mypriceset(&changed,LP_Alicequery.srccoin,LP_Alicequery.destcoin,0.);
+    }
     memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
     memset(&LP_Alicedestpubkey,0,sizeof(LP_Alicedestpubkey));
     LP_Alicemaxprice = 0.;
@@ -1201,14 +1203,13 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
         jaddnum(reqjson,"quotetime",qp->quotetime);
         jaddnum(reqjson,"pending",qp->timestamp + LP_RESERVETIME);
         jaddstr(reqjson,"method","reserved");
-        if ( qp->mpnet == 0 || qp->fill == 0 || qp->gtc == 0 )
         {
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
             bits256 zero;
             memset(zero.bytes,0,sizeof(zero));
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         }
-        else
+        if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
         {
             // send to mpnet
         }
