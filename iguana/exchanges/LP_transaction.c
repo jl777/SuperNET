@@ -1990,6 +1990,43 @@ char *LP_autosplit(struct iguana_info *coin)
     return(clonestr("{\"error\":\"couldnt autosplit\"}"));
 }
 
+char *LP_autofillbob(struct iguana_info *coin,uint64_t satoshis)
+{
+    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,txfee;
+    if ( coin->etomic[0] == 0 )
+    {
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
+        if ( (txfee= coin->txfee) == 0 ) // BTC
+            txfee = LP_txfeecalc(coin,0,500);
+        balance -= (txfee + 100000);
+        if ( balance < (satoshis<<2) )
+            return(clonestr("{\"error\":\"couldnt autofill balance too small\"}"));
+        if ( balance > satoshis+3*txfee && balance >= (1000000 - (txfee + 100000)) )
+        {
+            argjson = cJSON_CreateObject();
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(satoshis + txfee*3));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(LP_DEPOSITSATOSHIS(satoshis) + txfee*3));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,0.0001);
+            jaddi(outputs,item);
+            jadd(argjson,"outputs",outputs);
+            jaddnum(argjson,"broadcast",0);
+            jaddstr(argjson,"coin",coin->symbol);
+            retstr = LP_withdraw(coin,argjson);
+            free_json(argjson);
+            return(retstr);
+        } else return(clonestr("{\"error\":\"balance too small to autosplit, please make more deposits\"}"));
+    }
+    return(clonestr("{\"error\":\"couldnt autofill etomic needs separate support\"}"));
+}
+
 char *LP_movecoinbases(char *symbol)
 {
     static bits256 zero; bits256 utxotxid,txid; struct iguana_info *coin; cJSON *retjson,*outputs,*argjson,*txids,*unspents,*item,*gen,*output; int32_t i,n,utxovout; char *retstr,*hexstr;
