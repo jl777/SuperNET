@@ -623,7 +623,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->timestamp = (uint32_t)time(NULL);
     if ( qp->gtc != 0 )
     {
-        qp->uuidstr[0] = 'G';
+        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-3],"GTC");
         gtc = calloc(1,sizeof(*gtc));
         gtc->Q = *qp;
         gtc->maxprice = maxprice;
@@ -1100,6 +1100,8 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
                 qp->quotetime = (uint32_t)time(NULL);
                 break;
             }
+            if ( qp->fill != 0 )
+                break;
             qp->destsatoshis = (qp->destsatoshis * 2) / 3;
         }
         if ( butxo != 0 && j < voliters )
