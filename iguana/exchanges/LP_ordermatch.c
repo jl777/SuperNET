@@ -1163,26 +1163,10 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
             {
                 LP_address_utxo_reset(&num,coin);
                 satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
-                if ( LP_getheight(&notarized,coin) > coin->bobfillheight+3 && fabs(coin->fillsatoshis - satoshis)/satoshis > 0.1 )
+                if ( LP_getheight(&notarized,coin) > coin->bobfillheight+3 && fabs((double)coin->fillsatoshis - satoshis)/satoshis > 0.1 )
                 {
-                    if ( (retstr= LP_autofillbob(coin,satoshis*1.02)) != 0 )
-                    {
-                        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                        {
-                            if ( (hexstr= jstr(retjson,"hex")) != 0 )
-                            {
-                                if ( (txidstr= LP_sendrawtransaction(coin->symbol,hexstr,0)) != 0 )
-                                {
-                                    printf("autofill created %s\n",txidstr);
-                                    free(txidstr);
-                                    coin->fillsatoshis = satoshis;
-                                    coin->bobfillheight = LP_getheight(&notarized,coin);
-                                }
-                            }
-                            free_json(retjson);
-                        }
-                        free(retstr);
-                    }
+                    printf("queue up do_autofill_merge %.8f\n",dstr(satoshis));
+                    coin->do_autofill_merge = satoshis;
                 }
             }
             return(0);
