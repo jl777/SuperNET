@@ -677,6 +677,7 @@ int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quotein
 
 void LP_alicequery_clear()
 {
+    int32_t changed;
     if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 )
     {
         LP_mypriceset(&changed,LP_Alicequery.destcoin,LP_Alicequery.srccoin,0.);
