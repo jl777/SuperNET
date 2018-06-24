@@ -677,12 +677,6 @@ int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quotein
 
 void LP_alicequery_clear()
 {
-    int32_t changed;
-    if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 )
-    {
-        LP_mypriceset(&changed,LP_Alicequery.destcoin,LP_Alicequery.srccoin,0.);
-        LP_mypriceset(&changed,LP_Alicequery.srccoin,LP_Alicequery.destcoin,0.);
-    }
     memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
     memset(&LP_Alicedestpubkey,0,sizeof(LP_Alicedestpubkey));
     LP_Alicemaxprice = 0.;
@@ -691,11 +685,17 @@ void LP_alicequery_clear()
 
 int32_t LP_alice_eligible(uint32_t quotetime)
 {
+    int32_t changed;
     if ( Alice_expiration != 0 && quotetime > Alice_expiration )
     {
         if ( LP_Alicequery.uuidstr[0] != 0 )
             LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9999,LP_Alicequery.uuidstr);
         printf("time expired for Alice_request\n");
+        if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 )
+        {
+            LP_mypriceset(&changed,LP_Alicequery.destcoin,LP_Alicequery.srccoin,0.);
+            LP_mypriceset(&changed,LP_Alicequery.srccoin,LP_Alicequery.destcoin,0.);
+        }
         LP_alicequery_clear();
     }
     return(Alice_expiration == 0 || time(NULL) < Alice_expiration);
