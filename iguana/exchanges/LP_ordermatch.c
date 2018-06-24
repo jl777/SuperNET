@@ -1000,7 +1000,7 @@ double LP_trades_pricevalidate(struct LP_quoteinfo *qp,struct iguana_info *coin,
 struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
     int32_t voliters=10,priceiters=33;
-    double price=0.,p=0.,qprice,myprice,bestprice,range,bid,ask; uint64_t satoshis; struct iguana_info *coin,*othercoin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65],*retstr; struct LP_address_utxo *utxos[4096]; int32_t i,j,r,num,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
+    double price=0.,p=0.,qprice,myprice,bestprice,range,bid,ask; uint64_t satoshis; struct iguana_info *coin,*othercoin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson,*retjson; char str[65],*retstr,*txidstr; struct LP_address_utxo *utxos[4096]; int32_t i,j,notarized,r,num,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
 printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypub25519),qp->uuidstr+32,qp->fill,qp->gtc);
@@ -1135,13 +1135,25 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
         else if ( qp->fill != 0 || i == priceiters )
         {
             printf("i.%d cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f txfee %.8f\n",i,(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis),dstr(qp->txfee));
-            if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 )
+            if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 && LP_getheight(&notarized,coin) > coin->bobfillheight+3 )
             {
                 satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
                 LP_address_utxo_reset(&num,coin);
                 if ( (retstr= LP_autofillbob(coin,satoshis*1.02)) != 0 )
                 {
-                    printf("AUTOfill bob.(%s)\n",retstr);
+                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (hexstr= jstr(retjson,"hex")) != 0 )
+                        {
+                            if ( (txidstr= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
+                            {
+                                printf("autofill created %s\n",txidstr);
+                                free(txidstr);
+                                coin->bobfillheight = LP_getheight(&notarized,coin);
+                            }
+                        }
+                        free_json(retjson);
+                    }
                     free(retstr);
                 }
             }
