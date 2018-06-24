@@ -1135,26 +1135,29 @@ printf("bob %s received REQUEST.(%s) fill.%d gtc.%d\n",bits256_str(str,G.LP_mypu
         else if ( qp->fill != 0 || i == priceiters )
         {
             printf("i.%d cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f txfee %.8f\n",i,(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis),dstr(qp->txfee));
-            if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 && LP_getheight(&notarized,coin) > coin->bobfillheight+3 )
+            if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 )
             {
-                satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
                 LP_address_utxo_reset(&num,coin);
-                if ( (retstr= LP_autofillbob(coin,satoshis*1.02)) != 0 )
+                if (LP_getheight(&notarized,coin) > coin->bobfillheight+3 )
                 {
-                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
+                    if ( (retstr= LP_autofillbob(coin,satoshis*1.02)) != 0 )
                     {
-                        if ( (hexstr= jstr(retjson,"hex")) != 0 )
+                        if ( (retjson= cJSON_Parse(retstr)) != 0 )
                         {
-                            if ( (txidstr= LP_sendrawtransaction(coin->symbol,hexstr,0)) != 0 )
+                            if ( (hexstr= jstr(retjson,"hex")) != 0 )
                             {
-                                printf("autofill created %s\n",txidstr);
-                                free(txidstr);
-                                coin->bobfillheight = LP_getheight(&notarized,coin);
+                                if ( (txidstr= LP_sendrawtransaction(coin->symbol,hexstr,0)) != 0 )
+                                {
+                                    printf("autofill created %s\n",txidstr);
+                                    free(txidstr);
+                                    coin->bobfillheight = LP_getheight(&notarized,coin);
+                                }
                             }
+                            free_json(retjson);
                         }
-                        free_json(retjson);
+                        free(retstr);
                     }
-                    free(retstr);
                 }
             }
             return(0);
