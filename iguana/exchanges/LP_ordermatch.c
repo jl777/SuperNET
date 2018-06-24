@@ -623,7 +623,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->timestamp = (uint32_t)time(NULL);
     if ( qp->gtc != 0 )
     {
-        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-3],"GTC");
+        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
         gtc = calloc(1,sizeof(*gtc));
         gtc->Q = *qp;
         gtc->maxprice = maxprice;
