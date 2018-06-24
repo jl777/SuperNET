@@ -1887,7 +1887,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             if ( autofee != 0 && iter == 0 && strcmp(coin->symbol,"BTC") == 0 )
             {
                 txfee = newtxfee = LP_txfeecalc(coin,0,datalen);
-                printf("txfee %.8f -> newtxfee %.8f, numvins.%d\n",dstr(txfee),dstr(newtxfee),numvins);
+                printf("txfee %.8f -> newtxfee %.8f, numvins.%d datalen.%d\n",dstr(txfee),dstr(newtxfee),numvins,datalen);
                 for (i=0; i<numvins; i++)
                 {
                     item = jitem(vins,i);
@@ -1998,20 +1998,20 @@ char *LP_autofillbob(struct iguana_info *coin,uint64_t satoshis)
         if ( coin->electrum != 0 )
             balance = LP_unspents_load(coin->symbol,coin->smartaddr);
         else balance = LP_RTsmartbalance(coin);
-        if ( (txfee= coin->txfee) == 0 ) // BTC
-            txfee = LP_txfeecalc(coin,0,500);
-        balance -= (txfee + 100000);
+        if ( strcmp("BTC",coin->symbol) == 0 )
+            txfee = LP_txfeecalc(coin,0,1000);
+        balance -= (txfee + 1000000);
         if ( balance < (satoshis<<2) )
             return(clonestr("{\"error\":\"couldnt autofill balance too small\"}"));
-        if ( balance > satoshis+3*txfee && balance >= (1000000 - (txfee + 100000)) )
+        if ( balance > satoshis+3*txfee && balance >= (txfee + 1000000) )
         {
             argjson = cJSON_CreateObject();
             outputs = cJSON_CreateArray();
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(satoshis + txfee*3));
+            jaddnum(item,coin->smartaddr,dstr(satoshis + 3000000));
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(LP_DEPOSITSATOSHIS(satoshis) + txfee*3));
+            jaddnum(item,coin->smartaddr,dstr(LP_DEPOSITSATOSHIS(satoshis) + 3000000));
             jaddi(outputs,item);
             item = cJSON_CreateObject();
             jaddnum(item,coin->smartaddr,0.0001);
