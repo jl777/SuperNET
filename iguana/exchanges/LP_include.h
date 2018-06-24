@@ -311,7 +311,7 @@ struct iguana_info
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
-    uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
+    uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB,fillsatoshis;
     uint8_t pubkey33[33],zcash;
     int32_t privkeydepth,bobfillheight;
     void *curl_handle; portable_mutex_t curl_mutex;

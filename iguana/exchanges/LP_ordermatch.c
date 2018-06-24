@@ -1175,6 +1175,7 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
                                 {
                                     printf("autofill created %s\n",txidstr);
                                     free(txidstr);
+                                    coin->fillsatoshis = satoshis;
                                     coin->bobfillheight = LP_getheight(&notarized,coin);
                                 }
                             }
