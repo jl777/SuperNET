@@ -691,11 +691,11 @@ int32_t LP_alice_eligible(uint32_t quotetime)
         if ( LP_Alicequery.uuidstr[0] != 0 )
             LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9999,LP_Alicequery.uuidstr);
         printf("time expired for Alice_request\n");
-        if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 )
+        /*if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 ) cant do this! myprice is used to validate the order
         {
             LP_mypriceset(&changed,LP_Alicequery.destcoin,LP_Alicequery.srccoin,0.);
             LP_mypriceset(&changed,LP_Alicequery.srccoin,LP_Alicequery.destcoin,0.);
-        }
+        }*/
         LP_alicequery_clear();
     }
     return(Alice_expiration == 0 || time(NULL) < Alice_expiration);
