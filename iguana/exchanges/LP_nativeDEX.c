@@ -1110,7 +1110,7 @@ void LP_swapsloop(void *ctx)
                 sleep(6);
             }
         }
-        LP_gtc_iteration();
+        LP_gtc_iteration(ctx,LP_myipaddr,LP_mypubsock);
     }
 }
 

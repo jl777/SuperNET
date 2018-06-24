@@ -576,7 +576,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
     return(retval);
 }
 
-void LP_gtc_iteration()
+void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
 {
     struct LP_gtcorder *gtc,*tmp; struct LP_quoteinfo *qp; uint64_t destvalue,destvalue2;
     if ( Alice_expiration != 0 )
@@ -686,7 +686,7 @@ char *LP_cancel_order(char *uuidstr)
             struct LP_gtcorder *gtc,*tmp;
             DL_FOREACH_SAFE(GTCorders,gtc,tmp)
             {
-                if ( strcmp(gtc->uuidstr,uuidstr) == 0 )
+                if ( strcmp(gtc->Q.uuidstr,uuidstr) == 0 )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
@@ -696,12 +696,12 @@ char *LP_cancel_order(char *uuidstr)
                     {
                         gtc->cancelled = (uint32_t)time(NULL);
                         jaddstr(retjson,"status","uuid canceled");
-                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9997,gtc->uuidstr);
+                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9997,qp->uuidstr);
                     }
                     else
                     {
                         jaddstr(retjson,"status","uuid already canceled");
-                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9996,gtc->uuidstr);
+                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9996,qp->uuidstr);
                     }
                 }
             }
