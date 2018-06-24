@@ -1162,9 +1162,9 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
             if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 )
             {
                 LP_address_utxo_reset(&num,coin);
-                if (LP_getheight(&notarized,coin) > coin->bobfillheight+3 )
+                satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
+                if ( LP_getheight(&notarized,coin) > coin->bobfillheight+3 && fabs(coin->fillsatoshis - satoshis)/satoshis > 0.1 )
                 {
-                    satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
                     if ( (retstr= LP_autofillbob(coin,satoshis*1.02)) != 0 )
                     {
                         if ( (retjson= cJSON_Parse(retstr)) != 0 )
