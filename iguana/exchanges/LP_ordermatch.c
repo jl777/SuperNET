@@ -587,7 +587,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
         if ( gtc->cancelled == 0 && LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
         {
             gtc->cancelled = (uint32_t)time(NULL);
-            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-9997,gtc->uuidstr);
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-9997,qp->uuidstr);
         }
         if ( gtc->cancelled != 0 )
         {
@@ -601,7 +601,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
             if ( time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
             {
                 LP_query(ctx,myipaddr,mypubsock,"request",qp);
-                LP_Alicequery = *qp, LP_Alicemaxprice = gtc->maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
+                LP_Alicequery = *qp, LP_Alicemaxprice = gtc->maxprice, Alice_expiration = qp->timestamp + 2*LP_AUTOTRADE_TIMEOUT, LP_Alicedestpubkey = qp->srchash;
                 char str[65]; printf("LP_gtc fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),gtc->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
                 break;
             }
@@ -691,17 +691,17 @@ char *LP_cancel_order(char *uuidstr)
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"cancelled",uuidstr);
-                    jaddstr(retjson,"pending",gtc->pending);
+                    jaddnum(retjson,"pending",gtc->pending);
                     if ( gtc->cancelled == 0 )
                     {
                         gtc->cancelled = (uint32_t)time(NULL);
                         jaddstr(retjson,"status","uuid canceled");
-                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9997,qp->uuidstr);
+                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9997,gtc->Q.uuidstr);
                     }
                     else
                     {
                         jaddstr(retjson,"status","uuid already canceled");
-                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9996,qp->uuidstr);
+                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9996,gtc->Q.uuidstr);
                     }
                 }
             }
