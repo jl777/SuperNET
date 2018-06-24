@@ -18,6 +18,15 @@
 //  LP_ordermatch.c
 //  marketmaker
 //
+
+struct LP_gtcorder
+{
+    struct LP_gtcorder *next,*prev;
+    struct LP_quoteinfo Q;
+    double maxprice;
+    uint32_t cancelled,pending;
+} *GTCorders;
+
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
 double LP_Alicemaxprice;
 bits256 LP_Alicedestpubkey,LP_bobs_reserved;
@@ -567,10 +576,42 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
     return(retval);
 }
 
+void LP_gtc_iteration()
+{
+    struct LP_gtcorder *gtc,*tmp; struct LP_quoteinfo *qp; uint64_t destvalue,destvalue2;
+    if ( Alice_expiration != 0 )
+        return;
+    DL_FOREACH_SAFE(GTCorders,gtc,tmp)
+    {
+        qp = &gtc->Q;
+        if ( gtc->cancelled == 0 && LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
+        {
+            gtc->cancelled = (uint32_t)time(NULL);
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-9997,gtc->uuidstr);
+        }
+        if ( gtc->cancelled != 0 )
+        {
+            portable_mutex_lock(&LP_gtcmutex);
+            DL_DELETE(GTCorders,gtc);
+            free(gtc);
+            portable_mutex_unlock(&LP_gtcmutex);
+        }
+        else
+        {
+            if ( time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
+            {
+                LP_query(ctx,myipaddr,mypubsock,"request",qp);
+                LP_Alicequery = *qp, LP_Alicemaxprice = gtc->maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
+                char str[65]; printf("LP_gtc fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),gtc->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
+                break;
+            }
+        }
+    }
+}
+
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr)
 {
-    double price;
-    price = 0.;
+    struct LP_gtcorder *gtc;
     memset(qp->txid.bytes,0,sizeof(qp->txid));
     qp->txid2 = qp->txid;
     qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
@@ -578,8 +619,20 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         qp->tradeid = LP_rand();
     qp->srchash = destpubkey;
     strncpy(qp->uuidstr,uuidstr,sizeof(qp->uuidstr)-1);
+    qp->timestamp = (uint32_t)time(NULL);
+    if ( qp->gtc != 0 )
+    {
+        qp->uuidstr[0] = 'G';
+        gtc = calloc(1,sizeof(*gtc));
+        gtc->Q = *qp;
+        gtc->maxprice = maxprice;
+        gtc->pending = (uint32_t)time(NULL);
+        portable_mutex_lock(&LP_gtcmutex);
+        DL_APPEND(GTCorders,gtc);
+        portable_mutex_unlock(&LP_gtcmutex);
+    }
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
-    LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = destpubkey;
+    LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
     char str[65]; printf("LP_trade fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
     return(LP_recent_swaps(0,uuidstr));
 }
@@ -628,16 +681,45 @@ char *LP_cancel_order(char *uuidstr)
     int32_t num = 0; cJSON *retjson;
     if ( uuidstr != 0 )
     {
-        num = LP_trades_canceluuid(uuidstr);
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result","success");
-        jaddnum(retjson,"numentries",num);
-        if ( strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
+        if ( uuidstr[0] == 'G' )
         {
-            LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
-            LP_alicequery_clear();
-            jaddstr(retjson,"status","uuid canceled");
-        } else jaddstr(retjson,"status","will stop trade negotiation, but if swap started it wont cancel");
+            struct LP_gtcorder *gtc,*tmp;
+            DL_FOREACH_SAFE(GTCorders,gtc,tmp)
+            {
+                if ( strcmp(gtc->uuidstr,uuidstr) == 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"cancelled",uuidstr);
+                    jaddstr(retjson,"pending",gtc->pending);
+                    if ( gtc->cancelled == 0 )
+                    {
+                        gtc->cancelled = (uint32_t)time(NULL);
+                        jaddstr(retjson,"status","uuid canceled");
+                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9997,gtc->uuidstr);
+                    }
+                    else
+                    {
+                        jaddstr(retjson,"status","uuid already canceled");
+                        LP_failedmsg(gtc->Q.R.requestid,gtc->Q.R.quoteid,-9996,gtc->uuidstr);
+                    }
+                }
+            }
+            return(clonestr("{\"error\":\"gtc uuid not found\"}"));
+        }
+        else
+        {
+            num = LP_trades_canceluuid(uuidstr);
+            retjson = cJSON_CreateObject();
+            jaddstr(retjson,"result","success");
+            jaddnum(retjson,"numentries",num);
+            if ( strcmp(LP_Alicequery.uuidstr,uuidstr) == 0 )
+            {
+                LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9998,LP_Alicequery.uuidstr);
+                LP_alicequery_clear();
+                jaddstr(retjson,"status","uuid canceled");
+            } else jaddstr(retjson,"status","will stop trade negotiation, but if swap started it wont cancel");
+        }
         return(jprint(retjson,1));
     }
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
@@ -1668,7 +1750,6 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         }
     }
     int32_t changed;
-    Q.gtc = gtcflag;
     Q.fill = fillflag;
     LP_mypriceset(&changed,rel,base,1. / maxprice);
     LP_mypriceset(&changed,base,rel,0.);
