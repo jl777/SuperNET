@@ -513,7 +513,7 @@ void command_rpcloop(void *ctx)
 void LP_coinsloop(void *_coins)
 {
     static int32_t didfilescreate;
-    struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65],*retstr,*hexstr,*txidstr; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
@@ -575,6 +575,28 @@ void LP_coinsloop(void *_coins)
                 int32_t num;
                 LP_address_utxo_reset(&num,coin);
                 coin->did_addrutxo_reset = 1;
+            }
+            if ( coin->do_autofill_merge != 0 )
+            {
+                if ( (retstr= LP_autofillbob(coin,coin->do_autofill_merge*1.02)) != 0 )
+                {
+                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (hexstr= jstr(retjson,"hex")) != 0 )
+                        {
+                            if ( (txidstr= LP_sendrawtransaction(coin->symbol,hexstr,0)) != 0 )
+                            {
+                                printf("autofill created %s\n",txidstr);
+                                free(txidstr);
+                                coin->fillsatoshis = coin->do_autofill_merge;
+                                coin->do_autofill_merge = 0;
+                                coin->bobfillheight = LP_getheight(&notarized,coin);
+                            }
+                        }
+                        free_json(retjson);
+                    }
+                    free(retstr);
+                }
             }
             if ( coin->longestchain == 1 ) // special init value
                 coin->longestchain = LP_getheight(&notarized,coin);

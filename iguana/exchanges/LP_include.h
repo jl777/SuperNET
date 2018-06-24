@@ -303,7 +303,7 @@ struct iguana_info
 {
     UT_hash_handle hh;
     portable_mutex_t txmutex,addrmutex,addressutxo_mutex; struct LP_transaction *transactions; struct LP_address *addresses;
-    uint64_t txfee;
+    uint64_t txfee,do_autofill_merge;
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
@@ -311,7 +311,7 @@ struct iguana_info
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
-    uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
+    uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB,fillsatoshis;
     uint8_t pubkey33[33],zcash;
     int32_t privkeydepth,bobfillheight;
     void *curl_handle; portable_mutex_t curl_mutex;
@@ -380,7 +380,7 @@ struct LP_quoteinfo
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     int64_t othercredits;
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
-    uint32_t timestamp,quotetime,tradeid,gtc,fill;
+    uint32_t timestamp,quotetime,tradeid,gtc,fill,mpnet;
     int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65],uuidstr[65];
 };
