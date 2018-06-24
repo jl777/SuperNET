@@ -1807,7 +1807,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         }
     }
     int32_t changed;
-    Q.mpnet = 1;
+    Q.mpnet = 0;
     Q.fill = fillflag;
     Q.gtc = gtcflag;
     LP_mypriceset(&changed,rel,base,1. / maxprice);
