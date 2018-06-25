@@ -746,7 +746,7 @@ char *LP_cancel_order(char *uuidstr)
 
 char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
 {
-    cJSON *retjson; char otheraddr[64],*msg; double bid,ask,price,qprice; int32_t connected,pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
+    cJSON *retjson; char otheraddr[64],*msg; double bid,ask,price,qprice; int32_t changed,pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
     if ( bits256_cmp(qp->desthash,G.LP_mypub25519) != 0 )
     {
         LP_aliceid(qp->tradeid,qp->aliceid,"error1",0,0);
