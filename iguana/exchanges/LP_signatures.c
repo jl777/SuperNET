@@ -739,9 +739,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         }
     }
     if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
-    {
-        // send to mpnet
-    }
+        LP_mpnet_send(msg);
     free(msg);
 }
 

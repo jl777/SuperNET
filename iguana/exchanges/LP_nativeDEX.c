@@ -120,7 +120,7 @@ struct LP_globals
     uint64_t LP_skipstatus[10000];
     uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
-    uint32_t LP_sessionid,counter;
+    uint32_t LP_sessionid,counter,mpnet;
     int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
     char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[65],LP_NXTaddr[64];
     struct LP_privkey LP_privkeys[100];
@@ -172,6 +172,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 #include "LP_mmjson.c"
 #include "LP_socket.c"
+#include "LP_mpnet.c"
 #include "LP_secp.c"
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
@@ -480,6 +481,8 @@ int32_t LP_nanomsg_recvs(void *ctx)
         nonz += LP_sock_check("PULL",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
     }
     portable_mutex_unlock(&LP_nanorecvsmutex);
+    if ( G.mpnet != 0 )
+        LP_mpnet_check(ctx,origipaddr,LP_mypubsock);
     return(nonz);
 }
 
