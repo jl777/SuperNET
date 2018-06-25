@@ -1649,11 +1649,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     int32_t nonz,didremote=0;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
-    //if ( strcmp(G.USERPASS,"9894cc3a6f94afa8871d3633dce61a4444d48d670bacb229fb607064654ae81f") == 0 )
-    {
-        G.mpnet = 1;
-        printf("MPNET active\n");
-    }
     //LP_mpnet_init(); seems better to have the GUI send in persistent orders, exit mm is a cancel all
     while ( LP_STOP_RECEIVED == 0 )
     {

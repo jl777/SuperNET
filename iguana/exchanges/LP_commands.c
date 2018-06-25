@@ -173,6 +173,7 @@ unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint(port=5555)\n\
 getfee(coin)\n\
+mpnet(onoff)\n\
 sleep(seconds=60)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
@@ -237,6 +238,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"mpnet") == 0 )
+        {
+            G.mpnet = jint(argjson,"onoff");
+            printf("MPNET onoff.%d\n",G.mpnet);
+            return(clonestr("{\"status\":\"success\"}"));
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
