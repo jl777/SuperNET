@@ -149,7 +149,7 @@ cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
                 len = (hlen >> 1);
                 decode_hex(linebuf,len,hexstr);
                 buf = linebuf;
-                printf("hexstr.(%s)\n",hexstr);
+                //printf("hexstr.(%s)\n",hexstr);
                 if ( *buf == 0x6a )
                 {
                     buf++, len--;
@@ -158,7 +158,6 @@ cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
                         buf++, len--;
                         n = buf[0] + buf[1]*256;
                         buf += 2, len -= 2;
-                        printf("n.%d len.%d\n",n,len);
                         if ( n == len )
                         {
                             if ( (decodestr= MMJSON_decode(buf,len)) != 0 )
@@ -166,11 +165,11 @@ cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
                         }
                     }
                 }
-                if ( argjson == 0 )
+                if ( 0 && argjson == 0 )
                     printf("unhandled case.(%s)\n",hexstr);
             }
         }
-        if ( argjson == 0 )
+        if ( 0 && argjson == 0 )
             printf("unhandled tx.(%s)\n",jprint(txobj,0));
         free_json(txobj);
     }
@@ -187,7 +186,7 @@ void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_inf
     cJSON *argjson; char str[65];
     if ( LP_mpnet_find(txid) < 0 )
     {
-        printf("unique %s\n",bits256_str(str,txid));
+        //printf("unique %s\n",bits256_str(str,txid));
         if ( (argjson= LP_mpnet_parse(coin,txid)) != 0 )
         {
             printf("MPNET.(%s)\n",jprint(argjson,0));
