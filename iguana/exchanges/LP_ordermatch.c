@@ -550,7 +550,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 if ( qp->mpnet != 0 && qp->fill != 0 && qp->gtc != 0 )
                 {
                     char *msg = jprint(reqjson,0);
-                    LP_mpnet_send(0,msg,1);
+                    LP_mpnet_send(0,msg,1,0);
                     free(msg);
                 }
                 free_json(reqjson);
@@ -659,7 +659,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     {
         cJSON *reqjson = LP_quotejson(qp);
         char *msg = jprint(reqjson,1);
-        LP_mpnet_send(1,msg,qp->fill);
+        LP_mpnet_send(1,msg,qp->fill,0);
         free(msg);
     }
     char str[65]; printf("LP_trade mpnet.%d fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->mpnet,qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),qp->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
@@ -1208,7 +1208,7 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
         if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
         {
             char *msg = jprint(reqjson,0);
-            LP_mpnet_send(0,msg,1);
+            LP_mpnet_send(0,msg,1,0);
             free(msg);
         }
         free_json(reqjson);
