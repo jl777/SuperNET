@@ -140,7 +140,6 @@ void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr)
 cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
 {
     cJSON *txobj,*vouts,*sobj,*argjson = 0; char *decodestr,*hexstr; uint8_t *buf,linebuf[8192]; int32_t len,n,hlen;
-    cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
     if ( (txobj= LP_gettx("mpnet",coin->symbol,txid,0)) != 0 )
     {
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
