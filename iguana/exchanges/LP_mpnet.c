@@ -140,6 +140,7 @@ int32_t LP_mpnet_add(bits256 txid)
 
 int32_t LP_mpnet_remove(bits256 txid)
 {
+    int32_t i;
     if ( (i= LP_mpnet_find(txid)) >= 0 )
     {
         MPNET_txids[i] = MPNET_txids[--num_MPNET_txids];
@@ -150,6 +151,7 @@ int32_t LP_mpnet_remove(bits256 txid)
 
 void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info *coin,bits256 txid)
 {
+    cJSON *argjson;
     if ( LP_mpnet_find(txid) < 0 )
     {
         if ( (argjson= LP_mpnet_parse(coin,txid)) != 0 )
@@ -162,10 +164,10 @@ void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_inf
     }
 }
 
-cJSON *LP_mpnet_get(struct iguana_info *coin)
+cJSON *LP_mpnet_get(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info *coin)
 {
     static int32_t lastheight; static bits256 lasthash;
-    int32_t i,n=0,numtx,checkht = 0,height = 0; bits256 latesthash,zero; char hashstr[65],str[65]; cJSON *txs,*blockjson;
+    int32_t i,n=0,numtx,checkht = 0,height = 0; bits256 latesthash,hash,txid,zero; char hashstr[65],str[65]; cJSON *txs,*blockjson;
     memset(zero.bytes,0,sizeof(zero));
     latesthash = LP_getbestblockhash(coin);
     bits256_str(hashstr,latesthash);
