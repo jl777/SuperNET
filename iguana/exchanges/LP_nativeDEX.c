@@ -520,17 +520,17 @@ void LP_coinsloop(void *_coins)
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
-        LP_coinsloopBTC_stats.threshold = 20000.;
+        LP_coinsloopBTC_stats.threshold = 200000.;
     }
     else if ( strcmp("KMD",coins) == 0 )
     {
         strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
-        LP_coinsloopKMD_stats.threshold = 10000.;
+        LP_coinsloopKMD_stats.threshold = 100000.;
     }
     else
     {
         strcpy(LP_coinsloop_stats.name,"other coins loop");
-        LP_coinsloop_stats.threshold = 5000.;
+        LP_coinsloop_stats.threshold = 50000.;
     }
     while ( LP_STOP_RECEIVED == 0 )
     {
