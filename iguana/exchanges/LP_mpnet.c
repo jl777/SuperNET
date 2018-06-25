@@ -18,10 +18,44 @@
 //  marketmaker
 //
 
+bits256 MPNET_txids[1024];
+int32_t num_MPNET_txids;
+
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
 void LP_gtc_addorder(struct LP_quoteinfo *qp);
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson);
+
+int32_t LP_mpnet_find(bits256 txid)
+{
+    int32_t i;
+    for (i=0; i<num_MPNET_txids; i++)
+        if ( bits256_cmp(txid,MPNET_txids[i]) == 0 )
+            return(i);
+    return(-1);
+}
+
+int32_t LP_mpnet_add(bits256 txid)
+{
+    if ( num_MPNET_txids < sizeof(MPNET_txids)/sizeof(*MPNET_txids) )
+    {
+        MPNET_txids[num_MPNET_txids++] = txid;
+        return(num_MPNET_txids);
+    }
+    printf("MPNET_txids[] overflow\n");
+    return(-1);
+}
+
+int32_t LP_mpnet_remove(bits256 txid)
+{
+    int32_t i;
+    if ( (i= LP_mpnet_find(txid)) >= 0 )
+    {
+        MPNET_txids[i] = MPNET_txids[--num_MPNET_txids];
+        return(i);
+    }
+    return(-1);
+}
 
 int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp)
 {
@@ -105,8 +139,42 @@ void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr)
 
 cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
 {
-    cJSON *txobj,*argjson = 0;
-    
+    cJSON *txobj,*vouts,*sobj,*argjson = 0; char *decodestr,*hexstr; uint8_t *buf,linebuf[8192]; int32_t len,n,hlen;
+    cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
+    if ( (txobj= LP_gettx("mpnet",coin->symbol,txid,0)) != 0 )
+    {
+        if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
+        {
+            if ( (sobj= jobject(jitem(vouts,n-1),"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (hlen= strlen(hexstr)) < sizeof(linebuf)*2 )
+            {
+                len = (hlen >> 1);
+                decode_hex(linebuf,len,hexstr);
+                buf = linebuf;
+                printf("hexstr.(%s)\n",hexstr);
+                if ( *buf == 0x6a )
+                {
+                    buf++, len--;
+                    if ( *buf == 0x4d )
+                    {
+                        buf++, len--;
+                        n = buf[0] + buf[1]*256;
+                        buf += 2, len -= 2;
+                        printf("n.%d len.%d\n",n,len);
+                        if ( n == len )
+                        {
+                            if ( (decodestr= MMJSON_decode(buf,len)) != 0 )
+                                argjson = cJSON_Parse(decodestr);
+                        }
+                    }
+                }
+                if ( argjson == 0 )
+                    printf("unhandled case.(%s)\n",hexstr);
+            }
+        }
+        if ( argjson == 0 )
+            printf("unhandled tx.(%s)\n",jprint(txobj,0));
+        free_json(txobj);
+    }
     return(argjson);
 }
 
@@ -114,40 +182,6 @@ cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
 // 404bc4ac452db07ed16376b3d7e77dbfc22b4a68f7243797125bd0d3bdddf8d1
 // 893b46634456034a6d5d73b67026aa157b5e2addbfc6344dfbea6bae85f7dde0
 // 717c7ef9de8504bd331f3ef52ed0a16ea0e070434e12cb4d63f5f081e999c43d dup
-
-bits256 MPNET_txids[1024];
-int32_t num_MPNET_txids;
-
-int32_t LP_mpnet_find(bits256 txid)
-{
-    int32_t i;
-    for (i=0; i<num_MPNET_txids; i++)
-        if ( bits256_cmp(txid,MPNET_txids[i]) == 0 )
-            return(i);
-    return(-1);
-}
-
-int32_t LP_mpnet_add(bits256 txid)
-{
-    if ( num_MPNET_txids < sizeof(MPNET_txids)/sizeof(*MPNET_txids) )
-    {
-        MPNET_txids[num_MPNET_txids++] = txid;
-        return(num_MPNET_txids);
-    }
-    printf("MPNET_txids[] overflow\n");
-    return(-1);
-}
-
-int32_t LP_mpnet_remove(bits256 txid)
-{
-    int32_t i;
-    if ( (i= LP_mpnet_find(txid)) >= 0 )
-    {
-        MPNET_txids[i] = MPNET_txids[--num_MPNET_txids];
-        return(i);
-    }
-    return(-1);
-}
 
 void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info *coin,bits256 txid)
 {
