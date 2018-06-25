@@ -180,7 +180,7 @@ cJSON *LP_mpnet_get(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info 
             {
                 for (i=0; i<numtx; i++)
                 {
-                    txid = jstri(txs,i);
+                    txid = jbits256i(txs,i);
                     LP_mpnet_process(ctx,myipaddr,pubsock,coin,txid);
                     LP_mpnet_remove(txid);
                     printf("ht.%d n.%d i.%d %s\n",checkht,n,i,bits256_str(str,txid));
@@ -200,7 +200,7 @@ cJSON *LP_mpnet_get(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info 
             numtx = cJSON_GetArraySize(txs);
             for (i=0; i<numtx; i++)
             {
-                txid = jstri(txs,i);
+                txid = jbits256i(txs,i);
                 LP_mpnet_process(ctx,myipaddr,pubsock,coin,txid);
                 printf("mp i.%d %s\n",i,bits256_str(str,txid));
             }
