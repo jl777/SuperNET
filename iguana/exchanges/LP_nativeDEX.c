@@ -1649,6 +1649,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     int32_t nonz,didremote=0;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
+    LP_mpnet_init();
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
