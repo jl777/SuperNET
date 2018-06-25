@@ -21,6 +21,7 @@
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
 void LP_gtc_addorder(struct LP_quoteinfo *qp);
+char *LP_withdraw(struct iguana_info *coin,cJSON *argjson);
 
 int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp)
 {
