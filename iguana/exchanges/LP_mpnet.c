@@ -32,6 +32,7 @@ cJSON *LP_mpnet_get()
 
 void LP_mpnet_check(void *ctx,char *myipaddr,int32_t pubsock)
 {
+    cJSON *argjson;
     while ( (argjson= LP_mpnet_get()) != 0 )
     {
         LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0);
