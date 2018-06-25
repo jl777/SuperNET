@@ -576,6 +576,7 @@ void LP_coinsloop(void *_coins)
                 LP_address_utxo_reset(&num,coin);
                 coin->did_addrutxo_reset = 1;
             }
+            free_json(LP_address_balance(coin,coin->smartaddr,1));
             if ( coin->do_autofill_merge != 0 )
             {
                 if ( (retstr= LP_autofillbob(coin,coin->do_autofill_merge*1.02)) != 0 )

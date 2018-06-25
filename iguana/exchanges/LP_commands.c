@@ -486,14 +486,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 double price,bid,ask;
                 if ( strcmp(method,"getprice") == 0 )
                 {
-                    ask = LP_price(base,rel);
-                    if ( (bid= LP_price(rel,base)) > SMALLVAL )
+                    ask = LP_price(1,base,rel);
+                    if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
                         bid = 1./bid;
                 }
                 else
                 {
-                    ask = LP_getmyprice(base,rel);
-                    if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+                    ask = LP_getmyprice(1,base,rel);
+                    if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
                         bid = 1./bid;
                 }
                 price = _pairaved(bid,ask);
@@ -512,9 +512,9 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                if ( LP_mypriceset(1,&changed,base,rel,price) < 0 )
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
-                //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
+                //else if ( LP_mypriceset(1,&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                 else if ( price == 0. || jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
                     return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
@@ -524,7 +524,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 return(LP_orderbook(base,rel,jint(argjson,"duration")));
             else if ( strcmp(method,"myprice") == 0 )
             {
-                if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
+                if ( LP_myprice(1,&bid,&ask,base,rel) > SMALLVAL )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"base",base);
@@ -801,7 +801,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             return(jprint(retjson,1));
         }
         else if ( strcmp(method,"myprices") == 0 )
-            return(LP_myprices());
+            return(LP_myprices(1));
         else if ( strcmp(method,"trust") == 0 )
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
         else if ( strcmp(method,"trusted") == 0 )
@@ -862,14 +862,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         double price,bid,ask;
         if ( strcmp(method,"getprice") == 0 )
         {
-            ask = LP_price(base,rel);
-            if ( (bid= LP_price(rel,base)) > SMALLVAL )
+            ask = LP_price(1,base,rel);
+            if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         else
         {
-            ask = LP_getmyprice(base,rel);
-            if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+            ask = LP_getmyprice(1,base,rel);
+            if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         price = _pairaved(bid,ask);
