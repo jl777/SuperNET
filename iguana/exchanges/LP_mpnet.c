@@ -144,7 +144,7 @@ cJSON *LP_mpnet_parse(struct iguana_info *coin,bits256 txid)
     {
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
         {
-            if ( (sobj= jobject(jitem(vouts,n-1),"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (hlen= strlen(hexstr)) < sizeof(linebuf)*2 )
+            if ( (sobj= jobj(jitem(vouts,n-1),"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (hlen= strlen(hexstr)) < sizeof(linebuf)*2 )
             {
                 len = (hlen >> 1);
                 decode_hex(linebuf,len,hexstr);
