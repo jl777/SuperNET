@@ -172,11 +172,11 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 #include "LP_mmjson.c"
 #include "LP_socket.c"
-#include "LP_mpnet.c"
 #include "LP_secp.c"
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_mpnet.c"
 #include "LP_NXT.c"
 #include "LP_cache.c"
 #include "LP_RTmetrics.c"
