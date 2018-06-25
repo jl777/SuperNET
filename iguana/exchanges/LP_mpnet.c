@@ -96,12 +96,17 @@ void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr)
             free_json(argjson);
             if ( retstr != 0 )
             {
-                printf("mpnet.%s\n",retstr);
+                //printf("mpnet.%s\n",retstr);
                 free(retstr);
             }
         }
    }
 }
+
+// 2151978
+// 404bc4ac452db07ed16376b3d7e77dbfc22b4a68f7243797125bd0d3bdddf8d1
+// 893b46634456034a6d5d73b67026aa157b5e2addbfc6344dfbea6bae85f7dde0
+// 717c7ef9de8504bd331f3ef52ed0a16ea0e070434e12cb4d63f5f081e999c43d dup
 
 cJSON *LP_mpnet_get()
 {
