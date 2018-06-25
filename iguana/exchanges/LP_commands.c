@@ -507,6 +507,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 jaddnum(retjson,"price",price);
                 return(jprint(retjson,1));
             }
+            else if ( strcmp(method,"orderbook") == 0 )
+                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
@@ -520,8 +522,6 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
-            else if ( strcmp(method,"orderbook") == 0 )
-                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             else if ( strcmp(method,"myprice") == 0 )
             {
                 if ( LP_myprice(1,&bid,&ask,base,rel) > SMALLVAL )
