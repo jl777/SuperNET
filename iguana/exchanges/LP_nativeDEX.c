@@ -481,7 +481,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         nonz += LP_sock_check("PULL",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
     }
     portable_mutex_unlock(&LP_nanorecvsmutex);
-    if ( G.mpnet != 0 )
+    //if ( G.mpnet != 0 )
         LP_mpnet_check(ctx,origipaddr,LP_mypubsock);
     return(nonz);
 }
