@@ -151,9 +151,10 @@ int32_t LP_mpnet_remove(bits256 txid)
 
 void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info *coin,bits256 txid)
 {
-    cJSON *argjson;
+    cJSON *argjson; char str[65];
     if ( LP_mpnet_find(txid) < 0 )
     {
+        printf("unique %s\n",bits256_str(str,txid));
         if ( (argjson= LP_mpnet_parse(coin,txid)) != 0 )
         {
             printf("MPNET.(%s)\n",jprint(argjson,0));
@@ -183,7 +184,7 @@ cJSON *LP_mpnet_get(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info 
                     txid = jbits256i(txs,i);
                     LP_mpnet_process(ctx,myipaddr,pubsock,coin,txid);
                     LP_mpnet_remove(txid);
-                    printf("ht.%d n.%d i.%d %s\n",checkht,n,i,bits256_str(str,txid));
+                    //printf("ht.%d n.%d i.%d %s\n",checkht,n,i,bits256_str(str,txid));
                 }
             }
             hash = jbits256(blockjson,"previousblockhash");
@@ -202,7 +203,7 @@ cJSON *LP_mpnet_get(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info 
             {
                 txid = jbits256i(txs,i);
                 LP_mpnet_process(ctx,myipaddr,pubsock,coin,txid);
-                printf("mp i.%d %s\n",i,bits256_str(str,txid));
+                //printf("mp i.%d %s\n",i,bits256_str(str,txid));
             }
         }
     }
@@ -211,9 +212,11 @@ cJSON *LP_mpnet_get(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_info 
 
 void LP_mpnet_check(void *ctx,char *myipaddr,int32_t pubsock)
 {
+    static uint32_t lasttime;
     struct iguana_info *coin = LP_coinfind("CHIPS");
-    if ( coin != 0 )
+    if ( coin != 0 && coin->inactive == 0 && time(NULL) > lasttime+5 )
     {
         LP_mpnet_get(ctx,myipaddr,pubsock,coin);
+        lasttime = (uint32_t)time(NULL);
     }
 }
