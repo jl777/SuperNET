@@ -20,6 +20,7 @@
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
+int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp);
 
 int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp)
 {
@@ -34,7 +35,7 @@ int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp)
 
 void LP_mpnet_init()
 {
-    char fname[1024],line[8192]; FILE *fp; struct LP_quoteinfo Q;
+    char fname[1024],line[8192]; FILE *fp; struct LP_quoteinfo Q; cJSON *argjson;
     sprintf(fname,"%s/GTC/orders",GLOBAL_DBDIR), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"rb+")) != 0 )
     {
