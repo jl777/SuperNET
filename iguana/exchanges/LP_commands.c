@@ -862,14 +862,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         double price,bid,ask;
         if ( strcmp(method,"getprice") == 0 )
         {
-            ask = LP_price(base,rel);
+            ask = LP_price(1,base,rel);
             if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         else
         {
             ask = LP_getmyprice(1,base,rel);
-            if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+            if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         price = _pairaved(bid,ask);
