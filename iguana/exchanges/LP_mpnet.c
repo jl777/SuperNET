@@ -33,7 +33,7 @@ int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp)
     return(-1);
 }
 
-void LP_mpnet_init()
+void LP_mpnet_init() // problem is coins not enabled yet
 {
     char fname[1024],line[8192]; FILE *fp; struct LP_quoteinfo Q; cJSON *argjson;
     sprintf(fname,"%s/GTC/orders",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -55,9 +55,9 @@ void LP_mpnet_init()
     }
 }
 
-void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag)
+void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr)
 {
-    char fname[1024]; FILE *fp;
+    char fname[1024]; int32_t len; FILE *fp; char *hexstr,*retstr; cJSON *argjson,*outputs,*item; struct iguana_info *coin; uint8_t linebuf[8192];
     if ( localcopy != 0 )
     {
         sprintf(fname,"%s/GTC/orders",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -67,10 +67,39 @@ void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag)
         fprintf(fp,"%s\n",msg);
         fclose(fp);
     }
-    if ( G.mpnet != 0 && sendflag != 0 )
+    if ( G.mpnet != 0 && sendflag != 0 && (coin= LP_coinfind("CHIPS")) != 0 && coin->inactive == 0 )
     {
-        
-    }
+        len = MMJSON_encode(linebuf,msg);
+        //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"withdraw\",\"coin\":\"CHIPS\",\"outputs\":[{\"RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj\":0.0001}],\"opreturn\":\"deadbeef\"}"
+        if ( len > 0 )
+        {
+            argjson = cJSON_CreateObject();
+            outputs = cJSON_CreateArray();
+            if ( otheraddr != 0 && otheraddr[0] != 0 )
+            {
+                item = cJSON_CreateObject();
+                jaddnum(item,otheraddr,dstr(10000));
+                jaddi(outputs,item);
+            }
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,dstr(10000));
+            jaddi(outputs,item);
+            jadd(argjson,"outputs",outputs);
+            jaddnum(argjson,"broadcast",1);
+            jaddstr(argjson,"coin",coin->symbol);
+            hexstr = calloc(1,len*2 + 1);
+            init_hexbytes_noT(hexstr,linebuf,len);
+            jaddstr(argjson,"opreturn",hexstr);
+            free(hexstr);
+            retstr = LP_withdraw(coin,argjson);
+            free_json(argjson);
+            if ( retstr != 0 )
+            {
+                printf("mpnet.%s\n",retstr);
+                free(retstr);
+            }
+        }
+   }
 }
 
 cJSON *LP_mpnet_get()
