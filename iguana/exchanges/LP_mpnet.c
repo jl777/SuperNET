@@ -21,7 +21,7 @@
 bits256 MPNET_txids[1024];
 int32_t num_MPNET_txids;
 
-int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
+int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
 void LP_gtc_addorder(struct LP_quoteinfo *qp);
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson);
@@ -189,8 +189,8 @@ void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_inf
         //printf("unique %s\n",bits256_str(str,txid));
         if ( (argjson= LP_mpnet_parse(coin,txid)) != 0 )
         {
-            printf("MPNET.(%s)\n",jprint(argjson,0));
-            LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0);
+            //printf("MPNET.(%s)\n",jprint(argjson,0));
+            LP_tradecommand(1,ctx,myipaddr,pubsock,argjson,0,0);
             free_json(argjson);
         }
         LP_mpnet_add(txid);

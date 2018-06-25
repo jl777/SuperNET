@@ -1527,7 +1527,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
     //printf("queue.%d uuid.(%s)\n",funcid,qtp->Q.uuidstr);
 }
 
-int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
+int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
     int32_t Qtrades = 1;
     char *method,str[65]; int32_t i,num,DEXselector = 0; uint64_t aliceid; double qprice,bestprice,price,bid,ask; cJSON *proof; uint64_t rq; struct iguana_info *coin; struct LP_quoteinfo Q,Q2; int32_t counter,retval=-1;
@@ -1550,7 +1550,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_tradecommand_log(argjson);
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee); //jdouble(argjson,"price");
         //printf("%s\n",jprint(argjson,0));
-        printf("%-4d uuid.%32s g.%d f.%d %12s %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.uuidstr+32,Q.gtc,Q.fill,method,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),qprice,LP_RTcount,LP_swapscount,G.netid);
+        printf("%-4d uuid.%32s M.%d g.%d f.%d %12s %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.uuidstr+32,from_mpnet,Q.gtc,Q.fill,method,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),qprice,LP_RTcount,LP_swapscount,G.netid);
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");
         if ( strcmp(method,"reserved") == 0 )

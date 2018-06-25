@@ -203,7 +203,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     char *retstr=0; cJSON *retjson; bits256 zero;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
-    if ( stats_JSONonly != 0 || LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
+    if ( stats_JSONonly != 0 || LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
         if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
         {
@@ -424,7 +424,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                             /*if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
                                 //portable_mutex_lock(&LP_commandmutex);
-                                if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                                if ( LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                                 {
                                     if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                                         free(retstr);
