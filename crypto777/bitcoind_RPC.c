@@ -170,7 +170,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     else specialcase = 0;
     if ( url[0] == 0 )
         strcpy(url,"http://127.0.0.1:7776");
-    //if ( specialcase != 0 && (0) )
+    if ( specialcase != 0 && (0) )
     {
         //int32_t zeroval();
         printf("<<<<<<<<<<< bitcoind_RPC: userpass.(%s) url.(%s) command.(%s) params.(%s)\n",userpass,url,command,params);
