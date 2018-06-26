@@ -23,7 +23,6 @@ struct LP_gtcorder
 {
     struct LP_gtcorder *next,*prev;
     struct LP_quoteinfo Q;
-    double maxprice;
     uint32_t cancelled,pending;
 } *GTCorders;
 
@@ -548,9 +547,11 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                     if ( IPC_ENDPOINT >= 0 )
                         LP_queuecommand(0,jprint(reqjson,0),IPC_ENDPOINT,-1,0);
                 }
-                if ( qp->mpnet != 0 && qp->fill != 0 && qp->gtc != 0 )
+                if ( qp->mpnet != 0 && qp->gtc == 0 )
                 {
-                    // send to mpnet
+                    char *msg = jprint(reqjson,0);
+                    LP_mpnet_send(0,msg,1,qp->destaddr);
+                    free(msg);
                 }
                 free_json(reqjson);
                 retval = 0;
@@ -614,12 +615,23 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
             {
                 gtc->pending = qp->timestamp = (uint32_t)time(NULL);
                 LP_query(ctx,myipaddr,mypubsock,"request",qp);
-                LP_Alicequery = *qp, LP_Alicemaxprice = gtc->maxprice, Alice_expiration = qp->timestamp + 2*LP_AUTOTRADE_TIMEOUT, LP_Alicedestpubkey = qp->srchash;
-                char str[65]; printf("LP_gtc fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),gtc->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
+                LP_Alicequery = *qp, LP_Alicemaxprice = gtc->Q.maxprice, Alice_expiration = qp->timestamp + 2*LP_AUTOTRADE_TIMEOUT, LP_Alicedestpubkey = qp->srchash;
+                char str[65]; printf("LP_gtc fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),gtc->Q.maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
                 break;
             }
         }
     }
+}
+
+void LP_gtc_addorder(struct LP_quoteinfo *qp)
+{
+    struct LP_gtcorder *gtc;
+    gtc = calloc(1,sizeof(*gtc));
+    gtc->Q = *qp;
+    gtc->pending = (uint32_t)time(NULL);
+    portable_mutex_lock(&LP_gtcmutex);
+    DL_APPEND(GTCorders,gtc);
+    portable_mutex_unlock(&LP_gtcmutex);
 }
 
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr)
@@ -632,27 +644,25 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         qp->tradeid = LP_rand();
     qp->srchash = destpubkey;
     strncpy(qp->uuidstr,uuidstr,sizeof(qp->uuidstr)-1);
+    qp->maxprice = maxprice;
     qp->timestamp = (uint32_t)time(NULL);
     if ( qp->gtc != 0 )
     {
         strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
-        gtc = calloc(1,sizeof(*gtc));
-        gtc->Q = *qp;
-        gtc->maxprice = maxprice;
-        gtc->pending = (uint32_t)time(NULL);
-        portable_mutex_lock(&LP_gtcmutex);
-        DL_APPEND(GTCorders,gtc);
-        portable_mutex_unlock(&LP_gtcmutex);
+        LP_gtc_addorder(qp);
     }
     {
         LP_query(ctx,myipaddr,mypubsock,"request",qp);
-        LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
+        LP_Alicequery = *qp, LP_Alicemaxprice = qp->maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
     }
-    if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
+    if ( qp->gtc == 0 )
     {
-        // send to mpnet
+        cJSON *reqjson = LP_quotejson(qp);
+        char *msg = jprint(reqjson,1);
+        LP_mpnet_send(1,msg,1,0);
+        free(msg);
     }
-    char str[65]; printf("LP_trade mpnet.%d fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->mpnet,qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
+    char str[65]; printf("LP_trade mpnet.%d fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->mpnet,qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),qp->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
     return(LP_recent_swaps(0,uuidstr));
 }
 
@@ -1195,9 +1205,11 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
             memset(zero.bytes,0,sizeof(zero));
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         }
-        if ( qp->mpnet != 0 && qp->gtc != 0 && qp->fill != 0 )
+        if ( qp->mpnet != 0 && qp->gtc == 0 )
         {
-            // send to mpnet
+            char *msg = jprint(reqjson,0);
+            LP_mpnet_send(0,msg,1,qp->destaddr);
+            free(msg);
         }
         free_json(reqjson);
         //printf("Send RESERVED id.%llu\n",(long long)qp->aliceid);
@@ -1515,7 +1527,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
     //printf("queue.%d uuid.(%s)\n",funcid,qtp->Q.uuidstr);
 }
 
-int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
+int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
     int32_t Qtrades = 1;
     char *method,str[65]; int32_t i,num,DEXselector = 0; uint64_t aliceid; double qprice,bestprice,price,bid,ask; cJSON *proof; uint64_t rq; struct iguana_info *coin; struct LP_quoteinfo Q,Q2; int32_t counter,retval=-1;
@@ -1538,7 +1550,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_tradecommand_log(argjson);
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee); //jdouble(argjson,"price");
         //printf("%s\n",jprint(argjson,0));
-        printf("%-4d uuid.%32s g.%d f.%d %12s %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.uuidstr+32,Q.gtc,Q.fill,method,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),qprice,LP_RTcount,LP_swapscount,G.netid);
+        printf("%-4d uuid.%32s M.%d g.%d f.%d %12s %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.uuidstr+32,from_mpnet,Q.gtc,Q.fill,method,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),qprice,LP_RTcount,LP_swapscount,G.netid);
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");
         if ( strcmp(method,"reserved") == 0 )
@@ -1795,7 +1807,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         }
     }
     int32_t changed;
-    Q.mpnet = 0;
+    Q.mpnet = G.mpnet;
     Q.fill = fillflag;
     Q.gtc = gtcflag;
     LP_mypriceset(0,&changed,rel,base,1. / maxprice);

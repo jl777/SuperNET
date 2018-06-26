@@ -289,7 +289,7 @@ try_again:
             count++;
             elapsedsum += (OS_milliseconds() - starttime);
             if ( (count % 100000) == 0)
-                printf("%d: ave %9.6f | elapsed %.3f millis | bitcoind_RPC.(%s) url.(%s)\n",count,elapsedsum/count,(OS_milliseconds() - starttime),command,url);
+                printf("%d: %s ave %9.6f | elapsed %.3f millis | bitcoind_RPC.(%s) url.(%s)\n",count,debugstr,elapsedsum/count,(OS_milliseconds() - starttime),command,url);
             if ( retstrp != 0 )
             {
                 *retstrp = retstr;

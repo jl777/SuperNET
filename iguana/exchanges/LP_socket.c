@@ -73,7 +73,7 @@ int32_t komodo_connect(int32_t sock,struct sockaddr *saddr,socklen_t addrlen)
 			closesocket(sock);
             return(-1);
         }
-		printf("continue with select ...\n");
+		//printf("continue with select ...\n");
 		FD_ZERO(&wfd);
         FD_SET(sock,&wfd);
         FD_ZERO(&efd);
