@@ -682,6 +682,7 @@ void LP_coinsloop(void *_coins)
                 continue;
             }
             //if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"KMD") != 0 ) // SPV as backup
+            if ( coin->lastscanht < coin->longestchain )
             {
                 nonz++;
                 if ( strcmp("BTC",coins) == 0 )//&& coin->lastscanht < coin->longestchain-3 )
