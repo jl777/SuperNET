@@ -742,7 +742,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         }
     }
     if ( strcmp(method,"connect") == 0 && qp->mpnet != 0 && qp->gtc == 0 )
-        LP_mpnet_send(0,msg,1,0);
+        LP_mpnet_send(0,msg,1,qp->coinaddr);
     free(msg);
 }
 

@@ -550,7 +550,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 if ( qp->mpnet != 0 && qp->gtc == 0 )
                 {
                     char *msg = jprint(reqjson,0);
-                    LP_mpnet_send(0,msg,1,0);
+                    LP_mpnet_send(0,msg,1,qp->destaddr);
                     free(msg);
                 }
                 free_json(reqjson);
@@ -1208,7 +1208,7 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
         if ( qp->mpnet != 0 && qp->gtc == 0 )
         {
             char *msg = jprint(reqjson,0);
-            LP_mpnet_send(0,msg,1,0);
+            LP_mpnet_send(0,msg,1,qp->destaddr);
             free(msg);
         }
         free_json(reqjson);
