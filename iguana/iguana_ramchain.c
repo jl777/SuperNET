@@ -616,7 +616,7 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
     *B = RAMCHAIN_PTR(rdata,Boffset);
     *T = RAMCHAIN_PTR(rdata,Toffset);
     //*B = (void *)(long)((long)rdata + (long)rdata->Boffset);
-    //*T = (void *)(long)((long)rdata + (long)rdata->Toffset);
+    *T = (void *)(long)((long)rdata + (long)rdata->Toffset);
     *Kspace = RAMCHAIN_PTR(rdata,Koffset);
     //*Kspace = (void *)(long)((long)rdata + (long)rdata->Koffset);
     if ( ramchain->expanded != 0 )
