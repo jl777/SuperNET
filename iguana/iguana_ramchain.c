@@ -616,7 +616,7 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
     *B = RAMCHAIN_PTR(rdata,Boffset);
     *T = RAMCHAIN_PTR(rdata,Toffset);
     //*B = (void *)(long)((long)rdata + (long)rdata->Boffset);
-    *T = (void *)(long)((long)rdata + (long)rdata->Toffset);
+    //*T = (void *)(long)((long)rdata + (long)rdata->Toffset);
     *Kspace = RAMCHAIN_PTR(rdata,Koffset);
     //*Kspace = (void *)(long)((long)rdata + (long)rdata->Koffset);
     if ( ramchain->expanded != 0 )
@@ -1953,7 +1953,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
-                iguana_blockzcopyRO(0*coin->chain->zcash,B,0,&RO,0);
+                iguana_blockzcopyRO(coin->chain->zcash,B,0,&RO,0);
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
                 if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,coin->chain->zcash)) >= 0 )
