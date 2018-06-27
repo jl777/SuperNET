@@ -144,6 +144,7 @@ fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 inuse()\n\
+movecoinbases(coin)\n\
 getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -172,6 +173,7 @@ unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint(port=5555)\n\
 getfee(coin)\n\
+mpnet(onoff)\n\
 sleep(seconds=60)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
@@ -237,6 +239,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
+        else if ( strcmp(method,"mpnet") == 0 )
+        {
+            G.mpnet = jint(argjson,"onoff");
+            printf("MPNET onoff.%d\n",G.mpnet);
+            return(clonestr("{\"status\":\"success\"}"));
+        }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
             int32_t err,mode; uint16_t wsport = 5555; char endpoint[64],bindpoint[64];
@@ -275,6 +283,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 } else jaddstr(retjson,"error","couldnt get NN_PAIR socket");
             }
             return(jprint(retjson,1));
+        }
+        else if ( strcmp(method,"verus") == 0 )
+        {
+            return(verusblocks());
         }
         else if ( strcmp(method,"instantdex_claim") == 0 )
         {
@@ -476,24 +488,50 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
             }
+            else if ( strcmp(method,"getprice") == 0 || strcmp(method,"getmyprice") == 0 )
+            {
+                double price,bid,ask;
+                if ( strcmp(method,"getprice") == 0 )
+                {
+                    ask = LP_price(1,base,rel);
+                    if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
+                        bid = 1./bid;
+                }
+                else
+                {
+                    ask = LP_getmyprice(1,base,rel);
+                    if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
+                        bid = 1./bid;
+                }
+                price = _pairaved(bid,ask);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"base",base);
+                jaddstr(retjson,"rel",rel);
+                jaddnum(retjson,"timestamp",time(NULL));
+                jaddnum(retjson,"bid",bid);
+                jaddnum(retjson,"ask",ask);
+                jaddnum(retjson,"price",price);
+                return(jprint(retjson,1));
+            }
+            else if ( strcmp(method,"orderbook") == 0 )
+                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                if ( LP_mypriceset(1,&changed,base,rel,price) < 0 )
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
-                //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
+                //else if ( LP_mypriceset(1,&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                 else if ( price == 0. || jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
                     return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
-            else if ( strcmp(method,"orderbook") == 0 )
-                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             else if ( strcmp(method,"myprice") == 0 )
             {
-                if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
+                if ( LP_myprice(1,&bid,&ask,base,rel) > SMALLVAL )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"base",base);
@@ -514,7 +552,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 } else vol = jdouble(argjson,"relvolume");
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid")));
+                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid"),jint(argjson,"fill"),jint(argjson,"gtc")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -528,7 +566,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 } else vol = jdouble(argjson,"basevolume");
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid")));
+                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid"),jint(argjson,"fill"),jint(argjson,"gtc")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -630,7 +668,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
-                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx"),jint(argjson,"needjson")));
             }
             else if ( strcmp(method,"convaddress") == 0 )
             {
@@ -663,6 +701,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(LP_txblast(ptr,argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"movecoinbases") == 0 )
+            {
+                return(LP_movecoinbases(coin));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
@@ -766,7 +808,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             return(jprint(retjson,1));
         }
         else if ( strcmp(method,"myprices") == 0 )
-            return(LP_myprices());
+            return(LP_myprices(1));
         else if ( strcmp(method,"trust") == 0 )
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
         else if ( strcmp(method,"trusted") == 0 )
@@ -827,14 +869,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         double price,bid,ask;
         if ( strcmp(method,"getprice") == 0 )
         {
-            ask = LP_price(base,rel);
-            if ( (bid= LP_price(rel,base)) > SMALLVAL )
+            ask = LP_price(1,base,rel);
+            if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         else
         {
-            ask = LP_getmyprice(base,rel);
-            if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+            ask = LP_getmyprice(1,base,rel);
+            if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         price = _pairaved(bid,ask);

@@ -33,6 +33,7 @@
 char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 extern uint32_t DOCKERFLAG;
+extern char LP_myipaddr[];
 
 char *stats_validmethods[] =
 {
@@ -549,7 +550,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     //free(buf);
                     //while ( retstr == 0 )
                     //    usleep(10000);
-                    if ( (retstr= stats_JSON(ctx,0,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                    if ( (retstr= stats_JSON(ctx,0,LP_myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                     {
                         if ( (retitem= cJSON_Parse(retstr)) != 0 )
                             jaddi(retarray,retitem);
@@ -598,7 +599,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     buf = jprint(arg,0);
                     LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                     free(buf);
-                } else retstr = stats_JSON(ctx,jint(arg,"fast"),myipaddr,-1,arg,remoteaddr,port);
+                } else retstr = stats_JSON(ctx,jint(arg,"fast"),LP_myipaddr,-1,arg,remoteaddr,port);
 #endif
                 if ( fastflag == 0 )
                     portable_mutex_unlock(&LP_commandmutex);

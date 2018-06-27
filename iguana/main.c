@@ -2212,8 +2212,10 @@ void iguana_main(void *arg)
             myinfo->rpcport = atoi(&((char *)arg)[6]);
             printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
         }
-        else if ( strcmp((char *)arg,"notary") == 0 ) // must be second to last
+        else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
         {
+            if ( strcmp((char *)arg,"notary_nosplit") == 0 )
+                myinfo->nosplit = 1;
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
