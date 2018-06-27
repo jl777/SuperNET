@@ -593,13 +593,13 @@ char *verusblocks()
     }
     if ( num > 0 )
     {
+        if ( 0 )
+        {
             for (i=0; i<sizeof(histo)/sizeof(*histo); i++)
                 if ( histo[i] != 0 )
                     printf("%d %.8f, ",i*1000,histo[i]);
             printf("timelocked\n");
-        if ( 0 )
-        {
-           for (i=0; i<sizeof(myhisto)/sizeof(*myhisto); i++)
+            for (i=0; i<sizeof(myhisto)/sizeof(*myhisto); i++)
                 if ( myhisto[i] != 0 )
                     printf("%d %.8f, ",i*1000,myhisto[i]);
             printf("mytimelocked\n");
