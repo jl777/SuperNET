@@ -724,7 +724,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     }
     else
     {
-        if ( strcmp(coin->smartaddr,coinaddr) != 0 )
+        //if ( strcmp(coin->smartaddr,coinaddr) != 0 )
         {
             if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,coinaddr,2,zero,zero)) != 0 )
                 free_json(retjson);

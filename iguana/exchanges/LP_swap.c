@@ -888,6 +888,15 @@ void LP_bobloop(void *_swap)
                 }
             }
             LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
+            m = swap->I.bobconfirms;
+            while ( (n= LP_numconfirms(bobstr,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,1)) < m )
+            {
+                LP_swap_critical = (uint32_t)time(NULL);
+                LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
+                char str[65];printf("%d wait for bobdeposit %s numconfs.%d %s %s\n",n,swap->bobdeposit.I.destaddr,m,bobstr,bits256_str(str,swap->bobdeposit.I.signedtxid));
+                sleep(10);
+            }
+            printf("wait for alicepayment\n");
             if ( error == 0 && LP_waitfor(swap->N.pair,swap,bobwaittimeout + alicewaittimeout,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
@@ -901,6 +910,7 @@ void LP_bobloop(void *_swap)
                 else
                 {
                     m = swap->I.aliceconfirms;
+                    LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
                     while ( (n= LP_numconfirms(alicestr,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
                     {
                         LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
@@ -939,6 +949,7 @@ void LP_bobloop(void *_swap)
 void LP_aliceloop(void *_swap)
 {
     uint8_t *data; char bobstr[65],alicestr[65]; int32_t bobwaittimeout,alicewaittimeout,maxlen,n,m,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    LP_alicequery_clear();
     G.LP_pendingswaps++;
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
     LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
@@ -973,6 +984,7 @@ void LP_aliceloop(void *_swap)
                 while ( (n= LP_numconfirms(bobstr,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,1)) < m )
                 {
                     LP_swap_critical = (uint32_t)time(NULL);
+                    LP_unavailableset(swap->alicepayment.utxotxid,swap->alicepayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
                     char str[65];printf("%d wait for bobdeposit %s numconfs.%d %s %s\n",n,swap->bobdeposit.I.destaddr,m,bobstr,bits256_str(str,swap->bobdeposit.I.signedtxid));
                     sleep(10);
                 }
@@ -999,6 +1011,7 @@ void LP_aliceloop(void *_swap)
                             char str[65];printf("%d wait for bobpayment %s numconfs.%d %s %s\n",n,swap->bobpayment.I.destaddr,swap->I.bobconfirms,bobstr,bits256_str(str,swap->bobpayment.I.signedtxid));
                             sleep(10);
                         }
+                        char str[65];printf("%d waited for bobpayment %s numconfs.%d %s %s\n",n,swap->bobpayment.I.destaddr,swap->I.bobconfirms,bobstr,bits256_str(str,swap->bobpayment.I.signedtxid));
                         if ( swap->N.pair >= 0 )
                             nn_close(swap->N.pair), swap->N.pair = -1;
                     }

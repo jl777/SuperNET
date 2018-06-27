@@ -35,7 +35,7 @@ struct LP_priceinfo
     int32_t ind,pad;
     double diagval,high[2],low[2],last[2],bid[2],ask[2];
     double relvals[LP_MAXPRICEINFOS];
-    double myprices[LP_MAXPRICEINFOS];
+    double myprices[2][LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
     double fixedprices[LP_MAXPRICEINFOS]; // fixedprices
     double buymargins[LP_MAXPRICEINFOS];
@@ -451,16 +451,16 @@ void LP_priceinfoupdate(char *base,char *rel,double price)
     }
 }
 
-double LP_myprice(double *bidp,double *askp,char *base,char *rel)
+double LP_myprice(int32_t iambob,double *bidp,double *askp,char *base,char *rel)
 {
     struct LP_priceinfo *basepp,*relpp; double val;
     *bidp = *askp = 0.;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        *askp = basepp->myprices[relpp->ind];
+        *askp = basepp->myprices[iambob][relpp->ind];
         if ( LP_pricevalid(*askp) > 0 )
         {
-            val = relpp->myprices[basepp->ind];
+            val = relpp->myprices[iambob][basepp->ind];
             if ( LP_pricevalid(val) > 0 )
             {
                 *bidp = 1. / val;
@@ -474,7 +474,7 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
         }
         else
         {
-            val = relpp->myprices[basepp->ind];
+            val = relpp->myprices[iambob][basepp->ind];
             if ( LP_pricevalid(val) > 0 )
             {
                 *bidp = 1. / val;
@@ -486,7 +486,7 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
     return(0.);
 }
 
-char *LP_myprices()
+char *LP_myprices(int32_t iambob)
 {
     int32_t baseid,relid; double bid,ask; char *base,*rel; cJSON *item,*array;
     array = cJSON_CreateArray();
@@ -496,7 +496,7 @@ char *LP_myprices()
         for (relid=0; relid<LP_numpriceinfos; relid++)
         {
             rel = LP_priceinfos[relid].symbol;
-            if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
+            if ( LP_myprice(iambob,&bid,&ask,base,rel) > SMALLVAL )
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"base",base);
@@ -510,7 +510,7 @@ char *LP_myprices()
     return(jprint(array,1));
 }
 
-int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
+int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp=0,*relpp=0; struct LP_pubkey_info *pubp; double minprice,maxprice,margin,buymargin,sellmargin;
     *changedp = 0;
@@ -519,43 +519,46 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         
-        if ( price == 0. || fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
+        if ( price == 0. || fabs(basepp->myprices[iambob][relpp->ind] - price)/price > 0.001 )
             *changedp = 1;
-        sellmargin = relpp->sellmargins[basepp->ind];
-        buymargin = relpp->buymargins[basepp->ind];
-        margin = (sellmargin + buymargin) * 0.5;
-        if ( price == 0. )
+        if ( iambob != 0 )
         {
-            relpp->minprices[basepp->ind] = 0.;
-            relpp->fixedprices[basepp->ind] = 0.;
-            relpp->buymargins[basepp->ind] = 0.;
-            relpp->sellmargins[basepp->ind] = 0.;
-            relpp->offsets[basepp->ind] = 0.;
-            relpp->factors[basepp->ind] = 0.;
-            LP_autoref_clear(base,rel);
-            margin = 0.;
-        }
-        else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
-        {
-            //printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
-            price = minprice * (1. - margin);
-        }
-        else if ( (maxprice= relpp->minprices[basepp->ind]) > SMALLVAL )
-        {
-            if ( price > (1. / maxprice) )
+            sellmargin = relpp->sellmargins[basepp->ind];
+            buymargin = relpp->buymargins[basepp->ind];
+            margin = (sellmargin + buymargin) * 0.5;
+            if ( price == 0. )
             {
-                //printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
-                price = (1. / maxprice) * (1. + margin);
+                relpp->minprices[basepp->ind] = 0.;
+                relpp->fixedprices[basepp->ind] = 0.;
+                relpp->buymargins[basepp->ind] = 0.;
+                relpp->sellmargins[basepp->ind] = 0.;
+                relpp->offsets[basepp->ind] = 0.;
+                relpp->factors[basepp->ind] = 0.;
+                LP_autoref_clear(base,rel);
+                margin = 0.;
+            }
+            else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
+            {
+                //printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
+                price = minprice * (1. - margin);
+            }
+            else if ( (maxprice= relpp->minprices[basepp->ind]) > SMALLVAL )
+            {
+                if ( price > (1. / maxprice) )
+                {
+                    //printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
+                    price = (1. / maxprice) * (1. + margin);
+                }
             }
         }
         /*else if ( basepp->myprices[relpp->ind] > SMALLVAL )
         {
             price = (basepp->myprices[relpp->ind] * 0.9) + (0.1 * price);
         }*/
-        basepp->myprices[relpp->ind] = price;          // ask
+        basepp->myprices[iambob][relpp->ind] = price;          // ask
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid, but best to do one dir at a time
-        if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
+        if ( iambob != 0 && (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
             pubp->timestamp = (uint32_t)time(NULL);
             LP_pubkey_update(pubp,basepp->ind,relpp->ind,price,0,0,0,0,0);
@@ -569,12 +572,12 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     return(-1);
 }
 
-double LP_price(char *base,char *rel)
+double LP_price(int32_t iambob,char *base,char *rel)
 {
     struct LP_priceinfo *basepp; int32_t relind; double price = 0.;
     if ( (basepp= LP_priceinfoptr(&relind,base,rel)) != 0 )
     {
-        if ( (price= basepp->myprices[relind]) == 0. )
+        if ( (price= basepp->myprices[iambob][relind]) == 0. )
         {
             price = basepp->relvals[relind];
         }
@@ -582,19 +585,19 @@ double LP_price(char *base,char *rel)
     return(price);
 }
 
-double LP_getmyprice(char *base,char *rel)
+double LP_getmyprice(int32_t iambob,char *base,char *rel)
 {
     struct LP_priceinfo *basepp; int32_t relind; double price = 0.;
     if ( (basepp= LP_priceinfoptr(&relind,base,rel)) != 0 )
     {
-        if ( (price= basepp->myprices[relind]) == 0. )
+        if ( (price= basepp->myprices[iambob][relind]) == 0. )
         {
         }
     }
     return(price);
 }
 
-cJSON *LP_priceinfomatrix(int32_t usemyprices)
+cJSON *LP_priceinfomatrix(int32_t iambob,int32_t usemyprices)
 {
     int32_t i,j,n,m; double total,sum,val; struct LP_priceinfo *pp; uint32_t now; struct LP_cacheinfo *ptr,*tmp; cJSON *vectorjson = cJSON_CreateObject();
     now = (uint32_t)time(NULL);
@@ -611,7 +614,7 @@ cJSON *LP_priceinfomatrix(int32_t usemyprices)
         pp->diagval = sum = n = 0;
         for (j=0; j<LP_numpriceinfos; j++)
         {
-            if ( usemyprices == 0 || (val= pp->myprices[j]) == 0. )
+            if ( usemyprices == 0 || (val= pp->myprices[iambob][j]) == 0. )
                 val = pp->relvals[j];
             if ( val > SMALLVAL )
             {
@@ -661,7 +664,7 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     pp->coinbits = stringbits(symbol);
     pp->ind = LP_numpriceinfos++;
     //LP_numpriceinfos++;
-    if ( (retjson= LP_priceinfomatrix(0)) != 0 )
+    if ( (retjson= LP_priceinfomatrix(1,0)) != 0 )
         free_json(retjson);
     return(pp);
 }
@@ -1016,7 +1019,7 @@ int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
             KMDvalue = balance;
         else
         {
-            if ( (price= LP_price(coin->symbol,"KMD")) > SMALLVAL )
+            if ( (price= LP_price(1,coin->symbol,"KMD")) > SMALLVAL )
                 KMDvalue = price * balance;
         }
     }
