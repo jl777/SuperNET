@@ -576,7 +576,7 @@ cJSON *electrum_hasharg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,c
     char params[128],str[65]; cJSON *retjson;
     if ( retjsonp == 0 )
         retjsonp = &retjson;
-    sprintf(params,"[\"%s\", true]",bits256_str(str,arg));
+    sprintf(params,"[\"%s\"]",bits256_str(str,arg));
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
