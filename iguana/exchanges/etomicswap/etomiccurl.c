@@ -43,7 +43,7 @@ cJSON *parseEthRpcResponse(char *requestResult)
     cJSON *tmp = cJSON_GetObjectItem(json, "result");
     cJSON *error = cJSON_GetObjectItem(json, "error");
     cJSON *result = NULL;
-    if (!is_cJSON_Null(tmp)) {
+    if (tmp != NULL && !is_cJSON_Null(tmp)) {
         result = cJSON_Duplicate(tmp, 1);
     } else if (error != NULL && !is_cJSON_Null(error)) {
         char *errorString = cJSON_PrintUnformatted(error);
