@@ -151,6 +151,7 @@ getprice(base, rel)\n\
 //getmessages(firsti=0, num=100)\n\
 //deletemessages(firsti=0, num=100)\n\
 secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
+gen64addrs(passphrase, taddr=0, pubtype=60)\n\
 electrum(coin, ipaddr, port)\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
@@ -418,6 +419,13 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         else if ( strcmp(method,"ticker") == 0 )
         {
             return(LP_ticker(jstr(argjson,"base"),jstr(argjson,"rel")));
+        }
+        else if ( strcmp(method,"gen64addrs") == 0 )
+        {
+            uint8_t taddr,pubtype;
+            pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
+            taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
+            return(LP_gen64addrs(ctx,jstr(argjson,"passphrase"),taddr,pubtype));
         }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
