@@ -211,7 +211,7 @@ uint32_t komodo_segid32(char *coinaddr)
 
 char *LP_gen64addrs(void *ctx,char *passphrase,uint8_t taddr,uint8_t pubtype)
 {
-    int32_t i,segid,n=64; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[64],coinaddr[64],coinaddrs[64][64],wifstrs[64][64]; uint64_t mask = 0; bits256 checkprivkey,privkey,pubkey; cJSON *retjson,*addrs,*addrs64;
+    int32_t i,segid,n=64; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[64],coinaddr[64],coinaddrs[64][64],wifstrs[64][64]; uint64_t mask = 0; bits256 checkprivkey,privkey,pubkey; cJSON *retjson,*addrs,*array;
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = "password";
     memset(coinaddrs,0,sizeof(coinaddrs));
@@ -256,7 +256,7 @@ char *LP_gen64addrs(void *ctx,char *passphrase,uint8_t taddr,uint8_t pubtype)
         jaddstr(addrs,coinaddrs[i],wifstrs[i]);
     jadd(retjson,"addrpairs",addrs);
     for (i=0; i<n; i++)
-        jaddstri(array,coinaddrs[i]);
+        jaddistr(array,coinaddrs[i]);
     jadd(retjson,"addresses",array);
     //printf("%s]\n",output);
     return(jprint(retjson,1));
