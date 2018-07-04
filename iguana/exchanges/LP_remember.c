@@ -681,6 +681,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddbits256(item,"paymentspent",rswap->paymentspent);
     jaddbits256(item,"Apaymentspent",rswap->Apaymentspent);
     jaddbits256(item,"depositspent",rswap->depositspent);
+    jaddbits256(item,"alicedexfee",rswap->iambob == 0 ? rswap->txids[BASILISK_MYFEE] : rswap->txids[BASILISK_OTHERFEE]);
     return(item);
 }
 

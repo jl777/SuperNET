@@ -143,7 +143,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
-        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
+        if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
             if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
             {
@@ -235,6 +235,8 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
     *MoMdepthp = 0;
     memset(MoM.bytes,0,sizeof(MoM));
+    if ( strcmp(coin->symbol,"GAME") == 0 || strcmp(coin->symbol,"HUSH") == 0 ) // 80 byte OP_RETURN limit
+        return(MoM);
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
         if ( (prevMoMheight= jint(infojson,"prevMoMheight")) >= 0 )
@@ -300,6 +302,7 @@ void dpow_statemachinestart(void *ptr)
         Numallocated++;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
+        bp->CCid = dp->fullCCid & 0xffff;
         bp->minsigs = minsigs;
         bp->duration = duration;
         bp->srccoin = src;
@@ -436,7 +439,7 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     bp->myind = myind;
-    printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u MoM[%d] %s\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp,bp->MoMdepth,bits256_str(str2,bp->MoM));
+    printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u MoM[%d] %s CCid.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp,bp->MoMdepth,bits256_str(str2,bp->MoM),bp->CCid);
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
         for (i=0; i<33; i++)
@@ -518,7 +521,7 @@ void dpow_statemachinestart(void *ptr)
         if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
             src_or_dest = 0;
         else src_or_dest = 1;
-        extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
+        extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
     printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld MoM[%d] %s\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL),bp->MoMdepth,bits256_str(str2,bp->MoM));
@@ -539,7 +542,7 @@ void dpow_statemachinestart(void *ptr)
             if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
                 src_or_dest = 0;
             else src_or_dest = 1;
-            extralen = dpow_paxpending(extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
+            extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&

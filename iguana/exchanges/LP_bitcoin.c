@@ -2011,16 +2011,25 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
     return(n);
 }
 
+char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *method,char *params,int32_t timeout)
+{
+    /*struct iguana_info *coin; char *retstr;
+    if ( (coin= LP_coinfind(coinstr)) != 0 )
+    {
+        portable_mutex_lock(&coin->curl_mutex);
+        retstr = bitcoind_RPCnew(coin->curl_handle,0,coinstr,serverport,userpass,method,params,timeout);
+        portable_mutex_unlock(&coin->curl_mutex);
+        return(retstr);
+    }*/
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,timeout));
+}
+
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
     if ( userpass[0] == 0 )
         return(clonestr("{\"error\":\"no rpcusername rpcpassword in coin.conf\"}"));
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,4));
-}
-
-char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *method,char *params,int32_t timeout)
-{
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,timeout));
+    return(bitcoind_passthrut(coinstr,serverport,userpass,method,params,4));
+    //return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,4));
 }
 
 bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
@@ -2093,7 +2102,7 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
         }
         else if ( (strcmp(symbol,"GRS") == 0 || strcmp(symbol,"SMART") == 0) && (buf[20+offset]&0xff) == hash.bytes[0] && (buf[21+offset]&0xff) == hash.bytes[1] && (buf[22+offset]&0xff) == hash.bytes[2] && (buf[23+offset]&0xff) == hash.bytes[3] )
             return(20);
-        else
+        else if ( strcmp(symbol,"BTC") != 0 || *addrtypep == 0 || *addrtypep == 5 )
         {
             int32_t i;
             //if ( len > 20 )

@@ -373,6 +373,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     return(coin);
 }
 
+void *curl_easy_init();
 uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
     static void *ctx;
@@ -429,6 +430,13 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->zcash = LP_IS_BITCOINGOLD;
         printf("set coin.%s <- LP_IS_BITCOINGOLD %d\n",symbol,coin->zcash);
     }
+    else if ( strcmp(symbol,"CMM") == 0 )
+    {
+        coin->zcash = LP_IS_BITCOINCASH;
+        //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
+    }
+    coin->curl_handle = curl_easy_init();
+    portable_mutex_init(&coin->curl_mutex);
     return(port);
 }
 
