@@ -11,7 +11,7 @@ matrix:
       osx_image: xcode9.2
 
 script:
-  - nproc --all
+  - whereis cmake
 
 cache:
   apt: true
