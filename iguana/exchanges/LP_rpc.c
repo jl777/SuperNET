@@ -254,6 +254,12 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( bits256_nonz(txid) == 0 )
         return(cJSON_Parse("{\"error\":\"null txid\"}"));
+    if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts )
+    {
+        if ( tx->outpoints[vout].spendheight > 0 )
+            return(0);
+        //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
+    }
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
@@ -261,12 +267,6 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
     }
     else
     {
-        if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts )
-        {
-            if ( tx->outpoints[vout].spendheight > 0 )
-                return(0);
-            //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
-        }
         if ( coinaddr[0] == 0 )
         {
             if ( (txobj= electrum_transaction(&height,symbol,coin->electrum,&txobj,txid,0)) != 0 )

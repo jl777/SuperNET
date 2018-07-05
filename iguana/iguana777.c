@@ -1131,7 +1131,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = 1;//0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )

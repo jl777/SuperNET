@@ -152,6 +152,7 @@ getprice(base, rel)\n\
 //getmessages(firsti=0, num=100)\n\
 //deletemessages(firsti=0, num=100)\n\
 secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
+gen64addrs(passphrase, taddr=0, pubtype=60)\n\
 electrum(coin, ipaddr, port)\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
@@ -174,6 +175,7 @@ unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint(port=5555)\n\
 getfee(coin)\n\
+mpnet(onoff)\n\
 sleep(seconds=60)\n\
 listtransactions(coin, address, count=10, skip=0)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
@@ -249,6 +251,12 @@ version\n\
                 return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"mpnet") == 0 )
+        {
+            G.mpnet = jint(argjson,"onoff");
+            printf("MPNET onoff.%d\n",G.mpnet);
+            return(clonestr("{\"status\":\"success\"}"));
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
@@ -419,6 +427,13 @@ version\n\
         {
             return(LP_ticker(jstr(argjson,"base"),jstr(argjson,"rel")));
         }
+        else if ( strcmp(method,"gen64addrs") == 0 )
+        {
+            uint8_t taddr,pubtype;
+            pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
+            taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
+            return(LP_gen64addrs(ctx,jstr(argjson,"passphrase"),taddr,pubtype));
+        }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
             uint8_t taddr,pubtype;
@@ -499,14 +514,14 @@ version\n\
                 double price,bid,ask;
                 if ( strcmp(method,"getprice") == 0 )
                 {
-                    ask = LP_price(base,rel);
-                    if ( (bid= LP_price(rel,base)) > SMALLVAL )
+                    ask = LP_price(1,base,rel);
+                    if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
                         bid = 1./bid;
                 }
                 else
                 {
-                    ask = LP_getmyprice(base,rel);
-                    if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+                    ask = LP_getmyprice(1,base,rel);
+                    if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
                         bid = 1./bid;
                 }
                 price = _pairaved(bid,ask);
@@ -520,24 +535,24 @@ version\n\
                 jaddnum(retjson,"price",price);
                 return(jprint(retjson,1));
             }
+            else if ( strcmp(method,"orderbook") == 0 )
+                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                if ( LP_mypriceset(1,&changed,base,rel,price) < 0 )
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
-                //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
+                //else if ( LP_mypriceset(1,&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                 else if ( price == 0. || jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
                     return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
-            else if ( strcmp(method,"orderbook") == 0 )
-                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             else if ( strcmp(method,"myprice") == 0 )
             {
-                if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
+                if ( LP_myprice(1,&bid,&ask,base,rel) > SMALLVAL )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"base",base);
@@ -846,7 +861,7 @@ version\n\
             return(jprint(retjson,1));
         }
         else if ( strcmp(method,"myprices") == 0 )
-            return(LP_myprices());
+            return(LP_myprices(1));
         else if ( strcmp(method,"trust") == 0 )
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
         else if ( strcmp(method,"trusted") == 0 )
@@ -907,14 +922,14 @@ version\n\
         double price,bid,ask;
         if ( strcmp(method,"getprice") == 0 )
         {
-            ask = LP_price(base,rel);
-            if ( (bid= LP_price(rel,base)) > SMALLVAL )
+            ask = LP_price(1,base,rel);
+            if ( (bid= LP_price(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         else
         {
-            ask = LP_getmyprice(base,rel);
-            if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+            ask = LP_getmyprice(1,base,rel);
+            if ( (bid= LP_getmyprice(1,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         price = _pairaved(bid,ask);

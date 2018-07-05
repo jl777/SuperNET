@@ -347,6 +347,12 @@ int main(int argc, const char * argv[])
         printf("couldnt write to (%s)\n",dirname);
         exit(0);
     }
+    sprintf(dirname,"%s/GTC",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    if ( ensure_writable(dirname) < 0 )
+    {
+        printf("couldnt write to (%s)\n",dirname);
+        exit(0);
+    }
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( ensure_writable(dirname) < 0 )
     {
