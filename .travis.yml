@@ -10,13 +10,18 @@ matrix:
       env: OS_NAME=Darwin
       osx_image: xcode9.2
 
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./travis_cmake_linux.sh; fi
+  - git submodule update --init --recursive
+
 script:
-  - sudo rm -rf /usr/local/cmake-3.9.2 && sudo rm -rf /usr/local/cmake
-  - wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Linux-x86_64.sh
-  - chmod +x cmake-3.12.0-rc2-Linux-x86_64.sh
-  - sudo ./cmake-3.12.0-rc2-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr/local
-  - whereis cmake
-  - cmake --version
+  - export VERSION=`echo "$(git tag -l --points-at HEAD)"`
+  - mkdir build && cd build
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
+  - cmake --build . --target marketmaker-mainnet -j $(nproc --all)
+  - cmake --build . --target marketmaker-testnet -j $(nproc --all)
 
 cache:
   apt: true
