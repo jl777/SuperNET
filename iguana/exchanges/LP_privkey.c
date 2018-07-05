@@ -202,6 +202,66 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
     return(jprint(retjson,1));
 }
 
+uint32_t komodo_segid32(char *coinaddr)
+{
+    bits256 addrhash;
+    vcalc_sha256(0,(uint8_t *)&addrhash,(uint8_t *)coinaddr,(int32_t)strlen(coinaddr));
+    return(addrhash.uints[0]);
+}
+
+char *LP_gen64addrs(void *ctx,char *passphrase,uint8_t taddr,uint8_t pubtype)
+{
+    int32_t i,segid,n=64; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[64],coinaddr[64],coinaddrs[64][64],wifstrs[64][64]; uint64_t mask = 0; bits256 checkprivkey,privkey,pubkey; cJSON *retjson,*addrs,*array;
+    if ( passphrase == 0 || passphrase[0] == 0 )
+        passphrase = "password";
+    memset(coinaddrs,0,sizeof(coinaddrs));
+    memset(wifstrs,0,sizeof(wifstrs));
+    conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,taddr,pubtype);
+    //sprintf(output,"\"addresses\":[");
+    for (i=0; bitweight(mask)<64; i++)
+    {
+        sprintf(buf,"%s %03d",passphrase,i);
+        conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
+        bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,taddr,pubtype);
+        bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
+        bitcoin_wif2priv("KMD",0,&tmptype,&checkprivkey,wifstr);
+        bitcoin_addr2rmd160("KMD",taddr,&tmptype,rmd160,coinaddr);
+        if ( bits256_cmp(checkprivkey,privkey) != 0 )
+        {
+            printf("WIF.(%s) error -> %s vs %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkprivkey));
+            free_json(retjson);
+            return(clonestr("{\"error\":\"couldnt validate wifstr\"}"));
+        }
+        else if ( tmptype != pubtype )
+        {
+            printf("checktype.%d != pubtype.%d\n",tmptype,pubtype);
+            free_json(retjson);
+            return(clonestr("{\"error\":\"couldnt validate pubtype\"}"));
+        }
+        segid = komodo_segid32(coinaddr) & 0x3f;
+        if ( (mask & (1LL << segid)) == 0 )
+        {
+            mask |= (1LL << segid);
+            strcpy(coinaddrs[segid],coinaddr);
+            strcpy(wifstrs[segid],wifstr);
+            printf("./komodo-cli -ac_name=POSTEST64 importprivkey %s "" %s\n",wifstr,bitweight(mask)<64?"false":"true");
+        }
+        //sprintf(output+strlen(output),"\\\"%s\\\"%c ",coinaddr,i<n-1?',':' ');
+    }
+    retjson = cJSON_CreateObject();
+    addrs = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    for (i=0; i<n; i++)
+        jaddstr(addrs,coinaddrs[i],wifstrs[i]);
+    jadd(retjson,"addrpairs",addrs);
+    for (i=0; i<n; i++)
+        jaddistr(array,coinaddrs[i]);
+    jadd(retjson,"addresses",array);
+    //printf("%s]\n",output);
+    return(jprint(retjson,1));
+}
+
 static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 int32_t LP_wifstr_valid(char *symbol,char *wifstr)

@@ -123,7 +123,7 @@ struct LP_globals
     uint64_t LP_skipstatus[10000], LP_required_etomic_balance;
     uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
-    uint32_t LP_sessionid,counter;
+    uint32_t LP_sessionid,counter,mpnet;
     int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
     char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[65],LP_NXTaddr[64];
     struct LP_privkey LP_privkeys[100];
@@ -179,6 +179,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_mpnet.c"
 #include "LP_NXT.c"
 #include "LP_cache.c"
 #include "LP_RTmetrics.c"
@@ -205,7 +206,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     char *retstr=0; cJSON *retjson; bits256 zero;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
-    if ( stats_JSONonly != 0 || LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
+    if ( stats_JSONonly != 0 || LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
         if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
         {
@@ -426,7 +427,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                             /*if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
                                 //portable_mutex_lock(&LP_commandmutex);
-                                if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                                if ( LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                                 {
                                     if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                                         free(retstr);
@@ -483,6 +484,8 @@ int32_t LP_nanomsg_recvs(void *ctx)
         nonz += LP_sock_check("PULL",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
     }
     portable_mutex_unlock(&LP_nanorecvsmutex);
+    //if ( G.mpnet != 0 )
+        LP_mpnet_check(ctx,origipaddr,LP_mypubsock);
     return(nonz);
 }
 
@@ -516,21 +519,21 @@ void command_rpcloop(void *ctx)
 void LP_coinsloop(void *_coins)
 {
     static int32_t didfilescreate;
-    struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65],*retstr,*hexstr,*txidstr; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
-        LP_coinsloopBTC_stats.threshold = 20000.;
+        LP_coinsloopBTC_stats.threshold = 200000.;
     }
     else if ( strcmp("KMD",coins) == 0 )
     {
         strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
-        LP_coinsloopKMD_stats.threshold = 10000.;
+        LP_coinsloopKMD_stats.threshold = 100000.;
     }
     else
     {
         strcpy(LP_coinsloop_stats.name,"other coins loop");
-        LP_coinsloop_stats.threshold = 5000.;
+        LP_coinsloop_stats.threshold = 50000.;
     }
     while ( LP_STOP_RECEIVED == 0 )
     {
@@ -578,6 +581,29 @@ void LP_coinsloop(void *_coins)
                 int32_t num;
                 LP_address_utxo_reset(&num,coin);
                 coin->did_addrutxo_reset = 1;
+            }
+            //free_json(LP_address_balance(coin,coin->smartaddr,1)); expensive invoking gettxout
+            if ( coin->do_autofill_merge != 0 )
+            {
+                if ( (retstr= LP_autofillbob(coin,coin->do_autofill_merge*1.02)) != 0 )
+                {
+                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (hexstr= jstr(retjson,"hex")) != 0 )
+                        {
+                            if ( (txidstr= LP_sendrawtransaction(coin->symbol,hexstr,0)) != 0 )
+                            {
+                                printf("autofill created %s\n",txidstr);
+                                free(txidstr);
+                                coin->fillsatoshis = coin->do_autofill_merge;
+                                coin->do_autofill_merge = 0;
+                                coin->bobfillheight = LP_getheight(&notarized,coin);
+                            }
+                        }
+                        free_json(retjson);
+                    }
+                    free(retstr);
+                }
             }
             if ( coin->longestchain == 1 ) // special init value
                 coin->longestchain = LP_getheight(&notarized,coin);
@@ -659,6 +685,7 @@ void LP_coinsloop(void *_coins)
                 continue;
             }
             //if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"KMD") != 0 ) // SPV as backup
+            if ( coin->lastscanht < coin->longestchain )
             {
                 nonz++;
                 if ( strcmp("BTC",coins) == 0 )//&& coin->lastscanht < coin->longestchain-3 )
@@ -1625,6 +1652,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     int32_t nonz,didremote=0;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
+    //LP_mpnet_init(); seems better to have the GUI send in persistent orders, exit mm is a cancel all
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
