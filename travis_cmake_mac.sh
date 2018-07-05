@@ -1,10 +1,8 @@
 #!/bin/bash
 brew uninstall cmake --force
-wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Darwin-x86_64.dmg
-hdiutil convert -quiet cmake-3.12.0-rc2-Darwin-x86_64.dmg -format UDTO -o bar
-hdiutil attach -quiet -nobrowse -noverify -noautoopen -mountpoint right_here bar.cdr
-find right_here -print
-sudo installer -package right_here/cmake-3.12.0-rc2-Darwin-x86_64/cmake-3.12.0-rc2-Darwin-x86_64.pkg -target /
+wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Darwin-x86_64.tar.gz
+tar -xvzf cmake-3.12.0-rc2-Darwin-x86_64.tar.gz
+cp -r cmake-3.12.0-rc2-Darwin-x86_64/CMake.app/Contents/bin/* /usr/local/bin/
 sysctl -n hw.physicalcpu
 which cmake
 cmake --version
