@@ -1,3 +1,6 @@
 #!/bin/bash
-sudo find / | grep cmake
+which cmake
+brew uninstall cmake --force
+brew cleanup
+which cmake
 sysctl -n hw.physicalcpu
