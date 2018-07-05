@@ -1,2 +1,3 @@
 #!/bin/bash
-ls /Applications
+sudo find / | grep cmake
+sysctl -n hw.physicalcpu
