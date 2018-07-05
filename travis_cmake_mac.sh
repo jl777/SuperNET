@@ -1,9 +1,5 @@
 #!/bin/bash
-brew uninstall cmake --force
-brew cleanup
-wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Darwin-x86_64.tar.gz
-tar -xvzf cmake-3.12.0-rc2-Darwin-x86_64.tar.gz
-cp -r cmake-3.12.0-rc2-Darwin-x86_64/CMake.app /Applications
+brew reinstall --HEAD cmake
 sysctl -n hw.physicalcpu
 which cmake
 cmake --version
