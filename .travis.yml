@@ -12,15 +12,20 @@ matrix:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh; fi
   - git submodule update --init --recursive
 
 script:
   - export VERSION=`echo "$(git tag -l --points-at HEAD)"`
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n hw.physicalcpu)"`; fi
   - mkdir build && cd build
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
-  - cmake --build . --target marketmaker-mainnet
-  - cmake --build . --target marketmaker-testnet
+  - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
+  - cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
+  - cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
 
 cache:
   apt: true

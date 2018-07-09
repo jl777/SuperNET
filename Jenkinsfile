@@ -14,7 +14,7 @@ rm -rf build
 mkdir build
 cd build
 cmake ..
-cmake --build . --target marketmaker-testnet
+cmake --build . --target marketmaker-testnet -j 4
 cd ../
 docker-compose build'''
       }
@@ -32,24 +32,6 @@ docker-compose down'''
       steps {
         sh '''docker-compose up -d
 ./start_BEER_OTHER_trade_inverted.sh ETH
-timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f clientnode)
-timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)
-docker-compose down'''
-      }
-    }
-    stage('Trade BEER/ETOMIC') {
-      steps {
-        sh '''docker-compose up -d
-./start_BEER_OTHER_trade.sh ETOMIC
-timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f clientnode)
-timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)
-docker-compose down'''
-      }
-    }
-    stage('Trade ETOMIC/BEER') {
-      steps {
-        sh '''docker-compose up -d
-./start_BEER_OTHER_trade_inverted.sh ETOMIC
 timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f clientnode)
 timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)
 docker-compose down'''

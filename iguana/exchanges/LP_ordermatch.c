@@ -1789,7 +1789,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
         destsatoshis = autxo->swap_satoshis;
         printf("second path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->swap_satoshis));
     }
-    if ( destsatoshis < (autxo->payment.value / LP_MINCLIENTVOL) || autxo->payment.value < desttxfee*LP_MINSIZE_TXFEEMULT )
+    if ( relcoin->etomic[0] == 0 && (destsatoshis < (autxo->payment.value / LP_MINCLIENTVOL) || autxo->payment.value < desttxfee*LP_MINSIZE_TXFEEMULT ))
     {
         printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
         return(clonestr("{\"error\":\"cant find a deposit that is close enough in size. make another deposit that is a bit larger than what you want to trade\"}"));
