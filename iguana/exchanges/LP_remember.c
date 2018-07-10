@@ -429,9 +429,9 @@ int32_t basilisk_isbobcoin(int32_t iambob,int32_t ind)
         case BASILISK_OTHERFEE: return(!iambob); break;
         case BASILISK_BOBSPEND:
         case BASILISK_ALICEPAYMENT:
-        case BASILISK_ALICERECLAIM:
-        case BASILISK_ALICECLAIM: return(0);
+        case BASILISK_ALICERECLAIM: return(0);
             break;
+        case BASILISK_ALICECLAIM:
         case BASILISK_BOBDEPOSIT:
         case BASILISK_ALICESPEND:
         case BASILISK_BOBPAYMENT:
@@ -681,6 +681,8 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddbits256(item,"paymentspent",rswap->paymentspent);
     jaddbits256(item,"Apaymentspent",rswap->Apaymentspent);
     jaddbits256(item,"depositspent",rswap->depositspent);
+    jaddbits256(item,"alicedexfee",rswap->iambob == 0 ? rswap->txids[BASILISK_MYFEE] : rswap->txids[BASILISK_OTHERFEE]);
+    
     return(item);
 }
 
