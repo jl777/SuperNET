@@ -128,25 +128,29 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->uuidstr,jstr(argjson,"uuid"),sizeof(qp->uuidstr));
+#ifndef NOTETOMIC
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
     {
-        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || compareAddresses(etomicstr,etomic) == 0 )
         {
             printf("etomic src mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
             return(-1);
         }
     }
+#endif
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->etomicsrc,jstr(argjson,"etomicsrc"),sizeof(qp->etomicsrc));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
+#ifndef NOTETOMIC
     if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
     {
-        if ( (etomicstr= jstr(argjson,"alicetomic")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        if ( (etomicstr= jstr(argjson,"alicetomic")) == 0 || compareAddresses(etomicstr,etomic) == 0 )
         {
             printf("etomic dest mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
             return(-1);
         }
     }
+#endif
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     safecopy(qp->etomicdest,jstr(argjson,"etomicdest"),sizeof(qp->etomicdest));
     qp->aliceid = j64bits(argjson,"aliceid");
