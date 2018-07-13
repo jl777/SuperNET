@@ -1217,16 +1217,27 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     strcpy(destaddr,destaddr2);
                 if ( coin != 0 )
                 {
-                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 )
-                        return(0);
+                    char txid_str[100], txid2_str[100];
+                    bits256_str(txid_str, txid);
+                    bits256_str(txid2_str, txid2);
+                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 ) {
+                        printf("Could not find tx out: %s %d\n", txid_str, vout);
+                        return (0);
+                    }
                     else free_json(txobj);
-                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 )
-                        return(0);
+                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 ) {
+                        printf("Could not find tx out: %s %d\n", txid_str, vout2);
+                        return (0);
+                    }
                     else free_json(txobj);
-                    if ( LP_numconfirms(coin->symbol,destaddr,txid,vout,0) <= 0 )
-                        return(0);
-                    if ( LP_numconfirms(coin->symbol,destaddr,txid2,vout2,0) <= 0 )
-                        return(0);
+                    if ( LP_numconfirms(coin->symbol,destaddr,txid,vout,0) <= 0 ) {
+                        printf("Txid numconfirms is less or equal to zero: %s %d\n", txid_str, vout);
+                        return (0);
+                    }
+                    if ( LP_numconfirms(coin->symbol,destaddr,txid2,vout2,0) <= 0 ) {
+                        printf("Txid numconfirms is less or equal to zero: %s %d\n", txid2_str, vout2);
+                        return (0);
+                    }
                 }
                 return(1);
             }
