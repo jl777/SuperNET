@@ -612,7 +612,7 @@ version\n\
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
-#ifndef NOT_ETOMIC
+#ifndef NOTETOMIC
                     if (strcmp(coin, "ETOMIC") == 0) {
                         if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
                             return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));

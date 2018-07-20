@@ -1342,6 +1342,20 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
     swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
     swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
+#ifndef NOTETOMIC
+    if (strcmp(alicestr, "ETOMIC") == 0) {
+        swap->alicepayment.I.eth_amount = swap->I.alicerealsat;
+        if (swap->I.iambob == 1) {
+            swap->otherfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
+        } else {
+            swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
+        }
+    }
+    if (strcmp(bobstr, "ETOMIC") == 0) {
+        swap->bobpayment.I.eth_amount = swap->I.bobrealsat;
+        swap->bobdeposit.I.eth_amount = LP_DEPOSITSATOSHIS(swap->I.bobrealsat);
+    }
+#endif
     LP_mark_spent(bobstr,qp->txid,qp->vout);
     LP_mark_spent(bobstr,qp->txid2,qp->vout2);
     LP_mark_spent(alicestr,qp->desttxid,qp->destvout);

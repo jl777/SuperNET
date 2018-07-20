@@ -70,6 +70,12 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
         if ( swap->I.etomicsrc[0] != 0 )
             fprintf(fp,",\"etomicsrc\":\"%s\"",swap->I.etomicsrc);
+        if (swap->myfee.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"aliceFeeEthTx\":\"%s\"", swap->myfee.I.ethTxid);
+        }
+        if (swap->otherfee.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"aliceFeeEthTx\":\"%s\"", swap->otherfee.I.ethTxid);
+        }
         if (swap->bobdeposit.I.ethTxid[0] != 0) {
             fprintf(fp,",\"bobDepositEthTx\":\"%s\"", swap->bobdeposit.I.ethTxid);
         }
@@ -253,6 +259,22 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
         {
             if ( (reqjson= cJSON_Parse(fstr)) != 0 )
             {
+#ifndef NOTETOMIC
+                if (strcmp(rawtx->symbol,"ETOMIC") == 0) {
+                    jdelete(reqjson,"txid");
+                    jdelete(reqjson,"amount");
+                    jaddstr(reqjson,"txid", rawtx->I.ethTxid);
+                    jaddnum(reqjson,"amount", dstr(rawtx->I.eth_amount));
+                    jdelete(reqjson, "coin");
+                    if (rawtx == &swap->myfee || rawtx == &swap->otherfee || rawtx == &swap->alicepayment || rawtx == &swap->bobspend || rawtx == &swap->alicereclaim) {
+                        jaddstr(reqjson,"coin", swap->I.alicestr);
+                    }
+
+                    if (rawtx == &swap->bobdeposit || rawtx == &swap->bobrefund || rawtx == &swap->aliceclaim || rawtx == &swap->bobpayment || rawtx == &swap->bobreclaim || rawtx == &swap->alicespend) {
+                        jaddstr(reqjson,"coin", swap->I.bobstr);
+                    }
+                }
+#endif
                 if ( jobj(reqjson,"method") != 0 )
                     jdelete(reqjson,"method");
                 jaddstr(reqjson,"method","update");
@@ -685,7 +707,35 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddbits256(item,"Apaymentspent",rswap->Apaymentspent);
     jaddbits256(item,"depositspent",rswap->depositspent);
     jaddbits256(item,"alicedexfee",rswap->iambob == 0 ? rswap->txids[BASILISK_MYFEE] : rswap->txids[BASILISK_OTHERFEE]);
-    
+    if ( rswap->bobtomic[0] != 0 || rswap->alicetomic[0] != 0) {
+        cJSON *eth_info = cJSON_CreateObject();
+        if (rswap->alicetomic[0] != 0) {
+            cJSON *a_fee = cJSON_CreateObject();
+            jaddstr(a_fee, "txid", rswap->aliceFeeEthTx);
+            jaddnum(a_fee, "amount", dstr(LP_DEXFEE(rswap->alicerealsat)));
+            cJSON_AddItemToObject(eth_info, "alicefee", a_fee);
+
+            cJSON *a_payment = cJSON_CreateObject();
+            jaddstr(a_payment, "txid", rswap->alicePaymentEthTx);
+            jaddnum(a_payment, "amount", dstr(rswap->alicerealsat));
+            cJSON_AddItemToObject(eth_info, "alicepayment", a_payment);
+        }
+
+        if (rswap->bobtomic[0] != 0) {
+            cJSON *b_deposit = cJSON_CreateObject();
+            jaddstr(b_deposit, "txid", rswap->bobDepositEthTx);
+            jaddnum(b_deposit, "amount", dstr(LP_DEPOSITSATOSHIS(rswap->bobrealsat)));
+            cJSON_AddItemToObject(eth_info, "bobdeposit", b_deposit);
+
+            cJSON *b_payment = cJSON_CreateObject();
+            jaddstr(b_payment, "txid", rswap->bobPaymentEthTx);
+            jaddnum(b_payment, "amount", dstr(rswap->bobrealsat));
+            cJSON_AddItemToObject(eth_info, "bobpayment", b_payment);
+        }
+
+        cJSON_AddItemToObject(item, "eth_info", eth_info);
+    }
+
     return(item);
 }
 
@@ -904,6 +954,10 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
 
                 if (jstr(txobj,"etomicdest") != 0) {
                     strcpy(rswap->etomicdest,jstr(txobj,"etomicdest"));
+                }
+
+                if (jstr(txobj,"aliceFeeEthTx") != 0) {
+                    strcpy(rswap->aliceFeeEthTx, jstr(txobj,"aliceFeeEthTx"));
                 }
 
                 if (jstr(txobj,"bobDepositEthTx") != 0) {
