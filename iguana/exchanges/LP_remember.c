@@ -707,6 +707,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddbits256(item,"Apaymentspent",rswap->Apaymentspent);
     jaddbits256(item,"depositspent",rswap->depositspent);
     jaddbits256(item,"alicedexfee",rswap->iambob == 0 ? rswap->txids[BASILISK_MYFEE] : rswap->txids[BASILISK_OTHERFEE]);
+#ifndef NOTETOMIC
     if ( rswap->bobtomic[0] != 0 || rswap->alicetomic[0] != 0) {
         cJSON *eth_info = cJSON_CreateObject();
         if (rswap->alicetomic[0] != 0) {
@@ -719,6 +720,13 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
             jaddstr(a_payment, "txid", rswap->alicePaymentEthTx);
             jaddnum(a_payment, "amount", dstr(rswap->alicerealsat));
             cJSON_AddItemToObject(eth_info, "alicepayment", a_payment);
+
+            if (rswap->alicePaymentSpentEth[0] != 0) {
+                cJSON *a_payment_spent = cJSON_CreateObject();
+                jaddstr(a_payment_spent, "txid", rswap->alicePaymentSpentEth);
+                jaddnum(a_payment_spent, "amount", dstr(rswap->alicerealsat));
+                cJSON_AddItemToObject(eth_info, "alicepaymentspent", a_payment_spent);
+            }
         }
 
         if (rswap->bobtomic[0] != 0) {
@@ -731,11 +739,24 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
             jaddstr(b_payment, "txid", rswap->bobPaymentEthTx);
             jaddnum(b_payment, "amount", dstr(rswap->bobrealsat));
             cJSON_AddItemToObject(eth_info, "bobpayment", b_payment);
+            if (rswap->bobDepositSpentEth[0] != 0) {
+                cJSON *b_deposit_spent = cJSON_CreateObject();
+                jaddstr(b_deposit_spent, "txid", rswap->bobDepositSpentEth);
+                jaddnum(b_deposit_spent, "amount", dstr(LP_DEPOSITSATOSHIS(rswap->bobrealsat)));
+                cJSON_AddItemToObject(eth_info, "bobdepositspent", b_deposit_spent);
+            }
+
+            if (rswap->bobPaymentSpentEth[0] != 0) {
+                cJSON *b_payment_spent = cJSON_CreateObject();
+                jaddstr(b_payment_spent, "txid", rswap->bobPaymentSpentEth);
+                jaddnum(b_payment_spent, "amount", dstr(rswap->bobrealsat));
+                cJSON_AddItemToObject(eth_info, "bobpaymentspent", b_payment_spent);
+            }
         }
 
         cJSON_AddItemToObject(item, "eth_info", eth_info);
     }
-
+#endif
     return(item);
 }
 
@@ -1337,6 +1358,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                                 {
                                     char *aliceSpendEthTxId = LP_etomicalice_spends_bob_payment(&rswap);
                                     if (aliceSpendEthTxId != NULL) {
+                                        strcpy(rswap.bobPaymentSpentEth, aliceSpendEthTxId);
                                         free(aliceSpendEthTxId);
                                     } else {
                                         printf("Alice spend ETH tx send failed!\n");
@@ -1386,6 +1408,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                                 {
                                     char *aliceClaimsEthTxId = LP_etomicalice_claims_bob_deposit(&rswap);
                                     if (aliceClaimsEthTxId != NULL) {
+                                        strcpy(rswap.bobDepositSpentEth, aliceClaimsEthTxId);
                                         free(aliceClaimsEthTxId);
                                     } else {
                                         printf("Alice Bob deposit claim ETH tx failed!\n");
@@ -1418,7 +1441,12 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             if ( rswap.alicetomic[0] != 0 )
                             {
                                 char *aliceReclaimEthTx = LP_etomicalice_reclaims_payment(&rswap);
-                                free(aliceReclaimEthTx);
+                                if (aliceReclaimEthTx != NULL) {
+                                    strcpy(rswap.alicePaymentSpentEth, aliceReclaimEthTx);
+                                    free(aliceReclaimEthTx);
+                                } else {
+                                    printf("Alice could not reclaim ETH/ERC20 payment!\n");
+                                }
                             }
 #endif
                         }
@@ -1462,6 +1490,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                                 {
                                     char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
                                     if (bobSpendEthTx != NULL) {
+                                        strcpy(rswap.alicePaymentSpentEth, bobSpendEthTx);
                                         free(bobSpendEthTx);
                                     } else {
                                         printf("Bob spends Alice payment ETH tx send failed!\n");
@@ -1499,6 +1528,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             {
                                 char *bobReclaimEthTx = LP_etomicbob_reclaims_payment(&rswap);
                                 if (bobReclaimEthTx != NULL) {
+                                    strcpy(rswap.bobPaymentSpentEth, bobReclaimEthTx);
                                     free(bobReclaimEthTx);
                                 } else {
                                     printf("Bob reclaims payment ETH tx send failed!\n");
@@ -1552,6 +1582,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             {
                                 char *bobRefundsEthTx = LP_etomicbob_refunds_deposit(&rswap);
                                 if (bobRefundsEthTx != NULL) {
+                                    strcpy(rswap.bobDepositSpentEth, bobRefundsEthTx);
                                     free(bobRefundsEthTx);
                                 } else {
                                     printf("Bob refunds deposit ETH tx send failed!\n");
