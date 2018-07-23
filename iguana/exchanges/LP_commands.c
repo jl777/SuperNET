@@ -612,8 +612,8 @@ version\n\
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
-#ifndef NOT_ETOMIC
-                    if (strcmp(coin, "ETOMIC") == 0) {
+#ifndef NOTETOMIC
+                    if (strcmp(coin, "ETOMIC") == 0 && LP_RTsmartbalance(ptr) < 20 * SATOSHIDEN) {
                         if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
                             return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
                         }
@@ -641,8 +641,6 @@ version\n\
                     {
                         cJSON *array;
                         ptr->inactive = 0;
-                        if ( ptr->smartaddr[0] != 0 )
-                            LP_unspents_load(coin,ptr->smartaddr);
                         LP_unspents_load(coin,ptr->smartaddr);
                         if ( strcmp(ptr->symbol,"KMD") == 0 )
                             LP_importaddress("KMD",BOTS_BONDADDRESS);
@@ -708,13 +706,6 @@ version\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-#ifndef NOTETOMIC
-                    if (strcmp(coin, "ETOMIC") == 0) {
-                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
-                            return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
-                        }
-                    }
-#endif
                     ptr->inactive = 0;
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));

@@ -42,6 +42,7 @@ char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 {
     char amount[100], secretKey[70], dexaddr[50];
     satoshisToWei(amount, LP_DEXFEE(swap->I.alicerealsat));
+    swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
     uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
     LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
@@ -94,7 +95,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
 char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 {
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20; BasicTxData txData;
-
+    swap->alicepayment.I.eth_amount = swap->I.alicerealsat;
     // set input and txData fields from the swap data structure
     memset(&txData,0,sizeof(txData));
     if ( strcmp(swap->I.alicestr,"ETH") == 0 )
@@ -168,7 +169,6 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
         return(0);
     }
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20;
-
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
         uint64_t paymentAmount = weiToSatoshi(data.valueHex);
         if (paymentAmount != swap->I.alicerealsat) {
@@ -533,7 +533,6 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
     BobSendsErc20PaymentInput input20;
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
-
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
         uint64_t paymentAmount = weiToSatoshi(data.valueHex);
         if (paymentAmount != swap->I.bobrealsat) {
@@ -767,7 +766,7 @@ int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64])
 
 uint8_t LP_etomic_is_empty_tx_id(char *txId)
 {
-    if (strcmp(txId, EMPTY_ETH_TX_ID) == 0) {
+    if (txId[0] == 0 || strcmp(txId, EMPTY_ETH_TX_ID) == 0) {
         return 1;
     }
     return 0;
