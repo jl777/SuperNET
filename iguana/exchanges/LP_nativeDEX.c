@@ -1226,7 +1226,7 @@ void queue_loop(void *ctx)
                         }
                         if ( (json= cJSON_Parse((char *)ptr->msg)) != 0 )
                         {
-                            if ( 1 && ptr->msglen < sizeof(linebuf) )
+                            if ( ptr->msglen < sizeof(linebuf) )
                             {
                                 if ( (k= MMJSON_encode(linebuf,(char *)ptr->msg)) > 0 )
                                 {
