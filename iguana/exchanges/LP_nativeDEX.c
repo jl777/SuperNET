@@ -1126,6 +1126,7 @@ void LP_swapsloop(void *ctx)
                 if ( (sp->finished= LP_swapwait(0,sp->requestid,sp->quoteid,-1,0)) != 0 )
                 {
                 }
+                sleep(3);
             }
         }
         if ( nonz == 0 )
@@ -1136,7 +1137,7 @@ void LP_swapsloop(void *ctx)
                 LP_alice_eligible((uint32_t)time(NULL));
                 sleep(6);
             }
-        }
+        } else sleep(10);
         LP_gtc_iteration(ctx,LP_myipaddr,LP_mypubsock);
     }
 }
