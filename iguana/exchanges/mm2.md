@@ -50,5 +50,11 @@ Implementation might consist of two layers.
 A layer that is ported to the host environment (native, JS, Java, Objective-C, cross-compiled Raspberry Pi 3, etc) and implements the TCP/IP communication, state management, hot reloading all, things that won't fit into the WASM sandbox.
 And a layer that implements the core logic in a stateless manner and which is compiled into a native shared library or WASM.
 
+Parts of the state might be marked as sensitive.
+This will give the users an option to share only the information that can be freely shared,
+without a risk of loosing money that is.
+Even without the sensitive information a state snapshot might provide the developer with enough data to quickly triage and/or fix the failure, therefore improving the roundtrip time before a failure and a fix.
+Plus users will more easily share their problems when it's quick, automatic and doesn't pose a monetary risk.
+
 The feasibility of this approach is yet to be evaluated, but we can move gradually towards it
 by separating the code into the stateful and stateless layers while working on the basic Rust port.
