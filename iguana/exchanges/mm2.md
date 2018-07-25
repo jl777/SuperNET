@@ -47,8 +47,8 @@ The benefits we want to reap from this are:
 * Hot reloading. When the code is separated from state, it's trivial to reload it, both with the shared libraries in CPU-native environments (dlopen) and with WASM in GUI environments. This might positively affect the development cycle, reducing the round-trip time from a failure to a fix.
 
 Implementation might consist of two layers.
-A layer that is ported to the host environment (native, JS, Java, Objective-C, cross-compiled Raspberry Pi 3, etc) and implements the TCP/IP communication, state management, hot reloading all things that won't fit into the WASM sandbox.
-And a layer that implements the core logic in a stateless manner and which is compiled to a native shared library or WASM.
+A layer that is ported to the host environment (native, JS, Java, Objective-C, cross-compiled Raspberry Pi 3, etc) and implements the TCP/IP communication, state management, hot reloading all, things that won't fit into the WASM sandbox.
+And a layer that implements the core logic in a stateless manner and which is compiled into a native shared library or WASM.
 
 The feasibility of this approach is yet to be evaluated, but we can move gradually towards it
 by separating the code into the stateful and stateless layers while working on the basic Rust port.
