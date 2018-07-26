@@ -66,6 +66,7 @@ coins/eql_7776
 coins/zilla_7776
 coins/vrsc_7776
 coins/rfox_7776
+coins/sec_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
