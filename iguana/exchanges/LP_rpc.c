@@ -407,6 +407,8 @@ int32_t LP_address_isvalid(char *symbol,char *address)
     int32_t isvalid = 0; cJSON *retjson;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
+    if ( strcmp(symbol,"BCH") == 0 && (address[0] == '1' || address[0] == '3') )
+        return(-1);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
         if ( jobj(retjson,"isvalid") != 0 && is_cJSON_True(jobj(retjson,"isvalid")) != 0 )
