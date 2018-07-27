@@ -49,7 +49,7 @@ int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64]);
 
 uint8_t LP_etomic_is_empty_tx_id(char *txId);
 
-uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr);
+uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *error);
 
 void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output);
 

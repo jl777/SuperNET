@@ -352,6 +352,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 {
     //static uint32_t counter;
     bits256 privkey,userpub,zero,userpass,checkkey,tmpkey; char str[65],str2[65],tmpstr[128]; cJSON *retjson; uint8_t tmptype,sig[128]; int32_t notarized,siglen; uint64_t nxtaddr;
+    uint8_t rmd160[20];
     if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(coin->symbol,passphrase) > 0 )
     {
         wifstr = passphrase;
@@ -399,7 +400,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 #ifndef NOTETOMIC
     if ( coin->etomic[0] != 0 )
     {
-        uint8_t check64[64],checktype,checkrmd160[20],rmd160[20]; char checkaddr[64],checkaddr2[64];
+        uint8_t check64[64],checktype,checkrmd160[20]; char checkaddr[64],checkaddr2[64];
         if ( LP_etomic_priv2pub(check64,privkey) == 0 )
         {
             if ( memcmp(check64,coin->pubkey33+1,32) == 0 )
@@ -434,8 +435,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         coin->counter++;
         memcpy(G.LP_pubsecp,coin->pubkey33,33);
         bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,coin->wiftype);
-        bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
-        LP_privkeyadd(privkey,G.LP_myrmd160);
+        bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,rmd160,coin->smartaddr);
+        LP_privkeyadd(privkey,rmd160);
         G.LP_privkey = privkey;
         if ( G.counter++ == 0 )
         {
@@ -705,6 +706,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode)
 {
     static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;
+    uint8_t pubkey33[100];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -739,8 +741,11 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     memset(&G,0,sizeof(G));
     G.netid = netid;
     safecopy(G.seednode,seednode,sizeof(G.seednode));
+
     vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
+    bitcoin_pubkey33(ctx, pubkey33, G.LP_privkey);
+    calc_rmd160_sha256(G.LP_myrmd160, pubkey33, 33);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));

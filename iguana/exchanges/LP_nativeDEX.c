@@ -30,6 +30,9 @@
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
 #include <stdio.h>
+#ifndef MM_VERSION
+#define MM_VERSION "UNKNOWN"
+#endif
 
 long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
 
@@ -117,7 +120,7 @@ struct LP_globals
 {
     //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
     bits256 LP_mypub25519,LP_privkey,LP_mypriv25519,LP_passhash;
-    uint64_t LP_skipstatus[10000];
+    uint64_t LP_skipstatus[10000], LP_required_etomic_balance;
     uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter,mpnet;
@@ -1223,7 +1226,7 @@ void queue_loop(void *ctx)
                         }
                         if ( (json= cJSON_Parse((char *)ptr->msg)) != 0 )
                         {
-                            if ( 1 && ptr->msglen < sizeof(linebuf) )
+                            if ( ptr->msglen < sizeof(linebuf) )
                             {
                                 if ( (k= MMJSON_encode(linebuf,(char *)ptr->msg)) > 0 )
                                 {
@@ -1422,8 +1425,7 @@ extern int32_t bitcoind_RPC_inittime;
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
-    sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
+    char *myipaddr=0; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     bitcoind_RPC_inittime = 1;
     if ( LP_MAXPRICEINFOS > 256 )
     {
@@ -1431,7 +1433,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     LP_showwif = juint(argjson,"wif");
-    printf("showwif.%d %s %u\n",LP_showwif,version,calc_crc32(0,version,(int32_t)strlen(version)));
+    printf("showwif.%d version: %s %u\n",LP_showwif,MM_VERSION,calc_crc32(0,MM_VERSION,(int32_t)strlen(MM_VERSION)));
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
@@ -1506,10 +1508,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
-    if ( system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
+    char ipfname[64];
+    strcpy(ipfname,"myipaddr");
+    if ( access( ipfname, F_OK ) != -1 || system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
     {
-        char ipfname[64];
-        strcpy(ipfname,"myipaddr");
         if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
         {
             n = strlen(myipaddr);
