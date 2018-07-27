@@ -902,10 +902,10 @@ char *get_cJSON_fieldname(cJSON *obj)
 {
     if ( obj != 0 )
     {
-        if ( obj->child != 0 && obj->child->string != 0 )
-            return(obj->child->string);
-        else if ( obj->string != 0 )
+        if ( obj->string != 0 )
             return(obj->string);
+		if ( obj->child != 0 && obj->child->string != 0 )
+			return(obj->child->string);
     }
     return((char *)"<no cJSON string field>");
 }

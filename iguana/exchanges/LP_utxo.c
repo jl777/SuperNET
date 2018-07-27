@@ -699,7 +699,8 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     //printf("address balance call LP_listunspent %s electrum.%p etomic.%d\n",coin->symbol,coin->electrum,coin->etomic[0]);
 #ifndef NOTETOMIC
     if (coin->etomic[0] != 0) {
-        balance = LP_etomic_get_balance(coin, coinaddr);
+        int error = 0;
+        balance = LP_etomic_get_balance(coin, coinaddr, &error);
     } else
 #endif
     if ( coin->electrum == 0 )
@@ -787,7 +788,14 @@ cJSON *LP_balances(char *coinaddr)
         }
         else
         {
-            if ( (balance= LP_RTsmartbalance(coin)) != 0 )
+#ifndef NOTETOMIC
+            if (coin->etomic[0] == 0 || coin->inactive == 0) {
+#endif
+                balance = LP_RTsmartbalance(coin);
+#ifndef NOTETOMIC
+            }
+#endif
+            if ( balance != 0 )
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"coin",coin->symbol);
@@ -1185,7 +1193,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         return(-1);
     }
     destaddr[0] = destaddr2[0] = 0;
-    if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
+    if ( coin != 0 && (strcmp(coin->symbol, "ETOMIC") == 0 || (coin->inactive != 0 && IAMLP != 0)))
         bypass = 1;
     if ( bypass != 0 )
         val = satoshis;
@@ -1209,16 +1217,27 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     strcpy(destaddr,destaddr2);
                 if ( coin != 0 )
                 {
-                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 )
-                        return(0);
+                    char txid_str[100], txid2_str[100];
+                    bits256_str(txid_str, txid);
+                    bits256_str(txid2_str, txid2);
+                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 ) {
+                        printf("Could not find tx out: %s %d\n", txid_str, vout);
+                        return (0);
+                    }
                     else free_json(txobj);
-                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 )
-                        return(0);
+                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 ) {
+                        printf("Could not find tx out: %s %d\n", txid_str, vout2);
+                        return (0);
+                    }
                     else free_json(txobj);
-                    if ( LP_numconfirms(coin->symbol,destaddr,txid,vout,0) <= 0 )
-                        return(0);
-                    if ( LP_numconfirms(coin->symbol,destaddr,txid2,vout2,0) <= 0 )
-                        return(0);
+                    if ( LP_numconfirms(coin->symbol,destaddr,txid,vout,0) <= 0 ) {
+                        printf("Txid numconfirms is less or equal to zero: %s %d\n", txid_str, vout);
+                        return (0);
+                    }
+                    if ( LP_numconfirms(coin->symbol,destaddr,txid2,vout2,0) <= 0 ) {
+                        printf("Txid numconfirms is less or equal to zero: %s %d\n", txid2_str, vout2);
+                        return (0);
+                    }
                 }
                 return(1);
             }

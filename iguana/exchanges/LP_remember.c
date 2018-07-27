@@ -13,10 +13,33 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
+#include "LP_include.h"
+#include "../../includes/cJSON.h"
 //
 //  LP_remember.c
 //  marketmaker
 //
+char *coin_name_by_tx_index(struct LP_swap_remember *rswap, int32_t tx_index)
+{
+    switch (tx_index) {
+        case BASILISK_MYFEE:
+        case BASILISK_OTHERFEE:
+        case BASILISK_ALICEPAYMENT:
+        case BASILISK_ALICERECLAIM:
+        case BASILISK_BOBSPEND:
+            return rswap->dest;
+        case BASILISK_BOBDEPOSIT:
+        case BASILISK_BOBPAYMENT:
+        case BASILISK_BOBRECLAIM:
+        case BASILISK_BOBREFUND:
+        case BASILISK_ALICESPEND:
+        case BASILISK_ALICECLAIM:
+            return rswap->src;
+        default:
+            return 0;
+    }
+}
+
 void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,int32_t scriptlen)
 {
     int32_t i; char scriptstr[513];
@@ -70,6 +93,13 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
         if ( swap->I.etomicsrc[0] != 0 )
             fprintf(fp,",\"etomicsrc\":\"%s\"",swap->I.etomicsrc);
+#ifndef NOTETOMIC
+        if (swap->myfee.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"aliceFeeEthTx\":\"%s\"", swap->myfee.I.ethTxid);
+        }
+        if (swap->otherfee.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"aliceFeeEthTx\":\"%s\"", swap->otherfee.I.ethTxid);
+        }
         if (swap->bobdeposit.I.ethTxid[0] != 0) {
             fprintf(fp,",\"bobDepositEthTx\":\"%s\"", swap->bobdeposit.I.ethTxid);
         }
@@ -80,6 +110,9 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"alicePaymentEthTx\":\"%s\"", swap->alicepayment.I.ethTxid);
         }
 
+        fprintf(fp,",\"aliceRealSat\":\"%" PRId64 "\"", swap->I.alicerealsat);
+        fprintf(fp,",\"bobRealSat\":\"%" PRId64 "\"", swap->I.bobrealsat);
+#endif
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
             fprintf(fp,",\"alicetomic\":\"%s\"",swap->I.alicetomic);
@@ -250,6 +283,22 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
         {
             if ( (reqjson= cJSON_Parse(fstr)) != 0 )
             {
+#ifndef NOTETOMIC
+                if (strcmp(rawtx->symbol,"ETOMIC") == 0) {
+                    jdelete(reqjson,"txid");
+                    jdelete(reqjson,"amount");
+                    jaddstr(reqjson,"txid", rawtx->I.ethTxid);
+                    jaddnum(reqjson,"amount", dstr(rawtx->I.eth_amount));
+                    jdelete(reqjson, "coin");
+                    if (rawtx == &swap->myfee || rawtx == &swap->otherfee || rawtx == &swap->alicepayment || rawtx == &swap->bobspend || rawtx == &swap->alicereclaim) {
+                        jaddstr(reqjson,"coin", swap->I.alicestr);
+                    }
+
+                    if (rawtx == &swap->bobdeposit || rawtx == &swap->bobrefund || rawtx == &swap->aliceclaim || rawtx == &swap->bobpayment || rawtx == &swap->bobreclaim || rawtx == &swap->alicespend) {
+                        jaddstr(reqjson,"coin", swap->I.bobstr);
+                    }
+                }
+#endif
                 if ( jobj(reqjson,"method") != 0 )
                     jdelete(reqjson,"method");
                 jaddstr(reqjson,"method","update");
@@ -656,13 +705,31 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddnum(item,"alicetxfee",dstr(rswap->Atxfee));
     jadd64bits(item,"aliceid",rswap->aliceid);
     array = cJSON_CreateArray();
+    cJSON *tx_chain = cJSON_CreateArray();
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
-        if ( rswap->sentflags[i] != 0 )
-            jaddistr(array,txnames[i]);
+        if ( rswap->sentflags[i] != 0 ) {
+            jaddistr(array, txnames[i]);
+            cJSON *tx = cJSON_CreateObject();
+            jaddstr(tx, "stage", txnames[i]);
+            jaddstr(tx, "coin", coin_name_by_tx_index(rswap, i));
+#ifndef NOTETOMIC
+            if (LP_etomic_is_empty_tx_id(rswap->eth_tx_ids[i]) == 0) {
+                jaddstr(tx, "txid", rswap->eth_tx_ids[i]);
+                jaddnum(tx, "amount", dstr(rswap->eth_values[i]));
+            } else {
+#endif
+                jaddbits256(tx, "txid", rswap->txids[i]);
+                jaddnum(tx, "amount", dstr(rswap->values[i]));
+#ifndef NOTETOMIC
+            }
+#endif
+            jaddi(tx_chain, tx);
+        }
         if ( rswap->txbytes[i] != 0 )
             free(rswap->txbytes[i]), rswap->txbytes[i] = 0;
     }
+    jadd(item, "txChain", tx_chain);
     jadd(item,"sentflags",array);
     array = cJSON_CreateArray();
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
@@ -682,7 +749,6 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddbits256(item,"Apaymentspent",rswap->Apaymentspent);
     jaddbits256(item,"depositspent",rswap->depositspent);
     jaddbits256(item,"alicedexfee",rswap->iambob == 0 ? rswap->txids[BASILISK_MYFEE] : rswap->txids[BASILISK_OTHERFEE]);
-    
     return(item);
 }
 
@@ -903,16 +969,32 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     strcpy(rswap->etomicdest,jstr(txobj,"etomicdest"));
                 }
 
+                rswap->bobrealsat = jint(txobj, "bobRealSat");
+                rswap->alicerealsat = jint(txobj, "aliceRealSat");
+
+                if (jstr(txobj,"aliceFeeEthTx") != 0) {
+                    if (rswap->iambob == 0) {
+                        strcpy(rswap->eth_tx_ids[BASILISK_MYFEE], jstr(txobj, "aliceFeeEthTx"));
+                        rswap->eth_values[BASILISK_MYFEE] = LP_DEXFEE(rswap->alicerealsat);
+                    } else {
+                        strcpy(rswap->eth_tx_ids[BASILISK_OTHERFEE], jstr(txobj, "aliceFeeEthTx"));
+                        rswap->eth_values[BASILISK_OTHERFEE] = LP_DEXFEE(rswap->alicerealsat);
+                    }
+                }
+
                 if (jstr(txobj,"bobDepositEthTx") != 0) {
-                    strcpy(rswap->bobDepositEthTx, jstr(txobj,"bobDepositEthTx"));
+                    strcpy(rswap->eth_tx_ids[BASILISK_BOBDEPOSIT], jstr(txobj,"bobDepositEthTx"));
+                    rswap->eth_values[BASILISK_BOBDEPOSIT] = LP_DEPOSITSATOSHIS(rswap->bobrealsat);
                 }
 
                 if (jstr(txobj,"bobPaymentEthTx") != 0) {
-                    strcpy(rswap->bobPaymentEthTx, jstr(txobj,"bobPaymentEthTx"));
+                    strcpy(rswap->eth_tx_ids[BASILISK_BOBPAYMENT], jstr(txobj,"bobPaymentEthTx"));
+                    rswap->eth_values[BASILISK_BOBPAYMENT] = rswap->bobrealsat;
                 }
 
                 if (jstr(txobj,"alicePaymentEthTx") != 0) {
-                    strcpy(rswap->alicePaymentEthTx, jstr(txobj,"alicePaymentEthTx"));
+                    strcpy(rswap->eth_tx_ids[BASILISK_ALICEPAYMENT], jstr(txobj,"alicePaymentEthTx"));
+                    rswap->eth_values[BASILISK_ALICEPAYMENT] = rswap->alicerealsat;
                 }
 
                 if (jstr(txobj,"bobtomic") != 0) {
@@ -1277,6 +1359,8 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                                 {
                                     char *aliceSpendEthTxId = LP_etomicalice_spends_bob_payment(&rswap);
                                     if (aliceSpendEthTxId != NULL) {
+                                        strcpy(rswap.eth_tx_ids[BASILISK_ALICESPEND], aliceSpendEthTxId);
+                                        rswap.eth_values[BASILISK_ALICESPEND] = rswap.bobrealsat;
                                         free(aliceSpendEthTxId);
                                     } else {
                                         printf("Alice spend ETH tx send failed!\n");
@@ -1326,6 +1410,8 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                                 {
                                     char *aliceClaimsEthTxId = LP_etomicalice_claims_bob_deposit(&rswap);
                                     if (aliceClaimsEthTxId != NULL) {
+                                        strcpy(rswap.eth_tx_ids[BASILISK_ALICECLAIM], aliceClaimsEthTxId);
+                                        rswap.eth_values[BASILISK_ALICECLAIM] = LP_DEPOSITSATOSHIS(rswap.bobrealsat);
                                         free(aliceClaimsEthTxId);
                                     } else {
                                         printf("Alice Bob deposit claim ETH tx failed!\n");
@@ -1358,7 +1444,13 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             if ( rswap.alicetomic[0] != 0 )
                             {
                                 char *aliceReclaimEthTx = LP_etomicalice_reclaims_payment(&rswap);
-                                free(aliceReclaimEthTx);
+                                if (aliceReclaimEthTx != NULL) {
+                                    strcpy(rswap.eth_tx_ids[BASILISK_ALICERECLAIM], aliceReclaimEthTx);
+                                    rswap.eth_values[BASILISK_ALICERECLAIM] = rswap.alicerealsat;
+                                    free(aliceReclaimEthTx);
+                                } else {
+                                    printf("Alice could not reclaim ETH/ERC20 payment!\n");
+                                }
                             }
 #endif
                         }
@@ -1402,6 +1494,8 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                                 {
                                     char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
                                     if (bobSpendEthTx != NULL) {
+                                        strcpy(rswap.eth_tx_ids[BASILISK_BOBSPEND], bobSpendEthTx);
+                                        rswap.eth_values[BASILISK_BOBSPEND] = rswap.alicerealsat;
                                         free(bobSpendEthTx);
                                     } else {
                                         printf("Bob spends Alice payment ETH tx send failed!\n");
@@ -1439,6 +1533,8 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             {
                                 char *bobReclaimEthTx = LP_etomicbob_reclaims_payment(&rswap);
                                 if (bobReclaimEthTx != NULL) {
+                                    strcpy(rswap.eth_tx_ids[BASILISK_BOBRECLAIM], bobReclaimEthTx);
+                                    rswap.eth_values[BASILISK_BOBRECLAIM] = rswap.bobrealsat;
                                     free(bobReclaimEthTx);
                                 } else {
                                     printf("Bob reclaims payment ETH tx send failed!\n");
@@ -1492,6 +1588,8 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             {
                                 char *bobRefundsEthTx = LP_etomicbob_refunds_deposit(&rswap);
                                 if (bobRefundsEthTx != NULL) {
+                                    strcpy(rswap.eth_tx_ids[BASILISK_BOBREFUND], bobRefundsEthTx);
+                                    rswap.eth_values[BASILISK_BOBREFUND] = LP_DEPOSITSATOSHIS(rswap.bobrealsat);
                                     free(bobRefundsEthTx);
                                 } else {
                                     printf("Bob refunds deposit ETH tx send failed!\n");

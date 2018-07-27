@@ -2087,30 +2087,111 @@ char *LP_movecoinbases(char *symbol)
 
 #ifndef NOTETOMIC
 
-char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
+char *LP_eth_tx_fee(struct iguana_info *coin, char *dest_addr, char *amount, int64_t gas, int64_t gas_price)
 {
-    cJSON *retjson = cJSON_CreateObject();
-    char *dest_addr, *tx_id, privkey_str[70], amount_str[100];
-    int64_t amount;
     bits256 privkey;
+    cJSON *retjson = cJSON_CreateObject();
+    int64_t actual_gas_price = 0, actual_gas = 0;
+    char privkey_str[70];
 
-    dest_addr = jstr(argjson, "to");
-    amount = jdouble(argjson, "amount") * 100000000;
-    privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
-    uint8arrayToHex(privkey_str, privkey.bytes, 32);
-    satoshisToWei(amount_str, amount);
-    if (strcmp(coin->symbol, "ETH") == 0) {
-        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0);
+    if (gas_price > 0) {
+        actual_gas_price = gas_price;
     } else {
-        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0);
+        actual_gas_price = getGasPriceFromStation(0);
+        if (actual_gas_price == 0) {
+            return (clonestr("{\"error\":\"Couldn't get gas price from station!\"}"));
+        }
     }
-    jaddstr(retjson, "tx_id", tx_id);
+    cJSON_AddNumberToObject(retjson, "gas_price", actual_gas_price);
+
+    if (gas > 0) {
+        actual_gas = gas;
+    } else if (strcmp(coin->symbol, "ETH") == 0) {
+        actual_gas = 21000;
+    } else {
+        privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
+        uint8arrayToHex(privkey_str, privkey.bytes, 32);
+        actual_gas = estimate_erc20_gas(coin->etomic, dest_addr, amount, privkey_str, coin->decimals);
+        if (actual_gas == 0) {
+            return (clonestr("{\"error\":\"Couldn't estimate erc20 transfer gas usage!\"}"));
+        }
+    }
+    cJSON_AddNumberToObject(retjson, "gas", actual_gas);
+
+    double_t eth_fee = (actual_gas_price * actual_gas) / 1000000000.0;
+    cJSON_AddNumberToObject(retjson, "eth_fee", eth_fee);
     return(jprint(retjson,1));
 }
 
+char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    cJSON *gas_json = cJSON_GetObjectItem(argjson, "gas");
+    cJSON *gas_price_json = cJSON_GetObjectItem(argjson, "gas_price");
+    char *dest_addr, *tx_id, privkey_str[70], amount_str[100];
+    int64_t amount = 0, gas = 0, gas_price = 0, broadcast = 0;
+    bits256 privkey;
+
+    dest_addr = jstr(argjson, "to");
+    if (dest_addr == NULL) {
+        return(clonestr("{\"error\":\"param 'to' is required!\"}"));
+    }
+
+    if (isValidAddress(dest_addr) == 0) {
+        return(clonestr("{\"error\":\"'to' address is not valid!\"}"));
+    }
+
+    amount = jdouble(argjson, "amount") * 100000000;
+    if (amount == 0) {
+        return(clonestr("{\"error\":\"'amount' is not set or equal to zero!\"}"));
+    }
+    if (gas_json != NULL && is_cJSON_Number(gas_json)) {
+        gas = gas_json->valueint;
+        if (gas < 21000) {
+            return (clonestr("{\"error\":\"'gas' can't be lower than 21000!\"}"));
+        }
+    }
+    if (gas_price_json != NULL && is_cJSON_Number(gas_price_json)) {
+        gas_price = gas_price_json->valueint;
+        if (gas_price < 1) {
+            return (clonestr("{\"error\":\"'gas_price' can't be lower than 1!\"}"));
+        }
+    }
+
+    broadcast = jint(argjson, "broadcast");
+    satoshisToWei(amount_str, amount);
+    if (broadcast == 1) {
+        privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
+        uint8arrayToHex(privkey_str, privkey.bytes, 32);
+        if (strcmp(coin->symbol, "ETH") == 0) {
+            tx_id = sendEth(dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0);
+        } else {
+            tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0, coin->decimals);
+        }
+        if (tx_id != NULL) {
+            jaddstr(retjson, "tx_id", tx_id);
+            free(tx_id);
+        } else {
+            jaddstr(retjson, "error", "Error sending transaction");
+        }
+        return (jprint(retjson, 1));
+    } else {
+        return LP_eth_tx_fee(coin, dest_addr, amount_str, gas, gas_price);
+    }
+}
+
+char *LP_eth_gas_price()
+{
+    cJSON *retjson = cJSON_CreateObject();
+    uint64_t gas_price = getGasPriceFromStation(0);
+    if (gas_price > 0) {
+        cJSON_AddNumberToObject(retjson, "gas_price", gas_price);
+    } else {
+        cJSON_AddStringToObject(retjson, "error", "Could not get gas price from station!");
+    }
+    return(jprint(retjson,1));
+}
 #endif
-
-
 
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {
