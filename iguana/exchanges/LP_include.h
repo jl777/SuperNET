@@ -256,19 +256,19 @@ struct basilisk_swapinfo
     uint8_t userdata_bobrefund[256],userdata_bobrefundlen;
 };
 
-#define BASILISK_ALICESPEND 0
-#define BASILISK_BOBSPEND 1
-#define BASILISK_BOBPAYMENT 2
+#define BASILISK_MYFEE 0
+#define BASILISK_OTHERFEE 1
+#define BASILISK_BOBDEPOSIT 2
 #define BASILISK_ALICEPAYMENT 3
-#define BASILISK_BOBDEPOSIT 4
-#define BASILISK_OTHERFEE 5
-#define BASILISK_MYFEE 6
+#define BASILISK_BOBPAYMENT 4
+#define BASILISK_ALICESPEND 5
+#define BASILISK_BOBSPEND 6
 #define BASILISK_BOBREFUND 7
 #define BASILISK_BOBRECLAIM 8
 #define BASILISK_ALICERECLAIM 9
 #define BASILISK_ALICECLAIM 10
 //0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0
-static char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
+static char *txnames[] = { "myfee", "otherfee", "bobdeposit", "alicepayment", "bobpayment", "alicespend", "bobspend", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
 
 struct LP_swap_remember
 {
@@ -279,7 +279,8 @@ struct LP_swap_remember
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
     char uuidstr[65],Agui[65],Bgui[65],gui[65],src[65],dest[65],bobtomic[128],alicetomic[128],etomicsrc[65],etomicdest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)];
-    char bobDepositEthTx[75],bobPaymentEthTx[75],aliceFeeEthTx[75],alicePaymentEthTx[75],bobPaymentSpentEth[75],alicePaymentSpentEth[75],bobDepositSpentEth[75];
+    char eth_tx_ids[sizeof(txnames)/sizeof(*txnames)][75];
+    int64_t eth_values[sizeof(txnames)/sizeof(*txnames)];
 };
 
 struct LP_outpoint

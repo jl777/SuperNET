@@ -200,11 +200,11 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->alicePaymentEthTx) < 0) {
-        printf("Alice ETH payment %s is not found, can't reclaim\n", swap->alicePaymentEthTx);
+    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]) < 0) {
+        printf("Alice ETH payment %s is not found, can't reclaim\n", swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
         return NULL;
     }
-    EthTxReceipt receipt = getEthTxReceipt(swap->alicePaymentEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
     if (strcmp(receipt.status, "0x1") != 0) {
         printf("Alice payment receipt status failed, can't reclaim\n");
         return NULL;
@@ -252,11 +252,11 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->alicePaymentEthTx) < 0) {
-        printf("Alice ETH payment %s is not found, can't spend\n", swap->alicePaymentEthTx);
+    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]) < 0) {
+        printf("Alice ETH payment %s is not found, can't spend\n", swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
         return NULL;
     }
-    EthTxReceipt receipt = getEthTxReceipt(swap->alicePaymentEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
     if (strcmp(receipt.status, "0x1") != 0) {
         printf("Alice payment receipt status failed, can't spend\n");
         return NULL;
@@ -408,8 +408,8 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->bobDepositEthTx) < 0) {
-        printf("Bob deposit %s is not found, can't refund\n", swap->bobDepositEthTx);
+    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]) < 0) {
+        printf("Bob deposit %s is not found, can't refund\n", swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
         return NULL;
     }
     BobRefundsDepositInput input;
@@ -423,9 +423,9 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
     bobcoin = LP_coinfind(swap->src);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
-    EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
     if (strcmp(receipt.status, "0x1") != 0) {
-        printf("Bob deposit %s receipt status failed, can't refund\n", swap->bobDepositEthTx);
+        printf("Bob deposit %s receipt status failed, can't refund\n", swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
         return NULL;
     }
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
@@ -562,8 +562,8 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->bobPaymentEthTx) < 0) {
-        printf("Bob payment %s is not found, can't reclaim\n", swap->bobPaymentEthTx);
+    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBPAYMENT]) < 0) {
+        printf("Bob payment %s is not found, can't reclaim\n", swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
         return NULL;
     }
     BobReclaimsBobPaymentInput input;
@@ -577,7 +577,7 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
     bobcoin = LP_coinfind(swap->src);
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
-    EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
     if (strcmp(receipt.status, "0x1") != 0) {
         printf("Bob payment receipt status failed, can't reclaim\n");
         return NULL;
@@ -607,8 +607,8 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->bobPaymentEthTx) < 0) {
-        printf("Bob payment %s is not found, can't spend\n", swap->bobPaymentEthTx);
+    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBPAYMENT]) < 0) {
+        printf("Bob payment %s is not found, can't spend\n", swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
         return NULL;
     }
     AliceSpendsBobPaymentInput input;
@@ -616,9 +616,9 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
-    EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
     if (strcmp(receipt.status, "0x1") != 0) {
-        printf("Bob payment %s receipt status failed, can't spend\n", swap->bobPaymentEthTx);
+        printf("Bob payment %s receipt status failed, can't spend\n", swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
         return NULL;
     }
     struct iguana_info *ecoin, *bobcoin;
@@ -658,8 +658,8 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->bobDepositEthTx) < 0) {
-        printf("Bob deposit %s is not found, can't claim\n", swap->bobDepositEthTx);
+    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]) < 0) {
+        printf("Bob deposit %s is not found, can't claim\n", swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
         return NULL;
     }
     AliceClaimsBobDepositInput input;
@@ -667,7 +667,7 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
 
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
-    EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
     if (strcmp(receipt.status, "0x1") != 0) {
         printf("Bob deposit receipt status failed, can't claim\n");
         return NULL;
