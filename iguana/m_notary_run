@@ -8,7 +8,8 @@ clang -g -Wno-deprecated -c -O2 -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1 *.c ../b
 clang -g  -Wno-deprecated -c -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c
 clang -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -lcrypto -lpthread -lz -lm
 
-stdbuf -oL $1 ../agents/iguana notary  & #> iguana.log 2> error.log  &
+iguana_arg=${2:-notary}
+stdbuf -oL $1 ../agents/iguana $iguana_arg  & #> iguana.log 2> error.log  &
 
 myip=`curl -s4 checkip.amazonaws.com`
 source pubkey.txt
