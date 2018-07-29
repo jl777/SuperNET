@@ -547,6 +547,14 @@ char *verusblocks()
                             value = jdouble(vout,"value");
                             supply += value;
                             hexstr = 0;
+                            if ( m == 1 && (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 )
+                            {
+                                if ( strcmp(hexstr,"2102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ac") == 0 || strcmp(hexstr,"76a914cc39e9e699f86b03a5cf1d7f2a0b411cf652641788ac") == 0 )
+                                {
+                                    powsum += value, npow++;
+                                    fprintf(stderr,"PoW block\n");
+                                }
+                            }
                             if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
                             {
                                 // 6a2001039bbc0bb17576a9149a3af738444dd86b55c86752247aec2e7deb842688ac
@@ -566,7 +574,7 @@ char *verusblocks()
                                     locked = ((int32_t)script[6] << 16) + ((int32_t)script[5] << 8) + script[4];
                                     addr0 = firstaddr;
                                 } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",(int32_t)strlen(hexstr),jdouble(vout1,"value"));
-                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
+                            } //else printf("coinbase without opret (%s)\n",jprint(vouts,0));
                         }
                     }
                     free_json(txobj);
