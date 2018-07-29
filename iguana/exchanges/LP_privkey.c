@@ -504,7 +504,7 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
 
 char *verusblocks()
 {
-    bits256 hash,txid; uint8_t script[44]; double value,avestakedsize,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num10,num17,num20,num16,num23000,numpow,numpos,num,locked,height,i,m,n,z,numstaked,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,avestakedsize,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num10,num17,num20,num16,num23000,numpow,numpos,num,locked,height,i,m,n,z,gotblock,numstaked,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     struct iguana_info *coin = LP_coinfind("VRSC");
     if ( coin == 0 )
         return(clonestr("{\"error\":\"VRSC not active\"}"));
@@ -533,6 +533,7 @@ char *verusblocks()
                 value = 0;
                 posflag = 0;
                 locked = 0;
+                gotblock = 0;
                 lastaddr = addr0 = "";
                 memset(script,0,sizeof(script));
                 memset(firstaddr,0,sizeof(firstaddr));
@@ -547,12 +548,11 @@ char *verusblocks()
                             value = jdouble(vout,"value");
                             supply += value;
                             hexstr = 0;
-                            if ( m == 1 && (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 )
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 )
                             {
                                 if ( strcmp(hexstr,"2102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ac") == 0 || strcmp(hexstr,"76a914cc39e9e699f86b03a5cf1d7f2a0b411cf652641788ac") == 0 )
                                 {
-                                    powsum += value, npow++;
-                                    fprintf(stderr,"PoW block\n");
+                                    gotblock = 1;
                                 }
                             }
                             if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
@@ -638,7 +638,7 @@ char *verusblocks()
                     numpow++;
                     if ( num < 100 && strcmp(coinaddr,addr0) == 0 )
                         printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
-                    if ( strcmp(coinaddr,addr0) == 0 )
+                    if ( strcmp(coinaddr,addr0) == 0 || gotblock != 0 )
                         powsum += value, npow++;
                 }
                 histo[locked/1000] += value;
