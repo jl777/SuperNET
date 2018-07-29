@@ -550,7 +550,7 @@ char *verusblocks()
                             hexstr = 0;
                             if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 )
                             {
-                                if ( strcmp(hexstr,"2102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ac") == 0 || strcmp(hexstr,"76a914cc39e9e699f86b03a5cf1d7f2a0b411cf652641788ac") == 0 )
+                                if ( strcmp(hexstr,"2102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ac") == 0 || strcmp(hexstr,"2102aef0f54a967031f4c63b36d12741fbb9ca39713baedfff7f8c0d0d8ee14ee0ebac") == 0 || strcmp(hexstr,"76a914cc39e9e699f86b03a5cf1d7f2a0b411cf652641788ac") == 0 || strcmp(hexstr,"76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac") == 0 )
                                 {
                                     gotblock = 1;
                                 }
