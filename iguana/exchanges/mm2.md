@@ -53,10 +53,11 @@ The benefits we want to reap from this are:
 * Testability. Stateless code is much easier to test and according to Kent Beck is often a natural result of a Test-Driven development process.
 * Portability. Separating the state from the code allows us to more easily use the stateless parts from the sandboxed environments, such as when running under the Web Assembly (WASM). We only need to port the state-managing layer, fully reusing the stateless code.
 * Hot reloading. When the code is separated from state, it's trivial to reload it, both with the shared libraries in CPU-native environments (dlopen) and with WASM in GUI environments. This might positively affect the development cycle, reducing the round-trip time from a failure to a fix.
+* Concurrency. MarketMaker can currently only perform a single API operation at the time. The more stateless code we have the easier it should be to introduce the parallel execution of API requests in the future.
 
 Implementation might consist of two layers.
 A layer that is ported to the host environment (native, JS, Java, Objective-C, cross-compiled Raspberry Pi 3, etc) and implements the TCP/IP communication, state management, hot reloading, all things that won't fit into the WASM sandbox.
-And a layer that implements the core logic in a stateless manner and which is compiled into a native shared library or WASM.
+And a layer that implements the core logic in a stateless manner and which is compiled into a native shared library or, in the future, to WASM.
 
 Parts of the state might be marked as sensitive.
 This will give the users an option to share only the information that can be freely shared,
@@ -66,3 +67,8 @@ Plus users will more easily share their problems when it's quick, automatic and 
 
 The feasibility of this approach is yet to be evaluated, but we can move gradually towards it
 by separating the code into the stateful and stateless layers while working on the basic Rust port.
+
+During the initial Rust port we're going to  
+a) Mark the ported functions as purely functional or stateful, allowing us to more easily focus on the state management code in the future.  
+b) Where possible, take a low-hanging fruit and try to refactor the functions towards being stateless.  
+c) Probably mark as stateful the `sleep`ing functions, because `sleep` can be seen as changing the global state (moving the time forwards) and might negatively affect Transparency (we have no idea what's going on while a function is sleeping), Testability (sleeping tests might kill the TDD development cycle), Portability (sleeps are not compatible with WASM), Hot reloading and Concurrency (let's say we want to load new version of the code, but the old version is still sleeping somewhere).
