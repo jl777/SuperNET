@@ -91,11 +91,11 @@ Let's list the good things that should come out of the gradual rewrite:
 
 The plan so far is to by default use the C functions as the atomic units of rewrite.
 Rust FFI allows us to swap any C function with a similar Rust function.
-Porting on this level we  
-a) reuse the function-level modularity of the C language;  
-b) preserve the code meta-data (Git history will show a nice diff between the C and Rust functions, we'll be able to easily investigate the evolution of the code back to its roots);  
-c) avoid the complexity and slow-downs associated with adding RPC/networking layers or drawing new lines of abstraction;  
-d) have a good indicator of the porting progress (how many functions were ported, how many remains).
+Porting on this level we
+* reuse the function-level modularity of the C language;
+* preserve the code meta-data (Git history will show a nice diff between the C and Rust functions, we'll be able to easily investigate the evolution of the code back to its roots);
+* avoid the complexity and slow-downs associated with adding RPC/networking layers or drawing new lines of abstraction;
+* have a good indicator of the porting progress (how many functions were ported, how many remains).
 
 Focusing on the function call chains that are a common part of a failure/crash or touch on the new functionality
 will allow us to leverage the [Pareto principle](https://en.wikipedia.org/wiki/Pareto_principle),
