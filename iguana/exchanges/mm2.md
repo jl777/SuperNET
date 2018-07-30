@@ -72,3 +72,31 @@ During the initial Rust port we're going to
 a) Mark the ported functions as purely functional or stateful, allowing us to more easily focus on the state management code in the future.  
 b) Where possible, take a low-hanging fruit and try to refactor the functions towards being stateless.  
 c) Probably mark as stateful the `sleep`ing functions, because `sleep` can be seen as changing the global state (moving the time forwards) and might negatively affect Transparency (we have no idea what's going on while a function is sleeping), Testability (sleeping tests might kill the TDD development cycle), Portability (sleeps are not compatible with WASM), Hot reloading and Concurrency (let's say we want to load new version of the code, but the old version is still sleeping somewhere).
+
+## Gradual rewrite
+
+Above in the [Rewrite goals](#rewrite-goals) section we have identified some of the goals that we pursue with this rewrite.
+These goals constitute the Value (in the Lean Production terms) that we are going to create.
+
+For a project to suceed it is usually important to make shorter the path the Value takes to the users.
+(Inventory is waste. If we have created the Value but the users can't get their hands on it, we're wasting that Value).
+
+Hence we're going to start with a gradual rewrite. Keeping the version under rewrite immediately avaliable to the users willing to experiment with it.
+
+Let's list the good things that should come out of the gradual rewrite:
+* Transparency. With the second version of the MarketMaker being immediately available we can always check the Value we're getting. Is it more stable? Does it have new functions? Or did we hit the wall? What's going on with the code and how can we help? Gradual rewrite is critical for transparency because the change is available in small increments. We can more easily see what function has changed or what new functionality was added when we aren't being uprooted from the familiar context.
+* Risk reduction. It comes with transparency, as we can now more easily measure the progress, identify the roadblocks as they occur, see certain problems when they occur and not months after. Plus a gradual rewrite will by default follow the outline of the original project. We have a working system and we're improving it piece by piece, having the original design to fall back to. This makes it less likely for the rewrite to suffer from far-reaching redesign flaws (cf. [Second-system effect](https://en.wikipedia.org/wiki/Second-system_effect)) and creative blocks (cf. [Pantsing](https://www.wikiwrimo.org/wiki/Pantsing)).
+* Feedback. Incorporating user feedback is critical for most projects out there, allowing us to iteratively improve the functionality in the right direction (cf. [Fail faster](https://www.youtube.com/watch?v=rDjrOaoHz9s), [PDIA](https://www.youtube.com/watch?v=ZKdjBbiGjao)). The more early we get the feedback, the more time we have to react, and at a lesser cost.
+* Motivation. Feedback is not only important to guide us, but also to show us that our work is meaningful and changes lives to the better. It is the cornerstone of Agile (["Build projects around motivated individuals"](https://www.agilealliance.org/agile101/12-principles-behind-the-agile-manifesto/)) and affects our performance on all levels, down to the physical health.
+
+The plan so far is to by default use the C functions as the atomic units of rewrite.
+Rust FFI allows us to swap any C function with a similar Rust function.
+Porting on this level we
+a) reuse the function-level modularity of the C language;
+b) preserve the code meta-data (Git history will show a nice diff between the C and Rust functions, we'll be able to easily investigate the evolution of the code back to its roots);
+c) avoid the complexity and slow-downs associated with adding RPC/networking layers or drawing new lines of abstraction;
+d) have a good indicator of the porting progress (how many functions were ported, how many remains).
+
+Focusing on the function call chains that are a common part of a failure/crash or touch on the new functionality
+will allow us to leverage the [Pareto principle](https://en.wikipedia.org/wiki/Pareto_principle),
+advancing on 80% of desired Value (stability, functionality) with 20% of effort.
