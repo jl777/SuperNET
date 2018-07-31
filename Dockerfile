@@ -20,7 +20,7 @@ RUN cd /mm2 &&\
 RUN mkdir /mm2/build && cd /mm2/build &&\
     export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"` &&\
     # If we're not in a CI-release environment then set the version to "dev".
-    if [ -z ${MM_VERSION+x} ]; then export MM_VERSION=dev; fi &&\
+    if [ -z "$MM_VERSION" ]; then export MM_VERSION=dev; fi &&\
     echo "MM_VERSION is $MM_VERSION" &&\
     cmake -DMM_VERSION="$MM_VERSION" ..
 

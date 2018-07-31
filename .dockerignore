@@ -1,2 +1,5 @@
 .vscode
 cmake-build-debug
+
+# Ignoring the Dockerfile allows us to change it without invalidating the "COPY ." step.
+Dockerfile
