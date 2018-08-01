@@ -14,10 +14,12 @@ RUN \
     apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9 &&\
     apt-get clean
 
-RUN wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh && \
-    chmod +x cmake-3.10.3-Linux-x86_64.sh && \
-    ./cmake-3.10.3-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr && \
-    rm -rf cmake-3.10.3-Linux-x86_64.sh
+
+#Cmake 3.12.0 supports multi-platform -j option, it allows to use all cores for concurrent build to speed up it
+RUN wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Linux-x86_64.sh && \
+    chmod +x cmake-3.12.0-rc2-Linux-x86_64.sh && \
+    ./cmake-3.12.0-rc2-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr && \
+    rm -rf cmake-3.12.0-rc2-Linux-x86_64.sh
 
 RUN \
     wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh &&\
@@ -64,11 +66,14 @@ RUN cd /mm2 &&\
 RUN mkdir /mm2/build && cd /mm2/build &&\
     cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" ..
 
-RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-testnet
+# Get thread count to set -j and use all cores to speed up the build
+RUN export THREAD_COUNT=`echo "$(nproc --all)"`
 
 RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-mainnet
+    cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
+
+RUN cd /mm2/build &&\
+    cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
 
 RUN cd /mm2/build &&\
     ln iguana/exchanges/marketmaker-testnet /usr/local/bin/ &&\
