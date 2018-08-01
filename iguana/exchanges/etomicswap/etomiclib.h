@@ -213,7 +213,7 @@ uint64_t estimate_erc20_gas(
         uint8_t decimals
 );
 
-uint8_t compareAddresses(char *address1, char *address2);
+extern uint8_t compare_addresses(char *address1, char *address2);
 uint8_t isValidAddress(char *address);
 uint8_t getErc20DecimalsZeroOnError(char *tokenAddress);
 

@@ -131,7 +131,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 #ifndef NOTETOMIC
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
     {
-        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || compareAddresses(etomicstr,etomic) == 0 )
+        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || compare_addresses(etomicstr,etomic) == 0 )
         {
             printf("etomic src mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
             return(-1);
@@ -144,7 +144,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 #ifndef NOTETOMIC
     if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
     {
-        if ( (etomicstr= jstr(argjson,"alicetomic")) == 0 || compareAddresses(etomicstr,etomic) == 0 )
+        if ( (etomicstr= jstr(argjson,"alicetomic")) == 0 || compare_addresses(etomicstr,etomic) == 0 )
         {
             printf("etomic dest mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
             return(-1);
