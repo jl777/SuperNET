@@ -35,13 +35,17 @@ RUN cargo install bindgen
 
 COPY . /mm2
 
-# Put the version into the file, allowing us to easily use it from different Docker steps and from Rust.
+# The number of Docker layers is limited AFAIK,
+# so here we have a couple of configuration actions packed into a single step.
 RUN cd /mm2 &&\
+    # Put the version into the file, allowing us to easily use it from different Docker steps and from Rust.
     export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"` &&\
     # If we're not in a CI-release environment then set the version to "UNKNOWN".
     if [ -z "$MM_VERSION" ]; then export MM_VERSION=UNKNOWN; fi &&\
     echo "MM_VERSION is $MM_VERSION" &&\
-    echo -n "$MM_VERSION" > MM_VERSION
+    echo -n "$MM_VERSION" > MM_VERSION &&\
+    # `nproc --all` is "the number of processing units available".
+    nproc --all > /tmp/THREAD_COUNT
 
 # TODO: Should probably run the bindgen programmatically from the build.rs instead,
 # this will give us more control and will work uniformely for both the Docker build and the IDE-RLS.
@@ -64,16 +68,13 @@ RUN cd /mm2 &&\
     git submodule update --init --recursive
 
 RUN mkdir /mm2/build && cd /mm2/build &&\
-    cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" ..
-
-# Get thread count to set -j and use all cores to speed up the build
-RUN export THREAD_COUNT=`echo "$(nproc --all)"`
+    cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" -j `cat /tmp/THREAD_COUNT` ..
 
 RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
+    cmake --build . --target marketmaker-testnet -j `cat /tmp/THREAD_COUNT`
 
 RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
+    cmake --build . --target marketmaker-mainnet -j `cat /tmp/THREAD_COUNT`
 
 RUN cd /mm2/build &&\
     ln iguana/exchanges/marketmaker-testnet /usr/local/bin/ &&\
