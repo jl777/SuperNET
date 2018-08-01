@@ -1,0 +1,10 @@
+[package]
+name = "mm2"
+version = "0.1.0"
+
+[lib]
+name = "mm2"
+crate-type = ["staticlib"]
+path = "iguana/exchanges/mm2.rs"
+
+[dependencies]

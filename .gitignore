@@ -272,3 +272,6 @@ etomic_build/seed/DB
 etomic_build/seed/stats.log
 etomic_build/seed/unparsed.txt
 iguana/exchanges/manychains
+
+# Rust artefacts
+/target
