@@ -10,6 +10,8 @@ FROM ubuntu:17.10
 RUN \
     apt-get update &&\
     apt-get install -y git libcurl4-openssl-dev build-essential wget pax libleveldb-dev &&\
+    # https://rust-lang-nursery.github.io/rust-bindgen/requirements.html#debian-based-linuxes
+    apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9 &&\
     apt-get clean
 
 RUN wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh && \
@@ -24,19 +26,43 @@ RUN \
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# It seems that bindgen won't prettify without it:
+RUN rustup component add rustfmt-preview
+
 RUN cargo install bindgen
 
 COPY . /mm2
+
+# Put the version into the file, allowing us to easily use it from different Docker steps and from Rust.
+RUN cd /mm2 &&\
+    export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"` &&\
+    # If we're not in a CI-release environment then set the version to "UNKNOWN".
+    if [ -z "$MM_VERSION" ]; then export MM_VERSION=UNKNOWN; fi &&\
+    echo "MM_VERSION is $MM_VERSION" &&\
+    echo -n "$MM_VERSION" > MM_VERSION
+
+# TODO: Should probably run the bindgen programmatically from the build.rs instead,
+# this will give us more control and will work uniformely for both the Docker build and the IDE-RLS.
+RUN cd /mm2/crypto777 &&\
+    bindgen --no-derive-debug --no-layout-tests \
+        --whitelist-function OS_init \
+        OS_portable.h > OS_portable.rs
+
+RUN cd /mm2 && cargo build
+
+# TODO: Link in the "/mm2/target/debug/libmm2.a" with CMake.
+RUN cd /mm2/target/debug &&\
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' &&\
+    echo "Here's the new library we just built:" &&\
+    pwd &&\
+    ls -laF &&\
+    echo "We need to link it in with CMake."
 
 RUN cd /mm2 &&\
     git submodule update --init --recursive
 
 RUN mkdir /mm2/build && cd /mm2/build &&\
-    export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"` &&\
-    # If we're not in a CI-release environment then set the version to "dev".
-    if [ -z "$MM_VERSION" ]; then export MM_VERSION=dev; fi &&\
-    echo "MM_VERSION is $MM_VERSION" &&\
-    cmake -DMM_VERSION="$MM_VERSION" ..
+    cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" ..
 
 RUN cd /mm2/build &&\
     cmake --build . --target marketmaker-testnet

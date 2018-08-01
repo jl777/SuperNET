@@ -13,12 +13,14 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  main.c
+//  mm2.rs
 //  marketmaker
 //
-//  Copyright © 2017 SuperNET. All rights reserved.
+//  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
+/* The original C code will be replaced with the corresponding Rust code in small increments,
+   allowing Git history to catch up and show the function-level diffs.
 
 void PNACL_message(char *arg,...)
 {
@@ -32,7 +34,12 @@ void PNACL_message(char *arg,...)
 #ifndef NATIVE_WINDOWS
 #include "OS_portable.h"
 #else
-#include "../../crypto777/OS_portable.h"
+*/
+
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
+mod os_portable {include! ("../../crypto777/OS_portable.rs");}
+
+/*
 #endif // !_WIN_32
 
 uint32_t DOCKERFLAG;
@@ -160,11 +167,20 @@ int32_t ensure_writable(char *dirname)
     return(0);
 }
 
-int main(int argc, const char * argv[])
-{
+*/
+
+// TODO: Use the build.rs instead in order for the RLS build to work out of the box.
+const MM_VERSION: &'static str = include_str!("../../MM_VERSION");
+
+#[no_mangle]
+pub extern fn rust_main() {
+    unsafe {os_portable::OS_init()};
+    println!("BarterDEX MarketMaker {} \n", MM_VERSION);
+}
+
+/*  The rest of the `main` function that we're still porting into the `rust_main`:
+
     char dirname[512]; double incr; cJSON *retjson;
-    OS_init();
-    printf("BarterDEX Marketmaker %s \n",MM_VERSION);
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
@@ -401,3 +417,5 @@ int main(int argc, const char * argv[])
 #endif
     return 0;
 }
+
+*/

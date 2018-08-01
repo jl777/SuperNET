@@ -16,7 +16,7 @@
 //  main.c
 //  marketmaker
 //
-//  Copyright © 2017 SuperNET. All rights reserved.
+//  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
 
@@ -160,11 +160,12 @@ int32_t ensure_writable(char *dirname)
     return(0);
 }
 
+void rust_main();  // Defined in mm2.rs.
+
 int main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
-    OS_init();
-    printf("BarterDEX Marketmaker %s \n",MM_VERSION);
+    rust_main();
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
