@@ -1,0 +1,27 @@
+#!/bin/bash
+# I have extra changes here, on how I launch iguana, if you have a custom build script for SHA256 hardware instructions etc, you cal call this first, then run either the default sript or your own one like I do here.
+pkill -15 iguana
+#stdbuf -oL $1 ../agents/iguana notary  & #> iguana.log 2> error.log  &
+sudo nice -n -19 su -c "stdbuf -oL $1 ../agents/iguana notary_nosplit" node &
+
+myip=`curl -s4 checkip.amazonaws.com`
+source pubkey.txt
+
+sleep 4
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
+sleep 3
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"78.47.196.146\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"37.9.62.186\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.144.54\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"177.54.148.18\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"209.58.169.118\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"167.99.69.47\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"159.65.134.48\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"167.99.67.33\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"209.58.190.117\"}"
+
+# All the coins to be activated are moved to a new script, and will be standard for all nodes, you just call this scipt after any special changes.When new coins are added, you don't need to check ot change anything in your own scripts.
+./add_coins
+
+sleep 30
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"

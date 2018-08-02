@@ -1,5 +1,5 @@
 #!/bin/bash
 pkill -15 iguana
-rm -f ../agents/iguana *.o
 git pull
+./build_iguana
 ./m_notary_run "$1" "$2"

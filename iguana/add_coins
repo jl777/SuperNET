@@ -1,0 +1,25 @@
+#!/bin/bash
+# We don't add BEER/PIZZA to iguana so skip them, more skips can be added, mauybe this can be pulled as a prarm from assetchains.json?
+declare -a skip=("BEER" "PIZZA")
+
+# external coins.
+coins/btc_7776
+coins/kmd_7776
+coins/chips_7776
+coins/game_7776
+
+# Unlock wallet.  Does it have the be here exactly? Or can we call this somewhere else?
+./wp_7776
+
+# Loop through assetchains.json and build the path to the approptiate coins file and run it.
+~/komodo/src/listassetchains | while read chain; do
+  if [[ " ${skip[@]} " =~ " ${chain} " ]]; then
+    pointless=0
+  else
+    coin="coins/$(echo $chain | awk '{print tolower($0)}')_7776"
+    $coin
+  fi
+done
+
+# Add VRSC manually as its not listed in the assetchains.json
+coins/vrsc_7776
