@@ -620,7 +620,7 @@ version\n\
                     }
 
                     if (ptr->etomic[0] != 0) {
-                        if (isValidAddress(ptr->etomic) == 0) {
+                        if (is_valid_address(ptr->etomic) == 0) {
                             return(clonestr("{\"error\":\"'etomic' field is not valid address!\"}"));
                         }
 

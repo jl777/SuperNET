@@ -65,41 +65,6 @@ char *approveErc20(ApproveErc20Input input)
     return result;
 }
 
-std::stringstream aliceSendsEthPaymentData(AliceSendsEthPaymentInput input)
-{
-    std::stringstream ss;
-    ss << "0x47c7b6e2"
-       << toHex(jsToBytes(input.dealId))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.bobAddress))
-       << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000"
-       << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000";
-    return ss;
-}
-
-char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData)
-{
-    TransactionSkeleton tx = txDataToSkeleton(txData);
-    std::stringstream ss = aliceSendsEthPaymentData(input);
-    tx.data = jsToBytes(ss.str());
-    char *rawTx = signTx(tx, txData.secretKey);
-    char *result = sendRawTxWaitConfirm(rawTx);
-    free(rawTx);
-    return result;
-}
-
-uint8_t verifyAliceEthPaymentData(AliceSendsEthPaymentInput input, char *data)
-{
-    std::stringstream ss = aliceSendsEthPaymentData(input);
-    if (strcmp(ss.str().c_str(), data) != 0) {
-        printf("Alice ETH payment data %s does not match expected %s\n", data, ss.str().c_str());
-        return 0;
-    }
-    return 1;
-}
-
 std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
 {
     uint8_t decimals;
@@ -806,46 +771,4 @@ uint8_t verifyAliceErc20FeeData(char *tokenAddress, char *to, char *amount, char
         return 0;
     }
     return 1;
-}
-
-uint8_t alicePaymentStatus(char *paymentId)
-{
-    char buffer[100];
-    memset(buffer, 0, sizeof(buffer));
-    strcpy(buffer, "0x81cd872a");
-    strcat(buffer, paymentId);
-    char *hexStatus = ethCall(ETOMIC_ALICECONTRACT, buffer);
-    auto status = (uint8_t) strtol(hexStatus + 66, NULL, 0);
-    free(hexStatus);
-    return status;
-}
-
-uint8_t bobDepositStatus(char *depositId)
-{
-    char buffer[100];
-    memset(buffer, 0, sizeof(buffer));
-    strcpy(buffer, "0x3d4dff7b");
-    strcat(buffer, depositId);
-    char *hexStatus = ethCall(ETOMIC_BOBCONTRACT, buffer);
-    auto status = (uint8_t) strtol(hexStatus + 130, NULL, 0);
-    free(hexStatus);
-    return status;
-}
-
-uint8_t bobPaymentStatus(char *paymentId)
-{
-    char buffer[100];
-    memset(buffer, 0, sizeof(buffer));
-    strcpy(buffer, "0x0716326d");
-    strcat(buffer, paymentId);
-    char *hexStatus = ethCall(ETOMIC_BOBCONTRACT, buffer);
-    auto status = (uint8_t) strtol(hexStatus + 130, NULL, 0);
-    free(hexStatus);
-    return status;
-}
-
-uint8_t isValidAddress(char *address)
-{
-    std::regex r("^(0x|0X)?[a-fA-F0-9]{40}$");
-    return static_cast<uint8_t>(std::regex_match(address, r));
 }

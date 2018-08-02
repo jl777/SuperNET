@@ -1,4 +1,4 @@
-FROM ubuntu:17.10
+FROM ubuntu:18.04
 USER root
 RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls
 RUN echo "0.0.0.0 10271 10.100.0.1 10271" >> /etc/rinetd.conf

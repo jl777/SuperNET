@@ -2137,7 +2137,7 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
         return(clonestr("{\"error\":\"param 'to' is required!\"}"));
     }
 
-    if (isValidAddress(dest_addr) == 0) {
+    if (is_valid_address(dest_addr) == 0) {
         return(clonestr("{\"error\":\"'to' address is not valid!\"}"));
     }
 

@@ -25,10 +25,11 @@ typedef struct {
 } BasicTxData;
 
 typedef struct {
-    char dealId[70];
-    char bobAddress[65];
-    char aliceHash[65];
-    char bobHash[65];
+    char deal_id[70];
+    char bob_address[65];
+    char alice_hash[65];
+    char bob_hash[65];
+    uint64_t amount;
 } AliceSendsEthPaymentInput;
 
 typedef struct {
@@ -141,8 +142,8 @@ typedef struct {
 
 char *approveErc20(ApproveErc20Input input);
 
-char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData);
-uint8_t verifyAliceEthPaymentData(AliceSendsEthPaymentInput input, char *data);
+extern char *alice_sends_eth_payment(AliceSendsEthPaymentInput input, void *eth_client);
+extern uint8_t verify_alice_eth_payment_data(AliceSendsEthPaymentInput input, char *data);
 
 char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData);
 uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *data);
@@ -201,9 +202,9 @@ char *sendErc20(
 
 uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data, uint8_t decimals);
 
-uint8_t alicePaymentStatus(char *paymentId);
-uint8_t bobDepositStatus(char *depositId);
-uint8_t bobPaymentStatus(char *paymentId);
+extern uint64_t alice_payment_status(char *paymentId, void *eth_client);
+extern uint64_t bob_payment_status(char *payment_tx_id, void *eth_client);
+extern uint64_t bob_deposit_status(char *deposit_tx_id, void *eth_client);
 
 uint64_t estimate_erc20_gas(
         char *tokenAddress,
@@ -214,8 +215,11 @@ uint64_t estimate_erc20_gas(
 );
 
 extern uint8_t compare_addresses(char *address1, char *address2);
-uint8_t isValidAddress(char *address);
+extern uint8_t is_valid_address(char *address);
 uint8_t getErc20DecimalsZeroOnError(char *tokenAddress);
+
+extern void *eth_client(char *private_key);
+extern void eth_client_destruct(void *eth_client);
 
 #ifdef __cplusplus
 }

@@ -35,6 +35,8 @@ void PNACL_message(char *arg,...)
 #include "OS_portable.h"
 #else
 */
+extern crate etomiclibrs;
+pub use etomiclibrs::*;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 mod os_portable {include! ("../../crypto777/OS_portable.rs");}

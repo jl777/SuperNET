@@ -7,8 +7,9 @@ set(MM_LIBS
         libjpeg
         libsecp256k1
         ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
-        ${CMAKE_SOURCE_DIR}/iguana/exchanges/etomicswap/target/debug/libetomiclibrs.a
         dl
+        ssl
+        crypto
         -Wl,--allow-multiple-definition
     )
 
@@ -45,8 +46,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 target_link_libraries(marketmaker-mainnet -static-libgcc -static-libstdc++)
 target_link_libraries(marketmaker-testnet -static-libgcc -static-libstdc++)
 endif()
-add_dependencies(marketmaker-testnet etomiclibrs)
-add_dependencies(marketmaker-mainnet etomiclibrs)
 add_dependencies(marketmaker-testnet mm2rs)
 add_dependencies(marketmaker-mainnet mm2rs)
 if(NOT DEFINED MM_VERSION)
