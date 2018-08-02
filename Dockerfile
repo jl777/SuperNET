@@ -12,6 +12,8 @@ RUN \
     apt-get install -y git libcurl4-openssl-dev build-essential wget pax libleveldb-dev &&\
     # https://rust-lang-nursery.github.io/rust-bindgen/requirements.html#debian-based-linuxes
     apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9 &&\
+    # openssl-sys requirements, cf. https://crates.io/crates/openssl-sys
+    apt-get install -y pkg-config libssl-dev &&\
     apt-get clean
 
 #Cmake 3.12.0 supports multi-platform -j option, it allows to use all cores for concurrent build to speed up it
