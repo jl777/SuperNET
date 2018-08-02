@@ -169,8 +169,7 @@ int32_t ensure_writable(char *dirname)
 
 */
 
-// TODO: Use the build.rs instead in order for the RLS build to work out of the box.
-const MM_VERSION: &'static str = include_str!("../../MM_VERSION");
+const MM_VERSION: &'static str = env!("MM_VERSION");
 
 #[no_mangle]
 pub extern fn rust_main() {

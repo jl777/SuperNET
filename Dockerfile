@@ -14,7 +14,6 @@ RUN \
     apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9 &&\
     apt-get clean
 
-
 #Cmake 3.12.0 supports multi-platform -j option, it allows to use all cores for concurrent build to speed up it
 RUN wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Linux-x86_64.sh && \
     chmod +x cmake-3.12.0-rc2-Linux-x86_64.sh && \
@@ -31,8 +30,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # It seems that bindgen won't prettify without it:
 RUN rustup component add rustfmt-preview
 
-RUN cargo install bindgen
-
 COPY . /mm2
 
 # The number of Docker layers is limited AFAIK,
@@ -47,22 +44,7 @@ RUN cd /mm2 &&\
     # `nproc --all` is "the number of processing units available".
     nproc --all > /tmp/THREAD_COUNT
 
-# TODO: Should probably run the bindgen programmatically from the build.rs instead,
-# this will give us more control and will work uniformely for both the Docker build and the IDE-RLS.
-RUN cd /mm2/crypto777 &&\
-    bindgen --no-derive-debug --no-layout-tests \
-        --whitelist-function OS_init \
-        OS_portable.h > OS_portable.rs
-
 RUN cd /mm2 && cargo build
-
-# TODO: Link in the "/mm2/target/debug/libmm2.a" with CMake.
-RUN cd /mm2/target/debug &&\
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' &&\
-    echo "Here's the new library we just built:" &&\
-    pwd &&\
-    ls -laF &&\
-    echo "We need to link it in with CMake."
 
 RUN cd /mm2 &&\
     git submodule update --init --recursive

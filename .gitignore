@@ -275,3 +275,6 @@ iguana/exchanges/manychains
 
 # Rust artefacts
 /target
+
+# Generated Rust bindings
+/crypto777/OS_portable.rs

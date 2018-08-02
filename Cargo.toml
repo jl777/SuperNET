@@ -8,3 +8,6 @@ crate-type = ["staticlib"]
 path = "iguana/exchanges/mm2.rs"
 
 [dependencies]
+
+[build-dependencies]
+bindgen = "0.37.4"
