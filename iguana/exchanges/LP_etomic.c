@@ -61,7 +61,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         return(0);
     }
     EthTxData data = getEthTxData(swap->otherfee.I.ethTxid);
-    if (compareAddresses(data.from, swap->I.etomicdest) == 0) {
+    if (compare_addresses(data.from, swap->I.etomicdest) == 0) {
         printf("Alice fee tx %s was sent from wrong address %s\n", swap->otherfee.I.ethTxid, data.from);
         return(0);
     }
@@ -69,7 +69,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
     char dexaddr[50];
     LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        if (compareAddresses(data.to, dexaddr) == 0) {
+        if (compare_addresses(data.to, dexaddr) == 0) {
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
@@ -82,7 +82,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
     } else {
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
-        if (compareAddresses(data.to, swap->I.alicetomic) == 0) {
+        if (compare_addresses(data.to, swap->I.alicetomic) == 0) {
             printf("Alice ERC20 fee %s token address %s is not equal to expected %s\n", swap->otherfee.I.ethTxid, data.to, swap->I.alicetomic);
             return(0);
         }
@@ -160,11 +160,11 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
         return(0);
     }
     EthTxData data = getEthTxData(txId);
-    if (compareAddresses(data.to, ETOMIC_ALICECONTRACT) == 0) {
+    if (compare_addresses(data.to, ETOMIC_ALICECONTRACT) == 0) {
         printf("Alice payment %s was sent to wrong address %s\n", txId, data.to);
         return(0);
     }
-    if (compareAddresses(data.from, swap->I.etomicdest) == 0) {
+    if (compare_addresses(data.from, swap->I.etomicdest) == 0) {
         printf("Alice payment %s was done from wrong address %s\n", txId, data.from);
         return(0);
     }
@@ -367,11 +367,11 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
         return(0);
     }
     EthTxData data = getEthTxData(txId);
-    if (compareAddresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
+    if (compare_addresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
         printf("Bob deposit txid %s was sent to wrong address %s\n", txId, data.to);
         return(0);
     }
-    if (compareAddresses(data.from, swap->I.etomicsrc) == 0) {
+    if (compare_addresses(data.from, swap->I.etomicsrc) == 0) {
         printf("Bob deposit txid %s was sent from wrong address %s\n", txId, data.from);
         return(0);
     }
@@ -523,10 +523,10 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
         return 0;
     }
     EthTxData data = getEthTxData(txId);
-    if (compareAddresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
+    if (compare_addresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
         printf("Bob payment %s was sent to wrong address %s\n", txId, data.to);
     }
-    if (compareAddresses(data.from, swap->I.etomicsrc) == 0) {
+    if (compare_addresses(data.from, swap->I.etomicsrc) == 0) {
         printf("Bob payment %s was sent from wrong address %s\n", txId, data.from);
     }
     BobSendsEthPaymentInput input;

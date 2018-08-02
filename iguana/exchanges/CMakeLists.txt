@@ -1,6 +1,19 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(MM_SOURCES mm.c ../mini-gmp.c ../groestl.c ../segwit_addr.c ../keccak.c LP_etomic.c)
-set(MM_LIBS curl pthread libcrypto777 libjpeg libsecp256k1 ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a dl)
+set(MM_LIBS
+        curl
+        pthread
+        libcrypto777
+        libjpeg
+        libsecp256k1
+        ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
+        ${CMAKE_SOURCE_DIR}/iguana/exchanges/etomicswap/target/debug/libetomiclibrs.a
+        dl
+        -Wl,--allow-multiple-definition
+    )
+
+add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 if(WIN32)
 link_directories(${CMAKE_SOURCE_DIR}/marketmaker_depends/curl/build_msvc_2015_win64/lib/Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/pthread-win32/bin/x64_MSVC2015.Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/nanomsg/build_msvc_2015_win64/Release)
 set(MM_LIBS ${MM_LIBS} nanomsg)
@@ -32,6 +45,10 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 target_link_libraries(marketmaker-mainnet -static-libgcc -static-libstdc++)
 target_link_libraries(marketmaker-testnet -static-libgcc -static-libstdc++)
 endif()
+add_dependencies(marketmaker-testnet etomiclibrs)
+add_dependencies(marketmaker-mainnet etomiclibrs)
+add_dependencies(marketmaker-testnet mm2rs)
+add_dependencies(marketmaker-mainnet mm2rs)
 if(NOT DEFINED MM_VERSION)
     SET(MM_VERSION UNKNOWN)
 endif()

@@ -1,6 +1,52 @@
+/******************************************************************************
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
+ *                                                                            *
+ * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
+ * the top-level directory of this distribution for the individual copyright  *
+ * holder information and the developer policies on copyright and licensing.  *
+ *                                                                            *
+ * Unless otherwise agreed in a custom licensing agreement, no part of the    *
+ * SuperNET software, including this file may be copied, modified, propagated *
+ * or distributed except according to the terms contained in the LICENSE file *
+ *                                                                            *
+ * Removal or modification of this copyright notice is prohibited.            *
+ *                                                                            *
+ ******************************************************************************/
 //
-// Created by artem on 24.01.18.
+//  mm2.rs
+//  marketmaker
 //
+//  Copyright © 2017-2018 SuperNET. All rights reserved.
+//
+extern crate web3;
+extern crate ethabi;
+extern crate ethcore_transaction;
+extern crate ethereum_types;
+extern crate ethkey;
+extern crate rlp;
+extern crate hex;
+extern crate regex;
+
+use ethcore_transaction::{ Action, Transaction };
+use ethereum_types::{ U256, H160, H256 };
+use ethkey::{ KeyPair };
+use ethabi::{ Contract, Token, Error as EthAbiError };
+use web3::futures::Future;
+use web3::transports::{ Http, EventLoopHandle };
+use web3::{ Web3 };
+use web3::types::{ Transaction as Web3Transaction, TransactionId, BlockId, BlockNumber, CallRequest };
+use web3::confirm::TransactionReceiptBlockNumberCheck;
+use std::time::Duration;
+use std::sync::{ Arc, RwLock, Mutex };
+use std::thread;
+use std::collections::HashMap;
+use std::os::raw::c_char;
+use std::ffi::CString;
+use std::ffi::CStr;
+use std::str::FromStr;
+use regex::Regex;
+/* The original C code will be replaced with the corresponding Rust code in small increments,
+   allowing Git history to catch up and show the function-level diffs.
 #include "etomiclib.h"
 #include "etomiccurl.h"
 #include <iostream>
@@ -843,9 +889,35 @@ uint8_t bobPaymentStatus(char *paymentId)
     free(hexStatus);
     return status;
 }
-
+*/
+#[no_mangle]
+pub extern "C" fn compare_addresses(address1: *const c_char, address2: *const c_char) -> u8 {
+    unsafe {
+        let slice1 = CStr::from_ptr(address1).to_str().unwrap();
+        let slice2 = CStr::from_ptr(address2).to_str().unwrap();
+        let hash1 = H160::from_str(&slice1[2..]).unwrap();
+        let hash2 = H160::from_str(&slice2[2..]).unwrap();
+        (hash1 == hash2) as u8
+    }
+}
+/*
 uint8_t isValidAddress(char *address)
 {
     std::regex r("^(0x|0X)?[a-fA-F0-9]{40}$");
     return static_cast<uint8_t>(std::regex_match(address, r));
+}
+*/
+
+#[cfg(test)]
+#[test]
+fn test_compare_addresses() {
+    let address1 = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+    let address2 = CString::new("0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+
+    assert_eq!(compare_addresses(address1.as_ptr(), address2.as_ptr()), 1);
+
+    let address1 = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+    let address2 = CString::new("0x2a8e4f9ae69c86e277602c6802085febc4bd5986").unwrap();
+
+    assert_eq!(compare_addresses(address1.as_ptr(), address2.as_ptr()), 0);
 }
