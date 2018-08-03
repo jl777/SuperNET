@@ -6,7 +6,7 @@ set(MM_LIBS
         libcrypto777
         libjpeg
         libsecp256k1
-        ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
+        ${CMAKE_SOURCE_DIR}/libmm2.a
         dl
         ssl
         crypto

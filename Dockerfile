@@ -46,7 +46,10 @@ RUN cd /mm2 &&\
     # `nproc --all` is "the number of processing units available".
     nproc --all > /tmp/THREAD_COUNT
 
-RUN cd /mm2 && cargo build
+RUN cd /mm2 &&\
+    cargo build &&\
+    mv target/debug/libmm2.a ./ &&\
+    cargo clean
 
 RUN cd /mm2 &&\
     git submodule update --init --recursive
