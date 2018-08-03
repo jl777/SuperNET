@@ -6,62 +6,13 @@
 // On build.rs: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
 extern crate bindgen;
+extern crate gstuff;
 
 use gstuff::last_modified_sec;
 use std::fs;
 use std::io::Read;
 
 const OS_PORTABLE_FUNCTIONS: [&'static str; 1] = ["OS_init"];
-
-// last_modified_sec copied from gstuff, because right now we can't build gstuff on stable Rust.
-// TODO: Fix gstuff on stable and use last_modified_sec from there.
-
-mod gstuff {
-    use std;
-    use std::path::Path;
-    use std::time::{Duration, UNIX_EPOCH};
-
-    macro_rules! try_s {
-        ($e:expr) => {
-            match $e {
-                Ok(ok) => ok,
-                Err(err) => {
-                    return Err(format!("{}:{}] {}", file!(), line!(), err));
-                }
-            }
-        };
-    }
-
-    macro_rules! ERRL {
-      ($format: expr, $($args: tt)+) => {format! (concat! ("{}:{}] ", $format), file!(), line!(), $($args)+)};
-      ($format: expr) => {format! (concat! ("{}:{}] ", $format), file!(), line!())}}
-
-    macro_rules! ERR {
-      ($format: expr, $($args: tt)+) => {Err (ERRL! ($format, $($args)+))};
-      ($format: expr) => {Err (ERRL! ($format))}}
-
-    /// Converts the duration into a number of seconds with fractions.
-    pub fn duration_to_float(duration: Duration) -> f64 {
-        duration.as_secs() as f64 + ((duration.subsec_nanos() as f64) / 1000000000.0)
-    }
-
-    /// Last-modified of the file in seconds since the UNIX epoch, with fractions.  
-    /// Returns 0 if the file does not exists.
-    ///
-    /// A typical use case:
-    ///
-    ///     if (now_float() - try_s! (last_modified_sec (&path)) > 600.) {update (&path)}
-    pub fn last_modified_sec(path: &AsRef<Path>) -> Result<f64, String> {
-        let meta = match path.as_ref().metadata() {
-            Ok(m) => m,
-            Err(ref err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(0.),
-            Err(err) => return ERR!("{}", err),
-        };
-        let lm = try_s!(meta.modified());
-        let lm = duration_to_float(try_s!(lm.duration_since(UNIX_EPOCH)));
-        Ok(lm)
-    }
-}
 
 // Will probably refactor in the future (to be generic over multiple headers),
 // right now we're in the "collect as much information as possible" phase (https://www.agilealliance.org/glossary/simple-design).
