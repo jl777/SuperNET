@@ -17,10 +17,10 @@ RUN \
     apt-get clean
 
 #Cmake 3.12.0 supports multi-platform -j option, it allows to use all cores for concurrent build to speed up it
-RUN wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Linux-x86_64.sh && \
-    chmod +x cmake-3.12.0-rc2-Linux-x86_64.sh && \
-    ./cmake-3.12.0-rc2-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr && \
-    rm -rf cmake-3.12.0-rc2-Linux-x86_64.sh
+RUN wget https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh && \
+    chmod +x cmake-3.12.0-Linux-x86_64.sh && \
+    ./cmake-3.12.0-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr && \
+    rm -rf cmake-3.12.0-Linux-x86_64.sh
 
 RUN \
     wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh &&\
@@ -47,21 +47,18 @@ RUN cd /mm2 &&\
     nproc --all > /tmp/THREAD_COUNT
 
 RUN cd /mm2 &&\
-    cargo build &&\
-    mv target/debug/libmm2.a ./ &&\
-    cargo clean
-
-RUN cd /mm2 &&\
     git submodule update --init --recursive
 
 RUN mkdir /mm2/build && cd /mm2/build &&\
     cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" -j `cat /tmp/THREAD_COUNT` ..
 
+#Build and clean up
+#Cargo build of mm2rs is triggered by cmake - ./iguana/exchanges/CMakeLists.txt#16
 RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-testnet -j `cat /tmp/THREAD_COUNT`
-
-RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-mainnet -j `cat /tmp/THREAD_COUNT`
+    cmake --build . --target marketmaker-testnet -j `cat /tmp/THREAD_COUNT` &&\
+    cmake --build . --target marketmaker-mainnet -j `cat /tmp/THREAD_COUNT` &&\
+    cd /mm2 &&\
+    cargo clean
 
 RUN cd /mm2/build &&\
     ln iguana/exchanges/marketmaker-testnet /usr/local/bin/ &&\
