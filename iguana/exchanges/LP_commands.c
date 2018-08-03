@@ -630,7 +630,8 @@ version\n\
                         }
 
                         if (ptr->decimals == 0 && strcmp(coin, "ETH") != 0) {
-                            ptr->decimals = getErc20DecimalsZeroOnError(ptr->etomic);
+                            extern void *LP_eth_client;
+                            ptr->decimals = get_erc20_decimals(ptr->etomic, LP_eth_client);
                             if (ptr->decimals == 0) {
                                 return(clonestr("{\"error\":\"Could not get token decimals or token has zero decimals which is not supported!\"}"));
                             }

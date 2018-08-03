@@ -178,45 +178,37 @@ uint64_t getEthBalance(char* address, int *error);
 uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error);
 char *getErc20BalanceHexWei(char* address, char tokenAddress[65]);
 
-uint8_t getErc20Decimals(char *tokenAddress);
+extern uint8_t get_erc20_decimals(char *token_address, void *eth_client);
 
 // returns satoshis, not wei!
 uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8_t set_decimals);
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
-uint64_t weiToSatoshi(char *wei);
+extern uint64_t wei_to_satoshi(char *wei);
 
-char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr);
-char *sendErc20(
-        char *tokenAddress,
+extern char *send_eth(char *to, uint64_t amount, uint64_t gas, uint64_t gas_price, uint8_t default_gas_on_err, void *eth_client);
+extern char *send_erc20(
+        char *token_address,
         char *to,
-        char *amount,
-        char *privKey,
-        uint8_t waitConfirm,
+        uint64_t amount,
         int64_t gas,
-        int64_t gasPrice,
-        uint8_t defaultGasOnErr,
-        uint8_t decimals
+        int64_t gas_price,
+        uint8_t default_gas_on_err,
+        uint8_t decimals,
+        void *eth_client
 );
 
-uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data, uint8_t decimals);
+extern uint8_t verify_alice_erc20_fee_data(char *to, uint64_t amount, char *data, uint8_t decimals);
 
 extern uint64_t alice_payment_status(char *paymentId, void *eth_client);
 extern uint64_t bob_payment_status(char *payment_tx_id, void *eth_client);
 extern uint64_t bob_deposit_status(char *deposit_tx_id, void *eth_client);
 
-uint64_t estimate_erc20_gas(
-        char *tokenAddress,
-        char *to,
-        char *amount,
-        char *privKey,
-        uint8_t decimals
-);
+extern uint64_t estimate_erc20_gas(char *token_address, char *to, uint64_t amount, uint8_t decimals, void *eth_client);
 
 extern uint8_t compare_addresses(char *address1, char *address2);
 extern uint8_t is_valid_address(char *address);
-uint8_t getErc20DecimalsZeroOnError(char *tokenAddress);
 
 extern void *eth_client(char *private_key);
 extern void eth_client_destruct(void *eth_client);

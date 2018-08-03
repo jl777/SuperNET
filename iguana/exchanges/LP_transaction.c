@@ -2087,7 +2087,7 @@ char *LP_movecoinbases(char *symbol)
 
 #ifndef NOTETOMIC
 
-char *LP_eth_tx_fee(struct iguana_info *coin, char *dest_addr, char *amount, int64_t gas, int64_t gas_price)
+char *LP_eth_tx_fee(struct iguana_info *coin, char *dest_addr, uint64_t amount, int64_t gas, int64_t gas_price)
 {
     bits256 privkey;
     cJSON *retjson = cJSON_CreateObject();
@@ -2109,9 +2109,8 @@ char *LP_eth_tx_fee(struct iguana_info *coin, char *dest_addr, char *amount, int
     } else if (strcmp(coin->symbol, "ETH") == 0) {
         actual_gas = 21000;
     } else {
-        privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
-        uint8arrayToHex(privkey_str, privkey.bytes, 32);
-        actual_gas = estimate_erc20_gas(coin->etomic, dest_addr, amount, privkey_str, coin->decimals);
+        extern void *LP_eth_client;
+        actual_gas = estimate_erc20_gas(coin->etomic, dest_addr, amount, coin->decimals, LP_eth_client);
         if (actual_gas == 0) {
             return (clonestr("{\"error\":\"Couldn't estimate erc20 transfer gas usage!\"}"));
         }
@@ -2128,7 +2127,7 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
     cJSON *retjson = cJSON_CreateObject();
     cJSON *gas_json = cJSON_GetObjectItem(argjson, "gas");
     cJSON *gas_price_json = cJSON_GetObjectItem(argjson, "gas_price");
-    char *dest_addr, *tx_id, privkey_str[70], amount_str[100];
+    char *dest_addr, *tx_id, privkey_str[70];
     int64_t amount = 0, gas = 0, gas_price = 0, broadcast = 0;
     bits256 privkey;
 
@@ -2159,14 +2158,14 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
 
     broadcast = jint(argjson, "broadcast");
-    satoshisToWei(amount_str, amount);
+    extern void *LP_eth_client;
     if (broadcast == 1) {
         privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
         uint8arrayToHex(privkey_str, privkey.bytes, 32);
         if (strcmp(coin->symbol, "ETH") == 0) {
-            tx_id = sendEth(dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0);
+            tx_id = send_eth(dest_addr, amount, gas, gas_price, 0, LP_eth_client);
         } else {
-            tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0, gas, gas_price, 0, coin->decimals);
+            tx_id = send_erc20(coin->etomic, dest_addr, amount, gas, gas_price, 0, coin->decimals, LP_eth_client);
         }
         if (tx_id != NULL) {
             jaddstr(retjson, "tx_id", tx_id);
@@ -2176,7 +2175,7 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
         }
         return (jprint(retjson, 1));
     } else {
-        return LP_eth_tx_fee(coin, dest_addr, amount_str, gas, gas_price);
+        return LP_eth_tx_fee(coin, dest_addr, (uint64_t)amount, gas, gas_price);
     }
 }
 
