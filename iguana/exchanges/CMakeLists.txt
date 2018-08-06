@@ -9,6 +9,7 @@ set(MM_LIBS
         ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
         dl
         ssl
+        openssl
         crypto
     )
 
