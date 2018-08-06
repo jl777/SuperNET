@@ -6,9 +6,11 @@
 // On build.rs: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
 extern crate bindgen;
+extern crate cc;
 extern crate gstuff;
 
 use gstuff::last_modified_sec;
+use std::env;
 use std::fs;
 use std::io::Read;
 
@@ -69,7 +71,23 @@ fn mm_version() {
     println!("cargo:rustc-env=MM_VERSION={}", version);
 }
 
+/// Build helper C code.
+/// 
+/// I think "git clone ... && cargo build" should be enough to start hacking on the Rust code.
+/// 
+/// For now we're building the Structured Exception Handling code here,
+/// but in the future we might subsume the rest of the C build under build.rs.
+fn build_c_code() {
+    if cfg!(windows) {
+        // TODO: Only (re)build the library when the source code or the build script changes.
+        cc::Build::new().file("OSlibs/win/seh.c").warnings(true).compile("seh");
+        println! ("cargo:rustc-link-lib=static=seh");
+        println! ("cargo:rustc-link-search=native={}", env::var("OUT_DIR").expect("!OUT_DIR"));
+    }
+}
+
 fn main() {
-    generate_bindings();
+    build_c_code();
     mm_version();
+    generate_bindings();
 }

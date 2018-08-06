@@ -19,6 +19,20 @@
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
+extern crate backtrace;
+extern crate etomiclibrs;
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate lazy_static;
+
+extern crate winapi;
+
+// Re-export preserves the functions that are temporarily accessed from C during the gradual port.
+pub use etomiclibrs::*;
+
+pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
+
 /* The original C code will be replaced with the corresponding Rust code in small increments,
    allowing Git history to catch up and show the function-level diffs.
 
@@ -35,8 +49,6 @@ void PNACL_message(char *arg,...)
 #include "OS_portable.h"
 #else
 */
-extern crate etomiclibrs;
-pub use etomiclibrs::*;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 mod os_portable {include! ("../../crypto777/OS_portable.rs");}
