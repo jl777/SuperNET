@@ -25,6 +25,9 @@ script:
   - export VERSION=`echo "$(git tag -l --points-at HEAD)"`
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n hw.physicalcpu)"`; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export OPENSSL_ROOT_DIR=$(brew --prefix openssl); fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export OPENSSL_LIB_DIR=$(brew --prefix openssl)"/lib"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export OPENSSL_INCLUDE_DIR=$(brew --prefix openssl)"/include"; fi
   - mkdir build && cd build
   - cmake -DMM_VERSION="$VERSION" ..
   - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
