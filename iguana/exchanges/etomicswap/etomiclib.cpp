@@ -3,19 +3,9 @@
 //
 #include "etomiclib.h"
 #include "etomiccurl.h"
-#include <iostream>
-#include <regex>
 #include <inttypes.h>
 
 extern void *LP_eth_client;
-
-char *stringStreamToChar(std::stringstream& ss)
-{
-    const std::string tmp = ss.str();
-    auto result = (char*)malloc(strlen(tmp.c_str()) + 1);
-    strcpy(result, tmp.c_str());
-    return result;
-}
 
 char *approveErc20(ApproveErc20Input input)
 {
@@ -41,35 +31,6 @@ char *approveErc20(ApproveErc20Input input)
     return NULL;
 }
 
-std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
-{
-    /*
-    uint8_t decimals;
-    if (input.decimals > 0) {
-        decimals = input.decimals;
-    } else {
-        decimals = get_erc20_decimals(input.tokenAddress, LP_eth_client);
-    }
-    u256 amount = jsToU256(input.amount);
-    if (decimals < 18) {
-        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
-    ss << "0x184db3bf"
-       << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(amount))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.bobAddress))
-       << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000"
-       << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress));
-    */
-    std::stringstream ss;
-    return ss;
-}
-
 char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData)
 {
     /*
@@ -86,12 +47,14 @@ char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txDa
 
 uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *data)
 {
+    /*
     std::stringstream ss = aliceSendsErc20PaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
         printf("Alice ERC20 payment data %s is not equal to expected %s\n", data, ss.str().c_str());
         return 0;
     }
-    return 1;
+     */
+    return 0;
 }
 
 char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxData txData)
@@ -178,22 +141,6 @@ char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData
     return NULL;
 }
 
-std::stringstream bobSendsEthDepositData(BobSendsEthDepositInput input)
-{
-    /*
-    u256 lockTime = input.lockTime;
-    ss << "0xdd23795f"
-       << toHex(jsToBytes(input.depositId))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.aliceAddress))
-       << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000"
-       << toHex(toBigEndian(lockTime));
-    */
-    std::stringstream ss;
-    return ss;
-}
-
 char* bobSendsEthDeposit(BobSendsEthDepositInput input, BasicTxData txData)
 {
     /*
@@ -210,44 +157,14 @@ char* bobSendsEthDeposit(BobSendsEthDepositInput input, BasicTxData txData)
 
 uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data)
 {
+    /*
     std::stringstream ss = bobSendsEthDepositData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
         printf("Bob deposit data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
-    return 1;
-}
-
-std::stringstream bobSendsErc20DepositData(BobSendsErc20DepositInput input)
-{
-    /*
-    uint8_t decimals;
-    if (input.decimals > 0) {
-        decimals = input.decimals;
-    } else {
-        decimals = get_erc20_decimals(input.tokenAddress, LP_eth_client);
-    }
-
-    u256 amount = jsToU256(input.amount);
-    u256 lockTime = input.lockTime;
-    if (decimals < 18) {
-        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
-    std::stringstream ss;
-    ss << "0x5d567259"
-       << toHex(jsToBytes(input.depositId))
-       << toHex(toBigEndian(amount))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.aliceAddress))
-       << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
-       << toHex(toBigEndian(lockTime));
-    return ss;
-    */
-    std::stringstream ss;
-    return ss;
+     */
+    return 0;
 }
 
 char* bobSendsErc20Deposit(BobSendsErc20DepositInput input, BasicTxData txData)
@@ -266,12 +183,14 @@ char* bobSendsErc20Deposit(BobSendsErc20DepositInput input, BasicTxData txData)
 
 uint8_t verifyBobErc20DepositData(BobSendsErc20DepositInput input, char *data)
 {
+    /*
     std::stringstream ss = bobSendsErc20DepositData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
         printf("Bob deposit data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
-    return 1;
+     */
+    return 0;
 }
 
 char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData)
@@ -347,24 +266,6 @@ char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData
     return NULL;
 }
 
-std::stringstream bobSendsEthPaymentData(BobSendsEthPaymentInput input)
-{
-    /*
-    u256 lockTime = input.lockTime;
-    std::stringstream ss;
-    ss << "0x5ab30d95"
-       << toHex(jsToBytes(input.paymentId))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.aliceAddress))
-       << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000"
-       << toHex(toBigEndian(lockTime));
-    return ss;
-    */
-    std::stringstream ss;
-    return ss;
-}
-
 char* bobSendsEthPayment(BobSendsEthPaymentInput input, BasicTxData txData)
 {
     /*
@@ -381,44 +282,14 @@ char* bobSendsEthPayment(BobSendsEthPaymentInput input, BasicTxData txData)
 
 uint8_t verifyBobEthPaymentData(BobSendsEthPaymentInput input, char *data)
 {
+    /*
     std::stringstream ss = bobSendsEthPaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
         printf("Bob payment data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
-    return 1;
-}
-
-std::stringstream bobSendsErc20PaymentData(BobSendsErc20PaymentInput input)
-{
-    /*
-    u256 amount = jsToU256(input.amount);
-    u256 lockTime = input.lockTime;
-    uint8_t decimals;
-    if (input.decimals > 0) {
-        decimals = input.decimals;
-    } else {
-        decimals = get_erc20_decimals(input.tokenAddress, LP_eth_client);
-    }
-
-    if (decimals < 18) {
-        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
-    std::stringstream ss;
-    ss << "0xb8a15b1d"
-       << toHex(jsToBytes(input.paymentId))
-       << toHex(toBigEndian(amount))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.aliceAddress))
-       << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
-       << toHex(toBigEndian(lockTime));
-    return ss;
-    */
-    std::stringstream ss;
-    return ss;
+     */
+    return 0;
 }
 
 char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData)
@@ -437,12 +308,14 @@ char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData)
 
 uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data)
 {
+    /*
     std::stringstream ss = bobSendsErc20PaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
         printf("Bob payment data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
-    return 1;
+     */
+    return 0;
 }
 
 char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData)
