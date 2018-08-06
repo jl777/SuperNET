@@ -509,7 +509,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "gstuff"
 version = "0.5.0"
-source = "git+https://github.com/artemii235/gstuff.rs#ab9f73e372727800b8852b65bfb17a1e5372ff29"
+source = "git+https://github.com/artemii235/gstuff.rs#29af7ff9af55890e19700bd716cf42bd1622e48f"
 dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.42 (registry+https://github.com/rust-lang/crates.io-index)",
