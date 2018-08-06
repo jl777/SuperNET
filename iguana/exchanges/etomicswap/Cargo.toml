@@ -12,8 +12,8 @@ ethcore-transaction = { git = "https://github.com/paritytech/parity.git" }
 ethkey = { git = "https://github.com/paritytech/parity.git" }
 rlp = { git = "https://github.com/paritytech/parity-common" }
 ethereum-types = "0.3.1"
-web3 = { git = "https://github.com/ArtemGr/rust-web3" }
-ethabi = { git = "https://github.com/ArtemGr/ethabi" }
+web3 = { git = "https://github.com/artemii235/rust-web3" }
+ethabi = { git = "https://github.com/artemii235/ethabi" }
 hex = "0.3.2"
 regex = "1"
 libc = "0.2.42"
