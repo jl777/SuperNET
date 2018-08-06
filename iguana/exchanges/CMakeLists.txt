@@ -7,9 +7,9 @@ set(MM_LIBS
         libjpeg
         libsecp256k1
         ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
+        /usr/local/opt/openssl/lib/libcrypto.a
+        /usr/local/opt/openssl/lib/libssl.a
         dl
-        ssl
-        crypto
     )
 
 find_library(OPEN_SSL ssl)
