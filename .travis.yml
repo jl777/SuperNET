@@ -19,8 +19,6 @@ before_install:
   - rustup component add rustfmt-preview
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install openssl; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then xcode-select --install; fi
 
 script:
   - export VERSION=`echo "$(git tag -l --points-at HEAD)"`

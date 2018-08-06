@@ -12,6 +12,9 @@ set(MM_LIBS
         crypto
     )
 
+find_library(OPEN_SSL ssl)
+message(STATUS "OPEN SSL PATH: ${OPEN_SSL}")
+
 add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 if(WIN32)
@@ -65,7 +68,6 @@ add_dependencies(marketmaker-mainnet-lib mm2rs)
 if (APPLE)
     find_library(CoreFoundation CoreFoundation)
     find_library(Secutiry Security)
-    find_package(openssl REQUIRED)
     target_link_libraries(marketmaker-mainnet ${CoreFoundation} ${Security})
     target_link_libraries(marketmaker-testnet ${CoreFoundation} ${Security})
     target_link_libraries(marketmaker-mainnet-lib ${CoreFoundation} ${Security})
