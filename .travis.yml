@@ -13,6 +13,7 @@ matrix:
       osx_image: xcode9.2
 
 before_install:
+  - ls -la /usr/local/opt/openssl/lib
   - wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh
   - sh /tmp/rustup-init.sh -y --default-toolchain stable
   - source $HOME/.cargo/env
@@ -25,7 +26,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n hw.physicalcpu)"`; fi
   - mkdir build && cd build
-  - cmake -DMM_VERSION="$VERSION" -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DOPENSSL_LIBRARIES=/usr/local/opt/openssl/lib ..
+  - cmake -DMM_VERSION="$VERSION" ..
   - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
   - cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
   - cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
