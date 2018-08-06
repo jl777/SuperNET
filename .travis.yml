@@ -5,6 +5,8 @@ matrix:
     - os: linux
       compiler: gcc
       env: OS_NAME=Linux
+      sudo: required
+      dist: trusty
     - os: osx
       compiler: clang
       env: OS_NAME=Darwin
