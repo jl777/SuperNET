@@ -4,6 +4,7 @@ matrix:
   include:
     - os: linux
       compiler: gcc
+      env: OS_NAME=Linux
     - os: osx
       compiler: clang
       env: OS_NAME=Darwin
