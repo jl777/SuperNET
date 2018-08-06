@@ -6,10 +6,10 @@ set(MM_LIBS
         libcrypto777
         libjpeg
         libsecp256k1
+        ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
+        dl
         crypto
         ssl
-        dl
-        ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
     )
 
 add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
