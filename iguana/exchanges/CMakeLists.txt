@@ -6,13 +6,13 @@ set(MM_LIBS
         libcrypto777
         libjpeg
         libsecp256k1
-        ${CMAKE_SOURCE_DIR}/target/release/libmm2.a
+        ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
         dl
         crypto
         ssl
     )
 
-add_custom_target(mm2rs cargo build --release WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 if(WIN32)
 link_directories(${CMAKE_SOURCE_DIR}/marketmaker_depends/curl/build_msvc_2015_win64/lib/Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/pthread-win32/bin/x64_MSVC2015.Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/nanomsg/build_msvc_2015_win64/Release)
@@ -65,10 +65,10 @@ add_dependencies(marketmaker-mainnet-lib mm2rs)
 if (APPLE)
     find_library(CoreFoundation CoreFoundation)
     find_library(Security Security)
-    target_link_libraries(marketmaker-mainnet ${CoreFoundation} ${Security})
-    target_link_libraries(marketmaker-testnet ${CoreFoundation} ${Security})
-    target_link_libraries(marketmaker-mainnet-lib ${CoreFoundation} ${Security})
-    target_link_libraries(marketmaker-testnet-lib ${CoreFoundation} ${Security})
+    target_link_libraries(marketmaker-mainnet ${CoreFoundation} ${Security} jemalloc)
+    target_link_libraries(marketmaker-testnet ${CoreFoundation} ${Security} jemalloc)
+    target_link_libraries(marketmaker-mainnet-lib ${CoreFoundation} ${Security} jemalloc)
+    target_link_libraries(marketmaker-testnet-lib ${CoreFoundation} ${Security} jemalloc)
 endif()
 
 if(NOT DEFINED MM_VERSION)
