@@ -1,4 +1,5 @@
 use backtrace;
+#[cfg(not(test))] use std::process::abort;
 #[cfg(test)] use std::sync::Mutex;
 #[cfg(test)] use winapi::um::minwinbase::EXCEPTION_ACCESS_VIOLATION;
 
@@ -22,7 +23,11 @@ fn stack_trace_frame (buf: &mut String, symbol: &backtrace::Symbol) {
     if name.starts_with ("alloc::") {return}
     if name.starts_with ("panic_unwind::") {return}
     if name.starts_with ("std::") {return}
-    if name.starts_with ("mm2::crash_reports::") {return}
+    if name == "mm2::crash_reports::rust_seh_handler" {return}
+    if name.starts_with ("mm2::crash_reports::stack_trace") {return}
+    // seh.c
+    if name == "ExpFilter" {return}
+    if name == "with_seh$filt$0" {return}
 
     if !buf.is_empty() {buf.push ('\n')}
     use std::fmt::Write;
@@ -50,8 +55,9 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
 
 #[cfg(not(test))]
 #[no_mangle]
-pub extern fn rust_seh_handler (_exception_code: i32) {
-    println! ("SEH caught!\n");
+pub extern fn rust_seh_handler (exception_code: u32) {
+    println! ("SEH caught! ExceptionCode: {}\n", exception_code);
+    abort()
 }
 
 #[cfg(windows)]
@@ -63,8 +69,14 @@ extern "C" {
 
 #[cfg(windows)]
 #[cfg(test)]
+extern fn call_access_violation() {
+    access_violation()
+}
+
+#[cfg(windows)]
+#[cfg(test)]
 #[inline(never)]
-extern fn access_violation() {
+fn access_violation() {
     let ptr: *mut i32 = 0 as *mut i32;
     unsafe {*ptr = 123};
 }
@@ -80,18 +92,18 @@ extern fn call_c_access_violation() {
 #[test]
 fn test_seh_handler() {
     *SEH_CAUGHT.lock().expect("!SEH_CAUGHT") = None;
-    unsafe {with_seh (access_violation)};
+    unsafe {with_seh (call_access_violation)};
     let seh = SEH_CAUGHT.lock().expect("!SEH_CAUGHT").take().expect("!trace");
     println! ("ExceptionCode: {}\n{}", seh.0, seh.1);
     assert_eq! (seh.0, EXCEPTION_ACCESS_VIOLATION);
     assert! (seh.1.contains ("with_seh"));
-    // SEH handler is executed by Windows after unwinding, we won't see past the `with_seh`.
-    assert! (!seh.1.contains ("access_violation"));
+    assert! (seh.1.contains ("mm2::crash_reports::call_access_violation"));
+    assert! (seh.1.contains ("mm2::crash_reports::access_violation"));
 
     unsafe {with_seh (call_c_access_violation)};
     let seh = SEH_CAUGHT.lock().expect("!SEH_CAUGHT").take().expect("!trace");
     println! ("ExceptionCode: {}\n{}", seh.0, seh.1);
     assert! (seh.1.contains ("with_seh"));
-    // SEH handler is executed by Windows after unwinding, we won't see past the `with_seh`.
-    assert! (!seh.1.contains ("c_access_violation"));
+    assert! (seh.1.contains ("mm2::crash_reports::call_c_access_violation"));
+    assert! (seh.1.contains ("c_access_violation"));
 }
