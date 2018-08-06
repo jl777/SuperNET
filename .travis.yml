@@ -13,7 +13,6 @@ matrix:
       osx_image: xcode9.2
 
 before_install:
-  - ls -la /usr/local/opt/openssl/lib
   - wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh
   - sh /tmp/rustup-init.sh -y --default-toolchain stable
   - source $HOME/.cargo/env

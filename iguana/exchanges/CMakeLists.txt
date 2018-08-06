@@ -6,14 +6,11 @@ set(MM_LIBS
         libcrypto777
         libjpeg
         libsecp256k1
-        /usr/local/opt/openssl/lib/libcrypto.a
-        /usr/local/opt/openssl/lib/libssl.a
+        crypto
+        ssl
         dl
         ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
     )
-
-find_library(OPEN_SSL ssl)
-message(STATUS "OPEN SSL PATH: ${OPEN_SSL}")
 
 add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
@@ -68,7 +65,6 @@ add_dependencies(marketmaker-mainnet-lib mm2rs)
 if (APPLE)
     find_library(CoreFoundation CoreFoundation)
     find_library(Security Security)
-    message(STATUS "Security PATH: ${Security}")
     target_link_libraries(marketmaker-mainnet ${CoreFoundation} ${Security})
     target_link_libraries(marketmaker-testnet ${CoreFoundation} ${Security})
     target_link_libraries(marketmaker-mainnet-lib ${CoreFoundation} ${Security})

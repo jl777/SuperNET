@@ -1397,19 +1397,6 @@ pub extern "C" fn is_valid_address(address: *const c_char) -> u8 {
     }
 }
 
-// Workaround to fix MacOS static lib debug build
-// https://github.com/paritytech/parity-ethereum/issues/9167#issuecomment-406276920
-#[no_mangle]
-#[cfg(target_os = "macos")]
-pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
-    unsafe {
-        extern "C" {
-            fn malloc_usable_size(ptr: *const c_void) -> usize;
-        }
-        return malloc_usable_size(_ptr);
-    }
-}
-
 #[cfg(test)]
 #[test]
 fn test_wei_to_satoshi() {
