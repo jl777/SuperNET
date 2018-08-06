@@ -25,7 +25,6 @@ download_project(PROJ nanomsg
 
 find_library(NANOMSG_LIBRARY NAMES nanomsg PATHS ${DEPS_INSTALL_PREFIX}/lib NO_DEFAULT_PATH)
 include_directories("${CMAKE_SOURCE_DIR}")
-add_subdirectory(cpp-ethereum)
 add_subdirectory(iguana/exchanges)
 add_subdirectory(iguana/exchanges/etomicswap)
 add_subdirectory(iguana/secp256k1)

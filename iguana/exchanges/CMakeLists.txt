@@ -10,7 +10,6 @@ set(MM_LIBS
         dl
         ssl
         crypto
-        -Wl,--allow-multiple-definition
     )
 
 add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

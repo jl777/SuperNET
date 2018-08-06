@@ -5,13 +5,8 @@
 #include "etomiccurl.h"
 #include <iostream>
 #include <regex>
-#include <cpp-ethereum/libethcore/Common.h>
-#include <cpp-ethereum/libethcore/CommonJS.h>
-#include <cpp-ethereum/libethcore/TransactionBase.h>
 #include <inttypes.h>
 
-using namespace dev;
-using namespace dev::eth;
 extern void *LP_eth_client;
 
 char *stringStreamToChar(std::stringstream& ss)
@@ -22,31 +17,9 @@ char *stringStreamToChar(std::stringstream& ss)
     return result;
 }
 
-TransactionSkeleton txDataToSkeleton(BasicTxData txData)
-{
-    TransactionSkeleton tx;
-    tx.from = jsToAddress(txData.from);
-    tx.to = jsToAddress(txData.to);
-    tx.value = jsToU256(txData.amount);
-    tx.gas = 200000;
-    tx.gasPrice = getGasPriceFromStation(1) * boost::multiprecision::pow(u256(10), 9);
-    tx.nonce = getNonce(txData.from);
-    return tx;
-}
-
-char *signTx(TransactionSkeleton& tx, char* secret)
-{
-    Secret secretKey(secret);
-    TransactionBase baseTx(tx, secretKey);
-    RLPStream rlpStream;
-    baseTx.streamRLP(rlpStream);
-    std::stringstream ss;
-    ss << rlpStream.out();
-    return stringStreamToChar(ss);
-}
-
 char *approveErc20(ApproveErc20Input input)
 {
+    /*
     TransactionSkeleton tx;
     tx.from = jsToAddress(input.owner);
     tx.to = jsToAddress(input.tokenAddress);
@@ -64,10 +37,13 @@ char *approveErc20(ApproveErc20Input input)
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
 {
+    /*
     uint8_t decimals;
     if (input.decimals > 0) {
         decimals = input.decimals;
@@ -78,7 +54,6 @@ std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
     if (decimals < 18) {
         amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
     }
-    std::stringstream ss;
     ss << "0x184db3bf"
        << toHex(jsToBytes(input.dealId))
        << toHex(toBigEndian(amount))
@@ -90,11 +65,14 @@ std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
        << "000000000000000000000000"
        << "000000000000000000000000"
        << toHex(jsToAddress(input.tokenAddress));
+    */
+    std::stringstream ss;
     return ss;
 }
 
 char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss = aliceSendsErc20PaymentData(input);
     tx.data = jsToBytes(ss.str());
@@ -102,6 +80,8 @@ char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txDa
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *data)
@@ -116,6 +96,7 @@ uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *dat
 
 char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
     u256 amount = jsToU256(input.amount);
@@ -151,10 +132,13 @@ char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxDat
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
     u256 amount = jsToU256(input.amount);
@@ -190,12 +174,14 @@ char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 std::stringstream bobSendsEthDepositData(BobSendsEthDepositInput input)
 {
+    /*
     u256 lockTime = input.lockTime;
-    std::stringstream ss;
     ss << "0xdd23795f"
        << toHex(jsToBytes(input.depositId))
        << "000000000000000000000000"
@@ -203,11 +189,14 @@ std::stringstream bobSendsEthDepositData(BobSendsEthDepositInput input)
        << toHex(jsToBytes(input.bobHash))
        << "000000000000000000000000"
        << toHex(toBigEndian(lockTime));
+    */
+    std::stringstream ss;
     return ss;
 }
 
 char* bobSendsEthDeposit(BobSendsEthDepositInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss = bobSendsEthDepositData(input);
     tx.data = jsToBytes(ss.str());
@@ -215,6 +204,8 @@ char* bobSendsEthDeposit(BobSendsEthDepositInput input, BasicTxData txData)
     char* result = sendRawTx(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data)
@@ -229,6 +220,7 @@ uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data)
 
 std::stringstream bobSendsErc20DepositData(BobSendsErc20DepositInput input)
 {
+    /*
     uint8_t decimals;
     if (input.decimals > 0) {
         decimals = input.decimals;
@@ -253,10 +245,14 @@ std::stringstream bobSendsErc20DepositData(BobSendsErc20DepositInput input)
        << toHex(jsToAddress(input.tokenAddress))
        << toHex(toBigEndian(lockTime));
     return ss;
+    */
+    std::stringstream ss;
+    return ss;
 }
 
 char* bobSendsErc20Deposit(BobSendsErc20DepositInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss = bobSendsErc20DepositData(input);
     tx.data = jsToBytes(ss.str());
@@ -264,6 +260,8 @@ char* bobSendsErc20Deposit(BobSendsErc20DepositInput input, BasicTxData txData)
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 uint8_t verifyBobErc20DepositData(BobSendsErc20DepositInput input, char *data)
@@ -278,6 +276,7 @@ uint8_t verifyBobErc20DepositData(BobSendsErc20DepositInput input, char *data)
 
 char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
     u256 amount = jsToU256(input.amount);
@@ -307,10 +306,13 @@ char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData)
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
     u256 amount = jsToU256(input.amount);
@@ -341,10 +343,13 @@ char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 std::stringstream bobSendsEthPaymentData(BobSendsEthPaymentInput input)
 {
+    /*
     u256 lockTime = input.lockTime;
     std::stringstream ss;
     ss << "0x5ab30d95"
@@ -355,10 +360,14 @@ std::stringstream bobSendsEthPaymentData(BobSendsEthPaymentInput input)
        << "000000000000000000000000"
        << toHex(toBigEndian(lockTime));
     return ss;
+    */
+    std::stringstream ss;
+    return ss;
 }
 
 char* bobSendsEthPayment(BobSendsEthPaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss = bobSendsEthPaymentData(input);
     tx.data = jsToBytes(ss.str());
@@ -366,6 +375,8 @@ char* bobSendsEthPayment(BobSendsEthPaymentInput input, BasicTxData txData)
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 uint8_t verifyBobEthPaymentData(BobSendsEthPaymentInput input, char *data)
@@ -380,6 +391,7 @@ uint8_t verifyBobEthPaymentData(BobSendsEthPaymentInput input, char *data)
 
 std::stringstream bobSendsErc20PaymentData(BobSendsErc20PaymentInput input)
 {
+    /*
     u256 amount = jsToU256(input.amount);
     u256 lockTime = input.lockTime;
     uint8_t decimals;
@@ -404,10 +416,14 @@ std::stringstream bobSendsErc20PaymentData(BobSendsErc20PaymentInput input)
        << toHex(jsToAddress(input.tokenAddress))
        << toHex(toBigEndian(lockTime));
     return ss;
+    */
+    std::stringstream ss;
+    return ss;
 }
 
 char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss = bobSendsErc20PaymentData(input);
     tx.data = jsToBytes(ss.str());
@@ -415,6 +431,8 @@ char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData)
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data)
@@ -429,6 +447,7 @@ uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data)
 
 char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
     u256 amount = jsToU256(input.amount);
@@ -459,10 +478,13 @@ char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+    */
+    return NULL;
 }
 
 char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData)
 {
+    /*
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
     u256 amount = jsToU256(input.amount);
@@ -492,34 +514,46 @@ char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData
     char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
+     */
+    return NULL;
 }
 
 char* privKey2Addr(char* privKey)
 {
+    /*
     Secret secretKey(privKey);
     std::stringstream ss;
     ss << "0x" << toAddress(secretKey);
     return stringStreamToChar(ss);
+     */
+    return NULL;
 };
 
 char* pubKey2Addr(char* pubKey)
 {
+    /*
     Public publicKey(pubKey);
     std::stringstream ss;
     ss << "0x" << toAddress(publicKey);
     return stringStreamToChar(ss);
+     */
+    return NULL;
 };
 
 char* getPubKeyFromPriv(char *privKey)
 {
+    /*
     Public publicKey = toPublic(Secret(privKey));
     std::stringstream ss;
     ss << "0x" << publicKey;
     return stringStreamToChar(ss);
+     */
+    return NULL;
 }
 
 uint64_t getEthBalance(char *address, int *error)
 {
+    /*
     char* hexBalance = getEthBalanceRequest(address);
     if (hexBalance != NULL) {
         // convert wei to satoshi
@@ -530,10 +564,13 @@ uint64_t getEthBalance(char *address, int *error)
         *error = 1;
         return 0;
     }
+     */
+    return 0;
 }
 
 uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error)
 {
+    /*
     std::stringstream ss;
     ss << "0x70a08231"
        << "000000000000000000000000"
@@ -559,20 +596,26 @@ uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDe
         *error = 1;
         return 0;
     }
+     */
+    return 0;
 }
 
 char *getErc20BalanceHexWei(char *address, char *tokenAddress)
 {
+    /*
     std::stringstream ss;
     ss << "0x70a08231"
        << "000000000000000000000000"
        << toHex(jsToAddress(address));
     char *hexBalance = ethCall(tokenAddress, ss.str().c_str());
     return hexBalance;
+     */
+    return NULL;
 }
 
 uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8_t set_decimals)
 {
+    /*
     std::stringstream ss;
     ss << "0xdd62ed3e"
        << "000000000000000000000000"
@@ -594,6 +637,8 @@ uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8
     allowance /= boost::multiprecision::pow(u256(10), 10);
     free(hexAllowance);
     return static_cast<uint64_t>(allowance);
+     */
+    return 0;
 }
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len)

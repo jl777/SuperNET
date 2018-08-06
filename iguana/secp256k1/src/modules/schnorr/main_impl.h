@@ -9,6 +9,7 @@
 
 #include "../../../include/secp256k1_schnorr.h"
 #include "../../modules/schnorr/schnorr_impl.h"
+#ifdef NOTETOMIC
 
 static void secp256k1_schnorr_msghash_sha256(unsigned char *h32, const unsigned char *r32, const unsigned char *msg32) {
     secp256k1_sha256_t sha;
@@ -160,5 +161,7 @@ int secp256k1_schnorr_partial_combine(const secp256k1_context* ctx, unsigned cha
     ARG_CHECK(sig64sin != NULL);
     return secp256k1_schnorr_sig_combine(sig64, n, sig64sin);
 }
-
+// NOTETOMIC
+#endif
+// SECP256K1_MODULE_SCHNORR_MAIN
 #endif
