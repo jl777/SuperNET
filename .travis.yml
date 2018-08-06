@@ -25,7 +25,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n hw.physicalcpu)"`; fi
   - mkdir build && cd build
-  - cmake -DMM_VERSION="$VERSION" ..
+  - cmake -DMM_VERSION="$VERSION" -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DOPENSSL_LIBRARIES=/usr/local/opt/openssl/lib ..
   - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
   - cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
   - cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
