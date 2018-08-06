@@ -27,6 +27,8 @@ extern crate rlp;
 extern crate hex;
 extern crate regex;
 extern crate libc;
+#[macro_use]
+extern crate unwrap;
 
 use ethcore_transaction::{ Action, Transaction };
 use ethereum_types::{ U256, H160, H256 };
@@ -35,7 +37,7 @@ use ethabi::{ Contract, Token, Error as EthAbiError };
 use web3::futures::Future;
 use web3::transports::{ Http, EventLoopHandle };
 use web3::{ Web3 };
-use web3::types::{ Transaction as Web3Transaction, TransactionId, BlockId, BlockNumber, CallRequest };
+use web3::types::{ Transaction as Web3Transaction, TransactionId, BlockId, BlockNumber, CallRequest, Bytes };
 use web3::confirm::TransactionReceiptBlockNumberCheck;
 use std::time::Duration;
 use std::sync::{ Arc, RwLock, Mutex };
@@ -70,7 +72,10 @@ pub struct EthClient {
     _event_loop: EventLoopHandle,
     transactions: RwLock<HashMap<H256, Web3Transaction>>,
     block_number: RwLock<u64>,
-    current_nonce: Mutex<U256>
+    current_nonce: Mutex<U256>,
+    pub alice_abi: Contract,
+    pub bob_abi: Contract,
+    pub erc20_abi: Contract
 }
 
 impl EthClient {
@@ -79,6 +84,9 @@ impl EthClient {
         let web3 = web3::Web3::new(transport);
         let key_pair = KeyPair::from_secret_slice(&secret).unwrap();
         let current_nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
+        let alice_abi = unwrap!(Contract::load(ALICE_ABI.as_bytes()), "Could not load ALICE_ABI, is it valid?");
+        let bob_abi = unwrap!(Contract::load(BOB_ABI.as_bytes()), "Could not load BOB_ABI, is it valid?");
+        let erc20_abi = unwrap!(Contract::load(ERC20_ABI.as_bytes()), "Could not load ERC20_ABI, is it valid?");
 
         EthClient {
             web3,
@@ -86,8 +94,35 @@ impl EthClient {
             key_pair,
             transactions: RwLock::new(HashMap::new()),
             block_number: RwLock::new(3707894),
-            current_nonce: Mutex::new(current_nonce)
+            current_nonce: Mutex::new(current_nonce),
+            alice_abi,
+            bob_abi,
+            erc20_abi
         }
+    }
+
+    pub fn sign_and_send_transaction(
+        &self,
+        value: U256,
+        action: Action,
+        data: Vec<u8>,
+        gas: U256,
+        gas_price: U256
+    ) -> Result<H256, web3::Error> {
+        let mut nonce_lock = self.current_nonce.lock().unwrap();
+        let nonce = self.web3.eth().parity_next_nonce(self.key_pair.address()).wait()?;
+        let tx = Transaction {
+            nonce,
+            value,
+            action,
+            data,
+            gas,
+            gas_price
+        };
+
+        let signed = tx.sign(self.key_pair.secret(), None);
+        *nonce_lock = nonce;
+        self.web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&signed).to_vec())).wait()
     }
 
     pub fn send_alice_payment_eth(
@@ -98,9 +133,10 @@ impl EthClient {
         bob_hash: Vec<u8>,
         value: U256
     ) -> Result<H256, web3::Error> {
-        let mut nonce_lock = self.current_nonce.lock().unwrap();
-        let abi = Contract::load(ALICE_ABI.as_bytes()).unwrap();
-        let init_eth_deal = abi.function("initEthDeal").unwrap();
+        let init_eth_deal = unwrap!(
+            self.alice_abi.function("initEthDeal"),
+            "Could not load initEthDeal function from Alice contract. Is ALICE_ABI valid?"
+        );
 
         let encoded = init_eth_deal.encode_input(&[
             Token::FixedBytes(id),
@@ -108,19 +144,14 @@ impl EthClient {
             Token::FixedBytes(alice_hash),
             Token::FixedBytes(bob_hash)
         ]).unwrap();
-        let nonce = self.web3.eth().parity_next_nonce(self.key_pair.address()).wait()?;
-        let tx = Transaction {
-            nonce,
-            value,
-            action: Action::Call(H160::from(ALICE_CONTRACT)),
-            data: encoded,
-            gas: U256::from(210000),
-            gas_price: U256::from_dec_str("10000000000").unwrap()
-        };
 
-        let t = tx.sign(self.key_pair.secret(), None);
-        *nonce_lock = nonce;
-        self.web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&t).to_vec())).wait()
+        self.sign_and_send_transaction(
+            value,
+            Action::Call(H160::from(ALICE_CONTRACT)),
+            encoded,
+            U256::from(210000),
+            U256::from_dec_str("10000000000").unwrap()
+        )
     }
 
     pub fn send_alice_payment_erc20(
@@ -134,8 +165,10 @@ impl EthClient {
         decimals: u8
     ) -> Result<H256, web3::Error> {
         let mut nonce_lock = self.current_nonce.lock().unwrap();
-        let abi = Contract::load(ALICE_ABI.as_bytes()).unwrap();
-        let function = abi.function("initErc20Deal").unwrap();
+        let function = unwrap!(
+            self.alice_abi.function("initErc20Deal"),
+            "Could not get initErc20Deal Alice contract function, is Alice ABI valid?"
+        );
 
         let encoded = function.encode_input(&[
             Token::FixedBytes(id),
@@ -167,8 +200,10 @@ impl EthClient {
         alice_hash: Vec<u8>,
         bob_priv: Vec<u8>
     ) -> H256 {
-        let abi = Contract::load(ALICE_ABI.as_bytes()).unwrap();
-        let alice_claims_payment = abi.function("aliceClaimsPayment").unwrap();
+        let alice_claims_payment = unwrap!(
+            self.alice_abi.function("aliceClaimsPayment"),
+            "Could not load aliceClaimsPayment function, is ALICE_ABI valid?"
+        );
 
         let encoded_claim = alice_claims_payment.encode_input(&[
             Token::FixedBytes(id),
@@ -491,7 +526,10 @@ pub extern "C" fn alice_sends_eth_payment(
                 str.push_str(&hex::encode(tx.0));
                 CString::new(str).unwrap().into_raw()
             },
-            Err(e) => std::ptr::null_mut()
+            Err(e) => {
+                println!("Error sending Alice ETH payment: {}", e);
+                std::ptr::null_mut()
+            }
         }
     }
 }
@@ -1059,19 +1097,40 @@ uint8_t getErc20Decimals(char *tokenAddress)
     free(hexDecimals);
     return decimals;
 }
-
-uint8_t getErc20DecimalsZeroOnError(char *tokenAddress)
-{
-    char* hexDecimals = ethCall(tokenAddress, "0x313ce567");
-    if (hexDecimals != NULL) {
-        auto decimals = (uint8_t) strtol(hexDecimals, NULL, 0);
-        free(hexDecimals);
-        return decimals;
-    } else {
-        return 0;
+*/
+#[no_mangle]
+pub extern "C" fn get_erc20_decimals(token_address: *const c_char, eth_client: *mut EthClient) -> u8 {
+    unsafe {
+        let slice = CStr::from_ptr(token_address).to_str().unwrap();
+        let abi = Contract::load(ERC20_ABI.as_bytes()).unwrap();
+        let function = abi.function("decimals").unwrap();
+        let encoded = function.encode_input(&[]).unwrap();
+        let result = (*eth_client).web3.eth().call(
+            CallRequest {
+                from: None,
+                to: H160::from_str(&slice[2..]).unwrap(),
+                gas: None,
+                gas_price: None,
+                value: None,
+                data: Some(web3::types::Bytes(encoded))
+            }, Some(BlockNumber::Latest)
+        ).wait();
+        match result {
+            Ok(output) => {
+                let tokens = function.decode_output(&output.0);
+                match tokens {
+                    Ok(res) => match res[0] {
+                        Token::Uint(dec) => (u64::from(dec)) as u8,
+                        _ => 0
+                    },
+                    Err(_e) => 0
+                }
+            },
+            Err(_e) => 0
+        }
     }
 }
-
+/*
 void uint8arrayToHex(char *dest, uint8_t *input, int len)
 {
     strcpy(dest, "0x");
@@ -1081,161 +1140,174 @@ void uint8arrayToHex(char *dest, uint8_t *input, int len)
     }
     dest[(len + 1) * 2] = '\0';
 }
-
-void satoshisToWei(char *dest, uint64_t input)
-{
-    sprintf(dest, "%" PRIu64, input);
-    strcat(dest, "0000000000");
-}
-
-uint64_t weiToSatoshi(char *wei)
-{
-    u256 satoshi = jsToU256(wei) / boost::multiprecision::pow(u256(10), 10);
-    return static_cast<uint64_t>(satoshi);
-}
-
-char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr)
-{
-    TransactionSkeleton tx;
-    char *from = privKey2Addr(privKey), *result;
-    tx.from = jsToAddress(from);
-    tx.to = jsToAddress(to);
-    tx.value = jsToU256(amount);
-    tx.nonce = getNonce(from);
-    free(from);
-    if (gas > 0) {
-        tx.gas = gas;
-    } else {
-        tx.gas = 21000;
-    }
-    if (gasPrice > 0) {
-        tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
-    } else {
-        tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
-        if (tx.gasPrice == 0 && !defaultGasOnErr) {
-            printf("Could not get gas price from station!\n");
-            unlock_send_tx_mutex();
-            return NULL;
-        }
-    }
-
-    char *rawTx = signTx(tx, privKey);
-    if (waitConfirm == 0) {
-        result = sendRawTx(rawTx);
-    } else {
-        result = sendRawTxWaitConfirm(rawTx);
-    }
-    free(rawTx);
-    return result;
-}
-
-std::stringstream getErc20TransferData(char *tokenAddress, char *to, char *amount, uint8_t setDecimals)
-{
-    u256 amountWei = jsToU256(amount);
-    uint8_t decimals;
-    if (setDecimals > 0) {
-        decimals = setDecimals;
-    } else {
-        decimals = getErc20Decimals(tokenAddress);
-    }
-    if (decimals < 18) {
-        amountWei /= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
-    // convert wei to satoshi
-    std::stringstream ss;
-    ss << "0xa9059cbb"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(to))
-       << toHex(toBigEndian(amountWei));
-    return ss;
-}
-
-uint64_t estimate_erc20_gas(
-    char *tokenAddress,
-    char *to,
-    char *amount,
-    char *privKey,
-    uint8_t decimals
-)
-{
-    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount, decimals);
-    char *from = privKey2Addr(privKey);
-    uint64_t result = estimateGas(from, tokenAddress, ss.str().c_str());
-    free(from);
-    return result;
-}
-
-char *sendErc20(
-        char *tokenAddress,
-        char *to,
-        char *amount,
-        char *privKey,
-        uint8_t waitConfirm,
-        int64_t gas,
-        int64_t gasPrice,
-        uint8_t defaultGasOnErr,
-        uint8_t decimals
-)
-{
-    TransactionSkeleton tx;
-    char *from = privKey2Addr(privKey), *result;
-    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount, decimals);
-
-    tx.from = jsToAddress(from);
-    tx.to = jsToAddress(tokenAddress);
-    tx.value = 0;
-    tx.nonce = getNonce(from);
-
-    if (gas > 0) {
-        tx.gas = gas;
-    } else {
-        uint64_t gasEstimation = estimateGas(from, tokenAddress, ss.str().c_str());
-        if (gasEstimation > 0) {
-            tx.gas = gasEstimation;
-        } else {
-            tx.gas = 150000;
-        }
-    }
-    free(from);
-    if (gasPrice > 0) {
-        tx.gasPrice = gasPrice * boost::multiprecision::pow(u256(10), 9);
-    } else {
-        tx.gasPrice = getGasPriceFromStation(defaultGasOnErr) * boost::multiprecision::pow(u256(10), 9);
-        if (tx.gasPrice == 0 && !defaultGasOnErr) {
-            printf("Could not get gas price from station!\n");
-            unlock_send_tx_mutex();
-            return NULL;
-        }
-    }
-
-    tx.data = jsToBytes(ss.str());
-
-    char *rawTx = signTx(tx, privKey);
-    if (waitConfirm == 0) {
-        result = sendRawTx(rawTx);
-    } else {
-        result = sendRawTxWaitConfirm(rawTx);
-    }
-    free(rawTx);
-    return result;
-}
-
-uint8_t verifyAliceErc20FeeData(char *tokenAddress, char *to, char *amount, char *data, uint8_t decimals)
-{
-    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount, decimals);
-    if (strcmp(ss.str().c_str(), data) != 0) {
-        printf("Alice ERC20 fee data %s is not equal to expected %s\n", data, ss.str().c_str());
-        return 0;
-    }
-    return 1;
-}
 */
+#[no_mangle]
+pub extern "C" fn wei_to_satoshi(wei: *const c_char) -> u64
+{
+    unsafe {
+        let wei_slice = CStr::from_ptr(wei).to_str().unwrap();
+        (U256::from_str(&wei_slice[2..]).unwrap() / U256::exp10(10)).into()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn send_eth(
+    to: *const c_char,
+    amount: u64,
+    gas: u64,
+    gas_price: u64,
+    default_gas_on_err: u8,
+    eth_client: *mut EthClient
+) -> *mut c_char
+{
+    let value = U256::from(amount) * U256::exp10(10);
+    unsafe {
+        let to_slice = CStr::from_ptr(to).to_str().unwrap();
+        let to_address_h160 = H160::from_str(&to_slice[2..]).unwrap();
+
+        let tx_id = (*eth_client).sign_and_send_transaction(
+            value,
+            Action::Call(to_address_h160),
+            vec![],
+            U256::from(21000),
+            U256::exp10(10)
+        );
+        match tx_id {
+            Ok(tx) => {
+                let mut str = String::from("0x");
+                str.push_str(&hex::encode(tx.0));
+                CString::new(str).unwrap().into_raw()
+            },
+            Err(e) => {
+                println!("Got error trying so send the transaction: {}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn estimate_erc20_gas(
+    token_address: *const c_char,
+    to: *const c_char,
+    amount: u64,
+    decimals: u8,
+    eth_client: *mut EthClient
+) -> u64
+{
+    let abi = Contract::load(ERC20_ABI.as_bytes()).unwrap();
+    let function = abi.function("transfer").unwrap();
+    let mut value = U256::from(amount) * U256::exp10(10);
+    if decimals < 18 {
+        value = value / U256::exp10((18 - decimals) as usize);
+    }
+    unsafe {
+        let address_slice = CStr::from_ptr(token_address).to_str().unwrap();
+        let to_slice = CStr::from_ptr(to).to_str().unwrap();
+        let encoded = function.encode_input(&[
+            Token::Address(H160::from_str(&to_slice[2..]).unwrap()),
+            Token::Uint(value)
+        ]).unwrap();
+        let request = CallRequest {
+            from: Some((*eth_client).my_address()),
+            value: Some(U256::from(0)),
+            to: H160::from_str(&address_slice[2..]).unwrap(),
+            data: Some(Bytes(encoded)),
+            gas_price: None,
+            gas: None
+        };
+        let result = (*eth_client).web3.eth().estimate_gas(
+            request,
+            Some(BlockNumber::Latest)
+        ).wait().unwrap();
+        result.into()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn send_erc20(
+    token_address: *const c_char,
+    to: *const c_char,
+    amount: u64,
+    gas: u64,
+    gas_price: u64,
+    default_gas_on_err: u8,
+    decimals: u8,
+    eth_client: *mut EthClient
+) -> *mut c_char
+{
+    let abi = Contract::load(ERC20_ABI.as_bytes()).unwrap();
+    let function = abi.function("transfer").unwrap();
+    let mut value = U256::from(amount) * U256::exp10(10);
+    if decimals < 18 {
+        value = value / U256::exp10((18 - decimals) as usize);
+    }
+    unsafe {
+        let to_slice = CStr::from_ptr(to).to_str().unwrap();
+        let encoded = function.encode_input(&[
+            Token::Address(H160::from_str(&to_slice[2..]).unwrap()),
+            Token::Uint(value)
+        ]).unwrap();
+
+        let token_address_slice = CStr::from_ptr(token_address).to_str().unwrap();
+        let token_address_h160 = H160::from_str(&token_address_slice[2..]).unwrap();
+
+        let tx_id = (*eth_client).sign_and_send_transaction(
+            U256::from(0),
+            Action::Call(token_address_h160),
+            encoded,
+            U256::from(200000),
+            U256::exp10(10)
+        );
+        match tx_id {
+            Ok(tx) => {
+                let mut str = String::from("0x");
+                str.push_str(&hex::encode(tx.0));
+                CString::new(str).unwrap().into_raw()
+            },
+            Err(e) => {
+                println!("Got error trying so send the transaction: {}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn verify_alice_erc20_fee_data(
+    to: *const c_char,
+    amount: u64,
+    data: *const c_char,
+    decimals: u8
+) -> u8 {
+    let abi = Contract::load(ERC20_ABI.as_bytes()).unwrap();
+    let function = abi.function("transfer").unwrap();
+    let mut value = U256::from(amount) * U256::exp10(10);
+    if decimals < 18 {
+        value = value / U256::exp10((18 - decimals) as usize);
+    }
+    unsafe {
+        let to_slice = CStr::from_ptr(to).to_str().unwrap();
+        let encoded = function.encode_input(&[
+            Token::Address(H160::from_str(&to_slice[2..]).unwrap()),
+            Token::Uint(value)
+        ]).unwrap();
+        let data_slice = CStr::from_ptr(data).to_str().unwrap();
+        let data_decoded = hex::decode(&data_slice[2..]).unwrap();
+        (data_decoded == encoded) as u8
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn alice_payment_status(payment_tx_id: *const c_char, eth_client: *mut EthClient) -> u64 {
     unsafe {
         let slice = CStr::from_ptr(payment_tx_id).to_str().unwrap();
-        let abi = Contract::load(ALICE_ABI.as_bytes()).unwrap();
-        let function = abi.function("deals").unwrap();
+
+        let function = unwrap!(
+            (*eth_client).alice_abi.function("deals"),
+            "Could not load deals function of Alice contract. Is ALICE_ABI valid?"
+        );
+
         let encoded = function.encode_input(&[
             Token::FixedBytes(hex::decode(&slice[2..]).unwrap())
         ]).unwrap();
@@ -1250,7 +1322,7 @@ pub extern "C" fn alice_payment_status(payment_tx_id: *const c_char, eth_client:
         let tokens = function.decode_output(&res.0).unwrap();
         match tokens[1] {
             Token::Uint(number) => number.into(),
-            _ => panic!("Payment status must be Uint, check bob contract ABI")
+            _ => panic!("Payment status must be Uint, check Alice contract ABI")
         }
     }
 }
@@ -1326,6 +1398,13 @@ pub extern "C" fn is_valid_address(address: *const c_char) -> u8 {
 }
 
 
+#[cfg(test)]
+#[test]
+fn test_wei_to_satoshi() {
+    let wei = CString::new("0x7526ea4b2401").unwrap();
+    let satoshi = wei_to_satoshi(wei.as_ptr());
+    assert_eq!(satoshi, 12881);
+}
 
 #[cfg(test)]
 #[test]
@@ -1355,6 +1434,29 @@ fn test_verify_alice_eth_payment_data() {
 
     let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
     assert_eq!(verify_alice_eth_payment_data(input, invalid_data.as_ptr()), 0);
+}
+
+#[cfg(test)]
+#[test]
+fn test_verify_alice_erc_fee_data() {
+    let to = CString::new("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
+    let amount = 12881;
+    let valid_data = CString::new("0xa9059cbb0000000000000000000000003f17f1962b36e491b30a40b2405849e597ba5fb500000000000000000000000000000000000000000000000000007526ea4b2400").unwrap();
+    let decimals = 18;
+    assert_eq!(verify_alice_erc20_fee_data(
+        to.as_ptr(),
+        amount,
+        valid_data.as_ptr(),
+        decimals
+    ), 1);
+
+    let invalid_data = CString::new("0xa9059cbb0000000000000000000000003f17f1962b36e491b30a40b2405849e597ba5fb500000000000000000000000000000000000000000000000000007526ea4b2401").unwrap();
+    assert_eq!(verify_alice_erc20_fee_data(
+        to.as_ptr(),
+        amount,
+        invalid_data.as_ptr(),
+        decimals
+    ), 0);
 }
 
 #[cfg(test)]

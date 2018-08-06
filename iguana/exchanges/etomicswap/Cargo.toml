@@ -17,3 +17,4 @@ ethabi = { git = "https://github.com/artemii235/ethabi" }
 hex = "0.3.2"
 regex = "1"
 libc = "0.2.42"
+unwrap = "1.2.0"

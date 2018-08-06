@@ -43,17 +43,15 @@ void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output)
 
 char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 {
-    char amount[100], secretKey[70], dexaddr[50];
-    satoshisToWei(amount, LP_DEXFEE(swap->I.alicerealsat));
+    char dexaddr[50];
     swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
-    uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
     LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(sendEth(dexaddr, amount, secretKey, 1, 0, 0, 1));
+        return(send_eth(dexaddr, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), 0, 0, 1, LP_eth_client));
     } else {
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
-        return(sendErc20(swap->I.alicetomic, dexaddr, amount, secretKey, 1, 0, 0, 1, alicecoin->decimals));
+        return(send_erc20(swap->I.alicetomic, dexaddr, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), 0, 0, 1, alicecoin->decimals, LP_eth_client));
     }
 }
 
@@ -76,7 +74,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
-        uint64_t txValue = weiToSatoshi(data.valueHex);
+        uint64_t txValue = wei_to_satoshi(data.valueHex);
         if (txValue != LP_DEXFEE(swap->I.alicerealsat)) {
             printf("Alice fee %s amount %" PRIu64 " is not equal to expected %" PRId64 "\n", swap->otherfee.I.ethTxid, txValue, LP_DEXFEE(swap->I.alicerealsat));
             return(0);
@@ -89,9 +87,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
             printf("Alice ERC20 fee %s token address %s is not equal to expected %s\n", swap->otherfee.I.ethTxid, data.to, swap->I.alicetomic);
             return(0);
         }
-        char weiAmount[70];
-        satoshisToWei(weiAmount, LP_DEXFEE(swap->I.alicerealsat));
-        return(verifyAliceErc20FeeData(swap->I.alicetomic, dexaddr, weiAmount, data.input, alicecoin->decimals));
+        return(verify_alice_erc20_fee_data(dexaddr, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), data.input, alicecoin->decimals));
     }
 }
 
@@ -169,7 +165,7 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
     }
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20;
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        uint64_t paymentAmount = weiToSatoshi(data.valueHex);
+        uint64_t paymentAmount = wei_to_satoshi(data.valueHex);
         if (paymentAmount != swap->I.alicerealsat) {
             printf("Alice payment amount %" PRIu64 " does not match expected %" PRIu64 "\n", paymentAmount, swap->I.alicerealsat);
             return(0);
@@ -380,7 +376,7 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
-        uint64_t depositAmount = weiToSatoshi(data.valueHex);
+        uint64_t depositAmount = wei_to_satoshi(data.valueHex);
         if (depositAmount != LP_DEPOSITSATOSHIS(swap->I.bobrealsat)) {
             printf("Bob deposit %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, depositAmount, LP_DEPOSITSATOSHIS(swap->I.bobrealsat));
             return(0);
@@ -535,7 +531,7 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
-        uint64_t paymentAmount = weiToSatoshi(data.valueHex);
+        uint64_t paymentAmount = wei_to_satoshi(data.valueHex);
         if (paymentAmount != swap->I.bobrealsat) {
             printf("Bob payment %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, paymentAmount, swap->I.bobrealsat);
             return(0);
