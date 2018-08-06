@@ -13,7 +13,7 @@ matrix:
 before_install:
   - wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh
   - sh /tmp/rustup-init.sh -y --default-toolchain stable
-  - PATH="~/.cargo/bin:${PATH}"
+  - source $HOME/.cargo/env
   - rustup component add rustfmt-preview
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh; fi
