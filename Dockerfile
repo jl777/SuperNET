@@ -46,9 +46,6 @@ RUN cd /mm2 &&\
     # `nproc --all` is "the number of processing units available".
     nproc --all > /tmp/THREAD_COUNT
 
-RUN cd /mm2 &&\
-    git submodule update --init --recursive
-
 RUN mkdir /mm2/build && cd /mm2/build &&\
     cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" -j `cat /tmp/THREAD_COUNT` ..
 

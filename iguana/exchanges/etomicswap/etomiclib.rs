@@ -43,7 +43,7 @@ use std::time::Duration;
 use std::sync::{ Arc, RwLock, Mutex };
 use std::thread;
 use std::collections::HashMap;
-use std::os::raw::c_char;
+use std::os::raw::{ c_char, c_void };
 use std::ffi::CString;
 use std::ffi::CStr;
 use std::str::FromStr;
@@ -1397,6 +1397,22 @@ pub extern "C" fn is_valid_address(address: *const c_char) -> u8 {
     }
 }
 
+/// Workaround to avoid Undefined symbols for architecture x86_64 "_je_malloc_usable_size"
+/// It's dangerous and seems like it might cause unexpected behaviour
+/// However seems like there is no other "easy" ways to fix now as there are too many
+/// projects depending on "heapsize" crate
+/// https://github.com/paritytech/parity-ethereum/issues/9167
+/// https://github.com/servo/heapsize/issues/80
+#[no_mangle]
+#[cfg(target_os = "macos")]
+pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
+    unsafe {
+        extern "C" {
+            fn malloc_usable_size(ptr: *const c_void) -> usize;
+        }
+        return malloc_usable_size(_ptr);
+    }
+}
 
 #[cfg(test)]
 #[test]
