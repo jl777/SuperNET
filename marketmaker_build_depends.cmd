@@ -40,6 +40,11 @@ echo Decker will automatically download and build all needed *.dll and *.lib for
 mkdir marketmaker_depends
 mkdir x64\Release
 
+rem --- Rust ---
+curl https://win.rustup.rs/ -o rustup-init.exe
+rustup-init.exe -y --default-toolchain stable
+rustup component add rustfmt-preview
+
 rem --- pthreads ---
 :compile_pthreads
 if not exist marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib (
