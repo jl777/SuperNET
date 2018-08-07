@@ -43,6 +43,7 @@ mkdir x64\Release
 rem --- Rust ---
 curl https://win.rustup.rs/ -o rustup-init.exe
 rustup-init.exe -y --default-toolchain stable
+set PATH=%USERPROFILE%\.cargo\bin:%PATH%
 rustup component add rustfmt-preview
 
 rem --- pthreads ---
