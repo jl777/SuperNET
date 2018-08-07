@@ -15,6 +15,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS Off)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# We're using a static version of nanomsg, so tell the headers not to try linking with the DLL.
+add_definitions(-DNN_STATIC_LIB=ON)
 
 include(cmake/DownloadProject.cmake)
 
@@ -32,7 +34,7 @@ endif(NOT(WIN32))
 
 find_library(
     NANOMSG_LIBRARY NAMES nanomsg PATHS ${DEPS_INSTALL_PREFIX}/lib NO_DEFAULT_PATH
-    HINTS "${CMAKE_SOURCE_DIR}/OSlibs/win/x64"
+    HINTS "${CMAKE_SOURCE_DIR}/x64"
 )
 include_directories("${CMAKE_SOURCE_DIR}")
 add_subdirectory(iguana/exchanges)

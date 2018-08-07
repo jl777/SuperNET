@@ -272,6 +272,9 @@ etomic_build/seed/stats.log
 etomic_build/seed/unparsed.txt
 iguana/exchanges/manychains
 
+/marketmaker_depends
+/x64
+
 # Rust artefacts
 /target
 /iguana/exchanges/etomicswap/target

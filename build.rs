@@ -164,28 +164,23 @@ fn build_c_code(mm_version: &str) {
     println!("cargo:rustc-link-lib=static=libsecp256k1");
 
     if cfg!(windows) {
-        // TODO: Should fix the Git repository and the Windows scripts to use one folder instead of three
-        //       in order to avoid outdated library versions and mismatches.
-        println!("cargo:rustc-link-search=native=./OSlibs/win/x64");
-        println!("cargo:rustc-link-search=native=./OSlibs/win/x64/release");
+        println!("cargo:rustc-link-search=native=./x64");
         // When building locally with CMake 3.12.0 on Windows the artefacts are created in the "Debug" folders:
         println!("cargo:rustc-link-search=native=./build/iguana/exchanges/Debug");
         println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap/Debug");
         println!("cargo:rustc-link-search=native=./build/crypto777/Debug");
         println!("cargo:rustc-link-search=native=./build/crypto777/jpeg/Debug");
         println!("cargo:rustc-link-search=native=./build/iguana/secp256k1/Debug");
-        // https://stackoverflow.com/a/10234077/257568
-        //println!(r"cargo:rustc-link-search=native=c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.14.26428\lib\x64");
+    // https://stackoverflow.com/a/10234077/257568
+    //println!(r"cargo:rustc-link-search=native=c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.14.26428\lib\x64");
     } else {
         println!("cargo:rustc-link-search=native=./build/iguana/exchanges");
         println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap");
         println!("cargo:rustc-link-search=native=./build/crypto777");
         println!("cargo:rustc-link-search=native=./build/crypto777/jpeg");
         println!("cargo:rustc-link-search=native=./build/iguana/secp256k1");
+        println!("cargo:rustc-link-search=native=./build/nanomsg-build");
     }
-
-    println!("cargo:rustc-link-search=native=./build/nanomsg-build");
-    println!("cargo:rustc-link-lib=static=nanomsg");
 
     println!(
         "cargo:rustc-link-lib={}",
@@ -193,9 +188,16 @@ fn build_c_code(mm_version: &str) {
     );
     if cfg!(windows) {
         // https://sourceware.org/pthreads-win32/
-        println!("cargo:rustc-link-lib=static=pthreadVC2");
+        // ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/
+        println!("cargo:rustc-link-lib=pthreadVC2");
+        println!("cargo:rustc-link-lib=static=nanomsg");
+        println!("cargo:rustc-link-lib=mswsock"); // For nanomsg.
+        fs::copy("x64/pthreadVC2.dll", "target/debug/pthreadVC2.dll")
+            .expect("Can't copy pthreadVC2.dll");
+        fs::copy("x64/libcurl.dll", "target/debug/libcurl.dll").expect("Can't copy libcurl.dll");
     } else {
         println!("cargo:rustc-link-lib=crypto");
+        println!("cargo:rustc-link-lib=static=nanomsg");
     }
 }
 

@@ -33,26 +33,9 @@ extern "C" {
 #include <stdint.h>
 #include "nn_config.h"
     
-/*  Handle DSO symbol visibility                                             */
-#if defined NN_NO_EXPORTS
-#   define NN_EXPORT
-#else
-#   if defined _WIN32
-#      if defined NN_EXPORTS
-#          define NN_EXPORT __declspec(dllexport)
-#      else
-#          define NN_EXPORT __declspec(dllimport)
-#      endif
-#   else
-#      if defined __SUNPRO_C
-#          define NN_EXPORT __global
-#      elif (defined __GNUC__ && __GNUC__ >= 4) || \
-             defined __INTEL_COMPILER || defined __clang__
-#          define NN_EXPORT __attribute__ ((visibility("default")))
-#      else
-#          define NN_EXPORT
-#      endif
-#   endif
+/* NB: We're building nanomsg with -DNN_STATIC_LIB=ON. */
+#if !defined(NN_EXPORT)
+#  define NN_EXPORT extern
 #endif
 
 /******************************************************************************/
