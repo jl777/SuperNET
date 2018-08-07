@@ -99,7 +99,7 @@ fn build_c_code() {
         Ok(ref f) if f == "testnet" => "marketmaker-testnet-lib",
         _ => "etomiclib-mainnet",
     };
-    println!("cargo:rustc-link-search=native=/mm2/build/iguana/exchanges");
+    println!("cargo:rustc-link-search=native=./build/iguana/exchanges");
     println!("cargo:rustc-link-lib=static={}", mm1lib);
 
     // Libraries need for MM1.
@@ -109,19 +109,19 @@ fn build_c_code() {
         Ok(ref f) if f == "testnet" => "etomiclib-testnet",
         _ => "etomiclib-mainnet",
     };
-    println!("cargo:rustc-link-search=native=/mm2/build/iguana/exchanges/etomicswap");
+    println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap");
     println!("cargo:rustc-link-lib=static={}", mm1etlib);
 
-    println!("cargo:rustc-link-search=native=/mm2/build/crypto777");
+    println!("cargo:rustc-link-search=native=./build/crypto777");
     println!("cargo:rustc-link-lib=static=libcrypto777");
 
-    println!("cargo:rustc-link-search=native=/mm2/build/crypto777/jpeg");
+    println!("cargo:rustc-link-search=native=./build/crypto777/jpeg");
     println!("cargo:rustc-link-lib=static=libjpeg");
 
-    println!("cargo:rustc-link-search=native=/mm2/build/iguana/secp256k1");
+    println!("cargo:rustc-link-search=native=./build/iguana/secp256k1");
     println!("cargo:rustc-link-lib=static=libsecp256k1");
 
-    println!("cargo:rustc-link-search=native=/mm2/build/nanomsg-build");
+    println!("cargo:rustc-link-search=native=./build/nanomsg-build");
     println!("cargo:rustc-link-lib=static=nanomsg");
 
     println!("cargo:rustc-link-lib=curl");

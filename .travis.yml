@@ -28,8 +28,11 @@ script:
   - mkdir build && cd build
   - cmake -DMM_VERSION="$VERSION" ..
   - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
-  - cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
-  - cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
+  - cmake --build . --target marketmaker-mainnet-lib -j $THREAD_COUNT
+  - cmake --build . --target marketmaker-testnet-lib -j $THREAD_COUNT
+  - cd $TRAVIS_BUILD_DIR
+  - MM_FLAVOR=mainnet cargo build
+  - MM_FLAVOR=testnet cargo build
 
 cache:
   apt: true
