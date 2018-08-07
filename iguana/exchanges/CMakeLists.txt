@@ -6,13 +6,10 @@ set(MM_LIBS
         libcrypto777
         libjpeg
         libsecp256k1
-        ${CMAKE_SOURCE_DIR}/target/debug/libmm2.a
         dl
         crypto
         ssl
     )
-
-add_custom_target(mm2rs cargo build WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 if(WIN32)
 link_directories(${CMAKE_SOURCE_DIR}/marketmaker_depends/curl/build_msvc_2015_win64/lib/Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/pthread-win32/bin/x64_MSVC2015.Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/nanomsg/build_msvc_2015_win64/Release)
@@ -57,10 +54,6 @@ target_link_libraries(marketmaker-testnet -static-libgcc -static-libstdc++)
 target_link_libraries(marketmaker-mainnet-lib -static-libgcc -static-libstdc++)
 target_link_libraries(marketmaker-testnet-lib -static-libgcc -static-libstdc++)
 endif()
-add_dependencies(marketmaker-testnet mm2rs)
-add_dependencies(marketmaker-mainnet mm2rs)
-add_dependencies(marketmaker-testnet-lib mm2rs)
-add_dependencies(marketmaker-mainnet-lib mm2rs)
 # Link with apple OS libraries
 if (APPLE)
     find_library(CoreFoundation CoreFoundation)

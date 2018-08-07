@@ -32,6 +32,15 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # It seems that bindgen won't prettify without it:
 RUN rustup component add rustfmt-preview
 
+# Unlike the `COPY` command, the `RUN git clone` remains cached by Docker even if we change something locally.
+# This allows us to more easily play with later Dockerfile steps by adding the `COPY` there.
+RUN git clone --depth=1 -b mm2-dice https://github.com/artemii235/SuperNET.git /mm2
+
+# Or with the "etomic" branch:
+#RUN git clone --depth=1 -b etomic https://github.com/artemii235/SuperNET.git /mm2
+
+# This will overwrite the Git version with the local one.
+# Only needed when we're developing or changing something locally.
 COPY . /mm2
 
 # The number of Docker layers is limited AFAIK,
@@ -49,16 +58,19 @@ RUN cd /mm2 &&\
 RUN mkdir /mm2/build && cd /mm2/build &&\
     cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" -j `cat /tmp/THREAD_COUNT` ..
 
-#Build and clean up
-#Cargo build of mm2rs is triggered by cmake - ./iguana/exchanges/CMakeLists.txt#16
+# Build the MM1 library.
 RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-testnet -j `cat /tmp/THREAD_COUNT` &&\
-    cmake --build . --target marketmaker-mainnet -j `cat /tmp/THREAD_COUNT` &&\
-    cd /mm2 &&\
-    cargo clean
+    cmake --build . --target marketmaker-testnet-lib -j `cat /tmp/THREAD_COUNT` &&\
+    cmake --build . --target marketmaker-mainnet-lib -j `cat /tmp/THREAD_COUNT` &&\
+    find . -name *.a
 
-RUN cd /mm2/build &&\
-    ln iguana/exchanges/marketmaker-testnet /usr/local/bin/ &&\
-    ln iguana/exchanges/marketmaker-mainnet /usr/local/bin/
+RUN cd /mm2 &&\
+    MM_FLAVOR=mainnet cargo build -vv &&\
+    ls -laF target/debug &&\
+    find target &&\
+    mv target/debug/marketmaker /usr/local/bin/marketmaker-mainnet &&\
+    MM_FLAVOR=testnet cargo build -vv &&\
+    mv target/debug/marketmaker /usr/local/bin/marketmaker-testnet &&\
+    cargo clean
 
 CMD marketmaker-testnet

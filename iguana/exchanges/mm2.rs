@@ -31,6 +31,9 @@ extern crate winapi;
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 pub use etomiclibrs::*;
 
+use std::os::raw::{c_char, c_int};
+use std::ptr::null;
+
 pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
 
 /* The original C code will be replaced with the corresponding Rust code in small increments,
@@ -185,10 +188,11 @@ int32_t ensure_writable(char *dirname)
 
 const MM_VERSION: &'static str = env!("MM_VERSION");
 
-#[no_mangle]
-pub extern fn rust_main() {
+fn main() {
     unsafe {os_portable::OS_init()};
     println!("BarterDEX MarketMaker {} \n", MM_VERSION);
+    extern "C" {fn mm1_main (argc: c_int, argv: *const c_char) -> c_int;}  // mm.c
+    unsafe {mm1_main (0, null());}
 }
 
 /*  The rest of the `main` function that we're still porting into the `rust_main`:

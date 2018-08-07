@@ -72,18 +72,60 @@ fn mm_version() {
 }
 
 /// Build helper C code.
-/// 
+///
 /// I think "git clone ... && cargo build" should be enough to start hacking on the Rust code.
-/// 
+///
 /// For now we're building the Structured Exception Handling code here,
 /// but in the future we might subsume the rest of the C build under build.rs.
 fn build_c_code() {
     if cfg!(windows) {
         // TODO: Only (re)build the library when the source code or the build script changes.
-        cc::Build::new().file("OSlibs/win/seh.c").warnings(true).compile("seh");
-        println! ("cargo:rustc-link-lib=static=seh");
-        println! ("cargo:rustc-link-search=native={}", env::var("OUT_DIR").expect("!OUT_DIR"));
+        cc::Build::new()
+            .file("OSlibs/win/seh.c")
+            .warnings(true)
+            .compile("seh");
+        println!("cargo:rustc-link-lib=static=seh");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            env::var("OUT_DIR").expect("!OUT_DIR")
+        );
     }
+
+    // The MM1 library.
+
+    let mm_flavor = env::var("MM_FLAVOR");
+    let mm1lib = match mm_flavor {
+        Ok(ref f) if f == "mainnet" => "marketmaker-mainnet-lib",
+        Ok(ref f) if f == "testnet" => "marketmaker-testnet-lib",
+        _ => "etomiclib-mainnet",
+    };
+    println!("cargo:rustc-link-search=native=/mm2/build/iguana/exchanges");
+    println!("cargo:rustc-link-lib=static={}", mm1lib);
+
+    // Libraries need for MM1.
+
+    let mm1etlib = match mm_flavor {
+        Ok(ref f) if f == "mainnet" => "etomiclib-mainnet",
+        Ok(ref f) if f == "testnet" => "etomiclib-testnet",
+        _ => "etomiclib-mainnet",
+    };
+    println!("cargo:rustc-link-search=native=/mm2/build/iguana/exchanges/etomicswap");
+    println!("cargo:rustc-link-lib=static={}", mm1etlib);
+
+    println!("cargo:rustc-link-search=native=/mm2/build/crypto777");
+    println!("cargo:rustc-link-lib=static=libcrypto777");
+
+    println!("cargo:rustc-link-search=native=/mm2/build/crypto777/jpeg");
+    println!("cargo:rustc-link-lib=static=libjpeg");
+
+    println!("cargo:rustc-link-search=native=/mm2/build/iguana/secp256k1");
+    println!("cargo:rustc-link-lib=static=libsecp256k1");
+
+    println!("cargo:rustc-link-search=native=/mm2/build/nanomsg-build");
+    println!("cargo:rustc-link-lib=static=nanomsg");
+
+    println!("cargo:rustc-link-lib=curl");
+    println!("cargo:rustc-link-lib=crypto");
 }
 
 fn main() {
