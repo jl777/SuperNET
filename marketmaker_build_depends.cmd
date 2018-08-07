@@ -43,14 +43,14 @@ mkdir x64\Release
 rem --- Rust ---
 curl https://win.rustup.rs/ -o rustup-init.exe
 rustup-init.exe -y --default-toolchain stable
-set PATH=%USERPROFILE%\.cargo\bin:%PATH%
+set PATH=%USERPROFILE%\.cargo\bin;%PATH%
 rustup component add rustfmt-preview
 
 rem --- pthreads ---
 :compile_pthreads
 if not exist marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib (
 cd marketmaker_depends
-git clone https://github.com/DeckerSU/pthread-win32
+git clone --depth=1 --quiet https://github.com/DeckerSU/pthread-win32
 cd pthread-win32
 MSBuild pthread.2015.sln /t:Rebuild /p:Configuration=Release /p:Platform=Win32
 MSBuild pthread.2015.sln /t:Rebuild /p:Configuration=Release /p:Platform=x64
@@ -64,7 +64,7 @@ if not exist marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.l
 	if not exist marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.exp (
 		if not exist marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.dll (
 			cd marketmaker_depends 
-			git clone https://github.com/nanomsg/nanomsg
+			git clone --depth=1 --quiet https://github.com/nanomsg/nanomsg
 			cd nanomsg
 			mkdir build_msvc_2015_win32
 			mkdir build_msvc_2015_win64
@@ -85,7 +85,7 @@ if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_
 	if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.exp (
 		if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl.dll (
 			cd marketmaker_depends 
-			git clone https://github.com/curl/curl
+			git clone --depth=1 --quiet https://github.com/curl/curl
 			cd curl
 			mkdir build_msvc_2015_win32
 			mkdir build_msvc_2015_win64

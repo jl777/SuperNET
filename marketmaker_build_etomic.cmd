@@ -1,7 +1,7 @@
 @echo off
 rem (c) Decker
 
-echo [#1] Build nanomsg, curl and pthreads ...
+echo [#1] Install Rust, build nanomsg, curl and pthreads ...
 call marketmaker_build_depends.cmd
 copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.lib marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\curl.lib
 copy marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread.lib
