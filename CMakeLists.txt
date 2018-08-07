@@ -32,7 +32,7 @@ endif(NOT(WIN32))
 
 find_library(
     NANOMSG_LIBRARY NAMES nanomsg PATHS ${DEPS_INSTALL_PREFIX}/lib NO_DEFAULT_PATH
-    HINTS "${CMAKE_SOURCE_DIR}/OSlibs/win"
+    HINTS "${CMAKE_SOURCE_DIR}/OSlibs/win/x64"
 )
 include_directories("${CMAKE_SOURCE_DIR}")
 add_subdirectory(iguana/exchanges)

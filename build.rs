@@ -104,12 +104,17 @@ fn build_c_code(mm_version: &str) {
         fs::create_dir("build").expect("Can't create the 'build' directory");
 
         // NB: With "0.11.0" the `let _` variable binding is necessary in order for the build not to fall detached into background.
-        let _ = cmd!("cmake", format!("-DMM_VERSION={}", mm_version), "..")
-            .dir("build")
-            .stdout("build/cmake-prep.log")
-            .stderr_to_stdout()
-            .run()
-            .expect("!cmake");
+        let _ = cmd!(
+            "cmake",
+            "-G",
+            "Visual Studio 15 2017 Win64",
+            format!("-DMM_VERSION={}", mm_version),
+            ".."
+        ).dir("build")
+        .stdout("build/cmake-prep.log")
+        .stderr_to_stdout()
+        .run()
+        .expect("!cmake");
 
         let _ = cmd!(
             "cmake",
@@ -144,7 +149,6 @@ fn build_c_code(mm_version: &str) {
         Ok(ref f) if f == "testnet" => "marketmaker-testnet-lib",
         _ => "marketmaker-mainnet-lib",
     };
-    println!("cargo:rustc-link-search=native=./build/iguana/exchanges");
     println!("cargo:rustc-link-lib=static={}", mm1lib);
 
     // Libraries need for MM1.
@@ -154,22 +158,14 @@ fn build_c_code(mm_version: &str) {
         Ok(ref f) if f == "testnet" => "etomiclib-testnet",
         _ => "etomiclib-mainnet",
     };
-    println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap");
     println!("cargo:rustc-link-lib=static={}", mm1etlib);
-
-    println!("cargo:rustc-link-search=native=./build/crypto777");
     println!("cargo:rustc-link-lib=static=libcrypto777");
-
-    println!("cargo:rustc-link-search=native=./build/crypto777/jpeg");
     println!("cargo:rustc-link-lib=static=libjpeg");
-
-    println!("cargo:rustc-link-search=native=./build/iguana/secp256k1");
     println!("cargo:rustc-link-lib=static=libsecp256k1");
 
     if cfg!(windows) {
         // TODO: Should fix the Git repository and the Windows scripts to use one folder instead of three
         //       in order to avoid outdated library versions and mismatches.
-        println!("cargo:rustc-link-search=native=./OSlibs/win");
         println!("cargo:rustc-link-search=native=./OSlibs/win/x64");
         println!("cargo:rustc-link-search=native=./OSlibs/win/x64/release");
         // When building locally with CMake 3.12.0 on Windows the artefacts are created in the "Debug" folders:
@@ -178,6 +174,14 @@ fn build_c_code(mm_version: &str) {
         println!("cargo:rustc-link-search=native=./build/crypto777/Debug");
         println!("cargo:rustc-link-search=native=./build/crypto777/jpeg/Debug");
         println!("cargo:rustc-link-search=native=./build/iguana/secp256k1/Debug");
+        // https://stackoverflow.com/a/10234077/257568
+        //println!(r"cargo:rustc-link-search=native=c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.14.26428\lib\x64");
+    } else {
+        println!("cargo:rustc-link-search=native=./build/iguana/exchanges");
+        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap");
+        println!("cargo:rustc-link-search=native=./build/crypto777");
+        println!("cargo:rustc-link-search=native=./build/crypto777/jpeg");
+        println!("cargo:rustc-link-search=native=./build/iguana/secp256k1");
     }
 
     println!("cargo:rustc-link-search=native=./build/nanomsg-build");
@@ -189,6 +193,7 @@ fn build_c_code(mm_version: &str) {
     );
     if !cfg!(windows) {
         println!("cargo:rustc-link-lib=crypto");
+        println!("cargo:rustc-link-lib=static=pthread_lib");
     }
 }
 
