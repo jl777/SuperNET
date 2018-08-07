@@ -11,7 +11,8 @@ call marketmaker_build_depends.cmd
 echo [#2] Prepare the build.
 mkdir build
 cd build
-cmake .. -DMM_VERSION="%APPVEYOR_BUILD_VERSION%"
+rem https://cmake.org/cmake/help/v3.12/generator/Visual%20Studio%2015%202017.html
+cmake -G "Visual Studio 15 2017 Win64" -DMM_VERSION="%APPVEYOR_BUILD_VERSION%" ..
 
 echo [#3] Build the marketmaker-mainnet library.
 

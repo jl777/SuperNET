@@ -42,7 +42,7 @@ mkdir x64\Release
 
 rem --- Rust ---
 curl https://win.rustup.rs/ -o rustup-init.exe
-rustup-init.exe -y --default-toolchain stable
+rustup-init.exe -y --default-toolchain stable --default-host x86_64-pc-windows-msvc
 del rustup-init.exe
 set PATH=%USERPROFILE%\.cargo\bin;%PATH%
 rustup component add rustfmt-preview
