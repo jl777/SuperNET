@@ -97,7 +97,7 @@ fn build_c_code() {
     let mm1lib = match mm_flavor {
         Ok(ref f) if f == "mainnet" => "marketmaker-mainnet-lib",
         Ok(ref f) if f == "testnet" => "marketmaker-testnet-lib",
-        _ => "etomiclib-mainnet",
+        _ => "marketmaker-mainnet-lib",
     };
     println!("cargo:rustc-link-search=native=./build/iguana/exchanges");
     println!("cargo:rustc-link-lib=static={}", mm1lib);
