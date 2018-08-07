@@ -51,26 +51,22 @@ rem TODO: Download automatically from build.rs.
 rem --- pthreads ---
 :compile_pthreads
 if not exist x64\pthreadVC2.dll (
-curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll -o x64/pthreadVC2.dll
-curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/lib/x64/pthreadVC2.lib -o x64/pthreadVC2.lib
+    curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll -o x64/pthreadVC2.dll
+    curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/lib/x64/pthreadVC2.lib -o x64/pthreadVC2.lib
 )
 
 rem TODO: Move to build.rs and build automatically.
 rem --- nanomsg ---
 :compile_nanomsg
-if not exist marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.lib (
-	if not exist marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.exp (
-		if not exist marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.dll (
-			cd marketmaker_depends
-			git clone --depth=1 --quiet https://github.com/nanomsg/nanomsg
-			cd nanomsg
-			mkdir build
-			cd build
-			cmake -G "Visual Studio 15 2017 Win64" -DNN_STATIC_LIB=ON ..
-			cmake --build . --config Release --target nanomsg
-			cd ../../..
-		)
-	)
+if not exist x64\nanomsg.lib (
+    cd marketmaker_depends
+    git clone --depth=1 --quiet https://github.com/nanomsg/nanomsg
+    cd nanomsg
+    mkdir build
+    cd build
+    cmake -G "Visual Studio 15 2017 Win64" -DNN_STATIC_LIB=ON ..
+    cmake --build . --config Release --target nanomsg
+    cd ../../..
 )
 copy marketmaker_depends\nanomsg\build\Release\nanomsg.lib x64\nanomsg.lib
 
