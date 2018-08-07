@@ -18,6 +18,8 @@ before_install:
   - source $HOME/.cargo/env
   - rustup component add rustfmt-preview
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 60 && sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install jemalloc; fi
 
