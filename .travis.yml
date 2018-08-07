@@ -17,9 +17,11 @@ before_install:
 - rustup component add rustfmt-preview
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh;
   fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get update && apt-get install -y lftp;
+  fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh;
   fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install jemalloc; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install jemalloc lftp; fi
 script:
 - export VERSION=`echo "$(git tag -l --points-at HEAD)"`
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`;
@@ -48,9 +50,7 @@ before_deploy:
 - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges
   marketmaker-mainnet marketmaker-testnet
 after_success:
-- curl --ftp-create-dirs
-  -T $TRAVIS_BUILD_DIR/target/debug/marketmaker
-  sftp://${SFTP_USER}:${SFTP_PASSWORD}@/uploads/marketmaker
+- lftp sftp://${SFTP_USER}:${SFTP_PASSWORD}@195.201.0.6  -e "cd uploads; mkdir -f newdir; cd newdir; put target/debug/marketmaker; bye"
 deploy:
   provider: releases
   api_key:
