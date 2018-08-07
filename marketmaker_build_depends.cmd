@@ -48,17 +48,20 @@ set PATH=%USERPROFILE%\.cargo\bin;%PATH%
 rustup component add rustfmt-preview
 
 rem TODO: Download automatically from build.rs.
+rem NB: "marketmaker_depends" is cached between the AppVeyor builds!
 rem --- pthreads ---
 :compile_pthreads
-if not exist x64\pthreadVC2.dll (
-    curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll -o x64/pthreadVC2.dll
-    curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/lib/x64/pthreadVC2.lib -o x64/pthreadVC2.lib
+if not exist marketmaker_depends\pthreadVC2.dll (
+    curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll -o marketmaker_depends/pthreadVC2.dll
+    curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/lib/x64/pthreadVC2.lib -o marketmaker_depends/pthreadVC2.lib
 )
+copy marketmaker_depends\pthreadVC2.dll x64\pthreadVC2.dll
+copy marketmaker_depends\pthreadVC2.lib x64\pthreadVC2.lib
 
 rem TODO: Move to build.rs and build automatically.
 rem --- nanomsg ---
 :compile_nanomsg
-if not exist x64\nanomsg.lib (
+if not exist marketmaker_depends\nanomsg\build\Release\nanomsg.lib (
     cd marketmaker_depends
     git clone --depth=1 --quiet https://github.com/nanomsg/nanomsg
     cd nanomsg
@@ -73,19 +76,15 @@ copy marketmaker_depends\nanomsg\build\Release\nanomsg.lib x64\nanomsg.lib
 rem TODO: Move to build.rs and build automatically.
 rem --- curl ---
 :compile_curl
-if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.lib (
-	if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.exp (
-		if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl.dll (
-			cd marketmaker_depends 
-			git clone --depth=1 --quiet https://github.com/curl/curl
-			cd curl
-			mkdir build
-			cd build
-			cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_USE_WINSSL:BOOL=ON ..
-			cmake --build . --config Release --target libcurl
-			cd ../../..
-		)
-	)
+if not exist marketmaker_depends\curl\build\lib\Release\libcurl.dll (
+    cd marketmaker_depends 
+    git clone --depth=1 --quiet https://github.com/curl/curl
+    cd curl
+    mkdir build
+    cd build
+    cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_USE_WINSSL:BOOL=ON ..
+    cmake --build . --config Release --target libcurl
+    cd ../../..
 )
 copy marketmaker_depends\curl\build\lib\Release\libcurl_imp.lib x64\libcurl.lib
 copy marketmaker_depends\curl\build\lib\Release\libcurl_imp.exp x64\libcurl.exp
