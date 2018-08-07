@@ -17,11 +17,6 @@ set(MM_LIBS ${MM_LIBS} nanomsg)
 endif()
 add_library(marketmaker-testnet-lib ${MM_SOURCES})
 add_library(marketmaker-mainnet-lib ${MM_SOURCES})
-# GCC5 built lib link fails with relocation R_X86_64_32 against `.rodata' can not be used when making a shared object;
-# recompile with -fPIC
-# https://stackoverflow.com/questions/19364969/compilation-fails-with-relocation-r-x86-64-32-against-rodata-str1-8-can-not
-set_target_properties(marketmaker-testnet-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(marketmaker-mainnet-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_executable(marketmaker-testnet ${MM_SOURCES})
 add_executable(marketmaker-mainnet ${MM_SOURCES})
 include_directories(../../crypto777)
