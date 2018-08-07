@@ -28,7 +28,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n hw.physicalcpu)"`; fi
   - mkdir build && cd build
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
   - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
   - cmake --build . --target marketmaker-mainnet-lib -j $THREAD_COUNT
   - cmake --build . --target marketmaker-testnet-lib -j $THREAD_COUNT
