@@ -35,6 +35,7 @@ script:
 - cmake --build . --target marketmaker-testnet-lib -j $THREAD_COUNT
 - cd $TRAVIS_BUILD_DIR
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
+- touch build.rs
 - MM_FLAVOR=mainnet cargo test
 - MM_FLAVOR=mainnet cargo build
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
