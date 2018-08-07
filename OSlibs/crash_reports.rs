@@ -1,7 +1,6 @@
 use backtrace;
 #[cfg(not(test))] use std::process::abort;
 #[cfg(test)] use std::sync::Mutex;
-#[cfg(test)] use winapi::um::minwinbase::EXCEPTION_ACCESS_VIOLATION;
 
 type StackTrace = String;
 /// https://docs.microsoft.com/en-us/windows/desktop/debug/getexceptioncode
@@ -91,6 +90,8 @@ extern fn call_c_access_violation() {
 #[cfg(windows)]
 #[test]
 fn test_seh_handler() {
+    use winapi::um::minwinbase::EXCEPTION_ACCESS_VIOLATION;
+
     *SEH_CAUGHT.lock().expect("!SEH_CAUGHT") = None;
     unsafe {with_seh (call_access_violation)};
     let seh = SEH_CAUGHT.lock().expect("!SEH_CAUGHT").take().expect("!trace");

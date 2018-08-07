@@ -65,12 +65,13 @@ RUN cd /mm2/build &&\
     find . -name *.a
 
 RUN cd /mm2 &&\
-    MM_FLAVOR=mainnet cargo build -vv &&\
-    ls -laF target/debug &&\
-    find target &&\
-    mv target/debug/marketmaker /usr/local/bin/marketmaker-mainnet &&\
-    MM_FLAVOR=testnet cargo build -vv &&\
-    mv target/debug/marketmaker /usr/local/bin/marketmaker-testnet &&\
+    MM_FLAVOR=mainnet cargo test -vv &&\
+    MM_FLAVOR=mainnet cargo build &&\
+    mv target/debug/mm2 /usr/local/bin/marketmaker-mainnet &&\
+    touch build.rs &&\
+    MM_FLAVOR=testnet cargo test -vv &&\
+    MM_FLAVOR=testnet cargo build &&\
+    mv target/debug/mm2 /usr/local/bin/marketmaker-testnet &&\
     cargo clean
 
 CMD marketmaker-testnet

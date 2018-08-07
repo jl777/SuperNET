@@ -1,12 +1,16 @@
 // The script here will translate some of the C headers necessary for the gradual Rust port into the corresponding Rust files.
 // Going to take the *whitelisting* approach, converting just the necessary definitions, in order to keep the builds fast.
 
+// The script is experimentally formatted with `rustfmt`. Probably not going to use `rustfmt` for the rest of the project though.
+
 // Bindgen requirements: https://rust-lang-nursery.github.io/rust-bindgen/requirements.html
 //              Windows: https://github.com/rust-lang-nursery/rustup.rs/issues/1003#issuecomment-289825927
 // On build.rs: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
 extern crate bindgen;
 extern crate cc;
+#[macro_use]
+extern crate duct;
 extern crate gstuff;
 
 use gstuff::last_modified_sec;
@@ -53,9 +57,10 @@ fn generate_bindings() {
 /// If neither is there then we're probably in a non-released, local development branch
 /// (we're using the "UNKNOWN" version designator then).
 /// This function ensures that we have the "MM_VERSION" variable during the build.
-fn mm_version() {
-    if option_env!("MM_VERSION").is_some() {
-        return; // The variable is already there.
+fn mm_version() -> String {
+    if let Some(have) = option_env!("MM_VERSION") {
+        // The variable is already there.
+        return have.into();
     }
 
     // Try to load the variable from the file.
@@ -69,6 +74,7 @@ fn mm_version() {
         "UNKNOWN"
     };
     println!("cargo:rustc-env=MM_VERSION={}", version);
+    version.into()
 }
 
 /// Build helper C code.
@@ -77,7 +83,7 @@ fn mm_version() {
 ///
 /// For now we're building the Structured Exception Handling code here,
 /// but in the future we might subsume the rest of the C build under build.rs.
-fn build_c_code() {
+fn build_c_code(mm_version: &str) {
     if cfg!(windows) {
         // TODO: Only (re)build the library when the source code or the build script changes.
         cc::Build::new()
@@ -89,6 +95,45 @@ fn build_c_code() {
             "cargo:rustc-link-search=native={}",
             env::var("OUT_DIR").expect("!OUT_DIR")
         );
+    }
+
+    // In CI and Docker we're building MM1 separately, in order to benefit from granular caching and verbose logs.
+    // But we also want "git clone ... && cargo build" to *just work*,
+    // so if the MM1 build haven't happened *yet* then we invoke it from here.
+    if last_modified_sec(&"build").unwrap_or(0.) == 0. {
+        fs::create_dir("build").expect("Can't create the 'build' directory");
+
+        // NB: With "0.11.0" the `let _` variable binding is necessary in order for the build not to fall detached into background.
+        let _ = cmd!("cmake", format!("-DMM_VERSION={}", mm_version), "..")
+            .dir("build")
+            .stdout("build/cmake-prep.log")
+            .stderr_to_stdout()
+            .run()
+            .expect("!cmake");
+
+        let _ = cmd!(
+            "cmake",
+            "--build",
+            ".",
+            "--target",
+            "marketmaker-testnet-lib"
+        ).dir("build")
+        .stdout("build/cmake-testnet.log")
+        .stderr_to_stdout()
+        .run()
+        .expect("!cmake");
+
+        let _ = cmd!(
+            "cmake",
+            "--build",
+            ".",
+            "--target",
+            "marketmaker-mainnet-lib"
+        ).dir("build")
+        .stdout("build/cmake-mainnet.log")
+        .stderr_to_stdout()
+        .run()
+        .expect("!cmake");
     }
 
     // The MM1 library.
@@ -121,15 +166,34 @@ fn build_c_code() {
     println!("cargo:rustc-link-search=native=./build/iguana/secp256k1");
     println!("cargo:rustc-link-lib=static=libsecp256k1");
 
+    if cfg!(windows) {
+        // TODO: Should fix the Git repository and the Windows scripts to use one folder instead of three
+        //       in order to avoid outdated library versions and mismatches.
+        println!("cargo:rustc-link-search=native=./OSlibs/win");
+        println!("cargo:rustc-link-search=native=./OSlibs/win/x64");
+        println!("cargo:rustc-link-search=native=./OSlibs/win/x64/release");
+        // When building locally with CMake 3.12.0 on Windows the artefacts are created in the "Debug" folders:
+        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/Debug");
+        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap/Debug");
+        println!("cargo:rustc-link-search=native=./build/crypto777/Debug");
+        println!("cargo:rustc-link-search=native=./build/crypto777/jpeg/Debug");
+        println!("cargo:rustc-link-search=native=./build/iguana/secp256k1/Debug");
+    }
+
     println!("cargo:rustc-link-search=native=./build/nanomsg-build");
     println!("cargo:rustc-link-lib=static=nanomsg");
 
-    println!("cargo:rustc-link-lib=curl");
-    println!("cargo:rustc-link-lib=crypto");
+    println!(
+        "cargo:rustc-link-lib={}",
+        if cfg!(windows) { "libcurl" } else { "curl" }
+    );
+    if !cfg!(windows) {
+        println!("cargo:rustc-link-lib=crypto");
+    }
 }
 
 fn main() {
-    build_c_code();
-    mm_version();
+    let mm_version = mm_version();
+    build_c_code(&mm_version);
     generate_bindings();
 }

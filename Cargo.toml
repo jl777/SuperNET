@@ -3,7 +3,7 @@ name = "mm2"
 version = "0.1.0"
 
 [[bin]]
-name = "marketmaker"
+name = "mm2"
 path = "iguana/exchanges/mm2.rs"
 
 [dependencies]
@@ -17,7 +17,8 @@ winapi = "0.3.5"
 [build-dependencies]
 bindgen = "0.37.4"
 cc = "1.0.18"
-gstuff = { git = "https://github.com/artemii235/gstuff.rs" }
+duct = "0.11.0"
+gstuff = { git = "https://github.com/ArtemGr/gstuff.rs" }
 
 # ring 0.12 fails to build on Windows, this patch replaces it with ring 0.13.
 [patch."https://github.com/paritytech/parity-common"]

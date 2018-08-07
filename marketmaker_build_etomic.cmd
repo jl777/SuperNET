@@ -45,5 +45,7 @@ rem endif()
 
 echo [#3] Build marketmaker-mainnet ...
 
-cmake --build . --config Release --target marketmaker-mainnet
+cmake --build . --config Release --target marketmaker-mainnet-lib
 cd ..
+cargo test
+cargo build
