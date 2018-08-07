@@ -34,10 +34,11 @@ script:
 - cmake --build . --target marketmaker-mainnet-lib -j $THREAD_COUNT
 - cmake --build . --target marketmaker-testnet-lib -j $THREAD_COUNT
 - cd $TRAVIS_BUILD_DIR
+- export TAG=`echo "$(git rev-parse --short HEAD)"`
 - MM_FLAVOR=mainnet cargo build
-- mv target/debug/marketmaker marketmaker-mainnet-$OS_NAME-$TAG
+- mv target/debug/marketmaker marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 - MM_FLAVOR=testnet cargo build
-- mv target/debug/marketmaker marketmaker-testnet-$OS_NAME-$TAG
+- mv target/debug/marketmaker marketmaker-testnet-$TRAVIS_OS_NAME-$TAG
 cache:
   apt: true
   directories:
@@ -46,15 +47,15 @@ cache:
   - "$TRAVIS_BUILD_DIR/target"
 before_deploy:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
-- export BRANCH=`echo "$(git rev-parse --short HEAD)"`
 - mkdir deploy
 - strip iguana/exchanges/marketmaker-mainnet
 - strip iguana/exchanges/marketmaker-testnet
 - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges
   marketmaker-mainnet marketmaker-testnet
 after_success:
+- export TAG=`echo "$(git rev-parse --short HEAD)"`
 - lftp sftp://${SFTP_USER}:${SFTP_PASSWORD}@195.201.0.6
-  -e "set sftp:auto-confirm yes; cd uploads; mkdir $TRAVIS_BRANCH; cd $TRAVIS_BRANCH; put marketmaker-mainnet-$OS_NAME-$TAG; put marketmaker-testnet-$OS_NAME-$TAG; bye"
+  -e "set sftp:auto-confirm yes; cd uploads; mkdir $TRAVIS_BRANCH; cd $TRAVIS_BRANCH; put marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG; put marketmaker-testnet-$TRAVIS_OS_NAME-$TAG; bye"
 deploy:
   provider: releases
   api_key:
