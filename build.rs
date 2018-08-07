@@ -191,9 +191,11 @@ fn build_c_code(mm_version: &str) {
         "cargo:rustc-link-lib={}",
         if cfg!(windows) { "libcurl" } else { "curl" }
     );
-    if !cfg!(windows) {
+    if cfg!(windows) {
+        // https://sourceware.org/pthreads-win32/
+        println!("cargo:rustc-link-lib=static=pthreadVC2");
+    } else {
         println!("cargo:rustc-link-lib=crypto");
-        println!("cargo:rustc-link-lib=static=pthread_lib");
     }
 }
 
