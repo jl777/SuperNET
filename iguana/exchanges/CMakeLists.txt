@@ -1,5 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-set(MM_SOURCES mm.c ../mini-gmp.c ../groestl.c ../segwit_addr.c ../keccak.c LP_etomic.c)
+set(MM_SOURCES mm.c ../mini-gmp.c ../groestl.c ../segwit_addr.c ../keccak.c)
+
 set(MM_LIBS
         curl
         pthread
@@ -10,6 +11,11 @@ set(MM_LIBS
         crypto
         ssl
     )
+
+if(DEFINED ETOMIC)
+    set(MM_SOURCES ${MM_SOURCES} LP_etomic.c)
+    set(MM_LIBS ${MM_LIBS} etomiclib-mainnet)
+endif()
 
 if(WIN32)
 link_directories(${CMAKE_SOURCE_DIR}/marketmaker_depends/curl/build_msvc_2015_win64/lib/Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/pthread-win32/bin/x64_MSVC2015.Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/nanomsg/build_msvc_2015_win64/Release)
@@ -44,10 +50,6 @@ add_definitions(-DIGUANA_MAXPACKETSIZE=1572864)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 include_directories("${CMAKE_SOURCE_DIR}/includes")
 endif()
-target_link_libraries(marketmaker-testnet ${MM_LIBS} etomiclib-testnet)
-target_link_libraries(marketmaker-mainnet ${MM_LIBS} etomiclib-mainnet)
-target_link_libraries(marketmaker-testnet-lib ${MM_LIBS} etomiclib-testnet)
-target_link_libraries(marketmaker-mainnet-lib ${MM_LIBS} etomiclib-mainnet)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 target_link_libraries(marketmaker-mainnet -static-libgcc -static-libstdc++)
 target_link_libraries(marketmaker-testnet -static-libgcc -static-libstdc++)
@@ -64,10 +66,17 @@ if (APPLE)
     target_link_libraries(marketmaker-testnet-lib ${CoreFoundation} ${Security} jemalloc)
 endif()
 
+target_link_libraries(marketmaker-mainnet ${MM_LIBS})
+target_link_libraries(marketmaker-mainnet-lib ${MM_LIBS})
+
 if(NOT DEFINED MM_VERSION)
     SET(MM_VERSION UNKNOWN)
 endif()
+
+if(NOT DEFINED ETOMIC)
+    target_compile_definitions(marketmaker-mainnet-lib PRIVATE -DNOTETOMIC)
+    target_compile_definitions(marketmaker-mainnet PRIVATE -DNOTETOMIC)
+endif()
+
 target_compile_definitions(marketmaker-mainnet PRIVATE -DMM_VERSION="${MM_VERSION}")
-target_compile_definitions(marketmaker-testnet PRIVATE -DMM_VERSION="${MM_VERSION}")
 target_compile_definitions(marketmaker-mainnet-lib PRIVATE -DMM_VERSION="${MM_VERSION}")
-target_compile_definitions(marketmaker-testnet-lib PRIVATE -DMM_VERSION="${MM_VERSION}")
