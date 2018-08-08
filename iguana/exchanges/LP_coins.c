@@ -251,10 +251,14 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     }
 #ifndef NOTETOMIC
     else if (coin->etomic[0] != 0) {
-        //balance = LP_etomic_get_balance(coin, coin->smartaddr);
+        int error = 0;
+        if (coin->inactive == 0) {
+            balance = LP_etomic_get_balance(coin, coin->smartaddr, &error);
+        } else {
+            balance = 0;
+        }
         jaddnum(item,"height",-1);
-        //jaddnum(item,"balance",dstr(balance));
-        jaddnum(item,"balance",0);
+        jaddnum(item,"balance",dstr(balance));
     }
 #endif
     else
@@ -374,7 +378,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 }
 
 void *curl_easy_init();
-uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
+uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath,uint8_t decimals)
 {
     static void *ctx;
     char *name2; uint16_t origport = port;
@@ -437,6 +441,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     }
     coin->curl_handle = curl_easy_init();
     portable_mutex_init(&coin->curl_mutex);
+    coin->decimals = decimals;
     return(port);
 }
 
@@ -480,7 +485,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    port = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0);
+    port = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0,0);
     if ( port == 0 )
         isinactive = 1;
     else isinactive = 0;
@@ -522,7 +527,9 @@ struct iguana_info *LP_coincreate(cJSON *item)
         }
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath")) < 0 )
+
+        uint8_t decimals = juint(item,"decimals");
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals) < 0 )
         {
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);
