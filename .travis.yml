@@ -39,9 +39,6 @@ script:
 - MM_FLAVOR=mainnet cargo test
 - MM_FLAVOR=mainnet cargo build
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
-- touch build.rs
-- MM_FLAVOR=testnet cargo build
-- mv target/debug/mm2 marketmaker-testnet-$TRAVIS_OS_NAME-$TAG
 cache:
   apt: true
   directories:
@@ -52,13 +49,12 @@ before_deploy:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - mkdir deploy
 - strip iguana/exchanges/marketmaker-mainnet
-- strip iguana/exchanges/marketmaker-testnet
 - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges
-  marketmaker-mainnet marketmaker-testnet
+  marketmaker-mainnet
 after_success:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - lftp sftp://${SFTP_USER}:${SFTP_PASSWORD}@195.201.0.6
-  -e "set sftp:auto-confirm yes; cd uploads; mkdir $TRAVIS_BRANCH; cd $TRAVIS_BRANCH; put marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG; put marketmaker-testnet-$TRAVIS_OS_NAME-$TAG; bye"
+  -e "set sftp:auto-confirm yes; cd uploads; mkdir $TRAVIS_BRANCH; cd $TRAVIS_BRANCH; put marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG; bye"
 deploy:
   provider: releases
   api_key:

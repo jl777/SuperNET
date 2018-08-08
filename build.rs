@@ -153,12 +153,14 @@ fn build_c_code(mm_version: &str) {
 
     // Libraries need for MM1.
 
+    /* Comment temporary until ETOMIC rust feature is added
     let mm1etlib = match mm_flavor {
         Ok(ref f) if f == "mainnet" => "etomiclib-mainnet",
         Ok(ref f) if f == "testnet" => "etomiclib-testnet",
         _ => "etomiclib-mainnet",
     };
     println!("cargo:rustc-link-lib=static={}", mm1etlib);
+    */
     println!("cargo:rustc-link-lib=static=libcrypto777");
     println!("cargo:rustc-link-lib=static=libjpeg");
     println!("cargo:rustc-link-lib=static=libsecp256k1");
