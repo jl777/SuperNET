@@ -1,5 +1,10 @@
 version: 1.0.{build}
 image: Visual Studio 2017
+
+init:
+- ps: |
+    $env:SHORT_HASH = "$($env:APPVEYOR_REPO_COMMIT.Substring(0, 8))"
+
 build_script:
 - cmd: marketmaker_build_etomic.cmd
 cache:
@@ -7,14 +12,14 @@ cache:
   - marketmaker_depends
 
 after_build:
-  - '7z a mm-win-%APPVEYOR_REPO_COMMIT%.zip
+  - '7z a mm-win-%SHORT_HASH%.zip
      .\target\debug\mm2.exe
      .\target\debug\*.dll
      "%WINDIR%\system32\msvcp140.dll"
      "%WINDIR%\system32\vcruntime140.dll"'
 
 artifacts:
-  - path: mm-win-$(appveyor_repo_commit).zip
+  - path: mm-win-"$env:SHORT_HASH".zip
     name: marketmaker-mainnet
 
 deploy:
