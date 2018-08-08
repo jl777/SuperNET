@@ -576,7 +576,7 @@ cJSON *electrum_hasharg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,c
     char params[128],str[65]; cJSON *retjson;
     if ( retjsonp == 0 )
         retjsonp = &retjson;
-    sprintf(params,"[\"%s\", true]",bits256_str(str,arg));
+    sprintf(params,"[\"%s\"]",bits256_str(str,arg));
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
@@ -1277,7 +1277,21 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
             jaddnum(retjson,"restart",kickval);
         }
     }
+#ifndef NOTETOMIC
+    if (strcmp(coin->symbol, "ETOMIC") == 0) {
+        cJSON *balance = cJSON_CreateObject();
+        electrum_address_getbalance(coin->symbol, ep, &balance, coin->smartaddr);
+        int64_t confirmed = get_cJSON_int(balance, "confirmed");
+        int64_t unconfirmed = get_cJSON_int(balance, "unconfirmed");
+        if ((confirmed + unconfirmed) < 20 * SATOSHIDEN && get_etomic_from_faucet(coin->smartaddr) != 1) {
+            coin->inactive = (uint32_t)time(NULL);
+            coin->electrum = ep->prev;
+            cJSON_Delete(balance);
+            return(cJSON_Parse("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
+        }
+        cJSON_Delete(balance);
+    }
+#endif
     //printf("(%s)\n",jprint(retjson,0));
     return(retjson);
 }
-

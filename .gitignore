@@ -263,4 +263,12 @@ Release/*
 build_win64_release/*
 DB/*
 
+.env.client
+.env.seed
+etomic_build/client/DB
+etomic_build/client/stats.log
+etomic_build/client/unparsed.txt
+etomic_build/seed/DB
+etomic_build/seed/stats.log
+etomic_build/seed/unparsed.txt
 iguana/exchanges/manychains
