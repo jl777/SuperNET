@@ -30,7 +30,7 @@ deploy:
       appveyor_repo_tag: false
 
   - provider: FTP
-    protocol: ftps
+    protocol: sftp
     host: 195.201.0.6
     username: sftpuser1
     password:
