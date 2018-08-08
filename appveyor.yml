@@ -10,8 +10,8 @@ after_build:
   - '7z a mm-win.zip
      .\target\debug\mm2.exe
      .\target\debug\*.dll
-     "c:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\VC\\Redist\\MSVC\\14.14.26405\\x64\\Microsoft.VC141.CRT\\msvcp140.dll"
-     "c:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\VC\\Redist\\MSVC\\14.14.26405\\x64\\Microsoft.VC141.CRT\\vcruntime140.dll"'
+     "%WINDIR%\system32\msvcp140.dll"
+     "%WINDIR%\system32\vcruntime140.dll"'
 
 artifacts:
   - path: mm-win.zip

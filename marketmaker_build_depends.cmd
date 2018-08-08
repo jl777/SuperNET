@@ -63,6 +63,7 @@ rem --- nanomsg ---
 :compile_nanomsg
 if not exist marketmaker_depends\nanomsg\build\Release\nanomsg.lib (
     cd marketmaker_depends
+    rmdir nanomsg /S /Q
     git clone --depth=1 --quiet https://github.com/nanomsg/nanomsg
     cd nanomsg
     mkdir build
@@ -78,6 +79,7 @@ rem --- curl ---
 :compile_curl
 if not exist marketmaker_depends\curl\build\lib\Release\libcurl.dll (
     cd marketmaker_depends 
+    rmdir curl /S /Q
     git clone --depth=1 --quiet https://github.com/curl/curl
     cd curl
     mkdir build
