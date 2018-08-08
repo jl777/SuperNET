@@ -3,7 +3,7 @@ image: Visual Studio 2017
 
 init:
 - ps: |
-    $env:SHORT_HASH = "$($env:APPVEYOR_REPO_COMMIT.Substring(0, 8))"
+    $env:SHORT_HASH = "$($env:APPVEYOR_REPO_COMMIT.Substring(0, 7))"
 
 build_script:
 - cmd: marketmaker_build_etomic.cmd
@@ -19,7 +19,7 @@ after_build:
      "%WINDIR%\system32\vcruntime140.dll"'
 
 artifacts:
-  - path: mm-win-"$env:SHORT_HASH".zip
+  - path: mm-win-$(short_hash).zip
     name: marketmaker-mainnet
 
 deploy:
