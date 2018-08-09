@@ -21,8 +21,8 @@
 
 extern crate backtrace;
 
-// Enable this back for ETOMIC feature
-// extern crate etomiclibrs;
+#[cfg(feature = "etomic")]
+extern crate etomiclibrs;
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -31,8 +31,8 @@ extern crate lazy_static;
 extern crate winapi;
 
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
-// Enable this back for ETOMIC feature
-// pub use etomiclibrs::*;
+#[cfg(feature = "etomic")]
+pub use etomiclibrs::*;
 
 use std::env;
 use std::os::raw::{c_char, c_int};

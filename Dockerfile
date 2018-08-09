@@ -39,10 +39,6 @@ RUN git clone --depth=1 -b mm2-dice https://github.com/artemii235/SuperNET.git /
 # Or with the "etomic" branch:
 #RUN git clone --depth=1 -b etomic https://github.com/artemii235/SuperNET.git /mm2
 
-# This will overwrite the Git version with the local one.
-# Only needed when we're developing or changing something locally.
-COPY . /mm2
-
 # The number of Docker layers is limited AFAIK,
 # so here we have a couple of configuration actions packed into a single step.
 RUN cd /mm2 &&\
@@ -51,27 +47,22 @@ RUN cd /mm2 &&\
     # If we're not in a CI-release environment then set the version to "UNKNOWN".
     if [ -z "$MM_VERSION" ]; then export MM_VERSION=UNKNOWN; fi &&\
     echo "MM_VERSION is $MM_VERSION" &&\
-    echo -n "$MM_VERSION" > MM_VERSION &&\
-    # `nproc --all` is "the number of processing units available".
-    nproc --all > /tmp/THREAD_COUNT
+    echo -n "$MM_VERSION" > MM_VERSION
 
-RUN mkdir /mm2/build && cd /mm2/build &&\
-    cmake -DMM_VERSION="$(cat /mm2/MM_VERSION)" -j `cat /tmp/THREAD_COUNT` ..
-
-# Build the MM1 library.
-RUN cd /mm2/build &&\
-    cmake --build . --target marketmaker-testnet-lib -j `cat /tmp/THREAD_COUNT` &&\
-    cmake --build . --target marketmaker-mainnet-lib -j `cat /tmp/THREAD_COUNT` &&\
-    find . -name *.a
-
+# Build just the dependencies first.
 RUN cd /mm2 &&\
-    MM_FLAVOR=mainnet cargo test -vv &&\
-    MM_FLAVOR=mainnet cargo build &&\
+    cargo build --bin mm2-nop --features nop
+
+# This will overwrite the Git version with the local one.
+# Only needed when we're developing or changing something locally.
+COPY . /mm2
+
+# Build MM1 and MM2.
+# Increased verbosity here allows us to see the MM1 CMake logs.
+RUN cd /mm2 &&\
+    cargo build -vv &&\
     mv target/debug/mm2 /usr/local/bin/marketmaker-mainnet &&\
-    touch build.rs &&\
-    MM_FLAVOR=testnet cargo test -vv &&\
-    MM_FLAVOR=testnet cargo build &&\
-    mv target/debug/mm2 /usr/local/bin/marketmaker-testnet &&\
+    cargo test &&\
     cargo clean
 
 CMD marketmaker-testnet

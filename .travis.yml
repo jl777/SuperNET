@@ -23,21 +23,12 @@ before_install:
   fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install jemalloc lftp; fi
 script:
-- export VERSION=`echo "$(git tag -l --points-at HEAD)"`
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`;
-  fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n
-  hw.physicalcpu)"`; fi
-- mkdir build && cd build
-- cmake -DMM_VERSION="$VERSION" ..
-- echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
-- cmake --build . --target marketmaker-mainnet-lib -j $THREAD_COUNT
-- cmake --build . --target marketmaker-testnet-lib -j $THREAD_COUNT
-- cd $TRAVIS_BUILD_DIR
+- export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"`
+- rm -rf build
+- cargo build --bin mm2-nop --features nop
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
-- touch build.rs
-- MM_FLAVOR=mainnet cargo test
-- MM_FLAVOR=mainnet cargo build
+- cargo build -vv
+- cargo test
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 cache:
   apt: true

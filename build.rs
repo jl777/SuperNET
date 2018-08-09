@@ -9,10 +9,11 @@
 
 extern crate bindgen;
 extern crate cc;
-#[macro_use]
 extern crate duct;
 extern crate gstuff;
+extern crate num_cpus;
 
+use duct::cmd;
 use gstuff::last_modified_sec;
 use std::env;
 use std::fs;
@@ -77,6 +78,21 @@ fn mm_version() -> String {
     version.into()
 }
 
+/// Formats a vector of command-line arguments into a printable string, for the build log.
+fn show_args<'a, I: IntoIterator<Item = &'a String>>(args: I) -> String {
+    use std::fmt::Write;
+    let mut buf = String::new();
+    for arg in args {
+        if arg.contains(' ') {
+            let _ = write!(&mut buf, " \"{}\"", arg);
+        } else {
+            buf.push(' ');
+            buf.push_str(arg)
+        }
+    }
+    buf
+}
+
 /// Build helper C code.
 ///
 /// I think "git clone ... && cargo build" should be enough to start hacking on the Rust code.
@@ -97,70 +113,50 @@ fn build_c_code(mm_version: &str) {
         );
     }
 
-    // In CI and Docker we're building MM1 separately, in order to benefit from granular caching and verbose logs.
-    // But we also want "git clone ... && cargo build" to *just work*,
-    // so if the MM1 build haven't happened *yet* then we invoke it from here.
-    if last_modified_sec(&"build").unwrap_or(0.) == 0. {
-        fs::create_dir("build").expect("Can't create the 'build' directory");
-
-        // NB: With "0.11.0" the `let _` variable binding is necessary in order for the build not to fall detached into background.
-        let _ = cmd!(
-            "cmake",
-            "-G",
-            "Visual Studio 15 2017 Win64",
-            format!("-DMM_VERSION={}", mm_version),
-            ".."
-        ).dir("build")
-        .stdout("build/cmake-prep.log")
-        .stderr_to_stdout()
-        .run()
-        .expect("!cmake");
-
-        let _ = cmd!(
-            "cmake",
-            "--build",
-            ".",
-            "--target",
-            "marketmaker-testnet-lib"
-        ).dir("build")
-        .stdout("build/cmake-testnet.log")
-        .stderr_to_stdout()
-        .run()
-        .expect("!cmake");
-
-        let _ = cmd!(
-            "cmake",
-            "--build",
-            ".",
-            "--target",
-            "marketmaker-mainnet-lib"
-        ).dir("build")
-        .stdout("build/cmake-mainnet.log")
-        .stderr_to_stdout()
-        .run()
-        .expect("!cmake");
-    }
-
     // The MM1 library.
 
-    let mm_flavor = env::var("MM_FLAVOR");
-    let mm1lib = match mm_flavor {
-        Ok(ref f) if f == "mainnet" => "marketmaker-mainnet-lib",
-        Ok(ref f) if f == "testnet" => "marketmaker-testnet-lib",
-        _ => "marketmaker-mainnet-lib",
-    };
-    println!("cargo:rustc-link-lib=static={}", mm1lib);
+    let _ = fs::create_dir("build");
 
-    // Libraries need for MM1.
+    // NB: With "duct 0.11.0" the `let _` variable binding is necessary in order for the build not to fall detached into background.
+    let mut cmake_prep_args: Vec<String> = Vec::new();
+    if cfg!(windows) {
+        // To flush the build problems early we explicitly specify that we want a 64-bit MSVC build and not a GNU or 32-bit one.
+        cmake_prep_args.push("-G".into());
+        cmake_prep_args.push("Visual Studio 15 2017 Win64".into());
+    }
+    if env::var_os("CARGO_FEATURE_ETOMIC").is_some() {
+        // cargo build -vv --features etomic
+        cmake_prep_args.push("-DETOMIC=ON".into());
+    }
+    cmake_prep_args.push(format!("-DMM_VERSION={}", mm_version));
+    cmake_prep_args.push("..".into());
+    eprintln!("$ cmake{}", show_args(&cmake_prep_args));
+    let _ = cmd("cmake", cmake_prep_args).dir("build")
+        .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
+        .run()
+        .expect("!cmake");
 
-    /* Comment temporary until ETOMIC rust feature is added
-    let mm1etlib = match mm_flavor {
-        Ok(ref f) if f == "mainnet" => "etomiclib-mainnet",
-        Ok(ref f) if f == "testnet" => "etomiclib-testnet",
-        _ => "etomiclib-mainnet",
-    };
-    println!("cargo:rustc-link-lib=static={}", mm1etlib);
-    */
+    let cmake_args: Vec<String> = vec![
+        "--build".into(),
+        ".".into(),
+        "--target".into(),
+        "marketmaker-mainnet-lib".into(),
+        "-j".into(),
+        format!("{}", num_cpus::get()),
+    ];
+    eprintln!("$ cmake{}", show_args(&cmake_args));
+    let _ = cmd("cmake", cmake_args).dir("build")
+        .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
+        .run()
+        .expect("!cmake");
+
+    println!("cargo:rustc-link-lib=static=marketmaker-mainnet-lib");
+
+    // Link in the libraries needed for MM1.
+
+    if env::var_os("CARGO_FEATURE_ETOMIC").is_some() {
+        println!("cargo:rustc-link-lib=static=etomiclib-mainnet");
+    }
     println!("cargo:rustc-link-lib=static=libcrypto777");
     println!("cargo:rustc-link-lib=static=libjpeg");
     println!("cargo:rustc-link-lib=static=libsecp256k1");
@@ -204,6 +200,22 @@ fn build_c_code(mm_version: &str) {
 }
 
 fn main() {
+    // Rebuild when we change the C files.
+    println!("rerun-if-changed=iguana/exchanges");
+
+    // Rebuild when we change certain features.
+    println!("rerun-if-env-changed=CARGO_FEATURE_ETOMIC");
+    println!("rerun-if-env-changed=CARGO_FEATURE_NOP");
+
+    // Rebuild if version changes.
+    println!("rerun-if-changed=MM_VERSION");
+    println!("rerun-if-env-changed=MM_VERSION");
+
+    // Used with mm2-nop.rs in order to separately the dependencies build from the MM1 C build.
+    if env::var_os("CARGO_FEATURE_NOP").is_some() {
+        return;
+    }
+
     let mm_version = mm_version();
     build_c_code(&mm_version);
     generate_bindings();
