@@ -639,9 +639,9 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
                         printf("unfinished alice %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
                 }
             }
-            //printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
         }
-        if ( 0 && credits != 0 )
+        if ( 1 && credits != 0 )
             printf("%s %s othercredits %.8f debits %.8f + %.8f -> %.8f\n",coin->symbol,coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue),dstr(credits - (swaps_kmdvalue+kmdvalue)));
         return(credits - (swaps_kmdvalue+kmdvalue));
     }
@@ -679,9 +679,9 @@ int64_t LP_instantdex_proofcheck(char *symbol,char *coinaddr,cJSON *proof,int32_
             credits = ap->instantdex_credits;
             ap->didinstantdex = 1;
             ap->instantdextime = (uint32_t)time(NULL);
-            if ( 0 && ap->instantdex_credits > 0 )
+            if ( 1 && ap->instantdex_credits > 0 )
                 printf("validated instantdex %s.[%d] proof.(%s) credits %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits));
-        } //else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
+        } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }
     return(credits);
 }
