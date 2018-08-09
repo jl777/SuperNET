@@ -136,14 +136,17 @@ fn build_c_code(mm_version: &str) {
         .run()
         .expect("!cmake");
 
-    let cmake_args: Vec<String> = vec![
+    let mut cmake_args: Vec<String> = vec![
         "--build".into(),
         ".".into(),
         "--target".into(),
         "marketmaker-mainnet-lib".into(),
-        "-j".into(),
-        format!("{}", num_cpus::get()),
     ];
+    if !cfg!(windows) {
+        // Doesn't currently work on AppVeyor.
+        cmake_args.push("-j".into());
+        cmake_args.push(format!("{}", num_cpus::get()));
+    }
     eprintln!("$ cmake{}", show_args(&cmake_args));
     let _ = cmd("cmake", cmake_args).dir("build")
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
