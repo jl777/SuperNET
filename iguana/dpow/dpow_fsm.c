@@ -488,6 +488,11 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestutxo = ep->dest.prev_hash;
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
+        else
+        {
+            bp->mysrcutxo = ep->src.prev_hash;
+            bp->mydestutxo = ep->dest.prev_hash;
+        }
     }
     /*if ( strcmp(dp->symbol,"CHIPS") == 0 && myind == 0 )
     {
