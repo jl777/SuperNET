@@ -115,8 +115,10 @@ pub fn init_crash_reports() {
     static ONCE: Once = Once::new();
     ONCE.call_once (|| {
         // Try to invoke the `rust_seh_handler` whenever the C code crashes.
-        extern "C" {fn init_veh();}
-        unsafe {init_veh();}
+        if cfg! (windows) {
+          extern "C" {fn init_veh();}
+          unsafe {init_veh();}
+        }
 
         // Log Rust panics.
         env::set_var ("RUST_BACKTRACE", "1")
