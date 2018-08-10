@@ -1226,7 +1226,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     }
                     else free_json(txobj);
                     if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 ) {
-                        printf("Could not find tx out: %s %d\n", txid_str, vout2);
+                        printf("Could not find tx out2: %s %d\n", txid_str, vout2);
                         return (0);
                     }
                     else free_json(txobj);

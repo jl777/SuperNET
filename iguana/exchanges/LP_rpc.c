@@ -257,7 +257,10 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
     if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts )
     {
         if ( tx->outpoints[vout].spendheight > 0 )
+        {
+            fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
             return(0);
+        }
         //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
     }
     if ( coin->electrum == 0 )
@@ -281,7 +284,10 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
             {
                 if ( up->spendheight > 0 )
+                {
+                    fprintf(stderr,"LP_gettxout (%s) up->spendheight > 0\n",coinaddr);
                     return(0);
+                }
                 //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
             memset(zero.bytes,0,sizeof(zero));
