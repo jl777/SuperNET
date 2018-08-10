@@ -203,8 +203,18 @@ fn build_c_code(mm_version: &str) {
 }
 
 fn main() {
-    // Rebuild when we change the C files.
-    println!("rerun-if-changed=iguana/exchanges");
+    // Rebuild when we work with C files.
+    println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.cpp");
+
+    // Rebuild when the build configuration changes.
+    println!("rerun-if-changed=CMakeLists.txt");
+    println!("rerun-if-changed=crypto777/CMakeLists.txt");
+    println!("rerun-if-changed=crypto777/jpeg/CMakeLists.txt");
+    println!("rerun-if-changed=iguana/exchanges/CMakeLists.txt");
+    println!("rerun-if-changed=iguana/secp256k1/CMakeLists.txt");
+
+    // Rebuild when the build folder is removed.
+    println!("rerun-if-changed=build");
 
     // Rebuild when we change certain features.
     println!("rerun-if-env-changed=CARGO_FEATURE_ETOMIC");
