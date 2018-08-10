@@ -1,4 +1,5 @@
 use backtrace;
+use std::mem::transmute;
 #[cfg(not(test))] use std::process::abort;
 #[cfg(test)] use std::sync::Mutex;
 
@@ -23,6 +24,9 @@ fn stack_trace_frame (buf: &mut String, symbol: &backtrace::Symbol) {
     if name.starts_with ("panic_unwind::") {return}
     if name.starts_with ("std::") {return}
     if name == "mm2::crash_reports::rust_seh_handler" {return}
+    if name == "mm2::crash_reports::under_seh" {return}
+    if name == "mm2::crash_reports::with_crash_reports" {return}
+    if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
     if name.starts_with ("mm2::crash_reports::stack_trace") {return}
     // seh.c
     if name == "ExpFilter" {return}
@@ -55,22 +59,22 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
 #[cfg(not(test))]
 #[no_mangle]
 pub extern fn rust_seh_handler (exception_code: u32) {
-    println! ("SEH caught! ExceptionCode: {}\n", exception_code);
+    println! ("SEH caught! ExceptionCode: {}.", exception_code);
+    let trace = stack_trace(&mut stack_trace_frame);
+    println! ("Stack trace:\n{}", trace);
     abort()
 }
 
 #[cfg(windows)]
-#[cfg(test)]
-extern "C" {
-    fn with_seh (cb: extern fn()->());
-    fn c_access_violation();
-}
+extern "C" {fn with_seh (cb: extern fn (u64, u64) -> (), a1: u64, a2: u64);}
 
 #[cfg(windows)]
 #[cfg(test)]
-extern fn call_access_violation() {
-    access_violation()
-}
+extern "C" {fn c_access_violation (a1: u64, a2: u64);}
+
+#[cfg(windows)]
+#[cfg(test)]
+extern fn call_access_violation (_a1: u64, _a2: u64) {access_violation()}
 
 #[cfg(windows)]
 #[cfg(test)]
@@ -83,8 +87,8 @@ fn access_violation() {
 #[cfg(windows)]
 #[cfg(test)]
 #[inline(never)]
-extern fn call_c_access_violation() {
-    unsafe {c_access_violation()}
+extern fn call_c_access_violation (a1: u64, a2: u64) {
+    unsafe {c_access_violation (a1, a2)}
 }
 
 #[cfg(windows)]
@@ -93,7 +97,7 @@ fn test_seh_handler() {
     use winapi::um::minwinbase::EXCEPTION_ACCESS_VIOLATION;
 
     *SEH_CAUGHT.lock().expect("!SEH_CAUGHT") = None;
-    unsafe {with_seh (call_access_violation)};
+    unsafe {with_seh (call_access_violation, 0, 0)};
     let seh = SEH_CAUGHT.lock().expect("!SEH_CAUGHT").take().expect("!trace");
     println! ("ExceptionCode: {}\n{}", seh.0, seh.1);
     assert_eq! (seh.0, EXCEPTION_ACCESS_VIOLATION);
@@ -101,10 +105,39 @@ fn test_seh_handler() {
     assert! (seh.1.contains ("mm2::crash_reports::call_access_violation"));
     assert! (seh.1.contains ("mm2::crash_reports::access_violation"));
 
-    unsafe {with_seh (call_c_access_violation)};
+    unsafe {with_seh (call_c_access_violation, 0, 0)};
     let seh = SEH_CAUGHT.lock().expect("!SEH_CAUGHT").take().expect("!trace");
     println! ("ExceptionCode: {}\n{}", seh.0, seh.1);
     assert! (seh.1.contains ("with_seh"));
     assert! (seh.1.contains ("mm2::crash_reports::call_c_access_violation"));
     assert! (seh.1.contains ("c_access_violation"));
+}
+
+/// This is a piece of Rust code invoked under `with_seh` in order to invoke a Rust closure from there.
+/// 
+/// * `f` - points to the Rust closure that was passed to `with_crash_reports`.
+#[cfg(windows)]
+extern fn under_seh (a1: u64, a2: u64) {
+    // Converting the two 64-bit integers back into the 128-bit fat closure pointer.
+    let p2f: [u64; 2] = [a1, a2];
+    let p2f: *const *mut FnMut() = unsafe {transmute (p2f.as_ptr())};
+    let f: *mut FnMut() = unsafe {*p2f};
+    let f: &mut FnMut() = unsafe {&mut *f};
+    f()
+}
+
+/// Executes the given function withing a crash catching context,
+/// turning panics and segmentation faults into stack trace crash reports.
+pub fn with_crash_reports (f: &mut FnMut()) {
+    use std::mem::size_of;
+    if cfg! (windows) {
+        // Converting the 128-bit fat closure pointer into the two 64-bit integers in order to harbor it through the FFI.
+        assert_eq! (size_of::<*const FnMut()>(), 128 / 8);
+        let f: *mut FnMut() = f;
+        let p2f = &f as *const *mut FnMut();
+        let p2f: *const u64 = unsafe {transmute (p2f)};
+        unsafe {with_seh (under_seh, *p2f, *p2f.offset (1))}
+    } else {
+        f()
+    }
 }
