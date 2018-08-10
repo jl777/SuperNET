@@ -30,6 +30,10 @@ extern crate lazy_static;
 
 extern crate nix;
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate unwrap;
+
 extern crate winapi;
 
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
@@ -42,7 +46,7 @@ use std::ptr::null;
 
 pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
 
-use crash_reports::with_crash_reports;
+use crash_reports::init_crash_reports;
 
 /* The original C code will be replaced with the corresponding Rust code in small increments,
    allowing Git history to catch up and show the function-level diffs.
@@ -197,7 +201,8 @@ int32_t ensure_writable(char *dirname)
 const MM_VERSION: &'static str = env!("MM_VERSION");
 
 fn main() {
-    with_crash_reports (&mut || unsafe {os_portable::OS_init()});
+    init_crash_reports();
+    unsafe {os_portable::OS_init()};
     println!("BarterDEX MarketMaker {} \n", MM_VERSION);
 
     extern "C" {fn mm1_main (argc: c_int, argv: *const *const c_char) -> c_int;}  // mm.c
@@ -206,7 +211,7 @@ fn main() {
     let args: Vec<String> = env::args().map (|mut arg| {arg.push ('\0'); arg}) .collect();
     let mut args: Vec<*const c_char> = args.iter().map (|s| s.as_ptr() as *const c_char) .collect();
     args.push (null());
-    with_crash_reports (&mut || unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());});
+    unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
 
 /*  The rest of the `main` function that we're still porting into the `rust_main`:
