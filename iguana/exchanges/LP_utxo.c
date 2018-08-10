@@ -906,7 +906,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( coin->inactive != 0 )
         return(0);
-    if ( txobj != 0 || (txobj= LP_gettx("LP_transactioninit",coin->symbol,txid,0)) != 0 )
+    if ( txobj != 0 || (txobj= LP_gettx("LP_transactioninit",coin->symbol,txid,1)) != 0 )
     {
         if ( coin->electrum == 0 )
             height = LP_txheight(coin,txid);
@@ -972,7 +972,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
         return(height);
     if ( coin->electrum == 0 )
     {
-        if ( (txobj= LP_gettx("LP_txheight",coin->symbol,txid,0)) != 0 )
+        if ( (txobj= LP_gettx("LP_txheight",coin->symbol,txid,1)) != 0 )
         {
             //*timestampp = juint(txobj,"locktime");
             //*blocktimep = juint(txobj,"blocktime");

@@ -1151,7 +1151,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[1024]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     memset(notarizedhashp,0,sizeof(*notarizedhashp));
-    if ( (txobj= LP_gettx("LP_txhasnotarization",coin->symbol,txid,0)) != 0 )
+    if ( (txobj= LP_gettx("LP_txhasnotarization",coin->symbol,txid,1)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
         {
@@ -1163,7 +1163,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
                     vin = jitem(vins,i);
                     spenttxid = jbits256(vin,"txid");
                     spentvout = jint(vin,"vout");
-                    if ( (spentobj= LP_gettx("LP_txhasnotarization",coin->symbol,spenttxid,0)) != 0 )
+                    if ( (spentobj= LP_gettx("LP_txhasnotarization",coin->symbol,spenttxid,1)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
                         {
