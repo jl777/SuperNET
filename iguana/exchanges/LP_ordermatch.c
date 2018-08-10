@@ -1123,13 +1123,14 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
             return(0);
         }
     }
+    LP_address_utxo_reset(&num,coin);
     i = 0;
     while ( i < priceiters && price >= myprice )
     {
         for (j=0; j<voliters; j++)
         {
             printf("priceiter.%d voliter.%d price %.8f vol %.8f\n",i,j,price,dstr(qp->destsatoshis));
-            if ( (butxo= LP_address_myutxopair(&B,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
+            if ( (butxo= LP_address_myutxopair(&B,1,utxos,max,coin,qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
             {
                 strcpy(qp->gui,G.gui);
                 strcpy(qp->coinaddr,coin->smartaddr);
@@ -1181,7 +1182,7 @@ printf("bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,
         else if ( qp->fill != 0 || i == priceiters )
         {
             printf("i.%d cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f txfee %.8f\n",i,(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis),dstr(qp->txfee));
-            if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 )
+            if ( qp->gtc != 0 && qp->fill != 0 && coin != 0 && coin->electrum == 0 )
             {
                 LP_address_utxo_reset(&num,coin);
                 satoshis = LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee) + 3*qp->txfee;
