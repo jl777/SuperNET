@@ -260,7 +260,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         {
             if ( tx->outpoints[vout].spendheight > 0 )
             {
-                fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
+                //fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
                 return(0);
             }
             //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
@@ -285,7 +285,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             {
                 if ( up->spendheight > 0 )
                 {
-                    fprintf(stderr,"LP_gettxout (%s) up->spendheight > 0\n",coinaddr);
+                    //fprintf(stderr,"LP_gettxout (%s) up->spendheight > 0\n",coinaddr);
                     return(0);
                 }
                 //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
