@@ -1611,7 +1611,7 @@ int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubs
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-//printf("CONNECTED.(%s)\n",jprint(argjson,0));
+printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
@@ -1665,7 +1665,7 @@ int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubs
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-                //printf("CONNECT.(%s)\n",jprint(argjson,0));
+                printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
                 if ( Qtrades == 0 )
