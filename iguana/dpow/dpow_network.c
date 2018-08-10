@@ -1869,13 +1869,13 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
-        if ( bits256_nonz(srcutxo) != 0 )
+        if ( senderind != bp->myind && bits256_nonz(srcutxo) != 0 )
         {
             bp->notaries[senderind].src.prev_hash = srcutxo;
             bp->notaries[senderind].src.prev_vout = srcvout;
             //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
         }
-        if ( bits256_nonz(destutxo) != 0 )
+        if ( senderind != bp->myind && bits256_nonz(destutxo) != 0 )
         {
             bp->notaries[senderind].dest.prev_hash = destutxo;
             bp->notaries[senderind].dest.prev_vout = destvout;
