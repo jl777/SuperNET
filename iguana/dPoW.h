@@ -109,7 +109,7 @@ struct dpow_recvdata { uint64_t recvmask,bestmask; int8_t bestk; };
 
 struct dpow_block
 {
-    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM;
+    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM,mysrcutxo,mydestutxo;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
