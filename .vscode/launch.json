@@ -1,11 +1,12 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "C++ Launch (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "enter program name, for example ${workspaceRoot}/a.exe",
+            "program": "${workspaceRoot}/target/debug/mm2.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

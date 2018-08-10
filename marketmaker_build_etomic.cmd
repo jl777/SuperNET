@@ -5,21 +5,21 @@ echo Windows version and architecture:
 ver
 wmic os get osarchitecture
 
+set MM_VERSION=%APPVEYOR_BUILD_VERSION%
+echo MM_VERSION: %MM_VERSION%
+
 echo [#1] Install Rust, build nanomsg, curl and pthreads ...
 call marketmaker_build_depends.cmd
 
-echo [#2] Prepare the build.
-mkdir build
-cd build
-rem https://cmake.org/cmake/help/v3.12/generator/Visual%20Studio%2015%202017.html
-cmake -G "Visual Studio 15 2017 Win64" -DMM_VERSION="%APPVEYOR_BUILD_VERSION%" ..
+echo [#2] Build the Rust dependencies.
 
-echo [#3] Build the marketmaker-mainnet library.
+cargo build --bin mm2-nop --features nop
 
-cmake --build . --target marketmaker-mainnet-lib
-cd ..
+echo [#3] Build MM1 and MM2.
 
-echo [#4] Build and test the MM2.
+rem Increased verbosity here allows us to see the MM1 CMake logs.
+cargo build -vv
+
+echo [#4] Run the MM2 tests.
 
 cargo test
-cargo build

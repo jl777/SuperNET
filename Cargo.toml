@@ -2,17 +2,32 @@
 name = "mm2"
 version = "0.1.0"
 
+# Waiting for https://doc.rust-lang.org/beta/cargo/reference/unstable.html#default-run to become stable.
+#default-run = "mm2"
+
 [[bin]]
 name = "mm2"
 path = "iguana/exchanges/mm2.rs"
 
+[[bin]]
+name = "mm2-nop"
+path = "iguana/exchanges/mm2-nop.rs"
+required-features = ["nop"]
+
+[features]
+# Uncomment in order to enable ETOMIC builds by default:
+#default = ["etomic"]
+etomic = ["etomiclibrs"]
+# Used with "mm2-nop.rs" and tells "build.rs" to skip the C build.
+nop = []
+
 [dependencies]
+backtrace = "0.3.9"
 # `etomiclibrs` pulls https://github.com/briansmith/ring, to build which on Windows we need `perl` and `yasm` in the PATH.
 # Download http://www.tortall.net/projects/yasm/releases/yasm-1.3.0-win64.exe and rename to `yasm.exe`.
-backtrace = "0.3.9"
-#Enable this back for ETOMIC feature
-#etomiclibrs = { path = "iguana/exchanges/etomicswap" }
+etomiclibrs = { path = "iguana/exchanges/etomicswap", optional = true }
 lazy_static = "1.1.0"
+nix = "0.11.0"
 winapi = "0.3.5"
 
 [build-dependencies]
@@ -20,6 +35,8 @@ bindgen = "0.37.4"
 cc = "1.0.18"
 duct = "0.11.0"
 gstuff = { git = "https://github.com/ArtemGr/gstuff.rs" }
+itertools = "0.7.8"
+num_cpus = "1.8.0"
 
 # ring 0.12 fails to build on Windows, this patch replaces it with ring 0.13.
 [patch."https://github.com/paritytech/parity-common"]
