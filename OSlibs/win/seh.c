@@ -15,13 +15,15 @@ long WINAPI veh_exception_filter(PEXCEPTION_POINTERS info)
 {
     // https://docs.microsoft.com/en-us/windows/desktop/debug/using-a-vectored-exception-handler
 
+    rust_seh_handler(info->ExceptionRecord->ExceptionCode);
+
+    // These instruction skips (?) are fishy, but they're only used in crash report unit tests.
+    // In a non-`test` environment `rust_seh_handler` aborts.
 #ifdef _AMD64_
     info->ContextRecord->Rip++;
 #else
     info->ContextRecord->Eip++;
 #endif
-
-    rust_seh_handler(info->ExceptionRecord->ExceptionCode);
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
