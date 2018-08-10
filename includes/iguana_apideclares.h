@@ -27,6 +27,7 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
 ZERO_ARGS(dpow,cancelratify);
 STRING_ARG(dpow,bindaddr,ipaddr);
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
+ZERO_ARGS(dpow,ipaddrs);
 
 ZERO_ARGS(pax,start);
 INT_ARG(passthru,paxfiats,mask);
