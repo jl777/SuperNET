@@ -24,6 +24,9 @@ extern crate backtrace;
 #[cfg(feature = "etomic")]
 extern crate etomiclibrs;
 
+#[macro_use]
+extern crate gstuff;
+
 #[allow(unused_imports)]
 #[macro_use]
 extern crate lazy_static;
