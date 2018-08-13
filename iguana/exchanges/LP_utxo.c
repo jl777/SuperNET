@@ -906,7 +906,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( coin->inactive != 0 )
         return(0);
-    if ( txobj != 0 || (txobj= LP_gettx("LP_transactioninit",coin->symbol,txid,0)) != 0 )
+    if ( txobj != 0 || (txobj= LP_gettx("LP_transactioninit",coin->symbol,txid,1)) != 0 )
     {
         if ( coin->electrum == 0 )
             height = LP_txheight(coin,txid);
@@ -972,7 +972,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
         return(height);
     if ( coin->electrum == 0 )
     {
-        if ( (txobj= LP_gettx("LP_txheight",coin->symbol,txid,0)) != 0 )
+        if ( (txobj= LP_gettx("LP_txheight",coin->symbol,txid,1)) != 0 )
         {
             //*timestampp = juint(txobj,"locktime");
             //*blocktimep = juint(txobj,"blocktime");
@@ -1075,7 +1075,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     {
         if ( (value= LP_value_extract(txobj,0,txid)) == 0 )
         {
-            char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);
+            // char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);
         }
         else if ( strcmp(coin->symbol,"KMD") == 0 )
         {
@@ -1226,7 +1226,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     }
                     else free_json(txobj);
                     if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 ) {
-                        printf("Could not find tx out: %s %d\n", txid_str, vout2);
+                        printf("Could not find tx out2: %s %d\n", txid_str, vout2);
                         return (0);
                     }
                     else free_json(txobj);

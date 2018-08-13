@@ -2318,7 +2318,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 {
     cJSON *retjson;
     coinaddr[0] = 0;
-    if ( (retjson= LP_gettx("LP_swap_getcoinaddr",symbol,txid,0)) != 0 )
+    if ( (retjson= LP_gettx("LP_swap_getcoinaddr",symbol,txid,1)) != 0 )
     {
         LP_txdestaddr(coinaddr,txid,vout,retjson);
         free_json(retjson);

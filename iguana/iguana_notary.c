@@ -956,6 +956,18 @@ ZERO_ARGS(dpow,cancelratify)
     return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
 }
 
+ZERO_ARGS(dpow,ipaddrs)
+{
+    char ipaddr[64]; cJSON *array; int32_t i;
+    array = cJSON_CreateArray();
+    for (i=0; i<myinfo->numdpowipbits; i++)
+    {
+        expand_ipbits(ipaddr,myinfo->dpowipbits[i]);
+        jaddistr(array,ipaddr);
+    }
+    return(jprint(array,1));
+}
+
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
 {
     void **ptrs; bits256 zero; int32_t i; char *source; struct dpow_checkpoint checkpoint;

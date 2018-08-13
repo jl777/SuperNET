@@ -205,6 +205,7 @@ fn build_c_code(mm_version: &str) {
 fn main() {
     // Rebuild when we work with C files.
     println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.cpp");
+    println!("rerun-if-changed=OSlibs/win/seh.c");
 
     // Rebuild when the build configuration changes.
     println!("rerun-if-changed=CMakeLists.txt");
