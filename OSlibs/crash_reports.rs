@@ -2,7 +2,7 @@ use backtrace;
 #[cfg(unix)] use std::os::raw::c_int;
 use std::cell::UnsafeCell;
 use std::env;
-#[allow(unused_imports)] use std::io::stdout;
+#[allow(unused_imports)] use std::io::stderr;
 use std::io::Write;
 use std::mem::{uninitialized};
 #[allow(unused_imports)]  use std::process::abort;
@@ -98,12 +98,12 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
 #[cfg(not(test))]
 #[no_mangle]
 pub extern fn rust_seh_handler (exception_code: u32) {
-    println! ("SEH caught! ExceptionCode: {}.", exception_code);
+    eprintln! ("SEH caught! ExceptionCode: {}.", exception_code);
     stack_trace (&mut stack_trace_frame, &mut |trace| {
-        let stdout = stdout();
-        let mut stdout = stdout.lock();
-        let _ = stdout.write_all (trace.as_bytes());
-        let _ = stdout.flush();
+        let stderr = stderr();
+        let mut stderr = stderr.lock();
+        let _ = stderr.write_all (trace.as_bytes());
+        let _ = stderr.flush();
     });
     abort()
 }
@@ -153,13 +153,20 @@ fn test_seh_handler() {
 
 #[cfg(unix)]
 extern fn signal_handler (sig: c_int) {
-    println! ("Signal caught! sig {}", sig);
+    {
+        // NB: Manually writing to `stderr` is more reliable than using `eprintln!`, especially around `dup2`.
+        let stderr = stderr();
+        let mut stderr = stderr.lock();
+        let _ = writeln! (&mut stderr, "Signal caught! sig {}", sig);
+        let _ = stderr.flush();
+    }
+
     stack_trace (&mut stack_trace_frame, &mut |trace| {
-        let stdout = stdout();
-        let mut stdout = stdout.lock();
-        let _ = stdout.write_all (trace.as_bytes());
-        // Explicitly flush the output stream. Under at least the Docker/Linux the tail of the stdout is sometimes lost on `abort`.
-        let _ = stdout.flush();
+        let stderr = stderr();
+        let mut stderr = stderr.lock();
+        let _ = stderr.write_all (trace.as_bytes());
+        // Explicitly flush the output stream. Under at least the Docker/Linux the tail is sometimes lost on `abort`.
+        let _ = stderr.flush();
     });
     abort();
 }
@@ -167,28 +174,71 @@ extern fn signal_handler (sig: c_int) {
 #[cfg(unix)]
 fn init_signal_handling() {
     use nix::sys::signal::{sigaction, SaFlags, Signal, SigAction, SigHandler, SigSet};
-    println! ("init_signal_handling] Installing signal handlers.");
 
     lazy_static! {
         static ref ACTION: SigAction = SigAction::new (
             SigHandler::Handler (signal_handler),
             SaFlags::empty(),
-            SigSet::empty());}
+            SigSet::empty()
+        );
+    }
 
     for signal in [Signal::SIGILL, Signal::SIGFPE, Signal::SIGSEGV, Signal::SIGBUS, Signal::SIGSYS].iter() {
-      unsafe {unwrap! (sigaction (*signal, &*ACTION), "!sigaction");}
+        unsafe {unwrap! (sigaction (*signal, &*ACTION), "!sigaction");}
     }
 }
 
 #[cfg(not(unix))]
 fn init_signal_handling() {}
 
+/// Check that access violation stack traces are being reported to stderr under macOS and Linux.
+/// 
+/// Unix signal handling should work NP with threading. Not testing it here though,
+/// since Rust threading might not work just as well with forking. If such test is needed in the future,
+/// it should be a separate unit test and maybe with a different non-forking design.
 #[cfg(unix)]
 #[test]
 fn test_signal_handling() {
-    // TODO: Test in a forked process, allowing it to properly crash, checking logs [and `core`].
+    use nix::unistd::{dup2, fork, ForkResult};
+    use nix::sys::wait::waitpid;
+    use std::env::temp_dir;
+    use std::fs;
+    use std::io::Read;
+    use std::os::unix::io::AsRawFd;
+
     init_signal_handling();
-    access_violation();
+    let _seh_lock = unwrap! (SEH_LOCK.lock());  // Here to silence the `dead_code` warning.
+
+    let stderr_tmp_path = temp_dir().join ("test_signal_handling.stderr");
+    let _ = fs::remove_file (&stderr_tmp_path);
+    let stderr_tmp_file = unwrap! (fs::File::create (&stderr_tmp_path));
+    let stderr_tmp_fd = stderr_tmp_file.as_raw_fd();
+
+    let stderr_fd = stderr().as_raw_fd();
+
+    if let ForkResult::Parent {child} = unwrap! (fork()) {
+        println! ("Forked, child PID is {}, waiting for the child to exit...", child);
+        let wait_status = unwrap! (waitpid (child, None));
+        println! ("wait_status: {:?}", wait_status);
+        let mut stderr = String::new();
+        let mut stderr_tmp_file = unwrap! (fs::File::open (&stderr_tmp_path));
+        unwrap! (stderr_tmp_file.read_to_string (&mut stderr));
+        println! ("Obtained stderr is: ---\n{}", stderr);
+        unwrap! (fs::remove_file (&stderr_tmp_path));
+        assert! (stderr.contains ("This should go to the temporary file"));
+        assert! (stderr.contains ("Signal caught!"));
+        assert! (stderr.contains ("mm2::crash_reports::access_violation"));
+    } else {
+        println! ("Hi from the child. Redirecting stderr to {:?}.", &stderr_tmp_path);
+        unwrap! (dup2 (stderr_tmp_fd, stderr_fd));
+        {
+            let stderr = stderr();
+            let mut stderr = stderr.lock();
+            unwrap! (writeln! (&mut stderr, "This should go to the temporary file."));
+            unwrap! (stderr.flush());
+        }
+        access_violation();
+    }
 }
 
 /// Setup the crash handlers.
@@ -209,6 +259,7 @@ pub fn init_crash_reports() {
 }
 
 /// Check that access violations are handled in a spawned thread.
+#[cfg(windows)]  // We always `abort` on UNIX, even in tests, so this particular test won't work on UNIX.
 #[test]
 fn test_crash_reports_mt() {
     use std::thread;
