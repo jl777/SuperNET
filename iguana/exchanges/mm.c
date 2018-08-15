@@ -163,26 +163,7 @@ int32_t ensure_writable(char *dirname)
 int mm1_main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
-    if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
-    {
-        bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
-        if ( LP_wifstr_valid("BTC",(char *)argv[1]) > 0 )
-        {
-            bitcoin_wif2priv("BTC",0,&tmptype,&privkey,(char *)argv[1]);
-            bitcoin_priv2wif("KMD",0,kmdwif,privkey,188);
-            bitcoin_wif2priv("KMD",0,&tmptype,&checkkey,kmdwif);
-            if ( bits256_cmp(privkey,checkkey) == 0 )
-                printf("BTC %s -> KMD %s: privkey %s\n",argv[1],kmdwif,bits256_str(str,privkey));
-            else printf("ERROR BTC %s %s != KMD %s %s\n",argv[1],bits256_str(str,privkey),kmdwif,bits256_str(str2,checkkey));
-        }
-        else
-        {
-            if ( (retstr= LP_convaddress("BTC",(char *)argv[1],"KMD")) != 0 )
-                printf("%s\n",retstr);
-        }
-        exit(0);
-    }
-    else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
+    if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
     {
         int32_t len,bufsize = 1000000; void *ptr; char *buf;
         if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )

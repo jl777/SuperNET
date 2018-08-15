@@ -283,3 +283,4 @@ iguana/exchanges/manychains
 
 # Generated Rust bindings
 /crypto777/OS_portable.rs
+/includes/curve25519.rs

@@ -33,7 +33,6 @@ extern crate lazy_static;
 
 extern crate nix;
 
-#[allow(unused_imports)]
 #[macro_use]
 extern crate unwrap;
 
@@ -44,12 +43,29 @@ extern crate winapi;
 pub use etomiclibrs::*;
 
 use std::env;
+use std::ffi::{CStr, OsString};
+use std::fmt;
 use std::os::raw::{c_char, c_int};
+use std::mem::zeroed;
 use std::ptr::null;
 
 pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
+pub mod curve25519 {include! ("../../includes/curve25519.rs");}
+use curve25519::{_bits256 as bits256};
+extern "C" {
+    fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
+}
 
 use crash_reports::init_crash_reports;
+
+impl fmt::Display for bits256 {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut buf: [u8; 65] = unsafe {zeroed()};
+        let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
+        let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
+        f.write_str (hex)
+    }
+}
 
 /* The original C code will be replaced with the corresponding Rust code in small increments,
    allowing Git history to catch up and show the function-level diffs.
@@ -201,6 +217,16 @@ int32_t ensure_writable(char *dirname)
 
 */
 
+/// Integration (?) test for the "btc2kmd" command line invocation.
+/// The argument is the WIF example from https://en.bitcoin.it/wiki/Wallet_import_format.
+#[test]
+fn test_btc2kmd() {
+    let output = unwrap! (btc2kmd ("5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ"));
+    assert_eq! (output, "BTC 5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ \
+      -> KMD UpRBUQtkA5WqFnSztd7sCYyyhtd4aq6AggQ9sXFh2fXeSnLHtd3Z: \
+      privkey 0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d");
+}
+
 const MM_VERSION: &'static str = env!("MM_VERSION");
 
 fn main() {
@@ -214,31 +240,58 @@ fn main() {
     let args: Vec<String> = env::args().map (|mut arg| {arg.push ('\0'); arg}) .collect();
     let mut args: Vec<*const c_char> = args.iter().map (|s| s.as_ptr() as *const c_char) .collect();
     args.push (null());
+
+    let args_os: Vec<OsString> = env::args_os().collect();
+    let executable = unwrap! (args_os.get (0), "Running without a name");
+    if executable.to_string_lossy().contains ("btc2kmd") && args_os.get (1) .is_some() {
+        match btc2kmd (unwrap! (args_os[1].to_str(), "Bad argument encoding")) {
+            Ok (output) => println! ("{}", output),
+            Err (err) => eprintln! ("btc2kmd error] {}", err)
+        }
+        return
+    }
+
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
 
-/*  The rest of the `main` function that we're still porting into the `rust_main`:
-
-    char dirname[512]; double incr; cJSON *retjson;
-    if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
-    {
-        bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
-        if ( LP_wifstr_valid("BTC",(char *)argv[1]) > 0 )
-        {
-            bitcoin_wif2priv("BTC",0,&tmptype,&privkey,(char *)argv[1]);
-            bitcoin_priv2wif("KMD",0,kmdwif,privkey,188);
-            bitcoin_wif2priv("KMD",0,&tmptype,&checkkey,kmdwif);
-            if ( bits256_cmp(privkey,checkkey) == 0 )
-                printf("BTC %s -> KMD %s: privkey %s\n",argv[1],kmdwif,bits256_str(str,privkey));
-            else printf("ERROR BTC %s %s != KMD %s %s\n",argv[1],bits256_str(str,privkey),kmdwif,bits256_str(str2,checkkey));
-        }
-        else
-        {
-            if ( (retstr= LP_convaddress("BTC",(char *)argv[1],"KMD")) != 0 )
-                printf("%s\n",retstr);
-        }
-        exit(0);
+/// Implements the "btc2kmd" command line utility.
+fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
+    extern "C" {
+        fn LP_wifstr_valid (symbol: *const u8, wifstr: *const u8) -> i32;
+        fn LP_convaddress (symbol: *const u8, address: *const u8, dest: *const u8) -> *const c_char;
+        fn bitcoin_wif2priv (symbol: *const u8, wiftaddr: u8, addrtypep: *mut u8, privkeyp: *mut bits256, wifstr: *const c_char) -> i32;
+        fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
+        fn bits256_cmp (a: bits256, b: bits256) -> i32;
     }
+
+    let wif_or_btc_z = format! ("{}\0", wif_or_btc);
+/*  (this line helps the IDE diff to match the old and new code)
+    if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
+*/
+    let mut privkey: bits256 = unsafe {zeroed()};
+    let mut checkkey: bits256 = unsafe {zeroed()};
+    let mut tmptype = 0;
+    let mut kmdwif: [c_char; 64] = unsafe {zeroed()};
+    if unsafe {LP_wifstr_valid (b"BTC\0".as_ptr(), wif_or_btc_z.as_ptr())} > 0 {
+        let rc = unsafe {bitcoin_wif2priv (b"BTC\0".as_ptr(), 0, &mut tmptype, &mut privkey, wif_or_btc_z.as_ptr() as *const i8)};
+        if rc < 0 {return ERR! ("!bitcoin_wif2priv")}
+        let rc = unsafe {bitcoin_priv2wif (b"KMD\0".as_ptr(), 0, kmdwif.as_mut_ptr(), privkey, 188)};
+        if rc < 0 {return ERR! ("!bitcoin_priv2wif")}
+        let rc = unsafe {bitcoin_wif2priv (b"KMD\0".as_ptr(), 0, &mut tmptype, &mut checkkey, kmdwif.as_ptr())};
+        if rc < 0 {return ERR! ("!bitcoin_wif2priv")}
+        let kmdwif = try_s! (unsafe {CStr::from_ptr (kmdwif.as_ptr())} .to_str());
+        if unsafe {bits256_cmp (privkey, checkkey)} == 0 {
+            Ok (format! ("BTC {} -> KMD {}: privkey {}", wif_or_btc, kmdwif, privkey))
+        } else {
+            Err (format! ("ERROR BTC {} {} != KMD {} {}", wif_or_btc, privkey, kmdwif, checkkey))
+        }
+    } else {
+        let retstr = unsafe {LP_convaddress(b"BTC\0".as_ptr(), wif_or_btc_z.as_ptr(), b"KMD\0".as_ptr())};
+        if retstr == null() {return ERR! ("LP_convaddress")}
+        Ok (unwrap! (unsafe {CStr::from_ptr (retstr)} .to_str()) .into())
+    }
+}
+/*
     else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
     {
         int32_t len,bufsize = 1000000; void *ptr; char *buf;

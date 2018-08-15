@@ -12,45 +12,79 @@ extern crate cc;
 extern crate duct;
 extern crate gstuff;
 extern crate num_cpus;
+#[macro_use]
+extern crate unwrap;
 
 use duct::cmd;
 use gstuff::last_modified_sec;
 use std::env;
 use std::fs;
 use std::io::Read;
+use std::iter::empty;
+use std::path::Path;
 
-const OS_PORTABLE_FUNCTIONS: [&'static str; 1] = ["OS_init"];
-
-// Will probably refactor in the future (to be generic over multiple headers),
-// right now we're in the "collect as much information as possible" phase (https://www.agilealliance.org/glossary/simple-design).
-fn generate_bindings() {
+fn bindgen<
+    'a,
+    FP: AsRef<Path>,
+    TP: AsRef<Path>,
+    FI: Iterator<Item = &'a &'a str>,
+    TI: Iterator<Item = &'a &'a str>,
+>(
+    from: FP,
+    to: TP,
+    functions: FI,
+    types: TI,
+) {
     // We'd like to regenerate the bindings whenever the build.rs changes, in case we changed bindgen configuration here.
-    let lm_build_rs = last_modified_sec(&"build.rs").expect("Can't stat build.rs");
+    let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
 
-    let from = "crypto777/OS_portable.h";
-    let to = "crypto777/OS_portable.rs";
+    let from = from.as_ref();
+    let to = to.as_ref();
+
     let lm_from = match last_modified_sec(&from) {
         Ok(sec) => sec,
-        Err(err) => panic!("Can't stat the header {}: {}", from, err),
+        Err(err) => panic!("Can't stat the header {:?}: {}", from, err),
     };
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
     if lm_from >= lm_to || lm_build_rs >= lm_to {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
-            let mut builder = bindgen::builder().header(from);
-            for name in OS_PORTABLE_FUNCTIONS.iter() {
+            let mut builder = bindgen::builder().header(unwrap!(from.to_str()));
+            builder = builder.whitelist_recursively(true);
+            builder = builder.layout_tests(false);
+            for name in functions {
                 builder = builder.whitelist_function(name)
+            }
+            for name in types {
+                builder = builder.whitelist_type(name)
             }
             match builder.generate() {
                 Ok(bindings) => bindings,
-                Err(()) => panic!("Error generating the bindings for {}", from),
+                Err(()) => panic!("Error generating the bindings for {:?}", from),
             }
         };
 
         if let Err(err) = bindings.write_to_file(to) {
-            panic!("Error writing to {}: {}", to, err)
+            panic!("Error writing to {:?}: {}", to, err)
         }
     }
+}
+
+// Will probably refactor in the future (to be generic over multiple headers),
+// right now we're in the "collect as much information as possible" phase (https://www.agilealliance.org/glossary/simple-design).
+fn generate_bindings() {
+    bindgen(
+        "crypto777/OS_portable.h",
+        "crypto777/OS_portable.rs",
+        ["OS_init"].iter(),
+        empty(),
+    );
+    bindgen(
+        "includes/curve25519.h",
+        "includes/curve25519.rs",
+        empty(),
+        ["_bits256"].iter(),
+    );
 }
 
 /// The build script will usually help us by putting the MarketMaker version

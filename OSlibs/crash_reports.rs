@@ -61,6 +61,7 @@ fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name.starts_with ("panic_unwind::") {return}
     if name.starts_with ("std::") {return}
     if name == "mm2::crash_reports::rust_seh_handler" {return}
+    if name == "veh_exception_filter" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
     if name.starts_with ("mm2::crash_reports::stack_trace") {return}
 
@@ -85,6 +86,7 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
     });
 }
 
+#[cfg(windows)]
 #[cfg(test)]
 #[no_mangle]
 pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
@@ -95,10 +97,19 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
 }
 
 /// Performs a crash report and aborts.
+#[cfg(windows)]
 #[cfg(not(test))]
 #[no_mangle]
 pub extern fn rust_seh_handler (exception_code: u32) {
-    eprintln! ("SEH caught! ExceptionCode: {}.", exception_code);
+    use winapi::um::minwinbase::EXCEPTION_ACCESS_VIOLATION;
+
+    let exception_name = match exception_code {
+        EXCEPTION_ACCESS_VIOLATION => "Access Violation",
+        0xE06D7363 => "VC++ Exception",  // https://blogs.msdn.microsoft.com/oldnewthing/20100730-00/?p=13273
+        _ => ""
+    };
+
+    eprintln! ("SEH caught! ExceptionCode: {} ({}).", exception_code, exception_name);
     stack_trace (&mut stack_trace_frame, &mut |trace| {
         let stderr = stderr();
         let mut stderr = stderr.lock();
