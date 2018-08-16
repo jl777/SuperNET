@@ -287,7 +287,7 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     }
     if ( n == 0 || A == 0 || a == 0 )
         return(0);
-    if ( A > 5*a || a > 5*A || a > n*20 || A > n*20 ) // unlikely it is a real wif
+    if ( A > 5*a || a > 5*A || a > n*26 || A > n*26 ) // unlikely it is a real wif
     {
         printf("reject wif %s due to n.%d a.%d A.%d (%d %d %d %d)\n",wifstr,n,a,A,A > 5*a,a < 5*A,a > n*20,A > n*20);
         return(0);
