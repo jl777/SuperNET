@@ -654,9 +654,9 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     strncpy(qp->uuidstr,uuidstr,sizeof(qp->uuidstr)-1);
     qp->maxprice = maxprice;
     qp->timestamp = (uint32_t)time(NULL);
-    if ( 0 && qp->gtc != 0 )
+    if ( qp->gtc != 0 )
     {
-        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
+        //strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
         LP_gtc_addorder(qp);
     }
     {
