@@ -619,7 +619,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
         }
         else
         {
-            if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
+            if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+600 )//LP_AUTOTRADE_TIMEOUT*10 )
             {
                 gtc->pending = qp->timestamp = (uint32_t)time(NULL);
                 LP_query(ctx,myipaddr,mypubsock,"request",qp);
