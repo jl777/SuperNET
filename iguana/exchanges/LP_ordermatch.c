@@ -705,7 +705,7 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 {
     if ( Alice_expiration != 0 && quotetime > Alice_expiration )
     {
-        if ( LP_Alicequery.uuidstr[0] != 0 )
+        if ( LP_Alicequery.uuidstr[0] != 0 && LP_Alicequery.gtc == 0 )
             LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9999,LP_Alicequery.uuidstr);
         printf("time expired for Alice_request\n");
         LP_alicequery_clear();
