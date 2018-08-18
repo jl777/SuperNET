@@ -73,7 +73,7 @@ fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
 /// * `format` - Generates the string representation of a frame.
 /// * `output` - Function used to print the stack trace.
 ///              Printing immediately, without buffering, should make the tracing somewhat more reliable.
-pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output: &mut FnMut (&str)) {
+fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output: &mut FnMut (&str)) {
     backtrace::trace (|frame| {
         backtrace::resolve (frame.ip(), |symbol| {
             let trace_buf = trace_buf();

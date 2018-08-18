@@ -19,13 +19,24 @@
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
+#![allow(non_camel_case_types)]
+
 extern crate backtrace;
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate duct;
 
 #[cfg(feature = "etomic")]
 extern crate etomiclibrs;
 
+extern crate futures;
+extern crate futures_cpupool;
+
 #[macro_use]
 extern crate gstuff;
+
+extern crate hyper;
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -47,13 +58,23 @@ use std::ffi::{CStr, OsString};
 use std::fmt;
 use std::os::raw::{c_char, c_int};
 use std::mem::zeroed;
-use std::ptr::null;
+use std::ptr::{null, null_mut};
+use std::sync::Mutex;
 
 pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
-pub mod curve25519 {include! ("../../includes/curve25519.rs");}
+mod curve25519 {include! ("../../includes/curve25519.rs");}
 use curve25519::{_bits256 as bits256};
+enum cJSON {}
+#[allow(dead_code)]
 extern "C" {
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
+    /// NB: Use RAII CJSON instead.
+    fn cJSON_Parse (json: *const u8) -> *mut cJSON;
+    /// Defined when cJSON_Parse() returns 0. 0 when cJSON_Parse() succeeds.
+    fn cJSON_GetErrorPtr() -> *const c_char;
+    fn cJSON_Delete (c_json: *mut cJSON);
+    fn LP_main (c_json: *mut cJSON) -> !;
+    fn mm1_main (argc: c_int, argv: *const *const c_char) -> !;
 }
 
 use crash_reports::init_crash_reports;
@@ -64,6 +85,31 @@ impl fmt::Display for bits256 {
         let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
         let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
         f.write_str (hex)
+    }
+}
+
+/// RAII and MT wrapper for `cJSON`.
+#[allow(dead_code)]
+struct CJSON (*mut cJSON);
+#[allow(dead_code)]
+impl CJSON {
+    fn from_zero_terminated (json: *const u8) -> Result<CJSON, String> {
+        lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
+        let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
+        let c_json = unsafe {cJSON_Parse (json)};
+        if c_json == null_mut() {
+            let err = unsafe {cJSON_GetErrorPtr()};
+            let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
+            ERR! ("Can't parse JSON, error: {}", err)
+        } else {
+            Ok (CJSON (c_json))
+        }
+    }
+}
+impl Drop for CJSON {
+    fn drop (&mut self) {
+        unsafe {cJSON_Delete (self.0)}
+        self.0 = null_mut()
     }
 }
 
@@ -217,14 +263,161 @@ int32_t ensure_writable(char *dirname)
 
 */
 
-/// Integration (?) test for the "btc2kmd" command line invocation.
-/// The argument is the WIF example from https://en.bitcoin.it/wiki/Wallet_import_format.
-#[test]
-fn test_btc2kmd() {
-    let output = unwrap! (btc2kmd ("5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ"));
-    assert_eq! (output, "BTC 5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ \
-      -> KMD UpRBUQtkA5WqFnSztd7sCYyyhtd4aq6AggQ9sXFh2fXeSnLHtd3Z: \
-      privkey 0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d");
+#[cfg(test)]
+mod test {
+    use duct::Handle;
+
+    use futures::Future;
+    use futures_cpupool::CpuPool;
+
+    use gstuff::{now_float, slurp};
+
+    use hyper::{Body, Client, Request, StatusCode};
+    use hyper::rt::Stream;
+
+    use std::env;
+    use std::fs;
+    use std::os::raw::c_char;
+    use std::ptr::null;
+    use std::str::{from_utf8, from_utf8_unchecked};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    use super::{btc2kmd, mm1_main, LP_main, CJSON};
+
+    /// Automatically kill a wrapped process.
+    struct RaiiKill {handle: Handle, running: bool}
+    impl RaiiKill {
+        fn from_handle (handle: Handle) -> RaiiKill {
+            RaiiKill {handle, running: true}
+        }
+        fn running (&mut self) -> bool {
+            if !self.running {return false}
+            match self.handle.try_wait() {Ok (None) => true, _ => {self.running = false; false}}
+        }
+    }
+    impl Drop for RaiiKill {
+        fn drop (&mut self) {
+            // The cached `running` check might provide some protection against killing a wrong process under the same PID,
+            // especially if the cached `running` check is also used to monitor the status of the process.
+            if self.running() {
+                let _ = self.handle.kill();
+            }
+        }
+    }
+
+    /// Integration (?) test for the "btc2kmd" command line invocation.
+    /// The argument is the WIF example from https://en.bitcoin.it/wiki/Wallet_import_format.
+    #[test]
+    fn test_btc2kmd() {
+        let output = unwrap! (btc2kmd ("5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ"));
+        assert_eq! (output, "BTC 5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ \
+        -> KMD UpRBUQtkA5WqFnSztd7sCYyyhtd4aq6AggQ9sXFh2fXeSnLHtd3Z: \
+        privkey 0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d");
+    }
+
+    /// Integration test for the "mm2 events" mode.
+    /// Starts MM in background and verifies that "mm2 events" produces a non-empty feed of events.
+    #[test]
+    fn test_events() {
+        let executable = unwrap! (env::args().next());
+        let mm_output = env::temp_dir().join ("test_events.mm.log");
+        let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
+        match env::var ("MM2_TEST_EVENTS_MODE") {
+            Ok (ref mode) if mode == "MM" => {
+                println! ("test_events] Starting the MarketMaker...");
+                let c_json = unwrap! (CJSON::from_zero_terminated ("{\
+                \"gui\":\"nogui\",\
+                \"unbuffered-output\":1,\
+                \"client\":1,\
+                \"passphrase\":\"123\",\
+                \"coins\":\"BTC,KMD\"\
+                }\0".as_ptr()));
+                unsafe {LP_main (c_json.0)}
+            },
+            Ok (ref mode) if mode == "MM_EVENTS" => {
+                println! ("test_events] Starting the `mm2 events`...");
+
+                let args: Vec<*const c_char> = vec! ["mm2\0".as_ptr() as *const c_char, "events\0".as_ptr() as *const c_char, null()];
+                unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
+            },
+            _ => {
+                // Start the MM.
+                println! ("test_events] executable: '{}'.", executable);
+                println! ("test_events] `mm2` log: {:?}.", mm_output);
+                println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
+                let mut mm = RaiiKill::from_handle (unwrap! (cmd! (&executable, "test_events", "--nocapture")
+                    .env ("MM2_TEST_EVENTS_MODE", "MM")
+                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
+                    .stderr_to_stdout().stdout (&mm_output) .start()));
+
+                let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
+                    .env ("MM2_TEST_EVENTS_MODE", "MM_EVENTS")
+                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
+                    .stderr_to_stdout().stdout (&mm_events_output) .start()));
+
+                #[derive(Debug)] enum MmState {Starting, Started, GetendpointSent, Passed}
+                let mut mm_state = MmState::Starting;
+
+                // Monitor the MM output.
+                let started = now_float();
+                loop {
+                    if !mm.running() {panic! ("MM process terminated prematurely.")}
+                    if !mm_events.running() {panic! ("`mm2 events` terminated prematurely.")}
+
+                    /// Invokes a locally running MM and returns it's reply.
+                    fn call_mm (json: String) -> Result<(StatusCode, String), String> {
+                        let pool = CpuPool::new (1);
+                        let client = Client::builder().executor (pool.clone()) .build_http::<Body>();
+                        let fut = pool.spawn (client.request (try_s! (
+                            Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()))));
+                        let res = try_s! (fut.wait());
+                        let status = res.status();
+                        let body = try_s! (pool.spawn (res.into_body().concat2()) .wait());
+                        let body = try_s! (from_utf8 (&body)) .trim();
+                        Ok ((status, body.into()))
+                    }
+
+                    mm_state = match mm_state {
+                        MmState::Starting => {  // See if MM started.
+                            let mm_log = slurp (&mm_output);
+                            let mm_log = unsafe {from_utf8_unchecked (&mm_log)};
+                            if mm_log.contains (">>>>>>>>>> DEX stats 127.0.0.1:7783 bind") {MmState::Started}
+                            else {MmState::Starting}
+                        },
+                        MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
+                            let (status, body) = unwrap! (call_mm (String::from (
+                                "{\"userpass\":\"5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337\",\"method\":\"getendpoint\"}")));
+                            println! ("test_events] getendpoint response: {:?}, {}", status, body);
+                            assert_eq! (status, StatusCode::OK);
+                            assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""));
+                            MmState::GetendpointSent
+                        },
+                        MmState::GetendpointSent => {  // Wait for the `mm2 events` test to finish.
+                            let mm_events_log = slurp (&mm_events_output);
+                            let mm_events_log = unsafe {from_utf8_unchecked (&mm_events_log)};
+                            if mm_events_log.contains ("\"base\":\"KMD\"") && mm_events_log.contains ("\"price64\":\"") {MmState::Passed}
+                            else {MmState::GetendpointSent}
+                        },
+                        MmState::Passed => {  // Gracefully stop the MM.
+                            let (status, body) = unwrap! (call_mm (String::from (
+                                "{\"userpass\":\"5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337\",\"method\":\"stop\"}")));
+                            println! ("test_events] stop response: {:?}, {}", status, body);
+                            assert_eq! (status, StatusCode::OK);
+                            assert_eq! (body, "{\"result\":\"success\"}");
+                            sleep (Duration::from_millis (100));
+                            let _ = fs::remove_file (mm_output);
+                            let _ = fs::remove_file (mm_events_output);
+                            break
+                        }
+                    };
+
+                    if now_float() - started > 20. {panic! ("Test didn't pass withing the 20 seconds timeframe")}
+                    sleep (Duration::from_millis (20))
+                }
+            }
+        }
+    }
 }
 
 const MM_VERSION: &'static str = env!("MM_VERSION");
@@ -233,8 +426,6 @@ fn main() {
     init_crash_reports();
     unsafe {os_portable::OS_init()};
     println!("BarterDEX MarketMaker {} \n", MM_VERSION);
-
-    extern "C" {fn mm1_main (argc: c_int, argv: *const *const c_char) -> c_int;}  // mm.c
 
     // Temporarily simulate `argv[]` for the C version of the main method.
     let args: Vec<String> = env::args().map (|mut arg| {arg.push ('\0'); arg}) .collect();
@@ -253,6 +444,10 @@ fn main() {
 
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
+
+// TODO: `btc2kmd` is *pure*, it doesn't use shared state,
+// though some of the underlying functions (`LP_convaddress`) do (the hash of cryptocurrencies is shared).
+// Should mark it as shallowly pure.
 
 /// Implements the "btc2kmd" command line utility.
 fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {

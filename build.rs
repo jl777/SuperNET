@@ -70,8 +70,6 @@ fn bindgen<
     }
 }
 
-// Will probably refactor in the future (to be generic over multiple headers),
-// right now we're in the "collect as much information as possible" phase (https://www.agilealliance.org/glossary/simple-design).
 fn generate_bindings() {
     bindgen(
         "crypto777/OS_portable.h",
@@ -239,6 +237,8 @@ fn build_c_code(mm_version: &str) {
 fn main() {
     // Rebuild when we work with C files.
     println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.cpp");
+    println!("rerun-if-changed=iguana/exchanges/mm.c");
+    println!("rerun-if-changed=iguana/exchanges/LP_coins.c");
     println!("rerun-if-changed=OSlibs/win/seh.c");
 
     // Rebuild when the build configuration changes.

@@ -7,7 +7,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceRoot}/target/debug/mm2.exe",
-            "args": [],
+            "args": ["{\"gui\":\"nogui\",\"client\":1, \"passphrase\":\"123\", \"coins\":\"BTC,KMD\"}"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],

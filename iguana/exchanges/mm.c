@@ -101,9 +101,20 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
     printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
 }
 
+/// Useful when we want to monitor the MM output closely but piped output is buffered by default.
+void unbuffered_output_support()
+{
+    if (getenv("MM2_UNBUFFERED_OUTPUT") != 0)
+    {
+        setvbuf(stdout, 0, _IONBF, 0);
+        setvbuf(stderr, 0, _IONBF, 0);
+    }
+}
+
 void LP_main(void *ptr)
 {
     char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
+    unbuffered_output_support();
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
@@ -163,6 +174,7 @@ int32_t ensure_writable(char *dirname)
 int mm1_main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
+    unbuffered_output_support();
     if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
     {
         int32_t len,bufsize = 1000000; void *ptr; char *buf;
