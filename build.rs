@@ -103,11 +103,7 @@ fn generate_bindings() {
         empty(),
     );
     bindgen(
-        if cfg!(windows) {
-            vec!["crypto777/nanosrc/nn.h".into()]
-        } else {
-            vec!["/usr/local/include/nanomsg/nn.h".into()]
-        },
+        vec!["crypto777/nanosrc/nn.h".into()],
         "crypto777/nanosrc/nn.rs",
         ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
         empty(),
