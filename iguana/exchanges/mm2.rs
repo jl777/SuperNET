@@ -42,6 +42,8 @@ extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
 
+extern crate libc;
+
 extern crate nix;
 
 #[macro_use]
@@ -56,7 +58,8 @@ pub use etomiclibrs::*;
 use std::env;
 use std::ffi::{CStr, OsString};
 use std::fmt;
-use std::os::raw::{c_char, c_int};
+use std::io::{self, Write};
+use std::os::raw::{c_char, c_int, c_void};
 use std::mem::zeroed;
 use std::ptr::{null, null_mut};
 use std::sync::Mutex;
@@ -142,36 +145,10 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
-//defined(__APPLE__) ||
-#ifdef FROM_JS // defined(WIN32) || defined(USE_STATIC_NANOMSG)
-#include "../../crypto777/nanosrc/nn.h"
-#include "../../crypto777/nanosrc/bus.h"
-#include "../../crypto777/nanosrc/pubsub.h"
-#include "../../crypto777/nanosrc/pipeline.h"
-#include "../../crypto777/nanosrc/reqrep.h"
-#include "../../crypto777/nanosrc/tcp.h"
-#include "../../crypto777/nanosrc/pair.h"
-#else
-#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
-	#include "../../crypto777/nanosrc/nn.h"
-	#include "../../crypto777/nanosrc/bus.h"
-	#include "../../crypto777/nanosrc/pubsub.h"
-	#include "../../crypto777/nanosrc/pipeline.h"
-	#include "../../crypto777/nanosrc/reqrep.h"
-	#include "../../crypto777/nanosrc/tcp.h"
-    #include "../../crypto777/nanosrc/pair.h"
-    #include "../../crypto777/nanosrc/ws.h"
-#else
-	#include "/usr/local/include/nanomsg/nn.h"
-	#include "/usr/local/include/nanomsg/bus.h"
-	#include "/usr/local/include/nanomsg/pubsub.h"
-	#include "/usr/local/include/nanomsg/pipeline.h"
-	#include "/usr/local/include/nanomsg/reqrep.h"
-	#include "/usr/local/include/nanomsg/tcp.h"
-    #include "/usr/local/include/nanomsg/pair.h"
-    #include "/usr/local/include/nanomsg/ws.h"
-#endif
-#endif
+*/
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
+mod nn {include! ("../../crypto777/nanosrc/nn.rs");}
+/*
 #ifndef NN_WS_MSG_TYPE
 #define NN_WS_MSG_TYPE 1
 #endif
@@ -277,13 +254,11 @@ mod test {
 
     use std::env;
     use std::fs;
-    use std::os::raw::c_char;
-    use std::ptr::null;
     use std::str::{from_utf8, from_utf8_unchecked};
     use std::thread::sleep;
     use std::time::Duration;
 
-    use super::{btc2kmd, mm1_main, LP_main, CJSON};
+    use super::{btc2kmd, events, LP_main, CJSON};
 
     /// Automatically kill a wrapped process.
     struct RaiiKill {handle: Handle, running: bool}
@@ -337,9 +312,7 @@ mod test {
             },
             Ok (ref mode) if mode == "MM_EVENTS" => {
                 println! ("test_events] Starting the `mm2 events`...");
-
-                let args: Vec<*const c_char> = vec! ["mm2\0".as_ptr() as *const c_char, "events\0".as_ptr() as *const c_char, null()];
-                unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
+                unwrap! (events (&["_test".into(), "events".into()]));
             },
             _ => {
                 // Start the MM.
@@ -442,6 +415,8 @@ fn main() {
         return
     }
 
+    if let Err (err) = events (&args_os) {eprintln! ("events error] {}", err); return}
+
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
 
@@ -460,9 +435,9 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
     }
 
     let wif_or_btc_z = format! ("{}\0", wif_or_btc);
-/*  (this line helps the IDE diff to match the old and new code)
+    /* (this line helps the IDE diff to match the old and new code)
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
-*/
+    */
     let mut privkey: bits256 = unsafe {zeroed()};
     let mut checkkey: bits256 = unsafe {zeroed()};
     let mut tmptype = 0;
@@ -486,31 +461,36 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
         Ok (unwrap! (unsafe {CStr::from_ptr (retstr)} .to_str()) .into())
     }
 }
-/*
+
+/// Implements the `mm2 events` mode.  
+/// If the command-line arguments match the events mode and everything else works then this function will never return.
+fn events (args_os: &[OsString]) -> Result<(), String> {
+    use nn::*;
+
+    /*
     else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
-    {
-        int32_t len,bufsize = 1000000; void *ptr; char *buf;
-        if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
-        {
-            if ( nn_connect(IPC_ENDPOINT,"ws://127.0.0.1:5555") >= 0 )
-            {
-                buf = calloc(1,bufsize);
-                while ( 1 )
-                {
-                    if ( (len= nn_recv(IPC_ENDPOINT,&ptr,NN_MSG,0)) > 0 )
-                    {
-                        if ( len < bufsize )
-                        {
-                            memcpy(buf,ptr,len);
-                            buf[len] = 0;
-                            printf("%s\n",(char *)buf);
-                        }
-                        nn_freemsg(ptr);
-                    }
-                }
-            } else printf("nn_connect error to IPC_ENDPOINT\n");
-        } else printf("error opening IPC_ENDPOINT\n");
+    */
+    if args_os.get (1) .and_then (|arg| arg.to_str()) .unwrap_or ("") == "events" {
+        let ipc_endpoint = unsafe {nn_socket (AF_SP as c_int, NN_PAIR as c_int)};
+        if ipc_endpoint < 0 {return ERR! ("!nn_socket")}
+        let rc = unsafe {nn_connect (ipc_endpoint, "ws://127.0.0.1:5555\0".as_ptr() as *const c_char)};
+        if rc < 0 {return ERR! ("!nn_connect")}
+        loop {
+            let mut buf: [u8; 1000000] = unsafe {zeroed()};
+            let len = unsafe {nn_recv (ipc_endpoint, buf.as_mut_ptr() as *mut c_void, buf.len() - 1, 0)};
+            if len >= 0 {
+                let len = len as usize;
+                assert! (len < buf.len());
+                let stdout = io::stdout();
+                let mut stdout = stdout.lock();
+                try_s! (stdout.write_all (&buf[0..len]));
+            }
+        }
     }
+    Ok(())
+}
+
+/*
     else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {
         uint32_t timestamp; char str[65],wifstr[128]; bits256 privkey; int32_t i;

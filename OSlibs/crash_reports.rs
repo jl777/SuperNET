@@ -12,7 +12,7 @@ use std::sync::Once;
 #[cfg(test)] type StackTrace = String;
 /// https://docs.microsoft.com/en-us/windows/desktop/debug/getexceptioncode
 #[cfg(test)] type ExceptionCode = u32;
-#[cfg(test)] lazy_static! {
+#[cfg(test)] #[allow(dead_code)] lazy_static! {
     /// The testing version of `rust_seh_handler` is rigged to put the captured stack trace here.
     static ref SEH_CAUGHT: Mutex<Option<(ExceptionCode, StackTrace)>> = Mutex::new (None);
     /// Used to avoid the empty `SEH_CAUGHT` races.

@@ -25,42 +25,59 @@ use std::path::Path;
 
 fn bindgen<
     'a,
-    FP: AsRef<Path>,
     TP: AsRef<Path>,
     FI: Iterator<Item = &'a &'a str>,
     TI: Iterator<Item = &'a &'a str>,
+    DI: Iterator<Item = &'a &'a str>,
 >(
-    from: FP,
+    from: Vec<String>,
     to: TP,
     functions: FI,
     types: TI,
+    defines: DI,
 ) {
     // We'd like to regenerate the bindings whenever the build.rs changes, in case we changed bindgen configuration here.
     let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
 
-    let from = from.as_ref();
     let to = to.as_ref();
 
-    let lm_from = match last_modified_sec(&from) {
-        Ok(sec) => sec,
-        Err(err) => panic!("Can't stat the header {:?}: {}", from, err),
-    };
+    let mut lm_from = 0f64;
+    for header_path in &from {
+        lm_from = match last_modified_sec(&header_path) {
+            Ok(sec) => lm_from.max(sec),
+            Err(err) => panic!("Can't stat the header {:?}: {}", from, err),
+        };
+    }
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
     if lm_from >= lm_to || lm_build_rs >= lm_to {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
-            let mut builder = bindgen::builder().header(unwrap!(from.to_str()));
+            let mut builder = bindgen::builder();
+            for header_path in from {
+                builder = builder.header(header_path)
+            }
             builder = builder.whitelist_recursively(true);
             builder = builder.layout_tests(false);
+            if cfg!(windows) {
+                // Normally we should be checking for `_WIN32`, but `nn_config.h` checks for `WIN32`.
+                // (Note that it's okay to have WIN32 defined for 64-bit builds,
+                // cf https://github.com/rust-lang-nursery/rust-bindgen/issues/1062#issuecomment-334804738).
+                builder = builder.clang_arg("-D WIN32");
+            }
             for name in functions {
                 builder = builder.whitelist_function(name)
             }
             for name in types {
                 builder = builder.whitelist_type(name)
             }
+            // Looks like C defines should be whitelisted both on the function and the variable levels.
+            for name in defines {
+                builder = builder.whitelist_function(name);
+                builder = builder.whitelist_var(name)
+            }
             match builder.generate() {
                 Ok(bindings) => bindings,
-                Err(()) => panic!("Error generating the bindings for {:?}", from),
+                Err(()) => panic!("Error generating the bindings for {:?}", to),
             }
         };
 
@@ -72,16 +89,29 @@ fn bindgen<
 
 fn generate_bindings() {
     bindgen(
-        "crypto777/OS_portable.h",
+        vec!["crypto777/OS_portable.h".into()],
         "crypto777/OS_portable.rs",
         ["OS_init"].iter(),
         empty(),
+        empty(),
     );
     bindgen(
-        "includes/curve25519.h",
+        vec!["includes/curve25519.h".into()],
         "includes/curve25519.rs",
         empty(),
         ["_bits256"].iter(),
+        empty(),
+    );
+    bindgen(
+        if cfg!(windows) {
+            vec!["crypto777/nanosrc/nn.h".into()]
+        } else {
+            vec!["/usr/local/include/nanomsg/nn.h".into()]
+        },
+        "crypto777/nanosrc/nn.rs",
+        ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
+        empty(),
+        ["AF_SP", "NN_PAIR"].iter(),
     );
 }
 
