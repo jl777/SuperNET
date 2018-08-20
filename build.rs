@@ -14,6 +14,7 @@ extern crate gstuff;
 extern crate num_cpus;
 #[macro_use]
 extern crate unwrap;
+extern crate winapi;
 
 use duct::cmd;
 use gstuff::last_modified_sec;
@@ -151,6 +152,43 @@ fn show_args<'a, I: IntoIterator<Item = &'a String>>(args: I) -> String {
     buf
 }
 
+/// See if we have the required libraries.
+#[cfg(windows)]
+fn windows_requirements() {
+    use std::ffi::OsString;
+    use std::mem::uninitialized;
+    use std::os::windows::ffi::OsStringExt;
+    use std::path::Path;
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724373(v=vs.85).aspx
+    use winapi::um::sysinfoapi::GetSystemDirectoryW;
+
+    let system = {
+        let mut buf: [u16; 1024] = unsafe { uninitialized() };
+        //GetSystemDirectoryA(buf.as_mut_ptr(), buf.len());
+        let len = unsafe { GetSystemDirectoryW(buf.as_mut_ptr(), (buf.len() - 1) as u32) };
+        if len <= 0 {
+            panic!("!GetSystemDirectoryW")
+        }
+        let len = len as usize;
+        let system = OsString::from_wide(&buf[0..len]);
+        Path::new(&system).to_path_buf()
+    };
+    println!("windows_requirements] System directory is {:?}.", system);
+
+    let msvcr100 = system.join("msvcr100.dll");
+    if !msvcr100.exists() {
+        panic! ("MSVCR100.dll is missing. \
+            You can install it from https://www.microsoft.com/en-us/download/details.aspx?id=14632.");
+    }
+
+    // I don't exactly know what DLLs this download installs. Probably "msvcp140...". Might prove useful later.
+    //You can install it from https://aka.ms/vs/15/release/vc_redist.x64.exe,
+    //see https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
+}
+
+#[cfg(not(windows))]
+fn windows_requirements() {}
+
 /// Build helper C code.
 ///
 /// I think "git clone ... && cargo build" should be enough to start hacking on the Rust code.
@@ -158,6 +196,8 @@ fn show_args<'a, I: IntoIterator<Item = &'a String>>(args: I) -> String {
 /// For now we're building the Structured Exception Handling code here,
 /// but in the future we might subsume the rest of the C build under build.rs.
 fn build_c_code(mm_version: &str) {
+    // Link in the Windows-specific crash handling code.
+
     if cfg!(windows) {
         // TODO: Only (re)build the library when the source code or the build script changes.
         cc::Build::new()
@@ -290,6 +330,7 @@ fn main() {
         return;
     }
 
+    windows_requirements();
     let mm_version = mm_version();
     build_c_code(&mm_version);
     generate_bindings();
