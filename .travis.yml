@@ -39,7 +39,6 @@ cache:
 before_deploy:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - mkdir deploy
-- strip iguana/exchanges/marketmaker-mainnet
 - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges
   marketmaker-mainnet
 after_success:

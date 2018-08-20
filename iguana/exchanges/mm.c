@@ -101,9 +101,20 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
     printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
 }
 
+/// Useful when we want to monitor the MM output closely but piped output is buffered by default.
+void unbuffered_output_support()
+{
+    if (getenv("MM2_UNBUFFERED_OUTPUT") != 0)
+    {
+        setvbuf(stdout, 0, _IONBF, 0);
+        setvbuf(stderr, 0, _IONBF, 0);
+    }
+}
+
 void LP_main(void *ptr)
 {
     char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
+    unbuffered_output_support();
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
@@ -163,50 +174,8 @@ int32_t ensure_writable(char *dirname)
 int mm1_main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
-    if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
-    {
-        bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
-        if ( LP_wifstr_valid("BTC",(char *)argv[1]) > 0 )
-        {
-            bitcoin_wif2priv("BTC",0,&tmptype,&privkey,(char *)argv[1]);
-            bitcoin_priv2wif("KMD",0,kmdwif,privkey,188);
-            bitcoin_wif2priv("KMD",0,&tmptype,&checkkey,kmdwif);
-            if ( bits256_cmp(privkey,checkkey) == 0 )
-                printf("BTC %s -> KMD %s: privkey %s\n",argv[1],kmdwif,bits256_str(str,privkey));
-            else printf("ERROR BTC %s %s != KMD %s %s\n",argv[1],bits256_str(str,privkey),kmdwif,bits256_str(str2,checkkey));
-        }
-        else
-        {
-            if ( (retstr= LP_convaddress("BTC",(char *)argv[1],"KMD")) != 0 )
-                printf("%s\n",retstr);
-        }
-        exit(0);
-    }
-    else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
-    {
-        int32_t len,bufsize = 1000000; void *ptr; char *buf;
-        if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
-        {
-            if ( nn_connect(IPC_ENDPOINT,"ws://127.0.0.1:5555") >= 0 )
-            {
-                buf = calloc(1,bufsize);
-                while ( 1 )
-                {
-                    if ( (len= nn_recv(IPC_ENDPOINT,&ptr,NN_MSG,0)) > 0 )
-                    {
-                        if ( len < bufsize )
-                        {
-                            memcpy(buf,ptr,len);
-                            buf[len] = 0;
-                            printf("%s\n",(char *)buf);
-                        }
-                        nn_freemsg(ptr);
-                    }
-                }
-            } else printf("nn_connect error to IPC_ENDPOINT\n");
-        } else printf("error opening IPC_ENDPOINT\n");
-    }
-    else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
+    unbuffered_output_support();
+    if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {
         uint32_t timestamp; char str[65],wifstr[128]; bits256 privkey; int32_t i;
         timestamp = (uint32_t)time(NULL);

@@ -12,45 +12,103 @@ extern crate cc;
 extern crate duct;
 extern crate gstuff;
 extern crate num_cpus;
+#[macro_use]
+extern crate unwrap;
 
 use duct::cmd;
 use gstuff::last_modified_sec;
 use std::env;
 use std::fs;
 use std::io::Read;
+use std::iter::empty;
+use std::path::Path;
 
-const OS_PORTABLE_FUNCTIONS: [&'static str; 1] = ["OS_init"];
-
-// Will probably refactor in the future (to be generic over multiple headers),
-// right now we're in the "collect as much information as possible" phase (https://www.agilealliance.org/glossary/simple-design).
-fn generate_bindings() {
+fn bindgen<
+    'a,
+    TP: AsRef<Path>,
+    FI: Iterator<Item = &'a &'a str>,
+    TI: Iterator<Item = &'a &'a str>,
+    DI: Iterator<Item = &'a &'a str>,
+>(
+    from: Vec<String>,
+    to: TP,
+    functions: FI,
+    types: TI,
+    defines: DI,
+) {
     // We'd like to regenerate the bindings whenever the build.rs changes, in case we changed bindgen configuration here.
-    let lm_build_rs = last_modified_sec(&"build.rs").expect("Can't stat build.rs");
+    let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
 
-    let from = "crypto777/OS_portable.h";
-    let to = "crypto777/OS_portable.rs";
-    let lm_from = match last_modified_sec(&from) {
-        Ok(sec) => sec,
-        Err(err) => panic!("Can't stat the header {}: {}", from, err),
-    };
+    let to = to.as_ref();
+
+    let mut lm_from = 0f64;
+    for header_path in &from {
+        lm_from = match last_modified_sec(&header_path) {
+            Ok(sec) => lm_from.max(sec),
+            Err(err) => panic!("Can't stat the header {:?}: {}", from, err),
+        };
+    }
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
     if lm_from >= lm_to || lm_build_rs >= lm_to {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
-            let mut builder = bindgen::builder().header(from);
-            for name in OS_PORTABLE_FUNCTIONS.iter() {
+            let mut builder = bindgen::builder();
+            for header_path in from {
+                builder = builder.header(header_path)
+            }
+            builder = builder.whitelist_recursively(true);
+            builder = builder.layout_tests(false);
+            if cfg!(windows) {
+                // Normally we should be checking for `_WIN32`, but `nn_config.h` checks for `WIN32`.
+                // (Note that it's okay to have WIN32 defined for 64-bit builds,
+                // cf https://github.com/rust-lang-nursery/rust-bindgen/issues/1062#issuecomment-334804738).
+                builder = builder.clang_arg("-D WIN32");
+            }
+            for name in functions {
                 builder = builder.whitelist_function(name)
+            }
+            for name in types {
+                builder = builder.whitelist_type(name)
+            }
+            // Looks like C defines should be whitelisted both on the function and the variable levels.
+            for name in defines {
+                builder = builder.whitelist_function(name);
+                builder = builder.whitelist_var(name)
             }
             match builder.generate() {
                 Ok(bindings) => bindings,
-                Err(()) => panic!("Error generating the bindings for {}", from),
+                Err(()) => panic!("Error generating the bindings for {:?}", to),
             }
         };
 
         if let Err(err) = bindings.write_to_file(to) {
-            panic!("Error writing to {}: {}", to, err)
+            panic!("Error writing to {:?}: {}", to, err)
         }
     }
+}
+
+fn generate_bindings() {
+    bindgen(
+        vec!["crypto777/OS_portable.h".into()],
+        "crypto777/OS_portable.rs",
+        ["OS_init"].iter(),
+        empty(),
+        empty(),
+    );
+    bindgen(
+        vec!["includes/curve25519.h".into()],
+        "includes/curve25519.rs",
+        empty(),
+        ["_bits256"].iter(),
+        empty(),
+    );
+    bindgen(
+        vec!["crypto777/nanosrc/nn.h".into()],
+        "crypto777/nanosrc/nn.rs",
+        ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
+        empty(),
+        ["AF_SP", "NN_PAIR"].iter(),
+    );
 }
 
 /// The build script will usually help us by putting the MarketMaker version
@@ -205,6 +263,8 @@ fn build_c_code(mm_version: &str) {
 fn main() {
     // Rebuild when we work with C files.
     println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.cpp");
+    println!("rerun-if-changed=iguana/exchanges/mm.c");
+    println!("rerun-if-changed=iguana/exchanges/LP_coins.c");
     println!("rerun-if-changed=OSlibs/win/seh.c");
 
     // Rebuild when the build configuration changes.

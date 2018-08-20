@@ -19,21 +19,33 @@
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
+#![allow(non_camel_case_types)]
+
 extern crate backtrace;
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate duct;
 
 #[cfg(feature = "etomic")]
 extern crate etomiclibrs;
 
+extern crate futures;
+extern crate futures_cpupool;
+
 #[macro_use]
 extern crate gstuff;
+
+extern crate hyper;
 
 #[allow(unused_imports)]
 #[macro_use]
 extern crate lazy_static;
 
+extern crate libc;
+
 extern crate nix;
 
-#[allow(unused_imports)]
 #[macro_use]
 extern crate unwrap;
 
@@ -44,12 +56,65 @@ extern crate winapi;
 pub use etomiclibrs::*;
 
 use std::env;
-use std::os::raw::{c_char, c_int};
-use std::ptr::null;
+use std::ffi::{CStr, OsString};
+use std::fmt;
+use std::io::{self, Write};
+use std::os::raw::{c_char, c_int, c_void};
+use std::mem::zeroed;
+use std::ptr::{null, null_mut};
+use std::sync::Mutex;
 
 pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
+mod curve25519 {include! ("../../includes/curve25519.rs");}
+use curve25519::{_bits256 as bits256};
+enum cJSON {}
+#[allow(dead_code)]
+extern "C" {
+    fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
+    /// NB: Use RAII CJSON instead.
+    fn cJSON_Parse (json: *const u8) -> *mut cJSON;
+    /// Defined when cJSON_Parse() returns 0. 0 when cJSON_Parse() succeeds.
+    fn cJSON_GetErrorPtr() -> *const c_char;
+    fn cJSON_Delete (c_json: *mut cJSON);
+    fn LP_main (c_json: *mut cJSON) -> !;
+    fn mm1_main (argc: c_int, argv: *const *const c_char) -> !;
+}
 
 use crash_reports::init_crash_reports;
+
+impl fmt::Display for bits256 {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut buf: [u8; 65] = unsafe {zeroed()};
+        let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
+        let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
+        f.write_str (hex)
+    }
+}
+
+/// RAII and MT wrapper for `cJSON`.
+#[allow(dead_code)]
+struct CJSON (*mut cJSON);
+#[allow(dead_code)]
+impl CJSON {
+    fn from_zero_terminated (json: *const u8) -> Result<CJSON, String> {
+        lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
+        let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
+        let c_json = unsafe {cJSON_Parse (json)};
+        if c_json == null_mut() {
+            let err = unsafe {cJSON_GetErrorPtr()};
+            let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
+            ERR! ("Can't parse JSON, error: {}", err)
+        } else {
+            Ok (CJSON (c_json))
+        }
+    }
+}
+impl Drop for CJSON {
+    fn drop (&mut self) {
+        unsafe {cJSON_Delete (self.0)}
+        self.0 = null_mut()
+    }
+}
 
 /* The original C code will be replaced with the corresponding Rust code in small increments,
    allowing Git history to catch up and show the function-level diffs.
@@ -80,36 +145,10 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
-//defined(__APPLE__) ||
-#ifdef FROM_JS // defined(WIN32) || defined(USE_STATIC_NANOMSG)
-#include "../../crypto777/nanosrc/nn.h"
-#include "../../crypto777/nanosrc/bus.h"
-#include "../../crypto777/nanosrc/pubsub.h"
-#include "../../crypto777/nanosrc/pipeline.h"
-#include "../../crypto777/nanosrc/reqrep.h"
-#include "../../crypto777/nanosrc/tcp.h"
-#include "../../crypto777/nanosrc/pair.h"
-#else
-#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
-	#include "../../crypto777/nanosrc/nn.h"
-	#include "../../crypto777/nanosrc/bus.h"
-	#include "../../crypto777/nanosrc/pubsub.h"
-	#include "../../crypto777/nanosrc/pipeline.h"
-	#include "../../crypto777/nanosrc/reqrep.h"
-	#include "../../crypto777/nanosrc/tcp.h"
-    #include "../../crypto777/nanosrc/pair.h"
-    #include "../../crypto777/nanosrc/ws.h"
-#else
-	#include "/usr/local/include/nanomsg/nn.h"
-	#include "/usr/local/include/nanomsg/bus.h"
-	#include "/usr/local/include/nanomsg/pubsub.h"
-	#include "/usr/local/include/nanomsg/pipeline.h"
-	#include "/usr/local/include/nanomsg/reqrep.h"
-	#include "/usr/local/include/nanomsg/tcp.h"
-    #include "/usr/local/include/nanomsg/pair.h"
-    #include "/usr/local/include/nanomsg/ws.h"
-#endif
-#endif
+*/
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
+mod nn {include! ("../../crypto777/nanosrc/nn.rs");}
+/*
 #ifndef NN_WS_MSG_TYPE
 #define NN_WS_MSG_TYPE 1
 #endif
@@ -201,6 +240,159 @@ int32_t ensure_writable(char *dirname)
 
 */
 
+#[cfg(test)]
+mod test {
+    use duct::Handle;
+
+    use futures::Future;
+    use futures_cpupool::CpuPool;
+
+    use gstuff::{now_float, slurp};
+
+    use hyper::{Body, Client, Request, StatusCode};
+    use hyper::rt::Stream;
+
+    use std::env;
+    use std::fs;
+    use std::str::{from_utf8, from_utf8_unchecked};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    use super::{btc2kmd, events, LP_main, CJSON};
+
+    /// Automatically kill a wrapped process.
+    struct RaiiKill {handle: Handle, running: bool}
+    impl RaiiKill {
+        fn from_handle (handle: Handle) -> RaiiKill {
+            RaiiKill {handle, running: true}
+        }
+        fn running (&mut self) -> bool {
+            if !self.running {return false}
+            match self.handle.try_wait() {Ok (None) => true, _ => {self.running = false; false}}
+        }
+    }
+    impl Drop for RaiiKill {
+        fn drop (&mut self) {
+            // The cached `running` check might provide some protection against killing a wrong process under the same PID,
+            // especially if the cached `running` check is also used to monitor the status of the process.
+            if self.running() {
+                let _ = self.handle.kill();
+            }
+        }
+    }
+
+    /// Integration (?) test for the "btc2kmd" command line invocation.
+    /// The argument is the WIF example from https://en.bitcoin.it/wiki/Wallet_import_format.
+    #[test]
+    fn test_btc2kmd() {
+        let output = unwrap! (btc2kmd ("5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ"));
+        assert_eq! (output, "BTC 5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ \
+        -> KMD UpRBUQtkA5WqFnSztd7sCYyyhtd4aq6AggQ9sXFh2fXeSnLHtd3Z: \
+        privkey 0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d");
+    }
+
+    /// Integration test for the "mm2 events" mode.
+    /// Starts MM in background and verifies that "mm2 events" produces a non-empty feed of events.
+    #[test]
+    fn test_events() {
+        let executable = unwrap! (env::args().next());
+        let mm_output = env::temp_dir().join ("test_events.mm.log");
+        let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
+        match env::var ("MM2_TEST_EVENTS_MODE") {
+            Ok (ref mode) if mode == "MM" => {
+                println! ("test_events] Starting the MarketMaker...");
+                let c_json = unwrap! (CJSON::from_zero_terminated ("{\
+                \"gui\":\"nogui\",\
+                \"unbuffered-output\":1,\
+                \"client\":1,\
+                \"passphrase\":\"123\",\
+                \"coins\":\"BTC,KMD\"\
+                }\0".as_ptr()));
+                unsafe {LP_main (c_json.0)}
+            },
+            Ok (ref mode) if mode == "MM_EVENTS" => {
+                println! ("test_events] Starting the `mm2 events`...");
+                unwrap! (events (&["_test".into(), "events".into()]));
+            },
+            _ => {
+                // Start the MM.
+                println! ("test_events] executable: '{}'.", executable);
+                println! ("test_events] `mm2` log: {:?}.", mm_output);
+                println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
+                let mut mm = RaiiKill::from_handle (unwrap! (cmd! (&executable, "test_events", "--nocapture")
+                    .env ("MM2_TEST_EVENTS_MODE", "MM")
+                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
+                    .stderr_to_stdout().stdout (&mm_output) .start()));
+
+                let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
+                    .env ("MM2_TEST_EVENTS_MODE", "MM_EVENTS")
+                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
+                    .stderr_to_stdout().stdout (&mm_events_output) .start()));
+
+                #[derive(Debug)] enum MmState {Starting, Started, GetendpointSent, Passed}
+                let mut mm_state = MmState::Starting;
+
+                // Monitor the MM output.
+                let started = now_float();
+                loop {
+                    if !mm.running() {panic! ("MM process terminated prematurely.")}
+                    if !mm_events.running() {panic! ("`mm2 events` terminated prematurely.")}
+
+                    /// Invokes a locally running MM and returns it's reply.
+                    fn call_mm (json: String) -> Result<(StatusCode, String), String> {
+                        let pool = CpuPool::new (1);
+                        let client = Client::builder().executor (pool.clone()) .build_http::<Body>();
+                        let fut = pool.spawn (client.request (try_s! (
+                            Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()))));
+                        let res = try_s! (fut.wait());
+                        let status = res.status();
+                        let body = try_s! (pool.spawn (res.into_body().concat2()) .wait());
+                        let body = try_s! (from_utf8 (&body)) .trim();
+                        Ok ((status, body.into()))
+                    }
+
+                    mm_state = match mm_state {
+                        MmState::Starting => {  // See if MM started.
+                            let mm_log = slurp (&mm_output);
+                            let mm_log = unsafe {from_utf8_unchecked (&mm_log)};
+                            if mm_log.contains (">>>>>>>>>> DEX stats 127.0.0.1:7783 bind") {MmState::Started}
+                            else {MmState::Starting}
+                        },
+                        MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
+                            let (status, body) = unwrap! (call_mm (String::from (
+                                "{\"userpass\":\"5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337\",\"method\":\"getendpoint\"}")));
+                            println! ("test_events] getendpoint response: {:?}, {}", status, body);
+                            assert_eq! (status, StatusCode::OK);
+                            assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""));
+                            MmState::GetendpointSent
+                        },
+                        MmState::GetendpointSent => {  // Wait for the `mm2 events` test to finish.
+                            let mm_events_log = slurp (&mm_events_output);
+                            let mm_events_log = unsafe {from_utf8_unchecked (&mm_events_log)};
+                            if mm_events_log.contains ("\"base\":\"KMD\"") && mm_events_log.contains ("\"price64\":\"") {MmState::Passed}
+                            else {MmState::GetendpointSent}
+                        },
+                        MmState::Passed => {  // Gracefully stop the MM.
+                            let (status, body) = unwrap! (call_mm (String::from (
+                                "{\"userpass\":\"5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337\",\"method\":\"stop\"}")));
+                            println! ("test_events] stop response: {:?}, {}", status, body);
+                            assert_eq! (status, StatusCode::OK);
+                            assert_eq! (body, "{\"result\":\"success\"}");
+                            sleep (Duration::from_millis (100));
+                            let _ = fs::remove_file (mm_output);
+                            let _ = fs::remove_file (mm_events_output);
+                            break
+                        }
+                    };
+
+                    if now_float() - started > 20. {panic! ("Test didn't pass withing the 20 seconds timeframe")}
+                    sleep (Duration::from_millis (20))
+                }
+            }
+        }
+    }
+}
+
 const MM_VERSION: &'static str = env!("MM_VERSION");
 
 fn main() {
@@ -208,61 +400,97 @@ fn main() {
     unsafe {os_portable::OS_init()};
     println!("BarterDEX MarketMaker {} \n", MM_VERSION);
 
-    extern "C" {fn mm1_main (argc: c_int, argv: *const *const c_char) -> c_int;}  // mm.c
-
     // Temporarily simulate `argv[]` for the C version of the main method.
     let args: Vec<String> = env::args().map (|mut arg| {arg.push ('\0'); arg}) .collect();
     let mut args: Vec<*const c_char> = args.iter().map (|s| s.as_ptr() as *const c_char) .collect();
     args.push (null());
+
+    let args_os: Vec<OsString> = env::args_os().collect();
+    let executable = unwrap! (args_os.get (0), "Running without a name");
+    if executable.to_string_lossy().contains ("btc2kmd") && args_os.get (1) .is_some() {
+        match btc2kmd (unwrap! (args_os[1].to_str(), "Bad argument encoding")) {
+            Ok (output) => println! ("{}", output),
+            Err (err) => eprintln! ("btc2kmd error] {}", err)
+        }
+        return
+    }
+
+    if let Err (err) = events (&args_os) {eprintln! ("events error] {}", err); return}
+
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
 
-/*  The rest of the `main` function that we're still porting into the `rust_main`:
+// TODO: `btc2kmd` is *pure*, it doesn't use shared state,
+// though some of the underlying functions (`LP_convaddress`) do (the hash of cryptocurrencies is shared).
+// Should mark it as shallowly pure.
 
-    char dirname[512]; double incr; cJSON *retjson;
+/// Implements the "btc2kmd" command line utility.
+fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
+    extern "C" {
+        fn LP_wifstr_valid (symbol: *const u8, wifstr: *const u8) -> i32;
+        fn LP_convaddress (symbol: *const u8, address: *const u8, dest: *const u8) -> *const c_char;
+        fn bitcoin_wif2priv (symbol: *const u8, wiftaddr: u8, addrtypep: *mut u8, privkeyp: *mut bits256, wifstr: *const c_char) -> i32;
+        fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
+        fn bits256_cmp (a: bits256, b: bits256) -> i32;
+    }
+
+    let wif_or_btc_z = format! ("{}\0", wif_or_btc);
+    /* (this line helps the IDE diff to match the old and new code)
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
-    {
-        bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
-        if ( LP_wifstr_valid("BTC",(char *)argv[1]) > 0 )
-        {
-            bitcoin_wif2priv("BTC",0,&tmptype,&privkey,(char *)argv[1]);
-            bitcoin_priv2wif("KMD",0,kmdwif,privkey,188);
-            bitcoin_wif2priv("KMD",0,&tmptype,&checkkey,kmdwif);
-            if ( bits256_cmp(privkey,checkkey) == 0 )
-                printf("BTC %s -> KMD %s: privkey %s\n",argv[1],kmdwif,bits256_str(str,privkey));
-            else printf("ERROR BTC %s %s != KMD %s %s\n",argv[1],bits256_str(str,privkey),kmdwif,bits256_str(str2,checkkey));
+    */
+    let mut privkey: bits256 = unsafe {zeroed()};
+    let mut checkkey: bits256 = unsafe {zeroed()};
+    let mut tmptype = 0;
+    let mut kmdwif: [c_char; 64] = unsafe {zeroed()};
+    if unsafe {LP_wifstr_valid (b"BTC\0".as_ptr(), wif_or_btc_z.as_ptr())} > 0 {
+        let rc = unsafe {bitcoin_wif2priv (b"BTC\0".as_ptr(), 0, &mut tmptype, &mut privkey, wif_or_btc_z.as_ptr() as *const i8)};
+        if rc < 0 {return ERR! ("!bitcoin_wif2priv")}
+        let rc = unsafe {bitcoin_priv2wif (b"KMD\0".as_ptr(), 0, kmdwif.as_mut_ptr(), privkey, 188)};
+        if rc < 0 {return ERR! ("!bitcoin_priv2wif")}
+        let rc = unsafe {bitcoin_wif2priv (b"KMD\0".as_ptr(), 0, &mut tmptype, &mut checkkey, kmdwif.as_ptr())};
+        if rc < 0 {return ERR! ("!bitcoin_wif2priv")}
+        let kmdwif = try_s! (unsafe {CStr::from_ptr (kmdwif.as_ptr())} .to_str());
+        if unsafe {bits256_cmp (privkey, checkkey)} == 0 {
+            Ok (format! ("BTC {} -> KMD {}: privkey {}", wif_or_btc, kmdwif, privkey))
+        } else {
+            Err (format! ("ERROR BTC {} {} != KMD {} {}", wif_or_btc, privkey, kmdwif, checkkey))
         }
-        else
-        {
-            if ( (retstr= LP_convaddress("BTC",(char *)argv[1],"KMD")) != 0 )
-                printf("%s\n",retstr);
-        }
-        exit(0);
+    } else {
+        let retstr = unsafe {LP_convaddress(b"BTC\0".as_ptr(), wif_or_btc_z.as_ptr(), b"KMD\0".as_ptr())};
+        if retstr == null() {return ERR! ("LP_convaddress")}
+        Ok (unwrap! (unsafe {CStr::from_ptr (retstr)} .to_str()) .into())
     }
+}
+
+/// Implements the `mm2 events` mode.  
+/// If the command-line arguments match the events mode and everything else works then this function will never return.
+fn events (args_os: &[OsString]) -> Result<(), String> {
+    use nn::*;
+
+    /*
     else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
-    {
-        int32_t len,bufsize = 1000000; void *ptr; char *buf;
-        if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
-        {
-            if ( nn_connect(IPC_ENDPOINT,"ws://127.0.0.1:5555") >= 0 )
-            {
-                buf = calloc(1,bufsize);
-                while ( 1 )
-                {
-                    if ( (len= nn_recv(IPC_ENDPOINT,&ptr,NN_MSG,0)) > 0 )
-                    {
-                        if ( len < bufsize )
-                        {
-                            memcpy(buf,ptr,len);
-                            buf[len] = 0;
-                            printf("%s\n",(char *)buf);
-                        }
-                        nn_freemsg(ptr);
-                    }
-                }
-            } else printf("nn_connect error to IPC_ENDPOINT\n");
-        } else printf("error opening IPC_ENDPOINT\n");
+    */
+    if args_os.get (1) .and_then (|arg| arg.to_str()) .unwrap_or ("") == "events" {
+        let ipc_endpoint = unsafe {nn_socket (AF_SP as c_int, NN_PAIR as c_int)};
+        if ipc_endpoint < 0 {return ERR! ("!nn_socket")}
+        let rc = unsafe {nn_connect (ipc_endpoint, "ws://127.0.0.1:5555\0".as_ptr() as *const c_char)};
+        if rc < 0 {return ERR! ("!nn_connect")}
+        loop {
+            let mut buf: [u8; 1000000] = unsafe {zeroed()};
+            let len = unsafe {nn_recv (ipc_endpoint, buf.as_mut_ptr() as *mut c_void, buf.len() - 1, 0)};
+            if len >= 0 {
+                let len = len as usize;
+                assert! (len < buf.len());
+                let stdout = io::stdout();
+                let mut stdout = stdout.lock();
+                try_s! (stdout.write_all (&buf[0..len]));
+            }
+        }
     }
+    Ok(())
+}
+
+/*
     else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {
         uint32_t timestamp; char str[65],wifstr[128]; bits256 privkey; int32_t i;
