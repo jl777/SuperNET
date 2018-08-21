@@ -7,11 +7,11 @@ version = "0.1.0"
 
 [[bin]]
 name = "mm2"
-path = "iguana/exchanges/mm2.rs"
+path = "mm2src/mm2.rs"
 
 [[bin]]
 name = "mm2-nop"
-path = "iguana/exchanges/mm2-nop.rs"
+path = "mm2src/mm2-nop.rs"
 required-features = ["nop"]
 
 [features]

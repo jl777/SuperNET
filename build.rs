@@ -89,23 +89,25 @@ fn bindgen<
 }
 
 fn generate_bindings() {
+    let _ = fs::create_dir ("mm2src/c_headers");
+
     bindgen(
         vec!["crypto777/OS_portable.h".into()],
-        "crypto777/OS_portable.rs",
+        "mm2src/c_headers/OS_portable.rs",
         ["OS_init"].iter(),
         empty(),
         empty(),
     );
     bindgen(
         vec!["includes/curve25519.h".into()],
-        "includes/curve25519.rs",
+        "mm2src/c_headers/curve25519.rs",
         empty(),
         ["_bits256"].iter(),
         empty(),
     );
     bindgen(
         vec!["crypto777/nanosrc/nn.h".into()],
-        "crypto777/nanosrc/nn.rs",
+        "mm2src/c_headers/nn.rs",
         ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
         empty(),
         ["AF_SP", "NN_PAIR"].iter(),
@@ -302,19 +304,17 @@ fn build_c_code(mm_version: &str) {
 
 fn main() {
     // Rebuild when we work with C files.
-    println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.cpp");
-    println!("rerun-if-changed=iguana/exchanges/mm.c");
-    println!("rerun-if-changed=iguana/exchanges/LP_coins.c");
-    println!("rerun-if-changed=OSlibs/win/seh.c");
-
-    // Rebuild when the build configuration changes.
+    println!("rerun-if-changed=iguana/exchanges/etomicswap");
+    println!("rerun-if-changed=iguana/exchanges");
+    println!("rerun-if-changed=iguana/secp256k1");
+    println!("rerun-if-changed=crypto777");
+    println!("rerun-if-changed=crypto777/jpeg");
+    println!("rerun-if-changed=OSlibs/win");
     println!("rerun-if-changed=CMakeLists.txt");
-    println!("rerun-if-changed=crypto777/CMakeLists.txt");
-    println!("rerun-if-changed=crypto777/jpeg/CMakeLists.txt");
-    println!("rerun-if-changed=iguana/exchanges/CMakeLists.txt");
-    println!("rerun-if-changed=iguana/secp256k1/CMakeLists.txt");
 
     // Rebuild when the build folder is removed.
+    // NB: This works NP before a Rust build, but doesn't work when Cargo decides to skip the build altogether.
+    //     So to force a full rebuild we might need an extra touch: `rm -rf build && touch mm2src/mm2.rs`.
     println!("rerun-if-changed=build");
 
     // Rebuild when we change certain features.

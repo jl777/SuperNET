@@ -64,8 +64,8 @@ use std::mem::zeroed;
 use std::ptr::{null, null_mut};
 use std::sync::Mutex;
 
-pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
-mod curve25519 {include! ("../../includes/curve25519.rs");}
+pub mod crash_reports;
+mod curve25519 {include! ("c_headers/curve25519.rs");}
 use curve25519::{_bits256 as bits256};
 enum cJSON {}
 #[allow(dead_code)]
@@ -134,7 +134,7 @@ void PNACL_message(char *arg,...)
 */
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod os_portable {include! ("../../crypto777/OS_portable.rs");}
+mod os_portable {include! ("c_headers/OS_portable.rs");}
 
 /*
 #endif // !_WIN_32
@@ -147,7 +147,7 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 
 */
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod nn {include! ("../../crypto777/nanosrc/nn.rs");}
+mod nn {include! ("c_headers/nn.rs");}
 /*
 #ifndef NN_WS_MSG_TYPE
 #define NN_WS_MSG_TYPE 1

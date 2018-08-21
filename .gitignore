@@ -280,8 +280,4 @@ iguana/exchanges/manychains
 /iguana/exchanges/etomicswap/target
 # This `Cargo.lock` should not be persisted because etomicswap is normally built as a `mm2` dependency.
 /iguana/exchanges/etomicswap/Cargo.lock
-
-# Generated Rust bindings
-/crypto777/OS_portable.rs
-/crypto777/nanosrc/nn.rs
-/includes/curve25519.rs
+/mm2src/c_headers
