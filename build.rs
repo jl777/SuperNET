@@ -164,7 +164,6 @@ fn windows_requirements() {
 
     let system = {
         let mut buf: [u16; 1024] = unsafe { uninitialized() };
-        //GetSystemDirectoryA(buf.as_mut_ptr(), buf.len());
         let len = unsafe { GetSystemDirectoryW(buf.as_mut_ptr(), (buf.len() - 1) as u32) };
         if len <= 0 {
             panic!("!GetSystemDirectoryW")
@@ -175,9 +174,10 @@ fn windows_requirements() {
     };
     println!("windows_requirements] System directory is {:?}.", system);
 
+    // `msvcr100.dll` is required by `ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll`
     let msvcr100 = system.join("msvcr100.dll");
     if !msvcr100.exists() {
-        panic! ("MSVCR100.dll is missing. \
+        panic! ("msvcr100.dll is missing. \
             You can install it from https://www.microsoft.com/en-us/download/details.aspx?id=14632.");
     }
 
