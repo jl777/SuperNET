@@ -401,12 +401,14 @@ fn help() {
         "Command-line options.\n"
         "The first command-line argument is special and designates the mode.\n"
         "\n"
-        "  help  ..  Displays this message.\n"
-        "  btc2kmd {WIF or BTC}  ..  Converts a BTC WIF into a KMD WIF.\n"
+        "  help  ..  Display this message.\n"
+        "  btc2kmd {WIF or BTC}  ..  Convert a BTC WIF into a KMD WIF.\n"
         "  events  ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
         "\n"
-        "See also the published online documentation at http://api.kmd.host/\n"
-        "and https://github.com/gcharang/KomodoPlatformdocs/tree/master/docs/source/barterDEX/."
+        // Generated from https://github.com/KomodoPlatform/DocumentationPreview.
+        // SHossain: "this would be the URL we would recommend and it will be maintained
+        //            Please let @gcharang or me know if anything needs updating there".
+        "See also the online documentation at https://docs.komodoplatform.com/barterDEX/barterDEX-API.html."
     )
 }
 
