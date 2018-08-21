@@ -406,9 +406,9 @@ fn main() {
     args.push (null());
 
     let args_os: Vec<OsString> = env::args_os().collect();
-    let executable = unwrap! (args_os.get (0), "Running without a name");
-    if executable.to_string_lossy().contains ("btc2kmd") && args_os.get (1) .is_some() {
-        match btc2kmd (unwrap! (args_os[1].to_str(), "Bad argument encoding")) {
+    let first_arg = args_os.get (1) .and_then (|arg| arg.to_str());
+    if first_arg == Some ("--btc2kmd") && args_os.get (2) .is_some() {
+        match btc2kmd (unwrap! (args_os[2].to_str(), "Bad argument encoding")) {
             Ok (output) => println! ("{}", output),
             Err (err) => eprintln! ("btc2kmd error] {}", err)
         }
