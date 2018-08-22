@@ -406,9 +406,10 @@ fn help() {
         "Command-line options.\n"
         "The first command-line argument is special and designates the mode.\n"
         "\n"
-        "  help  ..  Display this message.\n"
+        "  help                  ..  Display this message.\n"
         "  btc2kmd {WIF or BTC}  ..  Convert a BTC WIF into a KMD WIF.\n"
-        "  events  ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
+        "  events                ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
+        "  vanity {substring}    ..  Tries to find an address with the given substring.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
