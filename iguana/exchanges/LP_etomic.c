@@ -36,22 +36,21 @@ int32_t LP_etomic_wait_for_confirmation(char *txId)
 
 void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output)
 {
-    char *address = pubKey2Addr(pubkey);
+    printf("Got pubkey: %s\n", pubkey);
+    char *address = pub_key_2_addr(pubkey);
     strcpy(output, address);
     free(address);
 }
 
 char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 {
-    char dexaddr[50];
     swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
-    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(send_eth(dexaddr, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), 0, 0, 1, LP_eth_client));
+        return(send_eth(INSTANTDEX_ETH_ADDR, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), 0, 0, 1, LP_eth_client));
     } else {
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
-        return(send_erc20(swap->I.alicetomic, dexaddr, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), 0, 0, 1, alicecoin->decimals, LP_eth_client));
+        return(send_erc20(swap->I.alicetomic, INSTANTDEX_ETH_ADDR, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), 0, 0, 1, alicecoin->decimals, LP_eth_client));
     }
 }
 
@@ -67,10 +66,8 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         return(0);
     }
 
-    char dexaddr[50];
-    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        if (compare_addresses(data.to, dexaddr) == 0) {
+        if (compare_addresses(data.to, INSTANTDEX_ETH_ADDR) == 0) {
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
@@ -87,16 +84,15 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
             printf("Alice ERC20 fee %s token address %s is not equal to expected %s\n", swap->otherfee.I.ethTxid, data.to, swap->I.alicetomic);
             return(0);
         }
-        return(verify_alice_erc20_fee_data(dexaddr, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), data.input, alicecoin->decimals));
+        return(verify_alice_erc20_fee_data(INSTANTDEX_ETH_ADDR, (uint64_t)LP_DEXFEE(swap->I.alicerealsat), data.input, alicecoin->decimals));
     }
 }
 
 char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 {
-    AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20; BasicTxData txData;
+    AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20;
     swap->alicepayment.I.eth_amount = swap->I.alicerealsat;
     // set input and txData fields from the swap data structure
-    memset(&txData,0,sizeof(txData));
     if ( strcmp(swap->I.alicestr,"ETH") == 0 )
     {
         memset(&input,0,sizeof(input));
@@ -113,38 +109,30 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
         memset(&input20,0,sizeof(input20));
-        strcpy(input20.bobAddress, swap->I.etomicsrc);
-        uint8arrayToHex(input20.bobHash, swap->I.secretBn, 20);
-        uint8arrayToHex(input20.aliceHash, swap->I.secretAm, 20);
-        uint8arrayToHex(input20.dealId, swap->alicepayment.I.actualtxid.bytes, 32);
-        strcpy(input20.tokenAddress, swap->I.alicetomic);
-        satoshisToWei(input20.amount, swap->I.alicerealsat);
+        strcpy(input20.bob_address, swap->I.etomicsrc);
+        uint8arrayToHex(input20.bob_hash, swap->I.secretBn, 20);
+        uint8arrayToHex(input20.alice_hash, swap->I.secretAm, 20);
+        uint8arrayToHex(input20.deal_id, swap->alicepayment.I.actualtxid.bytes, 32);
+        strcpy(input20.token_address, swap->I.alicetomic);
+        input20.amount = swap->I.alicerealsat;
         input20.decimals = alicecoin->decimals;
 
-        strcpy(txData.from, swap->I.etomicdest);
-        strcpy(txData.to, ETOMIC_ALICECONTRACT);
-        strcpy(txData.amount, "0");
-        uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
-
-        uint64_t allowance = getErc20Allowance(swap->I.etomicdest, ETOMIC_ALICECONTRACT, swap->I.alicetomic, alicecoin->decimals);
+        uint64_t allowance = get_erc20_allowance(swap->I.etomicdest, ETOMIC_ALICECONTRACT, swap->I.alicetomic, alicecoin->decimals, LP_eth_client);
         if (allowance < swap->I.alicerealsat) {
             printf("Alice token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
-            strcpy(approveErc20Input.tokenAddress, swap->I.alicetomic);
-            strcpy(approveErc20Input.owner, swap->I.etomicdest);
+            strcpy(approveErc20Input.token_address, swap->I.alicetomic);
             strcpy(approveErc20Input.spender, ETOMIC_ALICECONTRACT);
 
-            char *tokenBalance = getErc20BalanceHexWei(swap->I.etomicdest, swap->I.alicetomic);
-            strcpy(approveErc20Input.amount, tokenBalance);
-            free(tokenBalance);
-            strcpy(approveErc20Input.secret, txData.secretKey);
-
-            char *allowTxId = approveErc20(approveErc20Input);
+            int error = 0;
+            approveErc20Input.amount = get_erc20_balance(swap->I.etomicdest, swap->I.alicetomic, alicecoin->decimals, &error, LP_eth_client);
+            approveErc20Input.decimals = alicecoin->decimals;
+            char *allowTxId = approve_erc20(approveErc20Input, LP_eth_client);
             LP_etomic_wait_for_confirmation(allowTxId);
             free(allowTxId);
         }
 
-        return(aliceSendsErc20Payment(input20,txData));
+        return(alice_sends_erc20_payment(input20,LP_eth_client));
     }
 }
 
@@ -182,15 +170,15 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
         memset(&input20,0,sizeof(input20));
-        strcpy(input20.bobAddress, swap->I.etomicsrc);
-        uint8arrayToHex(input20.bobHash, swap->I.secretBn, 20);
-        uint8arrayToHex(input20.aliceHash, swap->I.secretAm, 20);
-        uint8arrayToHex(input20.dealId, swap->alicepayment.I.actualtxid.bytes, 32);
-        strcpy(input20.tokenAddress, swap->I.alicetomic);
-        satoshisToWei(input20.amount, swap->I.alicerealsat);
+        strcpy(input20.bob_address, swap->I.etomicsrc);
+        uint8arrayToHex(input20.bob_hash, swap->I.secretBn, 20);
+        uint8arrayToHex(input20.alice_hash, swap->I.secretAm, 20);
+        uint8arrayToHex(input20.deal_id, swap->alicepayment.I.actualtxid.bytes, 32);
+        strcpy(input20.token_address, swap->I.alicetomic);
+        input20.amount = swap->I.alicerealsat;
         input20.decimals = alicecoin->decimals;
 
-        return(verifyAliceErc20PaymentData(input20, data.input));
+        return(verify_alice_erc20_payment_data(input20, data.input));
     }
 }
 
@@ -205,45 +193,34 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
         printf("Alice payment receipt status failed, can't reclaim\n");
         return NULL;
     }
-    AliceReclaimsAlicePaymentInput input;
-    BasicTxData txData;
-    memset(&txData,0,sizeof(txData));
+    AliceReclaimsPaymentInput input;
     memset(&input,0,sizeof(input));
 
-    struct iguana_info *ecoin, *alice_coin;
-    bits256 privkey;
-    ecoin = LP_coinfind("ETOMIC");
-    alice_coin = LP_coinfind(swap->dest);
-    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
+    struct iguana_info *alice_coin = LP_coinfind(swap->dest);
 
-    uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
-    if (alice_payment_status(input.dealId, LP_eth_client) != ALICE_PAYMENT_SENT) {
+    uint8arrayToHex(input.deal_id, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
+    if (alice_payment_status(input.deal_id, LP_eth_client) != ALICE_PAYMENT_SENT) {
         printf("Alice payment smart contract status check failed, can't spend\n");
         return NULL;
     }
-    satoshisToWei(input.amount, swap->alicerealsat);
+    input.amount = swap->alicerealsat;
 
     if (swap->alicetomic[0] != 0) {
-        strcpy(input.tokenAddress, swap->alicetomic);
+        strcpy(input.token_address, swap->alicetomic);
     } else {
-        strcpy(input.tokenAddress, "0x0000000000000000000000000000000000000000");
+        strcpy(input.token_address, "0x0000000000000000000000000000000000000000");
     }
-    strcpy(input.bobAddress, swap->etomicsrc);
-    uint8arrayToHex(input.aliceHash, swap->secretAm, 20);
+    strcpy(input.bob_address, swap->etomicsrc);
+    uint8arrayToHex(input.alice_hash, swap->secretAm, 20);
     bits256 invertedSecret;
     int32_t i;
     for (i=0; i<32; i++) {
         invertedSecret.bytes[i] = swap->privBn.bytes[31 - i];
     }
-    uint8arrayToHex(input.bobSecret, invertedSecret.bytes, 32);
+    uint8arrayToHex(input.bob_secret, invertedSecret.bytes, 32);
 
     input.decimals = alice_coin->decimals;
-
-    strcpy(txData.from, swap->etomicdest);
-    strcpy(txData.to, ETOMIC_ALICECONTRACT);
-    strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
-    return aliceReclaimsAlicePayment(input, txData);
+    return alice_reclaims_payment(input, LP_eth_client);
 }
 
 char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
@@ -258,9 +235,7 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
         return NULL;
     }
     BobSpendsAlicePaymentInput input;
-    BasicTxData txData;
 
-    memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
 
     struct iguana_info *ecoin;
@@ -268,35 +243,31 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
     ecoin = LP_coinfind("ETOMIC");
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
-    uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
-    if (alice_payment_status(input.dealId, LP_eth_client) != ALICE_PAYMENT_SENT) {
+    uint8arrayToHex(input.deal_id, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
+    if (alice_payment_status(input.deal_id, LP_eth_client) != ALICE_PAYMENT_SENT) {
         printf("Alice payment smart contract status check failed, can't spend\n");
         return NULL;
     }
 
-    satoshisToWei(input.amount, swap->alicerealsat);
+    input.amount = swap->alicerealsat;
 
     if (swap->alicetomic[0] != 0) {
-        strcpy(input.tokenAddress, swap->alicetomic);
+        strcpy(input.token_address, swap->alicetomic);
     } else {
-        strcpy(input.tokenAddress, "0x0000000000000000000000000000000000000000");
+        strcpy(input.token_address, "0x0000000000000000000000000000000000000000");
     }
 
-    strcpy(input.aliceAddress, swap->etomicdest);
+    strcpy(input.alice_address, swap->etomicdest);
     bits256 invertedSecret; int32_t i;
     for (i=0; i<32; i++) {
         invertedSecret.bytes[i] = swap->privAm.bytes[31 - i];
     }
-    uint8arrayToHex(input.aliceSecret, invertedSecret.bytes, 32);
-    uint8arrayToHex(input.bobHash, swap->secretBn, 20);
+    uint8arrayToHex(input.alice_secret, invertedSecret.bytes, 32);
+    uint8arrayToHex(input.bob_hash, swap->secretBn, 20);
     struct iguana_info *alice_coin = LP_coinfind(swap->dest);
     input.decimals = alice_coin->decimals;
 
-    strcpy(txData.from, swap->etomicsrc);
-    strcpy(txData.to, ETOMIC_ALICECONTRACT);
-    strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
-    return bobSpendsAlicePayment(input, txData);
+    return bob_spends_alice_payment(input, LP_eth_client);
 }
 
 char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
@@ -334,20 +305,18 @@ char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
         strcpy(txData.amount, "0");
         uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
 
-        uint64_t allowance = getErc20Allowance(swap->I.etomicsrc, ETOMIC_BOBCONTRACT, swap->I.bobtomic, bobcoin->decimals);
+        uint64_t allowance = get_erc20_allowance(swap->I.etomicsrc, ETOMIC_BOBCONTRACT, swap->I.bobtomic, bobcoin->decimals, LP_eth_client);
         if (allowance < LP_DEPOSITSATOSHIS(swap->I.bobrealsat)) {
             printf("Bob token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
-            strcpy(approveErc20Input.tokenAddress, swap->I.bobtomic);
-            strcpy(approveErc20Input.owner, swap->I.etomicsrc);
+            strcpy(approveErc20Input.token_address, swap->I.bobtomic);
             strcpy(approveErc20Input.spender, ETOMIC_BOBCONTRACT);
 
-            char *tokenBalance = getErc20BalanceHexWei(swap->I.etomicsrc, swap->I.bobtomic);
-            strcpy(approveErc20Input.amount, tokenBalance);
-            free(tokenBalance);
-            strcpy(approveErc20Input.secret, txData.secretKey);
+            int error = 0;
+            approveErc20Input.amount = get_erc20_balance(swap->I.etomicsrc, swap->I.bobtomic, bobcoin->decimals, &error, LP_eth_client);
+            approveErc20Input.decimals = bobcoin->decimals;
 
-            char *allowTxId = approveErc20(approveErc20Input);
+            char *allowTxId = approve_erc20(approveErc20Input, LP_eth_client);
             LP_etomic_wait_for_confirmation(allowTxId);
             free(allowTxId);
         }
@@ -491,20 +460,18 @@ char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
         strcpy(txData.amount, "0");
         uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
 
-        uint64_t allowance = getErc20Allowance(swap->I.etomicsrc, ETOMIC_BOBCONTRACT, swap->I.bobtomic, bobcoin->decimals);
+        uint64_t allowance = get_erc20_allowance(swap->I.etomicsrc, ETOMIC_BOBCONTRACT, swap->I.bobtomic, bobcoin->decimals, LP_eth_client);
         if (allowance < swap->I.bobrealsat) {
             printf("Bob token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
-            strcpy(approveErc20Input.tokenAddress, swap->I.bobtomic);
-            strcpy(approveErc20Input.owner, swap->I.etomicsrc);
+            strcpy(approveErc20Input.token_address, swap->I.bobtomic);
             strcpy(approveErc20Input.spender, ETOMIC_BOBCONTRACT);
 
-            char *tokenBalance = getErc20BalanceHexWei(swap->I.etomicsrc, swap->I.bobtomic);
-            strcpy(approveErc20Input.amount, tokenBalance);
-            free(tokenBalance);
-            strcpy(approveErc20Input.secret, txData.secretKey);
+            int error = 0;
+            approveErc20Input.amount = get_erc20_balance(swap->I.etomicsrc, swap->I.bobtomic, bobcoin->decimals, &error, LP_eth_client);
+            approveErc20Input.decimals = bobcoin->decimals;
 
-            char *allowTxId = approveErc20(approveErc20Input);
+            char *allowTxId = approve_erc20(approveErc20Input, LP_eth_client);
             LP_etomic_wait_for_confirmation(allowTxId);
             free(allowTxId);
         }
@@ -729,7 +696,7 @@ int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)
 {
     char str[65],*addrstr;
     bits256_str(str,privkey);
-    if ( (addrstr= privKey2Addr(str)) != 0 )
+    if ( (addrstr= priv_key_2_addr(str)) != 0 )
     {
         strcpy(coinaddr,addrstr);
         free(addrstr);
@@ -742,11 +709,11 @@ int32_t LP_etomic_priv2pub(uint8_t *pub64,bits256 privkey)
 {
     char *pubstr,str[72]; int32_t retval = -1;
     bits256_str(str,privkey);
-    if ( (pubstr= getPubKeyFromPriv(str)) != 0 )
+    if ( (pubstr= priv_key_2_pub_key(str)) != 0 )
     {
-        if ( strlen(pubstr) == 130 && pubstr[0] == '0' && pubstr[1] == 'x' )
+        if ( strlen(pubstr) == 128 )
         {
-            decode_hex(pub64,64,pubstr+2);
+            decode_hex(pub64,64,pubstr);
             retval = 0;
         }
         free(pubstr);
@@ -757,9 +724,9 @@ int32_t LP_etomic_priv2pub(uint8_t *pub64,bits256 privkey)
 int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64])
 {
     char pubkeystr[131],*addrstr;
-    strcpy(pubkeystr,"0x");
-    init_hexbytes_noT(pubkeystr+2,pub64,64);
-    if ( (addrstr= pubKey2Addr(pubkeystr)) != 0 )
+    init_hexbytes_noT(pubkeystr,pub64,64);
+    printf("Pubkey str: %s\n", pubkeystr);
+    if ( (addrstr= pub_key_2_addr(pubkeystr)) != 0 )
     {
         strcpy(coinaddr,addrstr);
         free(addrstr);
@@ -784,8 +751,8 @@ uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *er
     }
 
     if (strcmp(coin->symbol, "ETH") == 0) {
-        return getEthBalance(coinaddr, error);
+        return get_eth_balance(coinaddr, error, LP_eth_client);
     } else {
-        return getErc20BalanceSatoshi(coinaddr, coin->etomic, coin->decimals, error);
+        return get_erc20_balance(coinaddr, coin->etomic, coin->decimals, error, LP_eth_client);
     }
 }

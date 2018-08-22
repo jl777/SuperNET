@@ -88,7 +88,8 @@ fn bindgen<
     }
 }
 
-fn generate_bindings() {
+fn
+generate_bindings() {
     let _ = fs::create_dir ("mm2src/c_headers");
 
     bindgen(
@@ -111,6 +112,21 @@ fn generate_bindings() {
         ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
         empty(),
         ["AF_SP", "NN_PAIR"].iter(),
+    );
+    bindgen(
+        vec!["iguana/exchanges/etomicswap/etomiclib.h".into()],
+        "mm2src/c_headers/etomiclib.rs",
+        empty(),
+        [
+            "AliceSendsEthPaymentInput", "AliceSendsErc20PaymentInput",
+            "AliceReclaimsPaymentInput", "BobSpendsAlicePaymentInput",
+            "BobSendsEthDepositInput", "BobSendsErc20DepositInput",
+            "BobRefundsDepositInput", "AliceClaimsBobDepositInput",
+            "BobSendsEthPaymentInput", "BobSendsErc20PaymentInput",
+            "BobReclaimsBobPaymentInput", "AliceSpendsBobPaymentInput",
+            "ApproveErc20Input"
+        ].iter(),
+        empty(),
     );
 }
 
@@ -305,6 +321,7 @@ fn build_c_code(mm_version: &str) {
 fn main() {
     // Rebuild when we work with C files.
     println!("rerun-if-changed=iguana/exchanges/etomicswap");
+    println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.h");
     println!("rerun-if-changed=iguana/exchanges");
     println!("rerun-if-changed=iguana/secp256k1");
     println!("rerun-if-changed=crypto777");

@@ -106,6 +106,10 @@
  */
 #define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
 
+#ifndef NOTETOMIC
+extern void *LP_eth_client;
+#endif
+
 uint32_t LP_atomic_locktime(char *base,char *rel)
 {
     if ( strcmp(base,"BTC") == 0 && strcmp(rel,"BTC") == 0 )
@@ -857,7 +861,7 @@ void LP_bobloop(void *_swap)
 #ifndef NOTETOMIC
     if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0) {
         int error = 0;
-        uint64_t eth_balance = getEthBalance(swap->I.etomicsrc, &error);
+        uint64_t eth_balance = get_eth_balance(swap->I.etomicsrc, &error, LP_eth_client);
         if (eth_balance < 500000) {
             err = -5000, printf("Bob ETH balance too low, aborting swap!\n");
         }
@@ -971,7 +975,7 @@ void LP_aliceloop(void *_swap)
 #ifndef NOTETOMIC
     if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0) {
         int error = 0;
-        uint64_t eth_balance = getEthBalance(swap->I.etomicdest, &error);
+        uint64_t eth_balance = get_eth_balance(swap->I.etomicdest, &error, LP_eth_client);
         if (eth_balance < 500000) {
             err = -5001, printf("Alice ETH balance too low, aborting swap!\n");
         }

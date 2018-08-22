@@ -16,7 +16,7 @@ required-features = ["nop"]
 
 [features]
 # Uncomment in order to enable ETOMIC builds by default:
-#default = ["etomic"]
+default = ["etomic"]
 etomic = ["etomiclibrs"]
 # Used with "mm2-nop.rs" and tells "build.rs" to skip the C build.
 nop = []

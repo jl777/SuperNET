@@ -7,13 +7,8 @@
 extern "C" {
 #endif
 
-#ifdef ETOMIC_TESTNET
 #define ETOMIC_ALICECONTRACT "0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c"
 #define ETOMIC_BOBCONTRACT "0x2a8e4f9ae69c86e277602c6802085febc4bd5986"
-#else
-#define ETOMIC_ALICECONTRACT "0x9bc5418ceded51db08467fc4b62f32c5d9ebda55"
-#define ETOMIC_BOBCONTRACT "0xfef736cfa3b884669a4e0efd6a081250cce228e7"
-#endif
 
 #define EMPTY_ETH_TX_ID "0x0000000000000000000000000000000000000000000000000000000000000000"
 
@@ -33,32 +28,32 @@ typedef struct {
 } AliceSendsEthPaymentInput;
 
 typedef struct {
-    char dealId[70];
-    char amount[100];
-    char tokenAddress[65];
-    char bobAddress[65];
-    char aliceHash[65];
-    char bobHash[65];
+    char deal_id[70];
+    uint64_t amount;
+    char token_address[65];
+    char bob_address[65];
+    char alice_hash[65];
+    char bob_hash[65];
     uint8_t decimals;
 } AliceSendsErc20PaymentInput;
 
 typedef struct {
-    char dealId[70];
-    char amount[100];
-    char tokenAddress[65];
-    char bobAddress[65];
-    char aliceHash[65];
-    char bobSecret[70];
+    char deal_id[70];
+    uint64_t amount;
+    char token_address[65];
+    char bob_address[65];
+    char alice_hash[65];
+    char bob_secret[70];
     uint8_t decimals;
-} AliceReclaimsAlicePaymentInput;
+} AliceReclaimsPaymentInput;
 
 typedef struct {
-    char dealId[70];
-    char amount[100];
-    char tokenAddress[65];
-    char aliceAddress[65];
-    char aliceSecret[70];
-    char bobHash[65];
+    char deal_id[70];
+    uint64_t amount;
+    char token_address[65];
+    char alice_address[65];
+    char alice_secret[70];
+    char bob_hash[65];
     uint8_t decimals;
 } BobSpendsAlicePaymentInput;
 
@@ -133,23 +128,22 @@ typedef struct {
 } AliceSpendsBobPaymentInput;
 
 typedef struct {
-    char tokenAddress[65];
-    char owner[65];
+    char token_address[65];
     char spender[65];
-    char amount[100];
-    char secret[70];
+    uint64_t amount;
+    uint8_t decimals;
 } ApproveErc20Input;
 
-char *approveErc20(ApproveErc20Input input);
+extern char *approve_erc20(ApproveErc20Input input, void *eth_client);
 
 extern char *alice_sends_eth_payment(AliceSendsEthPaymentInput input, void *eth_client);
 extern uint8_t verify_alice_eth_payment_data(AliceSendsEthPaymentInput input, char *data);
 
-char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData);
-uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *data);
+extern char *alice_sends_erc20_payment(AliceSendsErc20PaymentInput input, void *eth_client);
+extern uint8_t verify_alice_erc20_payment_data(AliceSendsErc20PaymentInput input, char *data);
 
-char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxData txData);
-char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData);
+extern char* alice_reclaims_payment(AliceReclaimsPaymentInput input, void *eth_client);
+extern char* bob_spends_alice_payment(BobSpendsAlicePaymentInput input, void *eth_client);
 
 char* bobSendsEthDeposit(BobSendsEthDepositInput input, BasicTxData txData);
 uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data);
@@ -169,19 +163,19 @@ uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data);
 char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData);
 char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData);
 
-char* privKey2Addr(char* privKey);
-char* pubKey2Addr(char* pubKey);
-char* getPubKeyFromPriv(char* privKey);
+extern char *priv_key_2_addr(char* privKey);
+extern char *pub_key_2_addr(char* pubKey);
+extern char *priv_key_2_pub_key(char* privKey);
 
 // returns satoshis, not wei!
-uint64_t getEthBalance(char* address, int *error);
-uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error);
-char *getErc20BalanceHexWei(char* address, char tokenAddress[65]);
+extern uint64_t get_eth_balance(char* address, int *error, void *eth_client);
+// returns satoshis, not wei!
+extern uint64_t get_erc20_balance(char *address, char *token_address, uint8_t set_decimals, int *error, void *eth_client);
 
 extern uint8_t get_erc20_decimals(char *token_address, void *eth_client);
 
 // returns satoshis, not wei!
-uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8_t set_decimals);
+extern uint64_t get_erc20_allowance(char *owner, char *spender, char *token_address, uint8_t set_decimals, void *eth_client);
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
