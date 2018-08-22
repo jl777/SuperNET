@@ -58,13 +58,17 @@ extern crate winapi;
 #[cfg(feature = "etomic")]
 pub use etomiclibrs::*;
 
+use gstuff::now_ms;
+
 use std::env;
 use std::ffi::{CStr, OsString};
 use std::fmt;
 use std::io::{self, Write};
-use std::os::raw::{c_char, c_int, c_void};
-use std::mem::zeroed;
+use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::mem::{size_of, zeroed};
 use std::ptr::{null, null_mut};
+use std::str::from_utf8_unchecked;
+use std::slice::from_raw_parts;
 use std::sync::Mutex;
 
 pub mod crash_reports;
@@ -73,6 +77,7 @@ use curve25519::{_bits256 as bits256};
 enum cJSON {}
 #[allow(dead_code)]
 extern "C" {
+    fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
     /// NB: Use RAII CJSON instead.
     fn cJSON_Parse (json: *const u8) -> *mut cJSON;
@@ -441,6 +446,9 @@ fn main() {
 
     if let Err (err) = events (&args_os) {eprintln! ("events error] {}", err); return}
 
+    let second_arg = args_os.get (2) .and_then (|arg| arg.to_str());
+    if first_arg == Some ("vanity") && second_arg.is_some() {vanity (unwrap! (second_arg)); return}
+
     if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
@@ -457,7 +465,6 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
         fn LP_wifstr_valid (symbol: *const u8, wifstr: *const u8) -> i32;
         fn LP_convaddress (symbol: *const u8, address: *const u8, dest: *const u8) -> *const c_char;
         fn bitcoin_wif2priv (symbol: *const u8, wiftaddr: u8, addrtypep: *mut u8, privkeyp: *mut bits256, wifstr: *const c_char) -> i32;
-        fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
         fn bits256_cmp (a: bits256, b: bits256) -> i32;
     }
 
@@ -517,29 +524,40 @@ fn events (args_os: &[OsString]) -> Result<(), String> {
     Ok(())
 }
 
-/*
-    else if ( argv[1] != 0 && strcmp(argv[1],"vanity") == 0 && argv[2] != 0 )
-    {
-        uint32_t timestamp; uint8_t pubkey33[33]; char str[65],coinaddr[64],wifstr[128]; bits256 privkey; int32_t i,len; void *ctx;
-        ctx = bitcoin_ctx();
-        len = (int32_t)strlen(argv[2]);
-        timestamp = (uint32_t)time(NULL);
-        printf("start vanitygen (%s).%d t.%u\n",argv[2],len,timestamp);
-        for (i=0; i<1000000000; i++)
-        {
-            OS_randombytes(privkey.bytes,sizeof(privkey));
-            bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
-            if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
-            {
-                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
-                printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
-                if ( coinaddr[1+len-1] == argv[2][len-1] )
-                    break;
-            } //else printf("failed %s\n",wifstr);
-        }
-        printf("done vanitygen.(%s) done %u elapsed %d\n",argv[2],(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
-        exit(0);
+fn vanity (substring: &str) {
+    enum BitcoinCtx {}
+    extern "C" {
+        fn bitcoin_ctx() -> *mut BitcoinCtx;
+        fn bitcoin_priv2pub (
+            ctx: *mut BitcoinCtx, symbol: *const u8, pubkey33: *mut u8, coinaddr: *mut u8,
+            privkey: bits256, taddr: u8, addrtype: u8);
     }
+    /*
+    else if ( argv[1] != 0 && strcmp(argv[1],"vanity") == 0 && argv[2] != 0 )
+    */
+    let mut pubkey33: [u8; 33] = unsafe {zeroed()};
+    let mut coinaddr: [u8; 64] = unsafe {zeroed()};
+    let mut wifstr: [c_char; 128] = unsafe {zeroed()};
+    let mut privkey: bits256 = unsafe {zeroed()};
+    let ctx = unsafe {bitcoin_ctx()};
+    let timestamp = now_ms() / 1000;
+    println! ("start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp);
+    for i in 0..1000000000 {
+        unsafe {os_portable::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
+        unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
+        let coinaddr = unsafe {from_utf8_unchecked (from_raw_parts (coinaddr.as_ptr(), 34))};
+        // if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
+        if &coinaddr[1 .. substring.len()] == &substring[0 .. substring.len() - 1] {  // Print on near match.
+            unsafe {bitcoin_priv2wif ("KMD\0".as_ptr(), 0, wifstr.as_mut_ptr(), privkey, 188)};
+            let wifstr = unwrap! (unsafe {CStr::from_ptr (wifstr.as_ptr())} .to_str());
+            println! ("i.{} {} -> {} wif.{}", i, privkey, coinaddr, wifstr);
+            if coinaddr.as_bytes()[substring.len()] == substring.as_bytes()[substring.len() - 1] {break}  // Stop on full match.
+        }
+    }
+    println! ("done vanitygen.({}) done {} elapsed {}\n", substring, now_ms() / 1000, now_ms() / 1000 - timestamp);
+}
+
+/*
     else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
     {
         FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char *floatstr,*addrstr,buf[256],checkaddr[64],coinaddr[64],manystrs[64][128],cmd[64*128]; int32_t n,i,num; char *flag;
