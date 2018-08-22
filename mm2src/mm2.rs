@@ -518,38 +518,6 @@ fn events (args_os: &[OsString]) -> Result<(), String> {
 }
 
 /*
-    else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
-    {
-        uint32_t timestamp; char str[65],wifstr[128]; bits256 privkey; int32_t i;
-        timestamp = (uint32_t)time(NULL);
-        //printf("start hush vanitygen t.%u\n",timestamp);
-        for (i=0; i<1000000000; i++)
-        {
-            OS_randombytes(privkey.bytes,sizeof(privkey));
-            privkey.bytes[0] = 0x0e;
-            privkey.bytes[1] = 0x5b;
-            privkey.bytes[2] = 0xf9;
-            privkey.bytes[3] = 0xc6;
-            privkey.bytes[4] = 0x06;
-            privkey.bytes[5] = 0xdd;
-            privkey.bytes[6] = 0xbb;
-            bitcoin_priv2wiflong("HUSH",0xab,wifstr,privkey,0x36);
-            if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
-            {
-                if ( wifstr[7] == 'h' && wifstr[8] == 'L' && wifstr[9] == 'i' )
-                {
-                    //printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
-                    if ( wifstr[10] == 's' && wifstr[11] == 't' )
-                    {
-                        printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\"}\n",i,bits256_str(str,privkey),wifstr);
-                        break;
-                    }
-                }
-            } //else printf("failed %s\n",wifstr);
-        }
-        //printf("done hush vanitygen done %u elapsed %d\n",(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
-        exit(0);
-    }
     else if ( argv[1] != 0 && strcmp(argv[1],"vanity") == 0 && argv[2] != 0 )
     {
         uint32_t timestamp; uint8_t pubkey33[33]; char str[65],coinaddr[64],wifstr[128]; bits256 privkey; int32_t i,len; void *ctx;
