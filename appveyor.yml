@@ -15,6 +15,7 @@ after_build:
   - '7z a mm-win-%SHORT_HASH%.zip
      .\target\debug\mm2.exe
      .\target\debug\*.dll
+     "%WINDIR%\system32\msvcr100.dll"
      "%WINDIR%\system32\msvcp140.dll"
      "%WINDIR%\system32\vcruntime140.dll"'
 

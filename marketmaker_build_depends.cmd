@@ -52,6 +52,8 @@ rem NB: "marketmaker_depends" is cached between the AppVeyor builds!
 rem --- pthreads ---
 :compile_pthreads
 if not exist marketmaker_depends\pthreadVC2.dll (
+    rem NB: This library depends on `msvcr100.dll`.
+    rem     In the future we should probably get rid of it entirely, by starting all threads from Rust.
     curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll -o marketmaker_depends/pthreadVC2.dll
     curl ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/lib/x64/pthreadVC2.lib -o marketmaker_depends/pthreadVC2.lib
 )

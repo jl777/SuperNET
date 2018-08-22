@@ -5,14 +5,14 @@ use std::env;
 #[allow(unused_imports)] use std::io::stderr;
 use std::io::Write;
 use std::mem::{uninitialized};
-#[allow(unused_imports)]  use std::process::abort;
+#[allow(unused_imports)] use std::process::abort;
 use std::sync::Once;
-#[cfg(test)] use std::sync::Mutex;
+#[allow(unused_imports)] use std::sync::Mutex;
 
-#[cfg(test)] type StackTrace = String;
+#[cfg(test)] #[cfg(windows)] type StackTrace = String;
 /// https://docs.microsoft.com/en-us/windows/desktop/debug/getexceptioncode
-#[cfg(test)] type ExceptionCode = u32;
-#[cfg(test)] #[allow(dead_code)] lazy_static! {
+#[cfg(test)] #[cfg(windows)] type ExceptionCode = u32;
+#[cfg(test)] #[cfg(windows)] lazy_static! {
     /// The testing version of `rust_seh_handler` is rigged to put the captured stack trace here.
     static ref SEH_CAUGHT: Mutex<Option<(ExceptionCode, StackTrace)>> = Mutex::new (None);
     /// Used to avoid the empty `SEH_CAUGHT` races.
@@ -218,7 +218,6 @@ fn test_signal_handling() {
     use std::os::unix::io::AsRawFd;
 
     init_signal_handling();
-    let _seh_lock = unwrap! (SEH_LOCK.lock());  // Here to silence the `dead_code` warning.
 
     let stderr_tmp_path = temp_dir().join ("test_signal_handling.stderr");
     let _ = fs::remove_file (&stderr_tmp_path);

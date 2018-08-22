@@ -30,6 +30,9 @@ extern crate duct;
 #[cfg(feature = "etomic")]
 extern crate etomiclibrs;
 
+#[macro_use]
+extern crate fomat_macros;
+
 extern crate futures;
 extern crate futures_cpupool;
 
@@ -64,8 +67,8 @@ use std::mem::zeroed;
 use std::ptr::{null, null_mut};
 use std::sync::Mutex;
 
-pub mod crash_reports {include! ("../../OSlibs/crash_reports.rs");}
-mod curve25519 {include! ("../../includes/curve25519.rs");}
+pub mod crash_reports;
+mod curve25519 {include! ("c_headers/curve25519.rs");}
 use curve25519::{_bits256 as bits256};
 enum cJSON {}
 #[allow(dead_code)]
@@ -134,7 +137,7 @@ void PNACL_message(char *arg,...)
 */
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod os_portable {include! ("../../crypto777/OS_portable.rs");}
+mod os_portable {include! ("c_headers/OS_portable.rs");}
 
 /*
 #endif // !_WIN_32
@@ -147,7 +150,7 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 
 */
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod nn {include! ("../../crypto777/nanosrc/nn.rs");}
+mod nn {include! ("c_headers/nn.rs");}
 /*
 #ifndef NN_WS_MSG_TYPE
 #define NN_WS_MSG_TYPE 1
@@ -393,6 +396,22 @@ mod test {
     }
 }
 
+fn help() {
+    pintln! (
+        "Command-line options.\n"
+        "The first command-line argument is special and designates the mode.\n"
+        "\n"
+        "  help  ..  Display this message.\n"
+        "  btc2kmd {WIF or BTC}  ..  Convert a BTC WIF into a KMD WIF.\n"
+        "  events  ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
+        "\n"
+        // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
+        // SHossain: "this would be the URL we would recommend and it will be maintained
+        //            Please let @gcharang or me know if anything needs updating there".
+        "See also the online documentation at https://docs.komodoplatform.com/barterDEX/barterDEX-API.html."
+    )
+}
+
 const MM_VERSION: &'static str = env!("MM_VERSION");
 
 fn main() {
@@ -406,9 +425,14 @@ fn main() {
     args.push (null());
 
     let args_os: Vec<OsString> = env::args_os().collect();
-    let executable = unwrap! (args_os.get (0), "Running without a name");
-    if executable.to_string_lossy().contains ("btc2kmd") && args_os.get (1) .is_some() {
-        match btc2kmd (unwrap! (args_os[1].to_str(), "Bad argument encoding")) {
+
+    // NB: The first argument is special, being used as the mode switcher.
+    // The other arguments might be used to pass the data to the various MM modes,
+    // we're not checking them for the mode switches in order not to risk [untrusted] data being mistaken for a mode switch.
+    let first_arg = args_os.get (1) .and_then (|arg| arg.to_str());
+
+    if first_arg == Some ("btc2kmd") && args_os.get (2) .is_some() {
+        match btc2kmd (unwrap! (args_os[2].to_str(), "Bad argument encoding")) {
             Ok (output) => println! ("{}", output),
             Err (err) => eprintln! ("btc2kmd error] {}", err)
         }
@@ -416,6 +440,9 @@ fn main() {
     }
 
     if let Err (err) = events (&args_os) {eprintln! ("events error] {}", err); return}
+
+    if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
+    if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
