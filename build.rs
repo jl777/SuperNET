@@ -91,18 +91,30 @@ fn bindgen<
 fn generate_bindings() {
     let _ = fs::create_dir("mm2src/c_headers");
 
+    // NB: curve25519.h and cJSON.h are needed to parse LP_include.h.
+    bindgen(
+        vec![
+            "includes/curve25519.h".into(),
+            "includes/cJSON.h".into(),
+            "iguana/exchanges/LP_include.h".into(),
+        ],
+        "mm2src/c_headers/LP_include.rs",
+        ["cJSON_Parse", "cJSON_GetErrorPtr", "cJSON_Delete"].iter(),
+        ["_bits256", "cJSON"].iter(),
+        ["GLOBAL_DBDIR"].iter(),
+    );
+
     bindgen(
         vec!["crypto777/OS_portable.h".into()],
         "mm2src/c_headers/OS_portable.rs",
-        ["OS_init", "OS_randombytes"].iter(),
+        [
+            "OS_init",
+            "OS_randombytes",
+            "OS_ensure_directory",
+            "OS_compatible_path",
+        ]
+            .iter(),
         empty(),
-        empty(),
-    );
-    bindgen(
-        vec!["includes/curve25519.h".into()],
-        "mm2src/c_headers/curve25519.rs",
-        empty(),
-        ["_bits256"].iter(),
         empty(),
     );
     bindgen(

@@ -41,7 +41,7 @@ winapi = "0.3.5"
 
 [build-dependencies]
 bindgen = "0.38"
-cc = "1.0.18"
+cc = "1.0"
 duct = "0.11.0"
 gstuff = { git = "https://github.com/ArtemGr/gstuff.rs" }
 itertools = "0.7.8"

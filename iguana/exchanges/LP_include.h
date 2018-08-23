@@ -21,6 +21,8 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#include <stdint.h>
+
 #ifndef LP_TECHSUPPORT
 #define LP_TECHSUPPORT 1
 #endif

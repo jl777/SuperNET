@@ -61,29 +61,25 @@ pub use etomiclibrs::*;
 use gstuff::now_ms;
 
 use std::env;
-use std::ffi::{CStr, OsString};
+use std::ffi::{CStr, CString, OsString};
 use std::fmt;
-use std::io::{self, Write};
+use std::fs;
+use std::io::{self, Read, Write};
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::mem::{size_of, zeroed};
+use std::path::Path;
 use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
 use std::sync::Mutex;
 
 pub mod crash_reports;
-mod curve25519 {include! ("c_headers/curve25519.rs");}
-use curve25519::{_bits256 as bits256};
-enum cJSON {}
+mod lp {include! ("c_headers/LP_include.rs");}
+use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
 extern "C" {
     fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
-    /// NB: Use RAII CJSON instead.
-    fn cJSON_Parse (json: *const u8) -> *mut cJSON;
-    /// Defined when cJSON_Parse() returns 0. 0 when cJSON_Parse() succeeds.
-    fn cJSON_GetErrorPtr() -> *const c_char;
-    fn cJSON_Delete (c_json: *mut cJSON);
     fn LP_main (c_json: *mut cJSON) -> !;
     fn mm1_main (argc: c_int, argv: *const *const c_char) -> !;
 }
@@ -104,12 +100,12 @@ impl fmt::Display for bits256 {
 struct CJSON (*mut cJSON);
 #[allow(dead_code)]
 impl CJSON {
-    fn from_zero_terminated (json: *const u8) -> Result<CJSON, String> {
+    fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
         lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
         let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
-        let c_json = unsafe {cJSON_Parse (json)};
+        let c_json = unsafe {lp::cJSON_Parse (json)};
         if c_json == null_mut() {
-            let err = unsafe {cJSON_GetErrorPtr()};
+            let err = unsafe {lp::cJSON_GetErrorPtr()};
             let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
             ERR! ("Can't parse JSON, error: {}", err)
         } else {
@@ -119,30 +115,13 @@ impl CJSON {
 }
 impl Drop for CJSON {
     fn drop (&mut self) {
-        unsafe {cJSON_Delete (self.0)}
+        unsafe {lp::cJSON_Delete (self.0)}
         self.0 = null_mut()
     }
 }
 
-/* The original C code will be replaced with the corresponding Rust code in small increments,
-   allowing Git history to catch up and show the function-level diffs.
-
-void PNACL_message(char *arg,...)
-{
-    
-}
-#define FROM_MARKETMAKER
-
-#include <stdio.h>
-#include <stdint.h>
-// #include "lib.h"
-#ifndef NATIVE_WINDOWS
-#include "OS_portable.h"
-#else
-*/
-
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod os_portable {include! ("c_headers/OS_portable.rs");}
+mod os {include! ("c_headers/OS_portable.rs");}
 
 /*
 #endif // !_WIN_32
@@ -202,51 +181,55 @@ void LP_main(void *ptr)
         LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
+*/
 
-int32_t ensure_writable(char *dirname)
-{
-    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
-    OS_randombytes(r.bytes,sizeof(r));
-    sprintf(fname,"%s/checkval",dirname), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"wb")) == 0 )
-    {
-        printf("FATAL ERROR cant create %s\n",fname);
-        fprintf(stderr,"FATAL ERROR cant create %s\n",fname);
-        return(-1);
-    }
-    else if ( fwrite(r.bytes,1,sizeof(r),fp) != sizeof(r) )
-    {
-        printf("FATAL ERROR error writing %s\n",fname);
-        fprintf(stderr,"FATAL ERROR writing %s\n",fname);
-        return(-1);
-    }
-    else
-    {
-        fclose(fp);
-        if ( (fp= fopen(fname,"rb")) == 0 )
-        {
-            printf("FATAL ERROR cant open %s\n",fname);
-            fprintf(stderr,"FATAL ERROR cant open %s\n",fname);
-            return(-1);
-        }
-        else if ( fread(check.bytes,1,sizeof(check),fp) != sizeof(check) )
-        {
-            printf("FATAL ERROR error reading %s\n",fname);
-            fprintf(stderr,"FATAL ERROR reading %s\n",fname);
-            return(-1);
-        }
-        else if ( memcmp(check.bytes,r.bytes,sizeof(r)) != 0 )
-        {
-            printf("FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
-            fprintf(stderr,"FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
-            return(-1);
-        }
-        fclose(fp);
-    }
-    return(0);
+fn global_dbdir() -> &'static Path {
+    Path::new (unwrap! (unsafe {CStr::from_ptr (lp::GLOBAL_DBDIR.as_ptr())} .to_str()))
 }
 
-*/
+/// Invokes `OS_ensure_directory`,  
+/// then prints an error and returns `false` if the directory is not writeable.
+fn ensure_writable (dir_path: &Path) -> bool {
+    let c_dir_path = unwrap! (dir_path.to_str());
+    let c_dir_path = unwrap! (CString::new (c_dir_path));
+    unsafe {os::OS_ensure_directory (c_dir_path.as_ptr() as *mut c_char)};
+
+    /*
+    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
+    */
+    let mut r: [u8; 32] = unsafe {zeroed()};
+    let mut check: Vec<u8> = Vec::with_capacity (r.len());
+    unsafe {os::OS_randombytes (r.as_mut_ptr(), r.len() as c_long)};
+    let fname = dir_path.join ("checkval");
+    let mut fp = match fs::File::create (&fname) {
+        Ok (fp) => fp,
+        Err (_) => {
+            eprintln! ("FATAL ERROR cant create {:?}", fname);
+            return false
+        }
+    };
+    if fp.write_all (&r) .is_err() {
+        eprintln! ("FATAL ERROR writing {:?}", fname);
+        return false
+    }
+    drop (fp);
+    let mut fp = match fs::File::open (&fname) {
+        Ok (fp) => fp,
+        Err (_) => {
+            eprintln! ("FATAL ERROR cant open {:?}", fname);
+            return false
+        }
+    };
+    if fp.read_to_end (&mut check).is_err() || check.len() != r.len() {
+        eprintln! ("FATAL ERROR reading {:?}", fname);
+        return false
+    }
+    if check != r {
+        eprintln! ("FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check);
+        return false
+    }
+    true
+}
 
 #[cfg(test)]
 mod test {
@@ -262,6 +245,7 @@ mod test {
 
     use std::env;
     use std::fs;
+    use std::os::raw::c_char;
     use std::str::{from_utf8, from_utf8_unchecked};
     use std::thread::sleep;
     use std::time::Duration;
@@ -315,7 +299,7 @@ mod test {
                 \"client\":1,\
                 \"passphrase\":\"123\",\
                 \"coins\":\"BTC,KMD\"\
-                }\0".as_ptr()));
+                }\0".as_ptr() as *const c_char));
                 unsafe {LP_main (c_json.0)}
             },
             Ok (ref mode) if mode == "MM_EVENTS" => {
@@ -422,7 +406,7 @@ const MM_VERSION: &'static str = env!("MM_VERSION");
 
 fn main() {
     init_crash_reports();
-    unsafe {os_portable::OS_init()};
+    unsafe {os::OS_init()};
     println!("BarterDEX MarketMaker {} \n", MM_VERSION);
 
     // Temporarily simulate `argv[]` for the C version of the main method.
@@ -452,6 +436,8 @@ fn main() {
 
     if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
+
+    if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); return}
 
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
@@ -544,7 +530,7 @@ fn vanity (substring: &str) {
     let timestamp = now_ms() / 1000;
     println! ("start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp);
     for i in 0..1000000000 {
-        unsafe {os_portable::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
+        unsafe {os::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
         unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
         let coinaddr = unsafe {from_utf8_unchecked (from_raw_parts (coinaddr.as_ptr(), 34))};
         // if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
@@ -558,44 +544,17 @@ fn vanity (substring: &str) {
     println! ("done vanitygen.({}) done {} elapsed {}\n", substring, now_ms() / 1000, now_ms() / 1000 - timestamp);
 }
 
+fn fix_directories() -> bool {
+    unsafe {os::OS_ensure_directory (lp::GLOBAL_DBDIR.as_ptr() as *mut c_char)};
+    let dbdir = global_dbdir();
+    if !ensure_writable (&dbdir.join ("SWAPS")) {return false}
+    if !ensure_writable (&dbdir.join ("GTC")) {return false}
+    if !ensure_writable (&dbdir.join ("PRICES")) {return false}
+    if !ensure_writable (&dbdir.join ("UNSPENTS")) {return false}
+    true
+}
+
 /*
-    sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/GTC",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-#ifdef FROM_JS
-    argc = 2;
-    retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
-    printf("calling LP_main(%s)\n",jprint(retjson,0));
-    LP_main(retjson);
-    emscripten_set_main_loop(LP_fromjs_iter,1,0);
-#else
     if ( argc == 1 )
     {
         //LP_privkey_tests();
@@ -622,7 +581,7 @@ fn vanity (substring: &str) {
         while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
     } else printf("couldnt parse.(%s)\n",argv[1]);
-#endif
+
     return 0;
 }
 
