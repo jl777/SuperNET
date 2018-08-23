@@ -26,12 +26,12 @@ script:
 - export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"`
 - rm -rf build
 - cargo build --bin mm2-nop --features nop
+- ls mm2src/c_headers
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - cargo build -vv
 - cargo test
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 cache:
-  apt: true
   directories:
   - "$HOME/.hunter"
   - "$HOME/.cargo"
