@@ -50,7 +50,7 @@ fn bindgen<
         };
     }
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
-    if !to.exists() || lm_from >= lm_to || lm_build_rs >= lm_to {
+    if lm_from >= lm_to || lm_build_rs >= lm_to {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
             let mut builder = bindgen::builder();
@@ -111,27 +111,6 @@ fn generate_bindings() {
         ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
         empty(),
         ["AF_SP", "NN_PAIR"].iter(),
-    );
-    bindgen(
-        vec!["iguana/exchanges/etomicswap/etomiclib.h".into()],
-        "mm2src/c_headers/etomiclib.rs",
-        empty(),
-        [
-            "AliceSendsEthPaymentInput",
-            "AliceSendsErc20PaymentInput",
-            "AliceReclaimsPaymentInput",
-            "BobSpendsAlicePaymentInput",
-            "BobSendsEthDepositInput",
-            "BobSendsErc20DepositInput",
-            "BobRefundsDepositInput",
-            "AliceClaimsBobDepositInput",
-            "BobSendsEthPaymentInput",
-            "BobSendsErc20PaymentInput",
-            "BobReclaimsBobPaymentInput",
-            "AliceSpendsBobPaymentInput",
-            "ApproveErc20Input",
-        ].iter(),
-        empty(),
     );
 }
 

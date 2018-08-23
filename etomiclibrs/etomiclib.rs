@@ -55,7 +55,7 @@ static ERC20_ABI: &'static str = r#"[{"constant":true,"inputs":[],"name":"name",
 static ALICE_CONTRACT: &'static str = "e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c";
 static BOB_CONTRACT: &'static str = "2a8e4f9ae69c86e277602c6802085febc4bd5986";
 
-include!("../../../mm2src/c_headers/etomiclib.rs");
+include!("c_headers/etomiclib.rs");
 
 #[repr(C)]
 pub struct EthClient {
