@@ -149,62 +149,6 @@ char* sendRawTx(char* rawTx)
     return txId;
 }
 
-int64_t getNonce(char* address)
-{
-    // we should lock this mutex and unlock it only when transaction was already sent or failed.
-    // make sure that sendRawTx or unlock_send_tx_mutex is called after getting a nonce!
-    if (pthread_mutex_lock(&sendTxMutex) != 0) {
-        printf("Nonce mutex lock failed\n");
-    };
-    cJSON *params = cJSON_CreateArray();
-    cJSON_AddItemToArray(params, cJSON_CreateString(address));
-    // cJSON_AddItemToArray(params, cJSON_CreateString("pending"));
-    int64_t nonce = -1;
-    cJSON *nonceJson = sendRpcRequest("parity_nextNonce", params);
-    cJSON_Delete(params);
-    if (nonceJson != NULL && is_cJSON_String(nonceJson) && nonceJson != NULL) {
-        nonce = (int64_t) strtol(nonceJson->valuestring, NULL, 0);
-    }
-    cJSON_Delete(nonceJson);
-    printf("Got ETH nonce %d\n", (int)nonce);
-    return nonce;
-}
-
-char* getEthBalanceRequest(char* address)
-{
-    cJSON *params = cJSON_CreateArray();
-    cJSON_AddItemToArray(params, cJSON_CreateString(address));
-    cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
-    cJSON *balanceJson = sendRpcRequest("eth_getBalance", params);
-    cJSON_Delete(params);
-    char *balance = NULL;
-    if (balanceJson != NULL && is_cJSON_String(balanceJson) && balanceJson->valuestring != NULL) {
-        balance = (char *) malloc(strlen(balanceJson->valuestring) + 1);
-        strcpy(balance, balanceJson->valuestring);
-    }
-    cJSON_Delete(balanceJson);
-    return balance;
-}
-
-char *ethCall(char *to, const char *data)
-{
-    cJSON *params = cJSON_CreateArray();
-    cJSON *txObject = cJSON_CreateObject();
-    cJSON_AddStringToObject(txObject, "to", to);
-    cJSON_AddStringToObject(txObject, "data", data);
-    cJSON_AddItemToArray(params, txObject);
-    cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
-    cJSON *resultJson = sendRpcRequest("eth_call", params);
-    cJSON_Delete(params);
-    char *result = NULL;
-    if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
-        result = (char *) malloc(strlen(resultJson->valuestring) + 1);
-        strcpy(result, resultJson->valuestring);
-    }
-    cJSON_Delete(resultJson);
-    return result;
-}
-
 uint64_t estimateGas(char *from, char *to, const char *data)
 {
     cJSON *params = cJSON_CreateArray();

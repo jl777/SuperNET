@@ -11,13 +11,8 @@
 extern "C"{
 #endif
 
-#ifdef ETOMIC_TESTNET
 #define ETOMIC_URL "http://195.201.0.6:8545"
 #define DEFAULT_GAS_PRICE 100
-#else
-#define ETOMIC_URL "http://195.201.0.6:8555"
-#define DEFAULT_GAS_PRICE 10
-#endif
 
 #define FAUCET_URL "http://195.201.116.176:8000/getEtomic"
 
@@ -40,10 +35,7 @@ typedef struct
 
 char* sendRawTx(char* rawTx);
 char* sendRawTxWaitConfirm(char* rawTx);
-char* ethCall(char* to, const char* data);
 uint64_t estimateGas(char *from, char *to, const char *data);
-int64_t getNonce(char* address);
-char* getEthBalanceRequest(char* address);
 EthTxReceipt getEthTxReceipt(char *txId);
 EthTxData getEthTxData(char *txId);
 uint64_t getEthBlockNumber();

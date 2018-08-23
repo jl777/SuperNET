@@ -89,7 +89,7 @@ fn bindgen<
 }
 
 fn generate_bindings() {
-    let _ = fs::create_dir ("mm2src/c_headers");
+    let _ = fs::create_dir("mm2src/c_headers");
 
     bindgen(
         vec!["crypto777/OS_portable.h".into()],
@@ -305,6 +305,7 @@ fn build_c_code(mm_version: &str) {
 fn main() {
     // Rebuild when we work with C files.
     println!("rerun-if-changed=iguana/exchanges/etomicswap");
+    println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.h");
     println!("rerun-if-changed=iguana/exchanges");
     println!("rerun-if-changed=iguana/secp256k1");
     println!("rerun-if-changed=crypto777");

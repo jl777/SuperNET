@@ -31,7 +31,6 @@ script:
 - cargo test
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 cache:
-  apt: true
   directories:
   - "$HOME/.hunter"
   - "$HOME/.cargo"

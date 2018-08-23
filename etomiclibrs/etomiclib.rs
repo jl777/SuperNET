@@ -32,7 +32,7 @@ extern crate unwrap;
 
 use ethcore_transaction::{ Action, Transaction };
 use ethereum_types::{ U256, H160, H256 };
-use ethkey::{ KeyPair };
+use ethkey::{ KeyPair, Secret, Public, public_to_address };
 use ethabi::{ Contract, Token, Error as EthAbiError };
 use web3::futures::Future;
 use web3::transports::{ Http, EventLoopHandle };
@@ -43,7 +43,7 @@ use std::time::Duration;
 use std::sync::{ Arc, RwLock, Mutex };
 use std::thread;
 use std::collections::HashMap;
-use std::os::raw::{ c_char, c_void };
+use std::os::raw::{ c_char, c_void, c_int };
 use std::ffi::CString;
 use std::ffi::CStr;
 use std::str::FromStr;
@@ -55,15 +55,7 @@ static ERC20_ABI: &'static str = r#"[{"constant":true,"inputs":[],"name":"name",
 static ALICE_CONTRACT: &'static str = "e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c";
 static BOB_CONTRACT: &'static str = "2a8e4f9ae69c86e277602c6802085febc4bd5986";
 
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct AliceSendsEthPaymentInput {
-    pub deal_id: [c_char; 70usize],
-    pub bob_address: [c_char; 65usize],
-    pub alice_hash: [c_char; 65usize],
-    pub bob_hash: [c_char; 65usize],
-    pub amount: u64,
-}
+include!("c_headers/etomiclib.rs");
 
 #[repr(C)]
 pub struct EthClient {
@@ -125,6 +117,36 @@ impl EthClient {
         self.web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&signed).to_vec())).wait()
     }
 
+    pub fn approve_erc20(
+        &self,
+        token_address: H160,
+        spender_address: H160,
+        mut amount: U256,
+        decimals: u8
+    ) -> Result<H256, web3::Error> {
+        let approve = unwrap!(
+            self.erc20_abi.function("approve"),
+            "Could not load approve function from ERC20 contract. Is ERC20_ABI valid?"
+        );
+
+        if decimals < 18 {
+            amount = amount / U256::exp10((18 - decimals) as usize)
+        }
+
+        let encoded = approve.encode_input(&[
+            Token::Address(spender_address),
+            Token::Uint(amount)
+        ]).unwrap();
+
+        self.sign_and_send_transaction(
+            0.into(),
+            Action::Call(token_address),
+            encoded,
+            U256::from(210000),
+            U256::from_dec_str("10000000000").unwrap()
+        )
+    }
+
     pub fn send_alice_payment_eth(
         &self,
         id: Vec<u8>,
@@ -157,108 +179,110 @@ impl EthClient {
     pub fn send_alice_payment_erc20(
         &self,
         id: Vec<u8>,
-        bob_address: Vec<u8>,
+        bob_address: H160,
         alice_hash: Vec<u8>,
         bob_hash: Vec<u8>,
-        value: U256,
+        mut value: U256,
         token_address: H160,
         decimals: u8
     ) -> Result<H256, web3::Error> {
-        let mut nonce_lock = self.current_nonce.lock().unwrap();
         let function = unwrap!(
             self.alice_abi.function("initErc20Deal"),
             "Could not get initErc20Deal Alice contract function, is Alice ABI valid?"
         );
 
+        if decimals < 18 {
+            value = value / U256::exp10((18 - decimals) as usize);
+        }
+
         let encoded = function.encode_input(&[
             Token::FixedBytes(id),
             Token::Uint(value),
-            Token::Address(H160::from(bob_address.as_slice())),
+            Token::Address(bob_address),
             Token::FixedBytes(alice_hash),
             Token::FixedBytes(bob_hash),
             Token::Address(token_address)
         ]).unwrap();
-        let nonce = self.web3.eth().parity_next_nonce(self.key_pair.address()).wait()?;
-        let tx = Transaction {
-            nonce,
-            value: U256::from(0),
-            action: Action::Call(H160::from(ALICE_CONTRACT)),
-            data: encoded,
-            gas: U256::from(210000),
-            gas_price: U256::from_dec_str("10000000000").unwrap()
-        };
 
-        let t = tx.sign(self.key_pair.secret(), None);
-        *nonce_lock = nonce;
-        self.web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&t).to_vec())).wait()
+        self.sign_and_send_transaction(
+            0.into(),
+            Action::Call(H160::from(ALICE_CONTRACT)),
+            encoded,
+            U256::from(210000),
+            U256::from_dec_str("10000000000").unwrap()
+        )
     }
 
     pub fn alice_reclaims_payment(
         &self,
         id: Vec<u8>,
-        bob_address: Vec<u8>,
+        bob_address: H160,
+        token_address: H160,
         alice_hash: Vec<u8>,
-        bob_priv: Vec<u8>
-    ) -> H256 {
+        bob_priv: Vec<u8>,
+        mut value: U256,
+        decimals: u8
+    ) -> Result<H256, web3::Error> {
         let alice_claims_payment = unwrap!(
             self.alice_abi.function("aliceClaimsPayment"),
             "Could not load aliceClaimsPayment function, is ALICE_ABI valid?"
         );
 
-        let encoded_claim = alice_claims_payment.encode_input(&[
+        if token_address != H160::zero() && decimals < 18 {
+            value = value / U256::exp10((18 - decimals) as usize);
+        }
+
+        let encoded = alice_claims_payment.encode_input(&[
             Token::FixedBytes(id),
-            Token::Uint(U256::from_dec_str("10000000000000000").unwrap()),
-            Token::Address(H160::new()),
-            Token::Address(H160::from(bob_address.as_slice())),
+            Token::Uint(value),
+            Token::Address(token_address),
+            Token::Address(bob_address),
             Token::FixedBytes(alice_hash),
             Token::Bytes(bob_priv)
         ]).unwrap();
 
-        let claim_tx = Transaction {
-            nonce: self.web3.eth().parity_next_nonce(self.key_pair.address()).wait().unwrap(),
-            value: U256::from(0),
-            action: Action::Call(H160::from(ALICE_CONTRACT)),
-            data: encoded_claim,
-            gas: U256::from(210000),
-            gas_price: U256::from_dec_str("10000000000").unwrap()
-        };
-
-        let claim_t = claim_tx.sign(self.key_pair.secret(), None);
-
-        self.web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&claim_t).to_vec())).wait().unwrap()
+        self.sign_and_send_transaction(
+            0.into(),
+            Action::Call(H160::from(ALICE_CONTRACT)),
+            encoded,
+            U256::from(210000),
+            U256::from_dec_str("10000000000").unwrap()
+        )
     }
 
     pub fn bob_spends_alice_payment(
         &self,
         id: Vec<u8>,
-        alice_address: Vec<u8>,
+        alice_address: H160,
+        token_address: H160,
+        alice_priv: Vec<u8>,
         bob_hash: Vec<u8>,
-        alice_priv: Vec<u8>
-    ) -> H256 {
+        mut value: U256,
+        decimals: u8
+    ) -> Result<H256, web3::Error> {
         let abi = Contract::load(ALICE_ABI.as_bytes()).unwrap();
         let function = abi.function("bobClaimsPayment").unwrap();
 
+        if token_address != H160::zero() && decimals < 18 {
+            value = value / U256::exp10((18 - decimals) as usize);
+        }
+
         let encoded = function.encode_input(&[
             Token::FixedBytes(id),
-            Token::Uint(U256::from_dec_str("10000000000000000").unwrap()),
-            Token::Address(H160::new()),
-            Token::Address(H160::from(alice_address.as_slice())),
+            Token::Uint(value),
+            Token::Address(token_address),
+            Token::Address(alice_address),
             Token::FixedBytes(bob_hash),
             Token::Bytes(alice_priv)
         ]).unwrap();
 
-        let claim_tx = Transaction {
-            nonce: self.web3.eth().parity_next_nonce(self.key_pair.address()).wait().unwrap(),
-            value: U256::from(0),
-            action: Action::Call(H160::from(ALICE_CONTRACT)),
-            data: encoded,
-            gas: U256::from(210000),
-            gas_price: U256::from_dec_str("10000000000").unwrap()
-        };
-
-        let claim_t = claim_tx.sign(self.key_pair.secret(), None);
-
-        self.web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&claim_t).to_vec())).wait().unwrap()
+        self.sign_and_send_transaction(
+            0.into(),
+            Action::Call(H160::from(ALICE_CONTRACT)),
+            encoded,
+            U256::from(210000),
+            U256::from_dec_str("10000000000").unwrap()
+        )
     }
 
     pub fn bob_sends_eth_deposit(
@@ -485,28 +509,34 @@ char *signTx(TransactionSkeleton& tx, char* secret)
     ss << rlpStream.out();
     return stringStreamToChar(ss);
 }
-
-char *approveErc20(ApproveErc20Input input)
-{
-    TransactionSkeleton tx;
-    tx.from = jsToAddress(input.owner);
-    tx.to = jsToAddress(input.tokenAddress);
-    tx.value = 0;
-    tx.gas = 300000;
-    tx.gasPrice = getGasPriceFromStation(1) * boost::multiprecision::pow(u256(10), 9);
-    tx.nonce = getNonce(input.owner);
-    std::stringstream ss;
-    ss << "0x095ea7b3"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.spender))
-       << toHex(toBigEndian(jsToU256(input.amount)));
-    tx.data = jsToBytes(ss.str());
-    char* rawTx = signTx(tx, input.secret);
-    char* result = sendRawTxWaitConfirm(rawTx);
-    free(rawTx);
-    return result;
-}
 */
+#[no_mangle]
+pub extern "C" fn approve_erc20(input: ApproveErc20Input, eth_client: *mut EthClient) -> *mut c_char
+{
+    unsafe {
+        let token_addr = hex::decode(CStr::from_ptr(input.token_address[2..].as_ptr()).to_str().unwrap()).unwrap();
+        let spender_addr = hex::decode(CStr::from_ptr(input.spender[2..].as_ptr()).to_str().unwrap()).unwrap();
+
+        let tx_id = (*eth_client).approve_erc20(
+            H160::from(token_addr.as_slice()),
+            H160::from(spender_addr.as_slice()),
+            U256::from(input.amount) * U256::exp10(10),
+            input.decimals
+        );
+        match tx_id {
+            Ok(tx) => {
+                let mut str = String::from("0x");
+                str.push_str(&hex::encode(tx.0));
+                CString::new(str).unwrap().into_raw()
+            },
+            Err(e) => {
+                println!("Error ERC20 approve: {}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn alice_sends_eth_payment(
     input: AliceSendsEthPaymentInput,
@@ -559,133 +589,143 @@ pub extern "C" fn verify_alice_eth_payment_data(
         (decoded == encoded) as u8
     }
 }
+
+#[no_mangle]
+pub extern "C" fn alice_sends_erc20_payment(
+    input: AliceSendsErc20PaymentInput,
+    eth_client: *mut EthClient
+) -> *mut c_char {
+    unsafe {
+        let bob_addr = hex::decode(CStr::from_ptr(input.bob_address[2..].as_ptr()).to_str().unwrap()).unwrap();
+        let token_addr = hex::decode(CStr::from_ptr(input.token_address[2..].as_ptr()).to_str().unwrap()).unwrap();
+
+        let tx_id = (*eth_client).send_alice_payment_erc20(
+            hex::decode(CStr::from_ptr(input.deal_id[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            H160::from(bob_addr.as_slice()),
+            hex::decode(CStr::from_ptr(input.alice_hash[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            hex::decode(CStr::from_ptr(input.bob_hash[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            U256::from(input.amount) * U256::exp10(10),
+            H160::from(token_addr.as_slice()),
+            input.decimals
+        );
+        match tx_id {
+            Ok(tx) => {
+                let mut str = String::from("0x");
+                str.push_str(&hex::encode(tx.0));
+                CString::new(str).unwrap().into_raw()
+            },
+            Err(e) => {
+                println!("Error sending Alice ERC20 payment: {}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn verify_alice_erc20_payment_data(
+    input: AliceSendsErc20PaymentInput,
+    data: *const c_char
+) -> u8 {
+    unsafe {
+        let data_slice = CStr::from_ptr(data).to_str().unwrap();
+        let decoded = hex::decode(&data_slice[2..]).unwrap();
+        let abi = unwrap!(
+            Contract::load(ALICE_ABI.as_bytes()),
+            "Could not load ALICE_ABI, is it valid?"
+        );
+        let init_erc20_deal = unwrap!(
+            abi.function("initErc20Deal"),
+            "Could not load initErc20Deal ALICE_ABI function, is it valid?"
+        );
+
+        let mut value = U256::from(input.amount) * U256::exp10(10);
+        if input.decimals < 18 {
+            value = value / U256::exp10((18 - input.decimals) as usize);
+        }
+
+        let deal_id_slice = CStr::from_ptr(input.deal_id[2..].as_ptr()).to_str().unwrap();
+        let bob_address_slice = CStr::from_ptr(input.bob_address[2..].as_ptr()).to_str().unwrap();
+        let alice_hash_slice = CStr::from_ptr(input.alice_hash[2..].as_ptr()).to_str().unwrap();
+        let bob_hash_slice = CStr::from_ptr(input.bob_hash[2..].as_ptr()).to_str().unwrap();
+        let token_address_slice = CStr::from_ptr(input.token_address[2..].as_ptr()).to_str().unwrap();
+
+        let encoded = init_erc20_deal.encode_input(&[
+            Token::FixedBytes(hex::decode(deal_id_slice).unwrap()),
+            Token::Uint(value),
+            Token::Address(H160::from_str(bob_address_slice).unwrap()),
+            Token::FixedBytes(hex::decode(alice_hash_slice).unwrap()),
+            Token::FixedBytes(hex::decode(bob_hash_slice).unwrap()),
+            Token::Address(H160::from_str(token_address_slice).unwrap()),
+        ]).unwrap();
+        (decoded == encoded) as u8
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn alice_reclaims_payment(
+    input: AliceReclaimsPaymentInput,
+    eth_client: *mut EthClient
+) -> *mut c_char {
+    unsafe {
+        let bob_addr_slice = CStr::from_ptr(input.bob_address[2..].as_ptr()).to_str().unwrap();
+        let token_addr_slice = CStr::from_ptr(input.token_address[2..].as_ptr()).to_str().unwrap();
+
+        let tx_id = (*eth_client).alice_reclaims_payment(
+            hex::decode(CStr::from_ptr(input.deal_id[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            H160::from_str(bob_addr_slice).unwrap(),
+            H160::from_str(token_addr_slice).unwrap(),
+            hex::decode(CStr::from_ptr(input.alice_hash[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            hex::decode(CStr::from_ptr(input.bob_secret[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            U256::from(input.amount) * U256::exp10(10),
+            input.decimals
+        );
+        match tx_id {
+            Ok(tx) => {
+                let mut str = String::from("0x");
+                str.push_str(&hex::encode(tx.0));
+                CString::new(str).unwrap().into_raw()
+            },
+            Err(e) => {
+                println!("Error sending Alice reclaim: {}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn bob_spends_alice_payment(
+    input: BobSpendsAlicePaymentInput,
+    eth_client: *mut EthClient
+) -> *mut c_char {
+    unsafe {
+        let alice_addr_slice = CStr::from_ptr(input.alice_address[2..].as_ptr()).to_str().unwrap();
+        let token_addr_slice = CStr::from_ptr(input.token_address[2..].as_ptr()).to_str().unwrap();
+
+        let tx_id = (*eth_client).bob_spends_alice_payment(
+            hex::decode(CStr::from_ptr(input.deal_id[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            H160::from_str(alice_addr_slice).unwrap(),
+            H160::from_str(token_addr_slice).unwrap(),
+            hex::decode(CStr::from_ptr(input.alice_secret[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            hex::decode(CStr::from_ptr(input.bob_hash[2..].as_ptr()).to_str().unwrap()).unwrap(),
+            U256::from(input.amount) * U256::exp10(10),
+            input.decimals
+        );
+        match tx_id {
+            Ok(tx) => {
+                let mut str = String::from("0x");
+                str.push_str(&hex::encode(tx.0));
+                CString::new(str).unwrap().into_raw()
+            },
+            Err(e) => {
+                println!("Error sending Bob spend: {}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+}
 /*
-std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
-{
-    uint8_t decimals;
-    if (input.decimals > 0) {
-        decimals = input.decimals;
-    } else {
-        decimals = getErc20Decimals(input.tokenAddress);
-    }
-    u256 amount = jsToU256(input.amount);
-    if (decimals < 18) {
-        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
-    std::stringstream ss;
-    ss << "0x184db3bf"
-       << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(amount))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.bobAddress))
-       << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000"
-       << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress));
-    return ss;
-}
-
-char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData)
-{
-    TransactionSkeleton tx = txDataToSkeleton(txData);
-    std::stringstream ss = aliceSendsErc20PaymentData(input);
-    tx.data = jsToBytes(ss.str());
-    char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTxWaitConfirm(rawTx);
-    free(rawTx);
-    return result;
-}
-
-uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *data)
-{
-    std::stringstream ss = aliceSendsErc20PaymentData(input);
-    if (strcmp(ss.str().c_str(), data) != 0) {
-        printf("Alice ERC20 payment data %s is not equal to expected %s\n", data, ss.str().c_str());
-        return 0;
-    }
-    return 1;
-}
-
-char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxData txData)
-{
-    TransactionSkeleton tx = txDataToSkeleton(txData);
-    std::stringstream ss;
-    u256 amount = jsToU256(input.amount);
-    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
-
-    if (tokenAddress != ZeroAddress) {
-        uint8_t decimals;
-        if (input.decimals > 0) {
-            decimals = input.decimals;
-        } else {
-            decimals = getErc20Decimals(input.tokenAddress);
-        }
-
-        if (decimals < 18) {
-            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-        }
-    }
-
-    ss << "0x8b9a167a"
-       << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(amount))
-       << "000000000000000000000000"
-       << toHex(tokenAddress)
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.bobAddress))
-       << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000"
-       << "00000000000000000000000000000000000000000000000000000000000000c0"
-       << "0000000000000000000000000000000000000000000000000000000000000020"
-       << toHex(jsToBytes(input.bobSecret));
-    tx.data = jsToBytes(ss.str());
-    char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTxWaitConfirm(rawTx);
-    free(rawTx);
-    return result;
-}
-
-char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData)
-{
-    TransactionSkeleton tx = txDataToSkeleton(txData);
-    std::stringstream ss;
-    u256 amount = jsToU256(input.amount);
-    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
-
-    if (tokenAddress != ZeroAddress) {
-        uint8_t decimals;
-        if (input.decimals > 0) {
-            decimals = input.decimals;
-        } else {
-            decimals = getErc20Decimals(input.tokenAddress);
-        }
-
-        if (decimals < 18) {
-            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-        }
-    }
-
-    ss << "0x392ec66b"
-       << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(amount))
-       << "000000000000000000000000"
-       << toHex(tokenAddress)
-       << "000000000000000000000000"
-       << toHex(jsToAddress(input.aliceAddress))
-       << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000"
-       << "00000000000000000000000000000000000000000000000000000000000000c0"
-       << "0000000000000000000000000000000000000000000000000000000000000020"
-       << toHex(jsToBytes(input.aliceSecret));
-    tx.data = jsToBytes(ss.str());
-    char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTxWaitConfirm(rawTx);
-    free(rawTx);
-    return result;
-}
-
 std::stringstream bobSendsEthDepositData(BobSendsEthDepositInput input)
 {
     u256 lockTime = input.lockTime;
@@ -987,117 +1027,139 @@ char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData
     free(rawTx);
     return result;
 }
-
-char* privKey2Addr(char* privKey)
-{
-    Secret secretKey(privKey);
-    std::stringstream ss;
-    ss << "0x" << toAddress(secretKey);
-    return stringStreamToChar(ss);
-};
-
-char* pubKey2Addr(char* pubKey)
-{
-    Public publicKey(pubKey);
-    std::stringstream ss;
-    ss << "0x" << toAddress(publicKey);
-    return stringStreamToChar(ss);
-};
-
-char* getPubKeyFromPriv(char *privKey)
-{
-    Public publicKey = toPublic(Secret(privKey));
-    std::stringstream ss;
-    ss << "0x" << publicKey;
-    return stringStreamToChar(ss);
-}
-
-uint64_t getEthBalance(char *address, int *error)
-{
-    char* hexBalance = getEthBalanceRequest(address);
-    if (hexBalance != NULL) {
-        // convert wei to satoshi
-        u256 balance = jsToU256(hexBalance) / boost::multiprecision::pow(u256(10), 10);
-        free(hexBalance);
-        return static_cast<uint64_t>(balance);
-    } else {
-        *error = 1;
-        return 0;
-    }
-}
-
-uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress, uint8_t setDecimals, int *error)
-{
-    std::stringstream ss;
-    ss << "0x70a08231"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(address));
-    char* hexBalance = ethCall(tokenAddress, ss.str().c_str());
-    // convert wei to satoshi
-    uint8_t decimals;
-    if (hexBalance != NULL) {
-        if (setDecimals > 0) {
-            decimals = setDecimals;
-        } else {
-            decimals = getErc20Decimals(tokenAddress);
-        }
-
-        u256 balance = jsToU256(hexBalance);
-        if (decimals < 18) {
-            balance *= boost::multiprecision::pow(u256(10), 18 - decimals);
-        }
-        balance /= boost::multiprecision::pow(u256(10), 10);
-        free(hexBalance);
-        return static_cast<uint64_t>(balance);
-    } else {
-        *error = 1;
-        return 0;
-    }
-}
-
-char *getErc20BalanceHexWei(char *address, char *tokenAddress)
-{
-    std::stringstream ss;
-    ss << "0x70a08231"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(address));
-    char *hexBalance = ethCall(tokenAddress, ss.str().c_str());
-    return hexBalance;
-}
-
-uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8_t set_decimals)
-{
-    std::stringstream ss;
-    ss << "0xdd62ed3e"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(owner))
-       << "000000000000000000000000"
-       << toHex(jsToAddress(spender));
-    char* hexAllowance = ethCall(tokenAddress, ss.str().c_str());
-    uint8_t decimals;
-    if (set_decimals > 0) {
-        decimals = set_decimals;
-    } else {
-        decimals = getErc20Decimals(tokenAddress);
-    }
-    u256 allowance = jsToU256(hexAllowance);
-    if (decimals < 18) {
-        allowance *= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
-    // convert wei to satoshi
-    allowance /= boost::multiprecision::pow(u256(10), 10);
-    free(hexAllowance);
-    return static_cast<uint64_t>(allowance);
-}
-
-uint8_t getErc20Decimals(char *tokenAddress)
-{
-    char* hexDecimals = ethCall(tokenAddress, "0x313ce567");
-    auto decimals = (uint8_t) strtol(hexDecimals, NULL, 0);
-    free(hexDecimals);
-    return decimals;
-}
 */
+#[no_mangle]
+pub extern "C" fn priv_key_2_addr(priv_key: *const c_char) -> *mut c_char
+{
+    unsafe {
+        let priv_key_slice = CStr::from_ptr(priv_key).to_str().unwrap();
+        let secret = Secret::from_str(priv_key_slice).unwrap();
+        let key_pair = KeyPair::from_secret(secret).unwrap();
+        let mut str = String::from("0x");
+        str.push_str(&hex::encode(key_pair.address().0));
+        CString::new(str).unwrap().into_raw()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn pub_key_2_addr(pub_key: *const c_char) -> *mut c_char
+{
+    unsafe {
+        let pub_key_slice = CStr::from_ptr(pub_key).to_str().unwrap();
+        let public = Public::from_str(pub_key_slice).unwrap();
+        let mut str = String::from("0x");
+        str.push_str(&hex::encode(public_to_address(&public).0));
+        CString::new(str).unwrap().into_raw()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn priv_key_2_pub_key(priv_key: *const c_char) -> *mut c_char
+{
+    unsafe {
+        let priv_key_slice = CStr::from_ptr(priv_key).to_str().unwrap();
+        let secret = Secret::from_str(priv_key_slice).unwrap();
+        let key_pair = KeyPair::from_secret(secret).unwrap();
+        let pub_str = format!("{:02x}", key_pair.public());
+        CString::new(pub_str).unwrap().into_raw()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn get_eth_balance(address: *const c_char, error: *const c_int, eth_client: *mut EthClient) -> u64
+{
+    unsafe {
+        let address_slice = CStr::from_ptr(address).to_str().unwrap();
+        let result = (*eth_client).web3.eth().balance(
+            H160::from_str(&address_slice[2..]).unwrap(),
+            Some(BlockNumber::Latest)
+        ).wait().unwrap();
+        (result / U256::exp10(10)).into()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn get_erc20_balance(
+    address: *const c_char,
+    token_address: *const c_char,
+    set_decimals: u8,
+    error: *const c_int,
+    eth_client: *mut EthClient
+) -> u64
+{
+    unsafe {
+        let abi = unwrap!(Contract::load(ERC20_ABI.as_bytes()), "Could not parse ERC20 ABI, is it valid?");
+        let function = unwrap!(abi.function("balanceOf"), "Could not get ERC20 balanceOf function, is ERC20 ABI valid?");
+        let address_slice = CStr::from_ptr(address).to_str().unwrap();
+        let token_address_slice = CStr::from_ptr(token_address).to_str().unwrap();
+        let encoded = function.encode_input(&[
+            Token::Address(H160::from_str(&address_slice[2..]).unwrap()),
+        ]).unwrap();
+        let output = (*eth_client).web3.eth().call(
+            CallRequest {
+                from: None,
+                to: H160::from_str(&token_address_slice[2..]).unwrap(),
+                gas: None,
+                gas_price: None,
+                value: None,
+                data: Some(web3::types::Bytes(encoded))
+            }, Some(BlockNumber::Latest)
+        ).wait().unwrap();
+        let decoded = function.decode_output(&output.0).unwrap();
+        let mut result = match decoded[0] {
+            Token::Uint(number) => number,
+            _ => panic!("balanceOf call result must be uint, check ERC20 contract ABI")
+        };
+
+        if set_decimals < 18 {
+            result = result * U256::exp10((18 - set_decimals) as usize);
+        }
+        (result / U256::exp10(10)).into()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn get_erc20_allowance(
+    owner: *const c_char,
+    spender: *const c_char,
+    token_address: *const c_char,
+    set_decimals: u8,
+    eth_client: *mut EthClient
+) -> u64
+{
+    unsafe {
+        let abi = unwrap!(Contract::load(ERC20_ABI.as_bytes()), "Could not parse ERC20 ABI, is it valid?");
+        let function = unwrap!(abi.function("allowance"), "Could not get ERC20 allowance function, is ERC20 ABI valid?");
+        let owner_slice = CStr::from_ptr(owner).to_str().unwrap();
+        let spender_slice = CStr::from_ptr(spender).to_str().unwrap();
+        let address_slice = CStr::from_ptr(token_address).to_str().unwrap();
+        let encoded = function.encode_input(&[
+            Token::Address(H160::from_str(&owner_slice[2..]).unwrap()),
+            Token::Address(H160::from_str(&spender_slice[2..]).unwrap())
+        ]).unwrap();
+        let output = (*eth_client).web3.eth().call(
+            CallRequest {
+                from: None,
+                to: H160::from_str(&address_slice[2..]).unwrap(),
+                gas: None,
+                gas_price: None,
+                value: None,
+                data: Some(web3::types::Bytes(encoded))
+            }, Some(BlockNumber::Latest)
+        ).wait().unwrap();
+        let decoded = function.decode_output(&output.0).unwrap();
+        let mut result = match decoded[0] {
+            Token::Uint(number) => number,
+            _ => panic!("Allowance call result must be uint, check ERC20 contract ABI")
+        };
+
+        if set_decimals < 18 {
+            result = result * U256::exp10((18 - set_decimals) as usize);
+        }
+        (result / U256::exp10(10)).into()
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn get_erc20_decimals(token_address: *const c_char, eth_client: *mut EthClient) -> u8 {
     unsafe {
@@ -1416,6 +1478,57 @@ pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
 
 #[cfg(test)]
 #[test]
+fn test_get_eth_balance() {
+    let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let error : c_int = 0;
+
+    let result = get_eth_balance(
+        address.as_ptr(),
+        &error,
+        eth_client(priv_key.as_ptr())
+    );
+    assert!(result > 0);
+}
+
+#[cfg(test)]
+#[test]
+fn test_get_erc20_balance() {
+    let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+    let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
+    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let error : c_int = 0;
+
+    let result = get_erc20_balance(
+        address.as_ptr(),
+        token_address.as_ptr(),
+        8,
+        &error,
+        eth_client(priv_key.as_ptr())
+    );
+    assert!(result > 0);
+}
+
+#[cfg(test)]
+#[test]
+fn test_get_erc20_allowance() {
+    let owner = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+    let spender = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+    let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
+    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+
+    let result = get_erc20_allowance(
+        owner.as_ptr(),
+        spender.as_ptr(),
+        token_address.as_ptr(),
+        8,
+        eth_client(priv_key.as_ptr())
+    );
+    assert_eq!(result, 0);
+}
+
+#[cfg(test)]
+#[test]
 fn test_wei_to_satoshi() {
     let wei = CString::new("0x7526ea4b2401").unwrap();
     let satoshi = wei_to_satoshi(wei.as_ptr());
@@ -1450,6 +1563,40 @@ fn test_verify_alice_eth_payment_data() {
 
     let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
     assert_eq!(verify_alice_eth_payment_data(input, invalid_data.as_ptr()), 0);
+}
+
+#[cfg(test)]
+#[test]
+fn test_verify_alice_erc20_payment_data() {
+    let mut alice_hash : [c_char; 65usize] = [0; 65];
+    let mut bob_hash : [c_char; 65usize] = [0; 65];
+    let mut bob_address : [c_char; 65usize] = [0; 65];
+    let mut token_address : [c_char; 65usize] = [0; 65];
+    let mut deal_id : [c_char; 70usize] = [0; 70];
+    unsafe {
+        libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0xb3b7e2df561771e71335c7ab6af75f07ef5fdbdb").unwrap().as_ptr());
+        libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x339b417b1924f3cbf03aa156cd993368ca66ea88").unwrap().as_ptr());
+        libc::strcpy(bob_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
+        libc::strcpy(deal_id.as_mut_ptr(), CString::new("0x08b343ceda5196d3ae8fd0822b44bff1a8ed43a0354fd0a17f4a52e1bbb0e5e5").unwrap().as_ptr());
+        libc::strcpy(token_address.as_mut_ptr(), CString::new("0xc0eb7aed740e1796992a08962c15661bdeb58003").unwrap().as_ptr());
+    }
+
+    let valid_data = CString::new("0x184db3bf08b343ceda5196d3ae8fd0822b44bff1a8ed43a0354fd0a17f4a52e1bbb0e5e5000000000000000000000000000000000000000000000000016397531f91a0000000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e9b3b7e2df561771e71335c7ab6af75f07ef5fdbdb000000000000000000000000339b417b1924f3cbf03aa156cd993368ca66ea88000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003").unwrap();
+
+    let input = AliceSendsErc20PaymentInput {
+        amount: 10009000,
+        alice_hash,
+        bob_hash,
+        bob_address,
+        token_address,
+        deal_id,
+        decimals: 18
+    };
+
+    assert_eq!(verify_alice_erc20_payment_data(input, valid_data.as_ptr()), 1);
+
+    let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+    assert_eq!(verify_alice_erc20_payment_data(input, invalid_data.as_ptr()), 0);
 }
 
 #[cfg(test)]
