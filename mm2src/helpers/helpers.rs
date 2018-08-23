@@ -1,12 +1,13 @@
 //! A common dependency for the non-WASM crates.
 //! 
 //!                  helpers
+//!                     ^
 //!                     |
-//!     subcrate A   <--+-->   subcrate B
+//!     subcrate A   ---+---   subcrate B
+//!         ^                      ^
 //!         |                      |
 //!         +-----------+----------+
 //!                     |
-//!                     v
 //!                   main
 
 extern crate libc;
