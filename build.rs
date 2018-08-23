@@ -94,7 +94,7 @@ fn generate_bindings() {
     bindgen(
         vec!["crypto777/OS_portable.h".into()],
         "mm2src/c_headers/OS_portable.rs",
-        ["OS_init"].iter(),
+        ["OS_init", "OS_randombytes"].iter(),
         empty(),
         empty(),
     );
