@@ -580,6 +580,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "helpers"
+version = "0.1.0"
+dependencies = [
+ "libc 0.2.42 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "hex"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -960,6 +967,7 @@ dependencies = [
  "futures 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "gstuff 0.5.0 (git+https://github.com/ArtemGr/gstuff.rs)",
+ "helpers 0.1.0",
  "hyper 0.12.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
