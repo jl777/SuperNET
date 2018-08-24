@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 USER root
-RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls
+RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls libssl1.0.0
 RUN echo "0.0.0.0 10271 10.100.0.1 10271" >> /etc/rinetd.conf
 RUN echo "0.0.0.0 8923 10.100.0.1 8923" >> /etc/rinetd.conf
 RUN useradd -u 111 jenkins
