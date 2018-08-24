@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5.1)
-add_library(etomiclib-testnet STATIC etomiclib.cpp etomiccurl.c)
-add_library(etomiclib-mainnet STATIC etomiclib.cpp etomiccurl.c)
+add_library(etomiclib-testnet STATIC etomiccurl.c)
+add_library(etomiclib-mainnet STATIC etomiccurl.c)
 set_target_properties(etomiclib-testnet PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(etomiclib-mainnet PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(etomiclib-testnet PRIVATE ETOMIC_TESTNET)

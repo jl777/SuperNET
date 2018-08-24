@@ -29,6 +29,7 @@ script:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - cargo build -vv
 - cargo test
+- cargo test --package etomicrs
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 cache:
   directories:

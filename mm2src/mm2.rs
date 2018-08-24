@@ -28,7 +28,7 @@ extern crate backtrace;
 extern crate duct;
 
 #[cfg(feature = "etomic")]
-extern crate etomiclibrs;
+extern crate etomicrs;
 
 #[macro_use]
 extern crate fomat_macros;
@@ -56,7 +56,7 @@ extern crate winapi;
 
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 #[cfg(feature = "etomic")]
-pub use etomiclibrs::*;
+pub use etomicrs::*;
 
 use gstuff::now_ms;
 
