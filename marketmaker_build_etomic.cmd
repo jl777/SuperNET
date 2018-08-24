@@ -25,4 +25,4 @@ echo [#4] Run the MM2 tests.
 cargo test
 
 echo [#5] Run the Etomic tests.
-- cargo test --package etomicrs
+cargo test --package etomicrs
