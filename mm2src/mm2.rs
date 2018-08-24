@@ -72,6 +72,8 @@ use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
 use std::sync::Mutex;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub mod crash_reports;
 mod lp {include! ("c_headers/LP_include.rs");}
@@ -394,6 +396,7 @@ fn help() {
         "  btc2kmd {WIF or BTC}  ..  Convert a BTC WIF into a KMD WIF.\n"
         "  events                ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
         "  vanity {substring}    ..  Tries to find an address with the given substring.\n"
+        "  nxt                   ..  Query the local NXT client (port 7876) regarding the SuperNET account in NXT.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
@@ -438,6 +441,12 @@ fn main() {
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
     if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); return}
+
+    if first_arg == Some ("nxt") {
+        unsafe {lp::LP_NXT_redeems()};
+        sleep (Duration::from_secs (3));
+        return
+    }
 
     unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
 }
@@ -555,13 +564,6 @@ fn fix_directories() -> bool {
 }
 
 /*
-    if ( argc == 1 )
-    {
-        //LP_privkey_tests();
-        LP_NXT_redeems();
-        sleep(3);
-        return(0);
-    }
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( jint(retjson,"docker") == 1 )

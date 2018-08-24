@@ -598,4 +598,6 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_
 void HashGroestl(void * buf, const void * pbegin, int len);
 bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
+cJSON *LP_NXT_redeems();
+
 #endif

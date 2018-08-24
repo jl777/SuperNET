@@ -99,7 +99,7 @@ fn generate_bindings() {
             "iguana/exchanges/LP_include.h".into(),
         ],
         "mm2src/c_headers/LP_include.rs",
-        ["cJSON_Parse", "cJSON_GetErrorPtr", "cJSON_Delete"].iter(),
+        ["cJSON_Parse", "cJSON_GetErrorPtr", "cJSON_Delete", "LP_NXT_redeems"].iter(),
         ["_bits256", "cJSON"].iter(),
         ["GLOBAL_DBDIR"].iter(),
     );

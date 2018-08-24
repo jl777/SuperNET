@@ -128,97 +128,11 @@ void LP_main(void *ptr)
     }
 }
 
-int32_t ensure_writable(char *dirname)
-{
-    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
-    OS_randombytes(r.bytes,sizeof(r));
-    sprintf(fname,"%s/checkval",dirname), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"wb")) == 0 )
-    {
-        printf("FATAL ERROR cant create %s\n",fname);
-        fprintf(stderr,"FATAL ERROR cant create %s\n",fname);
-        return(-1);
-    }
-    else if ( fwrite(r.bytes,1,sizeof(r),fp) != sizeof(r) )
-    {
-        printf("FATAL ERROR error writing %s\n",fname);
-        fprintf(stderr,"FATAL ERROR writing %s\n",fname);
-        return(-1);
-    }
-    else
-    {
-        fclose(fp);
-        if ( (fp= fopen(fname,"rb")) == 0 )
-        {
-            printf("FATAL ERROR cant open %s\n",fname);
-            fprintf(stderr,"FATAL ERROR cant open %s\n",fname);
-            return(-1);
-        }
-        else if ( fread(check.bytes,1,sizeof(check),fp) != sizeof(check) )
-        {
-            printf("FATAL ERROR error reading %s\n",fname);
-            fprintf(stderr,"FATAL ERROR reading %s\n",fname);
-            return(-1);
-        }
-        else if ( memcmp(check.bytes,r.bytes,sizeof(r)) != 0 )
-        {
-            printf("FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
-            fprintf(stderr,"FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
-            return(-1);
-        }
-        fclose(fp);
-    }
-    return(0);
-}
-
 int mm1_main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
     unbuffered_output_support();
-    sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/GTC",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-#ifdef FROM_JS
-    argc = 2;
-    retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
-    printf("calling LP_main(%s)\n",jprint(retjson,0));
-    LP_main(retjson);
-    emscripten_set_main_loop(LP_fromjs_iter,1,0);
-#else
-    if ( argc == 1 )
-    {
-        //LP_privkey_tests();
-        LP_NXT_redeems();
-        sleep(3);
-        return(0);
-    }
+
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( jint(retjson,"docker") == 1 )
@@ -238,6 +152,5 @@ int mm1_main(int argc, const char * argv[])
         while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
     } else printf("couldnt parse.(%s)\n",argv[1]);
-#endif
     return 0;
 }
