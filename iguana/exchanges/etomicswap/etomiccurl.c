@@ -1,5 +1,6 @@
 #include "etomiccurl.h"
 #include <curl/curl.h>
+#include "inttypes.h"
 
 pthread_mutex_t sendTxMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -348,4 +349,20 @@ uint8_t get_etomic_from_faucet(char *etomic_addr)
     }
     cJSON_Delete(json);
     return result;
+}
+
+void uint8arrayToHex(char *dest, uint8_t *input, int len)
+{
+    strcpy(dest, "0x");
+    for (int i = 0; i < len; i++)
+    {
+        sprintf(dest + (i + 1) * 2, "%02x", input[i]);
+    }
+    dest[(len + 1) * 2] = '\0';
+}
+
+void satoshisToWei(char *dest, uint64_t input)
+{
+    sprintf(dest, "%" PRIu64, input);
+    strcat(dest, "0000000000");
 }

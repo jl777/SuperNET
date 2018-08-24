@@ -1,7 +1,10 @@
 //
 // Created by artem on 24.01.18.
 //
-#include <stdint.h>
+#ifndef ETOMIC_LIB_HEADER
+#define ETOMIC_LIB_HEADER
+
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,13 +14,6 @@ extern "C" {
 #define ETOMIC_BOBCONTRACT "0x2a8e4f9ae69c86e277602c6802085febc4bd5986"
 
 #define EMPTY_ETH_TX_ID "0x0000000000000000000000000000000000000000000000000000000000000000"
-
-typedef struct {
-    char from[65];
-    char to[65];
-    char amount[100];
-    char secretKey[70];
-} BasicTxData;
 
 typedef struct {
     char deal_id[70];
@@ -102,30 +98,30 @@ typedef struct {
 } BobSendsEthPaymentInput;
 
 typedef struct {
-    char paymentId[70];
-    char amount[100];
-    char tokenAddress[65];
-    char aliceAddress[65];
-    char aliceHash[65];
-    uint64_t lockTime;
+    char payment_id[70];
+    uint64_t amount;
+    char token_address[65];
+    char alice_address[65];
+    char alice_hash[65];
+    uint64_t lock_time;
     uint8_t decimals;
 } BobSendsErc20PaymentInput;
 
 typedef struct {
-    char paymentId[70];
-    char amount[100];
-    char tokenAddress[65];
-    char aliceAddress[65];
-    char aliceHash[65];
+    char payment_id[70];
+    uint64_t amount;
+    char token_address[65];
+    char alice_address[65];
+    char alice_hash[65];
     uint8_t decimals;
 } BobReclaimsBobPaymentInput;
 
 typedef struct {
-    char paymentId[70];
-    char amount[100];
-    char tokenAddress[65];
-    char aliceSecret[70];
-    char bobAddress[65];
+    char payment_id[70];
+    uint64_t amount;
+    char token_address[65];
+    char alice_secret[70];
+    char bob_address[65];
     uint8_t decimals;
 } AliceSpendsBobPaymentInput;
 
@@ -156,14 +152,14 @@ extern uint8_t verify_bob_erc20_deposit_data(BobSendsErc20DepositInput input, ch
 extern char *bob_refunds_deposit(BobRefundsDepositInput input, void *eth_client);
 extern char *alice_claims_bob_deposit(AliceClaimsBobDepositInput input, void *eth_client);
 
-extern char* bob_sends_eth_payment(BobSendsEthPaymentInput input, void *eth_client);
+extern char *bob_sends_eth_payment(BobSendsEthPaymentInput input, void *eth_client);
 extern uint8_t verify_bob_eth_payment_data(BobSendsEthPaymentInput input, char *data);
 
-char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData);
-uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data);
+extern char *bob_sends_erc20_payment(BobSendsErc20PaymentInput input, void *eth_client);
+extern uint8_t verify_bob_erc20_payment_data(BobSendsErc20PaymentInput input, char *data);
 
-char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData);
-char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData);
+extern char *bob_reclaims_bob_payment(BobReclaimsBobPaymentInput input, void *eth_client);
+extern char *alice_spends_bob_payment(AliceSpendsBobPaymentInput input, void *eth_client);
 
 extern char *priv_key_2_addr(char* privKey);
 extern char *pub_key_2_addr(char* pubKey);
@@ -211,4 +207,6 @@ extern void eth_client_destruct(void *eth_client);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
