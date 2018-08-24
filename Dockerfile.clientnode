@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 USER root
-RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls
+RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls libcurl4-openssl-dev
 RUN curl -O http://mirrors.edge.kernel.org/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4.1_amd64.deb
 RUN dpkg -i libssl1.1_1.1.0g-2ubuntu4.1_amd64.deb
 RUN echo "0.0.0.0 10271 10.100.0.1 10271" >> /etc/rinetd.conf
