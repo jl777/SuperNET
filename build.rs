@@ -24,6 +24,9 @@ use std::io::Read;
 use std::iter::empty;
 use std::path::Path;
 
+/// Ongoing (RLS) builds might interfere with a precise time comparison.
+const SLIDE: f64 = 60.;
+
 fn bindgen<
     'a,
     TP: AsRef<Path>,
@@ -50,7 +53,7 @@ fn bindgen<
         };
     }
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
-    if lm_from >= lm_to || lm_build_rs >= lm_to {
+    if lm_from >= lm_to - SLIDE || lm_build_rs >= lm_to - SLIDE {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
             let mut builder = bindgen::builder();
@@ -99,9 +102,15 @@ fn generate_bindings() {
             "iguana/exchanges/LP_include.h".into(),
         ],
         "mm2src/c_headers/LP_include.rs",
-        ["cJSON_Parse", "cJSON_GetErrorPtr", "cJSON_Delete", "LP_NXT_redeems"].iter(),
+        [
+            "cJSON_Parse",
+            "cJSON_GetErrorPtr",
+            "cJSON_Delete",
+            "LP_NXT_redeems",
+        ]
+            .iter(),
         ["_bits256", "cJSON"].iter(),
-        ["GLOBAL_DBDIR"].iter(),
+        ["GLOBAL_DBDIR", "DOCKERFLAG"].iter(),
     );
 
     bindgen(
@@ -112,6 +121,7 @@ fn generate_bindings() {
             "OS_randombytes",
             "OS_ensure_directory",
             "OS_compatible_path",
+            "calc_ipbits",
         ]
             .iter(),
         empty(),
@@ -186,7 +196,7 @@ fn windows_requirements() {
         let system = OsString::from_wide(&buf[0..len]);
         Path::new(&system).to_path_buf()
     };
-    println!("windows_requirements] System directory is {:?}.", system);
+    eprintln!("windows_requirements] System directory is {:?}.", system);
 
     // `msvcr100.dll` is required by `ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll`
     let msvcr100 = system.join("msvcr100.dll");
@@ -213,16 +223,19 @@ fn build_c_code(mm_version: &str) {
     // Link in the Windows-specific crash handling code.
 
     if cfg!(windows) {
-        // TODO: Only (re)build the library when the source code or the build script changes.
-        cc::Build::new()
-            .file("OSlibs/win/seh.c")
-            .warnings(true)
-            .compile("seh");
+        let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
+        let lm_seh = unwrap!(last_modified_sec(&"mm2src/seh.c"), "Can't stat seh.c");
+        let out_dir = env::var("OUT_DIR").expect("!OUT_DIR");
+        let lib_path = Path::new(&out_dir).join("libseh.a");
+        let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
+        if lm_build_rs.max(lm_seh) >= lm_lib - SLIDE {
+            cc::Build::new()
+                .file("mm2src/seh.c")
+                .warnings(true)
+                .compile("seh");
+        }
         println!("cargo:rustc-link-lib=static=seh");
-        println!(
-            "cargo:rustc-link-search=native={}",
-            env::var("OUT_DIR").expect("!OUT_DIR")
-        );
+        println!("cargo:rustc-link-search=native={}", out_dir);
     }
 
     // The MM1 library.

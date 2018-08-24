@@ -599,5 +599,7 @@ void HashGroestl(void * buf, const void * pbegin, int len);
 bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
 cJSON *LP_NXT_redeems();
+extern uint32_t DOCKERFLAG;
+extern int32_t LP_STOP_RECEIVED;
 
 #endif

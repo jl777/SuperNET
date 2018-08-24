@@ -49,6 +49,9 @@ extern crate libc;
 
 extern crate nix;
 
+extern crate serde;
+extern crate serde_json;
+
 #[macro_use]
 extern crate unwrap;
 
@@ -59,6 +62,8 @@ extern crate winapi;
 pub use etomicrs::*;
 
 use gstuff::now_ms;
+
+use serde_json::{self as json, Value as Json};
 
 use std::env;
 use std::ffi::{CStr, CString, OsString};
@@ -83,7 +88,6 @@ extern "C" {
     fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
     fn LP_main (c_json: *mut cJSON) -> !;
-    fn mm1_main (argc: c_int, argv: *const *const c_char) -> !;
 }
 
 use crash_reports::init_crash_reports;
@@ -113,6 +117,10 @@ impl CJSON {
         } else {
             Ok (CJSON (c_json))
         }
+    }
+    fn from_str (json: &str) -> Result<CJSON, String> {
+        let cs = try_s! (CString::new (json));
+        CJSON::from_zero_terminated (cs.as_ptr())
     }
 }
 impl Drop for CJSON {
@@ -397,6 +405,7 @@ fn help() {
         "  events                ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
         "  vanity {substring}    ..  Tries to find an address with the given substring.\n"
         "  nxt                   ..  Query the local NXT client (port 7876) regarding the SuperNET account in NXT.\n"
+        "  {json configuration}  ..  Run the MarketMaker daemon.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
@@ -448,7 +457,7 @@ fn main() {
         return
     }
 
-    unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
+    if let Some (conf) = first_arg {run_lp_main (conf)}
 }
 
 // TODO: `btc2kmd` is *pure*, it doesn't use shared state,
@@ -563,28 +572,23 @@ fn fix_directories() -> bool {
     true
 }
 
-/*
-    if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
-    {
-        if ( jint(retjson,"docker") == 1 )
-            DOCKERFLAG = 1;
-        else if ( jstr(retjson,"docker") != 0 )
-            DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
-        //if ( jobj(retjson,"passphrase") != 0 )
-        //    jdelete(retjson,"passphrase");
-        //if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
-        //    jaddstr(retjson,"passphrase","default");
-        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
-        {
-            printf("error launching LP_main (%s)\n",jprint(retjson,0));
-            exit(-1);
-        } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
-        incr = 100.;
-        while ( LP_STOP_RECEIVED == 0 )
-            sleep(100000);
-    } else printf("couldnt parse.(%s)\n",argv[1]);
+/// Parses the `first_argument` as JSON and starts LP_main.
+fn run_lp_main (conf: &str) {
+    let c_conf = match CJSON::from_str (conf) {
+        Ok (json) => json,
+        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+    };
+    let conf: Json = match json::from_str(conf) {
+        Ok (json) => json,
+        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+    };
 
-    return 0;
+    if conf["docker"] == 1 {
+        unsafe {lp::DOCKERFLAG = 1}
+    } else if conf["docker"].is_string() {
+        let ip_port = unwrap! (CString::new (unwrap! (conf["docker"].as_str())));
+        unsafe {lp::DOCKERFLAG = os::calc_ipbits (ip_port.as_ptr() as *mut c_char) as u32}
+    }
+
+    unsafe {LP_main (c_conf.0)}
 }
-
-*/

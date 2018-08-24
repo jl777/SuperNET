@@ -127,30 +127,3 @@ void LP_main(void *ptr)
         LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
-
-int mm1_main(int argc, const char * argv[])
-{
-    char dirname[512]; double incr; cJSON *retjson;
-    unbuffered_output_support();
-
-    if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
-    {
-        if ( jint(retjson,"docker") == 1 )
-            DOCKERFLAG = 1;
-        else if ( jstr(retjson,"docker") != 0 )
-            DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
-        //if ( jobj(retjson,"passphrase") != 0 )
-        //    jdelete(retjson,"passphrase");
-        //if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
-        //    jaddstr(retjson,"passphrase","default");
-        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
-        {
-            printf("error launching LP_main (%s)\n",jprint(retjson,0));
-            exit(-1);
-        } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
-        incr = 100.;
-        while ( LP_STOP_RECEIVED == 0 )
-            sleep(100000);
-    } else printf("couldnt parse.(%s)\n",argv[1]);
-    return 0;
-}
