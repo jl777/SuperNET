@@ -619,7 +619,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
         }
         else
         {
-            if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
+            if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+600 )//LP_AUTOTRADE_TIMEOUT*10 )
             {
                 gtc->pending = qp->timestamp = (uint32_t)time(NULL);
                 LP_query(ctx,myipaddr,mypubsock,"request",qp);
@@ -656,7 +656,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->timestamp = (uint32_t)time(NULL);
     if ( qp->gtc != 0 )
     {
-        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
+        //strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
         LP_gtc_addorder(qp);
     }
     {
@@ -705,7 +705,7 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 {
     if ( Alice_expiration != 0 && quotetime > Alice_expiration )
     {
-        if ( LP_Alicequery.uuidstr[0] != 0 )
+        if ( LP_Alicequery.uuidstr[0] != 0 && LP_Alicequery.gtc == 0 )
             LP_failedmsg(LP_Alicequery.R.requestid,LP_Alicequery.R.quoteid,-9999,LP_Alicequery.uuidstr);
         printf("time expired for Alice_request\n");
         LP_alicequery_clear();
@@ -1611,7 +1611,7 @@ int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubs
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-//printf("CONNECTED.(%s)\n",jprint(argjson,0));
+printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
@@ -1665,7 +1665,7 @@ int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubs
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-                //printf("CONNECT.(%s)\n",jprint(argjson,0));
+                printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
                 if ( Qtrades == 0 )
