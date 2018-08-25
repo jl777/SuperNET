@@ -535,7 +535,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC"  
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL"  
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
@@ -954,6 +954,18 @@ ZERO_ARGS(dpow,cancelratify)
 {
     myinfo->DPOWS[0]->cancelratify = 1;
     return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
+}
+
+ZERO_ARGS(dpow,ipaddrs)
+{
+    char ipaddr[64]; cJSON *array; int32_t i;
+    array = cJSON_CreateArray();
+    for (i=0; i<myinfo->numdpowipbits; i++)
+    {
+        expand_ipbits(ipaddr,myinfo->dpowipbits[i]);
+        jaddistr(array,ipaddr);
+    }
+    return(jprint(array,1));
 }
 
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
