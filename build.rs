@@ -151,8 +151,7 @@ fn mm_version() -> String {
     let mut buf;
     let version = if let Ok(mut file) = fs::File::open("MM_VERSION") {
         buf = String::new();
-        file.read_to_string(&mut buf)
-            .expect("Can't read from MM_VERSION");
+        unwrap!(file.read_to_string(&mut buf), "Can't read from MM_VERSION");
         buf.trim()
     } else {
         "UNKNOWN"
@@ -225,7 +224,7 @@ fn build_c_code(mm_version: &str) {
     if cfg!(windows) {
         let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
         let lm_seh = unwrap!(last_modified_sec(&"mm2src/seh.c"), "Can't stat seh.c");
-        let out_dir = env::var("OUT_DIR").expect("!OUT_DIR");
+        let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
         let lib_path = Path::new(&out_dir).join("libseh.a");
         let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
         if lm_build_rs.max(lm_seh) >= lm_lib - SLIDE {
@@ -256,10 +255,12 @@ fn build_c_code(mm_version: &str) {
     cmake_prep_args.push(format!("-DMM_VERSION={}", mm_version));
     cmake_prep_args.push("..".into());
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
-    let _ = cmd("cmake", cmake_prep_args).dir("build")
+    let _ = unwrap!(
+        cmd("cmake", cmake_prep_args).dir("build")
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
-        .run()
-        .expect("!cmake");
+        .run(),
+        "!cmake"
+    );
 
     let mut cmake_args: Vec<String> = vec![
         "--build".into(),
@@ -273,10 +274,12 @@ fn build_c_code(mm_version: &str) {
         cmake_args.push(format!("{}", num_cpus::get()));
     }
     eprintln!("$ cmake{}", show_args(&cmake_args));
-    let _ = cmd("cmake", cmake_args).dir("build")
+    let _ = unwrap!(
+        cmd("cmake", cmake_args).dir("build")
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
-        .run()
-        .expect("!cmake");
+        .run(),
+        "!cmake"
+    );
 
     println!("cargo:rustc-link-lib=static=marketmaker-mainnet-lib");
 
@@ -318,9 +321,14 @@ fn build_c_code(mm_version: &str) {
         println!("cargo:rustc-link-lib=pthreadVC2");
         println!("cargo:rustc-link-lib=static=nanomsg");
         println!("cargo:rustc-link-lib=mswsock"); // For nanomsg.
-        fs::copy("x64/pthreadVC2.dll", "target/debug/pthreadVC2.dll")
-            .expect("Can't copy pthreadVC2.dll");
-        fs::copy("x64/libcurl.dll", "target/debug/libcurl.dll").expect("Can't copy libcurl.dll");
+        unwrap!(
+            fs::copy("x64/pthreadVC2.dll", "target/debug/pthreadVC2.dll"),
+            "Can't copy pthreadVC2.dll"
+        );
+        unwrap!(
+            fs::copy("x64/libcurl.dll", "target/debug/libcurl.dll"),
+            "Can't copy libcurl.dll"
+        );
     } else {
         println!("cargo:rustc-link-lib=crypto");
         println!("cargo:rustc-link-lib=static=nanomsg");
