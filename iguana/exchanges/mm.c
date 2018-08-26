@@ -19,16 +19,10 @@
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
-
-void PNACL_message(char *arg,...)
-{
-    
-}
 #define FROM_MARKETMAKER
 
 #include <stdio.h>
 #include <stdint.h>
-// #include "lib.h"
 #ifndef NATIVE_WINDOWS
 #include "OS_portable.h"
 #else
@@ -36,41 +30,11 @@ void PNACL_message(char *arg,...)
 #endif // !_WIN_32
 
 uint32_t DOCKERFLAG;
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
-void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
-//defined(__APPLE__) ||
-#ifdef FROM_JS // defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"
-#include "../../crypto777/nanosrc/bus.h"
-#include "../../crypto777/nanosrc/pubsub.h"
-#include "../../crypto777/nanosrc/pipeline.h"
-#include "../../crypto777/nanosrc/reqrep.h"
-#include "../../crypto777/nanosrc/tcp.h"
-#include "../../crypto777/nanosrc/pair.h"
-#else
-#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
-	#include "../../crypto777/nanosrc/nn.h"
-	#include "../../crypto777/nanosrc/bus.h"
-	#include "../../crypto777/nanosrc/pubsub.h"
-	#include "../../crypto777/nanosrc/pipeline.h"
-	#include "../../crypto777/nanosrc/reqrep.h"
-	#include "../../crypto777/nanosrc/tcp.h"
-    #include "../../crypto777/nanosrc/pair.h"
-    #include "../../crypto777/nanosrc/ws.h"
-#else
-	#include "/usr/local/include/nanomsg/nn.h"
-	#include "/usr/local/include/nanomsg/bus.h"
-	#include "/usr/local/include/nanomsg/pubsub.h"
-	#include "/usr/local/include/nanomsg/pipeline.h"
-	#include "/usr/local/include/nanomsg/reqrep.h"
-	#include "/usr/local/include/nanomsg/tcp.h"
-    #include "/usr/local/include/nanomsg/pair.h"
-    #include "/usr/local/include/nanomsg/ws.h"
-#endif
-#endif
+#include "../../crypto777/nanosrc/ws.h"
+
 #ifndef NN_WS_MSG_TYPE
 #define NN_WS_MSG_TYPE 1
 #endif

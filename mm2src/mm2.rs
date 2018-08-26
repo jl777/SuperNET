@@ -133,24 +133,10 @@ impl Drop for CJSON {
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 mod os {include! ("c_headers/OS_portable.rs");}
 
-/*
-#endif // !_WIN_32
-
-uint32_t DOCKERFLAG;
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
-#include "stats.c"
-void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
-
-*/
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 mod nn {include! ("c_headers/nn.rs");}
+
 /*
-#ifndef NN_WS_MSG_TYPE
-#define NN_WS_MSG_TYPE 1
-#endif
-
-
 #include "LP_nativeDEX.c"
 
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid)
