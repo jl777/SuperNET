@@ -1,4 +1,5 @@
 use backtrace;
+use helpers::stack_trace;
 #[cfg(unix)] use std::os::raw::c_int;
 use std::cell::UnsafeCell;
 use std::env;
@@ -22,21 +23,6 @@ use std::sync::Once;
 struct NotThreadSafe<T> (UnsafeCell<T>);
 unsafe impl<T> Sync for NotThreadSafe<T> {}
 
-/// Using a static buffer in order to minimize the chance of heap and stack allocations in the signal handler.
-/// NB: Not thread-safe, but we're only running a single signal handler at a time.
-fn trace_buf() -> &'static mut [u8; 256] {
-    // We're on stable and don't have `const fn`s yet, so resort to dynamic allocation instead.
-    lazy_static! {static ref TRACE_BUF: NotThreadSafe<[u8; 256]> = NotThreadSafe (UnsafeCell::new (unsafe {uninitialized()}));}
-    unsafe {&mut *TRACE_BUF.0.get()}
-
-    // In the future (when `const fn`s are made stable) I'd like to replace this with a fully static buffer:
-
-    // https://github.com/rust-lang/rfcs/issues/411#issuecomment-367704087
-    // Waiting for https://github.com/rust-lang/rust/issues/24111
-    //unsafe const fn uninitialized<T>() -> T {Foo {u: ()} .t}
-
-    //static mut TRACE_BUF: [u8; 256] = unsafe {uninitialized()};
-}
 fn trace_name_buf() -> &'static mut [u8; 128] {
     //static mut TRACE_NAME_BUF: [u8; 128] = unsafe {uninitialized()};
     lazy_static! {static ref TRACE_NAME_BUF: NotThreadSafe<[u8; 128]> = NotThreadSafe (UnsafeCell::new (unsafe {uninitialized()}));}
@@ -66,24 +52,6 @@ fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name.starts_with ("mm2::crash_reports::stack_trace") {return}
 
     let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
-}
-
-/// Generates a string with the current stack trace.
-/// 
-/// * `format` - Generates the string representation of a frame.
-/// * `output` - Function used to print the stack trace.
-///              Printing immediately, without buffering, should make the tracing somewhat more reliable.
-fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output: &mut FnMut (&str)) {
-    backtrace::trace (|frame| {
-        backtrace::resolve (frame.ip(), |symbol| {
-            let trace_buf = trace_buf();
-            let trace = gstring! (trace_buf, {
-              format (trace_buf, symbol);
-            });
-            output (trace);
-        });
-        true
-    });
 }
 
 #[cfg(windows)]

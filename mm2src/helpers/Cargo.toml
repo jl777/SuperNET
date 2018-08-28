@@ -7,4 +7,7 @@ name = "helpers"
 path = "helpers.rs"
 
 [dependencies]
+backtrace = "0.3.9"
+gstuff = { git = "https://github.com/ArtemGr/gstuff.rs" }
+lazy_static = "1.1.0"
 libc = "0.2"

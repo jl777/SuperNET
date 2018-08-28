@@ -39,6 +39,8 @@ extern crate futures_cpupool;
 #[macro_use]
 extern crate gstuff;
 
+extern crate helpers;
+
 extern crate hyper;
 
 #[allow(unused_imports)]
