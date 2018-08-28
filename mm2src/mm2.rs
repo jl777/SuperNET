@@ -21,8 +21,6 @@
 
 #![allow(non_camel_case_types)]
 
-extern crate backtrace;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
@@ -64,6 +62,8 @@ extern crate winapi;
 pub use etomicrs::*;
 
 use gstuff::now_ms;
+
+use helpers::{stack_trace, stack_trace_frame};
 
 use serde_json::{self as json, Value as Json};
 
@@ -579,4 +579,22 @@ fn run_lp_main (conf: &str) {
     }
 
     unsafe {LP_main (c_conf.0)}
+}
+
+#[no_mangle]
+pub extern fn log_stacktrace (desc: *const c_char) {
+    let desc = if desc == null() {
+        ""
+    } else {
+        match unsafe {CStr::from_ptr (desc)} .to_str() {
+            Ok (s) => s,
+            Err (err) => {
+                eprintln! ("log_stacktrace] Bad trace description: {}", err);
+                ""
+            }
+        }
+    };
+    let mut trace = String::with_capacity (4096);
+    stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+    eprintln! ("Stacktrace. {}\n{}", desc, trace);
 }

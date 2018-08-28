@@ -16,13 +16,15 @@ extern crate gstuff;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+#[macro_use]
+extern crate unwrap;
 
 use libc::malloc;
-use std::cell::UnsafeCell;
-use std::mem::uninitialized;
-use std::os::raw::c_char;
 use std::intrinsics::copy;
 use std::io::Write;
+use std::mem::uninitialized;
+use std::os::raw::{c_char, c_void};
+use std::sync::{Mutex, MutexGuard};
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -38,23 +40,51 @@ pub fn str_to_malloc (s: &str) -> *mut c_char {unsafe {
 
 //? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
-struct NotThreadSafe<T> (UnsafeCell<T>);
-unsafe impl<T> Sync for NotThreadSafe<T> {}
+/// Use the value, preventing the compiler and linker from optimizing it away.  
+/// cf. https://github.com/rust-lang/rfcs/issues/1002#issuecomment-239681761
+pub fn used<T> (v: &T) {
+    extern "C" {fn used4rs (ptr: *const c_void);}
+    unsafe {used4rs (v as *const T as *const c_void)}
+}
 
 /// Using a static buffer in order to minimize the chance of heap and stack allocations in the signal handler.
-/// NB: Not thread-safe, but we're only running a single signal handler at a time.
-fn trace_buf() -> &'static mut [u8; 256] {
-    // We're on stable and don't have `const fn`s yet, so resort to dynamic allocation instead.
-    lazy_static! {static ref TRACE_BUF: NotThreadSafe<[u8; 256]> = NotThreadSafe (UnsafeCell::new (unsafe {uninitialized()}));}
-    unsafe {&mut *TRACE_BUF.0.get()}
+fn trace_buf() -> MutexGuard<'static, [u8; 256]> {
+    lazy_static! {static ref TRACE_BUF: Mutex<[u8; 256]> = Mutex::new (unsafe {uninitialized()});}
+    unwrap! (TRACE_BUF.lock())
+}
 
-    // In the future (when `const fn`s are made stable) I'd like to replace this with a fully static buffer:
+fn trace_name_buf() -> MutexGuard<'static, [u8; 128]> {
+    lazy_static! {static ref TRACE_NAME_BUF: Mutex<[u8; 128]> = Mutex::new (unsafe {uninitialized()});}
+    unwrap! (TRACE_NAME_BUF.lock())
+}
 
-    // https://github.com/rust-lang/rfcs/issues/411#issuecomment-367704087
-    // Waiting for https://github.com/rust-lang/rust/issues/24111
-    //unsafe const fn uninitialized<T>() -> T {Foo {u: ()} .t}
+/// Formats a stack frame.  
+/// Some common and less than useful frames are skipped.
+pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
+    let filename = match symbol.filename() {Some (path) => path, None => return};
+    let filename = match filename.components().rev().next() {Some (c) => c.as_os_str().to_string_lossy(), None => return};
+    let lineno = match symbol.lineno() {Some (lineno) => lineno, None => return};
+    let name = match symbol.name() {Some (name) => name, None => return};
+    let mut name_buf = trace_name_buf();
+    let name = gstring! (name_buf, {
+        let _ = write! (name_buf, "{}", name);  // NB: `fmt` is different from `SymbolName::as_str`.
+    });
 
-    //static mut TRACE_BUF: [u8; 256] = unsafe {uninitialized()};
+    // Skip common and less than informative frames.
+
+    if name.starts_with ("backtrace::") {return}
+    if name.starts_with ("core::") {return}
+    if name.starts_with ("alloc::") {return}
+    if name.starts_with ("panic_unwind::") {return}
+    if name.starts_with ("std::") {return}
+    if name == "mm2::crash_reports::rust_seh_handler" {return}
+    if name == "veh_exception_filter" {return}
+    if name == "helpers::stack_trace" {return}
+    if name == "mm2::log_stacktrace" {return}
+    if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
+    if name.starts_with ("mm2::crash_reports::stack_trace") {return}
+
+    let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
 }
 
 /// Generates a string with the current stack trace.
@@ -65,7 +95,7 @@ fn trace_buf() -> &'static mut [u8; 256] {
 pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output: &mut FnMut (&str)) {
     backtrace::trace (|frame| {
         backtrace::resolve (frame.ip(), |symbol| {
-            let trace_buf = trace_buf();
+            let mut trace_buf = trace_buf();
             let trace = gstring! (trace_buf, {
               format (trace_buf, symbol);
             });
@@ -73,4 +103,11 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
         });
         true
     });
+}
+
+/// Initialize the crate.
+pub fn init() {
+    // Pre-allocate the stack trace buffer in order to avoid allocating it from a signal handler.
+    used (&*trace_buf());
+    used (&*trace_name_buf());
 }

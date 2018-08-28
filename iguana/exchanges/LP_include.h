@@ -23,6 +23,12 @@
 
 #include <stdint.h>
 
+// Things we presently share with the C code from Rust.
+
+void log_stacktrace(const char* desc);
+
+// ---
+
 #ifndef LP_TECHSUPPORT
 #define LP_TECHSUPPORT 1
 #endif

@@ -1,11 +1,8 @@
-use backtrace;
-use helpers::stack_trace;
+use helpers::{self, stack_trace, stack_trace_frame};
 #[cfg(unix)] use std::os::raw::c_int;
-use std::cell::UnsafeCell;
 use std::env;
 #[allow(unused_imports)] use std::io::stderr;
-use std::io::Write;
-use std::mem::{uninitialized};
+#[allow(unused_imports)] use std::io::Write;
 #[allow(unused_imports)] use std::process::abort;
 use std::sync::Once;
 #[allow(unused_imports)] use std::sync::Mutex;
@@ -18,40 +15,6 @@ use std::sync::Once;
     static ref SEH_CAUGHT: Mutex<Option<(ExceptionCode, StackTrace)>> = Mutex::new (None);
     /// Used to avoid the empty `SEH_CAUGHT` races.
     static ref SEH_LOCK: Mutex<()> = Mutex::new(());
-}
-
-struct NotThreadSafe<T> (UnsafeCell<T>);
-unsafe impl<T> Sync for NotThreadSafe<T> {}
-
-fn trace_name_buf() -> &'static mut [u8; 128] {
-    //static mut TRACE_NAME_BUF: [u8; 128] = unsafe {uninitialized()};
-    lazy_static! {static ref TRACE_NAME_BUF: NotThreadSafe<[u8; 128]> = NotThreadSafe (UnsafeCell::new (unsafe {uninitialized()}));}
-    unsafe {&mut *TRACE_NAME_BUF.0.get()}
-}
-
-fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
-    let filename = match symbol.filename() {Some (path) => path, None => return};
-    let filename = match filename.components().rev().next() {Some (c) => c.as_os_str().to_string_lossy(), None => return};
-    let lineno = match symbol.lineno() {Some (lineno) => lineno, None => return};
-    let name = match symbol.name() {Some (name) => name, None => return};
-    let name_buf = trace_name_buf();
-    let name = gstring! (name_buf, {
-        let _ = write! (name_buf, "{}", name);  // NB: `fmt` is different from `SymbolName::as_str`.
-    });
-
-    // Skip common and less than informative frames.
-
-    if name.starts_with ("backtrace::") {return}
-    if name.starts_with ("core::") {return}
-    if name.starts_with ("alloc::") {return}
-    if name.starts_with ("panic_unwind::") {return}
-    if name.starts_with ("std::") {return}
-    if name == "mm2::crash_reports::rust_seh_handler" {return}
-    if name == "veh_exception_filter" {return}
-    if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
-    if name.starts_with ("mm2::crash_reports::stack_trace") {return}
-
-    let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
 }
 
 #[cfg(windows)]
@@ -69,10 +32,11 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
 #[cfg(not(test))]
 #[no_mangle]
 pub extern fn rust_seh_handler (exception_code: u32) {
-    use winapi::um::minwinbase::EXCEPTION_ACCESS_VIOLATION;
+    use winapi::um::minwinbase::{EXCEPTION_ACCESS_VIOLATION, EXCEPTION_ILLEGAL_INSTRUCTION};
 
     let exception_name = match exception_code {
         EXCEPTION_ACCESS_VIOLATION => "Access Violation",
+        EXCEPTION_ILLEGAL_INSTRUCTION => "Illegal Instruction",
         0xE06D7363 => "VC++ Exception",  // https://blogs.msdn.microsoft.com/oldnewthing/20100730-00/?p=13273
         _ => ""
     };
@@ -223,6 +187,8 @@ fn test_signal_handling() {
 pub fn init_crash_reports() {
     static ONCE: Once = Once::new();
     ONCE.call_once (|| {
+        helpers::init();
+
         // Try to invoke the `rust_seh_handler` whenever the C code crashes.
         if cfg! (windows) {
             extern "C" {fn init_veh();}
