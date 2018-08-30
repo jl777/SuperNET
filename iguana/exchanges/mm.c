@@ -74,20 +74,3 @@ void unbuffered_output_support()
         setvbuf(stderr, 0, _IONBF, 0);
     }
 }
-
-void LP_main(void *ptr)
-{
-    char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
-    unbuffered_output_support();
-    if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
-    {
-        profitmargin = jdouble(argjson,"profitmargin");
-        LP_profitratio += profitmargin;
-        if ( (port= juint(argjson,"rpcport")) < 1000 )
-            port = LP_RPCPORT;
-        if ( jobj(argjson,"netid") != 0 )
-            netid = juint(argjson,"netid");
-        LP_ports(&pullport,&pubport,&busport,netid);
-        LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
-    }
-}

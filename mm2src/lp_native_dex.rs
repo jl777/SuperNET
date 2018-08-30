@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
@@ -14,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_nativeDEX.c
+//  LP_nativeDEX.rs
 //  marketmaker
 //
 // portfolio to set prices from historical
@@ -29,6 +28,7 @@
 // locktime claiming on sporadic assetchains
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
+/*
 #include <stdio.h>
 #ifndef MM_VERSION
 #define MM_VERSION "UNKNOWN"
@@ -1853,5 +1853,4 @@ void *LP_realloc(void *ptr,uint64_t len)
 {
     return(realloc(ptr,len));
 }*/
-
-
+*/

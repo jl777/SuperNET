@@ -107,10 +107,12 @@ fn generate_bindings() {
             "cJSON_GetErrorPtr",
             "cJSON_Delete",
             "LP_NXT_redeems",
+            "LPinit",
+            "LP_ports",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),
-        ["GLOBAL_DBDIR", "DOCKERFLAG"].iter(),
+        ["GLOBAL_DBDIR", "DOCKERFLAG", "LP_profitratio", "LP_RPCPORT"].iter(),
     );
 
     bindgen(

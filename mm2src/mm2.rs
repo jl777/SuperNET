@@ -83,13 +83,13 @@ use std::thread::sleep;
 use std::time::Duration;
 
 pub mod crash_reports;
+mod lp_native_dex;
 mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
 extern "C" {
     fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
-    fn LP_main (c_json: *mut cJSON) -> !;
 }
 
 use crash_reports::init_crash_reports;
@@ -163,23 +163,26 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
     *busportp = otherports + 30;
     printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
 }
-
-void LP_main(void *ptr)
-{
-    char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
-    if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
-    {
-        profitmargin = jdouble(argjson,"profitmargin");
-        LP_profitratio += profitmargin;
-        if ( (port= juint(argjson,"rpcport")) < 1000 )
-            port = LP_RPCPORT;
-        if ( jobj(argjson,"netid") != 0 )
-            netid = juint(argjson,"netid");
-        LP_ports(&pullport,&pubport,&busport,netid);
-        LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
-    }
-}
 */
+fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
+    let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
+    if let Some (passphrase) = conf["passphrase"].as_str() {
+        let profitmargin = conf["profitmargin"].as_f64();
+        unsafe {lp::LP_profitratio += profitmargin.unwrap_or (0.)};
+        let mut port = conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
+        if port < 1000 {return ERR! ("port < 1000")}
+        if port > u16::max_value() as u64 {return ERR! ("port > u16")}
+        let netid = conf["netid"].as_u64().unwrap_or (0) as u16;
+        unsafe {lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid)};
+        let passphrase = try_s! (CString::new (passphrase));
+        let client = conf["client"].as_i64().unwrap_or (0);
+        if client < i32::min_value() as i64 {return ERR! ("client < i32")}
+        if client > i32::max_value() as i64 {return ERR! ("client > i32")}
+        let userhome = try_s! (CString::new (conf["userhome"].as_str().unwrap_or ("")));
+        unsafe {lp::LPinit (port as u16, pullport, pubport, busport, passphrase.as_ptr() as *mut c_char, client as i32, userhome.as_ptr() as *mut c_char, c_conf.0)};
+        Ok(())
+    } else {ERR! ("!passphrase")}
+}
 
 fn global_dbdir() -> &'static Path {
     Path::new (unwrap! (unsafe {CStr::from_ptr (lp::GLOBAL_DBDIR.as_ptr())} .to_str()))
@@ -241,6 +244,8 @@ mod test {
     use hyper::{Body, Client, Request, StatusCode};
     use hyper::rt::Stream;
 
+    use serde_json::{self as json};
+
     use std::env;
     use std::fs;
     use std::os::raw::c_char;
@@ -248,7 +253,7 @@ mod test {
     use std::thread::sleep;
     use std::time::Duration;
 
-    use super::{btc2kmd, events, LP_main, CJSON};
+    use super::{btc2kmd, events, lp_main, CJSON};
 
     /// Automatically kill a wrapped process.
     struct RaiiKill {handle: Handle, running: bool}
@@ -291,14 +296,16 @@ mod test {
         match env::var ("MM2_TEST_EVENTS_MODE") {
             Ok (ref mode) if mode == "MM" => {
                 println! ("test_events] Starting the MarketMaker...");
-                let c_json = unwrap! (CJSON::from_zero_terminated ("{\
+                let c_json = "{\
                 \"gui\":\"nogui\",\
                 \"unbuffered-output\":1,\
                 \"client\":1,\
                 \"passphrase\":\"123\",\
                 \"coins\":\"BTC,KMD\"\
-                }\0".as_ptr() as *const c_char));
-                unsafe {LP_main (c_json.0)}
+                }\0";
+                let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
+                let conf = unwrap! (json::from_str (&c_json[0 .. c_json.len() - 1]));
+                unwrap! (lp_main (c_conf, conf))
             },
             Ok (ref mode) if mode == "MM_EVENTS" => {
                 println! ("test_events] Starting the `mm2 events`...");
@@ -395,9 +402,15 @@ fn help() {
         "  nxt                   ..  Query the local NXT client (port 7876) regarding the SuperNET account in NXT.\n"
         "  {JSON configuration}  ..  Run the MarketMaker daemon.\n"
         "\n"
-        "Some (but not all) of the JSON configuration parameters:\n"
+        "Some (but not all) of the JSON configuration parameters (* - required):\n"
         "\n"
-        "  canbind  ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
+        "  canbind       ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
+        "  client        ..  '1' to use the client mode.\n"
+        "  netid         ..  Subnetwork. Affects ports and keys.\n"
+        "  passphrase *  ..  The wallet seed.\n"
+        "  profitmargin  ..  Adds to `LP_profitratio`.\n"
+        "  rpcport       ..  If > 1000 overrides the 7783 default.\n"
+        "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
@@ -582,7 +595,7 @@ fn run_lp_main (conf: &str) {
         unsafe {lp::DOCKERFLAG = os::calc_ipbits (ip_port.as_ptr() as *mut c_char) as u32}
     }
 
-    unsafe {LP_main (c_conf.0)}
+    unwrap! (lp_main (c_conf, conf))
 }
 
 #[no_mangle]
