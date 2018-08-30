@@ -22,8 +22,9 @@ extern crate unwrap;
 use libc::malloc;
 use std::intrinsics::copy;
 use std::io::Write;
-use std::mem::uninitialized;
-use std::os::raw::{c_char, c_void};
+use std::mem::{forget, uninitialized};
+use std::ptr::read_volatile;
+use std::os::raw::{c_char};
 use std::sync::{Mutex, MutexGuard};
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
@@ -41,10 +42,11 @@ pub fn str_to_malloc (s: &str) -> *mut c_char {unsafe {
 //? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
 /// Use the value, preventing the compiler and linker from optimizing it away.  
-/// cf. https://github.com/rust-lang/rfcs/issues/1002#issuecomment-239681761
-pub fn used<T> (v: &T) {
-    extern "C" {fn used4rs (ptr: *const c_void);}
-    unsafe {used4rs (v as *const T as *const c_void)}
+pub fn black_box<T> (v: T) -> T {
+    // https://github.com/rust-lang/rfcs/issues/1484#issuecomment-240853111
+    let ret = unsafe {read_volatile (&v)};
+    forget (v);
+    ret
 }
 
 /// Using a static buffer in order to minimize the chance of heap and stack allocations in the signal handler.
@@ -108,6 +110,6 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
 /// Initialize the crate.
 pub fn init() {
     // Pre-allocate the stack trace buffer in order to avoid allocating it from a signal handler.
-    used (&*trace_buf());
-    used (&*trace_name_buf());
+    black_box (&*trace_buf());
+    black_box (&*trace_name_buf());
 }

@@ -90,24 +90,4 @@ void LP_main(void *ptr)
         LP_ports(&pullport,&pubport,&busport,netid);
         LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
-
-    used4rs(0);  // Tells MSVC that the function is used.
-}
-
-/// This noop function helps us with marking a value as used.  
-/// (On the nightly compiler we'd use the Rust inline assembly for that,
-/// but on stable we need an FFI function as recommended in
-/// https://github.com/rust-lang/rfcs/issues/1002#issuecomment-239681761).
-#ifdef _WIN32
-  __declspec(noinline)
-#endif
-void used4rs(void* ptr) {
-    // Adding side effects in order for MSVC to keep the function.
-
-    static volatile char BUF[1];
-    *BUF = * (char*) ptr;
-
-    // https://blogs.msdn.microsoft.com/oldnewthing/20150102-00/?p=43233
-
-    EncodePointer (ptr);
 }
