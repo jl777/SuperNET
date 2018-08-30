@@ -109,6 +109,7 @@ fn generate_bindings() {
             "LP_NXT_redeems",
             "LPinit",
             "LP_ports",
+            "unbuffered_output_support",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),

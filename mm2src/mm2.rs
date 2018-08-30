@@ -165,6 +165,8 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
 }
 */
 fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
+    unsafe {lp::unbuffered_output_support()};
+
     let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
     if let Some (passphrase) = conf["passphrase"].as_str() {
         let profitmargin = conf["profitmargin"].as_f64();
