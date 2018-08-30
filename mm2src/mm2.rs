@@ -393,7 +393,11 @@ fn help() {
         "  events                ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
         "  vanity {substring}    ..  Tries to find an address with the given substring.\n"
         "  nxt                   ..  Query the local NXT client (port 7876) regarding the SuperNET account in NXT.\n"
-        "  {json configuration}  ..  Run the MarketMaker daemon.\n"
+        "  {JSON configuration}  ..  Run the MarketMaker daemon.\n"
+        "\n"
+        "Some (but not all) of the JSON configuration parameters:\n"
+        "\n"
+        "  canbind  ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
