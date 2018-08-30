@@ -101,4 +101,13 @@ void LP_main(void *ptr)
 #ifdef _WIN32
   __declspec(noinline)
 #endif
-void used4rs(void* ptr) {}
+void used4rs(void* ptr) {
+    // Adding side effects in order for MSVC to keep the function.
+
+    static volatile char BUF[1];
+    *BUF = * (char*) ptr;
+
+    // https://blogs.msdn.microsoft.com/oldnewthing/20150102-00/?p=43233
+
+    EncodePointer (ptr);
+}
