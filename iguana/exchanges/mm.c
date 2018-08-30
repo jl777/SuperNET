@@ -91,3 +91,9 @@ void LP_main(void *ptr)
         LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
+
+/// This noop function helps us with marking a value as used.  
+/// (On the nightly compiler we'd use the Rust inline assembly for that,
+/// but on stable we need an FFI function as recommended in
+/// https://github.com/rust-lang/rfcs/issues/1002#issuecomment-239681761).
+void used4rs(void* ptr) {}
