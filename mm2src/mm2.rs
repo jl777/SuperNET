@@ -21,8 +21,6 @@
 
 #![allow(non_camel_case_types)]
 
-extern crate backtrace;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
@@ -39,6 +37,8 @@ extern crate futures_cpupool;
 #[macro_use]
 extern crate gstuff;
 
+extern crate helpers;
+
 extern crate hyper;
 
 #[allow(unused_imports)]
@@ -48,6 +48,9 @@ extern crate lazy_static;
 extern crate libc;
 
 extern crate nix;
+
+extern crate serde;
+extern crate serde_json;
 
 #[macro_use]
 extern crate unwrap;
@@ -60,32 +63,34 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
+use helpers::{stack_trace, stack_trace_frame};
+
+use serde_json::{self as json, Value as Json};
+
 use std::env;
-use std::ffi::{CStr, OsString};
+use std::ffi::{CStr, CString, OsString};
 use std::fmt;
-use std::io::{self, Write};
+use std::fs;
+use std::io::{self, Read, Write};
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::mem::{size_of, zeroed};
+use std::path::Path;
 use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
 use std::sync::Mutex;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub mod crash_reports;
-mod curve25519 {include! ("c_headers/curve25519.rs");}
-use curve25519::{_bits256 as bits256};
-enum cJSON {}
+mod lp_native_dex;
+use lp_native_dex::{lp_init};
+mod lp {include! ("c_headers/LP_include.rs");}
+use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
 extern "C" {
     fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
-    /// NB: Use RAII CJSON instead.
-    fn cJSON_Parse (json: *const u8) -> *mut cJSON;
-    /// Defined when cJSON_Parse() returns 0. 0 when cJSON_Parse() succeeds.
-    fn cJSON_GetErrorPtr() -> *const c_char;
-    fn cJSON_Delete (c_json: *mut cJSON);
-    fn LP_main (c_json: *mut cJSON) -> !;
-    fn mm1_main (argc: c_int, argv: *const *const c_char) -> !;
 }
 
 use crash_reports::init_crash_reports;
@@ -101,67 +106,40 @@ impl fmt::Display for bits256 {
 
 /// RAII and MT wrapper for `cJSON`.
 #[allow(dead_code)]
-struct CJSON (*mut cJSON);
+pub struct CJSON (*mut cJSON);
 #[allow(dead_code)]
 impl CJSON {
-    fn from_zero_terminated (json: *const u8) -> Result<CJSON, String> {
+    fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
         lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
         let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
-        let c_json = unsafe {cJSON_Parse (json)};
+        let c_json = unsafe {lp::cJSON_Parse (json)};
         if c_json == null_mut() {
-            let err = unsafe {cJSON_GetErrorPtr()};
+            let err = unsafe {lp::cJSON_GetErrorPtr()};
             let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
             ERR! ("Can't parse JSON, error: {}", err)
         } else {
             Ok (CJSON (c_json))
         }
     }
+    fn from_str (json: &str) -> Result<CJSON, String> {
+        let cs = try_s! (CString::new (json));
+        CJSON::from_zero_terminated (cs.as_ptr())
+    }
 }
 impl Drop for CJSON {
     fn drop (&mut self) {
-        unsafe {cJSON_Delete (self.0)}
+        unsafe {lp::cJSON_Delete (self.0)}
         self.0 = null_mut()
     }
 }
 
-/* The original C code will be replaced with the corresponding Rust code in small increments,
-   allowing Git history to catch up and show the function-level diffs.
-
-void PNACL_message(char *arg,...)
-{
-    
-}
-#define FROM_MARKETMAKER
-
-#include <stdio.h>
-#include <stdint.h>
-// #include "lib.h"
-#ifndef NATIVE_WINDOWS
-#include "OS_portable.h"
-#else
-*/
-
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod os_portable {include! ("c_headers/OS_portable.rs");}
+mod os {include! ("c_headers/OS_portable.rs");}
 
-/*
-#endif // !_WIN_32
-
-uint32_t DOCKERFLAG;
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
-#include "stats.c"
-void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
-
-*/
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 mod nn {include! ("c_headers/nn.rs");}
+
 /*
-#ifndef NN_WS_MSG_TYPE
-#define NN_WS_MSG_TYPE 1
-#endif
-
-
 #include "LP_nativeDEX.c"
 
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid)
@@ -186,67 +164,74 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
     *busportp = otherports + 30;
     printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
 }
-
-void LP_main(void *ptr)
-{
-    char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
-    if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
-    {
-        profitmargin = jdouble(argjson,"profitmargin");
-        LP_profitratio += profitmargin;
-        if ( (port= juint(argjson,"rpcport")) < 1000 )
-            port = LP_RPCPORT;
-        if ( jobj(argjson,"netid") != 0 )
-            netid = juint(argjson,"netid");
-        LP_ports(&pullport,&pubport,&busport,netid);
-        LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
-    }
-}
-
-int32_t ensure_writable(char *dirname)
-{
-    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
-    OS_randombytes(r.bytes,sizeof(r));
-    sprintf(fname,"%s/checkval",dirname), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"wb")) == 0 )
-    {
-        printf("FATAL ERROR cant create %s\n",fname);
-        fprintf(stderr,"FATAL ERROR cant create %s\n",fname);
-        return(-1);
-    }
-    else if ( fwrite(r.bytes,1,sizeof(r),fp) != sizeof(r) )
-    {
-        printf("FATAL ERROR error writing %s\n",fname);
-        fprintf(stderr,"FATAL ERROR writing %s\n",fname);
-        return(-1);
-    }
-    else
-    {
-        fclose(fp);
-        if ( (fp= fopen(fname,"rb")) == 0 )
-        {
-            printf("FATAL ERROR cant open %s\n",fname);
-            fprintf(stderr,"FATAL ERROR cant open %s\n",fname);
-            return(-1);
-        }
-        else if ( fread(check.bytes,1,sizeof(check),fp) != sizeof(check) )
-        {
-            printf("FATAL ERROR error reading %s\n",fname);
-            fprintf(stderr,"FATAL ERROR reading %s\n",fname);
-            return(-1);
-        }
-        else if ( memcmp(check.bytes,r.bytes,sizeof(r)) != 0 )
-        {
-            printf("FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
-            fprintf(stderr,"FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
-            return(-1);
-        }
-        fclose(fp);
-    }
-    return(0);
-}
-
 */
+fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
+    unsafe {lp::unbuffered_output_support()};
+
+    let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
+    if conf["passphrase"].is_string() {
+        let profitmargin = conf["profitmargin"].as_f64();
+        unsafe {lp::LP_profitratio += profitmargin.unwrap_or (0.)};
+        let port = conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
+        if port < 1000 {return ERR! ("port < 1000")}
+        if port > u16::max_value() as u64 {return ERR! ("port > u16")}
+        let netid = conf["netid"].as_u64().unwrap_or (0) as u16;
+        unsafe {lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid)};
+        let client = conf["client"].as_i64().unwrap_or (0);
+        if client < i32::min_value() as i64 {return ERR! ("client < i32")}
+        if client > i32::max_value() as i64 {return ERR! ("client > i32")}
+        try_s! (lp_init (port as u16, pullport, pubport, busport, client == 1, conf, c_conf));
+        Ok(())
+    } else {ERR! ("!passphrase")}
+}
+
+fn global_dbdir() -> &'static Path {
+    Path::new (unwrap! (unsafe {CStr::from_ptr (lp::GLOBAL_DBDIR.as_ptr())} .to_str()))
+}
+
+/// Invokes `OS_ensure_directory`,  
+/// then prints an error and returns `false` if the directory is not writeable.
+fn ensure_writable (dir_path: &Path) -> bool {
+    let c_dir_path = unwrap! (dir_path.to_str());
+    let c_dir_path = unwrap! (CString::new (c_dir_path));
+    unsafe {os::OS_ensure_directory (c_dir_path.as_ptr() as *mut c_char)};
+
+    /*
+    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
+    */
+    let mut r: [u8; 32] = unsafe {zeroed()};
+    let mut check: Vec<u8> = Vec::with_capacity (r.len());
+    unsafe {os::OS_randombytes (r.as_mut_ptr(), r.len() as c_long)};
+    let fname = dir_path.join ("checkval");
+    let mut fp = match fs::File::create (&fname) {
+        Ok (fp) => fp,
+        Err (_) => {
+            eprintln! ("FATAL ERROR cant create {:?}", fname);
+            return false
+        }
+    };
+    if fp.write_all (&r) .is_err() {
+        eprintln! ("FATAL ERROR writing {:?}", fname);
+        return false
+    }
+    drop (fp);
+    let mut fp = match fs::File::open (&fname) {
+        Ok (fp) => fp,
+        Err (_) => {
+            eprintln! ("FATAL ERROR cant open {:?}", fname);
+            return false
+        }
+    };
+    if fp.read_to_end (&mut check).is_err() || check.len() != r.len() {
+        eprintln! ("FATAL ERROR reading {:?}", fname);
+        return false
+    }
+    if check != r {
+        eprintln! ("FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check);
+        return false
+    }
+    true
+}
 
 #[cfg(test)]
 mod test {
@@ -260,13 +245,16 @@ mod test {
     use hyper::{Body, Client, Request, StatusCode};
     use hyper::rt::Stream;
 
+    use serde_json::{self as json};
+
     use std::env;
     use std::fs;
+    use std::os::raw::c_char;
     use std::str::{from_utf8, from_utf8_unchecked};
     use std::thread::sleep;
     use std::time::Duration;
 
-    use super::{btc2kmd, events, LP_main, CJSON};
+    use super::{btc2kmd, events, lp_main, CJSON};
 
     /// Automatically kill a wrapped process.
     struct RaiiKill {handle: Handle, running: bool}
@@ -309,14 +297,16 @@ mod test {
         match env::var ("MM2_TEST_EVENTS_MODE") {
             Ok (ref mode) if mode == "MM" => {
                 println! ("test_events] Starting the MarketMaker...");
-                let c_json = unwrap! (CJSON::from_zero_terminated ("{\
+                let c_json = "{\
                 \"gui\":\"nogui\",\
                 \"unbuffered-output\":1,\
                 \"client\":1,\
                 \"passphrase\":\"123\",\
                 \"coins\":\"BTC,KMD\"\
-                }\0".as_ptr()));
-                unsafe {LP_main (c_json.0)}
+                }\0";
+                let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
+                let conf = unwrap! (json::from_str (&c_json[0 .. c_json.len() - 1]));
+                unwrap! (lp_main (c_conf, conf))
             },
             Ok (ref mode) if mode == "MM_EVENTS" => {
                 println! ("test_events] Starting the `mm2 events`...");
@@ -410,6 +400,18 @@ fn help() {
         "  btc2kmd {WIF or BTC}  ..  Convert a BTC WIF into a KMD WIF.\n"
         "  events                ..  Listen to a feed coming from a separate MM daemon and print it to stdout.\n"
         "  vanity {substring}    ..  Tries to find an address with the given substring.\n"
+        "  nxt                   ..  Query the local NXT client (port 7876) regarding the SuperNET account in NXT.\n"
+        "  {JSON configuration}  ..  Run the MarketMaker daemon.\n"
+        "\n"
+        "Some (but not all) of the JSON configuration parameters (* - required):\n"
+        "\n"
+        "  canbind       ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
+        "  client        ..  '1' to use the client mode.\n"
+        "  netid         ..  Subnetwork. Affects ports and keys.\n"
+        "  passphrase *  ..  The wallet seed.\n"
+        "  profitmargin  ..  Adds to `LP_profitratio`.\n"
+        "  rpcport       ..  If > 1000 overrides the 7783 default.\n"
+        "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
@@ -422,7 +424,7 @@ const MM_VERSION: &'static str = env!("MM_VERSION");
 
 fn main() {
     init_crash_reports();
-    unsafe {os_portable::OS_init()};
+    unsafe {os::OS_init()};
     println!("BarterDEX MarketMaker {} \n", MM_VERSION);
 
     // Temporarily simulate `argv[]` for the C version of the main method.
@@ -453,7 +455,15 @@ fn main() {
     if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
-    unsafe {mm1_main ((args.len() as i32) - 1, args.as_ptr());}
+    if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); return}
+
+    if first_arg == Some ("nxt") {
+        unsafe {lp::LP_NXT_redeems()};
+        sleep (Duration::from_secs (3));
+        return
+    }
+
+    if let Some (conf) = first_arg {run_lp_main (conf)}
 }
 
 // TODO: `btc2kmd` is *pure*, it doesn't use shared state,
@@ -544,7 +554,7 @@ fn vanity (substring: &str) {
     let timestamp = now_ms() / 1000;
     println! ("start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp);
     for i in 0..1000000000 {
-        unsafe {os_portable::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
+        unsafe {os::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
         unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
         let coinaddr = unsafe {from_utf8_unchecked (from_raw_parts (coinaddr.as_ptr(), 34))};
         // if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
@@ -558,145 +568,51 @@ fn vanity (substring: &str) {
     println! ("done vanitygen.({}) done {} elapsed {}\n", substring, now_ms() / 1000, now_ms() / 1000 - timestamp);
 }
 
-/*
-    else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
-    {
-        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char *floatstr,*addrstr,buf[256],checkaddr[64],coinaddr[64],manystrs[64][128],cmd[64*128]; int32_t n,i,num; char *flag;
-        if ( (fp= fopen(argv[2],"rb")) != 0 )
-        {
-            num = 0;
-            while ( fgets(buf,sizeof(buf),fp) > 0 )
-            {
-                if ( (n= (int32_t)strlen(buf)) > 0 )
-                    buf[--n] = 0;
-                flag = 0;
-                for (i=0; i<n; i++)
-                {
-                    if ( buf[i] == ',' )
-                    {
-                        buf[i] = 0;
-                        flag = &buf[i+1];
-                        break;
-                    }
-                }
-                if ( flag != 0 )
-                {
-                    addrstr = flag, floatstr = buf;
-                    //addrstr = buf, floatstr = flag;
-                    //bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
-                    bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,addrstr);
-                    bitcoin_address("KMD",coinaddr,0,addrtype == 0 ? 60 : 85,rmd160,20);
-                    bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
-                    //bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
-                    bitcoin_address("BTC",checkaddr,0,checktype == 60 ? 0 : 5,checkrmd160,20);
-                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(addrstr,checkaddr) != 0 )
-                    {
-                        for (i=0; i<20; i++)
-                            printf("%02x",rmd160[i]);
-                        printf(" vs. ");
-                        for (i=0; i<20; i++)
-                            printf("%02x",checkrmd160[i]);
-                        printf(" address calc error (%s).%d -> (%s).%d -> (%s) %.8f?\n",addrstr,addrtype,coinaddr,checktype,checkaddr,atof(floatstr));
-                    }
-                    else
-                    {
-                        val = atof(floatstr);
-                        sprintf(manystrs[num++],"\\\"%s\\\":%0.8f",coinaddr,val);
-                        if ( num >= sizeof(manystrs)/sizeof(*manystrs) )
-                        {
-                            sprintf(cmd,"fiat/btch sendmany \\\"\\\" \"{");
-                            for (i=0; i<num; i++)
-                                sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
-                            strcat(cmd,"}\" 0");
-                            printf("%s\nsleep 3\n",cmd);
-                            num = 0;
-                            memset(manystrs,0,sizeof(manystrs));
-                        }
-                        total += val;
-                        //printf("(%s).%d (%s) <- %.8f (%s) total %.8f\n",addrstr,addrtype,coinaddr,val,floatstr,total);
-                    }
-                } else printf("parse error for (%s)\n",buf);
-            }
-            if ( num > 0 )
-            {
-                sprintf(cmd,"fiat/btch sendmany \\\"\\\" \"{");
-                for (i=0; i<num; i++)
-                    sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
-                strcat(cmd,"}\" 0");
-                printf("%s\n",cmd);
-                num = 0;
-                memset(manystrs,0,sizeof(manystrs));
-            }
-            printf("close (%s) total %.8f\n",argv[2],total);
-            fclose(fp);
-        } else printf("couldnt open (%s)\n",argv[2]);
-        exit(0);
-    }
-    sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/GTC",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-    sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
-    if ( ensure_writable(dirname) < 0 )
-    {
-        printf("couldnt write to (%s)\n",dirname);
-        exit(0);
-    }
-#ifdef FROM_JS
-    argc = 2;
-    retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
-    printf("calling LP_main(%s)\n",jprint(retjson,0));
-    LP_main(retjson);
-    emscripten_set_main_loop(LP_fromjs_iter,1,0);
-#else
-    if ( argc == 1 )
-    {
-        //LP_privkey_tests();
-        LP_NXT_redeems();
-        sleep(3);
-        return(0);
-    }
-    if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
-    {
-        if ( jint(retjson,"docker") == 1 )
-            DOCKERFLAG = 1;
-        else if ( jstr(retjson,"docker") != 0 )
-            DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
-        //if ( jobj(retjson,"passphrase") != 0 )
-        //    jdelete(retjson,"passphrase");
-        //if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
-        //    jaddstr(retjson,"passphrase","default");
-        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
-        {
-            printf("error launching LP_main (%s)\n",jprint(retjson,0));
-            exit(-1);
-        } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
-        incr = 100.;
-        while ( LP_STOP_RECEIVED == 0 )
-            sleep(100000);
-    } else printf("couldnt parse.(%s)\n",argv[1]);
-#endif
-    return 0;
+fn fix_directories() -> bool {
+    unsafe {os::OS_ensure_directory (lp::GLOBAL_DBDIR.as_ptr() as *mut c_char)};
+    let dbdir = global_dbdir();
+    if !ensure_writable (&dbdir.join ("SWAPS")) {return false}
+    if !ensure_writable (&dbdir.join ("GTC")) {return false}
+    if !ensure_writable (&dbdir.join ("PRICES")) {return false}
+    if !ensure_writable (&dbdir.join ("UNSPENTS")) {return false}
+    true
 }
 
-*/
+/// Parses the `first_argument` as JSON and starts LP_main.
+fn run_lp_main (conf: &str) {
+    let c_conf = match CJSON::from_str (conf) {
+        Ok (json) => json,
+        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+    };
+    let conf: Json = match json::from_str(conf) {
+        Ok (json) => json,
+        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+    };
+
+    if conf["docker"] == 1 {
+        unsafe {lp::DOCKERFLAG = 1}
+    } else if conf["docker"].is_string() {
+        let ip_port = unwrap! (CString::new (unwrap! (conf["docker"].as_str())));
+        unsafe {lp::DOCKERFLAG = os::calc_ipbits (ip_port.as_ptr() as *mut c_char) as u32}
+    }
+
+    unwrap! (lp_main (c_conf, conf))
+}
+
+#[no_mangle]
+pub extern fn log_stacktrace (desc: *const c_char) {
+    let desc = if desc == null() {
+        ""
+    } else {
+        match unsafe {CStr::from_ptr (desc)} .to_str() {
+            Ok (s) => s,
+            Err (err) => {
+                eprintln! ("log_stacktrace] Bad trace description: {}", err);
+                ""
+            }
+        }
+    };
+    let mut trace = String::with_capacity (4096);
+    stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+    eprintln! ("Stacktrace. {}\n{}", desc, trace);
+}

@@ -31,6 +31,7 @@ void *LP_alloc(uint64_t len);
 void LP_free(void *ptr);
 char *LP_clonestr(char *str);*/
 
+// TODO: Use the AtomicBool `BITCOIND_RPC_INITIALIZED` instead.
 int32_t bitcoind_RPC_inittime;
 
 #if LIQUIDITY_PROVIDER
