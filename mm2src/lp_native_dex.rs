@@ -28,6 +28,14 @@
 // locktime claiming on sporadic assetchains
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
+#![allow(unused_imports)]  // To be removed after the file is ported.
+
+use serde_json::{self as json, Value as Json};
+use std::ffi::{CStr, CString, OsString};
+use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::sync::atomic::{AtomicBool, Ordering};
+use super::CJSON;
+
 /*
 #include <stdio.h>
 #ifndef MM_VERSION
@@ -1421,11 +1429,14 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     return(n);
 }
 
-extern int32_t bitcoind_RPC_inittime;
+*/
+/// True if `lp_init` has started initializing the threads.  
+/// Mirrors the C `bitcoind_RPC_inittime`.
+const BITCOIND_RPC_INITIALIZED: AtomicBool = AtomicBool::new (false);
 
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
-{
-    char *myipaddr=0; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, mybusport: u16, amclient: bool, conf: Json, c_conf: CJSON) -> Result<(), String> {
+    BITCOIND_RPC_INITIALIZED.store (true, Ordering::Relaxed);
+/*
     bitcoind_RPC_inittime = 1;
     if ( LP_MAXPRICEINFOS > 256 )
     {
@@ -1690,7 +1701,14 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("marketmaker exiting in 5 seconds\n");
     sleep(5);
     exit(0);
+*/
+//pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, passphrase: &str, amclient: bool, userhome: &str, json: Json, c_json: CJSON) -> Result<(), String> {
+    let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
+    let userhome = try_s! (CString::new (conf["userhome"].as_str().unwrap_or ("")));
+    unsafe {::lp::LPinit (myport, mypullport, mypubport, mybusport, passphrase.as_ptr() as *mut c_char, if amclient {1} else {0}, userhome.as_ptr() as *mut c_char, c_conf.0)};
+    Ok(())
 }
+/*
 
 #ifdef FROM_JS
 extern void *Nanomsg_threadarg;

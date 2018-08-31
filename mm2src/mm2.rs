@@ -84,6 +84,7 @@ use std::time::Duration;
 
 pub mod crash_reports;
 mod lp_native_dex;
+use lp_native_dex::{lp_init};
 mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
@@ -105,7 +106,7 @@ impl fmt::Display for bits256 {
 
 /// RAII and MT wrapper for `cJSON`.
 #[allow(dead_code)]
-struct CJSON (*mut cJSON);
+pub struct CJSON (*mut cJSON);
 #[allow(dead_code)]
 impl CJSON {
     fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
@@ -168,20 +169,18 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
     unsafe {lp::unbuffered_output_support()};
 
     let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
-    if let Some (passphrase) = conf["passphrase"].as_str() {
+    if conf["passphrase"].is_string() {
         let profitmargin = conf["profitmargin"].as_f64();
         unsafe {lp::LP_profitratio += profitmargin.unwrap_or (0.)};
-        let mut port = conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
+        let port = conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
         if port < 1000 {return ERR! ("port < 1000")}
         if port > u16::max_value() as u64 {return ERR! ("port > u16")}
         let netid = conf["netid"].as_u64().unwrap_or (0) as u16;
         unsafe {lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid)};
-        let passphrase = try_s! (CString::new (passphrase));
         let client = conf["client"].as_i64().unwrap_or (0);
         if client < i32::min_value() as i64 {return ERR! ("client < i32")}
         if client > i32::max_value() as i64 {return ERR! ("client > i32")}
-        let userhome = try_s! (CString::new (conf["userhome"].as_str().unwrap_or ("")));
-        unsafe {lp::LPinit (port as u16, pullport, pubport, busport, passphrase.as_ptr() as *mut c_char, client as i32, userhome.as_ptr() as *mut c_char, c_conf.0)};
+        try_s! (lp_init (port as u16, pullport, pubport, busport, client == 1, conf, c_conf));
         Ok(())
     } else {ERR! ("!passphrase")}
 }
