@@ -21,6 +21,8 @@
 
 #![allow(non_camel_case_types)]
 
+extern crate crc;
+
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
@@ -49,6 +51,8 @@ extern crate libc;
 
 extern crate nix;
 
+extern crate rand;
+
 extern crate serde;
 extern crate serde_json;
 
@@ -65,6 +69,8 @@ use gstuff::now_ms;
 
 use helpers::{stack_trace, stack_trace_frame};
 
+use rand::random;
+
 use serde_json::{self as json, Value as Json};
 
 use std::env;
@@ -72,8 +78,8 @@ use std::ffi::{CStr, CString, OsString};
 use std::fmt;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::os::raw::{c_char, c_int, c_long, c_void};
-use std::mem::{size_of, zeroed};
+use std::os::raw::{c_char, c_int, c_void};
+use std::mem::{zeroed};
 use std::path::Path;
 use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
@@ -85,6 +91,7 @@ use std::time::Duration;
 pub mod crash_reports;
 mod lp_native_dex;
 use lp_native_dex::{lp_init};
+#[allow(dead_code)]
 mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
@@ -199,9 +206,8 @@ fn ensure_writable (dir_path: &Path) -> bool {
     /*
     char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
     */
-    let mut r: [u8; 32] = unsafe {zeroed()};
+    let r: [u8; 32] = random();
     let mut check: Vec<u8> = Vec::with_capacity (r.len());
-    unsafe {os::OS_randombytes (r.as_mut_ptr(), r.len() as c_long)};
     let fname = dir_path.join ("checkval");
     let mut fp = match fs::File::create (&fname) {
         Ok (fp) => fp,
@@ -412,6 +418,7 @@ fn help() {
         "  profitmargin  ..  Adds to `LP_profitratio`.\n"
         "  rpcport       ..  If > 1000 overrides the 7783 default.\n"
         "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
+        "  wif           ..  `1` to add WIFs to the information we provide about a coin.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
@@ -551,13 +558,13 @@ fn vanity (substring: &str) {
     let mut wifstr: [c_char; 128] = unsafe {zeroed()};
     let mut privkey: bits256 = unsafe {zeroed()};
     let ctx = unsafe {bitcoin_ctx()};
+    unsafe {lp::LP_initcoins (ctx as *mut c_void, -1, unwrap! (CJSON::from_str ("[]")) .0)};
     let timestamp = now_ms() / 1000;
     println! ("start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp);
     for i in 0..1000000000 {
-        unsafe {os::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
+        privkey.bytes = random();
         unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
         let coinaddr = unsafe {from_utf8_unchecked (from_raw_parts (coinaddr.as_ptr(), 34))};
-        // if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
         if &coinaddr[1 .. substring.len()] == &substring[0 .. substring.len() - 1] {  // Print on near match.
             unsafe {bitcoin_priv2wif ("KMD\0".as_ptr(), 0, wifstr.as_mut_ptr(), privkey, 188)};
             let wifstr = unwrap! (unsafe {CStr::from_ptr (wifstr.as_ptr())} .to_str());

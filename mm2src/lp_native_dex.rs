@@ -30,11 +30,16 @@
 
 #![allow(unused_imports)]  // To be removed after the file is ported.
 
+use crc::crc32;
+use libc;
+use rand::random;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString, OsString};
+use std::io::{Cursor, Write};
+use std::mem::transmute;
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::sync::atomic::{AtomicBool, Ordering};
-use super::CJSON;
+use super::{lp, CJSON, MM_VERSION};
 
 /*
 #include <stdio.h>
@@ -1430,63 +1435,66 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
 }
 
 */
-/// True if `lp_init` has started initializing the threads.  
+/// True during the threads initialization in `lp_init`.  
 /// Mirrors the C `bitcoind_RPC_inittime`.
-const BITCOIND_RPC_INITIALIZED: AtomicBool = AtomicBool::new (false);
+const BITCOIND_RPC_INITIALIZING: AtomicBool = AtomicBool::new (false);
+
+// See if the CRC32 we have in Rust matches the C version.
+#[test]
+fn test_crc32() {
+    assert_eq! (crc32::checksum_ieee (b"123456789"), 0xcbf43926);
+    assert_eq! (unsafe {lp::calc_crc32 (0, b"123456789".as_ptr() as *mut c_void, 9)}, 0xcbf43926);
+}
 
 pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, mybusport: u16, amclient: bool, conf: Json, c_conf: CJSON) -> Result<(), String> {
-    BITCOIND_RPC_INITIALIZED.store (true, Ordering::Relaxed);
+    unsafe {lp::bitcoind_RPC_inittime = 1};
+    BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
+    if lp::LP_MAXPRICEINFOS > 256 {
+        return ERR! ("LP_MAXPRICEINFOS {} wont fit in a u8, need to increase the width of the baseind and relind for struct LP_pubkey_quote", lp::LP_MAXPRICEINFOS)
+    }
+    unsafe {lp::LP_showwif = if conf["wif"] == 1 {1} else {0}};
+    println! ("showwif.{} version: {} {}", unsafe {lp::LP_showwif}, MM_VERSION, crc32::checksum_ieee (MM_VERSION.as_bytes()));
+    if unwrap! (conf["passphrase"].as_str()) .is_empty() {
+        return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree")
+    }
+    unsafe {lp::IAMLP = if amclient {0} else {1}};
+    unsafe {libc::srand (random())};  // Seed the C RNG, we might need it as long as we're using C code.
+    if conf["gui"] == 1 {
+        // Replace "cli\0" with "gui\0".
+        let lp_gui: &mut [c_char] = unsafe {&mut lp::LP_gui[..]};
+        let lp_gui: &mut [u8] = unsafe {transmute (lp_gui)};
+        let mut cur = Cursor::new (lp_gui);
+        unwrap! (write! (&mut cur, "gui\0"))
+    }
+    if conf["canbind"].is_null() {
+        unsafe {lp::LP_canbind = lp::IAMLP}
+    } else {
+        let canbind = unwrap! (conf["canbind"].as_i64());
+        if canbind < 0 {return ERR! ("Unexpected negative `canbind`")}
+        if canbind > 65535 {return ERR! ("canbind > u16")}
+        unsafe {lp::LP_canbind = canbind as i32};
+        println! (">>>>>>>>>>> set LP_canbind.{}", unsafe {lp::LP_canbind})
+    }
+    if unsafe {lp::LP_canbind > 1000 && lp::LP_canbind < 65536} {
+        unsafe {lp::LP_fixed_pairport = lp::LP_canbind as u16}
+    }
+    if unsafe {lp::LP_canbind != 0} {
+        unsafe {lp::LP_canbind = 1}
+    }
+    if !conf["userhome"].is_null() {
+        let userhome = unwrap! (conf["userhome"].as_str()) .trim();
+        if !userhome.is_empty() {
+            let global: &mut [c_char] = unsafe {&mut lp::USERHOME[..]};
+            let global: &mut [u8] = unsafe {transmute (global)};
+            let mut cur = Cursor::new (global);
+            unwrap! (write! (&mut cur, "{}", userhome));
+            if cfg! (target_os = "macos") {
+                unwrap! (write! (&mut cur, "/Library/Application Support"))
+            }
+            unwrap! (write! (&mut cur, "\0"))
+        }
+    }
 /*
-    bitcoind_RPC_inittime = 1;
-    if ( LP_MAXPRICEINFOS > 256 )
-    {
-        printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);
-        exit(-1);
-    }
-    LP_showwif = juint(argjson,"wif");
-    printf("showwif.%d version: %s %u\n",LP_showwif,MM_VERSION,calc_crc32(0,MM_VERSION,(int32_t)strlen(MM_VERSION)));
-    if ( passphrase == 0 || passphrase[0] == 0 )
-    {
-        printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
-        exit(-1);
-    }
-    IAMLP = !amclient;
-#ifndef __linux__
-    if ( IAMLP != 0 )
-    {
-        printf("must run a unix node for LP node\n");
-        exit(-1);
-    }
-#endif
-    OS_randombytes((void *)&n,sizeof(n));
-    srand((uint32_t)n);
-    if ( jobj(argjson,"gui") != 0 )
-        safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
-    if ( jobj(argjson,"canbind") == 0 )
-    {
-#ifndef __linux__
-        LP_canbind = IAMLP;
-#else
-        LP_canbind = IAMLP;
-#endif
-    }
-    else
-    {
-        LP_canbind = jint(argjson,"canbind");
-        printf(">>>>>>>>>>> set LP_canbind.%d\n",LP_canbind);
-    }
-    if ( LP_canbind > 1000 && LP_canbind < 65536 )
-        LP_fixed_pairport = LP_canbind;
-    if ( LP_canbind != 0 )
-        LP_canbind = 1;
-    srand((int32_t)n);
-    if ( userhome != 0 && userhome[0] != 0 )
-    {
-        safecopy(USERHOME,userhome,sizeof(USERHOME));
-#ifdef __APPLE__
-        strcat(USERHOME,"/Library/Application Support");
-#endif
-    }
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_UTXOmutex);
@@ -1702,10 +1710,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, mybusport: u16, am
     sleep(5);
     exit(0);
 */
-//pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, passphrase: &str, amclient: bool, userhome: &str, json: Json, c_json: CJSON) -> Result<(), String> {
     let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
     let userhome = try_s! (CString::new (conf["userhome"].as_str().unwrap_or ("")));
-    unsafe {::lp::LPinit (myport, mypullport, mypubport, mybusport, passphrase.as_ptr() as *mut c_char, if amclient {1} else {0}, userhome.as_ptr() as *mut c_char, c_conf.0)};
+    unsafe {lp::LPinit (myport, mypullport, mypubport, mybusport, passphrase.as_ptr() as *mut c_char, if amclient {1} else {0}, userhome.as_ptr() as *mut c_char, c_conf.0)};
     Ok(())
 }
 /*

@@ -16,13 +16,13 @@ web3 = { git = "https://github.com/artemii235/rust-web3" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
 hex = "0.3.2"
 regex = "1"
-libc = "0.2.42"
-unwrap = "1.2.0"
+libc = "0.2"
+unwrap = "1.2"
 helpers = { path = "../helpers" }
 
 [build-dependencies]
-bindgen = "0.38"
-cc = "1.0.18"
+bindgen = "0.39"
+cc = "1.0"
 duct = "0.11.0"
 gstuff = { git = "https://github.com/ArtemGr/gstuff.rs" }
 itertools = "0.7.8"

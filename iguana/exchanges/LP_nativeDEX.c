@@ -924,6 +924,7 @@ void gameaddrs()
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
     int32_t i,n,notarized; cJSON *item; char *symbol,*etomic; struct iguana_info *coin;
+    if (LP_coinmutex == 0) portable_mutex_init(&LP_coinmutex);  // Vanitygen skips the normal mutex initiazliation.
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s, ",activecoins[i]);
@@ -1426,56 +1427,6 @@ extern int32_t bitcoind_RPC_inittime;
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
-    bitcoind_RPC_inittime = 1;
-    if ( LP_MAXPRICEINFOS > 256 )
-    {
-        printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);
-        exit(-1);
-    }
-    LP_showwif = juint(argjson,"wif");
-    printf("showwif.%d version: %s %u\n",LP_showwif,MM_VERSION,calc_crc32(0,MM_VERSION,(int32_t)strlen(MM_VERSION)));
-    if ( passphrase == 0 || passphrase[0] == 0 )
-    {
-        printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
-        exit(-1);
-    }
-    IAMLP = !amclient;
-#ifndef __linux__
-    if ( IAMLP != 0 )
-    {
-        printf("must run a unix node for LP node\n");
-        exit(-1);
-    }
-#endif
-    OS_randombytes((void *)&n,sizeof(n));
-    srand((uint32_t)n);
-    if ( jobj(argjson,"gui") != 0 )
-        safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
-    if ( jobj(argjson,"canbind") == 0 )
-    {
-#ifndef __linux__
-        LP_canbind = IAMLP;
-#else
-        LP_canbind = IAMLP;
-#endif
-    }
-    else
-    {
-        LP_canbind = jint(argjson,"canbind");
-        printf(">>>>>>>>>>> set LP_canbind.%d\n",LP_canbind);
-    }
-    if ( LP_canbind > 1000 && LP_canbind < 65536 )
-        LP_fixed_pairport = LP_canbind;
-    if ( LP_canbind != 0 )
-        LP_canbind = 1;
-    srand((int32_t)n);
-    if ( userhome != 0 && userhome[0] != 0 )
-    {
-        safecopy(USERHOME,userhome,sizeof(USERHOME));
-#ifdef __APPLE__
-        strcat(USERHOME,"/Library/Application Support");
-#endif
-    }
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_UTXOmutex);
