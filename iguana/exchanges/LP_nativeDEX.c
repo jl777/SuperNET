@@ -1424,9 +1424,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
 
 extern int32_t bitcoind_RPC_inittime;
 
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
-{
-    char *myipaddr=0; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+void LP_mutex_init() {
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_UTXOmutex);
@@ -1456,6 +1454,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_pendswap_mutex);
     portable_mutex_init(&LP_listmutex);
     portable_mutex_init(&LP_gtcmutex);
+}
+
+void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson)
+{
+    char *myipaddr=0; long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS

@@ -187,7 +187,7 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
         let client = conf["client"].as_i64().unwrap_or (0);
         if client < i32::min_value() as i64 {return ERR! ("client < i32")}
         if client > i32::max_value() as i64 {return ERR! ("client > i32")}
-        try_s! (lp_init (port as u16, pullport, pubport, busport, client == 1, conf, c_conf));
+        try_s! (lp_init (port as u16, pullport, pubport, client == 1, conf, c_conf));
         Ok(())
     } else {ERR! ("!passphrase")}
 }
@@ -557,6 +557,7 @@ fn vanity (substring: &str) {
     let mut coinaddr: [u8; 64] = unsafe {zeroed()};
     let mut wifstr: [c_char; 128] = unsafe {zeroed()};
     let mut privkey: bits256 = unsafe {zeroed()};
+    unsafe {lp::LP_mutex_init()};
     let ctx = unsafe {bitcoin_ctx()};
     unsafe {lp::LP_initcoins (ctx as *mut c_void, -1, unwrap! (CJSON::from_str ("[]")) .0)};
     let timestamp = now_ms() / 1000;

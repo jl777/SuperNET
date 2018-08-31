@@ -1446,7 +1446,7 @@ fn test_crc32() {
     assert_eq! (unsafe {lp::calc_crc32 (0, b"123456789".as_ptr() as *mut c_void, 9)}, 0xcbf43926);
 }
 
-pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, mybusport: u16, amclient: bool, conf: Json, c_conf: CJSON) -> Result<(), String> {
+pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, conf: Json, c_conf: CJSON) -> Result<(), String> {
     unsafe {lp::bitcoind_RPC_inittime = 1};
     BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
     if lp::LP_MAXPRICEINFOS > 256 {
@@ -1494,36 +1494,8 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, mybusport: u16, am
             unwrap! (write! (&mut cur, "\0"))
         }
     }
+    unsafe {lp::LP_mutex_init()};
 /*
-    portable_mutex_init(&LP_peermutex);
-    portable_mutex_init(&LP_utxomutex);
-    portable_mutex_init(&LP_UTXOmutex);
-    portable_mutex_init(&LP_commandmutex);
-    portable_mutex_init(&LP_swaplistmutex);
-    portable_mutex_init(&LP_cachemutex);
-    portable_mutex_init(&LP_networkmutex);
-    portable_mutex_init(&LP_gcmutex);
-    portable_mutex_init(&LP_forwardmutex);
-    portable_mutex_init(&LP_inusemutex);
-    portable_mutex_init(&LP_psockmutex);
-    portable_mutex_init(&LP_coinmutex);
-    portable_mutex_init(&LP_pubkeymutex);
-    portable_mutex_init(&LP_electrummutex);
-    portable_mutex_init(&LP_messagemutex);
-    portable_mutex_init(&LP_portfoliomutex);
-    portable_mutex_init(&LP_butxomutex);
-    portable_mutex_init(&LP_reservedmutex);
-    portable_mutex_init(&LP_nanorecvsmutex);
-    portable_mutex_init(&LP_tradebotsmutex);
-    portable_mutex_init(&LP_cJSONmutex);
-    portable_mutex_init(&LP_logmutex);
-    portable_mutex_init(&LP_statslogmutex);
-    portable_mutex_init(&LP_tradesmutex);
-    portable_mutex_init(&LP_commandQmutex);
-    portable_mutex_init(&LP_blockinit_mutex);
-    portable_mutex_init(&LP_pendswap_mutex);
-    portable_mutex_init(&LP_listmutex);
-    portable_mutex_init(&LP_gtcmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
@@ -1711,8 +1683,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, mybusport: u16, am
     exit(0);
 */
     let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
-    let userhome = try_s! (CString::new (conf["userhome"].as_str().unwrap_or ("")));
-    unsafe {lp::LPinit (myport, mypullport, mypubport, mybusport, passphrase.as_ptr() as *mut c_char, if amclient {1} else {0}, userhome.as_ptr() as *mut c_char, c_conf.0)};
+    unsafe {lp::LPinit (myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
     Ok(())
 }
 /*

@@ -112,6 +112,7 @@ fn generate_bindings() {
             "unbuffered_output_support",
             "calc_crc32",
             "LP_initcoins",
+            "LP_mutex_init",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),
