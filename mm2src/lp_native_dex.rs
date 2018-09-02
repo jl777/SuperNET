@@ -31,14 +31,20 @@
 #![allow(unused_imports)]  // To be removed after the file is ported.
 
 use crc::crc32;
+use futures::Future;
+use helpers::slurp_url;
 use libc;
 use rand::random;
 use serde_json::{self as json, Value as Json};
+use std::fs;
 use std::ffi::{CStr, CString, OsString};
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Read, Write};
 use std::mem::transmute;
+use std::net::IpAddr;
 use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::str::from_utf8;
 use super::{lp, CJSON, MM_VERSION};
 
 /*
@@ -1495,26 +1501,72 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         }
     }
     unsafe {lp::LP_mutex_init()};
+
+    fn simple_ip_extractor (ip: &str) -> Result<IpAddr, String> {
+        let ip = ip.trim();
+        Ok (match ip.parse() {Ok (ip) => ip, Err (err) => return ERR! ("Error parsing IP address '{}': {}", ip, err)})
+    }
+
+    let myipaddr: IpAddr = if Path::new ("myipaddr") .exists() {
+        match fs::File::open ("myipaddr") {
+            Ok (mut f) => {
+                let mut buf = String::new();
+                if let Err (err) = f.read_to_string (&mut buf) {
+                    return ERR! ("Can't read from 'myipaddr': {}", err)
+                }
+                try_s! (simple_ip_extractor (&buf))
+            },
+            Err (err) => return ERR! ("Can't read from 'myipaddr': {}", err)
+        }
+    } else if !conf["myipaddr"].is_null() {
+        let s = try_s! (conf["myipaddr"].as_str().ok_or ("'myipaddr' is not a string"));
+        try_s! (simple_ip_extractor (s))
+    } else {
+        // Detect the real IP address.
+        // 
+        // We're detecting the outer IP address, visible to the internet.
+        // Later we'll try to *bind* on this IP address,
+        // and this will break under NAT or forwarding because the internal IP address will be different.
+        // Which might be a good thing, allowing us to see a forwarding problem instead of silently not functioning.
+
+        let ip_providers: [(&'static str, fn (&str) -> Result<IpAddr, String>); 2] = [
+            ("http://checkip.amazonaws.com/", simple_ip_extractor),
+            ("http://api.ipify.org", simple_ip_extractor)
+        ];
+
+        let mut ip_providers_it = ip_providers.iter();
+        loop {
+            let (url, extactor) = match ip_providers_it.next() {Some (t) => t, None => return ERR! ("Can't fetch the real IP")};
+            println! ("lp_init] Trying to fetch the real IP from '{}' ...", url);
+            let (status, _headers, ip) = match slurp_url (url) .wait() {
+                Ok (t) => t,
+                Err (err) => {
+                    println! ("lp_init] Failed to fetch IP from '{}': {}", url, err);
+                    continue
+                }
+            };
+            if !status.is_success() {
+                println! ("lp_init] Failed to fetch IP from '{}': status {:?}", url, status);
+                continue
+            }
+            let ip = match from_utf8 (&ip) {
+                Ok (ip) => ip,
+                Err (err) => {
+                    println! ("lp_init] Failed to fetch IP from '{}', not UTF-8: {}", url, err);
+                    continue
+                }
+            };
+            match extactor (ip) {
+                Ok (ip) => break ip,
+                Err (err) => {
+                    println! ("lp_init] Failed to parse IP '{}' fetched from '{}': {}", ip, url, err);
+                    continue
+                }
+            }
+        }
+    };
+
 /*
-    myipaddr = clonestr("127.0.0.1");
-#ifndef _WIN32
-#ifndef FROM_JS
-    char ipfname[64];
-    strcpy(ipfname,"myipaddr");
-    if ( access( ipfname, F_OK ) != -1 || system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
-    {
-        if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
-        {
-            n = strlen(myipaddr);
-            if ( myipaddr[n-1] == '\n' )
-                myipaddr[--n] = 0;
-            strcpy(LP_myipaddr,myipaddr);
-        } else printf("error getting myipaddr\n");
-    } else printf("error issuing curl\n");
-#else
-    IAMLP = 0;
-#endif
-#endif
     if ( IAMLP != 0 )
     {
         G.netid = juint(argjson,"netid");
@@ -1682,8 +1734,10 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     sleep(5);
     exit(0);
 */
+    let myipaddr = fomat! ((myipaddr));
+    let myipaddr = try_s! (CString::new (myipaddr));
     let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
-    unsafe {lp::LPinit (myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
+    unsafe {lp::LPinit (myipaddr.as_ptr() as *mut c_char, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
     Ok(())
 }
 /*

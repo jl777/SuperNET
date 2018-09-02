@@ -11,21 +11,33 @@
 //!                   main
 
 extern crate backtrace;
+extern crate futures;
 #[macro_use]
 extern crate gstuff;
+extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
 
+use futures::Future;
+use futures::sync::oneshot::{self, Receiver};
+use gstuff::any_to_str;
+use hyper::{Body, Client, Request, StatusCode, HeaderMap};
+use hyper::rt::Stream;
 use libc::malloc;
+use std::fmt::Display;
 use std::intrinsics::copy;
 use std::io::Write;
 use std::mem::{forget, uninitialized};
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::process::abort;
 use std::ptr::read_volatile;
 use std::os::raw::{c_char};
 use std::sync::{Mutex, MutexGuard};
+use tokio_core::reactor::Remote;
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -107,9 +119,91 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
     });
 }
 
+fn start_core_thread() -> Remote {
+    let (tx, rx) = oneshot::channel();
+    unwrap! (std::thread::Builder::new().name ("CORE".into()) .spawn (move || {
+        if let Err (err) = catch_unwind (AssertUnwindSafe (move || {
+            let mut core = unwrap! (tokio_core::reactor::Core::new(), "!core");
+            unwrap! (tx.send (core.remote()), "Can't send Remote.");
+            loop {core.turn (None)}
+        })) {
+            eprintln! ("CORE panic! {:?}", any_to_str (&*err));
+            abort()
+        }
+    }), "!spawn");
+    let core: Remote = unwrap! (rx.wait(), "!wait");
+    core
+}
+
+lazy_static! {
+    /// Shared asynchronous reactor.
+    pub static ref CORE: Remote = start_core_thread();
+}
+
+/// With a shared reactor drives the future `f` to completion.
+/// 
+/// NB: This function is only useful if you need to get the results of the execution.  
+/// If the results are not necessary then a future can be scheduled directly on the reactor:
+/// 
+///     CORE.spawn (|_| f);
+#[allow(dead_code)]
+pub fn drive<F, R, E> (f: F) -> Receiver<Result<R, E>> where
+F: Future<Item=R, Error=E> + Send + 'static,
+R: Send + 'static,
+E: Send + 'static {
+    let (sx, rx) = oneshot::channel();
+    CORE.spawn (move |_handle| {
+        f.then (move |fr: Result<R, E>| -> Result<(),()> {
+            let _ = sx.send (fr);
+            Ok(())
+        })
+    });
+    rx
+}
+
+/// With a shared reactor drives the future `f` to completion.
+/// 
+/// Similar to `fn drive`, but returns a stringified error,
+/// allowing us to collapse the `Receiver` and return the `R` directly.
+pub fn drive_s<F, R, E> (f: F) -> impl Future<Item=R, Error=String> where
+F: Future<Item=R, Error=E> + Send + 'static,
+R: Send + 'static,
+E: Display + Send + 'static {
+    drive (f) .then (move |r| -> Result<R, String> {
+        let r = try_s! (r);  // Peel the `Receiver`.
+        let r = try_s! (r);  // `E` to `String`.
+        Ok (r)
+    })
+}
+
 /// Initialize the crate.
 pub fn init() {
     // Pre-allocate the stack trace buffer in order to avoid allocating it from a signal handler.
     black_box (&*trace_buf());
     black_box (&*trace_name_buf());
+}
+
+type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> + Send>;
+
+/// Executes a Hyper request, returning the response body, status and headers.
+pub fn slurp_req (request: Request<Body>) -> SlurpFut {
+    let client = Client::builder().executor (CORE.clone()) .build_http::<Body>();
+    let request_f = client.request (request);
+    let response_f = request_f.then (move |res| -> SlurpFut {
+        let res = try_fus! (res);
+        let status = res.status();
+        let headers = res.headers().clone();
+        let body_f = res.into_body().concat2();
+        let combined_f = body_f.then (move |body| -> Result<(StatusCode, HeaderMap, Vec<u8>), String> {
+            let body = try_s! (body);
+            Ok ((status, headers, body.to_vec()))
+        });
+        Box::new (combined_f)
+    });
+    Box::new (drive_s (response_f))
+}
+
+/// Executes a GET request, returning the response body, status and headers.
+pub fn slurp_url (url: &str) -> Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String>> {
+    slurp_req (try_fus! (Request::builder().uri (url) .body (Body::empty())))
 }

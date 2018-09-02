@@ -81,6 +81,7 @@ use std::io::{self, Read, Write};
 use std::os::raw::{c_char, c_int, c_void};
 use std::mem::{zeroed};
 use std::path::Path;
+use std::process::exit;
 use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
@@ -413,6 +414,7 @@ fn help() {
         "\n"
         "  canbind       ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         "  client        ..  '1' to use the client mode.\n"
+        "  myipaddr      ..  IP address to bind to.\n"
         "  netid         ..  Subnetwork. Affects ports and keys.\n"
         "  passphrase *  ..  The wallet seed.\n"
         "  profitmargin  ..  Adds to `LP_profitratio`.\n"
@@ -462,7 +464,7 @@ fn main() {
     if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
-    if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); return}
+    if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); exit (1)}
 
     if first_arg == Some ("nxt") {
         unsafe {lp::LP_NXT_redeems()};
@@ -470,7 +472,12 @@ fn main() {
         return
     }
 
-    if let Some (conf) = first_arg {run_lp_main (conf)}
+    if let Some (conf) = first_arg {
+        if let Err (err) = run_lp_main (conf) {
+            eprintln! ("{}", err);
+            exit (1);
+        }
+    }
 }
 
 // TODO: `btc2kmd` is *pure*, it doesn't use shared state,
@@ -587,14 +594,14 @@ fn fix_directories() -> bool {
 }
 
 /// Parses the `first_argument` as JSON and starts LP_main.
-fn run_lp_main (conf: &str) {
+fn run_lp_main (conf: &str) -> Result<(), String> {
     let c_conf = match CJSON::from_str (conf) {
         Ok (json) => json,
-        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+        Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
     };
     let conf: Json = match json::from_str(conf) {
         Ok (json) => json,
-        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+        Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
     };
 
     if conf["docker"] == 1 {
@@ -604,7 +611,8 @@ fn run_lp_main (conf: &str) {
         unsafe {lp::DOCKERFLAG = os::calc_ipbits (ip_port.as_ptr() as *mut c_char) as u32}
     }
 
-    unwrap! (lp_main (c_conf, conf))
+    try_s! (lp_main (c_conf, conf));
+    Ok(())
 }
 
 #[no_mangle]

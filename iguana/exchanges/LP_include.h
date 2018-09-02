@@ -606,7 +606,7 @@ bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
 // Gradual port temporaries.
 cJSON *LP_NXT_redeems();
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson);
+void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson);
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid);
 void unbuffered_output_support();
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);

@@ -24,7 +24,7 @@ helpers = { path = "../helpers" }
 bindgen = "0.39"
 cc = "1.0"
 duct = "0.11.0"
-gstuff = { git = "https://github.com/ArtemGr/gstuff.rs" }
+gstuff = "0.5"
 itertools = "0.7.8"
 num_cpus = "1.8.0"
 unwrap = "1.2.1"

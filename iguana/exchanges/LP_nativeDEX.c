@@ -924,7 +924,6 @@ void gameaddrs()
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
     int32_t i,n,notarized; cJSON *item; char *symbol,*etomic; struct iguana_info *coin;
-    if (LP_coinmutex == 0) portable_mutex_init(&LP_coinmutex);  // Vanitygen skips the normal mutex initiazliation.
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s, ",activecoins[i]);
@@ -1456,28 +1455,9 @@ void LP_mutex_init() {
     portable_mutex_init(&LP_gtcmutex);
 }
 
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson)
+void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
-    myipaddr = clonestr("127.0.0.1");
-#ifndef _WIN32
-#ifndef FROM_JS
-    char ipfname[64];
-    strcpy(ipfname,"myipaddr");
-    if ( access( ipfname, F_OK ) != -1 || system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
-    {
-        if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
-        {
-            n = strlen(myipaddr);
-            if ( myipaddr[n-1] == '\n' )
-                myipaddr[--n] = 0;
-            strcpy(LP_myipaddr,myipaddr);
-        } else printf("error getting myipaddr\n");
-    } else printf("error issuing curl\n");
-#else
-    IAMLP = 0;
-#endif
-#endif
+    long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     if ( IAMLP != 0 )
     {
         G.netid = juint(argjson,"netid");
