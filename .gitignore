@@ -261,6 +261,7 @@ Release/*
 
 build_win64_release/*
 DB/*
+/stats.log
 
 .env.client
 .env.seed
