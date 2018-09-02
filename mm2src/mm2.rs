@@ -245,12 +245,12 @@ mod test {
     use duct::Handle;
 
     use futures::Future;
-    use futures_cpupool::CpuPool;
 
     use gstuff::{now_float, slurp};
 
-    use hyper::{Body, Client, Request, StatusCode};
-    use hyper::rt::Stream;
+    use helpers::slurp_req;
+
+    use hyper::{Request, StatusCode};
 
     use serde_json::{self as json};
 
@@ -345,15 +345,9 @@ mod test {
 
                     /// Invokes a locally running MM and returns it's reply.
                     fn call_mm (json: String) -> Result<(StatusCode, String), String> {
-                        let pool = CpuPool::new (1);
-                        let client = Client::builder().executor (pool.clone()) .build_http::<Body>();
-                        let fut = pool.spawn (client.request (try_s! (
-                            Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()))));
-                        let res = try_s! (fut.wait());
-                        let status = res.status();
-                        let body = try_s! (pool.spawn (res.into_body().concat2()) .wait());
-                        let body = try_s! (from_utf8 (&body)) .trim();
-                        Ok ((status, body.into()))
+                        let request = try_s! (Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()));
+                        let (status, _headers, body) = try_s! (slurp_req (request) .wait());
+                        Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
                     }
 
                     mm_state = match mm_state {

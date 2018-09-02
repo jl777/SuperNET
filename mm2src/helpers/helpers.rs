@@ -146,7 +146,6 @@ lazy_static! {
 /// If the results are not necessary then a future can be scheduled directly on the reactor:
 /// 
 ///     CORE.spawn (|_| f);
-#[allow(dead_code)]
 pub fn drive<F, R, E> (f: F) -> Receiver<Result<R, E>> where
 F: Future<Item=R, Error=E> + Send + 'static,
 R: Send + 'static,
@@ -185,7 +184,7 @@ pub fn init() {
 
 type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> + Send>;
 
-/// Executes a Hyper request, returning the response body, status and headers.
+/// Executes a Hyper request, returning the response status, headers and body.
 pub fn slurp_req (request: Request<Body>) -> SlurpFut {
     let client = Client::builder().executor (CORE.clone()) .build_http::<Body>();
     let request_f = client.request (request);
@@ -203,7 +202,7 @@ pub fn slurp_req (request: Request<Body>) -> SlurpFut {
     Box::new (drive_s (response_f))
 }
 
-/// Executes a GET request, returning the response body, status and headers.
-pub fn slurp_url (url: &str) -> Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String>> {
+/// Executes a GET request, returning the response status, headers and body.
+pub fn slurp_url (url: &str) -> SlurpFut {
     slurp_req (try_fus! (Request::builder().uri (url) .body (Body::empty())))
 }
