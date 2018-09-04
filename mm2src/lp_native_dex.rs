@@ -32,7 +32,7 @@
 
 use crc::crc32;
 use futures::Future;
-use helpers::slurp_url;
+use helpers::{slurp_url, str_to_malloc};
 use libc;
 use rand::random;
 use serde_json::{self as json, Value as Json};
@@ -1735,9 +1735,10 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     exit(0);
 */
     let myipaddr = fomat! ((myipaddr));
-    let myipaddr = try_s! (CString::new (myipaddr));
+    println! ("lp_init] Passing `myipaddr` {} to C.", myipaddr);
+    let myipaddr = str_to_malloc (&myipaddr);
     let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
-    unsafe {lp::LPinit (myipaddr.as_ptr() as *mut c_char, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
+    unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
     Ok(())
 }
 /*
