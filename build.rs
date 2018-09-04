@@ -24,6 +24,9 @@ use std::io::Read;
 use std::iter::empty;
 use std::path::Path;
 
+/// Ongoing (RLS) builds might interfere with a precise time comparison.
+const SLIDE: f64 = 60.;
+
 fn bindgen<
     'a,
     TP: AsRef<Path>,
@@ -50,7 +53,7 @@ fn bindgen<
         };
     }
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
-    if lm_from >= lm_to || lm_build_rs >= lm_to {
+    if lm_from >= lm_to - SLIDE || lm_build_rs >= lm_to - SLIDE {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
             let mut builder = bindgen::builder();
@@ -91,18 +94,40 @@ fn bindgen<
 fn generate_bindings() {
     let _ = fs::create_dir("mm2src/c_headers");
 
+    // NB: curve25519.h and cJSON.h are needed to parse LP_include.h.
+    bindgen(
+        vec![
+            "includes/curve25519.h".into(),
+            "includes/cJSON.h".into(),
+            "iguana/exchanges/LP_include.h".into(),
+        ],
+        "mm2src/c_headers/LP_include.rs",
+        [
+            "cJSON_Parse",
+            "cJSON_GetErrorPtr",
+            "cJSON_Delete",
+            "LP_NXT_redeems",
+            "LPinit",
+            "LP_ports",
+            "unbuffered_output_support",
+        ]
+            .iter(),
+        ["_bits256", "cJSON"].iter(),
+        ["GLOBAL_DBDIR", "DOCKERFLAG", "LP_profitratio", "LP_RPCPORT"].iter(),
+    );
+
     bindgen(
         vec!["crypto777/OS_portable.h".into()],
         "mm2src/c_headers/OS_portable.rs",
-        ["OS_init", "OS_randombytes"].iter(),
+        [
+            "OS_init",
+            "OS_randombytes",
+            "OS_ensure_directory",
+            "OS_compatible_path",
+            "calc_ipbits",
+        ]
+            .iter(),
         empty(),
-        empty(),
-    );
-    bindgen(
-        vec!["includes/curve25519.h".into()],
-        "mm2src/c_headers/curve25519.rs",
-        empty(),
-        ["_bits256"].iter(),
         empty(),
     );
     bindgen(
@@ -129,8 +154,7 @@ fn mm_version() -> String {
     let mut buf;
     let version = if let Ok(mut file) = fs::File::open("MM_VERSION") {
         buf = String::new();
-        file.read_to_string(&mut buf)
-            .expect("Can't read from MM_VERSION");
+        unwrap!(file.read_to_string(&mut buf), "Can't read from MM_VERSION");
         buf.trim()
     } else {
         "UNKNOWN"
@@ -174,7 +198,7 @@ fn windows_requirements() {
         let system = OsString::from_wide(&buf[0..len]);
         Path::new(&system).to_path_buf()
     };
-    println!("windows_requirements] System directory is {:?}.", system);
+    eprintln!("windows_requirements] System directory is {:?}.", system);
 
     // `msvcr100.dll` is required by `ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/dll/x64/pthreadVC2.dll`
     let msvcr100 = system.join("msvcr100.dll");
@@ -201,16 +225,19 @@ fn build_c_code(mm_version: &str) {
     // Link in the Windows-specific crash handling code.
 
     if cfg!(windows) {
-        // TODO: Only (re)build the library when the source code or the build script changes.
-        cc::Build::new()
-            .file("OSlibs/win/seh.c")
-            .warnings(true)
-            .compile("seh");
+        let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
+        let lm_seh = unwrap!(last_modified_sec(&"mm2src/seh.c"), "Can't stat seh.c");
+        let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
+        let lib_path = Path::new(&out_dir).join("libseh.a");
+        let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
+        if lm_build_rs.max(lm_seh) >= lm_lib - SLIDE {
+            cc::Build::new()
+                .file("mm2src/seh.c")
+                .warnings(true)
+                .compile("seh");
+        }
         println!("cargo:rustc-link-lib=static=seh");
-        println!(
-            "cargo:rustc-link-search=native={}",
-            env::var("OUT_DIR").expect("!OUT_DIR")
-        );
+        println!("cargo:rustc-link-search=native={}", out_dir);
     }
 
     // The MM1 library.
@@ -232,10 +259,12 @@ fn build_c_code(mm_version: &str) {
     cmake_prep_args.push("-DCMAKE_BUILD_TYPE=Debug".into());
     cmake_prep_args.push("..".into());
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
-    let _ = cmd("cmake", cmake_prep_args).dir("build")
+    let _ = unwrap!(
+        cmd("cmake", cmake_prep_args).dir("build")
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
-        .run()
-        .expect("!cmake");
+        .run(),
+        "!cmake"
+    );
 
     let mut cmake_args: Vec<String> = vec![
         "--build".into(),
@@ -249,10 +278,12 @@ fn build_c_code(mm_version: &str) {
         cmake_args.push(format!("{}", num_cpus::get()));
     }
     eprintln!("$ cmake{}", show_args(&cmake_args));
-    let _ = cmd("cmake", cmake_args).dir("build")
+    let _ = unwrap!(
+        cmd("cmake", cmake_args).dir("build")
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
-        .run()
-        .expect("!cmake");
+        .run(),
+        "!cmake"
+    );
 
     println!("cargo:rustc-link-lib=static=marketmaker-mainnet-lib");
 
@@ -291,9 +322,14 @@ fn build_c_code(mm_version: &str) {
         println!("cargo:rustc-link-lib=pthreadVC2");
         println!("cargo:rustc-link-lib=static=nanomsg");
         println!("cargo:rustc-link-lib=mswsock"); // For nanomsg.
-        fs::copy("x64/pthreadVC2.dll", "target/debug/pthreadVC2.dll")
-            .expect("Can't copy pthreadVC2.dll");
-        fs::copy("x64/libcurl.dll", "target/debug/libcurl.dll").expect("Can't copy libcurl.dll");
+        unwrap!(
+            fs::copy("x64/pthreadVC2.dll", "target/debug/pthreadVC2.dll"),
+            "Can't copy pthreadVC2.dll"
+        );
+        unwrap!(
+            fs::copy("x64/libcurl.dll", "target/debug/libcurl.dll"),
+            "Can't copy libcurl.dll"
+        );
     } else {
         println!("cargo:rustc-link-lib=crypto");
         println!("cargo:rustc-link-lib=static=nanomsg");

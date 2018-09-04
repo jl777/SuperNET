@@ -289,3 +289,4 @@ iguana/exchanges/manychains
 /mm2src/wasm/target
 /mm2src/etomic/Cargo.lock
 /mm2src/etomic/target
+/mm2src/etomic/c_headers

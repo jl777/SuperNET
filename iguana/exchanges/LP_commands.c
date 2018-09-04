@@ -709,7 +709,7 @@ version\n\
                 {
                     ptr->inactive = 0;
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
-                } else return(clonestr("{\"error\":\"cant find coind\"}"));
+                } else return(clonestr("{\"error\":\"Unknown coin ID. Make sure the coin is defined in `coins`.\"}"));
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {

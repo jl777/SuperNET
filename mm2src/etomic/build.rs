@@ -15,6 +15,9 @@ use std::io::Read;
 use std::iter::empty;
 use std::path::Path;
 
+/// Ongoing (RLS) builds might interfere with a precise time comparison.
+const SLIDE: f64 = 60.;
+
 fn bindgen<
     'a,
     TP: AsRef<Path>,
@@ -41,7 +44,7 @@ fn bindgen<
         };
     }
     let lm_to = last_modified_sec(&to).unwrap_or(0.);
-    if lm_from >= lm_to || lm_build_rs >= lm_to {
+    if lm_from >= lm_to - SLIDE || lm_build_rs >= lm_to - SLIDE {
         let bindings = {
             // https://docs.rs/bindgen/0.37.*/bindgen/struct.Builder.html
             let mut builder = bindgen::builder();
