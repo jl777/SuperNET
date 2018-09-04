@@ -1734,9 +1734,14 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     sleep(5);
     exit(0);
 */
-    let myipaddr = fomat! ((myipaddr));
-    println! ("lp_init] Passing `myipaddr` {} to C.", myipaddr);
-    let myipaddr = str_to_malloc (&myipaddr);
+    let myipaddr = {
+        println! ("lp_init] Passing `myipaddr` {} to C.", myipaddr);
+        let global: &mut [c_char] = unsafe {&mut lp::LP_myipaddr[..]};
+        let global: &mut [u8] = unsafe {transmute (global)};
+        let mut cur = Cursor::new (global);
+        unwrap! (write! (&mut cur, "{}\0", myipaddr));
+        unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
+    };
     let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
     Ok(())

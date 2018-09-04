@@ -619,6 +619,7 @@ extern int32_t LP_showwif;
 extern char LP_gui[65];
 extern int32_t LP_canbind;
 extern uint16_t LP_fixed_pairport;
+extern char LP_myipaddr[64];
 extern char USERHOME[512];
 
 #endif
