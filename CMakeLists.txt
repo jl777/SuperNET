@@ -1,14 +1,5 @@
 cmake_minimum_required(VERSION 3.9.2)
 
-if(NOT(WIN32))
-    include("cmake/HunterGate.cmake")
-    HunterGate(
-        URL "https://github.com/ruslo/hunter/archive/v0.19.173.tar.gz"
-        SHA1 "750fb1d621af971fad6f303356b13017ad9f5e15"
-        LOCAL
-    )
-endif(NOT(WIN32))
-
 project(SuperNET)
 set(DEPS_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 set(CMAKE_CXX_STANDARD 11)
@@ -39,7 +30,6 @@ find_library(
 )
 include_directories("${CMAKE_SOURCE_DIR}")
 add_subdirectory(iguana/exchanges)
-add_subdirectory(iguana/exchanges/etomicswap)
 add_subdirectory(iguana/secp256k1)
 add_subdirectory(crypto777)
 add_subdirectory(crypto777/jpeg)

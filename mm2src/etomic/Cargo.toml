@@ -5,7 +5,6 @@ authors = ["Artem Pikulin <ortgma@gmail.com>"]
 
 [lib]
 name = "etomicrs"
-path = "etomic.rs"
 
 [dependencies]
 ethcore-transaction = { git = "https://github.com/paritytech/parity.git" }
@@ -19,6 +18,11 @@ regex = "1"
 libc = "0.2.42"
 unwrap = "1.2.0"
 helpers = { path = "../helpers" }
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+tokio-timer = "0.1"
+futures = "0.1"
 
 [build-dependencies]
 bindgen = "0.38"

@@ -7,6 +7,7 @@
 #include "etomicswap/etomiclib.h"
 #include "etomicswap/etomiccurl.h"
 #include <inttypes.h>
+#include <includes/cJSON.h>
 #include "LP_include.h"
 
 int32_t LP_etomic_wait_for_confirmation(char *txId);

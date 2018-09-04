@@ -13,43 +13,40 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  etomiclib.rs
+//  etomic.rs
 //  marketmaker
 //
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
-extern crate web3;
-extern crate ethabi;
-extern crate ethcore_transaction;
-extern crate ethereum_types;
-extern crate ethkey;
-extern crate rlp;
-extern crate hex;
-extern crate regex;
-extern crate libc;
-#[macro_use]
-extern crate unwrap;
-extern crate helpers;
+
+#![allow(non_camel_case_types)]
 
 use ethcore_transaction::{ Action, Transaction };
 use ethereum_types::{ U256, H160, H256 };
 use ethkey::{ KeyPair, Secret, Public, public_to_address };
-use ethabi::{ Contract, Token, Error as EthAbiError };
-use web3::futures::Future;
+use ethabi::{ Contract, Token };
 use web3::transports::{ Http, EventLoopHandle };
-use web3::{ Web3 };
-use web3::types::{ Transaction as Web3Transaction, TransactionId, BlockId, BlockNumber, CallRequest, Bytes };
-use web3::confirm::TransactionReceiptBlockNumberCheck;
-use std::time::Duration;
-use std::sync::{ Arc, RwLock, Mutex };
-use std::thread;
+use web3::{ self, Web3 };
+use web3::types::{
+    Transaction as Web3Transaction,
+    TransactionId,
+    BlockNumber,
+    CallRequest,
+    Bytes,
+    TransactionReceipt
+};
+use std::sync::{ RwLock, Mutex };
 use std::collections::HashMap;
-use std::os::raw::{ c_char, c_void, c_int };
-use std::ffi::CString;
-use std::ffi::CStr;
+use std::os::raw::{ c_char, c_int };
+use std::ffi::{ CStr };
 use std::str::FromStr;
 use regex::Regex;
-use helpers::str_to_malloc;
+use helpers::{ str_to_malloc };
+use web3::futures::Future;
+use hex;
+use rlp;
+use std;
+use etomiccurl::get_gas_price_from_station;
 
 static ALICE_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"}],"name":"initErc20Deal","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceSecret","type":"bytes"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobHash","type":"bytes20"}],"name":"initEthDeal","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deals","outputs":[{"name":"dealHash","type":"bytes20"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobSecret","type":"bytes"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]"#;
 static BOB_ABI: &'static str = r#"[{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"payments","outputs":[{"name":"paymentHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"bobClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deposits","outputs":[{"name":"depositHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"aliceClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthPayment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Deposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Payment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthDeposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]"#;
@@ -57,7 +54,7 @@ static ERC20_ABI: &'static str = r#"[{"constant":true,"inputs":[],"name":"name",
 static ALICE_CONTRACT: &'static str = "e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c";
 static BOB_CONTRACT: &'static str = "2a8e4f9ae69c86e277602c6802085febc4bd5986";
 
-include!("c_headers/etomiclib.rs");
+include!("../c_headers/etomiclib.rs");
 
 fn decode_c_hex (s: &[c_char]) -> Vec<u8> {
     unsafe {
@@ -107,17 +104,22 @@ impl EthClient {
         action: Action,
         data: Vec<u8>,
         gas: U256,
-        gas_price: U256
+        gas_price: Option<U256>
     ) -> Result<H256, web3::Error> {
         let mut nonce_lock = self.current_nonce.lock().unwrap();
         let nonce = self.web3.eth().parity_next_nonce(self.key_pair.address()).wait()?;
+        let actual_gas_price = match gas_price {
+            Some(price) => price,
+            None => gas_price_in_wei()
+        };
+
         let tx = Transaction {
             nonce,
             value,
             action,
             data,
             gas,
-            gas_price
+            gas_price: actual_gas_price
         };
 
         let signed = tx.sign(self.key_pair.secret(), None);
@@ -151,7 +153,7 @@ impl EthClient {
             Action::Call(token_address),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -180,7 +182,7 @@ impl EthClient {
             Action::Call(H160::from(ALICE_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -217,7 +219,7 @@ impl EthClient {
             Action::Call(H160::from(ALICE_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -254,7 +256,7 @@ impl EthClient {
             Action::Call(H160::from(ALICE_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -289,7 +291,7 @@ impl EthClient {
             Action::Call(H160::from(ALICE_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -318,7 +320,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -355,7 +357,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -390,7 +392,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -419,7 +421,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -456,7 +458,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -491,7 +493,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -526,7 +528,7 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
     }
 
@@ -561,18 +563,8 @@ impl EthClient {
             Action::Call(H160::from(BOB_CONTRACT)),
             encoded,
             U256::from(210000),
-            U256::from_dec_str("10000000000").unwrap()
+            None
         )
-    }
-
-    pub fn get_tx(&self, tx_id: H256) -> Web3Transaction {
-        self.web3.eth().transaction(TransactionId::Hash(tx_id)).wait().unwrap().unwrap()
-    }
-
-    pub fn wait_confirm(&self, tx_id: H256) {
-        let check = TransactionReceiptBlockNumberCheck::new(self.web3.eth().clone(), tx_id);
-        let duration = Duration::from_secs(1);
-        let wait = self.web3.wait_for_confirmations(duration, 1, check).wait();
     }
 
     pub fn my_address(&self) -> H160 {
@@ -603,6 +595,28 @@ impl EthClient {
             None => Err("Transaction spend was not found")
         }
     }
+
+    pub fn get_tx_receipt(
+        &self,
+        tx_id: H256
+    ) -> Result<(Option<TransactionReceipt>, U256), web3::Error> {
+        let call_result = self.web3.eth().transaction_receipt(tx_id).wait()?;
+        match call_result {
+            Some(receipt) => {
+                let block_number = self.web3.eth().block_number().wait()?;
+                let confirmations = block_number - receipt.block_number + U256::from(1);
+                Ok((Some(receipt), confirmations))
+            },
+            None => Ok((None, U256::from(0)))
+        }
+    }
+
+    pub fn get_tx(
+        &self,
+        tx_id: H256
+    ) -> Result<Option<Web3Transaction>, web3::Error> {
+        self.web3.eth().transaction(TransactionId::Hash(tx_id)).wait()
+    }
 }
 
 #[no_mangle]
@@ -621,9 +635,6 @@ pub extern "C" fn eth_client_destruct(eth_client: *mut EthClient) {
     }
 }
 
-/* The original C code will be replaced with the corresponding Rust code in small increments,
-   allowing Git history to catch up and show the function-level diffs.
-*/
 #[no_mangle]
 pub extern "C" fn approve_erc20(input: ApproveErc20Input, eth_client: *mut EthClient) -> *mut c_char
 {
@@ -1216,9 +1227,8 @@ pub extern "C" fn priv_key_2_addr(priv_key: *const c_char) -> *mut c_char
         let priv_key_slice = CStr::from_ptr(priv_key).to_str().unwrap();
         let secret = Secret::from_str(priv_key_slice).unwrap();
         let key_pair = KeyPair::from_secret(secret).unwrap();
-        let mut str = String::from("0x");
-        str.push_str(&hex::encode(key_pair.address().0));
-        CString::new(str).unwrap().into_raw()
+        let addr_str = format!("0x{:02x}", key_pair.address());
+        str_to_malloc(&addr_str)
     }
 }
 
@@ -1228,9 +1238,8 @@ pub extern "C" fn pub_key_2_addr(pub_key: *const c_char) -> *mut c_char
     unsafe {
         let pub_key_slice = CStr::from_ptr(pub_key).to_str().unwrap();
         let public = Public::from_str(pub_key_slice).unwrap();
-        let mut str = String::from("0x");
-        str.push_str(&hex::encode(public_to_address(&public).0));
-        CString::new(str).unwrap().into_raw()
+        let addr_str = format!("0x{:02x}", public_to_address(&public));
+        str_to_malloc(&addr_str)
     }
 }
 
@@ -1242,20 +1251,24 @@ pub extern "C" fn priv_key_2_pub_key(priv_key: *const c_char) -> *mut c_char
         let secret = Secret::from_str(priv_key_slice).unwrap();
         let key_pair = KeyPair::from_secret(secret).unwrap();
         let pub_str = format!("{:02x}", key_pair.public());
-        CString::new(pub_str).unwrap().into_raw()
+        str_to_malloc(&pub_str)
     }
 }
 
 #[no_mangle]
-pub extern "C" fn get_eth_balance(address: *const c_char, error: *const c_int, eth_client: *mut EthClient) -> u64
+pub extern "C" fn get_eth_balance(address: *const c_char, error: *mut c_int, eth_client: *mut EthClient) -> u64
 {
     unsafe {
         let address_slice = CStr::from_ptr(address).to_str().unwrap();
         let result = (*eth_client).web3.eth().balance(
             H160::from_str(&address_slice[2..]).unwrap(),
             Some(BlockNumber::Latest)
-        ).wait().unwrap();
-        (result / U256::exp10(10)).into()
+        ).wait();
+        if result.is_err() {
+            *error = 1;
+            return 0;
+        }
+        (result.unwrap() / U256::exp10(10)).into()
     }
 }
 
@@ -1264,10 +1277,9 @@ pub extern "C" fn get_erc20_balance(
     address: *const c_char,
     token_address: *const c_char,
     set_decimals: u8,
-    error: *const c_int,
+    error: *mut c_int,
     eth_client: *mut EthClient
-) -> u64
-{
+) -> u64 {
     unsafe {
         let abi = unwrap!(Contract::load(ERC20_ABI.as_bytes()), "Could not parse ERC20 ABI, is it valid?");
         let function = unwrap!(abi.function("balanceOf"), "Could not get ERC20 balanceOf function, is ERC20 ABI valid?");
@@ -1285,8 +1297,14 @@ pub extern "C" fn get_erc20_balance(
                 value: None,
                 data: Some(web3::types::Bytes(encoded))
             }, Some(BlockNumber::Latest)
-        ).wait().unwrap();
-        let decoded = function.decode_output(&output.0).unwrap();
+        ).wait();
+
+        if output.is_err() {
+            *error = 1;
+            return 0;
+        }
+
+        let decoded = function.decode_output(&output.unwrap().0).unwrap();
         let mut result = match decoded[0] {
             Token::Uint(number) => number,
             _ => panic!("balanceOf call result must be uint, check ERC20 contract ABI")
@@ -1397,13 +1415,31 @@ pub extern "C" fn send_eth(
         let to_slice = CStr::from_ptr(to).to_str().unwrap();
         let to_address_h160 = H160::from_str(&to_slice[2..]).unwrap();
 
+        let actual_gas_price = if gas_price > 0 {
+            Some(U256::from(gas_price) * U256::exp10(9))
+        } else {
+            let gas_u64 = get_gas_price_from_station(default_gas_on_err);
+            if gas_u64 == 0 {
+                return std::ptr::null_mut();
+            } else {
+                Some(U256::from(gas_u64) * U256::exp10(9))
+            }
+        };
+
+        let actual_gas = if gas > 0 {
+            U256::from(gas)
+        } else {
+            U256::from(21000)
+        };
+
         let tx_id = (*eth_client).sign_and_send_transaction(
             value,
             Action::Call(to_address_h160),
             vec![],
-            U256::from(21000),
-            U256::exp10(10)
+            actual_gas,
+            actual_gas_price
         );
+
         match tx_id {
             Ok(tx) => {
                 let mut res = String::from("0x");
@@ -1483,13 +1519,31 @@ pub extern "C" fn send_erc20(
         let token_address_slice = CStr::from_ptr(token_address).to_str().unwrap();
         let token_address_h160 = H160::from_str(&token_address_slice[2..]).unwrap();
 
+        let actual_gas_price = if gas_price > 0 {
+            Some(U256::from(gas_price) * U256::exp10(9))
+        } else {
+            let gas_u64 = get_gas_price_from_station(default_gas_on_err);
+            if gas_u64 == 0 {
+                return std::ptr::null_mut();
+            } else {
+                Some(U256::from(gas_u64) * U256::exp10(9))
+            }
+        };
+
+        let actual_gas = if gas > 0 {
+            U256::from(gas)
+        } else {
+            U256::from(200000)
+        };
+
         let tx_id = (*eth_client).sign_and_send_transaction(
             U256::from(0),
             Action::Call(token_address_h160),
             encoded,
-            U256::from(200000),
-            U256::exp10(10)
+            actual_gas,
+            actual_gas_price
         );
+
         match tx_id {
             Ok(tx) => {
                 let mut res = String::from("0x");
@@ -1497,7 +1551,7 @@ pub extern "C" fn send_erc20(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Got error trying so send the transaction: {}", e);
+                println!("Got error trying so send the ERC20: {}", e);
                 std::ptr::null_mut()
             }
         }
@@ -1505,6 +1559,8 @@ pub extern "C" fn send_erc20(
 }
 
 #[no_mangle]
+
+
 pub extern "C" fn verify_alice_erc20_fee_data(
     to: *const c_char,
     amount: u64,
@@ -1628,12 +1684,17 @@ pub extern "C" fn is_valid_address(address: *const c_char) -> u8 {
     }
 }
 
+fn gas_price_in_wei() -> U256 {
+    U256::from(get_gas_price_from_station(1)) * U256::exp10(9)
+}
+
 /// Workaround to avoid Undefined symbols for architecture x86_64 "_je_malloc_usable_size"
 /// It's dangerous and seems like it might cause unexpected behaviour
 /// However seems like there is no other "easy" ways to fix now as there are too many
 /// projects depending on "heapsize" crate
 /// https://github.com/paritytech/parity-ethereum/issues/9167
 /// https://github.com/servo/heapsize/issues/80
+/// TODO: try to remove heapsize from the dependencies
 #[no_mangle]
 #[cfg(target_os = "macos")]
 pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
@@ -1646,297 +1707,290 @@ pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
 }
 
 #[cfg(test)]
-#[test]
-fn test_get_eth_balance() {
-    let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
-    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let error : c_int = 0;
+mod test {
+    use std::ffi::CString;
+    use libc;
+    use std::os::raw::{ c_int };
+    use etomic::*;
 
-    let result = get_eth_balance(
-        address.as_ptr(),
-        &error,
-        eth_client(priv_key.as_ptr())
-    );
-    assert!(result > 0);
-}
+    #[test]
+    fn test_get_eth_balance() {
+        let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let mut error: c_int = 0;
 
-#[cfg(test)]
-#[test]
-fn test_get_erc20_balance() {
-    let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
-    let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
-    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let error : c_int = 0;
-
-    let result = get_erc20_balance(
-        address.as_ptr(),
-        token_address.as_ptr(),
-        8,
-        &error,
-        eth_client(priv_key.as_ptr())
-    );
-    assert!(result > 0);
-}
-
-#[cfg(test)]
-#[test]
-fn test_get_erc20_allowance() {
-    let owner = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
-    let spender = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
-    let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
-    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-
-    let result = get_erc20_allowance(
-        owner.as_ptr(),
-        spender.as_ptr(),
-        token_address.as_ptr(),
-        8,
-        eth_client(priv_key.as_ptr())
-    );
-    assert_eq!(result, 0);
-}
-
-#[cfg(test)]
-#[test]
-fn test_wei_to_satoshi() {
-    let wei = CString::new("0x7526ea4b2401").unwrap();
-    let satoshi = wei_to_satoshi(wei.as_ptr());
-    assert_eq!(satoshi, 12881);
-}
-
-#[cfg(test)]
-#[test]
-fn test_verify_alice_eth_payment_data() {
-    let mut alice_hash : [c_char; 65usize] = [0; 65];
-    let mut bob_hash : [c_char; 65usize] = [0; 65];
-    let mut bob_address : [c_char; 65usize] = [0; 65];
-    let mut deal_id : [c_char; 70usize] = [0; 70];
-    unsafe {
-        libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0x9e2750ff62c3ae22f441fc51fe4422b4d1f5d414").unwrap().as_ptr());
-        libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x54be0b08698ebd55a43fbb225c124d45fff16366").unwrap().as_ptr());
-        libc::strcpy(bob_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
-        libc::strcpy(deal_id.as_mut_ptr(), CString::new("0xac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c3").unwrap().as_ptr());
+        let result = get_eth_balance(
+            address.as_ptr(),
+            &mut error as *mut i32,
+            eth_client(priv_key.as_ptr())
+        );
+        assert!(result > 0);
     }
 
-    let valid_data = CString::new("0x47c7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+    #[test]
+    fn test_get_erc20_balance() {
+        let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+        let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let mut error: c_int = 0;
 
-    let input = AliceSendsEthPaymentInput {
-        amount: 0,
-        alice_hash,
-        bob_hash,
-        bob_address,
-        deal_id
-    };
-
-    assert_eq!(verify_alice_eth_payment_data(input, valid_data.as_ptr()), 1);
-
-    let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
-    assert_eq!(verify_alice_eth_payment_data(input, invalid_data.as_ptr()), 0);
-}
-
-#[cfg(test)]
-#[test]
-fn test_verify_alice_erc20_payment_data() {
-    let mut alice_hash : [c_char; 65usize] = [0; 65];
-    let mut bob_hash : [c_char; 65usize] = [0; 65];
-    let mut bob_address : [c_char; 65usize] = [0; 65];
-    let mut token_address : [c_char; 65usize] = [0; 65];
-    let mut deal_id : [c_char; 70usize] = [0; 70];
-    unsafe {
-        libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0xb3b7e2df561771e71335c7ab6af75f07ef5fdbdb").unwrap().as_ptr());
-        libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x339b417b1924f3cbf03aa156cd993368ca66ea88").unwrap().as_ptr());
-        libc::strcpy(bob_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
-        libc::strcpy(deal_id.as_mut_ptr(), CString::new("0x08b343ceda5196d3ae8fd0822b44bff1a8ed43a0354fd0a17f4a52e1bbb0e5e5").unwrap().as_ptr());
-        libc::strcpy(token_address.as_mut_ptr(), CString::new("0xc0eb7aed740e1796992a08962c15661bdeb58003").unwrap().as_ptr());
+        let result = get_erc20_balance(
+            address.as_ptr(),
+            token_address.as_ptr(),
+            8,
+            &mut error as *mut i32,
+            eth_client(priv_key.as_ptr())
+        );
+        assert!(result > 0);
     }
 
-    let valid_data = CString::new("0x184db3bf08b343ceda5196d3ae8fd0822b44bff1a8ed43a0354fd0a17f4a52e1bbb0e5e5000000000000000000000000000000000000000000000000016397531f91a0000000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e9b3b7e2df561771e71335c7ab6af75f07ef5fdbdb000000000000000000000000339b417b1924f3cbf03aa156cd993368ca66ea88000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003").unwrap();
+    #[test]
+    fn test_get_erc20_allowance() {
+        let owner = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+        let spender = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
+        let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
 
-    let input = AliceSendsErc20PaymentInput {
-        amount: 10009000,
-        alice_hash,
-        bob_hash,
-        bob_address,
-        token_address,
-        deal_id,
-        decimals: 18
-    };
-
-    assert_eq!(verify_alice_erc20_payment_data(input, valid_data.as_ptr()), 1);
-
-    let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
-    assert_eq!(verify_alice_erc20_payment_data(input, invalid_data.as_ptr()), 0);
-}
-
-#[cfg(test)]
-#[test]
-fn test_verify_alice_erc_fee_data() {
-    let to = CString::new("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
-    let amount = 12881;
-    let valid_data = CString::new("0xa9059cbb0000000000000000000000003f17f1962b36e491b30a40b2405849e597ba5fb500000000000000000000000000000000000000000000000000007526ea4b2400").unwrap();
-    let decimals = 18;
-    assert_eq!(verify_alice_erc20_fee_data(
-        to.as_ptr(),
-        amount,
-        valid_data.as_ptr(),
-        decimals
-    ), 1);
-
-    let invalid_data = CString::new("0xa9059cbb0000000000000000000000003f17f1962b36e491b30a40b2405849e597ba5fb500000000000000000000000000000000000000000000000000007526ea4b2401").unwrap();
-    assert_eq!(verify_alice_erc20_fee_data(
-        to.as_ptr(),
-        amount,
-        invalid_data.as_ptr(),
-        decimals
-    ), 0);
-}
-
-#[cfg(test)]
-#[test]
-fn test_verify_bob_eth_deposit_data() {
-    let mut bob_hash : [c_char; 65usize] = [0; 65];
-    let mut alice_address : [c_char; 65usize] = [0; 65];
-    let mut deposit_id : [c_char; 70usize] = [0; 70];
-    unsafe {
-        libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x79e1c42c4daa013784767d91525ae043f38193e7").unwrap().as_ptr());
-        libc::strcpy(alice_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
-        libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0xaac640036de31b9eb9ef2978903e2202c19b1229edd8ca60bdee9228246e2905").unwrap().as_ptr());
+        let result = get_erc20_allowance(
+            owner.as_ptr(),
+            spender.as_ptr(),
+            token_address.as_ptr(),
+            8,
+            eth_client(priv_key.as_ptr())
+        );
+        assert_eq!(result, 0);
     }
 
-    let valid_data = CString::new("0xdd23795faac640036de31b9eb9ef2978903e2202c19b1229edd8ca60bdee9228246e29050000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e979e1c42c4daa013784767d91525ae043f38193e7000000000000000000000000000000000000000000000000000000000000000000000000000000005b76d4df").unwrap();
-
-    let input = BobSendsEthDepositInput {
-        amount: 10009000,
-        bob_hash,
-        alice_address,
-        deposit_id,
-        lock_time: 1534514399
-    };
-
-    assert_eq!(verify_bob_eth_deposit_data(input, valid_data.as_ptr()), 1);
-
-    let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
-    assert_eq!(verify_bob_eth_deposit_data(input, invalid_data.as_ptr()), 0);
-}
-
-#[cfg(test)]
-#[test]
-fn test_verify_bob_eth_payment_data() {
-    let mut alice_hash : [c_char; 65usize] = [0; 65];
-    let mut alice_address : [c_char; 65usize] = [0; 65];
-    let mut payment_id : [c_char; 70usize] = [0; 70];
-    unsafe {
-        libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0xe7ceb8fe8c43cb7acd4136fabb3a0a7aed3ae44e").unwrap().as_ptr());
-        libc::strcpy(alice_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
-        libc::strcpy(payment_id.as_mut_ptr(), CString::new("0xa52c038debdc51414c6434a5aaa2d2eb9cc97c90cafbc40083c25fadcbfed02f").unwrap().as_ptr());
+    #[test]
+    fn test_wei_to_satoshi() {
+        let wei = CString::new("0x7526ea4b2401").unwrap();
+        let satoshi = wei_to_satoshi(wei.as_ptr());
+        assert_eq!(satoshi, 12881);
     }
 
-    let valid_data = CString::new("0x5ab30d95a52c038debdc51414c6434a5aaa2d2eb9cc97c90cafbc40083c25fadcbfed02f0000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e9e7ceb8fe8c43cb7acd4136fabb3a0a7aed3ae44e000000000000000000000000000000000000000000000000000000000000000000000000000000005b76b667").unwrap();
+    #[test]
+    fn test_verify_alice_eth_payment_data() {
+        let mut alice_hash: [c_char; 65usize] = [0; 65];
+        let mut bob_hash: [c_char; 65usize] = [0; 65];
+        let mut bob_address: [c_char; 65usize] = [0; 65];
+        let mut deal_id: [c_char; 70usize] = [0; 70];
+        unsafe {
+            libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0x9e2750ff62c3ae22f441fc51fe4422b4d1f5d414").unwrap().as_ptr());
+            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x54be0b08698ebd55a43fbb225c124d45fff16366").unwrap().as_ptr());
+            libc::strcpy(bob_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
+            libc::strcpy(deal_id.as_mut_ptr(), CString::new("0xac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c3").unwrap().as_ptr());
+        }
 
-    let input = BobSendsEthPaymentInput {
-        amount: 10009000,
-        alice_hash,
-        alice_address,
-        payment_id,
-        lock_time: 1534506599
-    };
+        let valid_data = CString::new("0x47c7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
 
-    assert_eq!(verify_bob_eth_payment_data(input, valid_data.as_ptr()), 1);
+        let input = AliceSendsEthPaymentInput {
+            amount: 0,
+            alice_hash,
+            bob_hash,
+            bob_address,
+            deal_id
+        };
 
-    let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
-    assert_eq!(verify_bob_eth_payment_data(input, invalid_data.as_ptr()), 0);
-}
+        assert_eq!(verify_alice_eth_payment_data(input, valid_data.as_ptr()), 1);
 
-#[cfg(test)]
-#[test]
-fn test_verify_bob_erc20_deposit_data() {
-    let mut bob_hash : [c_char; 65usize] = [0; 65];
-    let mut alice_address : [c_char; 65usize] = [0; 65];
-    let mut token_address : [c_char; 65usize] = [0; 65];
-    let mut deposit_id : [c_char; 70usize] = [0; 70];
-    unsafe {
-        libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x736060647a2da6f52dcd23b346d6f9949de2fa7a").unwrap().as_ptr());
-        libc::strcpy(alice_address.as_mut_ptr(), CString::new("0xbab36286672fbdc7b250804bf6d14be0df69fa29").unwrap().as_ptr());
-        libc::strcpy(token_address.as_mut_ptr(), CString::new("0xc0eb7aed740e1796992a08962c15661bdeb58003").unwrap().as_ptr());
-        libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0x73a9c9f1d179f79c062fbb6fd1eba60a5bb797575e99ff2b905e57f779c21ff0").unwrap().as_ptr());
+        let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+        assert_eq!(verify_alice_eth_payment_data(input, invalid_data.as_ptr()), 0);
     }
 
-    let valid_data = CString::new("0x5d56725973a9c9f1d179f79c062fbb6fd1eba60a5bb797575e99ff2b905e57f779c21ff00000000000000000000000000000000000000000000000000181126bbe78f000000000000000000000000000bab36286672fbdc7b250804bf6d14be0df69fa29736060647a2da6f52dcd23b346d6f9949de2fa7a000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003000000000000000000000000000000000000000000000000000000005b5aeffe").unwrap();
+    #[test]
+    fn test_verify_alice_erc20_payment_data() {
+        let mut alice_hash: [c_char; 65usize] = [0; 65];
+        let mut bob_hash: [c_char; 65usize] = [0; 65];
+        let mut bob_address: [c_char; 65usize] = [0; 65];
+        let mut token_address: [c_char; 65usize] = [0; 65];
+        let mut deal_id: [c_char; 70usize] = [0; 70];
+        unsafe {
+            libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0xb3b7e2df561771e71335c7ab6af75f07ef5fdbdb").unwrap().as_ptr());
+            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x339b417b1924f3cbf03aa156cd993368ca66ea88").unwrap().as_ptr());
+            libc::strcpy(bob_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
+            libc::strcpy(deal_id.as_mut_ptr(), CString::new("0x08b343ceda5196d3ae8fd0822b44bff1a8ed43a0354fd0a17f4a52e1bbb0e5e5").unwrap().as_ptr());
+            libc::strcpy(token_address.as_mut_ptr(), CString::new("0xc0eb7aed740e1796992a08962c15661bdeb58003").unwrap().as_ptr());
+        }
 
-    let input = BobSendsErc20DepositInput {
-        amount: 10838812,
-        bob_hash,
-        alice_address,
-        token_address,
-        deposit_id,
-        lock_time: 1532686334,
-        decimals: 18
-    };
+        let valid_data = CString::new("0x184db3bf08b343ceda5196d3ae8fd0822b44bff1a8ed43a0354fd0a17f4a52e1bbb0e5e5000000000000000000000000000000000000000000000000016397531f91a0000000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e9b3b7e2df561771e71335c7ab6af75f07ef5fdbdb000000000000000000000000339b417b1924f3cbf03aa156cd993368ca66ea88000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003").unwrap();
 
-    assert_eq!(verify_bob_erc20_deposit_data(input, valid_data.as_ptr()), 1);
+        let input = AliceSendsErc20PaymentInput {
+            amount: 10009000,
+            alice_hash,
+            bob_hash,
+            bob_address,
+            token_address,
+            deal_id,
+            decimals: 18
+        };
 
-    let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
-    assert_eq!(verify_bob_erc20_deposit_data(input, invalid_data.as_ptr()), 0);
-}
+        assert_eq!(verify_alice_erc20_payment_data(input, valid_data.as_ptr()), 1);
 
-#[cfg(test)]
-#[test]
-fn test_alice_payment_status() {
-    let tx_id = CString::new("0x781d3bd164d6e0b6abeacb34b680a2dd43ee2e5dadad45f631bb21d06e792d98").unwrap();
-    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    assert_eq!(alice_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 2);
-}
+        let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+        assert_eq!(verify_alice_erc20_payment_data(input, invalid_data.as_ptr()), 0);
+    }
 
-#[cfg(test)]
-#[test]
-fn test_bob_payment_status() {
-    let tx_id = CString::new("0x301e0ab4824d87e764a1ef4dea49618e207aac8d80ffbb22de75152a5c25adc0").unwrap();
-    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    assert_eq!(bob_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 2);
-}
+    #[test]
+    fn test_verify_alice_erc_fee_data() {
+        let to = CString::new("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
+        let amount = 12881;
+        let valid_data = CString::new("0xa9059cbb0000000000000000000000003f17f1962b36e491b30a40b2405849e597ba5fb500000000000000000000000000000000000000000000000000007526ea4b2400").unwrap();
+        let decimals = 18;
+        assert_eq!(verify_alice_erc20_fee_data(
+            to.as_ptr(),
+            amount,
+            valid_data.as_ptr(),
+            decimals
+        ), 1);
 
-#[cfg(test)]
-#[test]
-fn test_bob_deposit_status() {
-    let tx_id = CString::new("0xd4116948f7b9a8e06b84417a48db0e34213b25e8fa3b50a7888fcb049fbf430d").unwrap();
-    let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    assert_eq!(bob_deposit_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 3);
-}
+        let invalid_data = CString::new("0xa9059cbb0000000000000000000000003f17f1962b36e491b30a40b2405849e597ba5fb500000000000000000000000000000000000000000000000000007526ea4b2401").unwrap();
+        assert_eq!(verify_alice_erc20_fee_data(
+            to.as_ptr(),
+            amount,
+            invalid_data.as_ptr(),
+            decimals
+        ), 0);
+    }
 
-#[cfg(test)]
-#[test]
-fn test_compare_addresses() {
-    let address1 = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
-    let address2 = CString::new("0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+    #[test]
+    fn test_verify_bob_eth_deposit_data() {
+        let mut bob_hash: [c_char; 65usize] = [0; 65];
+        let mut alice_address: [c_char; 65usize] = [0; 65];
+        let mut deposit_id: [c_char; 70usize] = [0; 70];
+        unsafe {
+            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x79e1c42c4daa013784767d91525ae043f38193e7").unwrap().as_ptr());
+            libc::strcpy(alice_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
+            libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0xaac640036de31b9eb9ef2978903e2202c19b1229edd8ca60bdee9228246e2905").unwrap().as_ptr());
+        }
 
-    assert_eq!(compare_addresses(address1.as_ptr(), address2.as_ptr()), 1);
+        let valid_data = CString::new("0xdd23795faac640036de31b9eb9ef2978903e2202c19b1229edd8ca60bdee9228246e29050000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e979e1c42c4daa013784767d91525ae043f38193e7000000000000000000000000000000000000000000000000000000000000000000000000000000005b76d4df").unwrap();
 
-    let address1 = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
-    let address2 = CString::new("0x2a8e4f9ae69c86e277602c6802085febc4bd5986").unwrap();
+        let input = BobSendsEthDepositInput {
+            amount: 10009000,
+            bob_hash,
+            alice_address,
+            deposit_id,
+            lock_time: 1534514399
+        };
 
-    assert_eq!(compare_addresses(address1.as_ptr(), address2.as_ptr()), 0);
-}
+        assert_eq!(verify_bob_eth_deposit_data(input, valid_data.as_ptr()), 1);
 
-#[cfg(test)]
-#[test]
-fn test_is_valid_address() {
-    let address = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+        let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+        assert_eq!(verify_bob_eth_deposit_data(input, invalid_data.as_ptr()), 0);
+    }
 
-    assert_eq!(is_valid_address(address.as_ptr()), 1);
+    #[test]
+    fn test_verify_bob_eth_payment_data() {
+        let mut alice_hash: [c_char; 65usize] = [0; 65];
+        let mut alice_address: [c_char; 65usize] = [0; 65];
+        let mut payment_id: [c_char; 70usize] = [0; 70];
+        unsafe {
+            libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0xe7ceb8fe8c43cb7acd4136fabb3a0a7aed3ae44e").unwrap().as_ptr());
+            libc::strcpy(alice_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
+            libc::strcpy(payment_id.as_mut_ptr(), CString::new("0xa52c038debdc51414c6434a5aaa2d2eb9cc97c90cafbc40083c25fadcbfed02f").unwrap().as_ptr());
+        }
 
-    let address = CString::new("e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+        let valid_data = CString::new("0x5ab30d95a52c038debdc51414c6434a5aaa2d2eb9cc97c90cafbc40083c25fadcbfed02f0000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e9e7ceb8fe8c43cb7acd4136fabb3a0a7aed3ae44e000000000000000000000000000000000000000000000000000000000000000000000000000000005b76b667").unwrap();
 
-    assert_eq!(is_valid_address(address.as_ptr()), 1);
+        let input = BobSendsEthPaymentInput {
+            amount: 10009000,
+            alice_hash,
+            alice_address,
+            payment_id,
+            lock_time: 1534506599
+        };
 
-    let address = CString::new("0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+        assert_eq!(verify_bob_eth_payment_data(input, valid_data.as_ptr()), 1);
 
-    assert_eq!(is_valid_address(address.as_ptr()), 1);
+        let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+        assert_eq!(verify_bob_eth_payment_data(input, invalid_data.as_ptr()), 0);
+    }
 
-    let address = CString::new("e1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+    #[test]
+    fn test_verify_bob_erc20_deposit_data() {
+        let mut bob_hash: [c_char; 65usize] = [0; 65];
+        let mut alice_address: [c_char; 65usize] = [0; 65];
+        let mut token_address: [c_char; 65usize] = [0; 65];
+        let mut deposit_id: [c_char; 70usize] = [0; 70];
+        unsafe {
+            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x736060647a2da6f52dcd23b346d6f9949de2fa7a").unwrap().as_ptr());
+            libc::strcpy(alice_address.as_mut_ptr(), CString::new("0xbab36286672fbdc7b250804bf6d14be0df69fa29").unwrap().as_ptr());
+            libc::strcpy(token_address.as_mut_ptr(), CString::new("0xc0eb7aed740e1796992a08962c15661bdeb58003").unwrap().as_ptr());
+            libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0x73a9c9f1d179f79c062fbb6fd1eba60a5bb797575e99ff2b905e57f779c21ff0").unwrap().as_ptr());
+        }
 
-    assert_eq!(is_valid_address(address.as_ptr()), 1);
+        let valid_data = CString::new("0x5d56725973a9c9f1d179f79c062fbb6fd1eba60a5bb797575e99ff2b905e57f779c21ff00000000000000000000000000000000000000000000000000181126bbe78f000000000000000000000000000bab36286672fbdc7b250804bf6d14be0df69fa29736060647a2da6f52dcd23b346d6f9949de2fa7a000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003000000000000000000000000000000000000000000000000000000005b5aeffe").unwrap();
 
-    let address = CString::new("0e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+        let input = BobSendsErc20DepositInput {
+            amount: 10838812,
+            bob_hash,
+            alice_address,
+            token_address,
+            deposit_id,
+            lock_time: 1532686334,
+            decimals: 18
+        };
 
-    assert_eq!(is_valid_address(address.as_ptr()), 0);
+        assert_eq!(verify_bob_erc20_deposit_data(input, valid_data.as_ptr()), 1);
+
+        let invalid_data = CString::new("0xc7b6e2ac010fc07a69dedd0536ffeca2a1d0685b7be444fdf68c9028b5b169aa0905c30000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e99e2750ff62c3ae22f441fc51fe4422b4d1f5d41400000000000000000000000054be0b08698ebd55a43fbb225c124d45fff16366000000000000000000000000").unwrap();
+        assert_eq!(verify_bob_erc20_deposit_data(input, invalid_data.as_ptr()), 0);
+    }
+
+    #[test]
+    fn test_alice_payment_status() {
+        let tx_id = CString::new("0x781d3bd164d6e0b6abeacb34b680a2dd43ee2e5dadad45f631bb21d06e792d98").unwrap();
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        assert_eq!(alice_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 2);
+    }
+
+    #[test]
+    fn test_bob_payment_status() {
+        let tx_id = CString::new("0x301e0ab4824d87e764a1ef4dea49618e207aac8d80ffbb22de75152a5c25adc0").unwrap();
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        assert_eq!(bob_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 2);
+    }
+
+    #[test]
+    fn test_bob_deposit_status() {
+        let tx_id = CString::new("0xd4116948f7b9a8e06b84417a48db0e34213b25e8fa3b50a7888fcb049fbf430d").unwrap();
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        assert_eq!(bob_deposit_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 3);
+    }
+
+    #[test]
+    fn test_compare_addresses() {
+        let address1 = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+        let address2 = CString::new("0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+
+        assert_eq!(compare_addresses(address1.as_ptr(), address2.as_ptr()), 1);
+
+        let address1 = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+        let address2 = CString::new("0x2a8e4f9ae69c86e277602c6802085febc4bd5986").unwrap();
+
+        assert_eq!(compare_addresses(address1.as_ptr(), address2.as_ptr()), 0);
+    }
+
+    #[test]
+    fn test_is_valid_address() {
+        let address = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+
+        assert_eq!(is_valid_address(address.as_ptr()), 1);
+
+        let address = CString::new("e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+
+        assert_eq!(is_valid_address(address.as_ptr()), 1);
+
+        let address = CString::new("0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+
+        assert_eq!(is_valid_address(address.as_ptr()), 1);
+
+        let address = CString::new("e1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c").unwrap();
+
+        assert_eq!(is_valid_address(address.as_ptr()), 1);
+
+        let address = CString::new("0e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+
+        assert_eq!(is_valid_address(address.as_ptr()), 0);
+    }
 }

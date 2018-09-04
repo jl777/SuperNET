@@ -2097,7 +2097,7 @@ char *LP_eth_tx_fee(struct iguana_info *coin, char *dest_addr, uint64_t amount, 
     if (gas_price > 0) {
         actual_gas_price = gas_price;
     } else {
-        actual_gas_price = getGasPriceFromStation(0);
+        actual_gas_price = get_gas_price_from_station(0);
         if (actual_gas_price == 0) {
             return (clonestr("{\"error\":\"Couldn't get gas price from station!\"}"));
         }
@@ -2182,7 +2182,7 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
 char *LP_eth_gas_price()
 {
     cJSON *retjson = cJSON_CreateObject();
-    uint64_t gas_price = getGasPriceFromStation(0);
+    uint64_t gas_price = get_gas_price_from_station(0);
     if (gas_price > 0) {
         cJSON_AddNumberToObject(retjson, "gas_price", gas_price);
     } else {

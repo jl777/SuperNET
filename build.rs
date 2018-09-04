@@ -229,6 +229,7 @@ fn build_c_code(mm_version: &str) {
         cmake_prep_args.push("-DETOMIC=ON".into());
     }
     cmake_prep_args.push(format!("-DMM_VERSION={}", mm_version));
+    cmake_prep_args.push("-DCMAKE_BUILD_TYPE=Debug".into());
     cmake_prep_args.push("..".into());
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
     let _ = cmd("cmake", cmake_prep_args).dir("build")
@@ -257,9 +258,6 @@ fn build_c_code(mm_version: &str) {
 
     // Link in the libraries needed for MM1.
 
-    if env::var_os("CARGO_FEATURE_ETOMIC").is_some() {
-        println!("cargo:rustc-link-lib=static=etomiclib-mainnet");
-    }
     println!("cargo:rustc-link-lib=static=libcrypto777");
     println!("cargo:rustc-link-lib=static=libjpeg");
     println!("cargo:rustc-link-lib=static=libsecp256k1");

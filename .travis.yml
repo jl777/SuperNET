@@ -33,7 +33,6 @@ script:
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 cache:
   directories:
-  - "$HOME/.hunter"
   - "$HOME/.cargo"
   - "$TRAVIS_BUILD_DIR/target"
 before_deploy:

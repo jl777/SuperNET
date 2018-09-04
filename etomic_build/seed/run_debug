@@ -1,0 +1,6 @@
+#!/bin/bash
+source passphrase
+source ../coins
+/usr/sbin/rinetd
+rm -rf DB
+gdbserver :4444 ../../target/debug/mm2 "{\"netid\":9999,\"gui\":\"nogui\", \"profitmargin\":0.01, \"userhome\":\"/${HOME#"/"}\", \"passphrase\":\"$passphrase\", \"coins\":$coins}"

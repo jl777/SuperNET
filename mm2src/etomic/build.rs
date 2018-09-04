@@ -82,9 +82,13 @@ fn bindgen<
 fn main() {
     let _ = fs::create_dir("c_headers");
     println!("rerun-if-changed=../../iguana/exchanges/etomicswap/etomiclib.h");
+    println!("rerun-if-changed=../../iguana/exchanges/etomicswap/etomiccurl.h");
 
     bindgen(
-        vec!["../../iguana/exchanges/etomicswap/etomiclib.h".into()],
+        vec![
+            "../../iguana/exchanges/etomicswap/etomiclib.h".into(),
+            "../../iguana/exchanges/etomicswap/etomiccurl.h".into(),
+        ],
         "c_headers/etomiclib.rs",
         empty(),
         [
@@ -101,6 +105,8 @@ fn main() {
             "BobReclaimsBobPaymentInput",
             "AliceSpendsBobPaymentInput",
             "ApproveErc20Input",
+            "EthTxReceipt",
+            "EthTxData",
         ].iter(),
         empty(),
     );

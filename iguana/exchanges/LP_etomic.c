@@ -31,7 +31,7 @@ void *LP_eth_client;
 
 int32_t LP_etomic_wait_for_confirmation(char *txId)
 {
-    return(waitForConfirmation(txId));
+    return(wait_for_confirmation(txId, LP_eth_client));
 }
 
 void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output)
@@ -56,11 +56,11 @@ char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
 {
-    if (waitForConfirmation(swap->otherfee.I.ethTxid) < 0) {
+    if (wait_for_confirmation(swap->otherfee.I.ethTxid, LP_eth_client) < 0) {
         printf("Alice fee tx %s does not exist", swap->otherfee.I.ethTxid);
         return(0);
     }
-    EthTxData data = getEthTxData(swap->otherfee.I.ethTxid);
+    EthTxData data = get_eth_tx_data(swap->otherfee.I.ethTxid, LP_eth_client);
     if (compare_addresses(data.from, swap->I.etomicdest) == 0) {
         printf("Alice fee tx %s was sent from wrong address %s\n", swap->otherfee.I.ethTxid, data.from);
         return(0);
@@ -71,9 +71,8 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
-        uint64_t txValue = wei_to_satoshi(data.valueHex);
-        if (txValue != LP_DEXFEE(swap->I.alicerealsat)) {
-            printf("Alice fee %s amount %" PRIu64 " is not equal to expected %" PRId64 "\n", swap->otherfee.I.ethTxid, txValue, LP_DEXFEE(swap->I.alicerealsat));
+        if (data.value != LP_DEXFEE(swap->I.alicerealsat)) {
+            printf("Alice fee %s amount %" PRIu64 " is not equal to expected %" PRId64 "\n", swap->otherfee.I.ethTxid, data.value, LP_DEXFEE(swap->I.alicerealsat));
             return(0);
         }
         return(1);
@@ -138,11 +137,11 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 {
-    if (waitForConfirmation(txId) < 0) {
+    if (wait_for_confirmation(txId, LP_eth_client) < 0) {
         printf("Alice payment %s does not exist\n", txId);
         return(0);
     }
-    EthTxData data = getEthTxData(txId);
+    EthTxData data = get_eth_tx_data(txId, LP_eth_client);
     if (compare_addresses(data.to, ETOMIC_ALICECONTRACT) == 0) {
         printf("Alice payment %s was sent to wrong address %s\n", txId, data.to);
         return(0);
@@ -153,9 +152,8 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
     }
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20;
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        uint64_t paymentAmount = wei_to_satoshi(data.valueHex);
-        if (paymentAmount != swap->I.alicerealsat) {
-            printf("Alice payment amount %" PRIu64 " does not match expected %" PRIu64 "\n", paymentAmount, swap->I.alicerealsat);
+        if (data.value != swap->I.alicerealsat) {
+            printf("Alice payment amount %" PRIu64 " does not match expected %" PRIu64 "\n", data.value, swap->I.alicerealsat);
             return(0);
         }
         memset(&input,0,sizeof(input));
@@ -184,12 +182,12 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]) < 0) {
+    if (wait_for_confirmation(swap->eth_tx_ids[BASILISK_ALICEPAYMENT], LP_eth_client) < 0) {
         printf("Alice ETH payment %s is not found, can't reclaim\n", swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
         return NULL;
     }
-    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
-    if (strcmp(receipt.status, "0x1") != 0) {
+    EthTxReceipt receipt = get_eth_tx_receipt(swap->eth_tx_ids[BASILISK_ALICEPAYMENT], LP_eth_client);
+    if (receipt.status != 1) {
         printf("Alice payment receipt status failed, can't reclaim\n");
         return NULL;
     }
@@ -225,12 +223,12 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]) < 0) {
+    if (wait_for_confirmation(swap->eth_tx_ids[BASILISK_ALICEPAYMENT], LP_eth_client) < 0) {
         printf("Alice ETH payment %s is not found, can't spend\n", swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
         return NULL;
     }
-    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_ALICEPAYMENT]);
-    if (strcmp(receipt.status, "0x1") != 0) {
+    EthTxReceipt receipt = get_eth_tx_receipt(swap->eth_tx_ids[BASILISK_ALICEPAYMENT], LP_eth_client);
+    if (receipt.status != 1) {
         printf("Alice payment receipt status failed, can't spend\n");
         return NULL;
     }
@@ -317,11 +315,11 @@ char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
 {
-    if (waitForConfirmation(txId) < 0) {
+    if (wait_for_confirmation(txId, LP_eth_client) < 0) {
         printf("Bob deposit txid %s does not exist\n", txId);
         return(0);
     }
-    EthTxData data = getEthTxData(txId);
+    EthTxData data = get_eth_tx_data(txId, LP_eth_client);
     if (compare_addresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
         printf("Bob deposit txid %s was sent to wrong address %s\n", txId, data.to);
         return(0);
@@ -335,9 +333,8 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
-        uint64_t depositAmount = wei_to_satoshi(data.valueHex);
-        if (depositAmount != LP_DEPOSITSATOSHIS(swap->I.bobrealsat)) {
-            printf("Bob deposit %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, depositAmount, LP_DEPOSITSATOSHIS(swap->I.bobrealsat));
+        if (data.value != LP_DEPOSITSATOSHIS(swap->I.bobrealsat)) {
+            printf("Bob deposit %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, data.value, LP_DEPOSITSATOSHIS(swap->I.bobrealsat));
             return(0);
         }
         uint8arrayToHex(input.deposit_id, swap->bobdeposit.I.actualtxid.bytes, 32);
@@ -363,7 +360,7 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]) < 0) {
+    if (wait_for_confirmation(swap->eth_tx_ids[BASILISK_BOBDEPOSIT], LP_eth_client) < 0) {
         printf("Bob deposit %s is not found, can't refund\n", swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
         return NULL;
     }
@@ -372,8 +369,8 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
 
     struct iguana_info *bobcoin = LP_coinfind(swap->src);
 
-    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
-    if (strcmp(receipt.status, "0x1") != 0) {
+    EthTxReceipt receipt = get_eth_tx_receipt(swap->eth_tx_ids[BASILISK_BOBDEPOSIT], LP_eth_client);
+    if (receipt.status != 1) {
         printf("Bob deposit %s receipt status failed, can't refund\n", swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
         return NULL;
     }
@@ -451,11 +448,11 @@ char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
 {
-    if (waitForConfirmation(txId) < 0) {
+    if (wait_for_confirmation(txId, LP_eth_client) < 0) {
         printf("Bob payment %s is not found\n", txId);
         return 0;
     }
-    EthTxData data = getEthTxData(txId);
+    EthTxData data = get_eth_tx_data(txId, LP_eth_client);
     if (compare_addresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
         printf("Bob payment %s was sent to wrong address %s\n", txId, data.to);
     }
@@ -467,9 +464,8 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
-        uint64_t paymentAmount = wei_to_satoshi(data.valueHex);
-        if (paymentAmount != swap->I.bobrealsat) {
-            printf("Bob payment %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, paymentAmount, swap->I.bobrealsat);
+        if (data.value != swap->I.bobrealsat) {
+            printf("Bob payment %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, data.value, swap->I.bobrealsat);
             return(0);
         }
         uint8arrayToHex(input.payment_id, swap->bobpayment.I.actualtxid.bytes, 32);
@@ -495,7 +491,7 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBPAYMENT]) < 0) {
+    if (wait_for_confirmation(swap->eth_tx_ids[BASILISK_BOBPAYMENT], LP_eth_client) < 0) {
         printf("Bob payment %s is not found, can't reclaim\n", swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
         return NULL;
     }
@@ -504,8 +500,8 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 
     struct iguana_info *bobcoin = LP_coinfind(swap->src);
 
-    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
-    if (strcmp(receipt.status, "0x1") != 0) {
+    EthTxReceipt receipt = get_eth_tx_receipt(swap->eth_tx_ids[BASILISK_BOBPAYMENT], LP_eth_client);
+    if (receipt.status != 1) {
         printf("Bob payment receipt status failed, can't reclaim\n");
         return NULL;
     }
@@ -531,15 +527,15 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBPAYMENT]) < 0) {
+    if (wait_for_confirmation(swap->eth_tx_ids[BASILISK_BOBPAYMENT], LP_eth_client) < 0) {
         printf("Bob payment %s is not found, can't spend\n", swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
         return NULL;
     }
     AliceSpendsBobPaymentInput input;
 
     memset(&input,0,sizeof(input));
-    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
-    if (strcmp(receipt.status, "0x1") != 0) {
+    EthTxReceipt receipt = get_eth_tx_receipt(swap->eth_tx_ids[BASILISK_BOBPAYMENT], LP_eth_client);
+    if (receipt.status != 1) {
         printf("Bob payment %s receipt status failed, can't spend\n", swap->eth_tx_ids[BASILISK_BOBPAYMENT]);
         return NULL;
     }
@@ -573,15 +569,15 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
 {
-    if (waitForConfirmation(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]) < 0) {
+    if (wait_for_confirmation(swap->eth_tx_ids[BASILISK_BOBDEPOSIT], LP_eth_client) < 0) {
         printf("Bob deposit %s is not found, can't claim\n", swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
         return NULL;
     }
     AliceClaimsBobDepositInput input;
 
     memset(&input,0,sizeof(input));
-    EthTxReceipt receipt = getEthTxReceipt(swap->eth_tx_ids[BASILISK_BOBDEPOSIT]);
-    if (strcmp(receipt.status, "0x1") != 0) {
+    EthTxReceipt receipt = get_eth_tx_receipt(swap->eth_tx_ids[BASILISK_BOBDEPOSIT], LP_eth_client);
+    if (receipt.status != 1) {
         printf("Bob deposit receipt status failed, can't claim\n");
         return NULL;
     }
@@ -689,4 +685,21 @@ uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *er
     } else {
         return get_erc20_balance(coinaddr, coin->etomic, coin->decimals, error, LP_eth_client);
     }
+}
+
+
+void uint8arrayToHex(char *dest, uint8_t *input, int len)
+{
+    strcpy(dest, "0x");
+    for (int i = 0; i < len; i++)
+    {
+        sprintf(dest + (i + 1) * 2, "%02x", input[i]);
+    }
+    dest[(len + 1) * 2] = '\0';
+}
+
+void satoshisToWei(char *dest, uint64_t input)
+{
+    sprintf(dest, "%" PRIu64, input);
+    strcat(dest, "0000000000");
 }
