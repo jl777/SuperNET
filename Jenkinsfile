@@ -25,9 +25,9 @@ timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose l
       }
       post {
         always {
-          sh '''docker-compose logs --timestamps --tail=999
-docker ps
-docker-compose down'''
+          sh 'docker-compose logs --timestamps --tail=999'
+          sh 'docker ps'
+          sh 'docker-compose down'
         }
       }
     }
@@ -40,9 +40,9 @@ timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose l
       }
       post {
         always {
-          sh '''docker-compose logs --timestamps --tail=999
-docker ps
-docker-compose down'''
+          sh 'docker-compose logs --timestamps --tail=999'
+          sh 'docker ps'
+          sh 'docker-compose down'
         }
       }
     }
