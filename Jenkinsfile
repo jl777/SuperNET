@@ -20,6 +20,8 @@ docker-compose build'''
       steps {
         sh '''docker-compose up -d
 ./start_BEER_OTHER_trade.sh ETH
+sleep 2
+docker-compose logs
 timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f clientnode)
 timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)
 docker-compose down'''
