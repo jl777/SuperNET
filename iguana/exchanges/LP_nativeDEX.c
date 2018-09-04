@@ -1003,6 +1003,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 
 void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,uint16_t netid,char *seednode)
 {
+    printf("LP_initpeers] myipaddr: %s\n", myipaddr);  // delme
     int32_t i,j; uint32_t r; uint16_t pushport,subport,busport; char fixedseed[64];
     LP_ports(&pushport,&subport,&busport,netid);
     if ( IAMLP != 0 )
@@ -1506,7 +1507,8 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
     LP_initcoins(ctx,LP_mypubsock,coinsjson);
     RPC_port = myport;
     G.waiting = 1;
-        LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
+    printf("LPinit] LP_myipaddr: %s, myipaddr: %s\n", LP_myipaddr, myipaddr);  // delme
+    LP_initpeers(LP_mypubsock,LP_mypeer,myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
     //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;
