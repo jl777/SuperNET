@@ -7,12 +7,12 @@ authors = ["Artem Pikulin <ortgma@gmail.com>"]
 name = "etomicrs"
 
 [dependencies]
-ethcore-transaction = { git = "https://github.com/paritytech/parity.git" }
-ethkey = { git = "https://github.com/paritytech/parity.git" }
+ethcore-transaction = { git = "https://github.com/paritytech/parity-ethereum.git", rev = "e2095d4a5d5749ee26828f65c80e509e024b9535" }
+ethkey = { git = "https://github.com/paritytech/parity-ethereum.git", rev = "e2095d4a5d5749ee26828f65c80e509e024b9535" }
 rlp = { git = "https://github.com/paritytech/parity-common" }
-ethereum-types = "0.3.1"
-web3 = { git = "https://github.com/artemii235/rust-web3" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
+ethereum-types = "~0.3"
+web3 = { git = "https://github.com/artemii235/rust-web3" }
 hex = "0.3.2"
 regex = "1"
 libc = "0.2"

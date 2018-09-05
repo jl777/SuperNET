@@ -43,10 +43,8 @@ use std::os::raw::{c_char};
 use std::sync::{Mutex, MutexGuard};
 use tokio_core::reactor::Remote;
 
-use hyper::{ Client, Request };
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper_tls::HttpsConnector;
-use hyper::rt::{ self, Future, Stream };
 use futures_cpupool::CpuPool;
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
