@@ -2226,6 +2226,7 @@ void iguana_main(void *arg)
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
             elected = (char *)arg;
+            myinfo->nosplit = 1;
         }
     }
     if ( komodo_initjson(elected) < 0 )
