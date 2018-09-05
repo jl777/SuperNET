@@ -6,9 +6,19 @@ authors = ["Artem Pikulin <ortgma@gmail.com>"]
 [lib]
 name = "etomicrs"
 
+[dependencies.ethcore-transaction]
+git = "https://github.com/paritytech/parity-ethereum.git"
+rev = "e2095d4a5d5749ee26828f65c80e509e024b9535"
+default-features = false
+features = []
+
+[dependencies.ethkey]
+git = "https://github.com/paritytech/parity-ethereum.git"
+rev = "e2095d4a5d5749ee26828f65c80e509e024b9535"
+default-features = false
+features = []
+
 [dependencies]
-ethcore-transaction = { git = "https://github.com/paritytech/parity-ethereum.git", rev = "e2095d4a5d5749ee26828f65c80e509e024b9535" }
-ethkey = { git = "https://github.com/paritytech/parity-ethereum.git", rev = "e2095d4a5d5749ee26828f65c80e509e024b9535" }
 rlp = { git = "https://github.com/paritytech/parity-common" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
 ethereum-types = "~0.3"
