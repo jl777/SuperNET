@@ -7,14 +7,12 @@ authors = ["Artem Pikulin <ortgma@gmail.com>"]
 name = "etomicrs"
 
 [dependencies.ethcore-transaction]
-git = "https://github.com/paritytech/parity-ethereum.git"
-rev = "e2095d4a5d5749ee26828f65c80e509e024b9535"
+git = "https://github.com/artemii235/parity-ethereum.git"
 default-features = false
 features = []
 
 [dependencies.ethkey]
-git = "https://github.com/paritytech/parity-ethereum.git"
-rev = "e2095d4a5d5749ee26828f65c80e509e024b9535"
+git = "https://github.com/artemii235/parity-ethereum.git"
 default-features = false
 features = []
 
