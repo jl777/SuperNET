@@ -128,6 +128,7 @@ fn generate_bindings() {
             "LP_gui",
             "LP_canbind",
             "LP_fixed_pairport",
+            "LP_myipaddr",
             "USERHOME",
         ]
             .iter(),

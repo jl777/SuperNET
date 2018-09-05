@@ -21,8 +21,14 @@ docker-compose build'''
         sh '''docker-compose up -d
 ./start_ONE_ANOTHER_trade.sh BEER ETH
 timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f clientnode)
-timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)
-docker-compose down'''
+timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)'''
+      }
+      post {
+        always {
+          sh 'docker-compose logs --timestamps --tail=999'
+          sh 'docker ps'
+          sh 'docker-compose down'
+        }
       }
     }
     stage('Trade ETH/BEER') {
@@ -30,8 +36,14 @@ docker-compose down'''
         sh '''docker-compose up -d
 ./start_ONE_ANOTHER_trade.sh ETH BEER
 timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f clientnode)
-timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)
-docker-compose down'''
+timeout 600 grep -q "SWAP completed" <(COMPOSE_HTTP_TIMEOUT=600 docker-compose logs -f seednode)'''
+      }
+      post {
+        always {
+          sh 'docker-compose logs --timestamps --tail=999'
+          sh 'docker ps'
+          sh 'docker-compose down'
+        }
       }
     }
   }
