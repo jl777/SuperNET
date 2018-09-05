@@ -21,6 +21,8 @@
 
 #![allow(non_camel_case_types)]
 
+extern crate crc;
+
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
@@ -49,6 +51,8 @@ extern crate libc;
 
 extern crate nix;
 
+extern crate rand;
+
 extern crate serde;
 extern crate serde_json;
 
@@ -65,6 +69,8 @@ use gstuff::now_ms;
 
 use helpers::{stack_trace, stack_trace_frame};
 
+use rand::random;
+
 use serde_json::{self as json, Value as Json};
 
 use std::env;
@@ -72,9 +78,10 @@ use std::ffi::{CStr, CString, OsString};
 use std::fmt;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::os::raw::{c_char, c_int, c_long, c_void};
-use std::mem::{size_of, zeroed};
+use std::os::raw::{c_char, c_int, c_void};
+use std::mem::{zeroed};
 use std::path::Path;
+use std::process::exit;
 use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
@@ -85,6 +92,7 @@ use std::time::Duration;
 pub mod crash_reports;
 mod lp_native_dex;
 use lp_native_dex::{lp_init};
+#[allow(dead_code)]
 mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
@@ -180,7 +188,7 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
         let client = conf["client"].as_i64().unwrap_or (0);
         if client < i32::min_value() as i64 {return ERR! ("client < i32")}
         if client > i32::max_value() as i64 {return ERR! ("client > i32")}
-        try_s! (lp_init (port as u16, pullport, pubport, busport, client == 1, conf, c_conf));
+        try_s! (lp_init (port as u16, pullport, pubport, client == 1, conf, c_conf));
         Ok(())
     } else {ERR! ("!passphrase")}
 }
@@ -199,9 +207,8 @@ fn ensure_writable (dir_path: &Path) -> bool {
     /*
     char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
     */
-    let mut r: [u8; 32] = unsafe {zeroed()};
+    let r: [u8; 32] = random();
     let mut check: Vec<u8> = Vec::with_capacity (r.len());
-    unsafe {os::OS_randombytes (r.as_mut_ptr(), r.len() as c_long)};
     let fname = dir_path.join ("checkval");
     let mut fp = match fs::File::create (&fname) {
         Ok (fp) => fp,
@@ -238,12 +245,12 @@ mod test {
     use duct::Handle;
 
     use futures::Future;
-    use futures_cpupool::CpuPool;
 
     use gstuff::{now_float, slurp};
 
-    use hyper::{Body, Client, Request, StatusCode};
-    use hyper::rt::Stream;
+    use helpers::slurp_req;
+
+    use hyper::{Request, StatusCode};
 
     use serde_json::{self as json};
 
@@ -338,15 +345,9 @@ mod test {
 
                     /// Invokes a locally running MM and returns it's reply.
                     fn call_mm (json: String) -> Result<(StatusCode, String), String> {
-                        let pool = CpuPool::new (1);
-                        let client = Client::builder().executor (pool.clone()) .build_http::<Body>();
-                        let fut = pool.spawn (client.request (try_s! (
-                            Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()))));
-                        let res = try_s! (fut.wait());
-                        let status = res.status();
-                        let body = try_s! (pool.spawn (res.into_body().concat2()) .wait());
-                        let body = try_s! (from_utf8 (&body)) .trim();
-                        Ok ((status, body.into()))
+                        let request = try_s! (Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()));
+                        let (status, _headers, body) = try_s! (slurp_req (request) .wait());
+                        Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
                     }
 
                     mm_state = match mm_state {
@@ -407,11 +408,13 @@ fn help() {
         "\n"
         "  canbind       ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         "  client        ..  '1' to use the client mode.\n"
+        "  myipaddr      ..  IP address to bind to.\n"
         "  netid         ..  Subnetwork. Affects ports and keys.\n"
         "  passphrase *  ..  The wallet seed.\n"
         "  profitmargin  ..  Adds to `LP_profitratio`.\n"
         "  rpcport       ..  If > 1000 overrides the 7783 default.\n"
         "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
+        "  wif           ..  `1` to add WIFs to the information we provide about a coin.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
@@ -455,7 +458,7 @@ fn main() {
     if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
-    if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); return}
+    if !fix_directories() {eprintln! ("Some of the required directories are not accessible."); exit (1)}
 
     if first_arg == Some ("nxt") {
         unsafe {lp::LP_NXT_redeems()};
@@ -463,7 +466,12 @@ fn main() {
         return
     }
 
-    if let Some (conf) = first_arg {run_lp_main (conf)}
+    if let Some (conf) = first_arg {
+        if let Err (err) = run_lp_main (conf) {
+            eprintln! ("{}", err);
+            exit (1);
+        }
+    }
 }
 
 // TODO: `btc2kmd` is *pure*, it doesn't use shared state,
@@ -550,14 +558,15 @@ fn vanity (substring: &str) {
     let mut coinaddr: [u8; 64] = unsafe {zeroed()};
     let mut wifstr: [c_char; 128] = unsafe {zeroed()};
     let mut privkey: bits256 = unsafe {zeroed()};
+    unsafe {lp::LP_mutex_init()};
     let ctx = unsafe {bitcoin_ctx()};
+    unsafe {lp::LP_initcoins (ctx as *mut c_void, -1, unwrap! (CJSON::from_str ("[]")) .0)};
     let timestamp = now_ms() / 1000;
     println! ("start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp);
     for i in 0..1000000000 {
-        unsafe {os::OS_randombytes (privkey.bytes.as_mut_ptr(), size_of::<bits256>() as c_long)};
+        privkey.bytes = random();
         unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
         let coinaddr = unsafe {from_utf8_unchecked (from_raw_parts (coinaddr.as_ptr(), 34))};
-        // if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
         if &coinaddr[1 .. substring.len()] == &substring[0 .. substring.len() - 1] {  // Print on near match.
             unsafe {bitcoin_priv2wif ("KMD\0".as_ptr(), 0, wifstr.as_mut_ptr(), privkey, 188)};
             let wifstr = unwrap! (unsafe {CStr::from_ptr (wifstr.as_ptr())} .to_str());
@@ -579,14 +588,14 @@ fn fix_directories() -> bool {
 }
 
 /// Parses the `first_argument` as JSON and starts LP_main.
-fn run_lp_main (conf: &str) {
+fn run_lp_main (conf: &str) -> Result<(), String> {
     let c_conf = match CJSON::from_str (conf) {
         Ok (json) => json,
-        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+        Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
     };
     let conf: Json = match json::from_str(conf) {
         Ok (json) => json,
-        Err (err) => {eprintln! ("couldnt parse.({}).{}", conf, err); return}
+        Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
     };
 
     if conf["docker"] == 1 {
@@ -596,7 +605,8 @@ fn run_lp_main (conf: &str) {
         unsafe {lp::DOCKERFLAG = os::calc_ipbits (ip_port.as_ptr() as *mut c_char) as u32}
     }
 
-    unwrap! (lp_main (c_conf, conf))
+    try_s! (lp_main (c_conf, conf));
+    Ok(())
 }
 
 #[no_mangle]

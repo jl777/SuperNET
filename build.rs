@@ -110,10 +110,27 @@ fn generate_bindings() {
             "LPinit",
             "LP_ports",
             "unbuffered_output_support",
+            "calc_crc32",
+            "LP_initcoins",
+            "LP_mutex_init",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),
-        ["GLOBAL_DBDIR", "DOCKERFLAG", "LP_profitratio", "LP_RPCPORT"].iter(),
+        [
+            "bitcoind_RPC_inittime",
+            "GLOBAL_DBDIR",
+            "DOCKERFLAG",
+            "LP_profitratio",
+            "LP_RPCPORT",
+            "LP_MAXPRICEINFOS",
+            "LP_showwif",
+            "IAMLP",
+            "LP_gui",
+            "LP_canbind",
+            "LP_fixed_pairport",
+            "USERHOME",
+        ]
+            .iter(),
     );
 
     bindgen(
@@ -121,7 +138,6 @@ fn generate_bindings() {
         "mm2src/c_headers/OS_portable.rs",
         [
             "OS_init",
-            "OS_randombytes",
             "OS_ensure_directory",
             "OS_compatible_path",
             "calc_ipbits",

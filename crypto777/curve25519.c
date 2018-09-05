@@ -1667,6 +1667,7 @@ static const uint32_t crc32_tab[] = {
 	0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
+// CRC-32-IEEE
 uint32_t calc_crc32(uint32_t crc,const void *buf,size_t size)
 {
 	const uint8_t *p;

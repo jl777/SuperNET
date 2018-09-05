@@ -1423,59 +1423,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
 
 extern int32_t bitcoind_RPC_inittime;
 
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
-{
-    char *myipaddr=0; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
-    bitcoind_RPC_inittime = 1;
-    if ( LP_MAXPRICEINFOS > 256 )
-    {
-        printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);
-        exit(-1);
-    }
-    LP_showwif = juint(argjson,"wif");
-    printf("showwif.%d version: %s %u\n",LP_showwif,MM_VERSION,calc_crc32(0,MM_VERSION,(int32_t)strlen(MM_VERSION)));
-    if ( passphrase == 0 || passphrase[0] == 0 )
-    {
-        printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
-        exit(-1);
-    }
-    IAMLP = !amclient;
-#ifndef __linux__
-    if ( IAMLP != 0 )
-    {
-        printf("must run a unix node for LP node\n");
-        exit(-1);
-    }
-#endif
-    OS_randombytes((void *)&n,sizeof(n));
-    srand((uint32_t)n);
-    if ( jobj(argjson,"gui") != 0 )
-        safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
-    if ( jobj(argjson,"canbind") == 0 )
-    {
-#ifndef __linux__
-        LP_canbind = IAMLP;
-#else
-        LP_canbind = IAMLP;
-#endif
-    }
-    else
-    {
-        LP_canbind = jint(argjson,"canbind");
-        printf(">>>>>>>>>>> set LP_canbind.%d\n",LP_canbind);
-    }
-    if ( LP_canbind > 1000 && LP_canbind < 65536 )
-        LP_fixed_pairport = LP_canbind;
-    if ( LP_canbind != 0 )
-        LP_canbind = 1;
-    srand((int32_t)n);
-    if ( userhome != 0 && userhome[0] != 0 )
-    {
-        safecopy(USERHOME,userhome,sizeof(USERHOME));
-#ifdef __APPLE__
-        strcat(USERHOME,"/Library/Application Support");
-#endif
-    }
+void LP_mutex_init() {
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_UTXOmutex);
@@ -1505,25 +1453,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_pendswap_mutex);
     portable_mutex_init(&LP_listmutex);
     portable_mutex_init(&LP_gtcmutex);
-    myipaddr = clonestr("127.0.0.1");
-#ifndef _WIN32
-#ifndef FROM_JS
-    char ipfname[64];
-    strcpy(ipfname,"myipaddr");
-    if ( access( ipfname, F_OK ) != -1 || system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
-    {
-        if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
-        {
-            n = strlen(myipaddr);
-            if ( myipaddr[n-1] == '\n' )
-                myipaddr[--n] = 0;
-            strcpy(LP_myipaddr,myipaddr);
-        } else printf("error getting myipaddr\n");
-    } else printf("error issuing curl\n");
-#else
-    IAMLP = 0;
-#endif
-#endif
+}
+
+void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson)
+{
+    long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     if ( IAMLP != 0 )
     {
         G.netid = juint(argjson,"netid");
