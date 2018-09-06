@@ -1520,7 +1520,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         }
     } else if !conf["myipaddr"].is_null() {
         let s = try_s! (conf["myipaddr"].as_str().ok_or ("'myipaddr' is not a string"));
-        try_s! (simple_ip_extractor (s))
+        let ip = try_s! (simple_ip_extractor (s));
+        unsafe {lp::LP_myipaddr_from_command_line = 1};
+        ip
     } else {
         // Detect the real IP address.
         // 

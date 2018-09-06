@@ -131,6 +131,7 @@ fn generate_bindings() {
             "LP_canbind",
             "LP_fixed_pairport",
             "LP_myipaddr",
+            "LP_myipaddr_from_command_line",
             "USERHOME",
         ]
             .iter(),

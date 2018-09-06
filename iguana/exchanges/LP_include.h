@@ -626,6 +626,13 @@ extern char LP_gui[65];
 extern int32_t LP_canbind;
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
+/**
+ * Boolean. `1` if the command-line "myipaddr" field was used to set the `LP_myipaddr`.
+ * 
+ * Tells "stats.c" to bind on `LP_myipaddr` and not on "0.0.0.0".
+ * (We might replicate that binding logic in other places in the future).
+ */
+extern uint8_t LP_myipaddr_from_command_line;
 extern char USERHOME[512];
 
 #endif
