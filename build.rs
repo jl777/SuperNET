@@ -62,6 +62,8 @@ fn bindgen<
             }
             builder = builder.whitelist_recursively(true);
             builder = builder.layout_tests(false);
+            // Currently works for functions but not for variables such as `extern uint32_t DOCKERFLAG`.
+            builder = builder.generate_comments(true);
             if cfg!(windows) {
                 // Normally we should be checking for `_WIN32`, but `nn_config.h` checks for `WIN32`.
                 // (Note that it's okay to have WIN32 defined for 64-bit builds,

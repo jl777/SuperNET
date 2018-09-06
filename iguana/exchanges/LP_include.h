@@ -611,6 +611,12 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
 void unbuffered_output_support();
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
+/**
+ * Contains IP bits parsed from the "docker" parameter.  
+ * Deprecated (setting IP address should not require Docker,
+ * there is now a generic "myipaddr" (`LP_myipaddr`) parameter for that,
+ * plus we don't want to be locked into IPv4).
+ */
 extern uint32_t DOCKERFLAG;
 extern int32_t LP_STOP_RECEIVED;
 extern double LP_profitratio;
