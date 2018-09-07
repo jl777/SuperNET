@@ -66,8 +66,15 @@ struct GasStationData {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(untagged)]
+enum EtomicFaucetResult {
+    String(String),
+    Vector(Vec<String>)
+}
+
+#[derive(Deserialize, Debug)]
 struct EtomicFaucetResponse {
-    result: Option<Vec<String>>,
+    result: Option<EtomicFaucetResult>,
     error: Option<String>
 }
 
@@ -249,7 +256,7 @@ pub extern "C" fn get_gas_price_from_station(
     default_on_err: u8
 ) -> u64 {
     let fetch_result = fetch_json::<GasStationData>(
-        "https://ethgasstation.info/json/ethgasAPI.json".parse().unwrap()).wait();
+        "https://ethgasstation.info/json/ethgasAPI.json").wait();
     match fetch_result {
         // dividing by 10 because gas station returns not exactly gwei amount for some reason:
         // e.g. 30 means 3 gwei actually
@@ -275,7 +282,7 @@ pub extern "C" fn get_etomic_from_faucet(etomic_addr: *const c_char) -> u8 {
         let json = serde_json::to_string(&request).unwrap();
         println!("Etomic faucet request: {:?}", json);
         let post = post_json::<EtomicFaucetResponse>(
-            "http://195.201.116.176:8000/getEtomic".parse().unwrap(),
+            "http://195.201.116.176:8000/getEtomic",
             json
         ).wait();
         match post {
@@ -284,6 +291,7 @@ pub extern "C" fn get_etomic_from_faucet(etomic_addr: *const c_char) -> u8 {
                     println!("Got error from Etomic faucet: {:?}", result.error.unwrap());
                     0
                 } else {
+                    println!("Got result from Etomic faucet: {:?}", result.result.unwrap());
                     1
                 }
             },
@@ -317,4 +325,18 @@ pub extern "C" fn wait_for_confirmation(
             }
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_gas_price_from_station() {
+    let res = get_gas_price_from_station(0);
+    assert!(res > 0);
+}
+
+#[cfg(test)]
+#[test]
+fn test_get_etomic_from_faucet() {
+    let res = get_etomic_from_faucet(CString::new("R9o9xTocqr6CeEDGDH6mEYpwLoMz6jNjMW").unwrap().as_ptr());
+    assert_eq!(res, 1);
 }
