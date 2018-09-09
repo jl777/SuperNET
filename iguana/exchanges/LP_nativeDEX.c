@@ -1514,6 +1514,12 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
     //LP_publicport = mypullport;
     //LP_mybussock = LP_coinbus(mybusport);
     printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport);
+    if (jstr(argjson, "ethnode") != NULL) {
+        strcpy(LP_eth_node_url, jstr(argjson, "ethnode"));
+    } else {
+        // use default mainnet Parity node address
+        strcpy(LP_eth_node_url, "http://195.201.0.6:8555");
+    }
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )

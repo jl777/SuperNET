@@ -78,9 +78,10 @@ pub struct EthClient {
 }
 
 impl EthClient {
-    pub fn new(secret: Vec<u8>) -> Self {
-        let (event_loop, transport) = web3::transports::Http::new("http://195.201.0.6:8545").unwrap();
-        let web3 = web3::Web3::new(transport);
+    pub fn new(secret: Vec<u8>, url: &str) -> Self {
+        let (event_loop, transport) = unwrap!(Http::new(url),
+            "Could not init Http transport for ETH client, check the ethnode json arg");
+        let web3 = Web3::new(transport);
         let key_pair = KeyPair::from_secret_slice(&secret).unwrap();
         let current_nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
         let alice_abi = unwrap!(Contract::load(ALICE_ABI.as_bytes()), "Could not load ALICE_ABI, is it valid?");
@@ -622,10 +623,16 @@ impl EthClient {
 }
 
 #[no_mangle]
-pub extern "C" fn eth_client(private_key: *const c_char) -> *mut EthClient {
+pub extern "C" fn eth_client(
+    private_key: *const c_char,
+    node_url: *const c_char
+) -> *mut EthClient {
     unsafe {
         let slice = CStr::from_ptr(private_key).to_str().unwrap();
-        let eth_client = EthClient::new(hex::decode(&slice[2..]).unwrap());
+        let eth_client = EthClient::new(
+            hex::decode(&slice[2..]).unwrap(),
+            CStr::from_ptr(node_url).to_str().unwrap()
+        );
         Box::into_raw(Box::new(eth_client))
     }
 }

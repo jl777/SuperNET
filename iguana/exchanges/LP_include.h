@@ -621,5 +621,6 @@ extern int32_t LP_canbind;
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
 extern char USERHOME[512];
+char LP_eth_node_url[2084];
 
 #endif

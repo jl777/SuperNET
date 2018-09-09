@@ -768,7 +768,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     }
     char privkey_str[100];
     uint8arrayToHex(privkey_str, G.LP_privkey.bytes, 32);
-    LP_eth_client = eth_client(privkey_str);
+    LP_eth_client = eth_client(privkey_str, LP_eth_node_url);
 #endif
     G.initializing = 0;
     //LP_cmdchannels();
