@@ -21,7 +21,6 @@ extern crate hyper;
 extern crate hyper_tls;
 extern crate serde;
 extern crate serde_json;
-extern crate futures_cpupool;
 extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
@@ -45,7 +44,6 @@ use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper_tls::HttpsConnector;
-use futures_cpupool::CpuPool;
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -58,93 +56,6 @@ pub fn str_to_malloc (s: &str) -> *mut c_char {unsafe {
     *buf.offset (s.len() as isize) = 0;
     buf as *mut c_char
 }}
-
-// Define a type so we can return multiple types of errors
-#[derive(Debug)]
-pub enum FetchError {
-    Http(hyper::Error),
-    Json(serde_json::Error),
-}
-
-impl From<hyper::Error> for FetchError {
-    fn from(err: hyper::Error) -> FetchError {
-        FetchError::Http(err)
-    }
-}
-
-impl From<serde_json::Error> for FetchError {
-    fn from(err: serde_json::Error) -> FetchError {
-        FetchError::Json(err)
-    }
-}
-
-pub fn fetch_json<T: 'static>(url: hyper::Uri) -> impl Future<Item=T, Error=FetchError>
-    where T: serde::de::DeserializeOwned + std::marker::Send {
-    let pool = CpuPool::new(1);
-    let https = HttpsConnector::new(4).unwrap();
-    let client = Client::builder()
-        .executor(pool.clone())
-        .build::<_, hyper::Body>(https);
-
-    pool.spawn(
-        client
-            // Fetch the url...
-            .get(url)
-            // And then, if we get a response back...
-            .and_then(|res| {
-                // asynchronously concatenate chunks of the body
-                res.into_body().concat2()
-            })
-            .from_err::<FetchError>()
-            // use the body after concatenation
-            .and_then(|body| {
-                // try to parse as json with serde_json
-                let result = serde_json::from_slice(&body)?;
-
-                Ok(result)
-            })
-            .from_err()
-    )
-}
-
-pub fn post_json<T: 'static>(url: hyper::Uri, json: String) -> impl Future<Item=T, Error=FetchError>
-    where T: serde::de::DeserializeOwned + std::marker::Send {
-    let pool = CpuPool::new(1);
-    let https = HttpsConnector::new(4).unwrap();
-    let client = Client::builder()
-        .executor(pool.clone())
-        .build::<_, hyper::Body>(https);
-
-    let request = Request::builder()
-        .method("POST")
-        .uri(url)
-        .header(
-            CONTENT_TYPE,
-            HeaderValue::from_static("application/json")
-        )
-        .body(json.into())
-        .unwrap();
-
-    pool.spawn(
-        client
-            // Post the url...
-            .request(request)
-            // And then, if we get a response back...
-            .and_then(|res| {
-                // asynchronously concatenate chunks of the body
-                res.into_body().concat2()
-            })
-            .from_err::<FetchError>()
-            // use the body after concatenation
-            .and_then(|body| {
-                // try to parse as json with serde_json
-                let result = serde_json::from_slice(&body)?;
-
-                Ok(result)
-            })
-            .from_err()
-    )
-}
 
 //? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
@@ -297,7 +208,65 @@ pub fn slurp_req (request: Request<Body>) -> SlurpFut {
     Box::new (drive_s (response_f))
 }
 
+/// Executes a Hyper HTTPS request, returning the response status, headers and body.
+pub fn slurp_req_https (request: Request<Body>) -> SlurpFut {
+    let https = try_fus!(HttpsConnector::new(4));
+    let client = Client::builder()
+        .executor(CORE.clone())
+        .build::<_, hyper::Body>(https);
+    let request_f = client.request (request);
+    let response_f = request_f.then (move |res| -> SlurpFut {
+        let res = try_fus! (res);
+        let status = res.status();
+        let headers = res.headers().clone();
+        let body_f = res.into_body().concat2();
+        let combined_f = body_f.then (move |body| -> Result<(StatusCode, HeaderMap, Vec<u8>), String> {
+            let body = try_s! (body);
+            Ok ((status, headers, body.to_vec()))
+        });
+        Box::new (combined_f)
+    });
+    Box::new (drive_s (response_f))
+}
+
 /// Executes a GET request, returning the response status, headers and body.
 pub fn slurp_url (url: &str) -> SlurpFut {
     slurp_req (try_fus! (Request::builder().uri (url) .body (Body::empty())))
+}
+
+/// Executes a GET HTTPS request, returning the response status, headers and body.
+pub fn slurp_url_https (url: &str) -> SlurpFut {
+    slurp_req_https (try_fus! (Request::builder().uri (url) .body (Body::empty())))
+}
+
+/// Fetch URL by HTTPS and parse JSON response
+pub fn fetch_json<T>(url: &str) -> Box<Future<Item=T, Error=String>>
+    where T: serde::de::DeserializeOwned + Send + 'static {
+    Box::new(slurp_url_https(url).and_then(|result| {
+        // try to parse as json with serde_json
+        let result = try_s!(serde_json::from_slice(&result.2));
+
+        Ok(result)
+    }))
+}
+
+/// Send POST JSON HTTPS request and parse response
+pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>>
+    where T: serde::de::DeserializeOwned + Send + 'static {
+    let request = try_fus!(Request::builder()
+        .method("POST")
+        .uri(url)
+        .header(
+            CONTENT_TYPE,
+            HeaderValue::from_static("application/json")
+        )
+        .body(json.into())
+    );
+
+    Box::new(slurp_req_https(request).and_then(|result| {
+        // try to parse as json with serde_json
+        let result = try_s!(serde_json::from_slice(&result.2));
+
+        Ok(result)
+    }))
 }
