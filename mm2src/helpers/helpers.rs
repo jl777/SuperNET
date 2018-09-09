@@ -18,7 +18,7 @@ extern crate gstuff;
 extern crate lazy_static;
 extern crate libc;
 extern crate hyper;
-extern crate hyper_tls;
+extern crate hyper_rustls;
 extern crate serde;
 extern crate serde_json;
 extern crate tokio_core;
@@ -43,7 +43,7 @@ use std::sync::{Mutex, MutexGuard};
 use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
-use hyper_tls::HttpsConnector;
+use hyper_rustls::HttpsConnector;
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -192,7 +192,11 @@ type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> 
 
 /// Executes a Hyper request, returning the response status, headers and body.
 pub fn slurp_req (request: Request<Body>) -> SlurpFut {
-    let https = try_fus! (HttpsConnector::new(4));
+    // We're doing only a single request with the `Client`,
+    // so likely a single or sequential DNS access, probably don't need to spawn more than a single DNS thread.
+    let dns_threads = 1;
+
+    let https = HttpsConnector::new (dns_threads);
     let client = Client::builder().executor (CORE.clone()) .build (https);
     let request_f = client.request (request);
     let response_f = request_f.then (move |res| -> SlurpFut {
