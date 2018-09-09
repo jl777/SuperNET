@@ -1726,12 +1726,13 @@ mod test {
     fn test_get_eth_balance() {
         let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
         let mut error: c_int = 0;
 
         let result = get_eth_balance(
             address.as_ptr(),
             &mut error as *mut i32,
-            eth_client(priv_key.as_ptr())
+            eth_client(priv_key.as_ptr(), eth_node.as_ptr())
         );
         assert!(result > 0);
     }
@@ -1741,6 +1742,8 @@ mod test {
         let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
         let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
+
         let mut error: c_int = 0;
 
         let result = get_erc20_balance(
@@ -1748,7 +1751,7 @@ mod test {
             token_address.as_ptr(),
             8,
             &mut error as *mut i32,
-            eth_client(priv_key.as_ptr())
+            eth_client(priv_key.as_ptr(), eth_node.as_ptr())
         );
         assert!(result > 0);
     }
@@ -1759,13 +1762,14 @@ mod test {
         let spender = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
         let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
 
         let result = get_erc20_allowance(
             owner.as_ptr(),
             spender.as_ptr(),
             token_address.as_ptr(),
             8,
-            eth_client(priv_key.as_ptr())
+            eth_client(priv_key.as_ptr(), eth_node.as_ptr())
         );
         assert_eq!(result, 0);
     }
@@ -1950,21 +1954,27 @@ mod test {
     fn test_alice_payment_status() {
         let tx_id = CString::new("0x781d3bd164d6e0b6abeacb34b680a2dd43ee2e5dadad45f631bb21d06e792d98").unwrap();
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        assert_eq!(alice_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 2);
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
+
+        assert_eq!(alice_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr(), eth_node.as_ptr())), 2);
     }
 
     #[test]
     fn test_bob_payment_status() {
         let tx_id = CString::new("0x301e0ab4824d87e764a1ef4dea49618e207aac8d80ffbb22de75152a5c25adc0").unwrap();
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        assert_eq!(bob_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 2);
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
+
+        assert_eq!(bob_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr(), eth_node.as_ptr())), 2);
     }
 
     #[test]
     fn test_bob_deposit_status() {
         let tx_id = CString::new("0xd4116948f7b9a8e06b84417a48db0e34213b25e8fa3b50a7888fcb049fbf430d").unwrap();
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        assert_eq!(bob_deposit_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr())), 3);
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
+
+        assert_eq!(bob_deposit_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr(), eth_node.as_ptr())), 3);
     }
 
     #[test]

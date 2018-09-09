@@ -412,6 +412,7 @@ fn help() {
         "  rpcport       ..  If > 1000 overrides the 7783 default.\n"
         "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
         "  wif           ..  `1` to add WIFs to the information we provide about a coin.\n"
+        "  ethnode       ..  The HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet). Set http://195.201.0.6:8545 for Ropsten testnet\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
