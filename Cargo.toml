@@ -43,7 +43,7 @@ unwrap = "1.2"
 winapi = "0.3.5"
 
 [build-dependencies]
-bindgen = "0.39"
+bindgen = "0.40"
 cc = "1.0"
 duct = "0.11.0"
 gstuff = "0.5"

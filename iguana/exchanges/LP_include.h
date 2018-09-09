@@ -611,6 +611,12 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
 void unbuffered_output_support();
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
+/**
+ * Contains IP bits parsed from the "docker" parameter.  
+ * Deprecated (setting IP address should not require Docker,
+ * there is now a generic "myipaddr" (`LP_myipaddr`) parameter for that,
+ * plus we don't want to be locked into IPv4).
+ */
 extern uint32_t DOCKERFLAG;
 extern int32_t LP_STOP_RECEIVED;
 extern double LP_profitratio;
@@ -620,6 +626,13 @@ extern char LP_gui[65];
 extern int32_t LP_canbind;
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
+/**
+ * Boolean. `1` if the command-line "myipaddr" field was used to set the `LP_myipaddr`.
+ * 
+ * Tells "stats.c" to bind on `LP_myipaddr` and not on "0.0.0.0".
+ * (We might replicate that binding logic in other places in the future).
+ */
+extern uint8_t LP_myipaddr_from_command_line;
 extern char USERHOME[512];
 char LP_eth_node_url[2084];
 

@@ -18,7 +18,7 @@ extern crate gstuff;
 extern crate lazy_static;
 extern crate libc;
 extern crate hyper;
-extern crate hyper_tls;
+extern crate hyper_rustls;
 extern crate serde;
 extern crate serde_json;
 extern crate tokio_core;
@@ -43,7 +43,7 @@ use std::sync::{Mutex, MutexGuard};
 use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
-use hyper_tls::HttpsConnector;
+use hyper_rustls::HttpsConnector;
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -192,28 +192,12 @@ type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> 
 
 /// Executes a Hyper request, returning the response status, headers and body.
 pub fn slurp_req (request: Request<Body>) -> SlurpFut {
-    let client = Client::builder().executor (CORE.clone()) .build_http::<Body>();
-    let request_f = client.request (request);
-    let response_f = request_f.then (move |res| -> SlurpFut {
-        let res = try_fus! (res);
-        let status = res.status();
-        let headers = res.headers().clone();
-        let body_f = res.into_body().concat2();
-        let combined_f = body_f.then (move |body| -> Result<(StatusCode, HeaderMap, Vec<u8>), String> {
-            let body = try_s! (body);
-            Ok ((status, headers, body.to_vec()))
-        });
-        Box::new (combined_f)
-    });
-    Box::new (drive_s (response_f))
-}
+    // We're doing only a single request with the `Client`,
+    // so likely a single or sequential DNS access, probably don't need to spawn more than a single DNS thread.
+    let dns_threads = 1;
 
-/// Executes a Hyper HTTPS request, returning the response status, headers and body.
-pub fn slurp_req_https (request: Request<Body>) -> SlurpFut {
-    let https = try_fus!(HttpsConnector::new(4));
-    let client = Client::builder()
-        .executor(CORE.clone())
-        .build::<_, hyper::Body>(https);
+    let https = HttpsConnector::new (dns_threads);
+    let client = Client::builder().executor (CORE.clone()) .build (https);
     let request_f = client.request (request);
     let response_f = request_f.then (move |res| -> SlurpFut {
         let res = try_fus! (res);
@@ -234,15 +218,16 @@ pub fn slurp_url (url: &str) -> SlurpFut {
     slurp_req (try_fus! (Request::builder().uri (url) .body (Body::empty())))
 }
 
-/// Executes a GET HTTPS request, returning the response status, headers and body.
-pub fn slurp_url_https (url: &str) -> SlurpFut {
-    slurp_req_https (try_fus! (Request::builder().uri (url) .body (Body::empty())))
+#[test]
+fn test_slurp_req() {
+    let (status, _headers, _body) = unwrap! (slurp_url ("https://httpbin.org/get") .wait());
+    assert! (status.is_success());
 }
 
 /// Fetch URL by HTTPS and parse JSON response
 pub fn fetch_json<T>(url: &str) -> Box<Future<Item=T, Error=String>>
     where T: serde::de::DeserializeOwned + Send + 'static {
-    Box::new(slurp_url_https(url).and_then(|result| {
+    Box::new(slurp_url(url).and_then(|result| {
         // try to parse as json with serde_json
         let result = try_s!(serde_json::from_slice(&result.2));
 
@@ -263,7 +248,7 @@ pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>
         .body(json.into())
     );
 
-    Box::new(slurp_req_https(request).and_then(|result| {
+    Box::new(slurp_req(request).and_then(|result| {
         // try to parse as json with serde_json
         let result = try_s!(serde_json::from_slice(&result.2));
 
