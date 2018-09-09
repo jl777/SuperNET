@@ -34,6 +34,7 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJS
 void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 extern uint32_t DOCKERFLAG;
 extern char LP_myipaddr[];
+extern uint8_t LP_myipaddr_from_command_line;
 
 char *stats_validmethods[] =
 {
@@ -825,13 +826,18 @@ void stats_rpcloop(void *args)
         //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( bindsock < 0 )
         {
-            while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+            // If the "myipaddr" was specified from the command line then we want to bind there
+            // and not on "0.0.0.0", in order to be able to run several MM instances on the same host.
+            // If, on the other hand, "myipaddr" wasn't specified on the command line
+            // then we bind on "0.0.0.0" like before, in order to maximize the likehood of MM being reachable.
+            const char* bind_on = LP_myipaddr_from_command_line == 1 ? LP_myipaddr : "0.0.0.0";
+
+            while ( (bindsock= iguana_socket(1,bind_on,port)) < 0 )
                 usleep(10000);
 #ifndef _WIN32
             //fcntl(bindsock, F_SETFL, fcntl(bindsock, F_GETFL, 0) | O_NONBLOCK);
 #endif
-            //if ( counter++ < 1 )
-                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled at unixtime.%u <<<<<<<<<\n",port,bindsock,(uint32_t)time(NULL));
+            printf(">>>>>>>>>> DEX stats %s:%d bind sock.%d DEX stats API enabled at unixtime.%u <<<<<<<<<\n",bind_on,port,bindsock,(uint32_t)time(NULL));
         }
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);

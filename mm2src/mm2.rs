@@ -54,6 +54,8 @@ extern crate nix;
 extern crate rand;
 
 extern crate serde;
+
+#[macro_use]
 extern crate serde_json;
 
 #[macro_use]
@@ -252,9 +254,10 @@ mod test {
 
     use hyper::{Request, StatusCode};
 
-    use serde_json::{self as json};
+    use serde_json::{self as json, Value as Json};
 
     use std::env;
+    use std::ffi::CString;
     use std::fs;
     use std::os::raw::c_char;
     use std::str::{from_utf8, from_utf8_unchecked};
@@ -304,15 +307,9 @@ mod test {
         match env::var ("MM2_TEST_EVENTS_MODE") {
             Ok (ref mode) if mode == "MM" => {
                 println! ("test_events] Starting the MarketMaker...");
-                let c_json = "{\
-                \"gui\":\"nogui\",\
-                \"unbuffered-output\":1,\
-                \"client\":1,\
-                \"passphrase\":\"123\",\
-                \"coins\":\"BTC,KMD\"\
-                }\0";
+                let conf: Json = json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"});
+                let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
                 let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
-                let conf = unwrap! (json::from_str (&c_json[0 .. c_json.len() - 1]));
                 unwrap! (lp_main (c_conf, conf))
             },
             Ok (ref mode) if mode == "MM_EVENTS" => {
@@ -354,7 +351,7 @@ mod test {
                         MmState::Starting => {  // See if MM started.
                             let mm_log = slurp (&mm_output);
                             let mm_log = unsafe {from_utf8_unchecked (&mm_log)};
-                            if mm_log.contains (">>>>>>>>>> DEX stats 127.0.0.1:7783 bind") {MmState::Started}
+                            if mm_log.contains (">>>>>>>>>> DEX stats 0.0.0.0:7783 bind") {MmState::Started}
                             else {MmState::Starting}
                         },
                         MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".

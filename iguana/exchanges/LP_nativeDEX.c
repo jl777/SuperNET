@@ -144,6 +144,7 @@ uint32_t LP_rand()
 char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],USERHOME[512] = { "/root" };
+uint8_t LP_myipaddr_from_command_line = 0;
 char LP_gui[65] = { "cli" };
 
 char *default_LPnodes[] = { "5.9.253.195", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
