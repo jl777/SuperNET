@@ -69,7 +69,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     {
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+DPOW_CHECKPOINTFREQ )
         {
-            suppress = 1;
+            suppress = strncmp("STAKED",dp->symbol,6) != 0;
             //fprintf(stderr,"suppress %s -> KMD\n",dp->symbol);
         }
     }
