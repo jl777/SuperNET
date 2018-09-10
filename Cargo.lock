@@ -352,12 +352,10 @@ dependencies = [
 [[package]]
 name = "ethcore-transaction"
 version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#306f07721f9d359b5a597eb12289c8805df75653"
+source = "git+https://github.com/artemii235/parity-ethereum.git#d5c196eb63adedb737953d022997b91f7bf83cb9"
 dependencies = [
  "ethereum-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ethjson 0.1.0 (git+https://github.com/artemii235/parity-ethereum.git)",
  "ethkey 0.3.0 (git+https://github.com/artemii235/parity-ethereum.git)",
- "heapsize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "keccak-hash 0.1.2 (git+https://github.com/paritytech/parity-common?rev=0045887fecd2fec39e56c962a0b27e2caf3b9474)",
  "rlp 0.2.1 (git+https://github.com/paritytech/parity-common?rev=0045887fecd2fec39e56c962a0b27e2caf3b9474)",
  "unexpected 0.1.0 (git+https://github.com/artemii235/parity-ethereum.git)",
@@ -386,21 +384,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethjson"
-version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#306f07721f9d359b5a597eb12289c8805df75653"
-dependencies = [
- "ethereum-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "ethkey"
 version = "0.3.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#306f07721f9d359b5a597eb12289c8805df75653"
+source = "git+https://github.com/artemii235/parity-ethereum.git#d5c196eb63adedb737953d022997b91f7bf83cb9"
 dependencies = [
  "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "edit-distance 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -842,7 +828,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "mem"
 version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#306f07721f9d359b5a597eb12289c8805df75653"
+source = "git+https://github.com/artemii235/parity-ethereum.git#d5c196eb63adedb737953d022997b91f7bf83cb9"
 
 [[package]]
 name = "memchr"
@@ -1758,7 +1744,7 @@ dependencies = [
 [[package]]
 name = "unexpected"
 version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#306f07721f9d359b5a597eb12289c8805df75653"
+source = "git+https://github.com/artemii235/parity-ethereum.git#d5c196eb63adedb737953d022997b91f7bf83cb9"
 
 [[package]]
 name = "unicase"
@@ -2029,7 +2015,6 @@ dependencies = [
 "checksum ethcore-transaction 0.1.0 (git+https://github.com/artemii235/parity-ethereum.git)" = "<none>"
 "checksum ethereum-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9c48729b8aea8aedb12cf4cb2e5cef439fdfe2dda4a89e47eeebd15778ef53b6"
 "checksum ethereum-types-serialize 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4ac59a21a9ce98e188f3dace9eb67a6c4a3c67ec7fbc7218cb827852679dc002"
-"checksum ethjson 0.1.0 (git+https://github.com/artemii235/parity-ethereum.git)" = "<none>"
 "checksum ethkey 0.3.0 (git+https://github.com/artemii235/parity-ethereum.git)" = "<none>"
 "checksum fixed-hash 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b18d6fd718fb4396e7a9c93ac59ba7143501467ca7a143c145b5555a571d5576"
 "checksum fnv 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "6cc484842f1e2884faf56f529f960cc12ad8c71ce96cc7abba0a067c98fee344"
