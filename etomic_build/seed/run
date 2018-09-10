@@ -1,4 +1,4 @@
 #!/bin/bash
 source passphrase
 source ../coins
-../../target/debug/mm2 "{\"ethnode\":\"http://195.201.0.6:8545\",\"netid\":9999,\"gui\":\"nogui\", \"profitmargin\":0.01, \"userhome\":\"/${HOME#"/"}\", \"passphrase\":\"$passphrase\", \"coins\":$coins}"
+../../target/debug/mm2 "{\"alice_contract\":\"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c\",\"bob_contract\":\"0x2a8e4f9ae69c86e277602c6802085febc4bd5986\",\"ethnode\":\"http://195.201.0.6:8545\",\"netid\":9999,\"gui\":\"nogui\", \"profitmargin\":0.01, \"userhome\":\"/${HOME#"/"}\", \"passphrase\":\"$passphrase\", \"coins\":$coins}"

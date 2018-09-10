@@ -54,10 +54,6 @@ static ALICE_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_dealI
 static BOB_ABI: &'static str = r#"[{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"payments","outputs":[{"name":"paymentHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"bobClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deposits","outputs":[{"name":"depositHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"aliceClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthPayment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Deposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Payment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthDeposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]"#;
 static ERC20_ABI: &'static str = r#"[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_subtractedValue","type":"uint256"}],"name":"decreaseApproval","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_addedValue","type":"uint256"}],"name":"increaseApproval","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}]"#;
 
-/// TODO use different addresses for testnet and mainnet
-static ALICE_CONTRACT: &'static str = "e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c";
-static BOB_CONTRACT: &'static str = "2a8e4f9ae69c86e277602c6802085febc4bd5986";
-
 include!("../c_headers/etomiclib.rs");
 
 fn decode_c_hex (s: &[c_char]) -> Vec<u8> {
@@ -76,15 +72,18 @@ pub struct EthClient {
     current_nonce: Mutex<U256>,
     pub alice_abi: Contract,
     pub bob_abi: Contract,
-    pub erc20_abi: Contract
+    pub erc20_abi: Contract,
+    pub alice_contract: H160,
+    pub bob_contract: H160
 }
 
 impl EthClient {
-    pub fn new(secret: Vec<u8>, url: &str) -> Self {
+    pub fn new(secret: Vec<u8>, url: &str, alice_contract: H160, bob_contract: H160) -> Self {
         let (event_loop, transport) = unwrap!(Http::new(url),
             "Could not init Http transport for ETH client, check the ethnode json arg");
         let web3 = Web3::new(transport);
-        let key_pair = KeyPair::from_secret_slice(&secret).unwrap();
+        let key_pair = unwrap!(KeyPair::from_secret_slice(&secret),
+            "Could not init ETH client key pair! Check the secret");
         let current_nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
         let alice_abi = unwrap!(Contract::load(ALICE_ABI.as_bytes()), "Could not load ALICE_ABI, is it valid?");
         let bob_abi = unwrap!(Contract::load(BOB_ABI.as_bytes()), "Could not load BOB_ABI, is it valid?");
@@ -99,7 +98,9 @@ impl EthClient {
             current_nonce: Mutex::new(current_nonce),
             alice_abi,
             bob_abi,
-            erc20_abi
+            erc20_abi,
+            alice_contract,
+            bob_contract
         }
     }
 
@@ -184,7 +185,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             amount,
-            Action::Call(H160::from(ALICE_CONTRACT)),
+            Action::Call(self.alice_contract),
             encoded,
             U256::from(210000),
             None
@@ -221,7 +222,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(ALICE_CONTRACT)),
+            Action::Call(self.alice_contract),
             encoded,
             U256::from(210000),
             None
@@ -258,7 +259,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(ALICE_CONTRACT)),
+            Action::Call(self.alice_contract),
             encoded,
             U256::from(210000),
             None
@@ -293,7 +294,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(ALICE_CONTRACT)),
+            Action::Call(self.alice_contract),
             encoded,
             U256::from(210000),
             None
@@ -322,7 +323,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             amount,
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -359,7 +360,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -394,7 +395,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -423,7 +424,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             amount,
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -460,7 +461,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -495,7 +496,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -530,7 +531,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -565,7 +566,7 @@ impl EthClient {
 
         self.sign_and_send_transaction(
             0.into(),
-            Action::Call(H160::from(BOB_CONTRACT)),
+            Action::Call(self.bob_contract),
             encoded,
             U256::from(210000),
             None
@@ -582,7 +583,7 @@ impl EthClient {
         let transactions = self.transactions.read().unwrap();
         let option = transactions.iter().find(
             |(ref _x, ref y)| {
-                if y.to == Some(H160::from(BOB_CONTRACT)) {
+                if y.to == Some(self.bob_contract) {
                     if y.input.0.as_slice()[0..4] == eth_function.short_signature() {
                         let decoded = eth_function.decode_input(&y.input.0).unwrap();
                         println!("Decoded: {:?}", decoded);
@@ -627,13 +628,25 @@ impl EthClient {
 #[no_mangle]
 pub extern "C" fn eth_client(
     private_key: *const c_char,
-    node_url: *const c_char
+    node_url: *const c_char,
+    alice_contract: *const c_char,
+    bob_contract: *const c_char
 ) -> *mut EthClient {
     unsafe {
         let slice = CStr::from_ptr(private_key).to_str().unwrap();
+        let alice_slice = CStr::from_ptr(alice_contract).to_str().unwrap();
+        let bob_slice = CStr::from_ptr(bob_contract).to_str().unwrap();
+
+        let alice_address = unwrap!(H160::from_str(&alice_slice[2..]),
+            "Could not init Alice contract address, check that alice_contract is valid!");
+        let bob_address = unwrap!(H160::from_str(&bob_slice[2..]),
+            "Could not init Bob contract address, check that bob_contract is valid!");
+
         let eth_client = EthClient::new(
             hex::decode(&slice[2..]).unwrap(),
-            CStr::from_ptr(node_url).to_str().unwrap()
+            CStr::from_ptr(node_url).to_str().unwrap(),
+            alice_address,
+            bob_address,
         );
         Box::into_raw(Box::new(eth_client))
     }
@@ -1611,7 +1624,7 @@ pub extern "C" fn alice_payment_status(payment_tx_id: *const c_char, eth_client:
         ]).unwrap();
         let res = (*eth_client).web3.eth().call(CallRequest {
             from: None,
-            to: H160::from(ALICE_CONTRACT),
+            to: (*eth_client).alice_contract,
             gas: None,
             gas_price: None,
             value: None,
@@ -1636,7 +1649,7 @@ pub extern "C" fn bob_deposit_status(deposit_tx_id: *const c_char, eth_client: *
         ]).unwrap();
         let res = (*eth_client).web3.eth().call(CallRequest {
             from: None,
-            to: H160::from(BOB_CONTRACT),
+            to: (*eth_client).bob_contract,
             gas: None,
             gas_price: None,
             value: None,
@@ -1661,7 +1674,7 @@ pub extern "C" fn bob_payment_status(payment_tx_id: *const c_char, eth_client: *
         ]).unwrap();
         let res = (*eth_client).web3.eth().call(CallRequest {
             from: None,
-            to: H160::from(BOB_CONTRACT),
+            to: (*eth_client).bob_contract,
             gas: None,
             gas_price: None,
             value: None,
@@ -1724,17 +1737,24 @@ mod test {
     use std::os::raw::{ c_int };
     use etomic::*;
 
+    fn eth_client_for_test() -> *mut EthClient {
+        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
+        let alice = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
+        let bob = CString::new("0x2a8e4f9ae69c86e277602c6802085febc4bd5986").unwrap();
+
+        eth_client(priv_key.as_ptr(), eth_node.as_ptr(), alice.as_ptr(), bob.as_ptr())
+    }
+
     #[test]
     fn test_get_eth_balance() {
         let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
         let mut error: c_int = 0;
 
         let result = get_eth_balance(
             address.as_ptr(),
             &mut error as *mut i32,
-            eth_client(priv_key.as_ptr(), eth_node.as_ptr())
+            eth_client_for_test()
         );
         assert!(result > 0);
     }
@@ -1743,8 +1763,6 @@ mod test {
     fn test_get_erc20_balance() {
         let address = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
         let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
 
         let mut error: c_int = 0;
 
@@ -1753,7 +1771,7 @@ mod test {
             token_address.as_ptr(),
             8,
             &mut error as *mut i32,
-            eth_client(priv_key.as_ptr(), eth_node.as_ptr())
+            eth_client_for_test()
         );
         assert!(result > 0);
     }
@@ -1763,15 +1781,13 @@ mod test {
         let owner = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
         let spender = CString::new("0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29").unwrap();
         let token_address = CString::new("0xd53315FeE75569ebaAb9d65fcAA94B5E836904Ea").unwrap();
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
 
         let result = get_erc20_allowance(
             owner.as_ptr(),
             spender.as_ptr(),
             token_address.as_ptr(),
             8,
-            eth_client(priv_key.as_ptr(), eth_node.as_ptr())
+            eth_client_for_test()
         );
         assert_eq!(result, 0);
     }
@@ -1955,28 +1971,22 @@ mod test {
     #[test]
     fn test_alice_payment_status() {
         let tx_id = CString::new("0x781d3bd164d6e0b6abeacb34b680a2dd43ee2e5dadad45f631bb21d06e792d98").unwrap();
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
 
-        assert_eq!(alice_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr(), eth_node.as_ptr())), 2);
+        assert_eq!(alice_payment_status(tx_id.as_ptr(), eth_client_for_test()), 2);
     }
 
     #[test]
     fn test_bob_payment_status() {
         let tx_id = CString::new("0x301e0ab4824d87e764a1ef4dea49618e207aac8d80ffbb22de75152a5c25adc0").unwrap();
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
 
-        assert_eq!(bob_payment_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr(), eth_node.as_ptr())), 2);
+        assert_eq!(bob_payment_status(tx_id.as_ptr(), eth_client_for_test()), 2);
     }
 
     #[test]
     fn test_bob_deposit_status() {
         let tx_id = CString::new("0xd4116948f7b9a8e06b84417a48db0e34213b25e8fa3b50a7888fcb049fbf430d").unwrap();
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
 
-        assert_eq!(bob_deposit_status(tx_id.as_ptr(), eth_client(priv_key.as_ptr(), eth_node.as_ptr())), 3);
+        assert_eq!(bob_deposit_status(tx_id.as_ptr(), eth_client_for_test()), 3);
     }
 
     #[test]

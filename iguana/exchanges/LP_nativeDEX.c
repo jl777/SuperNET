@@ -1521,6 +1521,20 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
         // use default mainnet Parity node address
         strcpy(LP_eth_node_url, "http://195.201.0.6:8555");
     }
+
+    if (jstr(argjson, "alice_contract") != NULL) {
+        strcpy(LP_alice_contract, jstr(argjson, "alice_contract"));
+    } else {
+        // use default mainnet Alice contract address
+        strcpy(LP_alice_contract, "0x9bc5418ceded51db08467fc4b62f32c5d9ebda55");
+    }
+
+    if (jstr(argjson, "bob_contract") != NULL) {
+        strcpy(LP_bob_contract, jstr(argjson, "bob_contract"));
+    } else {
+        // use default mainnet Bob contract address
+        strcpy(LP_bob_contract, "0xfef736cfa3b884669a4e0efd6a081250cce228e7");
+    }
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )

@@ -635,5 +635,7 @@ extern char LP_myipaddr[64];
 extern uint8_t LP_myipaddr_from_command_line;
 extern char USERHOME[512];
 char LP_eth_node_url[2084];
+char LP_alice_contract[50];
+char LP_bob_contract[50];
 
 #endif

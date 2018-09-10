@@ -413,6 +413,8 @@ fn help() {
         "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
         "  wif           ..  `1` to add WIFs to the information we provide about a coin.\n"
         "  ethnode       ..  The HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet). Set http://195.201.0.6:8545 for Ropsten testnet\n"
+        "  alice_contract..  0x prefixed Alice ETH contract address. Default is 0x9bc5418ceded51db08467fc4b62f32c5d9ebda55 (Mainnet). Set 0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c for Ropsten testnet\n"
+        "  bob_contract  ..  0x prefixed Bob ETH contract address. Default is 0xfef736cfa3b884669a4e0efd6a081250cce228e7 (Mainnet). Set 0x2a8e4f9ae69c86e277602c6802085febc4bd5986 for Ropsten testnet\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained
