@@ -236,7 +236,7 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     }
     else
     {
-        
+
     }
     if ( bits256_nonz(blockhash) != 0 )
     {
@@ -271,7 +271,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,ui
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
-            printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
+            //printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
             free(retstr);
         }
         usleep(10000);
@@ -399,7 +399,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 
 int32_t dpow_is015(char *symbol)
 {
-    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 ) //strcmp("BTC",symbol) == 0 || 
+    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 ) //strcmp("BTC",symbol) == 0 ||
         return(1);
     else return(0);
 }
@@ -1254,7 +1254,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                     printf(" opret[%c] fiatoshis %.8f vs check %.8f\n",script[0],dstr(fiatoshis),dstr(checktoshis));
                     if ( seed == 0 || fiatoshis < checktoshis )
                     {
-                        
+
                     }*/
                 }
             }
@@ -1424,4 +1424,3 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     //printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
 }
-
