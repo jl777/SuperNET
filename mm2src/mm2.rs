@@ -244,15 +244,11 @@ fn ensure_writable (dir_path: &Path) -> bool {
 
 #[cfg(test)]
 mod test {
-    use duct::Handle;
-
-    use futures::Future;
-
     use gstuff::{now_float, slurp};
 
-    use helpers::slurp_req;
+    use helpers::for_tests::{MarketMakerIt, RaiiKill};
 
-    use hyper::{Request, StatusCode};
+    use hyper::StatusCode;
 
     use serde_json::{self as json, Value as Json};
 
@@ -260,32 +256,11 @@ mod test {
     use std::ffi::CString;
     use std::fs;
     use std::os::raw::c_char;
-    use std::str::{from_utf8, from_utf8_unchecked};
+    use std::str::{from_utf8_unchecked};
     use std::thread::sleep;
     use std::time::Duration;
 
     use super::{btc2kmd, events, lp_main, CJSON};
-
-    /// Automatically kill a wrapped process.
-    struct RaiiKill {handle: Handle, running: bool}
-    impl RaiiKill {
-        fn from_handle (handle: Handle) -> RaiiKill {
-            RaiiKill {handle, running: true}
-        }
-        fn running (&mut self) -> bool {
-            if !self.running {return false}
-            match self.handle.try_wait() {Ok (None) => true, _ => {self.running = false; false}}
-        }
-    }
-    impl Drop for RaiiKill {
-        fn drop (&mut self) {
-            // The cached `running` check might provide some protection against killing a wrong process under the same PID,
-            // especially if the cached `running` check is also used to monitor the status of the process.
-            if self.running() {
-                let _ = self.handle.kill();
-            }
-        }
-    }
 
     /// Integration (?) test for the "btc2kmd" command line invocation.
     /// The argument is the WIF example from https://en.bitcoin.it/wiki/Wallet_import_format.
@@ -297,35 +272,56 @@ mod test {
         privkey 0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d");
     }
 
+    /// Integration test for the "autoprice" mode.  
+    /// Starts MM in background and files a buy request with it, in the "autoprice" mode,
+    /// then checks the logs to see that the price fetching code works.
+    #[test]
+    fn test_autoprice() {
+        // One of the ways we want to test the MarketMaker in the integration tests is by reading the logs.
+        // Just like the end users, we learn of what's MarketMaker doing from the logs,
+        // the information in the logs is actually a part of the user-visible functionality,
+        // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
+        // and to make an informed decision about whether the MarketMaker is performing correctly.
+
+        // MarketMakerIt TDD.
+        let mm = unwrap! (MarketMakerIt::start (
+            json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
+            "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into()));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+        unwrap! (mm.stop());
+        // TODO
+    }
+
+    /// This is not a separate test but a helper used by `MarketMakerIt` to run the MarketMaker from the test binary.
+    #[test]
+    fn test_mm_start() {
+        if let Ok (conf) = env::var ("MM2_TEST_CONF") {
+            println! ("test_mm_start] Starting the MarketMaker...");
+            let conf: Json = unwrap! (json::from_str (&conf));
+            let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
+            let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
+            unwrap! (lp_main (c_conf, conf))
+        }
+    }
+
     /// Integration test for the "mm2 events" mode.
     /// Starts MM in background and verifies that "mm2 events" produces a non-empty feed of events.
     #[test]
     fn test_events() {
         let executable = unwrap! (env::args().next());
-        let mm_output = env::temp_dir().join ("test_events.mm.log");
         let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
         match env::var ("MM2_TEST_EVENTS_MODE") {
-            Ok (ref mode) if mode == "MM" => {
-                println! ("test_events] Starting the MarketMaker...");
-                let conf: Json = json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"});
-                let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
-                let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
-                unwrap! (lp_main (c_conf, conf))
-            },
             Ok (ref mode) if mode == "MM_EVENTS" => {
                 println! ("test_events] Starting the `mm2 events`...");
                 unwrap! (events (&["_test".into(), "events".into()]));
             },
             _ => {
-                // Start the MM.
-                println! ("test_events] executable: '{}'.", executable);
-                println! ("test_events] `mm2` log: {:?}.", mm_output);
-                println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
-                let mut mm = RaiiKill::from_handle (unwrap! (cmd! (&executable, "test_events", "--nocapture")
-                    .env ("MM2_TEST_EVENTS_MODE", "MM")
-                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
-                    .stderr_to_stdout().stdout (&mm_output) .start()));
+                let mut mm = unwrap! (MarketMakerIt::start (
+                    json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
+                    "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into()));
+                println! ("test_events] `mm2` log: {:?}.", mm.log_path);
 
+                println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
                 let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
                     .env ("MM2_TEST_EVENTS_MODE", "MM_EVENTS")
                     .env ("MM2_UNBUFFERED_OUTPUT", "1")
@@ -337,29 +333,24 @@ mod test {
                 // Monitor the MM output.
                 let started = now_float();
                 loop {
-                    if !mm.running() {panic! ("MM process terminated prematurely.")}
+                    if !mm.pc.running() {panic! ("MM process terminated prematurely.")}
                     if !mm_events.running() {panic! ("`mm2 events` terminated prematurely.")}
-
-                    /// Invokes a locally running MM and returns it's reply.
-                    fn call_mm (json: String) -> Result<(StatusCode, String), String> {
-                        let request = try_s! (Request::builder().method ("POST") .uri ("http://127.0.0.1:7783") .body (json.into()));
-                        let (status, _headers, body) = try_s! (slurp_req (request) .wait());
-                        Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
-                    }
 
                     mm_state = match mm_state {
                         MmState::Starting => {  // See if MM started.
-                            let mm_log = slurp (&mm_output);
+                            let mm_log = slurp (&mm.log_path);
                             let mm_log = unsafe {from_utf8_unchecked (&mm_log)};
-                            if mm_log.contains (">>>>>>>>>> DEX stats 0.0.0.0:7783 bind") {MmState::Started}
+                            let expected_bind = format! (">>>>>>>>>> DEX stats {}:7783 bind", mm.ip);
+                            if mm_log.contains (&expected_bind) {MmState::Started}
                             else {MmState::Starting}
                         },
                         MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
-                            let (status, body) = unwrap! (call_mm (String::from (
-                                "{\"userpass\":\"5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337\",\"method\":\"getendpoint\"}")));
+                            let (status, body) = unwrap! (mm.call_mm (json! (
+                                {"userpass": mm.userpass, "method": "getendpoint"})));
                             println! ("test_events] getendpoint response: {:?}, {}", status, body);
                             assert_eq! (status, StatusCode::OK);
-                            assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""));
+                            //let expected_endpoint = format! ("\"endpoint\":\"ws://{}:5555\"", mm.ip);
+                            assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""), "{}", body);
                             MmState::GetendpointSent
                         },
                         MmState::GetendpointSent => {  // Wait for the `mm2 events` test to finish.
@@ -369,19 +360,15 @@ mod test {
                             else {MmState::GetendpointSent}
                         },
                         MmState::Passed => {  // Gracefully stop the MM.
-                            let (status, body) = unwrap! (call_mm (String::from (
-                                "{\"userpass\":\"5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337\",\"method\":\"stop\"}")));
-                            println! ("test_events] stop response: {:?}, {}", status, body);
-                            assert_eq! (status, StatusCode::OK);
-                            assert_eq! (body, "{\"result\":\"success\"}");
+                            unwrap! (mm.stop());
                             sleep (Duration::from_millis (100));
-                            let _ = fs::remove_file (mm_output);
                             let _ = fs::remove_file (mm_events_output);
                             break
                         }
                     };
 
-                    if now_float() - started > 20. {panic! ("Test didn't pass withing the 20 seconds timeframe")}
+                    if now_float() - started > 20. {
+                        panic! ("Test didn't pass withing the 20 seconds timeframe. mm_state={:?}", mm_state)}
                     sleep (Duration::from_millis (20))
                 }
             }

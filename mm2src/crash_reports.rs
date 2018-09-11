@@ -27,21 +27,23 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
     *seh_caught = Some ((exception_code, trace));
 }
 
+#[allow(dead_code)]
+fn exception_name (exception_code: u32) -> &'static str {
+    use winapi::um::minwinbase::{EXCEPTION_ACCESS_VIOLATION, EXCEPTION_ILLEGAL_INSTRUCTION};
+    match exception_code {
+        EXCEPTION_ACCESS_VIOLATION => "Access Violation",
+        EXCEPTION_ILLEGAL_INSTRUCTION => "Illegal Instruction",
+        0xE06D7363 => "VC++ Exception",  // https://blogs.msdn.microsoft.com/oldnewthing/20100730-00/?p=13273
+        _ => ""
+    }
+}
+
 /// Performs a crash report and aborts.
 #[cfg(windows)]
 #[cfg(not(test))]
 #[no_mangle]
 pub extern fn rust_seh_handler (exception_code: u32) {
-    use winapi::um::minwinbase::{EXCEPTION_ACCESS_VIOLATION, EXCEPTION_ILLEGAL_INSTRUCTION};
-
-    let exception_name = match exception_code {
-        EXCEPTION_ACCESS_VIOLATION => "Access Violation",
-        EXCEPTION_ILLEGAL_INSTRUCTION => "Illegal Instruction",
-        0xE06D7363 => "VC++ Exception",  // https://blogs.msdn.microsoft.com/oldnewthing/20100730-00/?p=13273
-        _ => ""
-    };
-
-    eprintln! ("SEH caught! ExceptionCode: {} ({}).", exception_code, exception_name);
+    eprintln! ("SEH caught! ExceptionCode: {} ({}).", exception_code, exception_name (exception_code));
     stack_trace (&mut stack_trace_frame, &mut |trace| {
         let stderr = stderr();
         let mut stderr = stderr.lock();
@@ -198,7 +200,13 @@ pub fn init_crash_reports() {
         }
 
         // Log Rust panics.
-        env::set_var ("RUST_BACKTRACE", "1")
+        // 
+        // There seems to be a conflict or a race between our crash report tracing and `RUST_BACKTRACE`.
+        // Crash reports misbehave when this option is enabled and when there are panics happening at the same time with the crash reports.
+        // A proper way to solve this would be to use our own panic handler, but this Rust feature isn't stable yet.
+        if !cfg! (test) {
+            env::set_var ("RUST_BACKTRACE", "1")
+        }
         // ^^ NB: In the future this might also affect the normal errors, cf. https://github.com/rust-lang/rfcs/blob/master/text/2504-fix-error.md.
     })
 }
@@ -218,4 +226,12 @@ fn test_crash_reports_mt() {
     let seh = unwrap! (unwrap! (SEH_CAUGHT.lock(), "!SEH_CAUGHT") .take(), "!trace");
     println! ("ExceptionCode: {}\n{}", seh.0, seh.1);
     assert! (seh.1.contains ("mm2::crash_reports::access_violation"));
+}
+
+// Make sure Rust panics still work in the presence of the VEH handler.
+#[test]
+#[should_panic]
+fn test_panic() {
+    init_crash_reports();
+    panic! ("NP");
 }
