@@ -301,7 +301,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;
-                    printf("add MoMoMdata.(%s)\n",hexstr);
+                    //printf("add MoMoMdata.(%s)\n",hexstr);
                     decode_hex(&hex[n],hexlen,hexstr), n += hexlen;
                 }
                 free_json(retjson);
