@@ -27,6 +27,7 @@ pub extern fn rust_seh_handler (exception_code: ExceptionCode) {
     *seh_caught = Some ((exception_code, trace));
 }
 
+#[cfg(windows)]
 #[allow(dead_code)]
 fn exception_name (exception_code: u32) -> &'static str {
     use winapi::um::minwinbase::{EXCEPTION_ACCESS_VIOLATION, EXCEPTION_ILLEGAL_INSTRUCTION};
