@@ -65,9 +65,27 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
     printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
 }
 
-/// Useful when we want to monitor the MM output closely but piped output is buffered by default.
-void unbuffered_output_support()
+/// Useful when we want to monitor the MM output closely but piped output is buffered by default.  
+/// Can also redirect the output to `log_path`, which sometimes is used in the integration tests.  
+/// Eventually we should port most of the logging to Rust and this will go away.
+void unbuffered_output_support(const char* log_path)
 {
+    if (log_path != 0)
+    {
+        if (freopen(log_path, "a", stdout) == 0)
+        {
+            printf("Can't reopen stdout to log_path %s\n", log_path);
+            abort();
+        }
+        if (freopen(log_path, "a", stderr) == 0)
+        {
+            printf("Can't reopen stderr to log_path %s\n", log_path);
+            abort();
+        }
+    }
+
+    // For some reason this doesn't work with `freopen` on Windows.
+    // TODO: Start a thread to periodically flush the streams instead.
     if (getenv("MM2_UNBUFFERED_OUTPUT") != 0)
     {
         setvbuf(stdout, 0, _IONBF, 0);

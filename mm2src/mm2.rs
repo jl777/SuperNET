@@ -177,7 +177,14 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
 }
 */
 fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
-    unsafe {lp::unbuffered_output_support()};
+    // Redirects the C stdout to the log.
+    let c_log_path_buf: CString;
+    let c_log_path = if conf["log"].is_null() {null()} else {
+        let log = try_s! (conf["log"].as_str().ok_or ("log is not a string"));
+        c_log_path_buf = try_s! (CString::new (log));
+        c_log_path_buf.as_ptr()
+    };
+    unsafe {lp::unbuffered_output_support (c_log_path)};
 
     let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
     if conf["passphrase"].is_string() {
@@ -257,8 +264,9 @@ mod test {
     use std::ffi::CString;
     use std::fs;
     use std::os::raw::c_char;
+    use std::path::{Path, PathBuf};
     use std::str::{from_utf8_unchecked};
-    use std::thread::sleep;
+    use std::thread::{self, sleep};
     use std::time::Duration;
 
     use super::{btc2kmd, events, lp_main, CJSON};
@@ -295,7 +303,8 @@ mod test {
                     {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
                 ]
             }),
-            "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into()));
+            "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
+            local_start));
         unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
 
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
@@ -339,8 +348,14 @@ mod test {
         assert_eq! (autoprice.0, StatusCode::OK);
         unwrap! (mm.wait_for_log (33., &|log| log.contains ("AUTOPRICE numautorefs")));
 
+        // Checking the autopricing logs here TDD-helps us with the porting effort.
+        // 
+        // The logging format is in flux until we start exporting the logs to websocket using them from HyperDEX.
+        // And the stdout format can be changed even after that.
+
+        sleep (Duration::from_secs (9));
+
         unwrap! (mm.stop());
-        // TODO
     }
 
     /// This is not a separate test but a helper used by `MarketMakerIt` to run the MarketMaker from the test binary.
@@ -353,6 +368,40 @@ mod test {
             let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
             unwrap! (lp_main (c_conf, conf))
         }
+    }
+
+    #[cfg(windows)]
+    fn chdir (dir: &Path) {
+        use winapi::um::processenv::SetCurrentDirectoryA;
+
+        let dir = unwrap! (dir.to_str());
+        let dir = unwrap! (CString::new (dir));
+        // https://docs.microsoft.com/en-us/windows/desktop/api/WinBase/nf-winbase-setcurrentdirectory
+        let rc = unsafe {SetCurrentDirectoryA (dir.as_ptr())};
+        assert_ne! (rc, 0);
+    }
+
+    #[cfg(not(windows))]
+    fn chdir (dir: &Path) {panic! ("chdir not implemented")}
+
+    /// Used by `MarketMakerIt` when the `LOCAL_THREAD_MM` env is `1`, helping debug the tested MM.
+    fn local_start (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
+        unwrap! (thread::Builder::new().name ("MM".into()) .spawn (move || {
+            if conf["log"].is_null() {
+                conf["log"] = unwrap! (log_path.to_str()) .into();
+            } else {
+                let path = Path::new (unwrap! (conf["log"].as_str(), "log is not a string"));
+                assert_eq! (log_path, path);
+            }
+
+            println! ("local_start] MM in a thread, log {:?}.", log_path);
+
+            chdir (&folder);
+
+            let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
+            let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
+            unwrap! (lp_main (c_conf, conf))
+        }));
     }
 
     /// Integration test for the "mm2 events" mode.
@@ -369,7 +418,8 @@ mod test {
             _ => {
                 let mut mm = unwrap! (MarketMakerIt::start (
                     json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
-                    "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into()));
+                    "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
+                    local_start));
                 println! ("test_events] `mm2` log: {:?}.", mm.log_path);
 
                 println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
@@ -384,7 +434,7 @@ mod test {
                 // Monitor the MM output.
                 let started = now_float();
                 loop {
-                    if !mm.pc.running() {panic! ("MM process terminated prematurely.")}
+                    if let Some (ref mut pc) = mm.pc {if !pc.running() {panic! ("MM process terminated prematurely.")}}
                     if !mm_events.running() {panic! ("`mm2 events` terminated prematurely.")}
 
                     mm_state = match mm_state {
@@ -441,18 +491,24 @@ fn help() {
         "\n"
         "Some (but not all) of the JSON configuration parameters (* - required):\n"
         "\n"
-        "  canbind       ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
-        "  client        ..  '1' to use the client mode.\n"
-        "  myipaddr      ..  IP address to bind to.\n"
-        "  netid         ..  Subnetwork. Affects ports and keys.\n"
-        "  passphrase *  ..  The wallet seed.\n"
-        "  profitmargin  ..  Adds to `LP_profitratio`.\n"
-        "  rpcport       ..  If > 1000 overrides the 7783 default.\n"
-        "  userhome      ..  Writeable folder with MM files ('DB' by default).\n"
-        "  wif           ..  `1` to add WIFs to the information we provide about a coin.\n"
-        "  ethnode       ..  The HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet). Set http://195.201.0.6:8545 for Ropsten testnet\n"
-        "  alice_contract..  0x prefixed Alice ETH contract address. Default is 0x9bc5418ceded51db08467fc4b62f32c5d9ebda55 (Mainnet). Set 0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c for Ropsten testnet\n"
-        "  bob_contract  ..  0x prefixed Bob ETH contract address. Default is 0xfef736cfa3b884669a4e0efd6a081250cce228e7 (Mainnet). Set 0x2a8e4f9ae69c86e277602c6802085febc4bd5986 for Ropsten testnet\n"
+        "  alice_contract ..  0x prefixed Alice ETH contract address.\n"
+        "                     Default is 0x9bc5418ceded51db08467fc4b62f32c5d9ebda55 (Mainnet).\n"
+        "                     Set 0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c for Ropsten testnet\n"
+        "  bob_contract   ..  0x prefixed Bob ETH contract address.\n"
+        "                     Default is 0xfef736cfa3b884669a4e0efd6a081250cce228e7 (Mainnet).\n"
+        "                     Set 0x2a8e4f9ae69c86e277602c6802085febc4bd5986 for Ropsten testnet\n"
+        "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
+        "  client         ..  '1' to use the client mode.\n"
+        "  ethnode        ..  HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet).\n"
+        "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
+        "  log            ..  File path. Redirect (as of now only a part of) the log there.\n"
+        "  myipaddr       ..  IP address to bind to.\n"
+        "  netid          ..  Subnetwork. Affects ports and keys.\n"
+        "  passphrase *   ..  Wallet seed.\n"
+        "  profitmargin   ..  Adds to `LP_profitratio`.\n"
+        "  rpcport        ..  If > 1000 overrides the 7783 default.\n"
+        "  userhome       ..  Writeable folder with MM files ('DB' by default).\n"
+        "  wif            ..  `1` to add WIFs to the information we provide about a coin.\n"
         "\n"
         // Generated from https://github.com/KomodoPlatform/Documentation (PR to dev branch).
         // SHossain: "this would be the URL we would recommend and it will be maintained

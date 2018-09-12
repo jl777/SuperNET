@@ -325,7 +325,7 @@ pub mod for_tests {
         /// The file we redirected the standard output and error streams to.
         pub log_path: PathBuf,
         /// The PID of the MarketMaker process.
-        pub pc: RaiiKill,
+        pub pc: Option<RaiiKill>,
         /// RPC API key.
         pub userpass: String
     }
@@ -335,7 +335,10 @@ pub mod for_tests {
         /// * `conf` - The command-line configuration passed to the MarketMaker.
         ///            Unique local IP address is injected as "myipaddr" unless this field is already present.
         /// * `userpass` - RPC API key. We should probably extract it automatically from the MM log.
-        pub fn start (mut conf: Json, userpass: String) -> Result<MarketMakerIt, String> {
+        /// * `local` - Function to start the MarketMaker in a local thread, instead of spawning a process.
+        ///             Used when the `LOCAL_THREAD_MM` env is `1` and allows to more easily debug the tested MM.
+        pub fn start (mut conf: Json, userpass: String, local: fn (folder: PathBuf, log_path: PathBuf, conf: Json))
+        -> Result<MarketMakerIt, String> {
             let executable = unwrap! (env::args().next());
             let executable = try_s! (Path::new (&executable) .canonicalize());
 
@@ -369,11 +372,21 @@ pub mod for_tests {
             try_s! (fs::create_dir (folder.join ("DB")));
             let log_path = folder.join ("mm2.log");
 
-            let pc = RaiiKill::from_handle (unwrap! (cmd! (&executable, "test_mm_start", "--nocapture")
-                .dir (&folder)
-                .env ("MM2_TEST_CONF", try_s! (json::to_string (&conf)))
-                .env ("MM2_UNBUFFERED_OUTPUT", "1")
-                .stderr_to_stdout().stdout (&log_path) .start()));
+            // If `LOCAL_THREAD_MM` is set to `1`
+            // then instead of spawning a process we start the MarketMaker in a local thread,
+            // allowing us to easily *debug* the tested MarketMaker code.
+            // Note that this should only be used while running a single test,
+            // using this option while running multiple tests (or multiple MarketMaker instances) is currently UB.
+            let pc = if env::var ("LOCAL_THREAD_MM") == Ok ("1".into()) {
+                local (folder.clone(), log_path.clone(), conf);
+                None
+            } else {
+                Some (RaiiKill::from_handle (unwrap! (cmd! (&executable, "test_mm_start", "--nocapture")
+                    .dir (&folder)
+                    .env ("MM2_TEST_CONF", try_s! (json::to_string (&conf)))
+                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
+                    .stderr_to_stdout().stdout (&log_path) .start())))
+            };
 
             Ok (MarketMakerIt {folder, ip, log_path, pc, userpass})
         }
