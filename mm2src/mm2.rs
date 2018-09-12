@@ -361,7 +361,7 @@ mod test {
     /// This is not a separate test but a helper used by `MarketMakerIt` to run the MarketMaker from the test binary.
     #[test]
     fn test_mm_start() {
-        if let Ok (conf) = env::var ("MM2_TEST_CONF") {
+        if let Ok (conf) = env::var ("_MM2_TEST_CONF") {
             println! ("test_mm_start] Starting the MarketMaker...");
             let conf: Json = unwrap! (json::from_str (&conf));
             let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
@@ -382,7 +382,7 @@ mod test {
     }
 
     #[cfg(not(windows))]
-    fn chdir (dir: &Path) {panic! ("chdir not implemented")}
+    fn chdir (_dir: &Path) {panic! ("chdir not implemented")}
 
     /// Used by `MarketMakerIt` when the `LOCAL_THREAD_MM` env is `1`, helping debug the tested MM.
     fn local_start (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
@@ -409,8 +409,9 @@ mod test {
     #[test]
     fn test_events() {
         let executable = unwrap! (env::args().next());
+        let executable = unwrap! (Path::new (&executable) .canonicalize());
         let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
-        match env::var ("MM2_TEST_EVENTS_MODE") {
+        match env::var ("_MM2_TEST_EVENTS_MODE") {
             Ok (ref mode) if mode == "MM_EVENTS" => {
                 println! ("test_events] Starting the `mm2 events`...");
                 unwrap! (events (&["_test".into(), "events".into()]));
@@ -424,7 +425,7 @@ mod test {
 
                 println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
                 let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
-                    .env ("MM2_TEST_EVENTS_MODE", "MM_EVENTS")
+                    .env ("_MM2_TEST_EVENTS_MODE", "MM_EVENTS")
                     .env ("MM2_UNBUFFERED_OUTPUT", "1")
                     .stderr_to_stdout().stdout (&mm_events_output) .start()));
 

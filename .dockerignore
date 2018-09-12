@@ -5,5 +5,7 @@ cmake-build-debug
 /Dockerfile
 
 /target
+/mm2src/etomic/target
+/mm2src/helpers/target
 
 /build

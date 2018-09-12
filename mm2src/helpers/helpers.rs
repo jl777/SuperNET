@@ -107,7 +107,8 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name == "helpers::stack_trace" {return}
     if name == "mm2::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
-    if name.starts_with ("mm2::crash_reports::stack_trace") {return}
+    if name.starts_with ("helpers::stack_trace") {return}
+    if name.starts_with ("mm2::crash_reports::signal_handler") {return}
 
     let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
 }
@@ -339,7 +340,7 @@ pub mod for_tests {
         ///             Used when the `LOCAL_THREAD_MM` env is `1` and allows to more easily debug the tested MM.
         pub fn start (mut conf: Json, userpass: String, local: fn (folder: PathBuf, log_path: PathBuf, conf: Json))
         -> Result<MarketMakerIt, String> {
-            let executable = unwrap! (env::args().next());
+            let executable = try_s! (env::args().next().ok_or ("No program name"));
             let executable = try_s! (Path::new (&executable) .canonicalize());
 
             let ip: IpAddr = if conf["myipaddr"].is_null() {  // Generate an unique IP.
@@ -381,9 +382,9 @@ pub mod for_tests {
                 local (folder.clone(), log_path.clone(), conf);
                 None
             } else {
-                Some (RaiiKill::from_handle (unwrap! (cmd! (&executable, "test_mm_start", "--nocapture")
+                Some (RaiiKill::from_handle (try_s! (cmd! (&executable, "test_mm_start", "--nocapture")
                     .dir (&folder)
-                    .env ("MM2_TEST_CONF", try_s! (json::to_string (&conf)))
+                    .env ("_MM2_TEST_CONF", try_s! (json::to_string (&conf)))
                     .env ("MM2_UNBUFFERED_OUTPUT", "1")
                     .stderr_to_stdout().stdout (&log_path) .start())))
             };
