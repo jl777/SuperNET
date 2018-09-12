@@ -282,7 +282,7 @@ pub mod for_tests {
     use std::fs;
     use std::net::{IpAddr, Ipv4Addr};
     use std::path::{Path, PathBuf};
-    use std::str::{from_utf8, from_utf8_unchecked};
+    use std::str::{from_utf8};
     use std::sync::Mutex;
     use std::thread::sleep;
     use std::time::Duration;
@@ -363,7 +363,7 @@ pub mod for_tests {
             // (We could also remove the old folders after some time in order not to spam the temporary folder.
             // Though we don't always want to remove them right away, allowing developers to check the files).
             let now = Local::now();
-            let folder = format! ("mm2_{}_{}", now.format ("%Y-%m-%d.%H-%M-%S-%3f"), ip);
+            let folder = format! ("mm2_{}_{}", now.format ("%Y-%m-%d_%H-%M-%S-%3f"), ip);
             let folder = env::temp_dir().join (folder);
             try_s! (fs::create_dir (&folder));
             try_s! (fs::create_dir (folder.join ("DB")));
@@ -377,14 +377,17 @@ pub mod for_tests {
 
             Ok (MarketMakerIt {folder, ip, log_path, pc, userpass})
         }
+        pub fn log_as_utf8 (&self) -> Result<String, String> {
+            let mm_log = slurp (&self.log_path);
+            Ok (unsafe {String::from_utf8_unchecked (mm_log)})
+        }
         /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
         pub fn wait_for_log (&self, timeout_sec: f64, pred: &Fn (&str) -> bool) -> Result<(), String> {
             let start = now_float();
             let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
             loop {
-                let mm_log = slurp (&self.log_path);
-                let mm_log = unsafe {from_utf8_unchecked (&mm_log)};
-                if pred (mm_log) {return Ok(())}
+                let mm_log = try_s! (self.log_as_utf8());
+                if pred (&mm_log) {return Ok(())}
                 if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
                 sleep (Duration::from_millis (ms));
             }
@@ -406,7 +409,6 @@ pub mod for_tests {
     }
     impl Drop for MarketMakerIt {
         fn drop (&mut self) {
-            println! ("MarketMakerIt] drop");
             if let Ok (mut mm_ips) = MM_IPS.lock() {
                 mm_ips.remove (&self.ip);
             } else {println! ("MarketMakerIt] Can't lock MM_IPS.")}

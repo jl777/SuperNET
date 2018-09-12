@@ -55,6 +55,7 @@ extern crate rand;
 
 extern crate serde;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 
@@ -283,7 +284,6 @@ mod test {
         // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
         // and to make an informed decision about whether the MarketMaker is performing correctly.
 
-        // MarketMakerIt TDD.
         let mm = unwrap! (MarketMakerIt::start (
             json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
             "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into()));
@@ -338,8 +338,7 @@ mod test {
 
                     mm_state = match mm_state {
                         MmState::Starting => {  // See if MM started.
-                            let mm_log = slurp (&mm.log_path);
-                            let mm_log = unsafe {from_utf8_unchecked (&mm_log)};
+                            let mm_log = unwrap! (mm.log_as_utf8());
                             let expected_bind = format! (">>>>>>>>>> DEX stats {}:7783 bind", mm.ip);
                             if mm_log.contains (&expected_bind) {MmState::Started}
                             else {MmState::Starting}
@@ -368,6 +367,7 @@ mod test {
                     };
 
                     if now_float() - started > 20. {
+                        println! ("--- mm2.log ---\n{}\n", unwrap! (mm.log_as_utf8()));
                         panic! ("Test didn't pass withing the 20 seconds timeframe. mm_state={:?}", mm_state)}
                     sleep (Duration::from_millis (20))
                 }
