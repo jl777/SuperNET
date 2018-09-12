@@ -393,7 +393,7 @@ pub mod for_tests {
             }
         }
         /// Invokes the locally running MM and returns it's reply.
-        pub fn call_mm (&self, payload: Json) -> Result<(StatusCode, String), String> {
+        pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String), String> {
             let payload = try_s! (json::to_string (&payload));
             let uri = format! ("http://{}:7783", self.ip);
             let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
@@ -402,7 +402,7 @@ pub mod for_tests {
         }
         /// Send the "stop" request to the locally running MM.
         pub fn stop (&self) -> Result<(), String> {
-            let (status, body) = try_s! (self.call_mm (json! ({"userpass": self.userpass, "method": "stop"})));
+            let (status, body) = try_s! (self.rpc (json! ({"userpass": self.userpass, "method": "stop"})));
             if status != StatusCode::OK {return ERR! ("MM didn't accept a stop. body: {}", body)}
             Ok(())
         }

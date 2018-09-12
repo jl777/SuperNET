@@ -284,10 +284,61 @@ mod test {
         // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
         // and to make an informed decision about whether the MarketMaker is performing correctly.
 
+        let passphrase = "SPATsRps3dhEtXwtnpRCKF";
         let mm = unwrap! (MarketMakerIt::start (
-            json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
-            "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into()));
+            json! ({
+                "gui": "nogui",
+                "client": 1,
+                "passphrase": passphrase,
+                "coins": [
+                    {"coin": "BEER","asset": "BEER", "rpcport": 8923},
+                    {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
+                ]
+            }),
+            "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into()));
         unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+
+        // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
+
+        let electrum_beer = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "electrum",
+            "coin": "BEER",
+            "ipaddr": "electrum1.cipig.net",
+            "port": 10022
+        })));
+        assert_eq! (electrum_beer.0, StatusCode::OK);
+
+        let electrum_pizza = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "electrum",
+            "coin": "PIZZA",
+            "ipaddr": "electrum1.cipig.net",
+            "port": 10024
+        })));
+        assert_eq! (electrum_pizza.0, StatusCode::OK);
+
+        let address = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "calcaddress",
+            "passphrase": passphrase
+        })));
+        assert_eq! (address.0, StatusCode::OK);
+        let address: Json = unwrap! (json::from_str (&address.1));
+        println! ("test_autoprice] coinaddr: {}.", unwrap! (address["coinaddr"].as_str(), "!coinaddr"));
+
+        // Trigger the autoprice.
+
+        let autoprice = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "autoprice",
+            "base": "PIZZA",
+            "rel": "BEER",
+            "margin": 0.5
+        })));
+        assert_eq! (autoprice.0, StatusCode::OK);
+        unwrap! (mm.wait_for_log (33., &|log| log.contains ("AUTOPRICE numautorefs")));
+
         unwrap! (mm.stop());
         // TODO
     }
@@ -344,7 +395,7 @@ mod test {
                             else {MmState::Starting}
                         },
                         MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
-                            let (status, body) = unwrap! (mm.call_mm (json! (
+                            let (status, body) = unwrap! (mm.rpc (json! (
                                 {"userpass": mm.userpass, "method": "getendpoint"})));
                             println! ("test_events] getendpoint response: {:?}, {}", status, body);
                             assert_eq! (status, StatusCode::OK);
