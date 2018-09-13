@@ -351,6 +351,13 @@ pub mod for_tests {
                         // For some reason we can't use the 127.0.0.2-255 range of IPs on Travis/MacOS,
                         // cf. https://travis-ci.org/artemii235/SuperNET/jobs/428167579
                         // I plan to later look into this, but for now we're always using 127.0.0.1 on MacOS.
+                        // 
+                        // P.S. 127.0.0.2:7783 works when tested with static+cURL,
+                        // cf. https://travis-ci.org/artemii235/SuperNET/builds/428350505
+                        // but with MM it mysteriously fails,
+                        // cf. https://travis-ci.org/artemii235/SuperNET/jobs/428341581#L4534.
+                        // I think that something might be wrong with the HTTP server on our side.
+                        // Hopefully porting it to Hyper (https://github.com/artemii235/SuperNET/issues/155) will help.
                         if attempts > 0 {sleep (Duration::from_millis (1000 + attempts * 200))}
                         Ipv4Addr::new (127, 0, 0, 1)
                     } else {
