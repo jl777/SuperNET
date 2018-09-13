@@ -353,6 +353,17 @@ pub mod for_tests {
                     let ip: IpAddr = ip.into();
                     if mm_ips.contains (&ip) {attempts += 1; continue}
                     conf["myipaddr"] = format! ("{}", ip) .into();
+
+                    if cfg! (macos) {
+                        // Make sure the local IP is enabled on MAC (and in the Travis CI).
+                        // cf. https://superuser.com/a/458877
+                        let cmd = cmd! ("sudo", "ifconfig", "lo0", "alias", format! ("{}", ip), "up");
+                        match cmd.stderr_to_stdout().read() {
+                            Err (err) => println! ("MarketMakerIt] Error trying to `up` the {}: {}", ip, err),
+                            Ok (output) => println! ("MarketMakerIt] Upped the {}: {}", ip, output)
+                        }
+                    }
+
                     break ip
                 }
             } else {  // Just use the IP given in the `conf`.
