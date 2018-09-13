@@ -288,7 +288,8 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-        if ( strncmp(bp->srccoin->symbol,"STKD",4) == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+
+        if ( ( (strlen(symbol) >= 4 && strncmp(symbol, "STKD", 4) == 0) || (strlen(symbol) >= 6 && strncmp(symbol, "STAKED", 6) == 0) ) && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -301,7 +302,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;
-                    //printf("add MoMoMdata.(%s)\n",hexstr);
+                    printf("add MoMoMdata.(%s)\n",hexstr);
                     decode_hex(&hex[n],hexlen,hexstr), n += hexlen;
                 }
                 free_json(retjson);

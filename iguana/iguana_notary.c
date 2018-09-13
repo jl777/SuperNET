@@ -61,16 +61,20 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;  struct dpow_block *bp;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t checkpointfreq,i,ht,suppress=0;  struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+DPOW_CHECKPOINTFREQ )
+        checkpointfreq = DPOW_CHECKPOINTFREQ
+        if ( (strlen(dp->symbol) >= 4 && strncmp(dp->symbol, "STKD", 4) == 0) || (strlen(dp->symbol) >= 6 && strncmp(dp->symbol, "STAKED", 6) == 0) )
+            checkpointfreq = 5;
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+checkpointfreq )
         {
-            suppress = strncmp("STKD",dp->symbol,4) != 0;
-            //fprintf(stderr,"suppress %s -> KMD\n",dp->symbol);
+            suppress = 1;
+            // suppress = strncmp("STKD",dp->symbol,4) != 0;
+            fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
