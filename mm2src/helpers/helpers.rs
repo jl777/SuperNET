@@ -344,17 +344,26 @@ pub mod for_tests {
             let executable = try_s! (Path::new (&executable) .canonicalize());
 
             let ip: IpAddr = if conf["myipaddr"].is_null() {  // Generate an unique IP.
-                let mut mm_ips = try_s! (MM_IPS.lock());
                 let mut attempts = 0;
                 let mut rng = thread_rng();
                 loop {
-                    let ip = Ipv4Addr::new (127, 0, 0, rng.gen_range (1, 255));
+                    let ip4 = if cfg! (target_os = "macos") {
+                        // For some reason we can't use the 127.0.0.2-255 range of IPs on Travis/MacOS,
+                        // cf. https://travis-ci.org/artemii235/SuperNET/jobs/428167579
+                        // I plan to later look into this, but for now we're always using 127.0.0.1 on MacOS.
+                        if attempts > 0 {sleep (Duration::from_millis (1000 + attempts * 200))}
+                        Ipv4Addr::new (127, 0, 0, 1)
+                    } else {
+                        Ipv4Addr::new (127, 0, 0, rng.gen_range (1, 255))
+                    };
                     if attempts > 128 {return ERR! ("Out of local IPs?")}
-                    let ip: IpAddr = ip.into();
+                    let ip: IpAddr = ip4.clone().into();
+                    let mut mm_ips = try_s! (MM_IPS.lock());
                     if mm_ips.contains (&ip) {attempts += 1; continue}
+                    mm_ips.insert (ip.clone());
                     conf["myipaddr"] = format! ("{}", ip) .into();
 
-                    if cfg! (target_os = "macos") {
+                    if cfg! (target_os = "macos") && ip4.octets()[3] > 1 {
                         // Make sure the local IP is enabled on MAC (and in the Travis CI).
                         // cf. https://superuser.com/a/458877
                         let cmd = cmd! ("sudo", "ifconfig", "lo0", "alias", format! ("{}", ip), "up");
