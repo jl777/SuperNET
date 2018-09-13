@@ -67,7 +67,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+checkpointfreq )
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+DPOW_CHECKPOINTFREQ )
         {
           if ( strncmp(dp->symbol, "STKD", 4) == 0) || strncmp(dp->symbol, "STAKED", 6) == 0) )
             suppress = 0;
