@@ -68,12 +68,12 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
         checkpointfreq = DPOW_CHECKPOINTFREQ;
-        if ( (strlen(dp->symbol) >= 4 && strncmp(dp->symbol, "STKD", 4) == 0) || (strlen(dp->symbol) >= 6 && strncmp(dp->symbol, "STAKED", 6) == 0) )
-            checkpointfreq = 5;
+        //if ( (strlen(dp->symbol) >= 4 && strncmp(dp->symbol, "STKD", 4) == 0) || (strlen(dp->symbol) >= 6 && strncmp(dp->symbol, "STAKED", 6) == 0) )
+            //checkpointfreq = 5;
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+checkpointfreq )
         {
-            suppress = 1;
-            // suppress = strncmp("STKD",dp->symbol,4) != 0;
+            //suppress = 1;
+            suppress = ( (strlen(dp->symbol) >= 4 && strncmp(dp->symbol, "STKD", 4) == 0) || (strlen(dp->symbol) >= 6 && strncmp(dp->symbol, "STAKED", 6) == 0) ) != 0;
             fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
         }
     }
