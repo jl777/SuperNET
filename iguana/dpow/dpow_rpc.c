@@ -289,7 +289,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
 
-        if ( ( (strlen(symbol) >= 4 && strncmp(symbol, "STKD", 4) == 0) || (strlen(symbol) >= 6 && strncmp(symbol, "STAKED", 6) == 0) ) && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        if ( ( (strlen(bp->srccoin->symbol) >= 4 && strncmp(bp->srccoin->symbol, "STKD", 4) == 0) || (strlen(bp->srccoin->symbol) >= 6 && strncmp(bp->srccoin->symbol, "STAKED", 6) == 0) ) && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
