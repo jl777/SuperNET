@@ -3,19 +3,17 @@
 /// Performs a crash report and aborts.
 void rust_seh_handler(DWORD exception_code);
 
-/// Helps us test catching access violations happening in C code.
-void c_access_violation()
-{
-    // Straight from the https://docs.microsoft.com/en-us/windows/desktop/Debug/using-a-vectored-exception-handler.
-    char *ptr = 0;
-    *ptr = 0;
-}
-
 long WINAPI veh_exception_filter(PEXCEPTION_POINTERS info)
 {
     // https://docs.microsoft.com/en-us/windows/desktop/debug/using-a-vectored-exception-handler
 
-    rust_seh_handler(info->ExceptionRecord->ExceptionCode);
+    DWORD code = info->ExceptionRecord->ExceptionCode;
+
+    // Don't handle the normal unwinding exceptions and panics.
+    // cf. https://blogs.msdn.microsoft.com/oldnewthing/20100730-00/?p=13273
+    if (code == 0xE06D7363) return EXCEPTION_CONTINUE_SEARCH;
+
+    rust_seh_handler(code);
 
     // These instruction skips (?) are fishy, but they're only used in crash report unit tests.
     // In a non-`test` environment `rust_seh_handler` aborts.

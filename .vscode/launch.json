@@ -1,9 +1,8 @@
 {
     "version": "0.2.0",
     "configurations": [
-
         {
-            "name": "C++ Launch (Windows)",
+            "name": "mm2",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceRoot}/target/debug/mm2.exe",
@@ -14,10 +13,17 @@
             "externalConsole": false
         },
         {
-            "name": "C++ Attach (Windows)",
+            "name": "test-autoprice",
             "type": "cppvsdbg",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
+            "request": "launch",
+            "program": "${workspaceRoot}/target/debug/mm2-6389d9eefde139e4.exe",
+            "args": ["autoprice", "--nocapture"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [
+                {"name": "LOCAL_THREAD_MM", "value": "1"}
+            ],
+            "externalConsole": false
         }
     ]
 }

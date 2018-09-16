@@ -479,6 +479,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     static cJSON *tickerjson; static uint32_t lasttime;
     char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,ltc_btc,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     printf("AUTOPRICE numautorefs.%d\n",num_LP_autorefs);
+    fflush(stdout);
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
@@ -907,7 +908,7 @@ void prices_loop(void *ctx)
         //printf("G.initializing.%d prices loop autoprices.%d autorefs.%d\n",G.initializing,LP_autoprices,num_LP_autorefs);
         if ( G.initializing != 0 )
         {
-            sleep(30);
+            sleep(1);
             continue;
         }
         LP_millistats_update(&prices_loop_stats);
