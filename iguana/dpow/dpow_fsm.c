@@ -265,6 +265,7 @@ void dpow_statemachinestart(void *ptr)
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
     int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    char *destlockunspent *srclockunspent;
     memset(&zero,0,sizeof(zero));
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -501,7 +502,21 @@ void dpow_statemachinestart(void *ptr)
         bp->desttxid = bp->notaries[myind].src.prev_hash;
         dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
     }*/
-    printf("Use srcutxo.(%s) vout.(%d) destutxo.(%s) vout.(%d)\n",bits256_str(str,ep->src.prev_hash),ep->src.prev_vout,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+
+    //printf("Use srcutxo.(%s) vout.(%d) destutxo.(%s) vout.(%d)\n",bits256_str(str,ep->src.prev_hash),ep->src.prev_vout,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+
+    // lock the dest coun selected utxo
+    destlockunspent = dpow_lockunspent(myinfo,bp->destcoin,destaddr,ep->dest.prev_hash,ep->dest.prev_vout);
+    if (strncmp(destlockunspent,"true", 4) == 0 )
+      print(">>>>LOCKED DEST UTXO.(%s) vout.(%d)",bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+    free(destlockunspent);
+
+    // lock the src selected utxo
+    srclockunspent = dpow_lockunspent(myinfo,bp->srccoin,srcaddr,ep->src.prev_hash,ep->src.prev_vout);
+    if (strncmp(srclockunspent,"true", 4) == 0 )
+      print(">>>>LOCKED SRC UTXO.(%s) vout.(%d)",bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+    free(srclockunspent);
+
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
