@@ -501,7 +501,7 @@ void dpow_statemachinestart(void *ptr)
         bp->desttxid = bp->notaries[myind].src.prev_hash;
         dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
     }*/
-    printf("Use srcutxo.(%s) vout.(%d) destutxo.(%s) vout.(%d)\n",bits256_str(str,bp->notaries[myind].ratifysrcutxo),bp->notaries[myind].ratifysrcvout,bits256_str(str2,ep->bp->notaries[myind].ratifydestutxo),bp->notaries[myind].ratifydestvout);
+    printf("Use srcutxo.(%s) vout.(%d) destutxo.(%s) vout.(%d)\n",bits256_str(str,bp->notaries[myind].ratifysrcutxo),bp->notaries[myind].ratifysrcvout,bits256_str(str2,bp->notaries[myind].ratifydestutxo),bp->notaries[myind].ratifydestvout);
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
