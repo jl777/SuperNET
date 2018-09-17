@@ -1571,7 +1571,6 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     };
 
     let ctx = MmCtx::new();
-        //btc_ctx: unsafe {bitcoin_ctx()}
 
 /*
     if ( IAMLP != 0 )

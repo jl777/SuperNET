@@ -22,9 +22,9 @@ if not defined VSPATH (
  exit
 )
 
-@REM set up the environment
-if exist "%VSPATH%..\..\vc\vcvarsall.bat" (
- call "%%VSPATH%%..\..\vc\vcvarsall.bat" amd64
+@REM set up the environment, https://www.appveyor.com/docs/lang/cpp/#visual-studio-2017
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat" (
+ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
  goto compile
 )
 

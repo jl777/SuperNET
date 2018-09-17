@@ -7,11 +7,8 @@ extern crate num_cpus;
 extern crate unwrap;
 extern crate winapi;
 
-use duct::cmd;
 use gstuff::last_modified_sec;
-use std::env;
 use std::fs;
-use std::io::Read;
 use std::iter::empty;
 use std::path::Path;
 
@@ -113,4 +110,27 @@ fn main() {
         ].iter(),
         empty(),
     );
+
+    if cfg!(windows) {
+        // The `helpers` crate needs to access the MM1 code,
+        // and on Windows this leads to linking errors in "cargo test --package etomicrs"
+        // unless we link in the MM1 and the libraries it depends on.
+
+        println!("cargo:rustc-link-lib=static=marketmaker-mainnet-lib");
+        println!("cargo:rustc-link-lib=static=libcrypto777");
+        println!("cargo:rustc-link-lib=static=libjpeg");
+        println!("cargo:rustc-link-lib=static=libsecp256k1");
+
+        println!("cargo:rustc-link-lib=pthreadVC2");
+        println!("cargo:rustc-link-lib=static=nanomsg");
+        println!("cargo:rustc-link-lib=mswsock");
+        println!("cargo:rustc-link-lib=libcurl");
+
+        println!("cargo:rustc-link-search=native=./x64");
+        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/Debug");
+        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap/Debug");
+        println!("cargo:rustc-link-search=native=./build/crypto777/Debug");
+        println!("cargo:rustc-link-search=native=./build/crypto777/jpeg/Debug");
+        println!("cargo:rustc-link-search=native=./build/iguana/secp256k1/Debug");
+    }
 }
