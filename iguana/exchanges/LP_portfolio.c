@@ -916,7 +916,7 @@ void prices_loop(void *ctx)
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
             printf("prices_loop BTC not in LP_priceinfofind\n");
-            sleep(60);
+            sleep(1);
             continue;
         }
         if ( LP_autoprices != 0 )

@@ -44,11 +44,54 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::read_volatile;
 use std::os::raw::{c_char};
-use std::sync::{Mutex, MutexGuard};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper_rustls::HttpsConnector;
+
+/// Created by `void *bitcoin_ctx()`.
+pub enum BitcoinCtx {}
+extern "C" {
+    fn bitcoin_ctx() -> *mut BitcoinCtx;
+    fn bitcoin_ctx_destroy (ctx: *mut BitcoinCtx);
+}
+
+/// MarketMaker state, shared between the various MarketMaker threads.
+/// 
+/// Every MarketMaker has one and only one instance of `MmCtx`.
+/// 
+/// Should fully replace `LP_globals`.
+/// 
+/// *Not* a singleton: we should be able to run multiple MarketMakers instances in a process.
+/// 
+/// Any function directly using `MmCtx` is automatically a stateful function.
+/// In the future we might want to replace direct state access with traceable and replayable
+/// state modifications
+/// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
+pub struct MmCtx {
+    btc_ctx: *mut BitcoinCtx
+}
+impl MmCtx {
+    pub fn new() -> MmArc {
+        MmArc (Arc::new (MmCtx {
+            btc_ctx: unsafe {bitcoin_ctx()}
+        }))
+    }
+    /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
+    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
+}
+impl Drop for MmCtx {
+    fn drop (&mut self) {
+        unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
+    }
+}
+
+pub struct MmArc (Arc<MmCtx>);
+unsafe impl Send for MmArc {}
+impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
+impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 

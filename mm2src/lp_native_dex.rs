@@ -32,8 +32,9 @@
 
 use crc::crc32;
 use futures::Future;
-use helpers::{slurp_url, str_to_malloc};
+use helpers::{slurp_url, str_to_malloc, MmCtx};
 use libc;
+use portfolio::prices_loop;
 use rand::random;
 use serde_json::{self as json, Value as Json};
 use std::fs;
@@ -43,9 +44,11 @@ use std::mem::transmute;
 use std::net::IpAddr;
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::path::Path;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::str::from_utf8;
-use super::{lp, CJSON, MM_VERSION};
+use std::thread;
+use super::{bitcoin_ctx, lp, CJSON, MM_VERSION};
 
 /*
 #include <stdio.h>
@@ -112,7 +115,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 #include "LP_etomic.h"
 #endif
 
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex,LP_blockinit_mutex,LP_pendswap_mutex,LP_listmutex,LP_gtcmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex,LP_blockinit_mutex,LP_pendswap_mutex,LP_listmutex,LP_gtcmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -216,7 +219,6 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_signatures.c"
 #include "LP_ordermatch.c"
 #include "LP_tradebots.c"
-#include "LP_portfolio.c"
 #include "LP_messages.c"
 #include "LP_commands.c"
 
@@ -1568,6 +1570,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         }
     };
 
+    let ctx = MmCtx::new();
+        //btc_ctx: unsafe {bitcoin_ctx()}
+
 /*
     if ( IAMLP != 0 )
     {
@@ -1655,11 +1660,12 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         printf("error launching gc_loop for port.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
-    {
-        printf("error launching prices_loop for ctx.%p\n",ctx);
-        exit(-1);
-    }
+    */
+    let prices = try_s! (thread::Builder::new().name ("prices".into()) .spawn ({
+        let ctx = ctx.clone();
+        move || prices_loop (ctx)
+    }));
+    /*
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"") != 0 )
     {
         printf("error launching LP_coinsloop for (%s)\n","");
@@ -1745,7 +1751,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
     let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
-    unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0)};
+    unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0,
+        ctx.btc_ctx() as *mut c_void)};
+    unwrap! (prices.join());
     Ok(())
 }
 /*

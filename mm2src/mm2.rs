@@ -51,6 +51,8 @@ extern crate libc;
 
 extern crate nix;
 
+extern crate portfolio;
+
 extern crate rand;
 
 extern crate serde;
@@ -70,7 +72,7 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
-use helpers::{stack_trace, stack_trace_frame};
+use helpers::{stack_trace, stack_trace_frame, BitcoinCtx};
 
 use rand::random;
 
@@ -100,6 +102,7 @@ mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{cJSON, _bits256 as bits256};
 #[allow(dead_code)]
 extern "C" {
+    fn bitcoin_ctx() -> *mut BitcoinCtx;
     fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
 }
@@ -639,9 +642,7 @@ fn events (args_os: &[OsString]) -> Result<(), String> {
 }
 
 fn vanity (substring: &str) {
-    enum BitcoinCtx {}
     extern "C" {
-        fn bitcoin_ctx() -> *mut BitcoinCtx;
         fn bitcoin_priv2pub (
             ctx: *mut BitcoinCtx, symbol: *const u8, pubkey33: *mut u8, coinaddr: *mut u8,
             privkey: bits256, taddr: u8, addrtype: u8);

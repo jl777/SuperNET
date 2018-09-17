@@ -1,0 +1,23 @@
+[package]
+name = "portfolio"
+version = "0.1.0"
+
+[lib]
+name = "portfolio"
+path = "portfolio.rs"
+doctest = false
+
+[dependencies]
+# Using the `chrono` because the `time` formatting has serious limits, like the lack of subsecond support, IIRC.
+chrono = "0.4"
+futures = "0.1"
+gstuff = "0.5"
+helpers = { path = "../helpers" }
+lazy_static = "1.1.0"
+libc = "0.2"
+hyper = "0.12"
+hyper-rustls = "0.14"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+unwrap = "1.2"

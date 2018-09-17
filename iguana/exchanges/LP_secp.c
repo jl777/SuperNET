@@ -45,6 +45,11 @@ void *bitcoin_ctx()
     return(ctx);
 }
 
+void bitcoin_ctx_destroy(void* ctx)
+{
+    secp256k1_context_destroy(ctx);
+}
+
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey)
 {
     size_t plen; bits256 pubkey; secp256k1_pubkey secppub;
