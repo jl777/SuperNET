@@ -487,8 +487,7 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifysrcvout = ep->src.prev_vout;
             bp->notaries[myind].ratifydestutxo = ep->dest.prev_hash;
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
-            printf("src.prev_hash.(%s) vout.(%d)",ep->src.prev_hash,ep->src.prev_vout);
-            printf("dest.prev_hash.(%s) vout.(%d)",ep->dest.prev_hash,ep->dest.prev_vout);
+            printf("Use srcutxo.(%s) vout.(%d) destutxo.(%s) vout.(%d)\n",bits256_str(str,ep->src.prev_hash),ep->src.prev_vout,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
         }
         else
         {
