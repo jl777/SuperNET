@@ -115,6 +115,7 @@ fn generate_bindings() {
             "calc_crc32",
             "LP_initcoins",
             "LP_mutex_init",
+            "stats_JSON",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),
