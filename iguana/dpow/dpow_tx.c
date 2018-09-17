@@ -581,7 +581,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         dpow_notarytx(myinfo,bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,pubkeys,numratified); // setcrcval
         signedtxid = dpow_notarytx(myinfo,bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,1,src_or_dest,pubkeys,numratified);
-        printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
+        //printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {
@@ -614,7 +614,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 else
                 {
                     bp->state = 0xffffffff;
-                    printf("dpow_sigscheck: mismatched txid.%s vs %s\n",bits256_str(str,txid),retstr);
+                    printf("dpow_sigscheck: mismatched txid.%s vs %s \n signedtx.(%s)\n",bits256_str(str,txid),retstr,bp->signedtx));
                 }
                 free(retstr);
                 retstr = 0;
