@@ -164,13 +164,6 @@ mod os {include! ("c_headers/OS_portable.rs");}
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 mod nn {include! ("c_headers/nn.rs");}
 
-extern "C" {
-    fn bitcoin_ctx() -> *mut c_void;
-    fn bitcoin_priv2pub (
-        ctx: *mut c_void, symbol: *const u8, pubkey33: *mut u8, coinaddr: *mut u8,
-        privkey: bits256, taddr: u8, addrtype: u8);
-}
-
 lazy_static! {
         static ref RPCSOCKET : RwLock<SocketAddrV4> = RwLock::new(
             SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 7783)
@@ -198,7 +191,7 @@ impl Service for RpcService {
             let read = RPCSOCKET.read().unwrap();
             let stats_result = unsafe {
                 lp::stats_JSON(
-                    bitcoin_ctx(),
+                    bitcoin_ctx() as *mut c_void,
                     0,
                     CString::new(format!("{}", read.ip())).unwrap().into_raw(),
                     -1,
