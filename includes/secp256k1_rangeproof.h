@@ -9,9 +9,6 @@ extern "C" {
 
 #include <stdint.h>
 
-/** Initialize a context for usage with Pedersen commitments. */
-int secp256k1_pedersen_context_initialize(secp256k1_context_t* ctx);
-
 /** Generate a pedersen commitment.
  *  Returns 1: commitment successfully created.
  *          0: error

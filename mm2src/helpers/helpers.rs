@@ -36,26 +36,53 @@ use gstuff::any_to_str;
 use hyper::{Body, Client, Request, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::malloc;
-use std::fmt::Display;
+use std::fmt;
+use std::ffi::{CStr};
 use std::intrinsics::copy;
 use std::io::Write;
-use std::mem::{forget, uninitialized};
+use std::mem::{forget, uninitialized, zeroed};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::read_volatile;
 use std::os::raw::{c_char};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper_rustls::HttpsConnector;
 
+pub mod lp {include! ("c_headers/LP_include.rs");}
+use lp::{_bits256 as bits256};
+
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
+pub mod os {include! ("c_headers/OS_portable.rs");}
+
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
+pub mod nn {include! ("c_headers/nn.rs");}
+
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
+pub mod etomiclib {include! ("c_headers/etomiclib.rs");}
+
+pub const MM_VERSION: &'static str = env! ("MM_VERSION");
+
 /// Created by `void *bitcoin_ctx()`.
 pub enum BitcoinCtx {}
 extern "C" {
-    fn bitcoin_ctx() -> *mut BitcoinCtx;
+    pub fn bitcoin_ctx() -> *mut BitcoinCtx;
     fn bitcoin_ctx_destroy (ctx: *mut BitcoinCtx);
+    pub fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
+    fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
+}
+
+impl fmt::Display for bits256 {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut buf: [u8; 65] = unsafe {zeroed()};
+        let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
+        let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
+        f.write_str (hex)
+    }
 }
 
 /// MarketMaker state, shared between the various MarketMaker threads.
@@ -71,16 +98,29 @@ extern "C" {
 /// state modifications
 /// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
 pub struct MmCtx {
-    btc_ctx: *mut BitcoinCtx
+    /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
+    btc_ctx: *mut BitcoinCtx,
+    /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
+    /// 
+    /// Should be refactored away in the future. State should always be valid.
+    /// If there are things that are loaded in background then they should be separately optional,
+    /// without invalidating the entire state.
+    pub initialized: AtomicBool,
+    /// True if the MarketMaker instance needs to stop.
+    stop: AtomicBool
 }
 impl MmCtx {
     pub fn new() -> MmArc {
         MmArc (Arc::new (MmCtx {
-            btc_ctx: unsafe {bitcoin_ctx()}
+            btc_ctx: unsafe {bitcoin_ctx()},
+            initialized: AtomicBool::new (false),
+            stop: AtomicBool::new (false)
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
+    pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
+    pub fn is_stopping (&self) -> bool {self.stop.load (Ordering::Relaxed)}
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
@@ -222,7 +262,7 @@ E: Send + 'static {
 pub fn drive_s<F, R, E> (f: F) -> impl Future<Item=R, Error=String> where
 F: Future<Item=R, Error=E> + Send + 'static,
 R: Send + 'static,
-E: Display + Send + 'static {
+E: fmt::Display + Send + 'static {
     drive (f) .then (move |r| -> Result<R, String> {
         let r = try_s! (r);  // Peel the `Receiver`.
         let r = try_s! (r);  // `E` to `String`.

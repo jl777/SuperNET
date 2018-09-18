@@ -34,14 +34,23 @@ SECP256K1_API extern const secp256k1_nonce_function secp256k1_nonce_function_rfc
 
 #define bits256_nonz(a) (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0)
 
-#define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); secp256k1_pedersen_context_initialize(ctx); secp256k1_rangeproof_context_initialize(ctx); flag++; } else flag = 0; if ( ctx != 0 )
+#define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); flag++; } else flag = 0; if ( ctx != 0 )
 #define ENDSECP_ENSURE_CTX if ( flag != 0 ) secp256k1_context_destroy(ctx);
 
 void *bitcoin_ctx()
 {
     void *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_pedersen_context_initialize(ctx);
-    secp256k1_rangeproof_context_initialize(ctx);
+
+    // NB, we might want to randomize the context here,
+    // cf. https://github.com/cryptocoinjs/secp256k1-node/issues/128
+
+    // NB, we're using the library linked in with https://github.com/paritytech/rust-secp256k1
+    // and it doesn't need initialization,
+    // cf. https://github.com/ElementsProject/secp256k1-zkp/issues/15#issuecomment-328290969
+
+    //secp256k1_pedersen_context_initialize(ctx);
+    //secp256k1_rangeproof_context_initialize(ctx);
+
     return(ctx);
 }
 
