@@ -265,7 +265,7 @@ void dpow_statemachinestart(void *ptr)
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
     int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
-    char *destlockunspent,*srclockunspent;
+    char *destlockunspent,*srclockunspent,*destunlockunspent,*srcunlockunspent;
     memset(&zero,0,sizeof(zero));
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -507,26 +507,25 @@ void dpow_statemachinestart(void *ptr)
 
     if (strcmp("KMD",dest->symbol) == 0 )
     {
-      // lock the dest coin selected utxo
+      // lock the dest utxo if destination coin is KMD.s
       destlockunspent = dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
       if (strncmp(destlockunspent,"true", 4) == 0 )
-      {
         printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-        //free(destlockunspent);
-      } else printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      else
+        printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
     }
 
     if ( strcmp("BTC",dest->symbol) == 0 )
     {
-      // lock the src coin selected utxo
+      // lock the src coin selected utxo if the source coin is KMD.
       srclockunspent = dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
       if (strncmp(srclockunspent,"true", 4) == 0 )
-      {
         printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-        //free(srclockunspent);
-      } else printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      else
+        printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
     }
-
+    free(destlockunspent);
+    free(srclockunspent);
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
@@ -621,23 +620,18 @@ void dpow_statemachinestart(void *ptr)
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
 
-    // unlock the dest utxo if it was locked.
-    if (strncmp(destlockunspent,"true",4) == 0)
-    {
-      destlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-      if (strncmp(destlockunspent,"true", 4) == 0 )
-        printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-      free(destlockunspent);
-    }
+    // unlock the dest utxo regardless if it was locked or not it does not matter.
+    destunlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+    if (strncmp(destunlockunspent,"true", 4) == 0 )
+      printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+    free(destunlockunspent);
 
-    // unlock the src selected utxo, if it was locked
-    if (strncmp(srclockunspent,"true",4) == 0)
-    {
-      srclockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-      if (strncmp(srclockunspent,"true", 4) == 0 )
-        printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-      free(srclockunspent);
-    }
+    // unlock the src selected utxo, if it was locked or not it does not matter.
+    srcunlockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+    if (strncmp(srcunlockunspent,"true", 4) == 0 )
+      printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+    free(srcunlockunspent);
+
     // dp->blocks[bp->height] = 0;
     bp->state = 0xffffffff;
     free(ptr);
