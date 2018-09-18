@@ -430,13 +430,11 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     portable_mutex_init(&dp->paxmutex);
     portable_mutex_init(&dp->dexmutex);
     PAX_init();
-    //printf(">>>>>>>>>>>>>>> call paxpending\n");
-    //uint8_t buf[32768];
-    //dpow_paxpending(buf);
+    dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d CCid.%u\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs,dp->fullCCid);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -537,7 +535,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL" 
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL"  
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
@@ -956,6 +954,18 @@ ZERO_ARGS(dpow,cancelratify)
 {
     myinfo->DPOWS[0]->cancelratify = 1;
     return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
+}
+
+ZERO_ARGS(dpow,ipaddrs)
+{
+    char ipaddr[64]; cJSON *array; int32_t i;
+    array = cJSON_CreateArray();
+    for (i=0; i<myinfo->numdpowipbits; i++)
+    {
+        expand_ipbits(ipaddr,myinfo->dpowipbits[i]);
+        jaddistr(array,ipaddr);
+    }
+    return(jprint(array,1));
 }
 
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)

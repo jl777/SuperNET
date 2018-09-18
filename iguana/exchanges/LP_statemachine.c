@@ -3645,7 +3645,7 @@ if ( LP_pricevalid(price) > 0 )
     {
         LP_query(ctx,myipaddr,mypubsock,"connect",qp);
         //price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
-        LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-2*qp->txfee,qp->destcoin,qp->destsatoshis-2*qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+        LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-2*qp->txfee,qp->destcoin,qp->destsatoshis-2*qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector,qp->fill,qp->gtc);
         while ( time(NULL) < expiration )
         {
             if ( aliceutxo->S.swap != 0 )

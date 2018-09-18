@@ -338,7 +338,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                     {
                         if ( remaining < 0.001 )
                             break;
-                        if ( (retstr= LP_autobuy(ctx,0,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining/i,0,0,G.gui,0,destpubkey,tradeid,0)) != 0 )
+                        if ( (retstr= LP_autobuy(ctx,0,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining/i,0,0,G.gui,0,destpubkey,tradeid,0,0,0)) != 0 )
                         {
                             if ( (retjson2= cJSON_Parse(retstr)) != 0 )
                             {

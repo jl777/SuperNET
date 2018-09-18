@@ -1308,8 +1308,8 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
     if ( myinfo->IAMNOTARY == 0 )
         return(-1);
-    if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
-        return(-1);
+    //if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
+    //    return(-1);
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
     {
@@ -1869,16 +1869,24 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
-        if ( bits256_nonz(srcutxo) != 0 )
+        if ( bp->myind != senderind )
         {
-            bp->notaries[senderind].src.prev_hash = srcutxo;
-            bp->notaries[senderind].src.prev_vout = srcvout;
-            //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
+            if ( bits256_nonz(srcutxo) != 0 )
+            {
+                bp->notaries[senderind].src.prev_hash = srcutxo;
+                bp->notaries[senderind].src.prev_vout = srcvout;
+                //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
+            }
+            if ( bits256_nonz(destutxo) != 0 )
+            {
+                bp->notaries[senderind].dest.prev_hash = destutxo;
+                bp->notaries[senderind].dest.prev_vout = destvout;
+            }
         }
-        if ( bits256_nonz(destutxo) != 0 )
+        else
         {
-            bp->notaries[senderind].dest.prev_hash = destutxo;
-            bp->notaries[senderind].dest.prev_vout = destvout;
+            bp->notaries[bp->myind].src.prev_hash = bp->mysrcutxo;
+            bp->notaries[bp->myind].dest.prev_hash = bp->mydestutxo;
         }
         if ( bestmask != 0 )
             bp->notaries[senderind].bestmask = bestmask;
@@ -2070,7 +2078,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
             src_or_dest = 0;
         else src_or_dest = 1;
-        extralen = dpow_paxpending(extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,src_or_dest,bp);
+        extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
         //dpow_bestconsensus(dp,bp);
         dpow_nanoutxoset(myinfo,dp,&np->notarize,bp,0);

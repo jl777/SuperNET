@@ -259,7 +259,11 @@ int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,
                 arbstr[j++] = c;
             }
             arbstr[j] = 0;
-            jaddstr(lineobj,fieldstr,arbstr);
+            if (strcmp(fieldstr, "txChain") == 0) {
+                cJSON_AddItemToObject(lineobj, fieldstr, cJSON_Parse(arbstr));
+            } else {
+                jaddstr(lineobj, fieldstr, arbstr);
+            }
             break;
         default:
             if ( valind < MMJSON_BOUNDARY )
