@@ -474,7 +474,7 @@ char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
         sprintf(buf,"false, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
         {
-            printf("RESULT.(%s)\n",retstr);
+            //printf("RESULT.(%s)\n",retstr);
             return(retstr);
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
@@ -489,7 +489,7 @@ char *dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,c
         sprintf(buf,"true, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
         {
-            printf("RESULT.(%s)\n",retstr);
+            //printf("RESULT.(%s)\n",retstr);
             return(retstr);
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
