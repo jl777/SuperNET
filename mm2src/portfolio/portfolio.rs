@@ -14,10 +14,16 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_portfolio.c
+//  portfolio.rs
 //  marketmaker
 //
 
+extern crate helpers;
+
+use helpers::{MmArc};
+use std::os::raw::c_void;
+
+/*
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 
 struct LP_autoprice_ref
@@ -896,9 +902,13 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
     }
     return(n);
 }
-
-void prices_loop(void *ctx)
-{
+*/
+/// A thread driving the price and portfolio activity.
+pub fn prices_loop (ctx: MmArc) {
+    extern "C" {fn prices_loop (ctx: *mut c_void);}
+    unsafe {prices_loop (ctx.btc_ctx() as *mut c_void)}
+}
+/*
     char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
     strcpy(prices_loop_stats.name,"prices_loop");
     prices_loop_stats.threshold = 600000.;
@@ -916,7 +926,7 @@ void prices_loop(void *ctx)
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
             printf("prices_loop BTC not in LP_priceinfofind\n");
-            sleep(1);
+            sleep(60);
             continue;
         }
         if ( LP_autoprices != 0 )
@@ -953,4 +963,4 @@ void prices_loop(void *ctx)
     }
 }
 
-
+*/

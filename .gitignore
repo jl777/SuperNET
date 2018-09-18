@@ -284,10 +284,6 @@ iguana/exchanges/manychains
 /mm2src/c_headers
 
 # Subcrate artefacts
-/mm2src/helpers/Cargo.lock
-/mm2src/helpers/target
-/mm2src/wasm/Cargo.lock
-/mm2src/wasm/target
-/mm2src/etomic/Cargo.lock
-/mm2src/etomic/target
 /mm2src/etomic/c_headers
+/mm2src/*/Cargo.lock
+/mm2src/*/target
