@@ -513,6 +513,7 @@ void dpow_statemachinestart(void *ptr)
         printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
       else
         printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      free(destlockunspent);
     }
 
     if ( strcmp("BTC",dest->symbol) == 0 )
@@ -523,9 +524,8 @@ void dpow_statemachinestart(void *ptr)
         printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
       else
         printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      free(srclockunspent);
     }
-    free(destlockunspent);
-    free(srclockunspent);
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
