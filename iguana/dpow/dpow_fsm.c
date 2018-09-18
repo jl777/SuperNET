@@ -618,18 +618,24 @@ void dpow_statemachinestart(void *ptr)
     printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
-    
-    // unlock the dest utxo regardless if it was locked or not it does not matter.
-    destunlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-    if (strncmp(destunlockunspent,"true", 4) == 0 )
-      printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-    free(destunlockunspent);
 
-    // unlock the src selected utxo, if it was locked or not it does not matter.
-    srcunlockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-    if (strncmp(srcunlockunspent,"true", 4) == 0 )
-      printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-    free(srcunlockunspent);
+    // unlock the dest utxo on KMD.
+    if (strcmp("KMD",dest->symbol) == 0 )
+    {
+      destunlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      if (strncmp(destunlockunspent,"true", 4) == 0 )
+        printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      free(destunlockunspent);
+    }
+
+    // unlock the src selected utxo on KMD, as those are the only ones we LOCK, and CHIPS does not like the lockunspent call.
+    if ( strcmp("BTC",dest->symbol) == 0 )
+    {
+      srcunlockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      if (strncmp(srcunlockunspent,"true", 4) == 0 )
+        printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      free(srcunlockunspent);
+    }
 
     // dp->blocks[bp->height] = 0;
     bp->state = 0xffffffff;
