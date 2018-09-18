@@ -627,6 +627,7 @@ void dpow_statemachinestart(void *ptr)
       destlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
       if (strncmp(destlockunspent,"true", 4) == 0 )
         printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      free(destlockunspent);
     }
 
     // unlock the src selected utxo, if it was locked
@@ -635,9 +636,8 @@ void dpow_statemachinestart(void *ptr)
       srclockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
       if (strncmp(srclockunspent,"true", 4) == 0 )
         printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      free(srclockunspent);
     }
-    free(destlockunspent);
-    free(srclockunspent);
     // dp->blocks[bp->height] = 0;
     bp->state = 0xffffffff;
     free(ptr);
