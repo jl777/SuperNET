@@ -1,4 +1,6 @@
 #!/bin/bash
+# Unlock all lockunspents to make sure we can access all our utxo!
+komodo-cli lockunspent true `komodo-cli listlockunspent | jq -c .`
 
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; ./m_LP; cd ../iguana
