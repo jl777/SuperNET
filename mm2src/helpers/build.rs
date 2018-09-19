@@ -144,6 +144,7 @@ fn generate_bindings() {
             "LP_initcoins",
             "LP_mutex_init",
             "LP_tradebots_timeslice",
+            "stats_JSON",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),

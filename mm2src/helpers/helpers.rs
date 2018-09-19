@@ -48,6 +48,7 @@ use std::os::raw::{c_char};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::str;
 use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
@@ -86,13 +87,13 @@ impl fmt::Display for bits256 {
 }
 
 /// MarketMaker state, shared between the various MarketMaker threads.
-/// 
+///
 /// Every MarketMaker has one and only one instance of `MmCtx`.
-/// 
+///
 /// Should fully replace `LP_globals`.
-/// 
+///
 /// *Not* a singleton: we should be able to run multiple MarketMakers instances in a process.
-/// 
+///
 /// Any function directly using `MmCtx` is automatically a stateful function.
 /// In the future we might want to replace direct state access with traceable and replayable
 /// state modifications
@@ -434,7 +435,7 @@ pub mod for_tests {
                         // For some reason we can't use the 127.0.0.2-255 range of IPs on Travis/MacOS,
                         // cf. https://travis-ci.org/artemii235/SuperNET/jobs/428167579
                         // I plan to later look into this, but for now we're always using 127.0.0.1 on MacOS.
-                        // 
+                        //
                         // P.S. 127.0.0.2:7783 works when tested with static+cURL,
                         // cf. https://travis-ci.org/artemii235/SuperNET/builds/428350505
                         // but with MM it mysteriously fails,
@@ -452,6 +453,7 @@ pub mod for_tests {
                     if mm_ips.contains (&ip) {attempts += 1; continue}
                     mm_ips.insert (ip.clone());
                     conf["myipaddr"] = format! ("{}", ip) .into();
+                    conf["rpcip"] = format! ("{}", ip) .into();
 
                     if cfg! (target_os = "macos") && ip4.octets()[3] > 1 {
                         // Make sure the local IP is enabled on MAC (and in the Travis CI).
@@ -462,7 +464,6 @@ pub mod for_tests {
                             Ok (output) => println! ("MarketMakerIt] Upped the {}: {}", ip, output)
                         }
                     }
-
                     break ip
                 }
             } else {  // Just use the IP given in the `conf`.

@@ -639,4 +639,5 @@ char LP_eth_node_url[2084];
 char LP_alice_contract[50];
 char LP_bob_contract[50];
 
+char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #endif
