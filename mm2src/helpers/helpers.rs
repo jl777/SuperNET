@@ -14,6 +14,8 @@ extern crate backtrace;
 extern crate chrono;
 #[macro_use]
 extern crate duct;
+#[macro_use]
+extern crate fomat_macros;
 extern crate futures;
 #[macro_use]
 extern crate gstuff;
@@ -29,6 +31,8 @@ extern crate serde_json;
 extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
+
+pub mod log;
 
 use futures::Future;
 use futures::sync::oneshot::{self, Receiver};
@@ -99,6 +103,8 @@ impl fmt::Display for bits256 {
 /// state modifications
 /// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
 pub struct MmCtx {
+    /// Human-readable log and status dashboard.
+    pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
     btc_ctx: *mut BitcoinCtx,
     /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
@@ -113,6 +119,7 @@ pub struct MmCtx {
 impl MmCtx {
     pub fn new() -> MmArc {
         MmArc (Arc::new (MmCtx {
+            log: log::LogState::in_memory(),
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false)

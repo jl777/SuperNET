@@ -909,6 +909,8 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 */
 /// A thread driving the price and portfolio activity.
 pub fn prices_loop (ctx: MmArc) {
+    let mut btc_wait_status = None;
+
     loop {
         if ctx.is_stopping() {break}
 
@@ -917,10 +919,12 @@ pub fn prices_loop (ctx: MmArc) {
 
         let btcpp = unsafe {lp::LP_priceinfofind (b"BTC\0".as_ptr() as *mut c_char)};
         if btcpp == null_mut() {
-            // TODO // _ = status (["portfolio", "prices_loop"], "Waiting for BTC price");
-            println! ("prices_loop] Waiting for BTC price...");
+            if btc_wait_status.is_none() {btc_wait_status = Some (ctx.log.status (&[&"portfolio"], "Waiting for BTC price..."))}
             sleep (Duration::from_millis (100));
             continue
+        } else {
+            // Updates the dashboard entry and moves it into the log.
+            btc_wait_status.take().map (|s| s.append (" Done."));
         }
 
         unsafe {lp::prices_loop (ctx.btc_ctx() as *mut c_void, btcpp)}
