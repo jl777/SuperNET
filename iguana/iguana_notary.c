@@ -384,7 +384,12 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     char tmp[67];
     safecopy(tmp,pubkey,sizeof(tmp));
     decode_hex(dp->minerkey33,33,tmp);
-    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
+    
+	if (strcmp(src->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(src->chain->symbol, srcaddr, 0x1c, src->chain->pubtype, dp->minerkey33, 33);
+	else
+		bitcoin_address(srcaddr, src->chain->pubtype, dp->minerkey33, 33);
+
     if ( (retstr= dpow_validateaddress(myinfo,src,srcaddr)) != 0 )
     {
         json = cJSON_Parse(retstr);
