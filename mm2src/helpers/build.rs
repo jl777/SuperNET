@@ -22,7 +22,7 @@ use std::env;
 use std::fs;
 use std::io::Read;
 use std::iter::empty;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Ongoing (RLS) builds might interfere with a precise time comparison.
 const SLIDE: f64 = 60.;
@@ -94,16 +94,44 @@ fn bindgen<
 }
 
 fn generate_bindings() {
-    let _ = fs::create_dir("mm2src/c_headers");
+    let _ = fs::create_dir("c_headers");
+
+    bindgen(
+        vec![
+            "../../iguana/exchanges/etomicswap/etomiclib.h".into(),
+            "../../iguana/exchanges/etomicswap/etomiccurl.h".into(),
+        ],
+        "c_headers/etomiclib.rs",
+        empty(),
+        [
+            "AliceSendsEthPaymentInput",
+            "AliceSendsErc20PaymentInput",
+            "AliceReclaimsPaymentInput",
+            "BobSpendsAlicePaymentInput",
+            "BobSendsEthDepositInput",
+            "BobSendsErc20DepositInput",
+            "BobRefundsDepositInput",
+            "AliceClaimsBobDepositInput",
+            "BobSendsEthPaymentInput",
+            "BobSendsErc20PaymentInput",
+            "BobReclaimsBobPaymentInput",
+            "AliceSpendsBobPaymentInput",
+            "ApproveErc20Input",
+            "EthTxReceipt",
+            "EthTxData",
+        ]
+            .iter(),
+        empty(),
+    );
 
     // NB: curve25519.h and cJSON.h are needed to parse LP_include.h.
     bindgen(
         vec![
-            "includes/curve25519.h".into(),
-            "includes/cJSON.h".into(),
-            "iguana/exchanges/LP_include.h".into(),
+            "../../includes/curve25519.h".into(),
+            "../../includes/cJSON.h".into(),
+            "../../iguana/exchanges/LP_include.h".into(),
         ],
-        "mm2src/c_headers/LP_include.rs",
+        "c_headers/LP_include.rs",
         [
             "cJSON_Parse",
             "cJSON_GetErrorPtr",
@@ -115,6 +143,7 @@ fn generate_bindings() {
             "calc_crc32",
             "LP_initcoins",
             "LP_mutex_init",
+            "LP_tradebots_timeslice",
             "stats_JSON",
         ]
             .iter(),
@@ -139,8 +168,8 @@ fn generate_bindings() {
     );
 
     bindgen(
-        vec!["crypto777/OS_portable.h".into()],
-        "mm2src/c_headers/OS_portable.rs",
+        vec!["../../crypto777/OS_portable.h".into()],
+        "c_headers/OS_portable.rs",
         [
             "OS_init",
             "OS_ensure_directory",
@@ -152,8 +181,8 @@ fn generate_bindings() {
         empty(),
     );
     bindgen(
-        vec!["crypto777/nanosrc/nn.h".into()],
-        "mm2src/c_headers/nn.rs",
+        vec!["../../crypto777/nanosrc/nn.h".into()],
+        "c_headers/nn.rs",
         ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
         empty(),
         ["AF_SP", "NN_PAIR"].iter(),
@@ -173,7 +202,7 @@ fn mm_version() -> String {
 
     // Try to load the variable from the file.
     let mut buf;
-    let version = if let Ok(mut file) = fs::File::open("MM_VERSION") {
+    let version = if let Ok(mut file) = fs::File::open("../../MM_VERSION") {
         buf = String::new();
         unwrap!(file.read_to_string(&mut buf), "Can't read from MM_VERSION");
         buf.trim()
@@ -236,6 +265,36 @@ fn windows_requirements() {
 #[cfg(not(windows))]
 fn windows_requirements() {}
 
+/// SuperNET's root.
+fn root() -> PathBuf {
+    let helpers = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let super_net = helpers.join("../..");
+    let super_net = match super_net.canonicalize() {
+        Ok(p) => p,
+        Err(err) => panic!("Can't canonicalize {:?}: {}", super_net, err),
+    };
+    // On Windows we're getting these "\\?\" paths from canonicalize but they aren't any good for CMake.
+    if cfg!(windows) {
+        let s = path2s(super_net);
+        Path::new(if s.starts_with(r"\\?\") {
+            &s[4..]
+        } else {
+            &s[..]
+        }).into()
+    } else {
+        super_net
+    }
+}
+
+/// Absolute path taken from SuperNET's root + `path`.  
+fn rabs(rrel: &str) -> PathBuf {
+    root().join(rrel)
+}
+
+fn path2s(path: PathBuf) -> String {
+    unwrap!(path.to_str(), "Non-stringy path {:?}", path).into()
+}
+
 /// Build helper C code.
 ///
 /// I think "git clone ... && cargo build" should be enough to start hacking on the Rust code.
@@ -247,15 +306,12 @@ fn build_c_code(mm_version: &str) {
 
     if cfg!(windows) {
         let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
-        let lm_seh = unwrap!(last_modified_sec(&"mm2src/seh.c"), "Can't stat seh.c");
+        let lm_seh = unwrap!(last_modified_sec(&"seh.c"), "Can't stat seh.c");
         let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
         let lib_path = Path::new(&out_dir).join("libseh.a");
         let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
         if lm_build_rs.max(lm_seh) >= lm_lib - SLIDE {
-            cc::Build::new()
-                .file("mm2src/seh.c")
-                .warnings(true)
-                .compile("seh");
+            cc::Build::new().file("seh.c").warnings(true).compile("seh");
         }
         println!("cargo:rustc-link-lib=static=seh");
         println!("cargo:rustc-link-search=native={}", out_dir);
@@ -263,7 +319,8 @@ fn build_c_code(mm_version: &str) {
 
     // The MM1 library.
 
-    let _ = fs::create_dir("build");
+    let _ = fs::create_dir(root().join("build"));
+    let _ = fs::create_dir_all(root().join("target/debug"));
 
     // NB: With "duct 0.11.0" the `let _` variable binding is necessary in order for the build not to fall detached into background.
     let mut cmake_prep_args: Vec<String> = Vec::new();
@@ -281,7 +338,7 @@ fn build_c_code(mm_version: &str) {
     cmake_prep_args.push("..".into());
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
     let _ = unwrap!(
-        cmd("cmake", cmake_prep_args).dir("build")
+        cmd("cmake", cmake_prep_args).dir(root().join ("build"))
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
         .run(),
         "!cmake"
@@ -300,7 +357,7 @@ fn build_c_code(mm_version: &str) {
     }
     eprintln!("$ cmake{}", show_args(&cmake_args));
     let _ = unwrap!(
-        cmd("cmake", cmake_args).dir("build")
+        cmd("cmake", cmake_args).dir(root().join ("build"))
         .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
         .run(),
         "!cmake"
@@ -312,25 +369,42 @@ fn build_c_code(mm_version: &str) {
 
     println!("cargo:rustc-link-lib=static=libcrypto777");
     println!("cargo:rustc-link-lib=static=libjpeg");
-    println!("cargo:rustc-link-lib=static=libsecp256k1");
+    //Already linked from etomicrs->ethkey->eth-secp256k1//println!("cargo:rustc-link-lib=static=libsecp256k1");
 
     if cfg!(windows) {
-        println!("cargo:rustc-link-search=native=./x64");
+        println!("cargo:rustc-link-search=native={}", path2s(rabs("x64")));
         // When building locally with CMake 3.12.0 on Windows the artefacts are created in the "Debug" folders:
-        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/Debug");
-        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap/Debug");
-        println!("cargo:rustc-link-search=native=./build/crypto777/Debug");
-        println!("cargo:rustc-link-search=native=./build/crypto777/jpeg/Debug");
-        println!("cargo:rustc-link-search=native=./build/iguana/secp256k1/Debug");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/iguana/exchanges/Debug"))
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/crypto777/Debug"))
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/crypto777/jpeg/Debug"))
+        );
     // https://stackoverflow.com/a/10234077/257568
     //println!(r"cargo:rustc-link-search=native=c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.14.26428\lib\x64");
     } else {
-        println!("cargo:rustc-link-search=native=./build/iguana/exchanges");
-        println!("cargo:rustc-link-search=native=./build/iguana/exchanges/etomicswap");
-        println!("cargo:rustc-link-search=native=./build/crypto777");
-        println!("cargo:rustc-link-search=native=./build/crypto777/jpeg");
-        println!("cargo:rustc-link-search=native=./build/iguana/secp256k1");
-        println!("cargo:rustc-link-search=native=./build/nanomsg-build");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/iguana/exchanges"))
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/crypto777"))
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/crypto777/jpeg"))
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            path2s(rabs("build/nanomsg-build"))
+        );
     }
 
     println!(
@@ -344,11 +418,17 @@ fn build_c_code(mm_version: &str) {
         println!("cargo:rustc-link-lib=static=nanomsg");
         println!("cargo:rustc-link-lib=mswsock"); // For nanomsg.
         unwrap!(
-            fs::copy("x64/pthreadVC2.dll", "target/debug/pthreadVC2.dll"),
+            fs::copy(
+                root().join("x64/pthreadVC2.dll"),
+                root().join("target/debug/pthreadVC2.dll")
+            ),
             "Can't copy pthreadVC2.dll"
         );
         unwrap!(
-            fs::copy("x64/libcurl.dll", "target/debug/libcurl.dll"),
+            fs::copy(
+                root().join("x64/libcurl.dll"),
+                root().join("target/debug/libcurl.dll")
+            ),
             "Can't copy libcurl.dll"
         );
     } else {
@@ -358,28 +438,30 @@ fn build_c_code(mm_version: &str) {
 }
 
 fn main() {
-    // Rebuild when we work with C files.
-    println!("rerun-if-changed=iguana/exchanges/etomicswap");
-    println!("rerun-if-changed=iguana/exchanges/etomicswap/etomiclib.h");
-    println!("rerun-if-changed=iguana/exchanges");
-    println!("rerun-if-changed=iguana/secp256k1");
-    println!("rerun-if-changed=crypto777");
-    println!("rerun-if-changed=crypto777/jpeg");
-    println!("rerun-if-changed=OSlibs/win");
-    println!("rerun-if-changed=CMakeLists.txt");
+    // NB: `rerun-if-changed` will ALWAYS invoke the build.rs if the target does not exists.
+    // cf. https://github.com/rust-lang/cargo/issues/4514#issuecomment-330976605
+    //     https://github.com/rust-lang/cargo/issues/4213#issuecomment-310697337
+    // `RUST_LOG=cargo::core::compiler::fingerprint cargo build` shows the fingerprit files used.
 
-    // Rebuild when the build folder is removed.
-    // NB: This works NP before a Rust build, but doesn't work when Cargo decides to skip the build altogether.
-    //     So to force a full rebuild we might need an extra touch: `rm -rf build && touch mm2src/mm2.rs`.
-    println!("rerun-if-changed=build");
+    // Rebuild when we work with C files.
+    println!(
+        "rerun-if-changed={}",
+        path2s(rabs("iguana/exchanges/etomicswap"))
+    );
+    println!("rerun-if-changed={}", path2s(rabs("iguana/exchanges")));
+    println!("rerun-if-changed={}", path2s(rabs("iguana/secp256k1")));
+    println!("rerun-if-changed={}", path2s(rabs("crypto777")));
+    println!("rerun-if-changed={}", path2s(rabs("crypto777/jpeg")));
+    println!("rerun-if-changed={}", path2s(rabs("OSlibs/win")));
+    println!("rerun-if-changed={}", path2s(rabs("CMakeLists.txt")));
+
+    // NB: Using `rerun-if-env-changed` disables the default dependency heuristics.
+    // cf. https://github.com/rust-lang/cargo/issues/4587
+    // We should avoid using it for now.
 
     // Rebuild when we change certain features.
-    println!("rerun-if-env-changed=CARGO_FEATURE_ETOMIC");
-    println!("rerun-if-env-changed=CARGO_FEATURE_NOP");
-
-    // Rebuild if version changes.
-    println!("rerun-if-changed=MM_VERSION");
-    println!("rerun-if-env-changed=MM_VERSION");
+    //println!("rerun-if-env-changed=CARGO_FEATURE_ETOMIC");
+    //println!("rerun-if-env-changed=CARGO_FEATURE_NOP");
 
     // Used with mm2-nop.rs in order to separately the dependencies build from the MM1 C build.
     if env::var_os("CARGO_FEATURE_NOP").is_some() {

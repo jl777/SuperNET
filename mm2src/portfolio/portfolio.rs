@@ -20,8 +20,11 @@
 
 extern crate helpers;
 
-use helpers::{MmArc};
+use helpers::{lp, MmArc};
 use std::os::raw::c_void;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
+use std::thread::sleep;
 
 /*
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
@@ -905,22 +908,17 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 */
 /// A thread driving the price and portfolio activity.
 pub fn prices_loop (ctx: MmArc) {
-    extern "C" {fn prices_loop (ctx: *mut c_void);}
-    unsafe {prices_loop (ctx.btc_ctx() as *mut c_void)}
+    loop {
+        if ctx.is_stopping() {break}
+
+        if !ctx.initialized.load (Ordering::Relaxed) {sleep (Duration::from_millis (100)); continue}
+        unsafe {lp::LP_tradebots_timeslice (ctx.btc_ctx() as *mut c_void)};
+
+        extern "C" {fn prices_loop (ctx: *mut c_void);}
+        unsafe {prices_loop (ctx.btc_ctx() as *mut c_void)}
+    }
 }
 /*
-    char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
-    strcpy(prices_loop_stats.name,"prices_loop");
-    prices_loop_stats.threshold = 600000.;
-    printf("start prices_loop\n");
-    while ( LP_STOP_RECEIVED == 0 )
-    {
-        //printf("G.initializing.%d prices loop autoprices.%d autorefs.%d\n",G.initializing,LP_autoprices,num_LP_autorefs);
-        if ( G.initializing != 0 )
-        {
-            sleep(1);
-            continue;
-        }
         LP_millistats_update(&prices_loop_stats);
         LP_tradebots_timeslice(ctx);
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )

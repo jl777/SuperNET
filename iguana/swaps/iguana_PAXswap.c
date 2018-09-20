@@ -53,7 +53,6 @@ char *instantdex_PAXswap(struct supernet_info *myinfo,struct exchange_info *exch
 //#include "../../crypto777/secp256k1/modules/rangeproof/pedersen_impl.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/borromean_impl.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/rangeproof_impl.h"
-void secp256k1_pedersen_context_initialize(secp256k1_context_t *ctx);
 int secp256k1_pedersen_commit(const secp256k1_context_t* ctx, unsigned char *commit, unsigned char *blind, uint64_t value);
 int secp256k1_pedersen_blind_sum(const secp256k1_context_t* ctx, unsigned char *blind_out, const unsigned char * const *blinds, int n, int npositive);
 int secp256k1_pedersen_verify_tally(const secp256k1_context_t* ctx, const unsigned char * const *commits, int pcnt,const unsigned char * const *ncommits, int ncnt, int64_t excess);
@@ -142,7 +141,6 @@ bits256 rand_secp()
 void test_pedersen(void) {
     secp256k1_context_t *ctx;
     ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_pedersen_context_initialize(ctx);
   unsigned char commits[33*19];
     const unsigned char *cptr[19];
     unsigned char blinds[32*19];
@@ -240,7 +238,6 @@ void ztest()
     //test_pedersen();
     secp256k1_context_t *ctx;  uint8_t commits[13][33],blinds[13][32]; int32_t i,j,ret,retvals[13]; int64_t val,excess = 0; const uint8_t *commitptrs[13],*blindptrs[13]; bits256 s;
     ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_pedersen_context_initialize(ctx);
     for (j=0; j<13; j++)
     {
         blindptrs[j] = blinds[j];

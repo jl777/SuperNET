@@ -44,16 +44,6 @@ unwrap = "1.2"
 winapi = "0.3.5"
 tokio-core = "0.1.17"
 
-[build-dependencies]
-bindgen = "0.40"
-cc = "1.0"
-duct = "0.11.0"
-gstuff = "0.5"
-itertools = "0.7.8"
-num_cpus = "1.8.0"
-unwrap = "1.2.1"
-winapi = "0.3.5"
-
 # ring 0.12 fails to build on Windows, this patch replaces it with ring 0.13.
 [patch."https://github.com/paritytech/parity-common"]
 parity-crypto = { git = "https://github.com/ArtemGr/parity-common" }

@@ -75,8 +75,6 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             if ( (coin->protocol= juint(argjson,"protocol")) == 0 )
                 coin->protocol = IGUANA_PROTOCOL_BITCOIN;
             coin->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-            secp256k1_pedersen_context_initialize(coin->ctx);
-            secp256k1_rangeproof_context_initialize(coin->ctx);
             strcpy(coin->name,name);
             strcpy(coin->symbol,symbol);
             iguana_initcoin(coin,argjson);

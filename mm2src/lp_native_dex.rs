@@ -32,7 +32,7 @@
 
 use crc::crc32;
 use futures::Future;
-use helpers::{slurp_url, str_to_malloc, MmCtx};
+use helpers::{bitcoin_ctx, lp, slurp_url, str_to_malloc, MmCtx, MM_VERSION};
 use libc;
 use portfolio::prices_loop;
 use rand::random;
@@ -48,7 +48,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::str::from_utf8;
 use std::thread;
-use super::{bitcoin_ctx, lp, CJSON, MM_VERSION};
+use super::{CJSON};
 
 /*
 #include <stdio.h>
@@ -1660,6 +1660,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         exit(-1);
     }
     */
+    ctx.initialized.store (true, Ordering::Relaxed);
     let prices = try_s! (thread::Builder::new().name ("prices".into()) .spawn ({
         let ctx = ctx.clone();
         move || prices_loop (ctx)

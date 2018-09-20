@@ -74,7 +74,8 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
-use helpers::{stack_trace, stack_trace_frame, BitcoinCtx};
+use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, stack_trace, stack_trace_frame, BitcoinCtx, MM_VERSION};
+use helpers::lp::{cJSON, _bits256 as bits256};
 
 use rand::random;
 
@@ -82,7 +83,6 @@ use serde_json::{self as json, Value as Json};
 
 use std::env;
 use std::ffi::{CStr, CString, OsString};
-use std::fmt;
 use std::fs;
 use std::io::{self, Read, Write};
 use std::os::raw::{c_char, c_int, c_void};
@@ -108,26 +108,8 @@ use tokio_core::net::TcpListener;
 pub mod crash_reports;
 mod lp_native_dex;
 use lp_native_dex::{lp_init};
-#[allow(dead_code)]
-mod lp {include! ("c_headers/LP_include.rs");}
-use lp::{cJSON, _bits256 as bits256};
-#[allow(dead_code)]
-extern "C" {
-    fn bitcoin_ctx() -> *mut BitcoinCtx;
-    fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
-    fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
-}
 
 use crash_reports::init_crash_reports;
-
-impl fmt::Display for bits256 {
-    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut buf: [u8; 65] = unsafe {zeroed()};
-        let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
-        let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
-        f.write_str (hex)
-    }
-}
 
 /// RAII and MT wrapper for `cJSON`.
 #[allow(dead_code)]
@@ -157,12 +139,6 @@ impl Drop for CJSON {
         self.0 = null_mut()
     }
 }
-
-#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod os {include! ("c_headers/OS_portable.rs");}
-
-#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-mod nn {include! ("c_headers/nn.rs");}
 
 lazy_static! {
         static ref RPCSOCKET : RwLock<SocketAddrV4> = RwLock::new(
@@ -618,8 +594,6 @@ fn help() {
     )
 }
 
-const MM_VERSION: &'static str = env!("MM_VERSION");
-
 fn main() {
     init_crash_reports();
     unsafe {os::OS_init()};
@@ -713,7 +687,7 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
 /// Implements the `mm2 events` mode.  
 /// If the command-line arguments match the events mode and everything else works then this function will never return.
 fn events (args_os: &[OsString]) -> Result<(), String> {
-    use nn::*;
+    use helpers::nn::*;
 
     /*
     else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )

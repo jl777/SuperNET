@@ -281,9 +281,8 @@ iguana/exchanges/manychains
 /iguana/exchanges/etomicswap/target
 # This `Cargo.lock` should not be persisted because etomicswap is normally built as a `mm2` dependency.
 /iguana/exchanges/etomicswap/Cargo.lock
-/mm2src/c_headers
 
 # Subcrate artefacts
-/mm2src/etomic/c_headers
+/mm2src/helpers/c_headers
 /mm2src/*/Cargo.lock
 /mm2src/*/target

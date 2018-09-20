@@ -242,24 +242,18 @@ void *bitcoin_ctx()
 {
     void *ptr;
     ptr = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_pedersen_context_initialize(ptr);
-    secp256k1_rangeproof_context_initialize(ptr);
     return(ptr);
 }
 
 void iguana_fixsecp(struct supernet_info *myinfo)
 {
     myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_pedersen_context_initialize(myinfo->ctx);
-    secp256k1_rangeproof_context_initialize(myinfo->ctx);
 }
 
 void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510])
 {
     uint32_t i,x = 1;
     myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_pedersen_context_initialize(myinfo->ctx);
-    secp256k1_rangeproof_context_initialize(myinfo->ctx);
     for (i=0; i<255; i++)
     {
         _exps[i] = x;
@@ -626,7 +620,7 @@ void test_mofn(struct supernet_info *myinfo)
 #undef M
 #undef N
 
-#define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); secp256k1_pedersen_context_initialize(ctx); secp256k1_rangeproof_context_initialize(ctx); flag++; } else flag = 0; if ( ctx != 0 )
+#define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); flag++; } else flag = 0; if ( ctx != 0 )
 #define ENDSECP_ENSURE_CTX if ( flag != 0 ) secp256k1_context_destroy(ctx);
 
 int32_t iguana_schnorr_peersign(void *ctx,uint8_t *allpub33,uint8_t *partialsig64,int32_t peeri,bits256 mypriv,bits256 privnonce,bits256 *nonces,int32_t n,bits256 msg256)

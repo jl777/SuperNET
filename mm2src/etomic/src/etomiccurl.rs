@@ -29,6 +29,7 @@ use hex;
 use libc;
 use serde_json;
 use helpers::{ post_json, fetch_json };
+use helpers::etomiclib::*;
 use std::str::FromStr;
 use web3::{ Transport };
 use tokio_timer::{ Interval, Timer };
@@ -41,8 +42,6 @@ use web3::types::{
 use web3::helpers::CallResult;
 use std::time::Duration;
 use web3::transports::{ Http };
-
-include!("../c_headers/etomiclib.rs");
 
 #[derive(Deserialize, Debug)]
 struct GasStationData {
