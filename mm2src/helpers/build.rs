@@ -152,6 +152,7 @@ fn generate_bindings() {
             "bitcoind_RPC_inittime",
             "GLOBAL_DBDIR",
             "DOCKERFLAG",
+            "USERHOME",
             "LP_profitratio",
             "LP_RPCPORT",
             "LP_MAXPRICEINFOS",
@@ -162,7 +163,8 @@ fn generate_bindings() {
             "LP_fixed_pairport",
             "LP_myipaddr",
             "LP_myipaddr_from_command_line",
-            "USERHOME",
+            "LP_priceinfofind",
+            "prices_loop",
         ]
             .iter(),
     );

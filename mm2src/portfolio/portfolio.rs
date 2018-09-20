@@ -21,7 +21,8 @@
 extern crate helpers;
 
 use helpers::{lp, MmArc};
-use std::os::raw::c_void;
+use std::os::raw::{c_char, c_void};
+use std::ptr::null_mut;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::thread::sleep;
@@ -914,19 +915,18 @@ pub fn prices_loop (ctx: MmArc) {
         if !ctx.initialized.load (Ordering::Relaxed) {sleep (Duration::from_millis (100)); continue}
         unsafe {lp::LP_tradebots_timeslice (ctx.btc_ctx() as *mut c_void)};
 
-        extern "C" {fn prices_loop (ctx: *mut c_void);}
-        unsafe {prices_loop (ctx.btc_ctx() as *mut c_void)}
+        let btcpp = unsafe {lp::LP_priceinfofind (b"BTC\0".as_ptr() as *mut c_char)};
+        if btcpp == null_mut() {
+            // TODO // _ = status (["portfolio", "prices_loop"], "Waiting for BTC price");
+            println! ("prices_loop] Waiting for BTC price...");
+            sleep (Duration::from_millis (100));
+            continue
+        }
+
+        unsafe {lp::prices_loop (ctx.btc_ctx() as *mut c_void, btcpp)}
     }
 }
 /*
-        LP_millistats_update(&prices_loop_stats);
-        LP_tradebots_timeslice(ctx);
-        if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
-        {
-            printf("prices_loop BTC not in LP_priceinfofind\n");
-            sleep(60);
-            continue;
-        }
         if ( LP_autoprices != 0 )
             LP_autoprice_iter(ctx,btcpp);
         if ( (retstr= LP_portfolio()) != 0 )

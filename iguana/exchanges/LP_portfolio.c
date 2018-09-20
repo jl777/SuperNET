@@ -897,20 +897,10 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
     return(n);
 }
 
-void prices_loop(void *ctx)
+void prices_loop(void *ctx, struct LP_priceinfo *btcpp)
 {
-    char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
-    //strcpy(prices_loop_stats.name,"prices_loop");
-    //prices_loop_stats.threshold = 600000.;
+    char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256];
 
-        //printf("G.initializing.%d prices loop autoprices.%d autorefs.%d\n",G.initializing,LP_autoprices,num_LP_autorefs);
-        LP_tradebots_timeslice(ctx);
-        if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
-        {
-            printf("prices_loop BTC not in LP_priceinfofind\n");
-            sleep(1);
-            return;
-        }
         if ( LP_autoprices != 0 )
             LP_autoprice_iter(ctx,btcpp);
         if ( (retstr= LP_portfolio()) != 0 )
