@@ -891,7 +891,7 @@ uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,b
 cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t showprivs)
 {
     uint8_t rmd160[20],pub[33]; uint64_t nxt64bits; bits256 pubkey;
-    char str2[41],wifbuf[64],pbuf[65],addr[64],str[128],coinwif[16]; cJSON *retjson; struct iguana_info *coin,*tmp;
+    char str2[41],wifbuf[64],pbuf[65],addr[64],str[128],coinwif[16],*paddr = 0; cJSON *retjson; struct iguana_info *coin,*tmp;
     pubkey = acct777_pubkey(privkey);
     nxt64bits = acct777_nxt64bits(pubkey);
     retjson = cJSON_CreateObject();
@@ -910,7 +910,12 @@ cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t
     {
         if ( coin != 0 && coin->symbol[0] != 0 )
         {
-            if ( bitcoin_address(addr,coin->chain->pubtype,pub,33) != 0 )
+			if (strcmp(coin->chain->symbol, "HUSH") == 0)
+				paddr = bitcoin_address_ex(coin->chain->symbol, addr, 0x1c, coin->chain->pubtype, pub, 33);
+			else
+				paddr = bitcoin_address(addr, coin->chain->pubtype, pub, 33);
+
+            if ( paddr != 0 )
             {
                 jaddstr(retjson,coin->symbol,addr);
                 sprintf(coinwif,"%swif",coin->symbol);
