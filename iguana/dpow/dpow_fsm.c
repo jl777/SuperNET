@@ -385,8 +385,13 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     dp->ratifying += bp->isratify;
-    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
+    
+	if (strcmp(src->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(src->chain->symbol, srcaddr, 0x1c, src->chain->pubtype, dp->minerkey33, 33);
+	else 
+		bitcoin_address(srcaddr, src->chain->pubtype, dp->minerkey33, 33);
+
+	bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
         ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
