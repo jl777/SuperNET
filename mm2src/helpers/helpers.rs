@@ -41,13 +41,13 @@ use hyper::{Body, Client, Request, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::malloc;
 use std::fmt;
-use std::ffi::{CStr};
+use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
 use std::io::Write;
 use std::mem::{forget, uninitialized, zeroed};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
-use std::ptr::read_volatile;
+use std::ptr::{null_mut, read_volatile};
 use std::os::raw::{c_char};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -140,6 +140,33 @@ pub struct MmArc (Arc<MmCtx>);
 unsafe impl Send for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
+
+/// RAII and MT wrapper for `cJSON`.
+pub struct CJSON (pub *mut lp::cJSON);
+impl CJSON {
+    pub fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
+        lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
+        let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
+        let c_json = unsafe {lp::cJSON_Parse (json)};
+        if c_json == null_mut() {
+            let err = unsafe {lp::cJSON_GetErrorPtr()};
+            let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
+            ERR! ("Can't parse JSON, error: {}", err)
+        } else {
+            Ok (CJSON (c_json))
+        }
+    }
+    pub fn from_str (json: &str) -> Result<CJSON, String> {
+        let cs = try_s! (CString::new (json));
+        CJSON::from_zero_terminated (cs.as_ptr())
+    }
+}
+impl Drop for CJSON {
+    fn drop (&mut self) {
+        unsafe {lp::cJSON_Delete (self.0)}
+        self.0 = null_mut()
+    }
+}
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 

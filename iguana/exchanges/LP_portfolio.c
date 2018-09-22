@@ -18,8 +18,6 @@
 //  marketmaker
 //
 
-struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
-
 struct LP_autoprice_ref
 {
     char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
@@ -896,42 +894,4 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
     }
     return(n);
 }
-
-void prices_loop(void *ctx, struct LP_priceinfo *btcpp)
-{
-    char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256];
-
-        if ( LP_autoprices != 0 )
-            LP_autoprice_iter(ctx,btcpp);
-        if ( (retstr= LP_portfolio()) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
-                {
-                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1,"portfolio") < 0 )
-                    {
-                        array = jarray(&m,retjson,"portfolio");
-                        if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
-                        {
-                            for (i=0; i<n; i++)
-                            {
-                                if ( strcmp(trades[i].buycoin,buycoin) != 0 || strcmp(trades[i].sellcoin,sellcoin) != 0 )
-                                {
-                                    buy = LP_coinfind(trades[i].buycoin);
-                                    sell = LP_coinfind(trades[i].sellcoin);
-                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0,"portfolio") == 0 )
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
-                free_json(retjson);
-            }
-            free(retstr);
-        }
-        sleep(30);
-}
-
 

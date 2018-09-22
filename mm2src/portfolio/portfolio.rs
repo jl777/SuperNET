@@ -19,8 +19,16 @@
 //
 
 extern crate helpers;
+extern crate libc;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate unwrap;
 
-use helpers::{lp, MmArc};
+use helpers::{lp, MmArc, CJSON};
+use serde_json::{self as json, Value as Json};
+use std::ffi::{CStr, CString};
+use std::mem::zeroed;
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
 use std::sync::atomic::Ordering;
@@ -910,6 +918,7 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 /// A thread driving the price and portfolio activity.
 pub fn prices_loop (ctx: MmArc) {
     let mut btc_wait_status = None;
+    let mut trades: [lp::LP_portfoliotrade; 256] = unsafe {zeroed()};
 
     loop {
         if ctx.is_stopping() {break}
@@ -927,42 +936,76 @@ pub fn prices_loop (ctx: MmArc) {
             btc_wait_status.take().map (|s| s.append (" Done."));
         }
 
-        unsafe {lp::prices_loop (ctx.btc_ctx() as *mut c_void, btcpp)}
-    }
-}
-/*
-        if ( LP_autoprices != 0 )
-            LP_autoprice_iter(ctx,btcpp);
-        if ( (retstr= LP_portfolio()) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
-                {
-                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1,"portfolio") < 0 )
-                    {
-                        array = jarray(&m,retjson,"portfolio");
-                        if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
-                        {
-                            for (i=0; i<n; i++)
-                            {
-                                if ( strcmp(trades[i].buycoin,buycoin) != 0 || strcmp(trades[i].sellcoin,sellcoin) != 0 )
-                                {
-                                    buy = LP_coinfind(trades[i].buycoin);
-                                    sell = LP_coinfind(trades[i].sellcoin);
-                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0,"portfolio") == 0 )
-                                        break;
-                                }
+        if unsafe {lp::LP_autoprices} != 0 {
+            unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp)}
+        }
+
+        // TODO: `LP_portfolio` should return a `Json` (or a serializable structure) and not a string.
+        let portfolio_cs = unsafe {lp::LP_portfolio()};
+        if portfolio_cs != null_mut() {
+            let portfolio_s = unwrap! (unsafe {CStr::from_ptr (portfolio_cs)} .to_str());
+            let portfolio: Json = unwrap! (json::from_str (portfolio_s));
+            fn find_coin (coin: Option<&str>) -> Option<(*mut lp::iguana_info, String)> {
+                let coin = match coin {Some (c) => c, None => return None};
+                let coin_cs = unwrap! (CString::new (coin));
+                let coin_inf = unsafe {lp::LP_coinfind (coin_cs.as_ptr() as *mut c_char)};
+                if coin_inf == null_mut() {return None}
+                if unsafe {(*coin_inf).inactive} != 0 {return None}
+                Some ((coin_inf, coin.into()))
+            }
+            let buy = find_coin (portfolio["buycoin"].as_str());
+            let sell = find_coin (portfolio["sellcoin"].as_str());
+            if let (Some ((buy, buycoin)), Some ((sell, sellcoin))) = (buy, sell) {
+                let mut request_id = 0;
+                let mut quote_id = 0;
+                let rc = unsafe {lp::LP_portfolio_trade (
+                    ctx.btc_ctx() as *mut c_void,
+                    &mut request_id,
+                    &mut quote_id,
+                    buy,
+                    sell,
+                    (*sell).relvolume,
+                    1,
+                    b"portfolio\0".as_ptr() as *mut c_char)};
+
+                let entries = portfolio["portfolio"].as_array();
+                if rc == -1 && entries.is_some() {
+                    let entries = unwrap! (json::to_string (unwrap! (entries)));
+                    let entries = unwrap! (CJSON::from_str (&entries));
+                    let n = unsafe {lp::LP_portfolio_order (
+                        trades.as_mut_ptr(),
+                        trades.len() as i32,
+                        entries.0
+                    ) as usize};
+                    for i in 0..n {
+                        let tbuycoin = unwrap! (unsafe {CStr::from_ptr (trades[i].buycoin.as_ptr())} .to_str());
+                        let tsellcoin = unwrap! (unsafe {CStr::from_ptr (trades[i].sellcoin.as_ptr())} .to_str());
+                        if tbuycoin == buycoin || tsellcoin == sellcoin {
+                            // TODO: See if the extra `find_coin` here is necessary,
+                            // I think `buy` and `sell` already point at the right coins.
+                            let buy = find_coin (Some (&tbuycoin[..]));
+                            let sell = find_coin (Some (&tsellcoin[..]));
+                            if let (Some ((buy, _)), Some ((sell, _))) = (buy, sell) {
+                                let rc = unsafe {lp::LP_portfolio_trade (
+                                    ctx.btc_ctx() as *mut c_void,
+                                    &mut request_id,
+                                    &mut quote_id,
+                                    buy,
+                                    sell,
+                                    (*sell).relvolume,
+                                    0,
+                                    b"portfolio\0".as_ptr() as *mut c_char)};
+                                if rc == 0 {break}
                             }
                         }
                     }
                 }
-                free_json(retjson);
             }
-            free(retstr);
+            unsafe {libc::free (portfolio_cs as *mut libc::c_void)};
         }
-        sleep(30);
+        // TODO: Reduce this sleep to ~100 milliseconds.
+        // If we need to wait then the waiting should be refactored in a way that wouldn't hang the loop.
+        // (MM should be able to stop in a timely manner; stateless?).
+        sleep (Duration::from_secs (30))
     }
 }
-
-*/
