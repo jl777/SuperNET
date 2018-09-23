@@ -464,7 +464,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
         ap = LP_addressfind(coin,coinaddr);
     else ap = LP_address(coin,coinaddr);
-    //printf("%s add addr.%s ht.%d ap.%p\n",coin->symbol,coinaddr,height,ap);
+    //printf("skipflag.%d %s add addr.%s ht.%d ap.%p\n",skipsearchcoin->symbol,coinaddr,height,ap);
     if ( ap != 0 )
     {
         flag = 0;
@@ -500,7 +500,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
                 {
                     if ( (hexstr= jstr(sobj,"hex")) != 0 )
                     {
-                        if ( strlen(hexstr) != 25*2 )
+                        if ( strlen(hexstr) != 25*2 && strlen(hexstr) != 35*2 )
                         {
                             //printf("skip non-standard utxo.(%s)\n",hexstr);
                             free_json(txobj);
