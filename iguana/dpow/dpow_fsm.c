@@ -265,6 +265,7 @@ void dpow_statemachinestart(void *ptr)
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
     int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    char *destlockunspent,*srclockunspent,*destunlockunspent,*srcunlockunspent;
     memset(&zero,0,sizeof(zero));
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -384,8 +385,13 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     dp->ratifying += bp->isratify;
-    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
+    
+	if (strcmp(src->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(src->chain->symbol, srcaddr, 0x1c, src->chain->pubtype, dp->minerkey33, 33);
+	else 
+		bitcoin_address(srcaddr, src->chain->pubtype, dp->minerkey33, 33);
+
+	bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
         ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
@@ -501,6 +507,29 @@ void dpow_statemachinestart(void *ptr)
         bp->desttxid = bp->notaries[myind].src.prev_hash;
         dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
     }*/
+
+    if (strcmp("KMD",dest->symbol) == 0 )
+    {
+      // lock the dest utxo if destination coin is KMD.
+      destlockunspent = dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      if (strncmp(destlockunspent,"true", 4) == 0 )
+        printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      else
+        printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      free(destlockunspent);
+    }
+
+    if ( strcmp("BTC",dest->symbol) == 0 )
+    {
+      // lock the src coin selected utxo if the source coin is KMD.
+      srclockunspent = dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      if (strncmp(srclockunspent,"true", 4) == 0 )
+        printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      else
+        printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      free(srclockunspent);
+    }
+
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
@@ -594,8 +623,26 @@ void dpow_statemachinestart(void *ptr)
     printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
+
+    // unlock the dest utxo on KMD.
+    if (strcmp("KMD",dest->symbol) == 0 )
+    {
+      destunlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      if (strncmp(destunlockunspent,"true", 4) == 0 )
+        printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      free(destunlockunspent);
+    }
+
+    // unlock the src selected utxo on KMD, as those are the only ones we LOCK, and CHIPS does not like the lockunspent call.
+    if ( strcmp("BTC",dest->symbol) == 0 )
+    {
+      srcunlockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      if (strncmp(srcunlockunspent,"true", 4) == 0 )
+        printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      free(srcunlockunspent);
+    }
+
     // dp->blocks[bp->height] = 0;
     bp->state = 0xffffffff;
     free(ptr);
 }
-
