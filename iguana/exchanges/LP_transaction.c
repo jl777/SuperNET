@@ -1083,8 +1083,8 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             {
                 up->spendheight = 1;
                 utxos[j] = 0;
-                if ( (sobj= jstr(txobj,"scriptPubKey")) != 0 && jstr(sobj,"hex") != 0 && strlen(jstr(sobj,"hex")) == 35*2 )
-                    up->suppress = 1;
+                if ( (sobj= jobj(txobj,"scriptPubKey")) != 0 && jstr(sobj,"hex") != 0 && strlen(jstr(sobj,"hex")) == 35*2 )
+                    up->U.suppress = 1;
             }
             else
             {
@@ -1213,7 +1213,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->signers[0].privkey = privkey;
         jaddistr(privkeys,wifstr);
         bitcoin_pubkey33(ctx,vp->signers[0].pubkey,privkey);
-        vp->suppress_pubkeys = up->suppress;
+        vp->suppress_pubkeys = up->U.suppress;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
         LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME*2,G.LP_mypub25519);
