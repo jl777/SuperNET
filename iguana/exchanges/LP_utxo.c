@@ -580,20 +580,20 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
                     {
-printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
+//printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
                         continue;
                     }
                     else free_json(txobj);
                     if ( (numconfs= LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0)) <= 0 )
                     {
-printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
+//printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
                         continue;
                     }
                 }
                 LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                 {
-printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
+//printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 }
                 else
                 {

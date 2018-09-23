@@ -321,7 +321,7 @@ struct iguana_info
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
 };
 
-struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };
+struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout:30,suppress:1,pad:1,height; };
 
 struct LP_utxostats { uint32_t sessionid,lasttime,errors,swappending,spentflag,lastspentcheck,bestflag; };
 
