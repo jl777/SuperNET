@@ -999,11 +999,13 @@ int32_t LP_vin_select(int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t 
     //return(abovei >= 0 && above < (below>>1) ? abovei : belowi);
 }
 
-cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
+cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr,int32_t suppress)
 {
     cJSON *sobj,*item = cJSON_CreateObject();
     jaddbits256(item,"txid",txid);
     jaddnum(item,"vout",vout);
+    if ( suppress != 0 )
+        jaddum(item,"suppress",1);
     sobj = cJSON_CreateObject();
     jaddstr(sobj,"hex",spendscriptstr);
     jadd(item,"scriptPubKey",sobj);
@@ -1214,10 +1216,8 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         jaddistr(privkeys,wifstr);
         bitcoin_pubkey33(ctx,vp->signers[0].pubkey,privkey);
         vp->suppress_pubkeys = up->U.suppress;
-        if ( vp->suppress_pubkeys != 0 )
-            printf("suppress vin.%d\n",n);
         vp->ignore_cltverr = ignore_cltverr;
-        jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
+        jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr,up->U.suppress));
         LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME*2,G.LP_mypub25519);
         if ( remains <= 0 && i >= numpre-1 )
             break;
@@ -1451,7 +1451,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             return(0);
         }
     }
-    printf("suppress.%d\n",V->suppress_pubkeys);
+    //printf("suppress.%d\n",V->suppress_pubkeys);
     if ( (rawtxbytes= bitcoin_json2hex(coin->symbol,coin->isPoS,&txid,txobj,V)) != 0 )
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
@@ -1601,7 +1601,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
     scriptlen = bitcoin_standardspend(script,0,rmd160);
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
     vins = cJSON_CreateArray();
-    jaddi(vins,LP_inputjson(utxotxid,utxovout,spendscriptstr));
+    jaddi(vins,LP_inputjson(utxotxid,utxovout,spendscriptstr,suppress_pubkeys));
     jdelete(txobj,"vin");
     jadd(txobj,"vin",jduplicate(vins));
     *vinsp = vins;
