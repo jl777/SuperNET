@@ -370,9 +370,12 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
-                    printf("check sobj.hex %s\n",jprint(txout,0));
+                    //printf("check sobj.hex %s\n",jprint(txout,0));
                     if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && jstr(sobj,"hex") != 0 && strlen(jstr(sobj,"hex")) == 35*2 )
+                    {
                         up->U.suppress = 1;
+                        printf("suppress %s\n",jprint(sobj,0));
+                    }
                     if ( LP_value_extract(txout,0,up->U.txid) == 0 )
                     {
 //char str[65]; printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
