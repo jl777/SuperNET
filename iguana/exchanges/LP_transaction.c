@@ -1005,7 +1005,7 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr,int32_t suppr
     jaddbits256(item,"txid",txid);
     jaddnum(item,"vout",vout);
     if ( suppress != 0 )
-        jaddum(item,"suppress",1);
+        jaddnum(item,"suppress",1);
     sobj = cJSON_CreateObject();
     jaddstr(sobj,"hex",spendscriptstr);
     jadd(item,"scriptPubKey",sobj);
