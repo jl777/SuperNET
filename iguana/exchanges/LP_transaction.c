@@ -1214,6 +1214,8 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         jaddistr(privkeys,wifstr);
         bitcoin_pubkey33(ctx,vp->signers[0].pubkey,privkey);
         vp->suppress_pubkeys = up->U.suppress;
+        if ( vp->suppress_pubkeys != 0 )
+            printf("suppress vin.%d\n",n);
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
         LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME*2,G.LP_mypub25519);
