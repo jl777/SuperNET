@@ -1570,7 +1570,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         }
     };
 
-    let ctx = MmCtx::new();
+    let ctx = MmCtx::new (conf);
 
 /*
     if ( IAMLP != 0 )
@@ -1750,7 +1750,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         unwrap! (write! (&mut cur, "{}\0", myipaddr));
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
-    let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
+    let passphrase = try_s! (CString::new (unwrap! (ctx.conf()["passphrase"].as_str())));
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0,
         ctx.btc_ctx() as *mut c_void)};
     unwrap! (prices.join());

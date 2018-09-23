@@ -40,6 +40,7 @@ use gstuff::any_to_str;
 use hyper::{Body, Client, Request, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::malloc;
+use serde_json::{Value as Json};
 use std::fmt;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
@@ -58,6 +59,7 @@ use tokio_core::reactor::Remote;
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper_rustls::HttpsConnector;
 
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{_bits256 as bits256};
 
@@ -103,6 +105,8 @@ impl fmt::Display for bits256 {
 /// state modifications
 /// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
 pub struct MmCtx {
+    /// MM command-line configuration.
+    conf: Json,
     /// Human-readable log and status dashboard.
     pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
@@ -117,9 +121,11 @@ pub struct MmCtx {
     stop: AtomicBool
 }
 impl MmCtx {
-    pub fn new() -> MmArc {
+    pub fn new (conf: Json) -> MmArc {
+        let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {
-            log: log::LogState::in_memory(),
+            conf,
+            log,
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false)
@@ -128,7 +134,10 @@ impl MmCtx {
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
     pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
+    /// True if the MarketMaker instance needs to stop.
     pub fn is_stopping (&self) -> bool {self.stop.load (Ordering::Relaxed)}
+    /// MM command-line configuration.
+    pub fn conf (&self) -> &Json {&self.conf}
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
@@ -517,6 +526,7 @@ pub mod for_tests {
             try_s! (fs::create_dir (&folder));
             try_s! (fs::create_dir (folder.join ("DB")));
             let log_path = folder.join ("mm2.log");
+            conf["log"] = unwrap! (log_path.to_str()) .into();
 
             // If `LOCAL_THREAD_MM` is set to `1`
             // then instead of spawning a process we start the MarketMaker in a local thread,

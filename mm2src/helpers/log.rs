@@ -1,5 +1,7 @@
 //! Human-readable logging and statuses.
 
+// TODO: As we discussed with Artem, skip a status update if it is equal to the previous update.
+
 #[cfg(test)]
 mod test {
     use super::LogState;
@@ -39,7 +41,13 @@ mod test {
     }
 }
 
+use chrono::{Local, TimeZone};
+use gstuff::now_ms;
+use serde_json::{Value as Json};
 use std::collections::VecDeque;
+use std::fs;
+use std::fmt;
+use std::io::Write;
 use std::mem::swap;
 use std::sync::{Arc, Mutex};
 
@@ -68,6 +76,8 @@ pub struct Status {
 
 #[derive(Default)]
 pub struct LogEntry {
+    pub time: u64,
+    pub emotion: String,
     pub tags: Vec<Tag>,
     pub line: String,
     /// If the log entry represents a finished `Status` then `trail` might contain the previous versions of that `Status`.
@@ -75,8 +85,16 @@ pub struct LogEntry {
 }
 
 impl LogEntry {
-    fn print (&self) {
-        pintln! (
+    fn format (&self, buf: &mut String) -> Result<(), fmt::Error> {
+        use fmt::Write;
+
+        let time = Local.timestamp_millis (self.time as i64);
+
+        witeln! (buf,
+            if self.emotion.is_empty() {'·'} else {(self.emotion)}
+            ' '
+            (time.format ("%Y-%m-%d %H:%M:%S"))
+            ' '
             // TODO: JSON-escape the keys and values when necessary.
             '[' for t in &self.tags {(t.key)} separated {' '} "] "
             (self.line)
@@ -139,7 +157,9 @@ pub struct LogState {
     dashboard: Mutex<Vec<Arc<Mutex<Status>>>>,
     /// Keeps recent log entries in memory in case we need them for debugging.  
     /// Should allow us to examine the log from withing the unit tests, core dumps and live debugging sessions.
-    tail: Mutex<VecDeque<LogEntry>>
+    tail: Mutex<VecDeque<LogEntry>>,
+    /// Log to stdout if `None`.
+    log_file: Option<Mutex<fs::File>>
 }
 
 impl LogState {
@@ -147,7 +167,25 @@ impl LogState {
     pub fn in_memory() -> LogState {
         LogState {
             dashboard: Mutex::new (Vec::new()),
-            tail: Mutex::new (VecDeque::with_capacity (64))
+            tail: Mutex::new (VecDeque::with_capacity (64)),
+            log_file: None
+        }
+    }
+
+    /// Initialize according to the MM command-line configuration.
+    pub fn mm (conf: &Json) -> LogState {
+        let log_file = match conf["log"] {
+            Json::Null => None,
+            Json::String (ref path) => Some (Mutex::new (unwrap! (
+                fs::OpenOptions::new().append (true) .create (true) .open (path),
+                "Can't open log file {}", path
+            ))),
+            ref x => panic! ("The 'log' is not a string: {:?}", x)
+        };
+        LogState {
+            dashboard: Mutex::new (Vec::new()),
+            tail: Mutex::new (VecDeque::with_capacity (64)),
+            log_file
         }
     }
 
@@ -189,18 +227,26 @@ impl LogState {
                 return
             }
         };
-        match self.tail.lock() {
+        let chunk = match self.tail.lock() {
             Ok (mut tail) => {
                 if tail.len() == tail.capacity() {let _ = tail.pop_front();}
                 let mut log = LogEntry::default();
                 swap (&mut log.tags, &mut status.tags);
                 swap (&mut log.line, &mut status.line);
                 swap (&mut log.trail, &mut status.trail);
-                log.print();
+                let mut chunk = String::with_capacity (256);
+                if let Err (err) = log.format (&mut chunk) {
+                    eprintln! ("log] Error formatting log entry: {}", err);
+                }
                 tail.push_back (log);
+                Some (chunk)
             },
-            Err (err) => eprintln! ("log] Can't lock the tail: {}", err)
-        }
+            Err (err) => {
+                eprintln! ("log] Can't lock the tail: {}", err);
+                None
+            }
+        };
+        if let Some (chunk) = chunk {self.chunk2log (chunk)}
     }
 
     /// Read-only access to the status dashboard.
@@ -219,5 +265,66 @@ impl LogState {
         let mut status = self.status_handle();
         status.status (tags, line);
         status
+    }
+
+    /// Creates a new human-readable log entry.
+    /// 
+    /// This is a bit different from the `println!` logging
+    /// (https://www.reddit.com/r/rust/comments/9hpk65/which_tools_are_you_using_to_debug_rust_projects/e6dkciz/)
+    /// as the information here is intended for the end users
+    /// (and to be shared through the GUI),
+    /// explaining what's going on with MM.
+    /// 
+    /// * `emotion` - We might use a unicode smiley here
+    ///   (https://unicode.org/emoji/charts/full-emoji-list.html)
+    ///   to emotionally color the event (the good, the bad and the ugly)
+    ///   or enrich it with infographics.
+    /// * `tags` - Parsable part of the log,
+    ///   representing subsystems and sharing concrete values.
+    ///   GUI might use it to get some useful information from the log.
+    /// * `line` - The human-readable description of the event,
+    ///   we have no intention to make it parsable.
+    pub fn log (&self, emotion: &str, tags: &[&TagParam], line: &str) {
+        let entry = LogEntry {
+            time: now_ms(),
+            emotion: emotion.into(),
+            tags: tags.iter().map (|t| Tag {key: t.key(), val: t.val()}) .collect(),
+            line: line.into(),
+            trail: Vec::new()
+        };
+
+        let mut chunk = String::with_capacity (256);
+        if let Err (err) = entry.format (&mut chunk) {
+            eprintln! ("log] Error formatting log entry: {}", err);
+            return
+        }
+
+        match self.tail.lock() {
+            Ok (mut tail) => {
+                if tail.len() == tail.capacity() {let _ = tail.pop_front();}
+                tail.push_back (entry)
+            },
+            Err (err) => eprintln! ("log] Can't lock the tail: {}", err)
+        }
+
+        self.chunk2log (chunk)
+    }
+
+    fn chunk2log (&self, chunk: String) {
+        match self.log_file {
+            Some (ref f) => match f.lock() {
+                Ok (mut f) => {
+                    if let Err (err) = f.write (chunk.as_bytes()) {
+                        eprintln! ("log] Can't write to the log: {}", err);
+                        println! ("{}", chunk);
+                    }
+                },
+                Err (err) => {
+                    eprintln! ("log] Can't lock the log: {}", err);
+                    println! ("{}", chunk)
+                }
+            },
+            None => println! ("{}", chunk)
+        }
     }
 }

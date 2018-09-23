@@ -630,7 +630,7 @@ void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp);
-extern int32_t LP_autoprices;
+extern int32_t LP_autoprices, num_LP_autorefs;
 char *LP_portfolio();
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui);
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };

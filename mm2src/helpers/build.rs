@@ -174,6 +174,7 @@ fn generate_bindings() {
             "LP_myipaddr",
             "LP_myipaddr_from_command_line",
             "LP_autoprices",
+            "num_LP_autorefs",
         ]
             .iter(),
     );
