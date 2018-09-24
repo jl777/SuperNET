@@ -153,6 +153,7 @@ fn generate_bindings() {
             "LP_coinfind",
             "LP_portfolio_trade",
             "LP_portfolio_order",
+            "LP_pricesparse",
         ]
             .iter(),
         // types
@@ -175,6 +176,7 @@ fn generate_bindings() {
             "LP_myipaddr_from_command_line",
             "LP_autoprices",
             "num_LP_autorefs",
+            "LP_STOP_RECEIVED",
         ]
             .iter(),
     );

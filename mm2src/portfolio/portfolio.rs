@@ -18,20 +18,27 @@
 //  marketmaker
 //
 
+extern crate futures;
+#[macro_use]
+extern crate gstuff;
 extern crate helpers;
+extern crate hyper;
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate unwrap;
 
-use helpers::{lp, MmArc, CJSON};
+use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
+use hyper::{StatusCode, HeaderMap};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
-use std::mem::zeroed;
+use std::mem::{zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{Ordering};
 use std::time::Duration;
 use std::thread::sleep;
 
@@ -494,31 +501,66 @@ int32_t LP_autoref_clear(char *base,char *rel)
 
 */
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
+    // TODO: Figure out what this means and whether we need to log it.
     println! ("AUTOPRICE numautorefs.{}", unsafe {lp::num_LP_autorefs});
+
+    // Natural singletons (there's only one "bittrex.com" in the internet).
+    lazy_static! {
+        static ref BITTREX_MARKETSUMMARIES: RefreshedExternalResource<(StatusCode, HeaderMap, Vec<u8>)> = RefreshedExternalResource::new (
+            30., 40.,
+            Box::new (|| slurp_url ("https://bittrex.com/api/v1.1/public/getmarketsummaries")
+        ));
+        static ref CRYPTOPIA_MARKETS: RefreshedExternalResource<(StatusCode, HeaderMap, Vec<u8>)> = RefreshedExternalResource::new (
+            30., 40.,
+            Box::new (|| slurp_url ("https://www.cryptopia.co.nz/api/GetMarkets")
+        ));
+    }
+
+    try_s! (BITTREX_MARKETSUMMARIES.tick());
+    try_s! (CRYPTOPIA_MARKETS.tick());
+
+    let status = ctx.log.claim_status (&[&"portfolio", &("bittrex", "waiting")]);
+    let (nxtkmd, waiting_for_markets) = if try_s! (BITTREX_MARKETSUMMARIES.last_finish()) == 0.0 {
+        match status {
+            None => ctx.log.status (&[&"portfolio", &("bittrex", "waiting")], "Waiting for Bittrex market summaries..."),
+            Some (status) => status
+        } .detach();
+        (0., true)
+    } else {
+        match BITTREX_MARKETSUMMARIES.with_result (|result| {
+            let result = try_s! (result.ok_or ("!result"));
+            let result = try_s! (result);
+            let retstr = try_s! (CString::new (result.2.clone()));
+            Ok (unsafe {lp::LP_pricesparse (ctx.btc_ctx() as *mut c_void, 1, retstr.as_ptr() as *mut c_char, btcpp)})
+        }) {
+            Ok (nxtkmd) => {status.map (|s| s.append (" Ok.")); (nxtkmd, false)},
+            Err (err) => {status.map (|s| s.append (&format! (" Error: {}", err))); (0., true)}
+        }
+    };
+
+    let status = ctx.log.claim_status (&[&"portfolio", &("cryptopia", "waiting")]);
+    let waiting_for_markets = if try_s! (CRYPTOPIA_MARKETS.last_finish()) == 0.0 {
+        match status {
+            None => ctx.log.status (&[&"portfolio", &("cryptopia", "waiting")], "Waiting for Cryptopia markets..."),
+            Some (status) => status
+        } .detach();
+        true
+    } else {
+        match CRYPTOPIA_MARKETS.with_result (|result| {
+            let result = try_s! (result.ok_or ("!result"));
+            let result = try_s! (result);
+            let retstr = try_s! (CString::new (result.2.clone()));
+            unsafe {lp::LP_pricesparse (ctx.btc_ctx() as *mut c_void, 0, retstr.as_ptr() as *mut c_char, btcpp)};
+            Ok(())
+        }) {
+            Ok(()) => {status.map (|s| s.append (" Ok.")); waiting_for_markets},
+            Err (err) => {status.map (|s| s.append (&format! (" Error: {}", err))); true}
+        }
+    };
+
+    if waiting_for_markets {return Ok(())}
+
     /*
-    fflush(stdout);
-    if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
-    {
-        printf("trex error getting marketsummaries\n");
-        sleep(40);
-        //return;
-    }
-    else
-    {
-        nxtkmd = LP_pricesparse(ctx,1,retstr,btcpp);
-        free(retstr);
-    }
-    if ( (retstr= issue_curlt("https://www.cryptopia.co.nz/api/GetMarkets",LP_HTTP_TIMEOUT*10)) == 0 )
-    {
-        printf("cryptopia error getting marketsummaries\n");
-        sleep(40);
-        //return;
-    }
-    else
-    {
-        LP_pricesparse(ctx,0,retstr,btcpp);
-        free(retstr);
-    }
     if ( (kmdpp= LP_priceinfofind("KMD")) != 0 )
     {
         for (i=0; i<32; i++)

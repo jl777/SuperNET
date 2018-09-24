@@ -635,6 +635,7 @@ char *LP_portfolio();
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui);
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *array);
+double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp);
 /**
  * Contains IP bits parsed from the "docker" parameter.  
  * Deprecated (setting IP address should not require Docker,

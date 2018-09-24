@@ -1,6 +1,8 @@
 //! Human-readable logging and statuses.
 
 // TODO: As we discussed with Artem, skip a status update if it is equal to the previous update.
+// TODO: Sort the tags while converting `&[&TagParam]` to `Vec<Tag>`.
+// TODO: Make the dashboard entries unique on the tags (if the tags match then this is the same status).
 
 #[cfg(test)]
 mod test {
@@ -61,9 +63,25 @@ impl<'a> TagParam<'a> for &'a str {
     fn val (&self) -> Option<String> {None}
 }
 
+impl<'a> TagParam<'a> for (&'a str, &'a str) {
+    fn key (&self) -> String {String::from (self.0)}
+    fn val (&self) -> Option<String> {Some (String::from (self.1))}
+}
+
+#[derive(Eq, PartialEq)]
 pub struct Tag {
     pub key: String,
     pub val: Option<String>
+}
+
+impl Tag {
+    /// Returns the tag's value or the empty string if there is no value.
+    pub fn val_s (&self) -> &str {
+        match self.val {
+            Some (ref s) => &s[..],
+            None => ""
+        }
+    }
 }
 
 /// The status entry kept in the dashboard.
@@ -96,7 +114,7 @@ impl LogEntry {
             (time.format ("%Y-%m-%d %H:%M:%S"))
             ' '
             // TODO: JSON-escape the keys and values when necessary.
-            '[' for t in &self.tags {(t.key)} separated {' '} "] "
+            '[' for t in &self.tags {(t.key) if let Some (ref v) = t.val {'=' (v)}} separated {' '} "] "
             (self.line)
             for tr in self.trail.iter().rev() {
                 "\n    " (tr.line)
@@ -139,6 +157,13 @@ impl<'a> StatusHandle<'a> {
             let mut status = unwrap! (status.lock(), "Can't lock the status");
             status.line.push_str (suffix)
         }
+    }
+
+    /// Detach the handle from the status, allowing the status to remain in the dashboard when the handle is dropped.
+    /// 
+    /// The code should later manually finish the status (finding it with `LogState::find_status`).
+    pub fn detach (&mut self) {
+        self.status = None
     }
 }
 
@@ -267,6 +292,36 @@ impl LogState {
         status
     }
 
+    /// Search dashboard for status matching the tags.
+    /// 
+    /// Note that returned status handle represent an ownership of the status and on the `drop` will mark the status as finished.
+    pub fn claim_status (&self, tags: &[&TagParam]) -> Option<StatusHandle> {
+        let mut found = Vec::new();
+        let mut locked = Vec::new();
+        let tags: Vec<Tag> = tags.iter().map (|t| Tag {key: t.key(), val: t.val()}) .collect();
+        let dashboard = unwrap! (self.dashboard.lock(), "Can't lock the dashboard");
+        for status_arc in &*dashboard {
+            if let Ok (ref status) = status_arc.try_lock() {
+                if status.tags == tags {found.push (StatusHandle {
+                    log: self,
+                    status: Some (status_arc.clone())
+                })}
+            } else {
+                locked.push (status_arc.clone())
+            }
+        }
+        drop (dashboard);  // Unlock the dashboard before lock-waiting on statuses, avoiding a chance of deadlock.
+        for status_arc in locked {
+            let matches = unwrap! (status_arc.lock(), "Can't lock a status") .tags == tags;
+            if matches {found.push (StatusHandle {
+                log: self,
+                status: Some (status_arc)
+            })}
+        }
+        if found.len() > 1 {eprintln! ("log] Dashboard tags not unique!")}
+        found.pop()
+    }
+
     /// Creates a new human-readable log entry.
     /// 
     /// This is a bit different from the `println!` logging
@@ -326,5 +381,11 @@ impl LogState {
             },
             None => println! ("{}", chunk)
         }
+    }
+}
+
+impl Drop for LogState {
+    fn drop (&mut self) {
+        println! ("LogState] drop!");
     }
 }

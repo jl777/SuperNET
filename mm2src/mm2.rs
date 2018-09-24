@@ -378,6 +378,8 @@ mod test {
         })));
         assert_eq! (autoprice.0, StatusCode::OK);
         unwrap! (mm.wait_for_log (33., &|log| log.contains ("AUTOPRICE numautorefs")));
+        unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
 
         // Checking the autopricing logs here TDD-helps us with the porting effort.
         //
@@ -387,6 +389,10 @@ mod test {
         sleep (Duration::from_secs (9));
 
         unwrap! (mm.stop());
+
+        // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
+        // (For this to happen in the integration tests we need the `LPinit` to stop faster).
+        //TODO// unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] drop!")));
     }
 
     use super::{btc2kmd, events, lp_main, CJSON};
