@@ -73,7 +73,6 @@ extern crate tokio_core;
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 #[cfg(feature = "etomic")]
 pub use etomicrs::*;
-pub use lp_native_dex::spawn_rpc_thread;
 
 use gstuff::now_ms;
 
@@ -103,6 +102,9 @@ use std::str;
 pub mod crash_reports;
 mod lp_native_dex;
 use lp_native_dex::{lp_init};
+
+mod rpc;
+pub use rpc::spawn_rpc_thread;
 
 use crash_reports::init_crash_reports;
 
