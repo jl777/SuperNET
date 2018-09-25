@@ -421,7 +421,8 @@ pub struct RefreshedExternalResource<R: Send + 'static> {
     every_n_sec: f64,
     /// Start a new `Future` and drop the old one if it fails to finish after this number of seconds.
     timeout_sec: f64,
-    /// The time (in f64 seconds) when we last (re)started the `sync`.
+    /// The time (in f64 seconds) when we last (re)started the `sync`.  
+    /// We want `AtomicU64` but it isn't yet stable.
     last_start: AtomicUsize,
     shelf: Arc<Mutex<Option<RerShelf<R>>>>
 }

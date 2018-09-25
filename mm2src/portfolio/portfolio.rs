@@ -31,6 +31,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate unwrap;
 
+use gstuff::now_ms;
 use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
 use hyper::{StatusCode, HeaderMap};
 use serde_json::{self as json, Value as Json};
@@ -38,7 +39,7 @@ use std::ffi::{CStr, CString};
 use std::mem::{zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
-use std::sync::atomic::{Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::thread::sleep;
 
@@ -560,59 +561,24 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
 
     if waiting_for_markets {return Ok(())}
 
+    let kmdpp = unsafe {lp::LP_priceinfofind (b"KMD\0".as_ptr() as *mut c_char)};
+
+    // `LP_ticker` does something with the swaps and it seems we only want to do this every 60 seconds.
+    // (We want `AtomicU64` for `LAST_TIME` but it isn't yet stable).
+    thread_local! {static LAST_TIME: AtomicUsize = AtomicUsize::new (now_ms() as usize);}
+    let tick = LAST_TIME.with (|last_time| {
+        let now = (now_ms() / 1000) as usize;
+        if last_time.load (Ordering::Relaxed) + 60 < now {
+            last_time.store (now, Ordering::Relaxed);
+            true
+        } else {false}
+    });
+    if tick {
+        let cs = unsafe {lp::LP_ticker (b"\0".as_ptr() as *mut c_char, b"\0".as_ptr() as *mut c_char)};
+        if cs != null_mut() {unsafe {libc::free (cs as *mut libc::c_void)}}
+    }
+
     /*
-    if ( (kmdpp= LP_priceinfofind("KMD")) != 0 )
-    {
-        for (i=0; i<32; i++)
-        {break;
-            if ( (fiatpp= LP_priceinfofind(CURRENCIES[i])) != 0 )
-            {
-                if ( (retjson= LP_paxprice(CURRENCIES[i])) != 0 )
-                {
-                    //printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
-                    price = jdouble(retjson,"price");
-                    LP_autopriceset(-1,ctx,1,fiatpp,kmdpp,price,0,0);
-                    LP_autopriceset(-1,ctx,-1,kmdpp,fiatpp,price,0,0);
-                    free_json(retjson);
-                }
-            }
-        }
-    }
-    if ( 0 && nxtkmd > SMALLVAL )
-    {
-        for (i=0; i<sizeof(assetids)/sizeof(*assetids); i++)
-        {
-            if ( (nxtpp= LP_priceinfofind(assetids[i][1])) != 0 )
-            {
-                price = 0.;
-                bidsatoshis = asksatoshis = 0;
-                if ( (retjson= LP_assethbla(assetids[i][0])) != 0 )
-                {
-                    if ( (bid= jobj(retjson,"bid")) != 0 && (ask= jobj(retjson,"ask")) != 0 )
-                    {
-                        bidsatoshis = j64bits(bid,"priceNQT") * atoi(assetids[i][2]);
-                        asksatoshis = j64bits(ask,"priceNQT") * atoi(assetids[i][2]);
-                        if ( bidsatoshis != 0 && asksatoshis != 0 )
-                            price = 0.5 * dstr(bidsatoshis + asksatoshis) * nxtkmd;
-                    }
-                    LP_autopriceset(-1,ctx,1,nxtpp,kmdpp,price,0,0);
-                    LP_autopriceset(-1,ctx,-1,kmdpp,nxtpp,price,0,0);
-                    //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
-                    free_json(retjson);
-                }
-            }
-        }
-    }
-    if ( time(NULL) > lasttime+60 )
-    {
-        if ( tickerjson != 0 )
-            free_json(tickerjson);
-        if ( (retstr= LP_ticker("","")) != 0 )
-        {
-            tickerjson = cJSON_Parse(retstr);
-            free(retstr);
-        }
-    }
     kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
     bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
     ltc_btc = LP_CMCbtcprice(&bch_usd,"litecoin");

@@ -154,6 +154,7 @@ fn generate_bindings() {
             "LP_portfolio_trade",
             "LP_portfolio_order",
             "LP_pricesparse",
+            "LP_ticker",
         ]
             .iter(),
         // types
