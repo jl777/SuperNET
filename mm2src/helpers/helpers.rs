@@ -35,25 +35,27 @@ use futures::sync::oneshot::{self, Receiver};
 use gstuff::any_to_str;
 use hyper::{Body, Client, Request, StatusCode, HeaderMap};
 use hyper::rt::Stream;
-use libc::malloc;
+use libc::{malloc, free};
 use std::fmt;
 use std::ffi::{CStr};
 use std::intrinsics::copy;
 use std::io::Write;
 use std::mem::{forget, uninitialized, zeroed};
+use std::net::{SocketAddr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::read_volatile;
-use std::os::raw::{c_char};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::os::raw::{c_char, c_void};
 use std::str;
 use tokio_core::reactor::Remote;
 
 use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper_rustls::HttpsConnector;
 
+#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
 use lp::{_bits256 as bits256};
 
@@ -102,26 +104,30 @@ pub struct MmCtx {
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
     btc_ctx: *mut BitcoinCtx,
     /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
-    /// 
+    ///
     /// Should be refactored away in the future. State should always be valid.
     /// If there are things that are loaded in background then they should be separately optional,
     /// without invalidating the entire state.
     pub initialized: AtomicBool,
     /// True if the MarketMaker instance needs to stop.
-    stop: AtomicBool
+    stop: AtomicBool,
+    /// Socket for RPC server to listen to
+    rpc_socket: SocketAddr,
 }
 impl MmCtx {
-    pub fn new() -> MmArc {
+    pub fn new(rpc_socket: SocketAddr) -> MmArc {
         MmArc (Arc::new (MmCtx {
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
-            stop: AtomicBool::new (false)
+            stop: AtomicBool::new (false),
+            rpc_socket,
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
     pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
     pub fn is_stopping (&self) -> bool {self.stop.load (Ordering::Relaxed)}
+    pub fn get_socket (&self) -> &SocketAddr {&self.rpc_socket}
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
@@ -145,6 +151,9 @@ pub fn str_to_malloc (s: &str) -> *mut c_char {unsafe {
     *buf.offset (s.len() as isize) = 0;
     buf as *mut c_char
 }}
+
+/// Frees C raw pointer
+pub fn free_c_ptr(ptr: *mut c_void) { unsafe { free(ptr as *mut libc::c_void); } }
 
 //? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
@@ -346,6 +355,10 @@ pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>
     }))
 }
 
+pub fn random_u32() -> u32 {
+    rand::random::<u32>()
+}
+
 /// Helpers used in the unit and integration tests.
 pub mod for_tests {
     use chrono::Local;
@@ -517,9 +530,16 @@ pub mod for_tests {
                 sleep (Duration::from_millis (ms));
             }
         }
-        /// Invokes the locally running MM and returns it's reply.
+        /// Sends the JSON payload to the locally running MM and returns it's reply.
         pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String), String> {
             let payload = try_s! (json::to_string (&payload));
+            let uri = format! ("http://{}:7783", self.ip);
+            let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
+            let (status, _headers, body) = try_s! (slurp_req (request) .wait());
+            Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
+        }
+        /// Sends the &str payload to the locally running MM and returns it's reply.
+        pub fn rpc_str (&self, payload: &'static str) -> Result<(StatusCode, String), String> {
             let uri = format! ("http://{}:7783", self.ip);
             let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
             let (status, _headers, body) = try_s! (slurp_req (request) .wait());

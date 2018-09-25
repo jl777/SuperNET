@@ -60,6 +60,8 @@ extern crate serde;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 #[macro_use]
 extern crate unwrap;
@@ -71,6 +73,7 @@ extern crate tokio_core;
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 #[cfg(feature = "etomic")]
 pub use etomicrs::*;
+pub use lp_native_dex::spawn_rpc_thread;
 
 use gstuff::now_ms;
 
@@ -92,18 +95,10 @@ use std::process::exit;
 use std::ptr::{null, null_mut};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
-use std::sync::{Mutex, RwLock};
+use std::sync::{Mutex};
 use std::thread::sleep;
 use std::time::Duration;
-use std::thread;
-use hyper::{Response, Request, Body};
-use hyper::server::conn::Http;
-use hyper::rt::{Future, Stream};
-use hyper::service::Service;
-use hyper::header::{HeaderValue, CONTENT_TYPE};
 use std::str;
-use std::net::{Ipv4Addr, SocketAddrV4, SocketAddr};
-use tokio_core::net::TcpListener;
 
 pub mod crash_reports;
 mod lp_native_dex;
@@ -138,84 +133,6 @@ impl Drop for CJSON {
         unsafe {lp::cJSON_Delete (self.0)}
         self.0 = null_mut()
     }
-}
-
-lazy_static! {
-        static ref RPCSOCKET : RwLock<SocketAddrV4> = RwLock::new(
-            SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 7783)
-        );
-    }
-
-struct RpcService {
-    // The socket address the original request is coming from.
-    source_address: SocketAddr,
-}
-
-impl Service for RpcService {
-    type ReqBody = Body;
-    type ResBody = Body;
-    type Error = hyper::Error;
-    type Future = Box<Future<Error=hyper::Error, Item=Response<Body>> + Send>;
-
-    fn call(&mut self, request: Request<Body>) -> Self::Future {
-        let body_f = request.into_body().concat2();
-        let remote_ip = self.source_address.ip().clone();
-        Box::new(body_f.then(move |body| -> Result<Response<Body>, hyper::Error> {
-            let body_vec = body.unwrap().to_vec();
-            let body_str = str::from_utf8(&body_vec).unwrap();
-            let body_json = CJSON::from_str(body_str).unwrap();
-            let read = RPCSOCKET.read().unwrap();
-            let stats_result = unsafe {
-                lp::stats_JSON(
-                    bitcoin_ctx() as *mut c_void,
-                    0,
-                    CString::new(format!("{}", read.ip())).unwrap().into_raw(),
-                    -1,
-                    body_json.0,
-                    CString::new(format!("{}", remote_ip)).unwrap().into_raw(),
-                    read.port()
-                )
-            };
-            let res_str = unsafe { CStr::from_ptr(stats_result).to_str().unwrap() };
-            Ok(Response::builder()
-                .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-                .body(Body::from(res_str))
-                .unwrap()
-            )
-        }))
-    }
-}
-
-fn spawn_rpc_thread(ip: Ipv4Addr, port: u16) {
-    (*RPCSOCKET.write().unwrap()) = SocketAddrV4::new(ip, port);
-    thread::spawn(|| {
-        let read = RPCSOCKET.read().unwrap();
-        let listener = TcpListener::bind2(&(*read).into()).unwrap();
-        let http = Http::new();
-
-        let server = listener
-            .incoming()
-            .for_each(move |(socket, _socket_addr)| {
-                let source_address = socket.peer_addr().unwrap();
-                hyper::rt::spawn(
-                    http.serve_connection(
-                        socket,
-                        RpcService {
-                            source_address,
-                        },
-                    ).map(|_| ())
-                        .map_err(|_| ()),
-                );
-                Ok(())
-            }).map_err(|e| panic!("accept error: {}", e));
-
-        println!(">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{} <<<<<<<<<",
-                 read.ip(),
-                 read.port(),
-                 gstuff::now_float() as u64
-        );
-        hyper::rt::run(server);
-    });
 }
 
 /*
@@ -256,9 +173,6 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
 
     let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
     if conf["passphrase"].is_string() {
-        let rpcipvalue = conf["rpcip"].clone();
-        let rpcip = rpcipvalue.as_str().unwrap_or("127.0.0.1");
-        let ipv4 : Ipv4Addr = try_s!(rpcip.parse());
         let profitmargin = conf["profitmargin"].as_f64();
         unsafe {lp::LP_profitratio += profitmargin.unwrap_or (0.)};
         let port = conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
@@ -269,7 +183,6 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
         let client = conf["client"].as_i64().unwrap_or (0);
         if client < i32::min_value() as i64 {return ERR! ("client < i32")}
         if client > i32::max_value() as i64 {return ERR! ("client > i32")}
-        spawn_rpc_thread(ipv4, port as u16);
         try_s! (lp_init (port as u16, pullport, pubport, client == 1, conf, c_conf));
         Ok(())
     } else {ERR! ("!passphrase")}
@@ -367,7 +280,6 @@ mod test {
             local_start));
         unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
 
-        thread::sleep(Duration::from_secs(4));
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
         let electrum_beer = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
@@ -414,6 +326,45 @@ mod test {
         // And the stdout format can be changed even after that.
 
         sleep (Duration::from_secs (9));
+
+        unwrap! (mm.stop());
+    }
+
+    /// Integration test for RPC server.
+    /// Check that MM doesn't crash in case of invalid RPC requests
+    #[test]
+    fn test_rpc() {
+        let passphrase = "SPATsRps3dhEtXwtnpRCKF";
+        let mm = unwrap! (MarketMakerIt::start (
+            json! ({
+                "gui": "nogui",
+                "client": 1,
+                "passphrase": passphrase,
+                "coins": [
+                    {"coin": "BEER","asset": "BEER", "rpcport": 8923},
+                    {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
+                ]
+            }),
+            "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
+            local_start));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+
+        let no_method = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "coin": "BEER",
+            "ipaddr": "electrum1.cipig.net",
+            "port": 10022
+        })));
+        assert! (no_method.0.is_client_error());
+
+        let not_json = unwrap! (mm.rpc_str("It's just a string"));
+        assert! (not_json.0.is_client_error());
+
+        let unknown_method = unwrap! (mm.rpc (json! ({
+            "method": "unknown_method",
+        })));
+
+        assert_eq! (unknown_method.0, StatusCode::OK);
 
         unwrap! (mm.stop());
     }
@@ -514,10 +465,7 @@ mod test {
                         MmState::Starting => {  // See if MM started.
                             let mm_log = unwrap! (mm.log_as_utf8());
                             let expected_bind = format! (">>>>>>>>>> DEX stats {}:7783", mm.ip);
-                            if mm_log.contains (&expected_bind) {
-                                thread::sleep(Duration::from_secs(2));
-                                MmState::Started
-                            }
+                            if mm_log.contains (&expected_bind) {MmState::Started}
                             else {MmState::Starting}
                         },
                         MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
@@ -579,10 +527,10 @@ fn help() {
         "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
         "  log            ..  File path. Redirect (as of now only a part of) the log there.\n"
         "  myipaddr       ..  IP address to bind to for P2P networking.\n"
-        "  rpcip          ..  IP address to bind to for RPC server. Overrides the 127.0.0.1 default\n"
         "  netid          ..  Subnetwork. Affects ports and keys.\n"
         "  passphrase *   ..  Wallet seed.\n"
         "  profitmargin   ..  Adds to `LP_profitratio`.\n"
+        "  rpcip          ..  IP address to bind to for RPC server. Overrides the 127.0.0.1 default\n"
         "  rpcport        ..  If > 1000 overrides the 7783 default.\n"
         "  userhome       ..  Writable folder with MM files ('DB' by default).\n"
         "  wif            ..  `1` to add WIFs to the information we provide about a coin.\n"

@@ -145,6 +145,7 @@ fn generate_bindings() {
             "LP_mutex_init",
             "LP_tradebots_timeslice",
             "stats_JSON",
+            "LP_queuecommand",
         ]
             .iter(),
         ["_bits256", "cJSON"].iter(),
@@ -163,6 +164,7 @@ fn generate_bindings() {
             "LP_myipaddr",
             "LP_myipaddr_from_command_line",
             "USERHOME",
+            "IPC_ENDPOINT",
         ]
             .iter(),
     );

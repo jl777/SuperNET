@@ -606,7 +606,7 @@ bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
 // Gradual port temporaries.
 cJSON *LP_NXT_redeems();
-void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,void* ctx);
+void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,void* ctx,uint32_t mm_ctx_id);
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid);
 void unbuffered_output_support(const char* log_path);
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
@@ -639,5 +639,7 @@ char LP_eth_node_url[2084];
 char LP_alice_contract[50];
 char LP_bob_contract[50];
 
+extern int32_t IPC_ENDPOINT;
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #endif

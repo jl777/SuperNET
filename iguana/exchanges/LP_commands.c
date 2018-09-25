@@ -354,7 +354,7 @@ version\n\
         else if ( strcmp(method,"sleep") == 0 )
         {
             if ( jint(argjson,"seconds") == 0 )
-                sleep(60);
+                sleep(180);
             else sleep(jint(argjson,"seconds"));
             return(clonestr("{\"result\":\"success\",\"status\":\"feeling good after sleeping\"}"));
         }
