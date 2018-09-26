@@ -1730,15 +1730,12 @@ pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use std::ffi::CString;
     use libc;
     use std::os::raw::{ c_int };
     use etomic::*;
-    #[cfg(target_os = "windows")]
-    pub use self::spawn_rpc_thread;
 
-    #[cfg(target_os = "windows")]
     #[no_mangle]
     /// Dummy spawn_rpc_thread added for Windows tests to pass
     /// Seems like Windows linker requires the method to be implemented
