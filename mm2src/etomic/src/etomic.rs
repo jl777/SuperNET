@@ -1736,6 +1736,15 @@ mod test {
     use std::os::raw::{ c_int };
     use etomic::*;
 
+    /// Dummy spawn_rpc_thread added for Windows tests to pass
+    /// Seems like Windows linker requires the method to be implemented
+    /// Even if it's not used anywhere
+    #[cfg(target_os = "windows")]
+    #[no_mangle]
+    pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
+        unimplemented!()
+    }
+
     fn eth_client_for_test() -> *mut EthClient {
         let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
         let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
