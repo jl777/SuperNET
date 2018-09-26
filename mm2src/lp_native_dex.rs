@@ -30,7 +30,7 @@
 
 use crc::crc32;
 use futures::{Future};
-use helpers::{random_u32, lp, slurp_url,  MmCtx, MM_VERSION, MmArc};
+use helpers::{lp, slurp_url,  MmCtx, MM_VERSION, MmArc};
 use libc;
 use portfolio::prices_loop;
 use rand::random;
@@ -51,7 +51,7 @@ use std::thread;
 use super::{CJSON};
 
 lazy_static! {
-    /// MmCtx contexts hash map
+    /// A map from a unique context ID to the corresponding MM context, facilitating context access across the FFI boundaries.
     pub static ref MM_CTX_MAP: RwLock<HashMap<u32, MmArc>> = RwLock::new(HashMap::new());
 }
 /*
@@ -1758,7 +1758,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
     let passphrase = try_s! (CString::new (unwrap! (ctx.conf()["passphrase"].as_str())));
-    let ctx_id = random_u32();
+    let ctx_id: u32 = random();
     (*MM_CTX_MAP.write().unwrap()).insert(ctx_id, ctx.clone());
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0,
         ctx.btc_ctx() as *mut c_void, ctx_id)};

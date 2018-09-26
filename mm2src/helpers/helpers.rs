@@ -114,7 +114,7 @@ pub struct MmCtx {
     /// Human-readable log and status dashboard.
     pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
-    btc_ctx: BtcCtxBox,
+    btc_ctx: *mut BitcoinCtx,
     /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
     ///
     /// Should be refactored away in the future. State should always be valid.
@@ -132,14 +132,14 @@ impl MmCtx {
         MmArc (Arc::new (MmCtx {
             conf,
             log,
-            btc_ctx: BtcCtxBox(unsafe {bitcoin_ctx()}),
+            btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
             rpc_socket,
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
-    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx.0}
+    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
     pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
     /// True if the MarketMaker instance needs to stop.
     pub fn is_stopping (&self) -> bool {
@@ -152,14 +152,20 @@ impl MmCtx {
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
-        unsafe {bitcoin_ctx_destroy (self.btc_ctx.0)}
+        unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
     }
 }
 
+// We don't want to send `MmCtx` across threads, it will only obstruct the normal use case
+// (and might result in undefined behavior if there's a C struct or value in the context that is aliased from the various MM threads).
+// Only the `MmArc` is `Send`.
+// Also, `MmCtx` not being `Send` allows us to easily keep various C pointers on the context,
+// which will likely come useful during the gradual port.
+//not-implemented-on-stable// impl !Send for MmCtx {}
+
 pub struct MmArc (Arc<MmCtx>);
 unsafe impl Send for MmArc {}
-unsafe impl Send for BtcCtxBox {}
-unsafe impl Sync for BtcCtxBox {}
+unsafe impl Sync for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
 
@@ -504,10 +510,6 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             None => cb (None)
         }
     }
-}
-
-pub fn random_u32() -> u32 {
-    rand::random::<u32>()
 }
 
 /// Helpers used in the unit and integration tests.
