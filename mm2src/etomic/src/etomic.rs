@@ -1741,7 +1741,7 @@ mod test {
     /// Even if it's not used anywhere
     #[cfg(target_os = "windows")]
     #[no_mangle]
-    pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
+    pub use extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
         unimplemented!()
     }
 
