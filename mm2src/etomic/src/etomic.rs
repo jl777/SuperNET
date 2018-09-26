@@ -1735,13 +1735,14 @@ mod test {
     use libc;
     use std::os::raw::{ c_int };
     use etomic::*;
+    pub use self::spawn_rpc_thread;
 
     /// Dummy spawn_rpc_thread added for Windows tests to pass
     /// Seems like Windows linker requires the method to be implemented
     /// Even if it's not used anywhere
     #[cfg(target_os = "windows")]
     #[no_mangle]
-    pub use extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
+    pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
         unimplemented!()
     }
 
