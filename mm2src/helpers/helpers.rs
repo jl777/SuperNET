@@ -164,6 +164,8 @@ impl Drop for MmCtx {
 //not-implemented-on-stable// impl !Send for MmCtx {}
 
 pub struct MmArc (Arc<MmCtx>);
+// NB: Explicit `Send` and `Sync` marks here should become unnecessary later,
+// after we finish the initial port and replace the C values with the corresponding Rust alternatives.
 unsafe impl Send for MmArc {}
 unsafe impl Sync for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
