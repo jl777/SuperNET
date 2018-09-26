@@ -24,6 +24,15 @@
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
+
+#ifndef _WIN32
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
+#endif
+#else
+#define MSG_NOSIGNAL	0
+#endif
+
 #include "DEXstats.h"
 extern uint32_t DOCKERFLAG;
 extern char LP_myipaddr[];

@@ -45,14 +45,14 @@ use std::os::raw::{c_char, c_void};
 use std::path::Path;
 use std::str;
 use std::str::from_utf8;
-use std::sync::{Mutex};
+use std::sync::{RwLock};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use super::{CJSON};
 
 lazy_static! {
     /// MmCtx contexts hash map
-    pub static ref MM_CTX_MAP: Mutex<HashMap<u32, MmArc>> = Mutex::new(HashMap::new());
+    pub static ref MM_CTX_MAP: RwLock<HashMap<u32, MmArc>> = RwLock::new(HashMap::new());
 }
 /*
 #include <stdio.h>
@@ -1759,7 +1759,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     };
     let passphrase = try_s! (CString::new (unwrap! (ctx.conf()["passphrase"].as_str())));
     let ctx_id = random_u32();
-    (*MM_CTX_MAP.lock().unwrap()).insert(ctx_id, ctx.clone());
+    (*MM_CTX_MAP.write().unwrap()).insert(ctx_id, ctx.clone());
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0,
         ctx.btc_ctx() as *mut c_void, ctx_id)};
     unwrap! (prices.join());

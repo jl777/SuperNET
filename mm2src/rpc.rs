@@ -187,7 +187,7 @@ impl Service for RpcService {
         }
         let body_f = request.into_body().concat2();
 
-        let ctx = unwrap!(MM_CTX_MAP.lock().unwrap().get(&self.mm_ctx_id)).clone();;
+        let ctx = unwrap!(MM_CTX_MAP.read().unwrap().get(&self.mm_ctx_id)).clone();;
         let remote_sock = self.remote_sock.clone();
         Box::new(body_f.then(move |body| -> Result<Response<Body>, hyper::Error> {
             let body_vec = unwrap_or_err_response!(
@@ -234,7 +234,7 @@ impl Service for RpcService {
 pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
     unwrap!(
         thread::Builder::new().name("mm_rpc".into()).spawn(move || {
-            let ctx = unwrap!(MM_CTX_MAP.lock().unwrap().get(&mm_ctx_id)).clone();
+            let ctx = unwrap!(MM_CTX_MAP.read().unwrap().get(&mm_ctx_id)).clone();
             let my_socket = ctx.get_socket().clone();
 
             let listener = unwrap!(

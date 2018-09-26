@@ -77,6 +77,9 @@ pub const MM_VERSION: &'static str = env! ("MM_VERSION");
 
 /// Created by `void *bitcoin_ctx()`.
 pub enum BitcoinCtx {}
+
+pub struct BtcCtxBox(*mut BitcoinCtx);
+
 extern "C" {
     pub fn bitcoin_ctx() -> *mut BitcoinCtx;
     fn bitcoin_ctx_destroy (ctx: *mut BitcoinCtx);
@@ -111,7 +114,7 @@ pub struct MmCtx {
     /// Human-readable log and status dashboard.
     pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
-    btc_ctx: *mut BitcoinCtx,
+    btc_ctx: BtcCtxBox,
     /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
     ///
     /// Should be refactored away in the future. State should always be valid.
@@ -129,14 +132,14 @@ impl MmCtx {
         MmArc (Arc::new (MmCtx {
             conf,
             log,
-            btc_ctx: unsafe {bitcoin_ctx()},
+            btc_ctx: BtcCtxBox(unsafe {bitcoin_ctx()}),
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
             rpc_socket,
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
-    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
+    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx.0}
     pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
     /// True if the MarketMaker instance needs to stop.
     pub fn is_stopping (&self) -> bool {
@@ -149,12 +152,14 @@ impl MmCtx {
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
-        unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
+        unsafe {bitcoin_ctx_destroy (self.btc_ctx.0)}
     }
 }
 
 pub struct MmArc (Arc<MmCtx>);
 unsafe impl Send for MmArc {}
+unsafe impl Send for BtcCtxBox {}
+unsafe impl Sync for BtcCtxBox {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
 

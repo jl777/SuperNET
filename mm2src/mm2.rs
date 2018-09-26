@@ -94,7 +94,6 @@ use std::process::exit;
 use std::ptr::{null};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
-use std::sync::{Mutex, RwLock};
 use std::thread::sleep;
 use std::time::Duration;
 use std::str;
