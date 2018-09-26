@@ -50,7 +50,6 @@ use std::net::{SocketAddr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::{null_mut, read_volatile};
-use std::os::raw::{c_char};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
