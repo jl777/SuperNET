@@ -19,10 +19,3 @@ echo [#3] Build MM1 and MM2.
 
 rem Increased verbosity here allows us to see the MM1 CMake logs.
 cargo build -vv
-
-echo [#4] Run the MM2 tests.
-
-cargo test
-
-echo [#5] Run the Etomic tests.
-cargo test --package etomicrs
