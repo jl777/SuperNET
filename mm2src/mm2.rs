@@ -250,7 +250,7 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>>> DEX stats ")));
 
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
         let electrum_beer = unwrap! (mm.rpc (json! ({
@@ -325,7 +325,7 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>>> DEX stats ")));
 
         let no_method = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
@@ -469,9 +469,9 @@ mod test {
                         }
                     };
 
-                    if now_float() - started > 20. {
+                    if now_float() - started > 60. {
                         println! ("--- mm2.log ---\n{}\n", unwrap! (mm.log_as_utf8()));
-                        panic! ("Test didn't pass withing the 20 seconds timeframe. mm_state={:?}", mm_state)}
+                        panic! ("Test didn't pass withing the 60 seconds timeframe. mm_state={:?}", mm_state)}
                     sleep (Duration::from_millis (20))
                 }
             }

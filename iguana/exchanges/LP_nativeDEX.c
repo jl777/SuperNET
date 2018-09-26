@@ -1459,9 +1459,11 @@ void LP_mutex_init() {
     portable_mutex_init(&LP_gtcmutex);
 }
 
-void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson, void* ctx, uint32_t mm_ctx_id)
+void* r_btc_ctx(uint32_t mm_ctx_id);
+
+void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson, uint32_t mm_ctx_id)
 {
-    long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0;
+    long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void* ctx;
     if ( IAMLP != 0 )
     {
         G.netid = juint(argjson,"netid");
@@ -1489,6 +1491,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
             }
         } else printf("error getting pubsock %d\n",LP_mypubsock);
         printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,LP_mypubsock);
+        if ((ctx = r_btc_ctx(mm_ctx_id)) == 0) return;
         LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     }
     if ( (coinsjson= jobj(argjson,"coins")) == 0 )
@@ -1507,6 +1510,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
         printf("no coins object or coins.json file, must abort\n");
         exit(-1);
     }
+    if ((ctx = r_btc_ctx(mm_ctx_id)) == 0) return;
     LP_initcoins(ctx,LP_mypubsock,coinsjson);
     RPC_port = myport;
     G.waiting = 1;
@@ -1549,6 +1553,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
         printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
         exit(-1);
     }
+    if ((ctx = r_btc_ctx(mm_ctx_id)) == 0) return;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
     {
         printf("error launching command_rpcloop for ctx.%p\n",ctx);
@@ -1618,6 +1623,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
             sleep(1);
             continue;
         }
+        if ((ctx = r_btc_ctx(mm_ctx_id)) == 0) return;
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,LP_mypubsock) != 0 )
             nonz++;
         if ( IAMLP != 0 && didremote == 0 && LP_cmdcount > 0 )
@@ -1634,7 +1640,6 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
 #endif
     printf("marketmaker exiting in 5 seconds\n");
     sleep(5);
-    exit(0);
 }
 
 #ifdef FROM_JS

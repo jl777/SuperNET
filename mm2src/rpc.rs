@@ -26,7 +26,6 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use hyper::header::{HeaderValue, CONTENT_TYPE};
-use lp_native_dex::MM_CTX_MAP;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
@@ -183,9 +182,11 @@ impl Service for RpcService {
         }
         let body_f = request.into_body().concat2();
 
-        let ctx = unwrap!(MM_CTX_MAP.read().unwrap().get(&self.mm_ctx_id)).clone();;
         let remote_sock = self.remote_sock.clone();
+        let mm_ctx_id = self.mm_ctx_id;
         Box::new(body_f.then(move |body| -> Result<Response<Body>, hyper::Error> {
+            let ctx = unwrap_or_err_response! (MmArc::from_ffi_handler (mm_ctx_id), 500, "No context");
+
             let body_vec = unwrap_or_err_response!(
                 body,
                 400,
@@ -230,7 +231,7 @@ impl Service for RpcService {
 pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
     unwrap!(
         thread::Builder::new().name("mm_rpc".into()).spawn(move || {
-            let ctx = unwrap!(MM_CTX_MAP.read().unwrap().get(&mm_ctx_id)).clone();
+            let ctx = unwrap! (MmArc::from_ffi_handler (mm_ctx_id), "No context");
             let my_socket = ctx.get_socket().clone();
 
             let listener = unwrap!(
