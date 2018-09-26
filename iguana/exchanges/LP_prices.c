@@ -28,21 +28,6 @@ struct LP_orderbookentry
     char coinaddr[64];
 };
 
-struct LP_priceinfo
-{
-    char symbol[68];
-    uint64_t coinbits;
-    int32_t ind,pad;
-    double diagval,high[2],low[2],last[2],bid[2],ask[2];
-    double relvals[LP_MAXPRICEINFOS];
-    double myprices[2][LP_MAXPRICEINFOS];
-    double minprices[LP_MAXPRICEINFOS]; // autoprice
-    double fixedprices[LP_MAXPRICEINFOS]; // fixedprices
-    double buymargins[LP_MAXPRICEINFOS];
-    double sellmargins[LP_MAXPRICEINFOS];
-    double offsets[LP_MAXPRICEINFOS];
-    double factors[LP_MAXPRICEINFOS];
-} LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
 struct LP_cacheinfo

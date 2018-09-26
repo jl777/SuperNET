@@ -76,8 +76,8 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
-use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, stack_trace, stack_trace_frame, BitcoinCtx, MM_VERSION};
-use helpers::lp::{cJSON, _bits256 as bits256};
+use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, stack_trace, stack_trace_frame, BitcoinCtx, CJSON, MM_VERSION};
+use helpers::lp::{_bits256 as bits256};
 
 use rand::random;
 
@@ -91,10 +91,10 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::mem::{zeroed};
 use std::path::Path;
 use std::process::exit;
-use std::ptr::{null, null_mut};
+use std::ptr::{null};
 use std::str::from_utf8_unchecked;
 use std::slice::from_raw_parts;
-use std::sync::{Mutex};
+use std::sync::{Mutex, RwLock};
 use std::thread::sleep;
 use std::time::Duration;
 use std::str;
@@ -107,35 +107,6 @@ mod rpc;
 pub use rpc::spawn_rpc_thread;
 
 use crash_reports::init_crash_reports;
-
-/// RAII and MT wrapper for `cJSON`.
-#[allow(dead_code)]
-pub struct CJSON (*mut cJSON);
-#[allow(dead_code)]
-impl CJSON {
-    fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
-        lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
-        let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
-        let c_json = unsafe {lp::cJSON_Parse (json)};
-        if c_json == null_mut() {
-            let err = unsafe {lp::cJSON_GetErrorPtr()};
-            let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
-            ERR! ("Can't parse JSON, error: {}", err)
-        } else {
-            Ok (CJSON (c_json))
-        }
-    }
-    fn from_str (json: &str) -> Result<CJSON, String> {
-        let cs = try_s! (CString::new (json));
-        CJSON::from_zero_terminated (cs.as_ptr())
-    }
-}
-impl Drop for CJSON {
-    fn drop (&mut self) {
-        unsafe {lp::cJSON_Delete (self.0)}
-        self.0 = null_mut()
-    }
-}
 
 /*
 #include "LP_nativeDEX.c"
@@ -321,6 +292,8 @@ mod test {
         })));
         assert_eq! (autoprice.0, StatusCode::OK);
         unwrap! (mm.wait_for_log (33., &|log| log.contains ("AUTOPRICE numautorefs")));
+        unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
 
         // Checking the autopricing logs here TDD-helps us with the porting effort.
         //
@@ -330,6 +303,10 @@ mod test {
         sleep (Duration::from_secs (9));
 
         unwrap! (mm.stop());
+
+        // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
+        // (For this to happen in the integration tests we need the `LPinit` to stop faster).
+        //TODO// unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] drop!")));
     }
 
     /// Integration test for RPC server.

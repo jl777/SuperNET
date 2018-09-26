@@ -14,6 +14,8 @@ extern crate backtrace;
 extern crate chrono;
 #[macro_use]
 extern crate duct;
+#[macro_use]
+extern crate fomat_macros;
 extern crate futures;
 #[macro_use]
 extern crate gstuff;
@@ -30,24 +32,28 @@ extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
 
+pub mod log;
+
 use futures::Future;
 use futures::sync::oneshot::{self, Receiver};
-use gstuff::any_to_str;
+use gstuff::{any_to_str, now_float};
 use hyper::{Body, Client, Request, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::{malloc, free};
+use serde_json::{Value as Json};
 use std::fmt;
-use std::ffi::{CStr};
+use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
 use std::io::Write;
-use std::mem::{forget, uninitialized, zeroed};
+use std::mem::{forget, size_of, uninitialized, zeroed};
 use std::net::{SocketAddr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
-use std::ptr::read_volatile;
+use std::ptr::{null_mut, read_volatile};
+use std::os::raw::{c_char};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::os::raw::{c_char, c_void};
 use std::str;
 use tokio_core::reactor::Remote;
@@ -101,6 +107,10 @@ impl fmt::Display for bits256 {
 /// state modifications
 /// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
 pub struct MmCtx {
+    /// MM command-line configuration.
+    conf: Json,
+    /// Human-readable log and status dashboard.
+    pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
     btc_ctx: *mut BitcoinCtx,
     /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
@@ -115,8 +125,11 @@ pub struct MmCtx {
     rpc_socket: SocketAddr,
 }
 impl MmCtx {
-    pub fn new(rpc_socket: SocketAddr) -> MmArc {
+    pub fn new (conf: Json, rpc_socket: SocketAddr) -> MmArc {
+        let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {
+            conf,
+            log,
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
@@ -126,7 +139,13 @@ impl MmCtx {
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
     pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
-    pub fn is_stopping (&self) -> bool {self.stop.load (Ordering::Relaxed)}
+    /// True if the MarketMaker instance needs to stop.
+    pub fn is_stopping (&self) -> bool {
+        if unsafe {lp::LP_STOP_RECEIVED != 0} {return true}
+        self.stop.load (Ordering::Relaxed)
+    }
+    /// MM command-line configuration.
+    pub fn conf (&self) -> &Json {&self.conf}
     pub fn get_socket (&self) -> &SocketAddr {&self.rpc_socket}
 }
 impl Drop for MmCtx {
@@ -139,6 +158,33 @@ pub struct MmArc (Arc<MmCtx>);
 unsafe impl Send for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
+
+/// RAII and MT wrapper for `cJSON`.
+pub struct CJSON (pub *mut lp::cJSON);
+impl CJSON {
+    pub fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
+        lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
+        let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
+        let c_json = unsafe {lp::cJSON_Parse (json)};
+        if c_json == null_mut() {
+            let err = unsafe {lp::cJSON_GetErrorPtr()};
+            let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
+            ERR! ("Can't parse JSON, error: {}", err)
+        } else {
+            Ok (CJSON (c_json))
+        }
+    }
+    pub fn from_str (json: &str) -> Result<CJSON, String> {
+        let cs = try_s! (CString::new (json));
+        CJSON::from_zero_terminated (cs.as_ptr())
+    }
+}
+impl Drop for CJSON {
+    fn drop (&mut self) {
+        unsafe {lp::cJSON_Delete (self.0)}
+        self.0 = null_mut()
+    }
+}
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -287,7 +333,7 @@ pub fn init() {
     black_box (&*trace_name_buf());
 }
 
-type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> + Send>;
+type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> + Send + 'static>;
 
 /// Executes a Hyper request, returning the response status, headers and body.
 pub fn slurp_req (request: Request<Body>) -> SlurpFut {
@@ -353,6 +399,107 @@ pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>
 
         Ok(result)
     }))
+}
+
+/// A closure that would (re)start a `Future` to synchronize with an external resource in `RefreshedExternalResource`.
+type ExternalResourceSync<R> = Box<Fn()->Box<Future<Item=R,Error=String> + Send + 'static> + Send + 'static>;
+
+/// Memory space accessible to the `Future` tail spawned by the `RefreshedExternalResource`.
+struct RerShelf<R: Send + 'static> {
+    /// The time when the `Future` generated by `sync` has filled this shell.
+    time: f64,
+    /// Results of the `sync`-generated `Future`.
+    result: Result<R, String>
+}
+
+/// Often we have an external resource that we need a fresh copy of.
+/// (Or the other way around, when there is an external resource that we need to periodically update or synchronize with).
+/// Particular property of such resources is that they might be unavailable,
+/// might be slow due to resource overload or network congestion,
+/// need to be resynchronized periodically
+/// while being nice to the resource by maintaining rate limits.
+///
+/// Some of these resources are naturally singleton.
+/// For exampe, we have only one "bittrex.com" and we need not multiple copies of its market data withing the process.
+///
+/// This helper here will organize the handling of such synchronization, periodically starting the synchronization `Future`,
+/// restarting it on timeout, maintaining rate limits.
+pub struct RefreshedExternalResource<R: Send + 'static> {
+    sync: Mutex<ExternalResourceSync<R>>,
+    /// Rate limit in the form of the desired number of seconds between the syncs.
+    every_n_sec: f64,
+    /// Start a new `Future` and drop the old one if it fails to finish after this number of seconds.
+    timeout_sec: f64,
+    /// The time (in f64 seconds) when we last (re)started the `sync`.
+    /// We want `AtomicU64` but it isn't yet stable.
+    last_start: AtomicUsize,
+    shelf: Arc<Mutex<Option<RerShelf<R>>>>
+}
+impl<R: Send + 'static> RefreshedExternalResource<R> {
+    /// New instance of the external resource tracker.
+    ///
+    /// * `every_n_sec` - Desired number of seconds between the syncs.
+    /// * `timeout_sec` - Start a new `sync` and drop the old `Future` if it fails to finish after this number of seconds.
+    ///                   Automatically bumped to be at least `every_n_sec` large.
+    /// * `sync` - Generates the `Future` that should synchronize with the external resource in background.
+    ///            Note that we'll tail the `Future`, polling the tail from the shared asynchronous reactor;
+    ///            *spawn* the `Future` onto a different reactor if the shared asynchronous reactor is not the best option.
+    pub fn new (every_n_sec: f64, timeout_sec: f64, sync: ExternalResourceSync<R>) -> RefreshedExternalResource<R> {
+        assert_eq! (size_of::<usize>(), 8);
+        RefreshedExternalResource {
+            sync: Mutex::new (sync),
+            every_n_sec,
+            timeout_sec: timeout_sec .max (every_n_sec),
+            last_start: AtomicUsize::new (0f64.to_bits() as usize),
+            shelf: Arc::new (Mutex::new (None))
+        }
+    }
+
+    /// Performs the maintenance operations necessary to periodically refresh the resource.
+    pub fn tick (&self) -> Result<(), String> {
+        let now = now_float();
+        let last_start = f64::from_bits (self.last_start.load (Ordering::Relaxed) as u64);
+        let last_finish = match * try_s! (self.shelf.lock()) {Some (ref rer_shelf) => rer_shelf.time, None => 0.};
+
+        if now - last_start > self.timeout_sec || (last_finish > last_start && now - last_start > self.every_n_sec) {
+            let sync = try_s! (self.sync.lock());
+            let f = (*sync)();
+            let shelf_tx = self.shelf.clone();
+            let f = f.then (move |result| -> Result<(), ()> {
+                let mut shelf = match shelf_tx.lock() {Ok (l) => l, Err (err) => {
+                    eprintln! ("RefreshedExternalResource::tick] Can't lock the shelf: {}", err);
+                    return Err(())
+                }};
+                let shelf_time = match *shelf {Some (ref r) => r.time, None => 0.};
+                if now > shelf_time {  // This check prevents out-of-order shelf updates.
+                    *shelf = Some (RerShelf {
+                        time: now_float(),
+                        result
+                    })
+                }
+                Ok(())
+            });
+            CORE.spawn (move |_| f);  // Polls `f` in background.
+        }
+
+        Ok(())
+    }
+
+    /// The time, in seconds since UNIX epoch, when the refresh `Future` resolved.
+    pub fn last_finish (&self) -> Result<f64, String> {
+        Ok (match * try_s! (self.shelf.lock()) {
+            Some (ref rer_shelf) => rer_shelf.time,
+            None => 0.
+        })
+    }
+
+    pub fn with_result<V, F: Fn (Option<&Result<R, String>>) -> Result<V, String>> (&self, cb: F) -> Result<V, String> {
+        let shelf = try_s! (self.shelf.lock());
+        match *shelf {
+            Some (ref rer_shelf) => cb (Some (&rer_shelf.result)),
+            None => cb (None)
+        }
+    }
 }
 
 pub fn random_u32() -> u32 {
@@ -496,6 +643,7 @@ pub mod for_tests {
             try_s! (fs::create_dir (&folder));
             try_s! (fs::create_dir (folder.join ("DB")));
             let log_path = folder.join ("mm2.log");
+            conf["log"] = unwrap! (log_path.to_str()) .into();
 
             // If `LOCAL_THREAD_MM` is set to `1`
             // then instead of spawning a process we start the MarketMaker in a local thread,
@@ -530,7 +678,7 @@ pub mod for_tests {
                 sleep (Duration::from_millis (ms));
             }
         }
-        /// Sends the JSON payload to the locally running MM and returns it's reply.
+        /// Invokes the locally running MM and returns it's reply.
         pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String), String> {
             let payload = try_s! (json::to_string (&payload));
             let uri = format! ("http://{}:7783", self.ip);

@@ -133,6 +133,7 @@ fn generate_bindings() {
         ],
         "c_headers/LP_include.rs",
         [
+            // functions
             "cJSON_Parse",
             "cJSON_GetErrorPtr",
             "cJSON_Delete",
@@ -145,14 +146,26 @@ fn generate_bindings() {
             "LP_mutex_init",
             "LP_tradebots_timeslice",
             "stats_JSON",
+            "LP_priceinfofind",
+            "prices_loop",
+            "LP_autoprice_iter",
+            "LP_portfolio",
+            "LP_coinfind",
+            "LP_portfolio_trade",
+            "LP_portfolio_order",
+            "LP_pricesparse",
+            "LP_ticker",
             "LP_queuecommand",
         ]
             .iter(),
+        // types
         ["_bits256", "cJSON"].iter(),
         [
+            // defines
             "bitcoind_RPC_inittime",
             "GLOBAL_DBDIR",
             "DOCKERFLAG",
+            "USERHOME",
             "LP_profitratio",
             "LP_RPCPORT",
             "LP_MAXPRICEINFOS",
@@ -163,7 +176,9 @@ fn generate_bindings() {
             "LP_fixed_pairport",
             "LP_myipaddr",
             "LP_myipaddr_from_command_line",
-            "USERHOME",
+            "LP_autoprices",
+            "num_LP_autorefs",
+            "LP_STOP_RECEIVED",
             "IPC_ENDPOINT",
         ]
             .iter(),

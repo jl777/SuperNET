@@ -18,11 +18,28 @@
 //  marketmaker
 //
 
+extern crate futures;
+#[macro_use]
+extern crate gstuff;
 extern crate helpers;
+extern crate hyper;
+#[macro_use]
+extern crate lazy_static;
+extern crate libc;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate unwrap;
 
-use helpers::{lp, MmArc};
-use std::os::raw::c_void;
-use std::sync::atomic::Ordering;
+use gstuff::now_ms;
+use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
+use hyper::{StatusCode, HeaderMap};
+use serde_json::{self as json, Value as Json};
+use std::ffi::{CStr, CString};
+use std::mem::{zeroed};
+use std::os::raw::{c_char, c_void};
+use std::ptr::null_mut;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::thread::sleep;
 
@@ -483,86 +500,85 @@ int32_t LP_autoref_clear(char *base,char *rel)
     return(-1);
 }
 
-void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
-{
-    static cJSON *tickerjson; static uint32_t lasttime;
-    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,ltc_btc,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
-    printf("AUTOPRICE numautorefs.%d\n",num_LP_autorefs);
-    fflush(stdout);
-    if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
-    {
-        printf("trex error getting marketsummaries\n");
-        sleep(40);
-        //return;
+*/
+fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
+    // TODO: Figure out what this means and whether we need to log it.
+    println! ("AUTOPRICE numautorefs.{}", unsafe {lp::num_LP_autorefs});
+
+    // Natural singletons (there's only one "bittrex.com" in the internet).
+    lazy_static! {
+        static ref BITTREX_MARKETSUMMARIES: RefreshedExternalResource<(StatusCode, HeaderMap, Vec<u8>)> = RefreshedExternalResource::new (
+            30., 40.,
+            Box::new (|| slurp_url ("https://bittrex.com/api/v1.1/public/getmarketsummaries")
+        ));
+        static ref CRYPTOPIA_MARKETS: RefreshedExternalResource<(StatusCode, HeaderMap, Vec<u8>)> = RefreshedExternalResource::new (
+            30., 40.,
+            Box::new (|| slurp_url ("https://www.cryptopia.co.nz/api/GetMarkets")
+        ));
     }
-    else
-    {
-        nxtkmd = LP_pricesparse(ctx,1,retstr,btcpp);
-        free(retstr);
-    }
-    if ( (retstr= issue_curlt("https://www.cryptopia.co.nz/api/GetMarkets",LP_HTTP_TIMEOUT*10)) == 0 )
-    {
-        printf("cryptopia error getting marketsummaries\n");
-        sleep(40);
-        //return;
-    }
-    else
-    {
-        LP_pricesparse(ctx,0,retstr,btcpp);
-        free(retstr);
-    }
-    if ( (kmdpp= LP_priceinfofind("KMD")) != 0 )
-    {
-        for (i=0; i<32; i++)
-        {break;
-            if ( (fiatpp= LP_priceinfofind(CURRENCIES[i])) != 0 )
-            {
-                if ( (retjson= LP_paxprice(CURRENCIES[i])) != 0 )
-                {
-                    //printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
-                    price = jdouble(retjson,"price");
-                    LP_autopriceset(-1,ctx,1,fiatpp,kmdpp,price,0,0);
-                    LP_autopriceset(-1,ctx,-1,kmdpp,fiatpp,price,0,0);
-                    free_json(retjson);
-                }
-            }
+
+    try_s! (BITTREX_MARKETSUMMARIES.tick());
+    try_s! (CRYPTOPIA_MARKETS.tick());
+
+    let status = ctx.log.claim_status (&[&"portfolio", &("bittrex", "waiting")]);
+    let (nxtkmd, waiting_for_markets) = if try_s! (BITTREX_MARKETSUMMARIES.last_finish()) == 0.0 {
+        match status {
+            None => ctx.log.status (&[&"portfolio", &("bittrex", "waiting")], "Waiting for Bittrex market summaries..."),
+            Some (status) => status
+        } .detach();
+        (0., true)
+    } else {
+        match BITTREX_MARKETSUMMARIES.with_result (|result| {
+            let result = try_s! (result.ok_or ("!result"));
+            let result = try_s! (result);
+            let retstr = try_s! (CString::new (result.2.clone()));
+            Ok (unsafe {lp::LP_pricesparse (ctx.btc_ctx() as *mut c_void, 1, retstr.as_ptr() as *mut c_char, btcpp)})
+        }) {
+            Ok (nxtkmd) => {status.map (|s| s.append (" Ok.")); (nxtkmd, false)},
+            Err (err) => {status.map (|s| s.append (&format! (" Error: {}", err))); (0., true)}
         }
-    }
-    if ( 0 && nxtkmd > SMALLVAL )
-    {
-        for (i=0; i<sizeof(assetids)/sizeof(*assetids); i++)
-        {
-            if ( (nxtpp= LP_priceinfofind(assetids[i][1])) != 0 )
-            {
-                price = 0.;
-                bidsatoshis = asksatoshis = 0;
-                if ( (retjson= LP_assethbla(assetids[i][0])) != 0 )
-                {
-                    if ( (bid= jobj(retjson,"bid")) != 0 && (ask= jobj(retjson,"ask")) != 0 )
-                    {
-                        bidsatoshis = j64bits(bid,"priceNQT") * atoi(assetids[i][2]);
-                        asksatoshis = j64bits(ask,"priceNQT") * atoi(assetids[i][2]);
-                        if ( bidsatoshis != 0 && asksatoshis != 0 )
-                            price = 0.5 * dstr(bidsatoshis + asksatoshis) * nxtkmd;
-                    }
-                    LP_autopriceset(-1,ctx,1,nxtpp,kmdpp,price,0,0);
-                    LP_autopriceset(-1,ctx,-1,kmdpp,nxtpp,price,0,0);
-                    //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
-                    free_json(retjson);
-                }
-            }
+    };
+
+    let status = ctx.log.claim_status (&[&"portfolio", &("cryptopia", "waiting")]);
+    let waiting_for_markets = if try_s! (CRYPTOPIA_MARKETS.last_finish()) == 0.0 {
+        match status {
+            None => ctx.log.status (&[&"portfolio", &("cryptopia", "waiting")], "Waiting for Cryptopia markets..."),
+            Some (status) => status
+        } .detach();
+        true
+    } else {
+        match CRYPTOPIA_MARKETS.with_result (|result| {
+            let result = try_s! (result.ok_or ("!result"));
+            let result = try_s! (result);
+            let retstr = try_s! (CString::new (result.2.clone()));
+            unsafe {lp::LP_pricesparse (ctx.btc_ctx() as *mut c_void, 0, retstr.as_ptr() as *mut c_char, btcpp)};
+            Ok(())
+        }) {
+            Ok(()) => {status.map (|s| s.append (" Ok.")); waiting_for_markets},
+            Err (err) => {status.map (|s| s.append (&format! (" Error: {}", err))); true}
         }
+    };
+
+    if waiting_for_markets {return Ok(())}
+
+    let kmdpp = unsafe {lp::LP_priceinfofind (b"KMD\0".as_ptr() as *mut c_char)};
+
+    // `LP_ticker` does something with the swaps and it seems we only want to do this every 60 seconds.
+    // (We want `AtomicU64` for `LAST_TIME` but it isn't yet stable).
+    thread_local! {static LAST_TIME: AtomicUsize = AtomicUsize::new (now_ms() as usize);}
+    let tick = LAST_TIME.with (|last_time| {
+        let now = (now_ms() / 1000) as usize;
+        if last_time.load (Ordering::Relaxed) + 60 < now {
+            last_time.store (now, Ordering::Relaxed);
+            true
+        } else {false}
+    });
+    if tick {
+        let cs = unsafe {lp::LP_ticker (b"\0".as_ptr() as *mut c_char, b"\0".as_ptr() as *mut c_char)};
+        if cs != null_mut() {unsafe {libc::free (cs as *mut libc::c_void)}}
     }
-    if ( time(NULL) > lasttime+60 )
-    {
-        if ( tickerjson != 0 )
-            free_json(tickerjson);
-        if ( (retstr= LP_ticker("","")) != 0 )
-        {
-            tickerjson = cJSON_Parse(retstr);
-            free(retstr);
-        }
-    }
+
+    /*
     kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
     bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
     ltc_btc = LP_CMCbtcprice(&bch_usd,"litecoin");
@@ -663,7 +679,13 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             }
         }
     }
+    */
+    if unsafe {lp::LP_autoprices} != 0 {
+        unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp)}
+    }
+    Ok(())
 }
+/*
 
 void LP_autoprices_update(char *method,char *base,double basevol,char *rel,double relvol)
 {
@@ -908,57 +930,98 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 */
 /// A thread driving the price and portfolio activity.
 pub fn prices_loop (ctx: MmArc) {
+    let mut btc_wait_status = None;
+    let mut trades: [lp::LP_portfoliotrade; 256] = unsafe {zeroed()};
+
     loop {
         if ctx.is_stopping() {break}
 
         if !ctx.initialized.load (Ordering::Relaxed) {sleep (Duration::from_millis (100)); continue}
         unsafe {lp::LP_tradebots_timeslice (ctx.btc_ctx() as *mut c_void)};
 
-        extern "C" {fn prices_loop (ctx: *mut c_void);}
-        unsafe {prices_loop (ctx.btc_ctx() as *mut c_void)}
-    }
-}
-/*
-        LP_millistats_update(&prices_loop_stats);
-        LP_tradebots_timeslice(ctx);
-        if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
-        {
-            printf("prices_loop BTC not in LP_priceinfofind\n");
-            sleep(60);
-            continue;
+        let btcpp = unsafe {lp::LP_priceinfofind (b"BTC\0".as_ptr() as *mut c_char)};
+        if btcpp == null_mut() {
+            if btc_wait_status.is_none() {btc_wait_status = Some (ctx.log.status (&[&"portfolio"], "Waiting for BTC price..."))}
+            sleep (Duration::from_millis (100));
+            continue
+        } else {
+            // Updates the dashboard entry and moves it into the log.
+            btc_wait_status.take().map (|s| s.append (" Done."));
         }
-        if ( LP_autoprices != 0 )
-            LP_autoprice_iter(ctx,btcpp);
-        if ( (retstr= LP_portfolio()) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
-                {
-                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1,"portfolio") < 0 )
-                    {
-                        array = jarray(&m,retjson,"portfolio");
-                        if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
-                        {
-                            for (i=0; i<n; i++)
-                            {
-                                if ( strcmp(trades[i].buycoin,buycoin) != 0 || strcmp(trades[i].sellcoin,sellcoin) != 0 )
-                                {
-                                    buy = LP_coinfind(trades[i].buycoin);
-                                    sell = LP_coinfind(trades[i].sellcoin);
-                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0,"portfolio") == 0 )
-                                        break;
-                                }
+
+        if let Err (err) = lp_autoprice_iter (&ctx, btcpp) {
+            ctx.log.log ("🤯", &[&"portfolio"], &format! ("!lp_autoprice_iter: {}", err));
+            // Keep trying, maybe the error will go away. But wait a bit in order not to overflow the log.
+            sleep (Duration::from_secs (2));
+            continue
+        }
+
+        // TODO: `LP_portfolio` should return a `Json` (or a serializable structure) and not a string.
+        let portfolio_cs = unsafe {lp::LP_portfolio()};
+        if portfolio_cs != null_mut() {
+            let portfolio_s = unwrap! (unsafe {CStr::from_ptr (portfolio_cs)} .to_str());
+            let portfolio: Json = unwrap! (json::from_str (portfolio_s));
+            fn find_coin (coin: Option<&str>) -> Option<(*mut lp::iguana_info, String)> {
+                let coin = match coin {Some (c) => c, None => return None};
+                let coin_cs = unwrap! (CString::new (coin));
+                let coin_inf = unsafe {lp::LP_coinfind (coin_cs.as_ptr() as *mut c_char)};
+                if coin_inf == null_mut() {return None}
+                if unsafe {(*coin_inf).inactive} != 0 {return None}
+                Some ((coin_inf, coin.into()))
+            }
+            let buy = find_coin (portfolio["buycoin"].as_str());
+            let sell = find_coin (portfolio["sellcoin"].as_str());
+            if let (Some ((buy, buycoin)), Some ((sell, sellcoin))) = (buy, sell) {
+                let mut request_id = 0;
+                let mut quote_id = 0;
+                let rc = unsafe {lp::LP_portfolio_trade (
+                    ctx.btc_ctx() as *mut c_void,
+                    &mut request_id,
+                    &mut quote_id,
+                    buy,
+                    sell,
+                    (*sell).relvolume,
+                    1,
+                    b"portfolio\0".as_ptr() as *mut c_char)};
+
+                let entries = portfolio["portfolio"].as_array();
+                if rc == -1 && entries.is_some() {
+                    let entries = unwrap! (json::to_string (unwrap! (entries)));
+                    let entries = unwrap! (CJSON::from_str (&entries));
+                    let n = unsafe {lp::LP_portfolio_order (
+                        trades.as_mut_ptr(),
+                        trades.len() as i32,
+                        entries.0
+                    ) as usize};
+                    for i in 0..n {
+                        let tbuycoin = unwrap! (unsafe {CStr::from_ptr (trades[i].buycoin.as_ptr())} .to_str());
+                        let tsellcoin = unwrap! (unsafe {CStr::from_ptr (trades[i].sellcoin.as_ptr())} .to_str());
+                        if tbuycoin == buycoin || tsellcoin == sellcoin {
+                            // TODO: See if the extra `find_coin` here is necessary,
+                            // I think `buy` and `sell` already point at the right coins.
+                            let buy = find_coin (Some (&tbuycoin[..]));
+                            let sell = find_coin (Some (&tsellcoin[..]));
+                            if let (Some ((buy, _)), Some ((sell, _))) = (buy, sell) {
+                                let rc = unsafe {lp::LP_portfolio_trade (
+                                    ctx.btc_ctx() as *mut c_void,
+                                    &mut request_id,
+                                    &mut quote_id,
+                                    buy,
+                                    sell,
+                                    (*sell).relvolume,
+                                    0,
+                                    b"portfolio\0".as_ptr() as *mut c_char)};
+                                if rc == 0 {break}
                             }
                         }
                     }
                 }
-                free_json(retjson);
             }
-            free(retstr);
+            unsafe {libc::free (portfolio_cs as *mut libc::c_void)};
         }
-        sleep(30);
+        // TODO: Reduce this sleep to ~100 milliseconds.
+        // If we need to wait then the waiting should be refactored in a way that wouldn't hang the loop.
+        // (MM should be able to stop in a timely manner; stateless?).
+        sleep (Duration::from_secs (30))
     }
 }
-
-*/

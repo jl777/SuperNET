@@ -1577,7 +1577,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     let rpcipvalue = conf["rpcip"].clone();
     let rpcip = rpcipvalue.as_str().unwrap_or("127.0.0.1");
     let ip : IpAddr = try_s!(rpcip.parse());
-    let ctx = MmCtx::new(SocketAddr::new(ip, myport));
+    let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport));
 
 /*
     if ( IAMLP != 0 )
@@ -1757,9 +1757,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         unwrap! (write! (&mut cur, "{}\0", myipaddr));
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
+    let passphrase = try_s! (CString::new (unwrap! (ctx.conf()["passphrase"].as_str())));
     let ctx_id = random_u32();
     (*MM_CTX_MAP.lock().unwrap()).insert(ctx_id, ctx.clone());
-    let passphrase = try_s! (CString::new (unwrap! (conf["passphrase"].as_str())));
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0,
         ctx.btc_ctx() as *mut c_void, ctx_id)};
     unwrap! (prices.join());
@@ -1929,4 +1929,3 @@ void *LP_realloc(void *ptr,uint64_t len)
     return(realloc(ptr,len));
 }*/
 */
-

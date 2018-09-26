@@ -604,6 +604,22 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_
 void HashGroestl(void * buf, const void * pbegin, int len);
 bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
+struct LP_priceinfo
+{
+    char symbol[68];
+    uint64_t coinbits;
+    int32_t ind,pad;
+    double diagval,high[2],low[2],last[2],bid[2],ask[2];
+    double relvals[LP_MAXPRICEINFOS];
+    double myprices[2][LP_MAXPRICEINFOS];
+    double minprices[LP_MAXPRICEINFOS]; // autoprice
+    double fixedprices[LP_MAXPRICEINFOS]; // fixedprices
+    double buymargins[LP_MAXPRICEINFOS];
+    double sellmargins[LP_MAXPRICEINFOS];
+    double offsets[LP_MAXPRICEINFOS];
+    double factors[LP_MAXPRICEINFOS];
+} LP_priceinfos[LP_MAXPRICEINFOS];
+
 // Gradual port temporaries.
 cJSON *LP_NXT_redeems();
 void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,void* ctx,uint32_t mm_ctx_id);
@@ -612,6 +628,15 @@ void unbuffered_output_support(const char* log_path);
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
+struct LP_priceinfo *LP_priceinfofind(char *symbol);
+void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp);
+extern int32_t LP_autoprices, num_LP_autorefs;
+char *LP_portfolio();
+int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui);
+struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
+int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *array);
+double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp);
+char *LP_ticker(char *refbase,char *refrel);
 /**
  * Contains IP bits parsed from the "docker" parameter.  
  * Deprecated (setting IP address should not require Docker,
