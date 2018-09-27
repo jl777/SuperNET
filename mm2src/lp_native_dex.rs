@@ -1754,7 +1754,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         unwrap! (write! (&mut cur, "{}\0", myipaddr));
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
-    let passphrase = try_s! (CString::new (unwrap! (ctx.conf()["passphrase"].as_str())));
+    let passphrase = try_s! (CString::new (unwrap! (ctx.conf["passphrase"].as_str())));
     let ctx_id = try_s! (ctx.ffi_handler());
 
     // `LPinit` currently fails to stop in a timely manner, so we're dropping the `lp_init` context early

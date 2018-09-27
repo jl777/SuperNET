@@ -102,8 +102,7 @@ pub mod crash_reports;
 mod lp_native_dex;
 use lp_native_dex::{lp_init};
 
-mod rpc;
-pub use rpc::spawn_rpc_thread;
+pub mod rpc;
 
 use crash_reports::init_crash_reports;
 
@@ -250,7 +249,8 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+        println! ("test_autoprice] `mm2` log: {:?}.", mm.log_path);
+        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
         let electrum_beer = unwrap! (mm.rpc (json! ({
@@ -290,7 +290,6 @@ mod test {
             "margin": 0.5
         })));
         assert_eq! (autoprice.0, StatusCode::OK);
-        unwrap! (mm.wait_for_log (33., &|log| log.contains ("AUTOPRICE numautorefs")));
         unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
 
@@ -299,13 +298,11 @@ mod test {
         // The logging format is in flux until we start exporting the logs to websocket using them from HyperDEX.
         // And the stdout format can be changed even after that.
 
-        sleep (Duration::from_secs (9));
-
         unwrap! (mm.stop());
 
         // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
-        // (For this to happen in the integration tests we need the `LPinit` to stop faster).
-        //TODO// unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] drop!")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("rpc] on_stop, firing shutdown_tx!")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] drop!")));
     }
 
     /// Integration test for RPC server.
@@ -325,7 +322,8 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>>> DEX stats ")));
+        println! ("test_rpc] `mm2` log: {:?}.", mm.log_path);
+        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         let no_method = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
@@ -442,7 +440,7 @@ mod test {
                     mm_state = match mm_state {
                         MmState::Starting => {  // See if MM started.
                             let mm_log = unwrap! (mm.log_as_utf8());
-                            let expected_bind = format! (">>>>>>>>>> DEX stats {}:7783", mm.ip);
+                            let expected_bind = format! (">>>>>>>>> DEX stats {}:7783", mm.ip);
                             if mm_log.contains (&expected_bind) {MmState::Started}
                             else {MmState::Starting}
                         },

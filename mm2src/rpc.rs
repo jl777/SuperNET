@@ -19,8 +19,8 @@
 //
 use futures::{self, Future};
 use futures_cpupool::{CpuPool};
-use helpers::{lp, MmArc, free_c_ptr, CORE};
-use gstuff::{self};
+use gstuff;
+use helpers::{free_c_ptr, lp, MmArc, CORE};
 use hyper::{self, Response, Request, Body, Method};
 use hyper::server::conn::Http;
 use hyper::rt::{Stream};
@@ -32,7 +32,6 @@ use std::net::{SocketAddr};
 use std::ptr::null_mut;
 use std::os::raw::{c_char, c_void};
 use std::str::from_utf8;
-use std::thread;
 use super::CJSON;
 use tokio_core::net::TcpListener;
 
@@ -80,17 +79,17 @@ struct ErrResponse {
 }
 
 struct RpcService {
-    /// The MmCtx id
-    mm_ctx_id: u32,
-    /// The socket of the original request is coming from.
-    remote_sock: SocketAddr,
+    /// Allows us to get the `MmCtx` if it is still around.
+    ctx_ffi_handler: u32,
+    /// The IP and port from whence the request is coming from.
+    remote_addr: SocketAddr,
 }
 
-fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
+fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json)
                         -> Result<String, String> {
     let body_json = unwrap_or_err_msg!(CJSON::from_str(&json.to_string()),
                                         "Couldn't parse request body as json");
-    if !remote_sock.ip().is_loopback() && !lp_valid_remote_method(json["method"].as_str().unwrap()) {
+    if !remote_addr.ip().is_loopback() && !lp_valid_remote_method(json["method"].as_str().unwrap()) {
         return Ok(err_to_json_string("Selected method can be called from localhost only!"));
     }
 
@@ -98,7 +97,7 @@ fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
         if json["queueid"].is_u64() {
             if unsafe { lp::IPC_ENDPOINT == -1 } {
                 return Ok(err_to_json_string("Can't queue the command when ws endpoint is disabled!"));
-            } else if !remote_sock.ip().is_loopback() {
+            } else if !remote_addr.ip().is_loopback() {
                 return Ok(err_to_json_string("Can queue the command from localhost only!"));
             } else {
                 let json_str = json.to_string();
@@ -119,9 +118,9 @@ fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
         }
     }
 
-    let my_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", ctx.get_socket().ip())),
+    let my_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", ctx.rpc_ip_port.ip())),
                                         "Error occurred");
-    let remote_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", remote_sock.ip())),
+    let remote_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", remote_addr.ip())),
                                         "Error occurred");
     let stats_result = unsafe {
         lp::stats_JSON(
@@ -131,7 +130,7 @@ fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
             -1,
             body_json.0,
             remote_ip_ptr.as_ptr() as *mut c_char,
-            ctx.get_socket().port()
+            ctx.rpc_ip_port.port()
         )
     };
 
@@ -182,11 +181,9 @@ impl Service for RpcService {
         }
         let body_f = request.into_body().concat2();
 
-        let remote_sock = self.remote_sock.clone();
-        let mm_ctx_id = self.mm_ctx_id;
+        let remote_addr = self.remote_addr.clone();
+        let ctx_ffi_handler = self.ctx_ffi_handler;
         Box::new(body_f.then(move |body| -> Result<Response<Body>, hyper::Error> {
-            let ctx = unwrap_or_err_response! (MmArc::from_ffi_handler (mm_ctx_id), 500, "No context");
-
             let body_vec = unwrap_or_err_response!(
                 body,
                 400,
@@ -205,20 +202,26 @@ impl Service for RpcService {
                 "Could not parse request body as JSON"
             );
 
-            if !json["method"].is_string() { return Ok(err_response(400, "Method is not set!")); }
+            let ctx = unwrap_or_err_response! (MmArc::from_ffi_handler (ctx_ffi_handler), 500, "No context");
+
+            // NB: We haven't fully ported the "stop" yet.
+            if json["method"].as_str() == Some ("stop") {ctx.stop()}
 
             match json["method"].as_str() {
                 Some("version") => {
                     let process = unwrap_or_err_response!(
-                        rpc_process_json(ctx, remote_sock, json),
+                        rpc_process_json(ctx, remote_addr, json),
                         500,
                         "Error occurred"
                     );
                     Ok(rpc_response(200, process))
                 },
+                None => {
+                    Ok(err_response(400, "Method is not set!"))
+                }
                 _ => {
                     let cpu_pool_fut = CPUPOOL.spawn_fn(move ||
-                        rpc_process_json(ctx, remote_sock, json)
+                        rpc_process_json(ctx, remote_addr, json)
                     );
                     Ok(rpc_response(200, Body::wrap_stream(cpu_pool_fut.into_stream())))
                 }
@@ -228,43 +231,62 @@ impl Service for RpcService {
 }
 
 #[no_mangle]
-pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
-    unwrap!(
-        thread::Builder::new().name("mm_rpc".into()).spawn(move || {
-            let ctx = unwrap! (MmArc::from_ffi_handler (mm_ctx_id), "No context");
-            let my_socket = ctx.get_socket().clone();
+pub extern "C" fn spawn_rpc(ctx_ffi_handler: u32) {
+    // NB: We need to manually handle the incoming connections in order to get the remote IP address,
+    // cf. https://github.com/hyperium/hyper/issues/1410#issuecomment-419510220.
+    // Although if the ability to access the remote IP address is solved by the Hyper in the future
+    // then we might want to refactor into start it ideomatically in order to benefit from a more graceful shutdown,
+    // cf. https://github.com/hyperium/hyper/pull/1640.
 
-            let listener = unwrap!(
-                TcpListener::bind2(ctx.get_socket().into()),
-                "Could not bind socket for RPC server!"
+    let ctx = unwrap! (MmArc::from_ffi_handler (ctx_ffi_handler), "No context");
+
+    let listener = unwrap! (TcpListener::bind2 (&ctx.rpc_ip_port), "Can't bind on {}", ctx.rpc_ip_port);
+
+    let server = listener
+        .incoming()
+        .for_each(move |(socket, _my_sock)| {
+            let remote_addr = match socket.peer_addr() {
+                Ok (addr) => addr,
+                Err (err) => {
+                    eprintln! ("spawn_rpc] No peer_addr: {}", err);
+                    return Ok(())
+                }
+            };
+
+            CORE.spawn(move |_|
+                HTTP.serve_connection(
+                    socket,
+                    RpcService {
+                        ctx_ffi_handler,
+                        remote_addr
+                    },
+                )
+                .map(|_| ())
+                .map_err (|err| eprintln! ("spawn_rpc] HTTP error: {}", err))
             );
+            Ok(())
+        })
+        .map_err (|err| eprintln! ("spawn_rpc] accept error: {}", err));
 
-            let server = listener
-                .incoming()
-                .for_each(move |(socket, _my_sock)| {
-                    let remote_sock = socket.peer_addr().unwrap();
-                    CORE.spawn(move |_|
-                        HTTP.serve_connection(
-                            socket,
-                            RpcService {
-                                mm_ctx_id,
-                                remote_sock
-                            },
-                        ).map(|_| ())
-                            .map_err(|_| ())
-                    );
-                    Ok(())
-                }).map_err(|e| panic!("accept error: {}", e));
+    // Finish the server `Future` when `shutdown_rx` fires.
 
-            CORE.spawn(move |_| {
-                println!(">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{} <<<<<<<<<",
-                         my_socket.ip(),
-                         my_socket.port(),
-                         gstuff::now_float() as u64
-                );
-                server
-            });
-        }),
-        "Could not spawn RPC thread!"
-    );
+    let (shutdown_tx, shutdown_rx) = futures::sync::oneshot::channel::<()>();
+    let server = server.select2 (shutdown_rx) .then (|_| Ok(()));
+    let mut shutdown_tx = Some (shutdown_tx);
+    ctx.on_stop (Box::new (move || {
+        if let Some (shutdown_tx) = shutdown_tx.take() {
+            println! ("rpc] on_stop, firing shutdown_tx!");
+            if let Err (_) = shutdown_tx.send(()) {ERR! ("shutdown_tx already closed")} else {Ok(())}
+        } else {ERR! ("on_stop callback called twice!")}
+    }));
+
+    CORE.spawn(move |_| {
+        ctx.log.rawln (
+            format!(">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{} <<<<<<<<<",
+                    ctx.rpc_ip_port.ip(),
+                    ctx.rpc_ip_port.port(),
+                    gstuff::now_ms() / 1000
+        ));
+        server
+    });
 }

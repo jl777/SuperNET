@@ -36,7 +36,7 @@
 
 long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
 
-extern void spawn_rpc_thread(uint32_t ctx_id);
+void spawn_rpc(uint32_t ctx_id);
 
 struct LP_millistats
 {
@@ -1616,7 +1616,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
     int32_t nonz,didremote=0;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
-    spawn_rpc_thread(mm_ctx_id);
+    spawn_rpc(mm_ctx_id);
     //LP_mpnet_init(); seems better to have the GUI send in persistent orders, exit mm is a cancel all
     while ( LP_STOP_RECEIVED == 0 )
     {
