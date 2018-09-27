@@ -10,6 +10,8 @@ extern crate libc;
 #[macro_use]
 extern crate unwrap;
 extern crate helpers;
+#[macro_use]
+extern crate gstuff;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]

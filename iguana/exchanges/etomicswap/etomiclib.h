@@ -202,7 +202,7 @@ extern uint64_t estimate_erc20_gas(char *token_address, char *to, uint64_t amoun
 extern uint8_t compare_addresses(char *address1, char *address2);
 extern uint8_t is_valid_address(char *address);
 
-extern void *eth_client(char *private_key, char *node_url, char *alice_contract, char *bob_contract);
+extern void *eth_client(char *private_key, char *node_url, char *alice_contract, char *bob_contract, uint32_t mm_ctx_id);
 extern void eth_client_destruct(void *eth_client);
 
 #ifdef __cplusplus

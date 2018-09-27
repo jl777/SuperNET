@@ -41,7 +41,7 @@ use std::os::raw::{ c_char, c_int };
 use std::ffi::{ CStr };
 use std::str::FromStr;
 use regex::Regex;
-use helpers::{ str_to_malloc };
+use helpers::{ str_to_malloc, MmArc };
 use helpers::etomiclib::*;
 use web3::futures::Future;
 use hex;
@@ -73,11 +73,13 @@ pub struct EthClient {
     pub bob_abi: Contract,
     pub erc20_abi: Contract,
     pub alice_contract: H160,
-    pub bob_contract: H160
+    pub bob_contract: H160,
+    mm_ctx_id: u32,
 }
 
 impl EthClient {
-    pub fn new(secret: Vec<u8>, url: &str, alice_contract: H160, bob_contract: H160) -> Self {
+    pub fn new(secret: Vec<u8>, url: &str, alice_contract: H160, bob_contract: H160, mm_ctx_id: u32) -> Self {
+        unwrap! (MmArc::from_ffi_handler (mm_ctx_id), "No context");
         let (event_loop, transport) = unwrap!(Http::new(url),
             "Could not init Http transport for ETH client, check the ethnode json arg");
         let web3 = Web3::new(transport);
@@ -99,8 +101,36 @@ impl EthClient {
             bob_abi,
             erc20_abi,
             alice_contract,
-            bob_contract
+            bob_contract,
+            mm_ctx_id,
         }
+    }
+
+    #[cfg(test)]
+    pub fn new_test() -> *mut Self {
+        let (event_loop, transport) = unwrap!(Http::new("http://195.201.0.6:8545"));
+        let web3 = Web3::new(transport);
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+        let current_nonce = 0.into();
+        let alice_abi = unwrap!(Contract::load(ALICE_ABI.as_bytes()), "Could not load ALICE_ABI, is it valid?");
+        let bob_abi = unwrap!(Contract::load(BOB_ABI.as_bytes()), "Could not load BOB_ABI, is it valid?");
+        let erc20_abi = unwrap!(Contract::load(ERC20_ABI.as_bytes()), "Could not load ERC20_ABI, is it valid?");
+
+        Box::into_raw(Box::new(EthClient {
+            web3,
+            _event_loop: event_loop,
+            key_pair,
+            transactions: RwLock::new(HashMap::new()),
+            block_number: RwLock::new(3707894),
+            current_nonce: Mutex::new(current_nonce),
+            alice_abi,
+            bob_abi,
+            erc20_abi,
+            alice_contract: H160::from_str("e1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap(),
+            bob_contract: H160::from_str("2a8e4f9ae69c86e277602c6802085febc4bd5986").unwrap(),
+            mm_ctx_id: 0,
+        }))
     }
 
     pub fn sign_and_send_transaction(
@@ -622,6 +652,8 @@ impl EthClient {
     ) -> Result<Option<Web3Transaction>, web3::Error> {
         self.web3.eth().transaction(TransactionId::Hash(tx_id)).wait()
     }
+
+    pub fn ctx_id(&self) -> u32 { self.mm_ctx_id }
 }
 
 #[no_mangle]
@@ -629,7 +661,8 @@ pub extern "C" fn eth_client(
     private_key: *const c_char,
     node_url: *const c_char,
     alice_contract: *const c_char,
-    bob_contract: *const c_char
+    bob_contract: *const c_char,
+    mm_ctx_id: u32
 ) -> *mut EthClient {
     unsafe {
         let slice = CStr::from_ptr(private_key).to_str().unwrap();
@@ -646,6 +679,7 @@ pub extern "C" fn eth_client(
             CStr::from_ptr(node_url).to_str().unwrap(),
             alice_address,
             bob_address,
+            mm_ctx_id,
         );
         Box::into_raw(Box::new(eth_client))
     }
@@ -1745,12 +1779,7 @@ pub mod test {
     }
 
     fn eth_client_for_test() -> *mut EthClient {
-        let priv_key = CString::new("0x809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-        let eth_node = CString::new("http://195.201.0.6:8545").unwrap();
-        let alice = CString::new("0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c").unwrap();
-        let bob = CString::new("0x2a8e4f9ae69c86e277602c6802085febc4bd5986").unwrap();
-
-        eth_client(priv_key.as_ptr(), eth_node.as_ptr(), alice.as_ptr(), bob.as_ptr())
+        EthClient::new_test()
     }
 
     #[test]

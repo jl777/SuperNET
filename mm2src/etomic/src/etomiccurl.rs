@@ -28,7 +28,8 @@ use ethereum_types::{ U256, H256 };
 use hex;
 use libc;
 use serde_json;
-use helpers::{ post_json, fetch_json };
+use helpers::{ post_json, fetch_json, MmArc };
+use helpers::log::StatusHandle;
 use helpers::etomiclib::*;
 use std::str::FromStr;
 use web3::{ Transport };
@@ -91,29 +92,31 @@ enum WaitForReceiptState<T>
     GettingData(CallResult<Option<Web3Transaction>, T::Out>),
 }
 
-struct WaitForReceipt<'a> {
+struct WaitForReceipt<'a,'b> {
     interval: Interval,
     eth_client: &'a EthClient,
     state: WaitForReceiptState<Http>,
     tx_id: H256,
     retries: u8,
-    max_retries: u8
+    max_retries: u8,
+    status: &'b StatusHandle<'b>,
 }
 
-impl<'a> WaitForReceipt<'a> {
-    fn new(eth_client: &'a EthClient, tx_id: H256, max_retries: u8, poll_interval: u64) -> Self {
+impl<'a,'b> WaitForReceipt<'a,'b> {
+    fn new(eth_client: &'a EthClient, status: &'b StatusHandle<'b>, tx_id: H256, max_retries: u8, poll_interval: u64) -> Self {
         WaitForReceipt {
             interval: Timer::default().interval(Duration::from_secs(poll_interval)),
             eth_client,
             state: WaitForReceiptState::WaitingForInterval,
             tx_id,
             retries: 0,
-            max_retries
+            max_retries,
+            status,
         }
     }
 }
 
-impl<'a> Future for WaitForReceipt<'a> {
+impl<'a,'b> Future for WaitForReceipt<'a,'b> {
     type Item = TransactionReceipt;
     type Error = String;
 
@@ -124,7 +127,9 @@ impl<'a> Future for WaitForReceipt<'a> {
                     let _ready = try_ready!(
                         self.interval
                             .poll()
-                            .map_err(|_| "Error occurred")
+                            .map_err(|e| {
+                                ERRL!("{}", e)
+                            })
                     );
                     WaitForReceiptState::GettingReceipt(self.eth_client.web3.eth().transaction_receipt(self.tx_id))
                 },
@@ -133,9 +138,11 @@ impl<'a> Future for WaitForReceipt<'a> {
                     match ready {
                         Ok(Async::Ready(tx_receipt)) => {
                             match tx_receipt {
-                                Some(receipt) => return Ok(Async::Ready(receipt)),
+                                Some(receipt) => {
+                                    return Ok(Async::Ready(receipt))
+                                },
                                 None => {
-                                    println!("Could not find receipt of {:?} yet, checking tx existence", self.tx_id);
+                                    self.status.append("Receipt not found...");
                                     WaitForReceiptState::GettingData(
                                         self.eth_client.web3.eth().transaction(TransactionId::Hash(self.tx_id))
                                     )
@@ -144,7 +151,7 @@ impl<'a> Future for WaitForReceipt<'a> {
                         },
                         Ok(Async::NotReady) => return Ok(Async::NotReady),
                         Err(_e) => {
-                            println!("Could not find receipt of {:?} yet, checking tx existence", self.tx_id);
+                            self.status.append("Receipt not found...");
                             WaitForReceiptState::GettingData(
                                 self.eth_client.web3.eth().transaction(TransactionId::Hash(self.tx_id))
                             )
@@ -155,22 +162,20 @@ impl<'a> Future for WaitForReceipt<'a> {
                     let _ready = try_ready!(
                         future.poll()
                             .map_err(|e| {
-                                println!("Got error {:?}", e);
-                                "Error occurred"
+                                ERRL!("{}", e)
                             })
                     );
                     match _ready {
                         Some(_data) => {
-                            println!("Transaction 0x{:02x} exists, but not confirmed yet", self.tx_id);
+                            self.status.append("Exists, but not confirmed yet...");
                             self.retries = self.retries + 1;
                             if self.retries >= self.max_retries {
-                                return Err(format!("Waiting too long for tx 0x{:02x} confirmation!", self.tx_id))
+                                return ERR!("Waiting too long")
                             }
                             WaitForReceiptState::WaitingForInterval
                         },
                         None => {
-                            println!("Could not find tx data 0x{:02x}!", self.tx_id);
-                            return Err("Tx is not found!".to_string())
+                            return ERR!("Tx is not found!");
                         }
                     }
                 },
@@ -309,17 +314,26 @@ pub extern "C" fn wait_for_confirmation(
 )-> i32 {
     unsafe {
         let slice = CStr::from_ptr(tx_id).to_str().unwrap();
+        let tx_hash = H256::from_str(&slice[2..]).unwrap();
+
+        let ctx = unwrap!(MmArc::from_ffi_handler((*eth_client).ctx_id()), "No context");
+        let tx_hash_str = format!("0x{:02x}", tx_hash);
+        let status = ctx.log.status(&[&"transaction", &(tx_hash_str, "waiting")], "Waiting for confirmations...");
         let wait = WaitForReceipt::new(
             &(*eth_client),
-            H256::from_str(&slice[2..]).unwrap(),
+            &status,
+            tx_hash,
             30,
             15
         );
         let receipt = wait.wait();
         match receipt {
-            Ok(_tx_receipt) => 1,
+            Ok(_tx_receipt) => {
+                status.append("Ok, confirmed");
+                1
+            },
             Err(e) => {
-                println!("Got error waiting for ETH tx receipt: {:?}", e);
+                status.append(&ERRL!("Got error waiting for ETH tx receipt: {:?}", e));
                 -1
             }
         }

@@ -1542,6 +1542,15 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
         strcpy(LP_bob_contract, "0xfef736cfa3b884669a4e0efd6a081250cce228e7");
     }
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
+#ifndef NOTETOMIC
+    extern void *LP_eth_client;
+    if (LP_eth_client != NULL) {
+        eth_client_destruct(LP_eth_client);
+    }
+    char privkey_str[100];
+    uint8arrayToHex(privkey_str, G.LP_privkey.bytes, 32);
+    LP_eth_client = eth_client(privkey_str, LP_eth_node_url, LP_alice_contract, LP_bob_contract, mm_ctx_id);
+#endif
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

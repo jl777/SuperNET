@@ -50,6 +50,7 @@ use std::collections::VecDeque;
 use std::fs;
 use std::fmt;
 use std::io::Write;
+use std::default::Default;
 use std::mem::swap;
 use std::sync::{Arc, Mutex};
 
@@ -65,6 +66,11 @@ impl<'a> TagParam<'a> for &'a str {
 
 impl<'a> TagParam<'a> for (&'a str, &'a str) {
     fn key (&self) -> String {String::from (self.0)}
+    fn val (&self) -> Option<String> {Some (String::from (self.1))}
+}
+
+impl<'a> TagParam<'a> for (String, &'a str) {
+    fn key (&self) -> String { self.0.clone() }
     fn val (&self) -> Option<String> {Some (String::from (self.1))}
 }
 
@@ -92,7 +98,6 @@ pub struct Status {
     pub trail: Vec<Status>
 }
 
-#[derive(Default)]
 pub struct LogEntry {
     pub time: u64,
     pub emotion: String,
@@ -100,6 +105,18 @@ pub struct LogEntry {
     pub line: String,
     /// If the log entry represents a finished `Status` then `trail` might contain the previous versions of that `Status`.
     pub trail: Vec<Status>
+}
+
+impl Default for LogEntry {
+    fn default() -> Self {
+        LogEntry {
+            time: now_ms(),
+            emotion: Default::default(),
+            tags: Default::default(),
+            line: Default::default(),
+            trail: Default::default(),
+        }
+    }
 }
 
 impl LogEntry {
