@@ -622,7 +622,7 @@ struct LP_priceinfo
 
 // Gradual port temporaries.
 cJSON *LP_NXT_redeems();
-void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,void* ctx,uint32_t mm_ctx_id);
+void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,uint32_t mm_ctx_id);
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid);
 void unbuffered_output_support(const char* log_path);
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);

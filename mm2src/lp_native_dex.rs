@@ -30,12 +30,11 @@
 
 use crc::crc32;
 use futures::{Future};
-use helpers::{random_u32, lp, slurp_url,  MmCtx, MM_VERSION, MmArc};
+use helpers::{lp, slurp_url,  MmCtx, MM_VERSION};
 use libc;
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
-use std::collections::HashMap;
 use std::fs;
 use std::ffi::{CString};
 use std::io::{Cursor, Read, Write};
@@ -45,15 +44,10 @@ use std::os::raw::{c_char, c_void};
 use std::path::Path;
 use std::str;
 use std::str::from_utf8;
-use std::sync::{RwLock};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use super::{CJSON};
 
-lazy_static! {
-    /// MmCtx contexts hash map
-    pub static ref MM_CTX_MAP: RwLock<HashMap<u32, MmArc>> = RwLock::new(HashMap::new());
-}
 /*
 #include <stdio.h>
 #ifndef MM_VERSION
@@ -1574,8 +1568,11 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         }
     };
 
-    let rpcipvalue = conf["rpcip"].clone();
-    let rpcip = rpcipvalue.as_str().unwrap_or("127.0.0.1");
+    let rpcip = if !conf["rpcip"].is_null() {
+        try_s! (conf["rpcip"].as_str().ok_or ("rpcip is not a string"))
+    } else {
+        "127.0.0.1"
+    } .to_string();
     let ip : IpAddr = try_s!(rpcip.parse());
     let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport));
 
@@ -1758,10 +1755,14 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
     let passphrase = try_s! (CString::new (unwrap! (ctx.conf()["passphrase"].as_str())));
-    let ctx_id = random_u32();
-    (*MM_CTX_MAP.write().unwrap()).insert(ctx_id, ctx.clone());
-    unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0,
-        ctx.btc_ctx() as *mut c_void, ctx_id)};
+    let ctx_id = try_s! (ctx.ffi_handler());
+
+    // `LPinit` currently fails to stop in a timely manner, so we're dropping the `lp_init` context early
+    // in order to be able to use and test the `Drop` implementations withing the context.
+    // In the future, when `LPinit` stops in a timely manner, we might relinquish the early `drop`.
+    drop (ctx);
+
+    unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0, ctx_id)};
     unwrap! (prices.join());
     Ok(())
 }

@@ -26,12 +26,11 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use hyper::header::{HeaderValue, CONTENT_TYPE};
-use lp_native_dex::MM_CTX_MAP;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
 use std::ptr::null_mut;
-use std::os::raw::{c_void};
+use std::os::raw::{c_char, c_void};
 use std::str::from_utf8;
 use std::thread;
 use super::CJSON;
@@ -87,7 +86,7 @@ struct RpcService {
     remote_sock: SocketAddr,
 }
 
-pub fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
+fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
                         -> Result<String, String> {
     let body_json = unwrap_or_err_msg!(CJSON::from_str(&json.to_string()),
                                         "Couldn't parse request body as json");
@@ -121,33 +120,29 @@ pub fn rpc_process_json(ctx: MmArc, remote_sock: SocketAddr, json: Json)
     }
 
     let my_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", ctx.get_socket().ip())),
-                                        "Error occurred").into_raw();
+                                        "Error occurred");
     let remote_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", remote_sock.ip())),
-                                        "Error occurred").into_raw();
+                                        "Error occurred");
     let stats_result = unsafe {
         lp::stats_JSON(
             ctx.btc_ctx() as *mut c_void,
             0,
-            my_ip_ptr,
+            my_ip_ptr.as_ptr() as *mut c_char,
             -1,
             body_json.0,
-            remote_ip_ptr,
+            remote_ip_ptr.as_ptr() as *mut c_char,
             ctx.get_socket().port()
         )
     };
-    // Free allocated pointers
-    unsafe {
-        CString::from_raw(my_ip_ptr);
-        CString::from_raw(remote_ip_ptr);
-    }
 
     if !stats_result.is_null() {
         let res_str = unsafe {
             unwrap_or_err_msg!(CStr::from_ptr(stats_result).to_str(),
             "Request execution result is empty")
         };
+        let res_str = String::from (res_str);
         free_c_ptr(stats_result as *mut c_void);
-        Ok(res_str.to_string())
+        Ok(res_str)
     } else {
         Ok(err_to_json_string("Request execution result is empty"))
     }
@@ -187,9 +182,11 @@ impl Service for RpcService {
         }
         let body_f = request.into_body().concat2();
 
-        let ctx = unwrap!(MM_CTX_MAP.read().unwrap().get(&self.mm_ctx_id)).clone();;
         let remote_sock = self.remote_sock.clone();
+        let mm_ctx_id = self.mm_ctx_id;
         Box::new(body_f.then(move |body| -> Result<Response<Body>, hyper::Error> {
+            let ctx = unwrap_or_err_response! (MmArc::from_ffi_handler (mm_ctx_id), 500, "No context");
+
             let body_vec = unwrap_or_err_response!(
                 body,
                 400,
@@ -234,7 +231,7 @@ impl Service for RpcService {
 pub extern "C" fn spawn_rpc_thread(mm_ctx_id: u32) {
     unwrap!(
         thread::Builder::new().name("mm_rpc".into()).spawn(move || {
-            let ctx = unwrap!(MM_CTX_MAP.read().unwrap().get(&mm_ctx_id)).clone();
+            let ctx = unwrap! (MmArc::from_ffi_handler (mm_ctx_id), "No context");
             let my_socket = ctx.get_socket().clone();
 
             let listener = unwrap!(

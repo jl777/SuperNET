@@ -17,6 +17,7 @@ extern crate duct;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
+extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
 #[macro_use]
@@ -36,10 +37,12 @@ pub mod log;
 
 use futures::Future;
 use futures::sync::oneshot::{self, Receiver};
+use fxhash::FxHashMap;
 use gstuff::{any_to_str, now_float};
 use hyper::{Body, Client, Request, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::{malloc, free};
+use rand::random;
 use serde_json::{Value as Json};
 use std::fmt;
 use std::ffi::{CStr, CString};
@@ -51,7 +54,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::{null_mut, read_volatile};
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::os::raw::{c_char, c_void};
 use std::str;
@@ -114,7 +117,7 @@ pub struct MmCtx {
     /// Human-readable log and status dashboard.
     pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
-    btc_ctx: BtcCtxBox,
+    btc_ctx: *mut BitcoinCtx,
     /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
     ///
     /// Should be refactored away in the future. State should always be valid.
@@ -125,6 +128,9 @@ pub struct MmCtx {
     stop: AtomicBool,
     /// Socket for RPC server to listen to
     rpc_socket: SocketAddr,
+    /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
+    /// 0 if the handler ID is allocated yet.
+    ffi_handler: AtomicUsize
 }
 impl MmCtx {
     pub fn new (conf: Json, rpc_socket: SocketAddr) -> MmArc {
@@ -132,14 +138,15 @@ impl MmCtx {
         MmArc (Arc::new (MmCtx {
             conf,
             log,
-            btc_ctx: BtcCtxBox(unsafe {bitcoin_ctx()}),
+            btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
             rpc_socket,
+            ffi_handler: AtomicUsize::new (0)
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
-    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx.0}
+    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
     pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
     /// True if the MarketMaker instance needs to stop.
     pub fn is_stopping (&self) -> bool {
@@ -152,16 +159,81 @@ impl MmCtx {
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
-        unsafe {bitcoin_ctx_destroy (self.btc_ctx.0)}
+        unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
     }
 }
 
+// We don't want to send `MmCtx` across threads, it will only obstruct the normal use case
+// (and might result in undefined behavior if there's a C struct or value in the context that is aliased from the various MM threads).
+// Only the `MmArc` is `Send`.
+// Also, `MmCtx` not being `Send` allows us to easily keep various C pointers on the context,
+// which will likely come useful during the gradual port.
+//not-implemented-on-stable// impl !Send for MmCtx {}
+
 pub struct MmArc (Arc<MmCtx>);
+// NB: Explicit `Send` and `Sync` marks here should become unnecessary later,
+// after we finish the initial port and replace the C values with the corresponding Rust alternatives.
 unsafe impl Send for MmArc {}
-unsafe impl Send for BtcCtxBox {}
-unsafe impl Sync for BtcCtxBox {}
+unsafe impl Sync for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
+
+pub struct MmWeak (Weak<MmCtx>);
+// Same as `MmArc`.
+unsafe impl Send for MmWeak {}
+unsafe impl Sync for MmWeak {}
+
+lazy_static! {
+    /// A map from a unique context ID to the corresponding MM context, facilitating context access across the FFI boundaries.  
+    /// NB: The entries are not removed in order to keep the FFI handlers unique.
+    pub static ref MM_CTX_FFI: Mutex<FxHashMap<u32, MmWeak>> = Mutex::new (FxHashMap::default());
+}
+
+impl MmArc {
+    /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.
+    pub fn ffi_handler (&self) -> Result<u32, String> {
+        use std::collections::hash_map::Entry;
+
+        let mut mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
+        let have = self.ffi_handler.load (Ordering::Relaxed) as u32;
+        if have != 0 {return Ok (have)}
+        let mut tries = 0;
+        loop {
+            if tries > 999 {panic! ("MmArc] out of RIDs")} else {tries += 1}
+            let rid: u32 = random();
+            if rid == 0 {continue}
+            match mm_ctx_ffi.entry (rid) {
+                Entry::Occupied (_) => continue,  // Try another ID.
+                Entry::Vacant (ve) => {
+                    ve.insert (MmWeak (Arc::downgrade (&self.0)));
+                    self.ffi_handler.store (rid as usize, Ordering::Relaxed);
+                    return Ok (rid)
+                }
+            }
+        }
+    }
+
+    pub fn from_ffi_handler (ffi_handler: u32) -> Result<MmArc, String> {
+        if ffi_handler == 0 {return ERR! ("MmArc] Zeroed ffi_handler")}
+        let mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
+        match mm_ctx_ffi.get (&ffi_handler) {
+            Some (mm_weak) => match mm_weak.0.upgrade() {
+                Some (arc) => Ok (MmArc (arc)),
+                None => ERR! ("MmArc] ffi_handler {} is dead", ffi_handler)
+            },
+            None => ERR! ("MmArc] ffi_handler {} does not exists", ffi_handler)
+        }
+    }
+}
+
+#[no_mangle]
+pub fn r_btc_ctx (mm_ctx_id: u32) -> *mut c_void {
+    if let Ok (ctx) = MmArc::from_ffi_handler (mm_ctx_id) {
+        unsafe {ctx.btc_ctx() as *mut c_void}
+    } else {
+        null_mut()
+    }
+}
 
 /// RAII and MT wrapper for `cJSON`.
 pub struct CJSON (pub *mut lp::cJSON);
@@ -504,10 +576,6 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             None => cb (None)
         }
     }
-}
-
-pub fn random_u32() -> u32 {
-    rand::random::<u32>()
 }
 
 /// Helpers used in the unit and integration tests.
