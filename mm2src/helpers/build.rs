@@ -180,6 +180,7 @@ fn generate_bindings() {
             "num_LP_autorefs",
             "LP_STOP_RECEIVED",
             "IPC_ENDPOINT",
+            "SPAWN_RPC",
         ]
             .iter(),
     );

@@ -117,7 +117,7 @@ impl fmt::Display for bits256 {
 /// particularly of the C structures during the gradual port).
 /// Only the pointers (`MmArc`, `MmWeak`) can be moved around.
 /// 
-/// Thread only have the non-`mut` access to `MmCtx`, allowing us to directly share certain fields.
+/// Threads only have the non-`mut` access to `MmCtx`, allowing us to directly share certain fields.
 pub struct MmCtx {
     /// MM command-line configuration.
     pub conf: Json,

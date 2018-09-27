@@ -30,7 +30,7 @@
 
 use crc::crc32;
 use futures::{Future};
-use helpers::{lp, slurp_url,  MmCtx, MM_VERSION};
+use helpers::{lp, slurp_url, MmCtx, CJSON, MM_VERSION};
 use libc;
 use portfolio::prices_loop;
 use rand::random;
@@ -46,7 +46,7 @@ use std::str;
 use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use super::{CJSON};
+use super::rpc;
 
 /*
 #include <stdio.h>
@@ -1761,6 +1761,11 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     // in order to be able to use and test the `Drop` implementations withing the context.
     // In the future, when `LPinit` stops in a timely manner, we might relinquish the early `drop`.
     drop (ctx);
+
+    // When building etomicrs tests (cargo test --package etomicrs) we have no access
+    // to C functions defined here in the mm2 binary crate. Such functions should be shared dynamically
+    // in order not to interfere with the linking of the etomicrs test binary.
+    unsafe {lp::SPAWN_RPC = Some (rpc::spawn_rpc)};
 
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0, ctx_id)};
     unwrap! (prices.join());

@@ -230,12 +230,11 @@ impl Service for RpcService {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn spawn_rpc(ctx_ffi_handler: u32) {
+pub extern fn spawn_rpc(ctx_ffi_handler: u32) {
     // NB: We need to manually handle the incoming connections in order to get the remote IP address,
     // cf. https://github.com/hyperium/hyper/issues/1410#issuecomment-419510220.
     // Although if the ability to access the remote IP address is solved by the Hyper in the future
-    // then we might want to refactor into start it ideomatically in order to benefit from a more graceful shutdown,
+    // then we might want to refactor into starting it ideomatically in order to benefit from a more graceful shutdown,
     // cf. https://github.com/hyperium/hyper/pull/1640.
 
     let ctx = unwrap! (MmArc::from_ffi_handler (ctx_ffi_handler), "No context");
