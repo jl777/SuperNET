@@ -291,7 +291,7 @@ mod test {
         })));
         assert_eq! (autoprice.0, StatusCode::OK);
         unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
+        unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
 
         // Checking the autopricing logs here TDD-helps us with the porting effort.
         //
