@@ -111,9 +111,16 @@ impl fmt::Display for bits256 {
 /// In the future we might want to replace direct state access with traceable and replayable
 /// state modifications
 /// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
+/// 
+/// `MmCtx` never moves in memory (and it isn't `Send`), it is created and then destroyed in place
+/// (this invariant should make it a bit simpler thinking about aliasing and thread-safety,
+/// particularly of the C structures during the gradual port).
+/// Only the pointers (`MmArc`, `MmWeak`) can be moved around.
+/// 
+/// Threads only have the non-`mut` access to `MmCtx`, allowing us to directly share certain fields.
 pub struct MmCtx {
     /// MM command-line configuration.
-    conf: Json,
+    pub conf: Json,
     /// Human-readable log and status dashboard.
     pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
@@ -126,14 +133,15 @@ pub struct MmCtx {
     pub initialized: AtomicBool,
     /// True if the MarketMaker instance needs to stop.
     stop: AtomicBool,
-    /// Socket for RPC server to listen to
-    rpc_socket: SocketAddr,
+    /// IP and port for the RPC server to listen on.
+    pub rpc_ip_port: SocketAddr,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
-    ffi_handler: AtomicUsize
+    ffi_handler: AtomicUsize,
+    stop_listeners: Mutex<Vec<Box<FnMut()->Result<(), String>>>>
 }
 impl MmCtx {
-    pub fn new (conf: Json, rpc_socket: SocketAddr) -> MmArc {
+    pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
         let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {
             conf,
@@ -141,21 +149,40 @@ impl MmCtx {
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
-            rpc_socket,
-            ffi_handler: AtomicUsize::new (0)
+            rpc_ip_port,
+            ffi_handler: AtomicUsize::new (0),
+            stop_listeners: Mutex::new (Vec::new())
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
-    pub fn stop (&self) {self.stop.store (true, Ordering::Relaxed)}
+    pub fn stop (&self) {
+        if self.stop.compare_and_swap (false, true, Ordering::Relaxed) == false {
+            let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
+            for listener in stop_listeners.iter_mut() {
+                if let Err (err) = listener() {
+                    eprintln! ("MmCtx::stop] Listener error: {}", err)
+                }
+            }
+        }
+    }
     /// True if the MarketMaker instance needs to stop.
     pub fn is_stopping (&self) -> bool {
         if unsafe {lp::LP_STOP_RECEIVED != 0} {return true}
         self.stop.load (Ordering::Relaxed)
     }
-    /// MM command-line configuration.
-    pub fn conf (&self) -> &Json {&self.conf}
-    pub fn get_socket (&self) -> &SocketAddr {&self.rpc_socket}
+    /// Register a callback to be invoked when the MM receives the "stop" request.  
+    /// The callback is invoked immediately if the MM is stopped already.
+    pub fn on_stop (&self, mut cb: Box<FnMut()->Result<(), String>>) {
+        let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
+        if self.stop.load (Ordering::Relaxed) {
+            if let Err (err) = cb() {
+                eprintln! ("MmCtx::on_stop] Listener error: {}", err)
+            }
+        } else {
+            stop_listeners.push (cb)
+        }
+    }
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {
@@ -205,7 +232,7 @@ impl MmArc {
             match mm_ctx_ffi.entry (rid) {
                 Entry::Occupied (_) => continue,  // Try another ID.
                 Entry::Vacant (ve) => {
-                    ve.insert (MmWeak (Arc::downgrade (&self.0)));
+                    ve.insert (self.weak());
                     self.ffi_handler.store (rid as usize, Ordering::Relaxed);
                     return Ok (rid)
                 }
@@ -213,16 +240,28 @@ impl MmArc {
         }
     }
 
+    /// Tries getting access to the MM context.  
+    /// Fails if an invalid MM context handler is passed (no such context or dropped context).
     pub fn from_ffi_handler (ffi_handler: u32) -> Result<MmArc, String> {
         if ffi_handler == 0 {return ERR! ("MmArc] Zeroed ffi_handler")}
         let mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
         match mm_ctx_ffi.get (&ffi_handler) {
-            Some (mm_weak) => match mm_weak.0.upgrade() {
-                Some (arc) => Ok (MmArc (arc)),
+            Some (weak) => match MmArc::from_weak (weak) {
+                Some (ctx) => Ok (ctx),
                 None => ERR! ("MmArc] ffi_handler {} is dead", ffi_handler)
             },
             None => ERR! ("MmArc] ffi_handler {} does not exists", ffi_handler)
         }
+    }
+
+    /// Generates a weak link, to track the context without prolonging its life.
+    pub fn weak (&self) -> MmWeak {
+        MmWeak (Arc::downgrade (&self.0))
+    }
+
+    /// Tries to obtain the MM context from the weak link.  
+    pub fn from_weak (weak: &MmWeak) -> Option<MmArc> {
+        weak.0.upgrade().map (|arc| MmArc (arc))
     }
 }
 

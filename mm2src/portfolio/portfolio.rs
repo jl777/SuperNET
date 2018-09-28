@@ -503,7 +503,7 @@ int32_t LP_autoref_clear(char *base,char *rel)
 */
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
     // TODO: Figure out what this means and whether we need to log it.
-    println! ("AUTOPRICE numautorefs.{}", unsafe {lp::num_LP_autorefs});
+    //println! ("AUTOPRICE numautorefs.{}", unsafe {lp::num_LP_autorefs});
 
     // Natural singletons (there's only one "bittrex.com" in the internet).
     lazy_static! {
@@ -1019,9 +1019,6 @@ pub fn prices_loop (ctx: MmArc) {
             }
             unsafe {libc::free (portfolio_cs as *mut libc::c_void)};
         }
-        // TODO: Reduce this sleep to ~100 milliseconds.
-        // If we need to wait then the waiting should be refactored in a way that wouldn't hang the loop.
-        // (MM should be able to stop in a timely manner; stateless?).
-        sleep (Duration::from_secs (30))
+        sleep (Duration::from_millis (200))
     }
 }

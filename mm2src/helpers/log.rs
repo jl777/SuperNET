@@ -399,6 +399,12 @@ impl LogState {
             None => println! ("{}", chunk)
         }
     }
+
+    /// Writes into the *raw* portion of the log, the one not shared with the UI.
+    pub fn rawln (&self, mut line: String) {
+        line.push ('\n');
+        self.chunk2log (line);
+    }
 }
 
 impl Drop for LogState {

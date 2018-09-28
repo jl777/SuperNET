@@ -663,6 +663,7 @@ extern char USERHOME[512];
 char LP_eth_node_url[2084];
 char LP_alice_contract[50];
 char LP_bob_contract[50];
+void (*SPAWN_RPC)(uint32_t);
 
 extern int32_t IPC_ENDPOINT;
 void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
