@@ -1537,7 +1537,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
         strcpy(LP_bob_contract, jstr(argjson, "bob_contract"));
     } else {
         // use default mainnet Bob contract address
-        strcpy(LP_bob_contract, "0xfef736cfa3b884669a4e0efd6a081250cce228e7");
+        strcpy(LP_bob_contract, "0x2896Db79fAF20ABC8776fc27D15719cf59b8138B");
     }
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef NOTETOMIC

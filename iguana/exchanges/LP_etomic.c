@@ -116,12 +116,12 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
         input20.amount = swap->I.alicerealsat;
         input20.decimals = alicecoin->decimals;
 
-        uint64_t allowance = get_erc20_allowance(swap->I.etomicdest, ETOMIC_ALICECONTRACT, swap->I.alicetomic, alicecoin->decimals, LP_eth_client);
+        uint64_t allowance = get_erc20_allowance(swap->I.etomicdest, LP_alice_contract, swap->I.alicetomic, alicecoin->decimals, LP_eth_client);
         if (allowance < swap->I.alicerealsat) {
             printf("Alice token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
             strcpy(approveErc20Input.token_address, swap->I.alicetomic);
-            strcpy(approveErc20Input.spender, ETOMIC_ALICECONTRACT);
+            strcpy(approveErc20Input.spender, LP_alice_contract);
 
             int error = 0;
             approveErc20Input.amount = get_erc20_balance(swap->I.etomicdest, swap->I.alicetomic, alicecoin->decimals, &error, LP_eth_client);
@@ -142,7 +142,7 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
         return(0);
     }
     EthTxData data = get_eth_tx_data(txId, LP_eth_client);
-    if (compare_addresses(data.to, ETOMIC_ALICECONTRACT) == 0) {
+    if (compare_addresses(data.to, LP_alice_contract) == 0) {
         printf("Alice payment %s was sent to wrong address %s\n", txId, data.to);
         return(0);
     }
@@ -278,6 +278,7 @@ char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
         uint8arrayToHex(input.deposit_id, swap->bobdeposit.I.actualtxid.bytes, 32);
         strcpy(input.alice_address, swap->I.etomicdest);
         uint8arrayToHex(input.bob_hash, swap->I.secretBn, 20);
+        uint8arrayToHex(input.alice_hash, swap->I.secretAm, 20);
         input.lock_time = swap->bobdeposit.I.locktime;
         input.amount = LP_DEPOSITSATOSHIS(swap->I.bobrealsat);
 
@@ -288,17 +289,18 @@ char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
         uint8arrayToHex(input20.deposit_id, swap->bobdeposit.I.actualtxid.bytes, 32);
         strcpy(input20.alice_address, swap->I.etomicdest);
         uint8arrayToHex(input20.bob_hash, swap->I.secretBn, 20);
+        uint8arrayToHex(input20.alice_hash, swap->I.secretAm, 20);
         input20.amount = LP_DEPOSITSATOSHIS(swap->I.bobrealsat);
         strcpy(input20.token_address, swap->I.bobtomic);
         input20.lock_time = swap->bobdeposit.I.locktime;
         input20.decimals = bobcoin->decimals;
 
-        uint64_t allowance = get_erc20_allowance(swap->I.etomicsrc, ETOMIC_BOBCONTRACT, swap->I.bobtomic, bobcoin->decimals, LP_eth_client);
+        uint64_t allowance = get_erc20_allowance(swap->I.etomicsrc, LP_bob_contract, swap->I.bobtomic, bobcoin->decimals, LP_eth_client);
         if (allowance < LP_DEPOSITSATOSHIS(swap->I.bobrealsat)) {
             printf("Bob token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
             strcpy(approveErc20Input.token_address, swap->I.bobtomic);
-            strcpy(approveErc20Input.spender, ETOMIC_BOBCONTRACT);
+            strcpy(approveErc20Input.spender, LP_bob_contract);
 
             int error = 0;
             approveErc20Input.amount = get_erc20_balance(swap->I.etomicsrc, swap->I.bobtomic, bobcoin->decimals, &error, LP_eth_client);
@@ -320,7 +322,7 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
         return(0);
     }
     EthTxData data = get_eth_tx_data(txId, LP_eth_client);
-    if (compare_addresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
+    if (compare_addresses(data.to, LP_bob_contract) == 0) {
         printf("Bob deposit txid %s was sent to wrong address %s\n", txId, data.to);
         return(0);
     }
@@ -340,6 +342,7 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
         uint8arrayToHex(input.deposit_id, swap->bobdeposit.I.actualtxid.bytes, 32);
         strcpy(input.alice_address, swap->I.etomicdest);
         uint8arrayToHex(input.bob_hash, swap->I.secretBn, 20);
+        uint8arrayToHex(input.alice_hash, swap->I.secretAm, 20);
         input.lock_time = swap->bobdeposit.I.locktime;
 
         return verify_bob_eth_deposit_data(input, data.input);
@@ -349,6 +352,7 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
         uint8arrayToHex(input20.deposit_id, swap->bobdeposit.I.actualtxid.bytes, 32);
         strcpy(input20.alice_address, swap->I.etomicdest);
         uint8arrayToHex(input20.bob_hash, swap->I.secretBn, 20);
+        uint8arrayToHex(input20.alice_hash, swap->I.secretAm, 20);
         input20.amount = LP_DEPOSITSATOSHIS(swap->I.bobrealsat);
         strcpy(input20.token_address, swap->I.bobtomic);
         input20.lock_time = swap->bobdeposit.I.locktime;
@@ -388,6 +392,7 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
         invertedSecret.bytes[i] = swap->privBn.bytes[31 - i];
     }
     uint8arrayToHex(input.bob_secret, invertedSecret.bytes, 32);
+    uint8arrayToHex(input.alice_hash, swap->secretAm, 20);
 
     if (swap->bobtomic[0] != 0) {
         strcpy(input.token_address, swap->bobtomic);
@@ -426,12 +431,12 @@ char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
         input20.lock_time = swap->bobpayment.I.locktime;
         input20.decimals = bobcoin->decimals;
 
-        uint64_t allowance = get_erc20_allowance(swap->I.etomicsrc, ETOMIC_BOBCONTRACT, swap->I.bobtomic, bobcoin->decimals, LP_eth_client);
+        uint64_t allowance = get_erc20_allowance(swap->I.etomicsrc, LP_bob_contract, swap->I.bobtomic, bobcoin->decimals, LP_eth_client);
         if (allowance < swap->I.bobrealsat) {
             printf("Bob token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
             strcpy(approveErc20Input.token_address, swap->I.bobtomic);
-            strcpy(approveErc20Input.spender, ETOMIC_BOBCONTRACT);
+            strcpy(approveErc20Input.spender, LP_bob_contract);
 
             int error = 0;
             approveErc20Input.amount = get_erc20_balance(swap->I.etomicsrc, swap->I.bobtomic, bobcoin->decimals, &error, LP_eth_client);
@@ -453,7 +458,7 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
         return 0;
     }
     EthTxData data = get_eth_tx_data(txId, LP_eth_client);
-    if (compare_addresses(data.to, ETOMIC_BOBCONTRACT) == 0) {
+    if (compare_addresses(data.to, LP_bob_contract) == 0) {
         printf("Bob payment %s was sent to wrong address %s\n", txId, data.to);
     }
     if (compare_addresses(data.from, swap->I.etomicsrc) == 0) {
@@ -601,6 +606,14 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
 
     strcpy(input.bob_address, swap->etomicsrc);
     uint8arrayToHex(input.bob_hash, swap->secretBn, 20);
+
+    bits256 invertedSecret; int32_t i;
+
+    for (i=0; i<32; i++) {
+        invertedSecret.bytes[i] = swap->privAm.bytes[31 - i];
+    }
+    uint8arrayToHex(input.alice_secret, invertedSecret.bytes, 32);
+
     input.decimals = bobcoin->decimals;
 
     return alice_claims_bob_deposit(input, LP_eth_client);

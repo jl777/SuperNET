@@ -52,7 +52,7 @@ use etomiccurl::get_gas_price_from_station;
 use std::os::raw::c_void;
 
 static ALICE_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"}],"name":"initErc20Deal","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceSecret","type":"bytes"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobHash","type":"bytes20"}],"name":"initEthDeal","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deals","outputs":[{"name":"dealHash","type":"bytes20"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobSecret","type":"bytes"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]"#;
-static BOB_ABI: &'static str = r#"[{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"payments","outputs":[{"name":"paymentHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"bobClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deposits","outputs":[{"name":"depositHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"aliceClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthPayment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Deposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Payment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthDeposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]"#;
+static BOB_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_aliceSecret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_bobHash","type":"bytes20"}],"name":"aliceClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bobSecret","type":"bytes32"},{"name":"_aliceHash","type":"bytes20"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"bobClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Deposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Payment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthDeposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthPayment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deposits","outputs":[{"name":"depositHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"payments","outputs":[{"name":"paymentHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]"#;
 static ERC20_ABI: &'static str = r#"[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_subtractedValue","type":"uint256"}],"name":"decreaseApproval","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_addedValue","type":"uint256"}],"name":"increaseApproval","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}]"#;
 
 fn decode_c_hex (s: &[c_char]) -> Vec<u8> {
@@ -335,6 +335,7 @@ impl EthClient {
         id: Vec<u8>,
         alice_address: H160,
         bob_hash: Vec<u8>,
+        alice_hash: Vec<u8>,
         amount: U256,
         lock_time: u64
     ) -> Result<H256, web3::Error> {
@@ -347,6 +348,7 @@ impl EthClient {
             Token::FixedBytes(id),
             Token::Address(alice_address),
             Token::FixedBytes(bob_hash),
+            Token::FixedBytes(alice_hash),
             Token::Uint(U256::from(lock_time))
         ]).unwrap();
 
@@ -365,6 +367,7 @@ impl EthClient {
         alice_address: H160,
         token_address: H160,
         bob_hash: Vec<u8>,
+        alice_hash: Vec<u8>,
         mut amount: U256,
         lock_time: u64,
         decimals: u8
@@ -383,6 +386,7 @@ impl EthClient {
             Token::Uint(amount),
             Token::Address(alice_address),
             Token::FixedBytes(bob_hash),
+            Token::FixedBytes(alice_hash),
             Token::Address(token_address),
             Token::Uint(U256::from(lock_time))
         ]).unwrap();
@@ -402,6 +406,7 @@ impl EthClient {
         alice_address: H160,
         token_address: H160,
         bob_secret: Vec<u8>,
+        alice_hash: Vec<u8>,
         mut amount: U256,
         decimals: u8
     ) -> Result<H256, web3::Error> {
@@ -418,6 +423,7 @@ impl EthClient {
             Token::FixedBytes(id),
             Token::Uint(amount),
             Token::FixedBytes(bob_secret),
+            Token::FixedBytes(alice_hash),
             Token::Address(alice_address),
             Token::Address(token_address),
         ]).unwrap();
@@ -571,6 +577,7 @@ impl EthClient {
         &self,
         id: Vec<u8>,
         mut amount: U256,
+        alice_secret: Vec<u8>,
         bob_address: H160,
         token_address: H160,
         bob_hash: Vec<u8>,
@@ -588,6 +595,7 @@ impl EthClient {
         let encoded = alice_claims_deposit.encode_input(&[
             Token::FixedBytes(id),
             Token::Uint(amount),
+            Token::FixedBytes(alice_secret),
             Token::Address(bob_address),
             Token::Address(token_address),
             Token::FixedBytes(bob_hash),
@@ -914,6 +922,7 @@ pub extern "C" fn bob_sends_eth_deposit(
             decode_c_hex(&input.deposit_id[2..]),
             H160::from_str(alice_addr_slice).unwrap(),
             decode_c_hex(&input.bob_hash[2..]),
+            decode_c_hex(&input.alice_hash[2..]),
             U256::from(input.amount) * U256::exp10(10),
             input.lock_time
         );
@@ -954,6 +963,7 @@ pub extern "C" fn verify_bob_eth_deposit_data(
             Token::FixedBytes(decode_c_hex(&input.deposit_id[2..])),
             Token::Address(H160::from_str(alice_address_slice).unwrap()),
             Token::FixedBytes(decode_c_hex(&input.bob_hash[2..])),
+            Token::FixedBytes(decode_c_hex(&input.alice_hash[2..])),
             Token::Uint(U256::from(input.lock_time)),
         ]).unwrap();
         (decoded == encoded) as u8
@@ -974,6 +984,7 @@ pub extern "C" fn bob_sends_erc20_deposit(
             H160::from_str(alice_addr_slice).unwrap(),
             H160::from_str(token_addr_slice).unwrap(),
             decode_c_hex(&input.bob_hash[2..]),
+            decode_c_hex(&input.alice_hash[2..]),
             U256::from(input.amount) * U256::exp10(10),
             input.lock_time,
             input.decimals
@@ -1021,6 +1032,7 @@ pub extern "C" fn verify_bob_erc20_deposit_data(
             Token::Uint(amount),
             Token::Address(H160::from_str(alice_addr_slice).unwrap()),
             Token::FixedBytes(decode_c_hex(&input.bob_hash[2..])),
+            Token::FixedBytes(decode_c_hex(&input.alice_hash[2..])),
             Token::Address(H160::from_str(token_addr_slice).unwrap()),
             Token::Uint(U256::from(input.lock_time))
         ]).unwrap();
@@ -1042,6 +1054,7 @@ pub extern "C" fn bob_refunds_deposit(
             H160::from_str(alice_addr_slice).unwrap(),
             H160::from_str(token_addr_slice).unwrap(),
             decode_c_hex(&input.bob_secret[2..]),
+            decode_c_hex(&input.alice_hash[2..]),
             U256::from(input.amount) * U256::exp10(10),
             input.decimals
         );
@@ -1071,6 +1084,7 @@ pub extern "C" fn alice_claims_bob_deposit(
         let tx_id = (*eth_client).alice_claims_bob_deposit(
             decode_c_hex(&input.deposit_id[2..]),
             U256::from(input.amount) * U256::exp10(10),
+            decode_c_hex(&input.alice_secret[2..]),
             H160::from_str(bob_addr_slice).unwrap(),
             H160::from_str(token_addr_slice).unwrap(),
             decode_c_hex(&input.bob_hash[2..]),
@@ -1914,22 +1928,25 @@ pub mod test {
     #[test]
     fn test_verify_bob_eth_deposit_data() {
         let mut bob_hash: [c_char; 65usize] = [0; 65];
+        let mut alice_hash: [c_char; 65usize] = [0; 65];
         let mut alice_address: [c_char; 65usize] = [0; 65];
         let mut deposit_id: [c_char; 70usize] = [0; 70];
         unsafe {
-            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x79e1c42c4daa013784767d91525ae043f38193e7").unwrap().as_ptr());
-            libc::strcpy(alice_address.as_mut_ptr(), CString::new("0x4b2d0d6c2c785217457b69b922a2a9cea98f71e9").unwrap().as_ptr());
-            libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0xaac640036de31b9eb9ef2978903e2202c19b1229edd8ca60bdee9228246e2905").unwrap().as_ptr());
+            libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0xe3d25fdd0e5d4d7aa4c315a140803c89c2fa195b").unwrap().as_ptr());
+            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0xe863f395be0d20a7ab5e9ef43eb2fd2e8dafa8b7").unwrap().as_ptr());
+            libc::strcpy(alice_address.as_mut_ptr(), CString::new("0xbab36286672fbdc7b250804bf6d14be0df69fa29").unwrap().as_ptr());
+            libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0x532518acab4481e14fafad24591375e3d6f7780809544867d51c68ae0255f6b4").unwrap().as_ptr());
         }
 
-        let valid_data = CString::new("0xdd23795faac640036de31b9eb9ef2978903e2202c19b1229edd8ca60bdee9228246e29050000000000000000000000004b2d0d6c2c785217457b69b922a2a9cea98f71e979e1c42c4daa013784767d91525ae043f38193e7000000000000000000000000000000000000000000000000000000000000000000000000000000005b76d4df").unwrap();
+        let valid_data = CString::new("0x26e8cd23532518acab4481e14fafad24591375e3d6f7780809544867d51c68ae0255f6b4000000000000000000000000bab36286672fbdc7b250804bf6d14be0df69fa29e863f395be0d20a7ab5e9ef43eb2fd2e8dafa8b7000000000000000000000000e3d25fdd0e5d4d7aa4c315a140803c89c2fa195b000000000000000000000000000000000000000000000000000000000000000000000000000000005bae749b").unwrap();
 
         let input = BobSendsEthDepositInput {
-            amount: 10009000,
+            amount: 11510012,
             bob_hash,
+            alice_hash,
             alice_address,
             deposit_id,
-            lock_time: 1534514399
+            lock_time: 1538159771
         };
 
         assert_eq!(verify_bob_eth_deposit_data(input, valid_data.as_ptr()), 1);
@@ -1968,25 +1985,28 @@ pub mod test {
     #[test]
     fn test_verify_bob_erc20_deposit_data() {
         let mut bob_hash: [c_char; 65usize] = [0; 65];
+        let mut alice_hash: [c_char; 65usize] = [0; 65];
         let mut alice_address: [c_char; 65usize] = [0; 65];
         let mut token_address: [c_char; 65usize] = [0; 65];
         let mut deposit_id: [c_char; 70usize] = [0; 70];
         unsafe {
-            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x736060647a2da6f52dcd23b346d6f9949de2fa7a").unwrap().as_ptr());
+            libc::strcpy(alice_hash.as_mut_ptr(), CString::new("0x5a7f369a568b509a803de49881030e485f356a1f").unwrap().as_ptr());
+            libc::strcpy(bob_hash.as_mut_ptr(), CString::new("0x64750e67fb614037970cc77013ba2938d8401b35").unwrap().as_ptr());
             libc::strcpy(alice_address.as_mut_ptr(), CString::new("0xbab36286672fbdc7b250804bf6d14be0df69fa29").unwrap().as_ptr());
             libc::strcpy(token_address.as_mut_ptr(), CString::new("0xc0eb7aed740e1796992a08962c15661bdeb58003").unwrap().as_ptr());
-            libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0x73a9c9f1d179f79c062fbb6fd1eba60a5bb797575e99ff2b905e57f779c21ff0").unwrap().as_ptr());
+            libc::strcpy(deposit_id.as_mut_ptr(), CString::new("0x42b0ca74008fc433c61c30c844390b39033c4466c91cf30750b7e48832238e14").unwrap().as_ptr());
         }
 
-        let valid_data = CString::new("0x5d56725973a9c9f1d179f79c062fbb6fd1eba60a5bb797575e99ff2b905e57f779c21ff00000000000000000000000000000000000000000000000000181126bbe78f000000000000000000000000000bab36286672fbdc7b250804bf6d14be0df69fa29736060647a2da6f52dcd23b346d6f9949de2fa7a000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003000000000000000000000000000000000000000000000000000000005b5aeffe").unwrap();
+        let valid_data = CString::new("0x57282b9642b0ca74008fc433c61c30c844390b39033c4466c91cf30750b7e48832238e14000000000000000000000000000000000000000000000000019ca41039be6000000000000000000000000000bab36286672fbdc7b250804bf6d14be0df69fa2964750e67fb614037970cc77013ba2938d8401b350000000000000000000000005a7f369a568b509a803de49881030e485f356a1f000000000000000000000000000000000000000000000000c0eb7aed740e1796992a08962c15661bdeb58003000000000000000000000000000000000000000000000000000000005bae7623").unwrap();
 
         let input = BobSendsErc20DepositInput {
-            amount: 10838812,
+            amount: 11614808,
             bob_hash,
+            alice_hash,
             alice_address,
             token_address,
             deposit_id,
-            lock_time: 1532686334,
+            lock_time: 1538160163,
             decimals: 18
         };
 

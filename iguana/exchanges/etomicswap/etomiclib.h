@@ -10,9 +10,6 @@
 extern "C" {
 #endif
 
-#define ETOMIC_ALICECONTRACT "0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c"
-#define ETOMIC_BOBCONTRACT "0x2a8e4f9ae69c86e277602c6802085febc4bd5986"
-
 #define EMPTY_ETH_TX_ID "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 typedef struct {
@@ -57,6 +54,7 @@ typedef struct {
     char deposit_id[70];
     char alice_address[65];
     char bob_hash[65];
+    char alice_hash[65];
     uint64_t lock_time;
     uint64_t amount;
 } BobSendsEthDepositInput;
@@ -67,6 +65,7 @@ typedef struct {
     char token_address[65];
     char alice_address[65];
     char bob_hash[65];
+    char alice_hash[65];
     uint64_t lock_time;
     uint8_t decimals;
 } BobSendsErc20DepositInput;
@@ -77,12 +76,14 @@ typedef struct {
     char token_address[65];
     char alice_address[65];
     char bob_secret[70];
+    char alice_hash[70];
     uint8_t decimals;
 } BobRefundsDepositInput;
 
 typedef struct {
     char deposit_id[70];
     uint64_t amount;
+    char alice_secret[70];
     char token_address[65];
     char bob_address[65];
     char bob_hash[65];
