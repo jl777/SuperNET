@@ -210,7 +210,7 @@ fn ensure_writable (dir_path: &Path) -> bool {
 mod test {
     use gstuff::{now_float, slurp};
 
-    use helpers::for_tests::{MarketMakerIt, RaiiKill};
+    use helpers::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 
     use hyper::StatusCode;
 
@@ -249,7 +249,7 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        println! ("test_autoprice] `mm2` log: {:?}.", mm.log_path);
+        let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
@@ -322,7 +322,7 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        println! ("test_rpc] `mm2` log: {:?}.", mm.log_path);
+        let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         let no_method = unwrap! (mm.rpc (json! ({
@@ -420,9 +420,8 @@ mod test {
                     json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
                     "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
                     local_start));
-                println! ("test_events] `mm2` log: {:?}.", mm.log_path);
+                let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
 
-                println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
                 let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
                     .env ("_MM2_TEST_EVENTS_MODE", "MM_EVENTS")
                     .env ("MM2_UNBUFFERED_OUTPUT", "1")
@@ -467,9 +466,7 @@ mod test {
                         }
                     };
 
-                    if now_float() - started > 60. {
-                        println! ("--- mm2.log ---\n{}\n", unwrap! (mm.log_as_utf8()));
-                        panic! ("Test didn't pass withing the 60 seconds timeframe. mm_state={:?}", mm_state)}
+                    if now_float() - started > 60. {panic! ("Test didn't pass withing the 60 seconds timeframe. mm_state={:?}", mm_state)}
                     sleep (Duration::from_millis (20))
                 }
             }
