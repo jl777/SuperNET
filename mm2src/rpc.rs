@@ -26,6 +26,8 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use hyper::header::{HeaderValue, CONTENT_TYPE};
+use rpc_commands::*;
+use serde::Serialize;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
@@ -49,6 +51,12 @@ const STATS_VALID_METHODS : &[&str; 14] = &[
 
 fn lp_valid_remote_method(method: &str) -> bool {
     STATS_VALID_METHODS.iter().position(|&s| s == method).is_some()
+}
+
+const PORTED_METHODS : &[Option<&str>] = &[Some("version"), Some("help")];
+
+fn is_ported(method: Option<&str>) -> bool {
+    PORTED_METHODS.iter().position(|&s| s == method).is_some()
 }
 
 macro_rules! unwrap_or_err_response {
@@ -78,6 +86,27 @@ struct ErrResponse {
     error: String,
 }
 
+#[derive(Serialize)]
+struct SuccessResponse<T> {
+    result: T,
+}
+
+fn serialize_result<T> (result: T) -> Result<String, String>
+where T: Serialize {
+    json::to_string(&SuccessResponse {
+        result
+    }).map_err(|e| err_to_json_string(&ERRL!("{}", e)))
+}
+
+fn call_method(method: Option<&str>) -> Result<String, String> {
+    let result = match method {
+        Some("version") => version(),
+        Some("help") => help(),
+        _ => return Err(err_to_json_string(&ERRL!("Invalid method")))
+    };
+    serialize_result(result)
+}
+
 struct RpcService {
     /// Allows us to get the `MmCtx` if it is still around.
     ctx_ffi_handler: u32,
@@ -87,11 +116,17 @@ struct RpcService {
 
 fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json)
                         -> Result<String, String> {
-    let body_json = unwrap_or_err_msg!(CJSON::from_str(&json.to_string()),
-                                        "Couldn't parse request body as json");
     if !remote_addr.ip().is_loopback() && !lp_valid_remote_method(json["method"].as_str().unwrap()) {
         return Ok(err_to_json_string("Selected method can be called from localhost only!"));
     }
+
+    let method = json["method"].as_str();
+    if is_ported(method) {
+        return call_method(method);
+    }
+
+    let body_json = unwrap_or_err_msg!(CJSON::from_str(&json.to_string()),
+                                        "Couldn't parse request body as json");
 
     if !json["queueid"].is_null() {
         if json["queueid"].is_u64() {

@@ -103,6 +103,7 @@ mod lp_native_dex;
 use lp_native_dex::{lp_init};
 
 pub mod rpc;
+pub mod rpc_commands;
 
 use crash_reports::init_crash_reports;
 

@@ -14,10 +14,11 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_commands.c
+//  rpc_commands.rs
 //  marketmaker
 //
-
+use helpers::{MM_VERSION};
+/*
 char *LP_numutxos()
 {
     cJSON *retjson = cJSON_CreateObject();
@@ -99,94 +100,92 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
      }*/
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
-     else if ( strcmp(method,"help") == 0 )
-         return(clonestr("{\"result\":\" \
-available localhost RPC commands: \n \
-setprice(base, rel, price, broadcast=1)\n\
-autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*\n\
-goal(coin=*, val=<autocalc>)\n\
-myprice(base, rel)\n\
-enable(coin)\n\
-disable(coin)\n\
-notarizations(coin)\n\
-statsdisp(starttime=0, endtime=0, gui="", pubkey="", base="", rel="")\n\
-ticker(base="", rel="")\n\
-tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]\n\
-pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
-getrawtransaction(coin, txid)\n\
-inventory(coin, reset=0, [passphrase=])\n\
-lastnonce()\n\
-cancel(uuid)\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
-withdraw(coin, outputs[], broadcast=0)\n\
-eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)\n\
-txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)\n\
-sendrawtransaction(coin, signedtx)\n\
-swapstatus(pending=0, fast=0)\n\
-swapstatus(coin, limit=10)\n\
-swapstatus(base, rel, limit=10)\n\
-swapstatus(requestid, quoteid, pending=0, fast=0)\n\
-recentswaps(limit=3)\n\
-kickstart(requestid, quoteid)\n\
-notarizations(coin)\n\
-public API:\n \
-getcoins()\n\
-getcoin(coin)\n\
-portfolio()\n\
-getpeers()\n\
-passphrase(passphrase, gui, netid=0, seednode="")\n\
-listunspent(coin, address)\n\
-setconfirms(coin, numconfirms, maxconfirms=6)\n\
-trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
-balance(coin, address)\n\
-balances(address)\n\
-fundvalue(address="", holdings=[], divisor=0)\n\
-orderbook(base, rel, duration=3600)\n\
-getprices()\n\
-inuse()\n\
-movecoinbases(coin)\n\
-getmyprice(base, rel)\n\
-getprice(base, rel)\n\
-//sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
-//getmessages(firsti=0, num=100)\n\
-//deletemessages(firsti=0, num=100)\n\
-secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
-gen64addrs(passphrase, taddr=0, pubtype=60)\n\
-electrum(coin, ipaddr, port)\n\
-snapshot(coin, height)\n\
-snapshot_balance(coin, height, addresses[])\n\
-dividends(coin, height, <args>)\n\
-stop()\n\
-bot_list()\n\
-bot_statuslist()\n\
-bot_buy(base, rel, maxprice, relvolume) -> botid\n\
-bot_sell(base, rel, minprice, basevolume) -> botid\n\
-bot_settings(botid, newprice, newvolume)\n\
-bot_status(botid)\n\
-bot_stop(botid)\n\
-bot_pause(botid)\n\
-calcaddress(passphrase, coin=KMD)\n\
-convaddress(coin, address, destcoin)\n\
-instantdex_deposit(weeks, amount, broadcast=1)\n\
-instantdex_claim()\n\
-timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
-unlockedspend(coin, txid)\n\
-opreturndecrypt(coin, txid, passphrase)\n\
-getendpoint(port=5555)\n\
-getfee(coin)\n\
-mpnet(onoff)\n\
-sleep(seconds=60)\n\
-listtransactions(coin, address, count=10, skip=0)\n\
-jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
-version\n\
-\"}"));
-    if ( strcmp(method,"version") == 0 ) {
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result",MM_VERSION);
-        return(jprint(retjson,1));
-    }
+*/
+pub fn help() -> &'static str {
+    "
+    available localhost RPC commands:
+    setprice(base, rel, price, broadcast=1)
+    autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*
+    goal(coin=*, val=<autocalc>)
+    myprice(base, rel)
+    enable(coin)
+    disable(coin)
+    notarizations(coin)
+    statsdisp(starttime=0, endtime=0, gui=\"\", pubkey=\"\", base=\"\", rel=\"\")
+    ticker(base=\"\", rel=\"\")
+    tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+    pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]
+    getrawtransaction(coin, txid)
+    inventory(coin, reset=0, [passphrase=])
+    lastnonce()
+    cancel(uuid)
+    buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)
+    sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)
+    withdraw(coin, outputs[], broadcast=0)
+    eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)
+    txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)
+    sendrawtransaction(coin, signedtx)
+    swapstatus(pending=0, fast=0)
+    swapstatus(coin, limit=10)
+    swapstatus(base, rel, limit=10)
+    swapstatus(requestid, quoteid, pending=0, fast=0)
+    recentswaps(limit=3)
+    kickstart(requestid, quoteid)
+    notarizations(coin)
+    public API:
+    getcoins()
+    getcoin(coin)
+    portfolio()
+    getpeers()
+    passphrase(passphrase, gui, netid=0, seednode=\"\")
+    listunspent(coin, address)
+    setconfirms(coin, numconfirms, maxconfirms=6)
+    trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist
+    balance(coin, address)
+    balances(address)
+    fundvalue(address=\"\", holdings=[], divisor=0)
+    orderbook(base, rel, duration=3600)
+    getprices()
+    inuse()
+    movecoinbases(coin)
+    getmyprice(base, rel)
+    getprice(base, rel)
+    secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)
+    gen64addrs(passphrase, taddr=0, pubtype=60)
+    electrum(coin, ipaddr, port)
+    snapshot(coin, height)
+    snapshot_balance(coin, height, addresses[])
+    dividends(coin, height, <args>)
+    stop()
+    bot_list()
+    bot_statuslist()
+    bot_buy(base, rel, maxprice, relvolume) -> botid
+    bot_sell(base, rel, minprice, basevolume) -> botid
+    bot_settings(botid, newprice, newvolume)
+    bot_status(botid)
+    bot_stop(botid)
+    bot_pause(botid)
+    calcaddress(passphrase, coin=KMD)
+    convaddress(coin, address, destcoin)
+    instantdex_deposit(weeks, amount, broadcast=1)
+    instantdex_claim()
+    timelock(coin, duration, destaddr=(tradeaddr), amount)
+    unlockedspend(coin, txid)
+    opreturndecrypt(coin, txid, passphrase)
+    getendpoint(port=5555)
+    getfee(coin)
+    mpnet(onoff)
+    sleep(seconds=60)
+    listtransactions(coin, address, count=10, skip=0)
+    jpg(srcfile, destfile, power2=7, password, data=\"\", required, ind=0)
+    version
+    "
+}
 
+pub fn version() -> &'static str {
+    MM_VERSION
+}
+/*
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
     if ((rel= jstr(argjson,"rel")) == 0 )
@@ -1036,3 +1035,5 @@ version\n\
     }
     return(0);
 }
+*/
+*/*/*/
