@@ -629,7 +629,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);
-void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp);
+void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp,double kmd_btc,double bch_btc,double ltc_btc);
 extern int32_t LP_autoprices, num_LP_autorefs;
 char *LP_portfolio();
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui);

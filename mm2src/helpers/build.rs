@@ -156,6 +156,7 @@ fn generate_bindings() {
             "LP_pricesparse",
             "LP_ticker",
             "LP_queuecommand",
+            "LP_CMCbtcprice",
         ]
             .iter(),
         // types

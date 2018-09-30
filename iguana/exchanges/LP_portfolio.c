@@ -472,13 +472,10 @@ int32_t LP_autoref_clear(char *base,char *rel)
     return(-1);
 }
 
-void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
+void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp,double kmd_btc,double bch_btc,double ltc_btc)
 {
     static cJSON *tickerjson; static uint32_t lasttime;
-    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,ltc_btc,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
-    kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
-    bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
-    ltc_btc = LP_CMCbtcprice(&bch_usd,"litecoin");
+    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     for (i=0; i<num_LP_autorefs; i++)
     {
         rel = LP_autorefs[i].rel;

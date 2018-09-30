@@ -14,10 +14,15 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_prices.c
+//  prices.rs
 //  marketmaker
 //
 
+use lp;
+use std::os::raw::c_char;
+use std::ffi::CString;
+
+/*
 struct LP_orderbookentry
 {
     bits256 pubkey;
@@ -1209,7 +1214,15 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
 }
 
 double LP_CMCbtcprice(double *price_usdp,char *symbol)
-{
+*/
+
+pub fn lp_btcprice (symbol: &str) -> Result<f64, String> {
+    let mut usd = 0.;
+    let symbol = try_s! (CString::new (symbol));
+    Ok (unsafe {lp::LP_CMCbtcprice (&mut usd, symbol.as_ptr() as *mut c_char)})
+}
+
+/*
     char *retstr; cJSON *ticker,*item; double price_btc = 0.;
     *price_usdp = 0.;
     if ( (retstr= cmc_ticker(symbol)) != 0 )
@@ -1310,3 +1323,4 @@ cJSON *LP_fundvalue(cJSON *argjson)
     return(retjson);
 }
 
+*/

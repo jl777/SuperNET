@@ -31,9 +31,12 @@ extern crate serde_json;
 #[macro_use]
 extern crate unwrap;
 
+mod prices;
+
 use gstuff::now_ms;
 use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
 use hyper::{StatusCode, HeaderMap};
+use prices::lp_btcprice;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::mem::{zeroed};
@@ -578,6 +581,10 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         if cs != null_mut() {unsafe {libc::free (cs as *mut libc::c_void)}}
     }
 
+    let kmd_btc = try_s! (lp_btcprice ("komodo"));
+    let bch_btc = try_s! (lp_btcprice ("bitcoin-cash"));
+    let ltc_btc = try_s! (lp_btcprice ("litecoin"));
+
     /*
     kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
     bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
@@ -680,9 +687,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         }
     }
     */
-    if unsafe {lp::LP_autoprices} != 0 {
-        unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp)}
-    }
+    unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, kmd_btc, bch_btc, ltc_btc)}
     Ok(())
 }
 /*
@@ -949,11 +954,13 @@ pub fn prices_loop (ctx: MmArc) {
             btc_wait_status.take().map (|s| s.append (" Done."));
         }
 
-        if let Err (err) = lp_autoprice_iter (&ctx, btcpp) {
-            ctx.log.log ("🤯", &[&"portfolio"], &format! ("!lp_autoprice_iter: {}", err));
-            // Keep trying, maybe the error will go away. But wait a bit in order not to overflow the log.
-            sleep (Duration::from_secs (2));
-            continue
+        if unsafe {lp::LP_autoprices} != 0 {
+            if let Err (err) = lp_autoprice_iter (&ctx, btcpp) {
+                ctx.log.log ("🤯", &[&"portfolio"], &format! ("!lp_autoprice_iter: {}", err));
+                // Keep trying, maybe the error will go away. But wait a bit in order not to overflow the log.
+                sleep (Duration::from_secs (2));
+                continue
+            }
         }
 
         // TODO: `LP_portfolio` should return a `Json` (or a serializable structure) and not a string.
