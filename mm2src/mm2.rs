@@ -302,7 +302,7 @@ mod test {
 
         // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("rpc] on_stop, firing shutdown_tx!")));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] drop!")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!") || log.contains ("--- LogState] Remaining status entries. ---")));
     }
 
     /// Integration test for RPC server.
@@ -496,6 +496,7 @@ fn help() {
         "                     Set 0x105aFE60fDC8B5c021092b09E8a042135A4A976E for Ropsten testnet\n"
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         "  client         ..  '1' to use the client mode.\n"
+        "  cmc_key        ..  CoinMarketCap Professional API key. Switches from CoinGecko to CoinMarketCap.\n"
         "  ethnode        ..  HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet).\n"
         "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
         "  log            ..  File path. Redirect (as of now only a part of) the log there.\n"
