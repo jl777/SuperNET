@@ -1,7 +1,6 @@
 //! Human-readable logging and statuses.
 
 // TODO: As we discussed with Artem, skip a status update if it is equal to the previous update.
-// TODO: -> Make the dashboard entries unique on the tags (if the tags match then this is the same status).
 // TODO: Sort the tags while converting `&[&TagParam]` to `Vec<Tag>`.
 
 #[cfg(test)]
@@ -168,10 +167,12 @@ impl<'a> StatusHandle<'a> {
             trail: Vec::new()
         };
         if let Some (ref status) = self.status {
-            let mut shared_status = unwrap! (status.lock(), "Can't lock the status");
-            swap (&mut stack_status, &mut shared_status);
-            swap (&mut stack_status.trail, &mut shared_status.trail);  // Move the existing `trail` back to the `shared_status`.
-            shared_status.trail.push (stack_status);
+            {
+                let mut shared_status = unwrap! (status.lock(), "Can't lock the status");
+                swap (&mut stack_status, &mut shared_status);
+                swap (&mut stack_status.trail, &mut shared_status.trail);  // Move the existing `trail` back to the `shared_status`.
+                shared_status.trail.push (stack_status);
+            }
             self.log.updated (status);
         } else {
             let status = Arc::new (Mutex::new (stack_status));
@@ -371,9 +372,9 @@ impl LogState {
         cb (&*tail)
     }
 
-   /// Creates the status.
-   pub fn status<'b> (&self, tags: &[&TagParam], line: &str) -> StatusHandle {
-        let mut status = self.status_handle();
+    /// Creates the status or rewrites it if the tags match.
+    pub fn status<'b> (&self, tags: &[&TagParam], line: &str) -> StatusHandle {
+        let mut status = self.claim_status (tags) .unwrap_or (self.status_handle());
         status.status (tags, line);
         status
     }
@@ -452,6 +453,12 @@ impl LogState {
     }
 
     fn chunk2log (&self, chunk: String) {
+        // As of now we're logging from both the C and the Rust code and mixing the `println!` with the file writing to boot.
+        // On Windows these writes aren't atomic unfortunately.
+        // Duplicating the logging output here is a temporary workaround.
+        // This should become unnecessary in the future as we port more code to Rust or Rust logging.
+        if cfg! (windows) {print! ("⸗{}", chunk)}
+
         match self.log_file {
             Some (ref f) => match f.lock() {
                 Ok (mut f) => {
