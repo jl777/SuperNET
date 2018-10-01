@@ -18,9 +18,12 @@
 //  marketmaker
 //
 
-use lp;
-use std::os::raw::c_char;
-use std::ffi::CString;
+use futures;
+use gstuff::now_float;
+use helpers::slurp_req;
+use hyper::{Body, Request, StatusCode};
+use hyper::header::CONTENT_TYPE;
+use serde_json::{self as json};
 
 /*
 struct LP_orderbookentry
@@ -1213,33 +1216,78 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
     //    printf("error finding %s/%s %.8f\n",base,rel,price);
 }
 
-double LP_CMCbtcprice(double *price_usdp,char *symbol)
 */
 
-pub fn lp_btcprice (symbol: &str) -> Result<f64, String> {
-    let mut usd = 0.;
-    let symbol = try_s! (CString::new (symbol));
-    Ok (unsafe {lp::LP_CMCbtcprice (&mut usd, symbol.as_ptr() as *mut c_char)})
+use futures::Future;
+
+#[derive(Clone, Debug)]
+pub struct BtcPrice {
+    pub kmd: f64,
+    pub bch: f64,
+    pub ltc: f64,
+    pub at_time: f64
+}
+
+/// Load coin prices from CoinGecko or, if `cmc_key` is given, from CoinMarketCap.
+pub fn lp_btcprice (cmc_key: &Option<String>) -> Box<Future<Item=BtcPrice, Error=String> + Send> {
+    let (request, _curl_example) = if let Some (ref cmc_key) = cmc_key {
+        let url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=KMD,BCH,LTC&convert=BTC";
+        ( try_fus! (Request::builder().uri (url) .header ("X-CMC_PRO_API_KEY", &cmc_key[..]) .body (Body::empty())),
+          format! ("curl --header 'Content-Type: application/json' --header 'X-CMC_PRO_API_KEY: {}' '{}'", cmc_key, url) )
+    } else {
+        let url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=btc&ids=komodo,bitcoin-cash,litecoin";
+        ( try_fus! (Request::builder().uri (url) .body (Body::empty())),
+          format! ("curl '{}'", url) )
+    };
+    //println! ("lp_btcprice] Fetching prices, akin to\n$ {}", _curl_example);
+
+    let f = slurp_req (request);
+
+    let cmc = cmc_key.is_some();
+
+    #[derive(Deserialize, Debug)]
+    struct CoinMarketCap {
+        // TODO
+    }
+
+    #[derive(Deserialize, Debug)]
+    struct CoinGecko<'a> {
+        symbol: &'a str,
+        current_price: f64
+    }
+
+    let f = f.then (move |r| -> Result<BtcPrice, String> {
+        let (status_code, headers, body) = try_s! (r);
+        if status_code != StatusCode::OK {return ERR! ("status_code {:?}", status_code)}
+        let ct = match headers.get (CONTENT_TYPE) {Some (ct) => ct, None => return ERR! ("No Content-Type")};
+        let ct = try_s! (ct.to_str());
+        if !ct.starts_with ("application/json") {return ERR! ("Content-Type not JSON: {}", ct)}
+        if cmc {
+            let reply: Vec<CoinMarketCap> = try_s! (json::from_slice (&body));
+            println! ("lp_btcprice] Parsed reply: {:?}", reply);
+            ERR! ("TBD")
+        } else {
+            let reply: Vec<CoinGecko> = match json::from_slice (&body) {
+                Ok (r) => r,
+                Err (err) => {
+                    eprintln! ("lp_btcprice] Bad CoinGecko response ({}): {}", err, String::from_utf8_lossy (&body));
+                    return ERR! ("Can't parse the CoinGecko response: {}", err)
+                }
+            };
+            //println! ("lp_btcprice] Parsed reply: {:?}", reply);
+            Ok (BtcPrice {
+                kmd: try_s! (reply.iter().find (|e| e.symbol == "kmd") .ok_or ("!kmd")) .current_price,
+                bch: try_s! (reply.iter().find (|e| e.symbol == "bch") .ok_or ("!bch")) .current_price,
+                ltc: try_s! (reply.iter().find (|e| e.symbol == "ltc") .ok_or ("!ltc")) .current_price,
+                at_time: now_float()
+            })
+        }
+    });
+
+    Box::new (f)
 }
 
 /*
-    char *retstr; cJSON *ticker,*item; double price_btc = 0.;
-    *price_usdp = 0.;
-    if ( (retstr= cmc_ticker(symbol)) != 0 )
-    {
-        if ( (ticker= cJSON_Parse(retstr)) != 0 )
-        {
-            item = jitem(ticker,0);
-            price_btc = jdouble(item,"price_btc");
-            *price_usdp = jdouble(item,"price_usd");
-//printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
-            free_json(ticker);
-        }
-        free(retstr);
-    }
-    return(price_btc);
-}
-
 cJSON *LP_fundvalue(cJSON *argjson)
 {
     cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;

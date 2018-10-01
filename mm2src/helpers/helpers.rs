@@ -575,10 +575,11 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
     /// Performs the maintenance operations necessary to periodically refresh the resource.
     pub fn tick (&self) -> Result<(), String> {
         let now = now_float();
-        let last_start = f64::from_bits (self.last_start.load (Ordering::Relaxed) as u64);
         let last_finish = match * try_s! (self.shelf.lock()) {Some (ref rer_shelf) => rer_shelf.time, None => 0.};
+        let last_start = f64::from_bits (self.last_start.load (Ordering::Relaxed) as u64);
 
         if now - last_start > self.timeout_sec || (last_finish > last_start && now - last_start > self.every_n_sec) {
+            self.last_start.store (now.to_bits() as usize, Ordering::Relaxed);
             let sync = try_s! (self.sync.lock());
             let f = (*sync)();
             let shelf_tx = self.shelf.clone();

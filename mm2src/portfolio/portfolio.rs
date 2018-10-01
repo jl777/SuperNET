@@ -19,6 +19,7 @@
 //
 
 extern crate futures;
+extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
 extern crate helpers;
@@ -29,19 +30,24 @@ extern crate libc;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate unwrap;
 
 mod prices;
 
+use fxhash::FxHashMap;
 use gstuff::now_ms;
 use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
+use helpers::log::TagParam;
 use hyper::{StatusCode, HeaderMap};
-use prices::lp_btcprice;
+use prices::{lp_btcprice, BtcPrice};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::mem::{zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::thread::sleep;
@@ -521,7 +527,6 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     }
 
     try_s! (BITTREX_MARKETSUMMARIES.tick());
-    try_s! (CRYPTOPIA_MARKETS.tick());
 
     let status = ctx.log.claim_status (&[&"portfolio", &("bittrex", "waiting")]);
     let (nxtkmd, waiting_for_markets) = if try_s! (BITTREX_MARKETSUMMARIES.last_finish()) == 0.0 {
@@ -541,6 +546,8 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             Err (err) => {status.map (|s| s.append (&format! (" Error: {}", err))); (0., true)}
         }
     };
+
+    try_s! (CRYPTOPIA_MARKETS.tick());
 
     let status = ctx.log.claim_status (&[&"portfolio", &("cryptopia", "waiting")]);
     let waiting_for_markets = if try_s! (CRYPTOPIA_MARKETS.last_finish()) == 0.0 {
@@ -581,14 +588,40 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         if cs != null_mut() {unsafe {libc::free (cs as *mut libc::c_void)}}
     }
 
-    let kmd_btc = try_s! (lp_btcprice ("komodo"));
-    let bch_btc = try_s! (lp_btcprice ("bitcoin-cash"));
-    let ltc_btc = try_s! (lp_btcprice ("litecoin"));
+    lazy_static! {
+        /// A map from the configurable `cmc_key` to the corresponding price fetching resource.
+        static ref BTC_PRICE_RESOURCES: Mutex<FxHashMap<Option<String>, RefreshedExternalResource<BtcPrice>>> = Mutex::new (FxHashMap::default());
+    }
+    let btc_price = {
+        let cmc_key = match ctx.conf["cmc_key"] {
+            Json::Null => None,
+            Json::String (ref k) => Some (k.clone()),
+            _ => return ERR! ("cmc_key is not a string")
+        };
+        let mut btc_price_resources = try_s! (BTC_PRICE_RESOURCES.lock());
+        let resource = btc_price_resources.entry (cmc_key.clone())
+            .or_insert (RefreshedExternalResource::new (30., 40., Box::new (move || lp_btcprice (&cmc_key))));
+        try_s! (resource.tick());
+        let status_tags: &[&TagParam] = &[&"portfolio", &"waiting-cmc-gecko"];
+        let btc_price = try_s! (resource.with_result (|r| {match r {
+            Some (Ok (bp)) => {
+                ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Done! ({}, {}, {})", bp.kmd, bp.bch, bp.ltc));
+                Ok (Some (bp.clone()))
+            },
+            Some (Err (err)) => {
+                ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Error: {}", err)) .detach();
+                Ok (None)
+            },
+            None => {
+                ctx.log.status (status_tags, "Waiting for coin prices (KMD, BCH, LTC)...") .detach();
+                Ok (None)
+            }
+        }}));
+        if let Some (btc_price) = btc_price {btc_price}
+        else {return Ok(())}  // Wait for the prices.
+    };
 
     /*
-    kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
-    bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
-    ltc_btc = LP_CMCbtcprice(&bch_usd,"litecoin");
     for (i=0; i<num_LP_autorefs; i++)
     {
         rel = LP_autorefs[i].rel;
@@ -687,7 +720,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         }
     }
     */
-    unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, kmd_btc, bch_btc, ltc_btc)}
+    unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, btc_price.kmd, btc_price.bch, btc_price.ltc)}
     Ok(())
 }
 /*
