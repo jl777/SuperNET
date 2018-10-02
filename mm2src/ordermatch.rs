@@ -15,10 +15,10 @@
  ******************************************************************************/
 
 //
-//  LP_ordermatch.c
+//  ordermatch.rs
 //  marketmaker
 //
-
+/*
 struct LP_gtcorder
 {
     struct LP_gtcorder *next,*prev;
@@ -1840,5 +1840,4 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
     }
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey,uuidstr));
 }
-
-
+*/
