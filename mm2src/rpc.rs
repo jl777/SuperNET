@@ -171,6 +171,14 @@ fn err_response(status: u16, msg: &str) -> HyRes {
     rpc_response(status, err_to_json_string(msg))
 }
 
+fn version (ctx_h: u32, remote_addr: SocketAddr, req: Json) -> HyRes {
+    // Runs "version" on the shared asynchronous reaktor.
+    // TODO: Port "version" fully to Rust.
+    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
+    let process = try_h! (rpc_process_json (ctx, remote_addr, req));  
+    rpc_response (200, process)
+}
+
 fn stop (ctx_h: u32) -> HyRes {
     unsafe {lp::LP_STOP_RECEIVED = 1};
     let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
@@ -179,25 +187,19 @@ fn stop (ctx_h: u32) -> HyRes {
 }
 
 fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
-    lazy_static! {static ref SPAWN_JSON_LOCK: Mutex<()> = Mutex::new(());}
+    lazy_static! {static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());}
 
     let method = req["method"].as_str().map (|s| s.to_string());
     let method = match method {Some (ref s) => Some (&s[..]), None => None};
     match method {
-        Some ("version") => {  // Run "version" on the shared asynchronous reaktor.
-            let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
-            let process = try_h! (rpc_process_json (ctx, remote_addr, req));  // TODO: Port fully to Rust.
-            rpc_response (200, process)
-        },
+        Some ("version") => version (ctx_h, remote_addr, req),
         Some ("stop") => stop (ctx_h),
-        None => {
-            err_response (400, "Method is not set!")
-        },
-        _ => {
+        None => err_response (400, "Method is not set!"),
+        _ => {  // Evoke the old C code.
             let cpu_pool_fut = CPUPOOL.spawn_fn(move || {
                 let ctx = try_s! (MmArc::from_ffi_handler (ctx_h));
-                // Emulates the single-threaded execution for the old C code.
-                let _lock = SPAWN_JSON_LOCK.lock();
+                // Emulates the single-threaded execution of the old C code.
+                let _lock = SINGLE_THREADED_C_LOCK.lock();
                 rpc_process_json (ctx, remote_addr, req)
             });
             rpc_response (200, Body::wrap_stream (cpu_pool_fut.into_stream()))
