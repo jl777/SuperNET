@@ -17,7 +17,18 @@
 //  rpc_commands.rs
 //  marketmaker
 //
-use helpers::{MM_VERSION};
+use etomiccurl::get_gas_price_from_station;
+use helpers::{MM_VERSION, lp, MmArc, CJSON};
+use serde_json::{Value as Json};
+use std::ffi::{CString};
+use std::os::raw::{c_void, c_char};
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum RpcResponse {
+    Str(&'static str),
+    EthGasPrice(GasPriceResult)
+}
 /*
 char *LP_numutxos()
 {
@@ -101,8 +112,8 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
 */
-pub fn help() -> &'static str {
-    "
+pub fn help() -> Result<RpcResponse, &'static str> {
+    Ok(RpcResponse::Str("
     available localhost RPC commands:
     setprice(base, rel, price, broadcast=1)
     autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*
@@ -179,12 +190,10 @@ pub fn help() -> &'static str {
     listtransactions(coin, address, count=10, skip=0)
     jpg(srcfile, destfile, power2=7, password, data=\"\", required, ind=0)
     version
-    "
+    "))
 }
 
-pub fn version() -> &'static str {
-    MM_VERSION
-}
+pub fn version() -> Result<RpcResponse, &'static str> { Ok(RpcResponse::Str(MM_VERSION)) }
 /*
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
@@ -251,12 +260,22 @@ pub fn version() -> &'static str {
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
-        else if ( strcmp(method,"mpnet") == 0 )
-        {
-            G.mpnet = jint(argjson,"onoff");
-            printf("MPNET onoff.%d\n",G.mpnet);
-            return(clonestr("{\"status\":\"success\"}"));
-        }
+*/
+pub fn mpnet(json: &Json) -> Result<RpcResponse, &'static str> {
+    if !json["onoff"].is_u64() {
+        return Err("onoff must be unsigned int");
+    }
+
+    let onoff = json["onoff"].as_u64().unwrap();
+    if onoff > 1 {
+        return Err("onoff must be 0 or 1");
+    }
+
+    unsafe { lp::G.mpnet = onoff as u32 };
+    println!("MPNET onoff.{}", onoff);
+    Ok(RpcResponse::Str("success"))
+}
+/*
         else if ( strcmp(method,"getendpoint") == 0 )
         {
             int32_t err,mode; uint16_t wsport = 5555; char endpoint[64],bindpoint[64];
@@ -339,12 +358,13 @@ pub fn version() -> &'static str {
         {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
         }
-        else if ( strcmp(method,"stop") == 0 )
-        {
-            printf("DEBUG stop\n");
-            LP_STOP_RECEIVED = 1;
-            return(clonestr("{\"result\":\"success\"}"));
-        }
+*/*/
+pub fn stop(ctx: MmArc) -> Result<RpcResponse, &'static str> {
+    ctx.stop();
+    unsafe { lp::LP_STOP_RECEIVED = 1 };
+    Ok(RpcResponse::Str("success"))
+}
+/*
         else if ( strcmp(method,"millis") == 0 )
         {
             LP_millistats_update(0);
@@ -477,23 +497,52 @@ pub fn version() -> &'static str {
         }
         else if ( strcmp(method,"inuse") == 0 )
             return(jprint(LP_inuse_json(),1));
-#ifndef NOTETOMIC
-        else if ( strcmp(method,"eth_gas_price") == 0 )
-        {
-            return LP_eth_gas_price();
-        }
-#endif
+*/
+#[derive(Serialize)]
+pub struct GasPriceResult {
+    gas_price: u64
+}
+
+pub fn eth_gas_price() -> Result<RpcResponse, &'static str> {
+    let gas_price = get_gas_price_from_station(0);
+    if gas_price > 0 {
+        Ok(RpcResponse::EthGasPrice(GasPriceResult { gas_price }))
+    } else {
+        Err("Could not get gas price from station")
+    }
+}
+/*
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
-            if ( strcmp(method,"autoprice") == 0 )
-            {
-                if ( LP_autoprice(ctx,base,rel,argjson) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
-                else return(clonestr("{\"result\":\"success\"}"));
-            }
+*/
+pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> Result<RpcResponse, &'static str> {
+    if !json["base"].is_string() {
+        return Err("Base currency is not set or is not string");
+    }
+
+    if !json["rel"].is_string() {
+        return Err("Rel currency is not set or is not string");
+    }
+
+    let result = unsafe {
+        lp::LP_autoprice(
+            ctx.btc_ctx() as *mut c_void,
+            CString::new(json["base"].as_str().unwrap()).unwrap().as_ptr() as *mut c_char,
+            CString::new(json["rel"].as_str().unwrap()).unwrap().as_ptr() as *mut c_char,
+            c_json.0
+        )
+    };
+
+    if result < 0 {
+        Err("couldn't set autoprice")
+    } else {
+        Ok(RpcResponse::Str("success"))
+    }
+}
+/*
             else if ( strcmp(method,"pricearray") == 0 )
             {
                 uint32_t firsttime;
@@ -1036,4 +1085,4 @@ pub fn version() -> &'static str {
     return(0);
 }
 */
-*/*/*/
+*/*/

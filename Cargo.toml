@@ -44,6 +44,7 @@ serde_derive = "1.0"
 unwrap = "1.2"
 winapi = "0.3"
 tokio-core = "0.1.17"
+hex = "0.3.2"
 
 # ring 0.12 fails to build on Windows, this patch replaces it with ring 0.13.
 [patch."https://github.com/paritytech/parity-common"]

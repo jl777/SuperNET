@@ -164,12 +164,6 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
-        else if ( strcmp(method,"mpnet") == 0 )
-        {
-            G.mpnet = jint(argjson,"onoff");
-            printf("MPNET onoff.%d\n",G.mpnet);
-            return(clonestr("{\"status\":\"success\"}"));
-        }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
             int32_t err,mode; uint16_t wsport = 5555; char endpoint[64],bindpoint[64];
@@ -251,12 +245,6 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         else if ( strcmp(method,"recentswaps") == 0 )
         {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
-        }
-        else if ( strcmp(method,"stop") == 0 )
-        {
-            printf("DEBUG stop\n");
-            LP_STOP_RECEIVED = 1;
-            return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"millis") == 0 )
         {
@@ -390,24 +378,12 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         }
         else if ( strcmp(method,"inuse") == 0 )
             return(jprint(LP_inuse_json(),1));
-#ifndef NOTETOMIC
-        else if ( strcmp(method,"eth_gas_price") == 0 )
-        {
-            return LP_eth_gas_price();
-        }
-#endif
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
-            if ( strcmp(method,"autoprice") == 0 )
-            {
-                if ( LP_autoprice(ctx,base,rel,argjson) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
-                else return(clonestr("{\"result\":\"success\"}"));
-            }
-            else if ( strcmp(method,"pricearray") == 0 )
+            if ( strcmp(method,"pricearray") == 0 )
             {
                 uint32_t firsttime;
                 if ( base[0] != 0 && rel[0] != 0 )

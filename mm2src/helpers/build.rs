@@ -156,10 +156,13 @@ fn generate_bindings() {
             "LP_pricesparse",
             "LP_ticker",
             "LP_queuecommand",
+            "LP_coinsearch",
+            "LP_autoprice",
+            "LP_instantdex_deposit",
         ]
             .iter(),
         // types
-        ["_bits256", "cJSON"].iter(),
+        ["_bits256", "cJSON", "iguana_info",].iter(),
         [
             // defines
             "bitcoind_RPC_inittime",
@@ -181,6 +184,7 @@ fn generate_bindings() {
             "LP_STOP_RECEIVED",
             "IPC_ENDPOINT",
             "SPAWN_RPC",
+            "G",
         ]
             .iter(),
     );

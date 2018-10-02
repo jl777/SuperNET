@@ -668,4 +668,22 @@ void (*SPAWN_RPC)(uint32_t);
 extern int32_t IPC_ENDPOINT;
 void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+struct iguana_info *LP_coinsearch(char *symbol);
+int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson);
+char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast);
+
+struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
+
+struct LP_globals
+{
+    //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
+    bits256 LP_mypub25519,LP_privkey,LP_mypriv25519,LP_passhash;
+    uint64_t LP_skipstatus[10000];
+    uint16_t netid;
+    uint8_t LP_myrmd160[20],LP_pubsecp[33];
+    uint32_t LP_sessionid,counter,mpnet;
+    int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
+    char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[65],LP_NXTaddr[64];
+    struct LP_privkey LP_privkeys[100];
+} G;
 #endif
