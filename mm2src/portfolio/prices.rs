@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-use futures;
+use futures::{self, Future};
 use gstuff::now_float;
 use helpers::slurp_req;
 use hyper::{Body, Request, StatusCode};
@@ -1218,8 +1218,6 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
 
 */
 
-use futures::Future;
-
 #[derive(Clone, Debug)]
 pub struct BtcPrice {
     pub kmd: f64,
@@ -1233,7 +1231,7 @@ pub fn lp_btcprice (cmc_key: &Option<String>) -> Box<Future<Item=BtcPrice, Error
     let (request, _curl_example) = if let Some (ref cmc_key) = cmc_key {
         let url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=KMD,BCH,LTC&convert=BTC";
         ( try_fus! (Request::builder().uri (url) .header ("X-CMC_PRO_API_KEY", &cmc_key[..]) .body (Body::empty())),
-          format! ("curl --header 'Content-Type: application/json' --header 'X-CMC_PRO_API_KEY: {}' '{}'", cmc_key, url) )
+          format! ("curl --header 'X-CMC_PRO_API_KEY: {}' '{}'", cmc_key, url) )
     } else {
         let url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=btc&ids=komodo,bitcoin-cash,litecoin";
         ( try_fus! (Request::builder().uri (url) .body (Body::empty())),

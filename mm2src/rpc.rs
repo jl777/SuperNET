@@ -17,11 +17,11 @@
 //
 //  Copyright © 2014-2018 SuperNET. All rights reserved.
 //
-use futures::{self, Future};
-use futures_cpupool::{CpuPool};
+use futures::{self, future, Future};
+use futures_cpupool::CpuPool;
 use gstuff;
 use helpers::{free_c_ptr, lp, MmArc, CORE};
-use hyper::{self, Response, Request, Body, Method};
+use hyper::{Response, Request, Body, Method};
 use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
@@ -31,7 +31,7 @@ use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
 use std::ptr::null_mut;
 use std::os::raw::{c_char, c_void};
-use std::str::from_utf8;
+use std::sync::Mutex;
 use super::CJSON;
 use tokio_core::net::TcpListener;
 
@@ -51,13 +51,12 @@ fn lp_valid_remote_method(method: &str) -> bool {
     STATS_VALID_METHODS.iter().position(|&s| s == method).is_some()
 }
 
-macro_rules! unwrap_or_err_response {
-    ($e:expr, $($args:tt)*) => {
+/// Returns a JSON error HyRes on a failure.
+macro_rules! try_h {
+    ($e: expr) => {
         match $e {
-            Ok(ok) => ok,
-            Err(_e) => {
-                return Ok(err_response($($args)*))
-            }
+            Ok (ok) => ok,
+            Err (err) => {return err_response (500, &ERRL! ("{}", err))}
         }
     }
 }
@@ -80,7 +79,7 @@ struct ErrResponse {
 
 struct RpcService {
     /// Allows us to get the `MmCtx` if it is still around.
-    ctx_ffi_handler: u32,
+    ctx_h: u32,
     /// The IP and port from whence the request is coming from.
     remote_addr: SocketAddr,
 }
@@ -147,13 +146,18 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json)
     }
 }
 
-fn rpc_response<T>(status: u16, body: T) -> Response<Body>
-    where Body: From<T> {
-    Response::builder()
-        .status(status)
-        .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-        .body(Body::from(body))
-        .unwrap()
+type HyRes = Box<Future<Item=Response<Body>, Error=String> + Send>;
+
+fn rpc_response<T>(status: u16, body: T) -> HyRes where Body: From<T> {
+    Box::new (
+        match Response::builder()
+            .status(status)
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .body(Body::from(body)) {
+                Ok (r) => future::ok::<Response<Body>, String> (r),
+                Err (err) => future::err::<Response<Body>, String> (ERRL! ("{}", err))
+            }
+    )
 }
 
 fn err_to_json_string(err: &str) -> String {
@@ -163,81 +167,78 @@ fn err_to_json_string(err: &str) -> String {
     json::to_string(&err).unwrap()
 }
 
-fn err_response(status: u16, msg: &str) -> Response<Body> {
+fn err_response(status: u16, msg: &str) -> HyRes {
     rpc_response(status, err_to_json_string(msg))
 }
+
+fn stop (ctx_h: u32) -> HyRes {
+    unsafe {lp::LP_STOP_RECEIVED = 1};
+    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
+    ctx.stop();
+    rpc_response (200, r#"{"result": "success"}"#)
+}
+
+fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
+    lazy_static! {static ref SPAWN_JSON_LOCK: Mutex<()> = Mutex::new(());}
+
+    let method = req["method"].as_str().map (|s| s.to_string());
+    let method = match method {Some (ref s) => Some (&s[..]), None => None};
+    match method {
+        Some ("version") => {  // Run "version" on the shared asynchronous reaktor.
+            let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
+            let process = try_h! (rpc_process_json (ctx, remote_addr, req));  // TODO: Port fully to Rust.
+            rpc_response (200, process)
+        },
+        Some ("stop") => stop (ctx_h),
+        None => {
+            err_response (400, "Method is not set!")
+        },
+        _ => {
+            let cpu_pool_fut = CPUPOOL.spawn_fn(move || {
+                let ctx = try_s! (MmArc::from_ffi_handler (ctx_h));
+                // Emulates the single-threaded execution for the old C code.
+                let _lock = SPAWN_JSON_LOCK.lock();
+                rpc_process_json (ctx, remote_addr, req)
+            });
+            rpc_response (200, Body::wrap_stream (cpu_pool_fut.into_stream()))
+        }
+    }
+}
+
 
 impl Service for RpcService {
     type ReqBody = Body;
     type ResBody = Body;
-    type Error = hyper::Error;
-    type Future = Box<Future<Error=hyper::Error, Item=Response<Body>> + Send>;
+    type Error = String;
+    type Future = HyRes;
 
-    fn call(&mut self, request: Request<Body>) -> Self::Future {
+    fn call(&mut self, request: Request<Body>) -> HyRes {
         if request.method() != Method::POST {
-            return Box::new(
-                futures::future::ok(err_response(400, "Only POST requests are supported!"))
-            );
+            return err_response (400, "Only POST requests are supported!")
         }
         let body_f = request.into_body().concat2();
 
         let remote_addr = self.remote_addr.clone();
-        let ctx_ffi_handler = self.ctx_ffi_handler;
-        Box::new(body_f.then(move |body| -> Result<Response<Body>, hyper::Error> {
-            let body_vec = unwrap_or_err_response!(
-                body,
-                400,
-                "Could not read request body"
-            ).to_vec();
+        let ctx_h = self.ctx_h;
 
-            let body_str = unwrap_or_err_response!(
-                from_utf8(&body_vec),
-                400,
-                "Non-utf8 character in request body?"
-            );
+        let f = body_f.then (move |req| -> HyRes {
+            let req = try_h! (req);
+            let req: Json = try_h! (json::from_slice (&req));
+            dispatcher (req, remote_addr, ctx_h)
+        });
 
-            let json : Json = unwrap_or_err_response!(
-                json::from_str(body_str),
-                400,
-                "Could not parse request body as JSON"
-            );
-
-            let ctx = unwrap_or_err_response! (MmArc::from_ffi_handler (ctx_ffi_handler), 500, "No context");
-
-            // NB: We haven't fully ported the "stop" yet.
-            if json["method"].as_str() == Some ("stop") {ctx.stop()}
-
-            match json["method"].as_str() {
-                Some("version") => {
-                    let process = unwrap_or_err_response!(
-                        rpc_process_json(ctx, remote_addr, json),
-                        500,
-                        "Error occurred"
-                    );
-                    Ok(rpc_response(200, process))
-                },
-                None => {
-                    Ok(err_response(400, "Method is not set!"))
-                }
-                _ => {
-                    let cpu_pool_fut = CPUPOOL.spawn_fn(move ||
-                        rpc_process_json(ctx, remote_addr, json)
-                    );
-                    Ok(rpc_response(200, Body::wrap_stream(cpu_pool_fut.into_stream())))
-                }
-            }
-        }))
+        Box::new (f)
     }
 }
 
-pub extern fn spawn_rpc(ctx_ffi_handler: u32) {
+pub extern fn spawn_rpc(ctx_h: u32) {
     // NB: We need to manually handle the incoming connections in order to get the remote IP address,
     // cf. https://github.com/hyperium/hyper/issues/1410#issuecomment-419510220.
     // Although if the ability to access the remote IP address is solved by the Hyper in the future
     // then we might want to refactor into starting it ideomatically in order to benefit from a more graceful shutdown,
     // cf. https://github.com/hyperium/hyper/pull/1640.
 
-    let ctx = unwrap! (MmArc::from_ffi_handler (ctx_ffi_handler), "No context");
+    let ctx = unwrap! (MmArc::from_ffi_handler (ctx_h), "No context");
 
     let listener = unwrap! (TcpListener::bind2 (&ctx.rpc_ip_port), "Can't bind on {}", ctx.rpc_ip_port);
 
@@ -256,7 +257,7 @@ pub extern fn spawn_rpc(ctx_ffi_handler: u32) {
                 HTTP.serve_connection(
                     socket,
                     RpcService {
-                        ctx_ffi_handler,
+                        ctx_h,
                         remote_addr
                     },
                 )

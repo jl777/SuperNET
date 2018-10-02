@@ -335,7 +335,7 @@ mod test {
         assert! (no_method.0.is_client_error());
 
         let not_json = unwrap! (mm.rpc_str("It's just a string"));
-        assert! (not_json.0.is_client_error());
+        assert! (not_json.0.is_server_error());
 
         let unknown_method = unwrap! (mm.rpc (json! ({
             "method": "unknown_method",

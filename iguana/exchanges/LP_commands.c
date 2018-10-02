@@ -340,12 +340,6 @@ version\n\
         {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
         }
-        else if ( strcmp(method,"stop") == 0 )
-        {
-            printf("DEBUG stop\n");
-            LP_STOP_RECEIVED = 1;
-            return(clonestr("{\"result\":\"success\"}"));
-        }
         else if ( strcmp(method,"millis") == 0 )
         {
             LP_millistats_update(0);
