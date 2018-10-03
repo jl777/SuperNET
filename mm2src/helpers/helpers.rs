@@ -302,6 +302,7 @@ impl Drop for CJSON {
         self.0 = null_mut()
     }
 }
+unsafe impl Send for CJSON {}
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 

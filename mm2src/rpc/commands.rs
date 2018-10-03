@@ -22,14 +22,8 @@ use helpers::{MM_VERSION, lp, MmArc, CJSON};
 use serde_json::{Value as Json};
 use std::ffi::{CString};
 use std::os::raw::{c_void, c_char};
-use super::{err_response, rpc_response, HyRes};
+use super::{err_response, rpc_response, HyRes, serialize_result};
 
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum RpcResponse {
-    Str(&'static str),
-    EthGasPrice(GasPriceResult)
-}
 /*
 char *LP_numutxos()
 {
@@ -113,8 +107,8 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
 */
-pub fn help() -> Result<RpcResponse, &'static str> {
-    Ok(RpcResponse::Str("
+pub fn help() -> HyRes {
+    rpc_response(200, "
     available localhost RPC commands:
     setprice(base, rel, price, broadcast=1)
     autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*
@@ -191,10 +185,10 @@ pub fn help() -> Result<RpcResponse, &'static str> {
     listtransactions(coin, address, count=10, skip=0)
     jpg(srcfile, destfile, power2=7, password, data=\"\", required, ind=0)
     version
-    "))
+    ")
 }
 
-pub fn version() -> Result<RpcResponse, &'static str> { Ok(RpcResponse::Str(MM_VERSION)) }
+pub fn version() -> HyRes { rpc_response(200, MM_VERSION) }
 /*
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
@@ -262,19 +256,19 @@ pub fn version() -> Result<RpcResponse, &'static str> { Ok(RpcResponse::Str(MM_V
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
 */
-pub fn mpnet(json: &Json) -> Result<RpcResponse, &'static str> {
+pub fn mpnet(json: &Json) -> HyRes {
     if !json["onoff"].is_u64() {
-        return Err("onoff must be unsigned int");
+        return err_response(400, "onoff must be unsigned int");
     }
 
     let onoff = json["onoff"].as_u64().unwrap();
     if onoff > 1 {
-        return Err("onoff must be 0 or 1");
+        return err_response(400, "onoff must be 0 or 1");
     }
 
     unsafe { lp::G.mpnet = onoff as u32 };
     println!("MPNET onoff.{}", onoff);
-    Ok(RpcResponse::Str("success"))
+    rpc_response (200, r#"{"result": "success"}"#)
 }
 /*
         else if ( strcmp(method,"getendpoint") == 0 )
@@ -360,9 +354,8 @@ pub fn mpnet(json: &Json) -> Result<RpcResponse, &'static str> {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
         }
 */*/
-pub fn stop (ctx_h: u32) -> HyRes {
+pub fn stop (ctx: MmArc) -> HyRes {
     unsafe {lp::LP_STOP_RECEIVED = 1};
-    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
     ctx.stop();
     rpc_response (200, r#"{"result": "success"}"#)
 }
@@ -505,12 +498,13 @@ pub struct GasPriceResult {
     gas_price: u64
 }
 
-pub fn eth_gas_price() -> Result<RpcResponse, &'static str> {
+pub fn eth_gas_price() -> HyRes {
     let gas_price = get_gas_price_from_station(0);
     if gas_price > 0 {
-        Ok(RpcResponse::EthGasPrice(GasPriceResult { gas_price }))
+        let result = try_h!(serialize_result(GasPriceResult { gas_price }));
+        rpc_response(200, result)
     } else {
-        Err("Could not get gas price from station")
+        err_response(500, "Could not get gas price from station")
     }
 }
 /*
@@ -520,13 +514,13 @@ pub fn eth_gas_price() -> Result<RpcResponse, &'static str> {
         {
             double price,bid,ask;
 */
-pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> Result<RpcResponse, &'static str> {
+pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> HyRes {
     if !json["base"].is_string() {
-        return Err("Base currency is not set or is not string");
+        return err_response(400, "Base currency is not set or is not string");
     }
 
     if !json["rel"].is_string() {
-        return Err("Rel currency is not set or is not string");
+        return err_response(400, "Rel currency is not set or is not string");
     }
 
     let result = unsafe {
@@ -539,9 +533,9 @@ pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> Result<RpcResponse,
     };
 
     if result < 0 {
-        Err("couldn't set autoprice")
+        err_response(500, "couldn't set autoprice")
     } else {
-        Ok(RpcResponse::Str("success"))
+        rpc_response (200, r#"{"result": "success"}"#)
     }
 }
 /*
