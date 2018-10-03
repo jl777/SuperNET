@@ -22,6 +22,7 @@ use helpers::{MM_VERSION, lp, MmArc, CJSON};
 use serde_json::{Value as Json};
 use std::ffi::{CString};
 use std::os::raw::{c_void, c_char};
+use super::{err_response, rpc_response, HyRes};
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -359,10 +360,11 @@ pub fn mpnet(json: &Json) -> Result<RpcResponse, &'static str> {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
         }
 */*/
-pub fn stop(ctx: MmArc) -> Result<RpcResponse, &'static str> {
+pub fn stop (ctx_h: u32) -> HyRes {
+    unsafe {lp::LP_STOP_RECEIVED = 1};
+    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
     ctx.stop();
-    unsafe { lp::LP_STOP_RECEIVED = 1 };
-    Ok(RpcResponse::Str("success"))
+    rpc_response (200, r#"{"result": "success"}"#)
 }
 /*
         else if ( strcmp(method,"millis") == 0 )

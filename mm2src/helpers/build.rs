@@ -156,6 +156,10 @@ fn generate_bindings() {
             "LP_pricesparse",
             "LP_ticker",
             "LP_queuecommand",
+            "LP_CMCbtcprice",
+            "LP_fundvalue",
+            "jint",
+            "free_json",
             "LP_coinsearch",
             "LP_autoprice",
             "LP_instantdex_deposit",
@@ -184,6 +188,7 @@ fn generate_bindings() {
             "LP_STOP_RECEIVED",
             "IPC_ENDPOINT",
             "SPAWN_RPC",
+            "LP_autorefs",
             "G",
         ]
             .iter(),

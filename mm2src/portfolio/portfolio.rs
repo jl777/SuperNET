@@ -19,6 +19,7 @@
 //
 
 extern crate futures;
+extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
 extern crate helpers;
@@ -29,16 +30,24 @@ extern crate libc;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate unwrap;
 
+mod prices;
+
+use fxhash::FxHashMap;
 use gstuff::now_ms;
 use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
+use helpers::log::TagParam;
 use hyper::{StatusCode, HeaderMap};
+use prices::{lp_btcprice, BtcPrice};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::mem::{zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::thread::sleep;
@@ -518,7 +527,6 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     }
 
     try_s! (BITTREX_MARKETSUMMARIES.tick());
-    try_s! (CRYPTOPIA_MARKETS.tick());
 
     let status = ctx.log.claim_status (&[&"portfolio", &("bittrex", "waiting")]);
     let (nxtkmd, waiting_for_markets) = if try_s! (BITTREX_MARKETSUMMARIES.last_finish()) == 0.0 {
@@ -538,6 +546,8 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             Err (err) => {status.map (|s| s.append (&format! (" Error: {}", err))); (0., true)}
         }
     };
+
+    try_s! (CRYPTOPIA_MARKETS.tick());
 
     let status = ctx.log.claim_status (&[&"portfolio", &("cryptopia", "waiting")]);
     let waiting_for_markets = if try_s! (CRYPTOPIA_MARKETS.last_finish()) == 0.0 {
@@ -578,27 +588,59 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         if cs != null_mut() {unsafe {libc::free (cs as *mut libc::c_void)}}
     }
 
+    lazy_static! {
+        /// A map from the configurable `cmc_key` to the corresponding price fetching resource.
+        static ref BTC_PRICE_RESOURCES: Mutex<FxHashMap<Option<String>, RefreshedExternalResource<BtcPrice>>> = Mutex::new (FxHashMap::default());
+    }
+    let btc_price = {
+        let cmc_key = match ctx.conf["cmc_key"] {
+            Json::Null => None,
+            Json::String (ref k) => Some (k.clone()),
+            _ => return ERR! ("cmc_key is not a string")
+        };
+        let mut btc_price_resources = try_s! (BTC_PRICE_RESOURCES.lock());
+        let resource = btc_price_resources.entry (cmc_key.clone())
+            .or_insert (RefreshedExternalResource::new (30., 40., Box::new (move || lp_btcprice (&cmc_key))));
+        try_s! (resource.tick());
+        let status_tags: &[&TagParam] = &[&"portfolio", &"waiting-cmc-gecko"];
+        let btc_price = try_s! (resource.with_result (|r| {match r {
+            Some (Ok (bp)) => {
+                ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Done! ({}, {}, {})", bp.kmd, bp.bch, bp.ltc));
+                Ok (Some (bp.clone()))
+            },
+            Some (Err (err)) => {
+                ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Error: {}", err)) .detach();
+                Ok (None)
+            },
+            None => {
+                ctx.log.status (status_tags, "Waiting for coin prices (KMD, BCH, LTC)...") .detach();
+                Ok (None)
+            }
+        }}));
+        if let Some (btc_price) = btc_price {btc_price}
+        else {return Ok(())}  // Wait for the prices.
+    };
+
+    // Incremeted with RPC "autoprice" invoking `LP_autoprice`.
+    let num_lp_autorefs = unsafe {lp::num_LP_autorefs};
+
+    for i in 0..num_lp_autorefs {
+        // RPC "autoprice" parameters, cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice
+        let autoref = unsafe {&lp::LP_autorefs[i as usize]};
+        let rel = try_s! (unsafe {CStr::from_ptr (autoref.rel.as_ptr())} .to_str());
+        let base = try_s! (unsafe {CStr::from_ptr (autoref.base.as_ptr())} .to_str());
+        if rel.is_empty() || base.is_empty() {continue}
+        let buymargin = autoref.buymargin;
+        let sellmargin = autoref.sellmargin;
+        let offset = autoref.offset;
+        let factor = autoref.factor;
+        let fundvalue = autoref.fundvalue;
+        if fundvalue != null_mut() {
+            let fundjson = unsafe {lp::LP_fundvalue (fundvalue)};
+            if fundjson != null_mut() {
+                let missing = unsafe {lp::jint (fundjson, b"missing".as_ptr() as *mut c_char)};
+                if missing != 0 {
     /*
-    kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
-    bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
-    ltc_btc = LP_CMCbtcprice(&bch_usd,"litecoin");
-    for (i=0; i<num_LP_autorefs; i++)
-    {
-        rel = LP_autorefs[i].rel;
-        base = LP_autorefs[i].base;
-        if ( rel[0] == 0 || base[0] == 0 )
-            continue;
-        buymargin = LP_autorefs[i].buymargin;
-        sellmargin = LP_autorefs[i].sellmargin;
-        offset = LP_autorefs[i].offset;
-        factor = LP_autorefs[i].factor;
-        if ( (argjson= LP_autorefs[i].fundvalue) != 0 )
-        {
-            if ( (fundjson= LP_fundvalue(argjson)) != 0 )
-            {
-                //printf("%s\n",jprint(fundjson,0));
-                if ( jint(fundjson,"missing") == 0 )
-                {
                     if ( LP_autorefs[i].fundbid[0] != 0 && (bidprice= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL && LP_autorefs[i].fundask[0] != 0 && (askprice= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
                     {
                         price = (bidprice + askprice) * 0.5;
@@ -619,10 +661,12 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                         //printf("price %.8f -> %.8f %.8f\n",price,bidprice,askprice);
                     }
                     LP_autorefs[i].count++;
+*/
                 }
-                free_json(fundjson);
+                unsafe {lp::free_json (fundjson);}
             }
         }
+/*
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
             //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
@@ -678,11 +722,9 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                 LP_autopriceset(i,ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
             }
         }
-    }
     */
-    if unsafe {lp::LP_autoprices} != 0 {
-        unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp)}
     }
+    unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, btc_price.kmd, btc_price.bch, btc_price.ltc)}
     Ok(())
 }
 /*
@@ -949,11 +991,13 @@ pub fn prices_loop (ctx: MmArc) {
             btc_wait_status.take().map (|s| s.append (" Done."));
         }
 
-        if let Err (err) = lp_autoprice_iter (&ctx, btcpp) {
-            ctx.log.log ("🤯", &[&"portfolio"], &format! ("!lp_autoprice_iter: {}", err));
-            // Keep trying, maybe the error will go away. But wait a bit in order not to overflow the log.
-            sleep (Duration::from_secs (2));
-            continue
+        if unsafe {lp::LP_autoprices} != 0 {
+            if let Err (err) = lp_autoprice_iter (&ctx, btcpp) {
+                ctx.log.log ("🤯", &[&"portfolio"], &format! ("!lp_autoprice_iter: {}", err));
+                // Keep trying, maybe the error will go away. But wait a bit in order not to overflow the log.
+                sleep (Duration::from_secs (2));
+                continue
+            }
         }
 
         // TODO: `LP_portfolio` should return a `Json` (or a serializable structure) and not a string.

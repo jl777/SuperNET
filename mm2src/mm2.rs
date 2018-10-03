@@ -105,7 +105,6 @@ mod lp_native_dex;
 use lp_native_dex::{lp_init};
 
 pub mod rpc;
-pub mod rpc_commands;
 pub mod ordermatch;
 
 use crash_reports::init_crash_reports;
@@ -214,7 +213,7 @@ fn ensure_writable (dir_path: &Path) -> bool {
 mod test {
     use gstuff::{now_float, slurp};
 
-    use helpers::for_tests::{MarketMakerIt, RaiiKill};
+    use helpers::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 
     use hyper::StatusCode;
 
@@ -253,7 +252,7 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        println! ("test_autoprice] `mm2` log: {:?}.", mm.log_path);
+        let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
@@ -294,8 +293,9 @@ mod test {
             "margin": 0.5
         })));
         assert_eq! (autoprice.0, StatusCode::OK);
-        unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
-        unwrap! (mm.wait_for_log (99., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
+        unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
+        unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
 
         // Checking the autopricing logs here TDD-helps us with the porting effort.
         //
@@ -306,7 +306,7 @@ mod test {
 
         // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("rpc] on_stop, firing shutdown_tx!")));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] drop!")));
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!") || log.contains ("--- LogState] Remaining status entries. ---")));
     }
 
     /// Integration test for RPC server.
@@ -326,7 +326,7 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
-        println! ("test_rpc] `mm2` log: {:?}.", mm.log_path);
+        let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         let no_method = unwrap! (mm.rpc (json! ({
@@ -338,7 +338,7 @@ mod test {
         assert! (no_method.0.is_client_error());
 
         let not_json = unwrap! (mm.rpc_str("It's just a string"));
-        assert! (not_json.0.is_client_error());
+        assert! (not_json.0.is_server_error());
 
         let unknown_method = unwrap! (mm.rpc (json! ({
             "method": "unknown_method",
@@ -432,9 +432,8 @@ mod test {
                     json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
                     "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
                     local_start));
-                println! ("test_events] `mm2` log: {:?}.", mm.log_path);
+                let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
 
-                println! ("test_events] `mm2 events` log: {:?}.", mm_events_output);
                 let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
                     .env ("_MM2_TEST_EVENTS_MODE", "MM_EVENTS")
                     .env ("MM2_UNBUFFERED_OUTPUT", "1")
@@ -479,9 +478,7 @@ mod test {
                         }
                     };
 
-                    if now_float() - started > 60. {
-                        println! ("--- mm2.log ---\n{}\n", unwrap! (mm.log_as_utf8()));
-                        panic! ("Test didn't pass withing the 60 seconds timeframe. mm_state={:?}", mm_state)}
+                    if now_float() - started > 60. {panic! ("Test didn't pass withing the 60 seconds timeframe. mm_state={:?}", mm_state)}
                     sleep (Duration::from_millis (20))
                 }
             }
@@ -511,6 +508,7 @@ fn help() {
         "                     Set 0x105aFE60fDC8B5c021092b09E8a042135A4A976E for Ropsten testnet\n"
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         "  client         ..  '1' to use the client mode.\n"
+        "  cmc_key        ..  CoinMarketCap Professional API key. Switches from CoinGecko to CoinMarketCap.\n"
         "  ethnode        ..  HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet).\n"
         "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
         "  log            ..  File path. Redirect (as of now only a part of) the log there.\n"

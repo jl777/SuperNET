@@ -629,14 +629,27 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);
-void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp);
-extern int32_t LP_autoprices, num_LP_autorefs;
+void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp,double kmd_btc,double bch_btc,double ltc_btc);
+/// `num_LP_autorefs` is incremeted in `LP_autoprice`, invoked by RPC method "autoprice".
+extern int32_t num_LP_autorefs;
+extern int32_t LP_autoprices;
 char *LP_portfolio();
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui);
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *array);
 double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp);
 char *LP_ticker(char *refbase,char *refrel);
+cJSON *LP_fundvalue(cJSON *argjson);
+
+struct LP_autoprice_ref
+{
+    char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
+    double buymargin,sellmargin,factor,offset,lastbid,lastask;
+    cJSON *fundvalue;
+    uint32_t count;
+};
+extern struct LP_autoprice_ref LP_autorefs[1024];
+
 /**
  * Contains IP bits parsed from the "docker" parameter.  
  * Deprecated (setting IP address should not require Docker,
