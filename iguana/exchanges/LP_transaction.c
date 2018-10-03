@@ -2178,18 +2178,6 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
         return LP_eth_tx_fee(coin, dest_addr, (uint64_t)amount, gas, gas_price);
     }
 }
-
-char *LP_eth_gas_price()
-{
-    cJSON *retjson = cJSON_CreateObject();
-    uint64_t gas_price = get_gas_price_from_station(0);
-    if (gas_price > 0) {
-        cJSON_AddNumberToObject(retjson, "gas_price", gas_price);
-    } else {
-        cJSON_AddStringToObject(retjson, "error", "Could not get gas price from station!");
-    }
-    return(jprint(retjson,1));
-}
 #endif
 
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)

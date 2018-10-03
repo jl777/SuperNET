@@ -14,10 +14,23 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_commands.c
+//  rpc_commands.rs
 //  marketmaker
 //
+use etomiccurl::get_gas_price_from_station;
+use helpers::{MM_VERSION, lp, MmArc, CJSON};
+use serde_json::{Value as Json};
+use std::ffi::{CString};
+use std::os::raw::{c_void, c_char};
+use super::{err_response, rpc_response, HyRes};
 
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum RpcResponse {
+    Str(&'static str),
+    EthGasPrice(GasPriceResult)
+}
+/*
 char *LP_numutxos()
 {
     cJSON *retjson = cJSON_CreateObject();
@@ -99,6 +112,90 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
      }*/
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
+*/
+pub fn help() -> Result<RpcResponse, &'static str> {
+    Ok(RpcResponse::Str("
+    available localhost RPC commands:
+    setprice(base, rel, price, broadcast=1)
+    autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*
+    goal(coin=*, val=<autocalc>)
+    myprice(base, rel)
+    enable(coin)
+    disable(coin)
+    notarizations(coin)
+    statsdisp(starttime=0, endtime=0, gui=\"\", pubkey=\"\", base=\"\", rel=\"\")
+    ticker(base=\"\", rel=\"\")
+    tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+    pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]
+    getrawtransaction(coin, txid)
+    inventory(coin, reset=0, [passphrase=])
+    lastnonce()
+    cancel(uuid)
+    buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)
+    sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)
+    withdraw(coin, outputs[], broadcast=0)
+    eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)
+    txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)
+    sendrawtransaction(coin, signedtx)
+    swapstatus(pending=0, fast=0)
+    swapstatus(coin, limit=10)
+    swapstatus(base, rel, limit=10)
+    swapstatus(requestid, quoteid, pending=0, fast=0)
+    recentswaps(limit=3)
+    kickstart(requestid, quoteid)
+    notarizations(coin)
+    public API:
+    getcoins()
+    getcoin(coin)
+    portfolio()
+    getpeers()
+    passphrase(passphrase, gui, netid=0, seednode=\"\")
+    listunspent(coin, address)
+    setconfirms(coin, numconfirms, maxconfirms=6)
+    trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist
+    balance(coin, address)
+    balances(address)
+    fundvalue(address=\"\", holdings=[], divisor=0)
+    orderbook(base, rel, duration=3600)
+    getprices()
+    inuse()
+    movecoinbases(coin)
+    getmyprice(base, rel)
+    getprice(base, rel)
+    secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)
+    gen64addrs(passphrase, taddr=0, pubtype=60)
+    electrum(coin, ipaddr, port)
+    snapshot(coin, height)
+    snapshot_balance(coin, height, addresses[])
+    dividends(coin, height, <args>)
+    stop()
+    bot_list()
+    bot_statuslist()
+    bot_buy(base, rel, maxprice, relvolume) -> botid
+    bot_sell(base, rel, minprice, basevolume) -> botid
+    bot_settings(botid, newprice, newvolume)
+    bot_status(botid)
+    bot_stop(botid)
+    bot_pause(botid)
+    calcaddress(passphrase, coin=KMD)
+    convaddress(coin, address, destcoin)
+    instantdex_deposit(weeks, amount, broadcast=1)
+    instantdex_claim()
+    timelock(coin, duration, destaddr=(tradeaddr), amount)
+    unlockedspend(coin, txid)
+    opreturndecrypt(coin, txid, passphrase)
+    getendpoint(port=5555)
+    getfee(coin)
+    mpnet(onoff)
+    sleep(seconds=60)
+    listtransactions(coin, address, count=10, skip=0)
+    jpg(srcfile, destfile, power2=7, password, data=\"\", required, ind=0)
+    version
+    "))
+}
+
+pub fn version() -> Result<RpcResponse, &'static str> { Ok(RpcResponse::Str(MM_VERSION)) }
+/*
     if ( (base= jstr(argjson,"base")) == 0 )
         base = "";
     if ((rel= jstr(argjson,"rel")) == 0 )
@@ -164,6 +261,22 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
+*/
+pub fn mpnet(json: &Json) -> Result<RpcResponse, &'static str> {
+    if !json["onoff"].is_u64() {
+        return Err("onoff must be unsigned int");
+    }
+
+    let onoff = json["onoff"].as_u64().unwrap();
+    if onoff > 1 {
+        return Err("onoff must be 0 or 1");
+    }
+
+    unsafe { lp::G.mpnet = onoff as u32 };
+    println!("MPNET onoff.{}", onoff);
+    Ok(RpcResponse::Str("success"))
+}
+/*
         else if ( strcmp(method,"getendpoint") == 0 )
         {
             int32_t err,mode; uint16_t wsport = 5555; char endpoint[64],bindpoint[64];
@@ -246,6 +359,14 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         {
             return(LP_recent_swaps(jint(argjson,"limit"),0));
         }
+*/*/
+pub fn stop (ctx_h: u32) -> HyRes {
+    unsafe {lp::LP_STOP_RECEIVED = 1};
+    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
+    ctx.stop();
+    rpc_response (200, r#"{"result": "success"}"#)
+}
+/*
         else if ( strcmp(method,"millis") == 0 )
         {
             LP_millistats_update(0);
@@ -378,12 +499,53 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         }
         else if ( strcmp(method,"inuse") == 0 )
             return(jprint(LP_inuse_json(),1));
+*/
+#[derive(Serialize)]
+pub struct GasPriceResult {
+    gas_price: u64
+}
+
+pub fn eth_gas_price() -> Result<RpcResponse, &'static str> {
+    let gas_price = get_gas_price_from_station(0);
+    if gas_price > 0 {
+        Ok(RpcResponse::EthGasPrice(GasPriceResult { gas_price }))
+    } else {
+        Err("Could not get gas price from station")
+    }
+}
+/*
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
-            if ( strcmp(method,"pricearray") == 0 )
+*/
+pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> Result<RpcResponse, &'static str> {
+    if !json["base"].is_string() {
+        return Err("Base currency is not set or is not string");
+    }
+
+    if !json["rel"].is_string() {
+        return Err("Rel currency is not set or is not string");
+    }
+
+    let result = unsafe {
+        lp::LP_autoprice(
+            ctx.btc_ctx() as *mut c_void,
+            CString::new(json["base"].as_str().unwrap()).unwrap().as_ptr() as *mut c_char,
+            CString::new(json["rel"].as_str().unwrap()).unwrap().as_ptr() as *mut c_char,
+            c_json.0
+        )
+    };
+
+    if result < 0 {
+        Err("couldn't set autoprice")
+    } else {
+        Ok(RpcResponse::Str("success"))
+    }
+}
+/*
+            else if ( strcmp(method,"pricearray") == 0 )
             {
                 uint32_t firsttime;
                 if ( base[0] != 0 && rel[0] != 0 )
@@ -924,3 +1086,5 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
     }
     return(0);
 }
+*/
+*/*/

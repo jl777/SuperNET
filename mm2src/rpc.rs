@@ -26,6 +26,7 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use hyper::header::{HeaderValue, CONTENT_TYPE};
+use serde::Serialize;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
@@ -34,6 +35,20 @@ use std::os::raw::{c_char, c_void};
 use std::sync::Mutex;
 use super::CJSON;
 use tokio_core::net::TcpListener;
+use hex;
+
+/// Returns a JSON error HyRes on a failure.
+macro_rules! try_h {
+    ($e: expr) => {
+        match $e {
+            Ok (ok) => ok,
+            Err (err) => {return err_response (500, &ERRL! ("{}", err))}
+        }
+    }
+}
+
+mod commands;
+use self::commands::*;
 
 lazy_static! {
     /// Shared HTTP server.
@@ -42,7 +57,7 @@ lazy_static! {
     pub static ref CPUPOOL: CpuPool = CpuPool::new(8);
 }
 
-const STATS_VALID_METHODS : &[&str; 14] = &[
+const STATS_VALID_METHODS : &[&str] = &[
     "psock", "ticker", "balances", "getprice", "notify", "getpeers", "orderbook",
     "statsdisp", "fundvalue", "help", "getcoins", "pricearray", "balance", "tradesarray"
 ];
@@ -51,9 +66,16 @@ fn lp_valid_remote_method(method: &str) -> bool {
     STATS_VALID_METHODS.iter().position(|&s| s == method).is_some()
 }
 
-/// Returns a JSON error HyRes on a failure.
-macro_rules! try_h {
-    ($e: expr) => {
+const PORTED_FAST_METHODS : &[Option<&str>] = &[Some("version"), Some("help"),
+    Some("eth_gas_price"), Some("autoprice"), Some("mpnet")];
+
+fn is_fast_ported(method: Option<&str>) -> bool {
+    PORTED_FAST_METHODS.iter().position(|&s| s == method).is_some()
+}
+
+#[allow(unused_macros)]
+macro_rules! unwrap_or_err_response {
+    ($e:expr, $($args:tt)*) => {
         match $e {
             Ok (ok) => ok,
             Err (err) => {return err_response (500, &ERRL! ("{}", err))}
@@ -77,6 +99,18 @@ struct ErrResponse {
     error: String,
 }
 
+#[derive(Serialize)]
+struct SuccessResponse<T> {
+    result: T,
+}
+
+fn serialize_result<T> (result: T) -> Result<String, String>
+    where T: Serialize {
+    json::to_string(&SuccessResponse {
+        result
+    }).map_err(|e| err_to_json_string(&ERRL!("{}", e)))
+}
+
 struct RpcService {
     /// Allows us to get the `MmCtx` if it is still around.
     ctx_h: u32,
@@ -86,10 +120,29 @@ struct RpcService {
 
 fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json)
                         -> Result<String, String> {
-    let body_json = unwrap_or_err_msg!(CJSON::from_str(&json.to_string()),
-                                        "Couldn't parse request body as json");
     if !remote_addr.ip().is_loopback() && !lp_valid_remote_method(json["method"].as_str().unwrap()) {
         return Ok(err_to_json_string("Selected method can be called from localhost only!"));
+    }
+
+    // It's not required to authenticate to call remote method
+    if !lp_valid_remote_method(json["method"].as_str().unwrap()) {
+        if !json["userpass"].is_string() {
+            return Ok(err_to_json_string("Userpass is not set!"));
+        }
+
+        let userpass = unsafe { CStr::from_ptr(lp::G.USERPASS.as_ptr()).to_str().unwrap() };
+        let pass_hash = hex::encode(unsafe { lp::G.LP_passhash.bytes });
+
+        if json["userpass"].as_str() != Some(userpass) && json["userpass"].as_str() != Some(&pass_hash) {
+            return Ok(err_to_json_string("Userpass is invalid!"));
+        }
+    }
+
+    let c_json = unwrap_or_err_msg!(CJSON::from_str(&json.to_string()),
+                                        "Couldn't parse request body as json");
+
+    if is_fast_ported(json["method"].as_str()) {
+        return call_method(ctx, json, c_json);
     }
 
     if !json["queueid"].is_null() {
@@ -100,15 +153,14 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json)
                 return Ok(err_to_json_string("Can queue the command from localhost only!"));
             } else {
                 let json_str = json.to_string();
-                let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred").into_raw();
+                let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred");
                 unsafe {
                     lp::LP_queuecommand(null_mut(),
-                                        c_json_ptr,
+                                        c_json_ptr.as_ptr() as *mut c_char,
                                         lp::IPC_ENDPOINT,
                                         1,
                                         json["queueid"].as_u64().unwrap() as u32
                     );
-                    CString::from_raw(c_json_ptr);
                 }
                 return Ok(r#"{"result":"success","status":"queued"}"#.to_string());
             }
@@ -127,7 +179,7 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json)
             0,
             my_ip_ptr.as_ptr() as *mut c_char,
             -1,
-            body_json.0,
+            c_json.0,
             remote_ip_ptr.as_ptr() as *mut c_char,
             ctx.rpc_ip_port.port()
         )
@@ -171,28 +223,13 @@ fn err_response(status: u16, msg: &str) -> HyRes {
     rpc_response(status, err_to_json_string(msg))
 }
 
-fn version (ctx_h: u32, remote_addr: SocketAddr, req: Json) -> HyRes {
-    // Runs "version" on the shared asynchronous reaktor.
-    // TODO: Port "version" fully to Rust.
-    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
-    let process = try_h! (rpc_process_json (ctx, remote_addr, req));  
-    rpc_response (200, process)
-}
-
-fn stop (ctx_h: u32) -> HyRes {
-    unsafe {lp::LP_STOP_RECEIVED = 1};
-    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
-    ctx.stop();
-    rpc_response (200, r#"{"result": "success"}"#)
-}
-
+/// The outer dispatcher, with full control over the HTTP result and the way we run the `Future` producing it.
 fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
     lazy_static! {static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());}
 
     let method = req["method"].as_str().map (|s| s.to_string());
     let method = match method {Some (ref s) => Some (&s[..]), None => None};
     match method {
-        Some ("version") => version (ctx_h, remote_addr, req),
         Some ("stop") => stop (ctx_h),
         None => err_response (400, "Method is not set!"),
         _ => {  // Evoke the old C code.
@@ -207,6 +244,21 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
     }
 }
 
+/// The inner dispatcher, invoked from `rpc_process_json` for some of the fast and protected RPC methods.
+fn call_method(ctx: MmArc, json: Json, c_json: CJSON) -> Result<String, String> {
+    let result = match json["method"].as_str() {
+        Some("version") => version(),
+        Some("help") => help(),
+        Some("eth_gas_price") => eth_gas_price(),
+        Some("autoprice") => auto_price(ctx, &json, c_json),
+        Some("mpnet") => mpnet(&json),
+        _ => return Err(err_to_json_string("Invalid method"))
+    };
+    match result {
+        Ok(success) => serialize_result(success),
+        Err(e) => Err(err_to_json_string(e))
+    }
+}
 
 impl Service for RpcService {
     type ReqBody = Body;

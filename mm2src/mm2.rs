@@ -41,6 +41,8 @@ extern crate gstuff;
 
 extern crate helpers;
 
+extern crate hex;
+
 extern crate hyper;
 
 #[allow(unused_imports)]
@@ -342,6 +344,14 @@ mod test {
         })));
 
         assert_eq! (unknown_method.0, StatusCode::OK);
+
+        let mpnet = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "mpnet",
+            "onoff": 1,
+        })));
+        assert_eq!(mpnet.0, StatusCode::OK);
+        unwrap! (mm.wait_for_log (1., &|log| log.contains ("MPNET onoff")));
 
         unwrap! (mm.stop());
     }

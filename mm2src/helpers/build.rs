@@ -160,10 +160,13 @@ fn generate_bindings() {
             "LP_fundvalue",
             "jint",
             "free_json",
+            "LP_coinsearch",
+            "LP_autoprice",
+            "LP_instantdex_deposit",
         ]
             .iter(),
         // types
-        ["_bits256", "cJSON"].iter(),
+        ["_bits256", "cJSON", "iguana_info",].iter(),
         [
             // defines
             "bitcoind_RPC_inittime",
@@ -186,6 +189,7 @@ fn generate_bindings() {
             "IPC_ENDPOINT",
             "SPAWN_RPC",
             "LP_autorefs",
+            "G",
         ]
             .iter(),
     );
