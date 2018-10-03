@@ -223,12 +223,12 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
     try_h!(auth(&req));
     let c_json = try_h!(CJSON::from_str(&req.to_string()));
     match method {
+        Some ("autoprice") => auto_price(ctx, &req, c_json),
+        Some ("eth_gas_price") => eth_gas_price(),
+        Some ("help") => help(),
+        Some ("mpnet") => mpnet(&req),
         Some ("stop") => stop (ctx),
         Some ("version") => version(),
-        Some ("help") => help(),
-        Some ("eth_gas_price") => eth_gas_price(),
-        Some ("autoprice") => auto_price(ctx, &req, c_json),
-        Some ("mpnet") => mpnet(&req),
         None => err_response (400, "Method is not set!"),
         _ => {  // Evoke the old C code.
             let cpu_pool_fut = CPUPOOL.spawn_fn(move || {
