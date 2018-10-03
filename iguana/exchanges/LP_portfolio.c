@@ -18,13 +18,7 @@
 //  marketmaker
 //
 
-struct LP_autoprice_ref
-{
-    char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
-    double buymargin,sellmargin,factor,offset,lastbid,lastask;
-    cJSON *fundvalue;
-    uint32_t count;
-} LP_autorefs[1024];
+struct LP_autoprice_ref LP_autorefs[1024];
 
 int32_t LP_autoprices,num_LP_autorefs;
 char LP_portfolio_base[128],LP_portfolio_rel[128];

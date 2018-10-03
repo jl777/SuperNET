@@ -621,24 +621,26 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         else {return Ok(())}  // Wait for the prices.
     };
 
+    // Incremeted with RPC "autoprice" invoking `LP_autoprice`.
+    let num_lp_autorefs = unsafe {lp::num_LP_autorefs};
+
+    for i in 0..num_lp_autorefs {
+        // RPC "autoprice" parameters, cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice
+        let autoref = unsafe {&lp::LP_autorefs[i as usize]};
+        let rel = try_s! (unsafe {CStr::from_ptr (autoref.rel.as_ptr())} .to_str());
+        let base = try_s! (unsafe {CStr::from_ptr (autoref.base.as_ptr())} .to_str());
+        if rel.is_empty() || base.is_empty() {continue}
+        let buymargin = autoref.buymargin;
+        let sellmargin = autoref.sellmargin;
+        let offset = autoref.offset;
+        let factor = autoref.factor;
+        let fundvalue = autoref.fundvalue;
+        if fundvalue != null_mut() {
+            let fundjson = unsafe {lp::LP_fundvalue (fundvalue)};
+            if fundjson != null_mut() {
+                let missing = unsafe {lp::jint (fundjson, b"missing".as_ptr() as *mut c_char)};
+                if missing != 0 {
     /*
-    for (i=0; i<num_LP_autorefs; i++)
-    {
-        rel = LP_autorefs[i].rel;
-        base = LP_autorefs[i].base;
-        if ( rel[0] == 0 || base[0] == 0 )
-            continue;
-        buymargin = LP_autorefs[i].buymargin;
-        sellmargin = LP_autorefs[i].sellmargin;
-        offset = LP_autorefs[i].offset;
-        factor = LP_autorefs[i].factor;
-        if ( (argjson= LP_autorefs[i].fundvalue) != 0 )
-        {
-            if ( (fundjson= LP_fundvalue(argjson)) != 0 )
-            {
-                //printf("%s\n",jprint(fundjson,0));
-                if ( jint(fundjson,"missing") == 0 )
-                {
                     if ( LP_autorefs[i].fundbid[0] != 0 && (bidprice= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL && LP_autorefs[i].fundask[0] != 0 && (askprice= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
                     {
                         price = (bidprice + askprice) * 0.5;
@@ -659,10 +661,12 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                         //printf("price %.8f -> %.8f %.8f\n",price,bidprice,askprice);
                     }
                     LP_autorefs[i].count++;
+*/
                 }
-                free_json(fundjson);
+                unsafe {lp::free_json (fundjson);}
             }
         }
+/*
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
             //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
@@ -718,8 +722,8 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                 LP_autopriceset(i,ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
             }
         }
-    }
     */
+    }
     unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, btc_price.kmd, btc_price.bch, btc_price.ltc)}
     Ok(())
 }

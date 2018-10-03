@@ -157,6 +157,9 @@ fn generate_bindings() {
             "LP_ticker",
             "LP_queuecommand",
             "LP_CMCbtcprice",
+            "LP_fundvalue",
+            "jint",
+            "free_json",
         ]
             .iter(),
         // types
@@ -182,6 +185,7 @@ fn generate_bindings() {
             "LP_STOP_RECEIVED",
             "IPC_ENDPOINT",
             "SPAWN_RPC",
+            "LP_autorefs",
         ]
             .iter(),
     );
