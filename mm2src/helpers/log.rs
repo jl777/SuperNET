@@ -2,7 +2,6 @@
 
 // TODO: As we discussed with Artem, skip a status update if it is equal to the previous update.
 // TODO: Sort the tags while converting `&[&TagParam]` to `Vec<Tag>`.
-// TODO: Make the dashboard entries unique on the tags (if the tags match then this is the same status).
 
 #[cfg(test)]
 mod test {
@@ -48,11 +47,11 @@ use gstuff::now_ms;
 use serde_json::{Value as Json};
 use std::collections::VecDeque;
 use std::fs;
-use std::fmt;
-use std::io::Write;
+use std::fmt::{self, Write as WriteFmt};
+use std::io::{Seek, SeekFrom, Write};
 use std::default::Default;
 use std::mem::swap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 pub trait TagParam<'a> {
     fn key (&self) -> String;
@@ -87,6 +86,17 @@ impl Tag {
             Some (ref s) => &s[..],
             None => ""
         }
+    }
+}
+
+impl fmt::Debug for Tag {
+    fn fmt (&self, ft: &mut fmt::Formatter) -> fmt::Result {
+        ft.write_str (&self.key) ?;
+        if let Some (ref val) = self.val {
+            ft.write_str ("=") ?;
+            ft.write_str (val) ?;
+        }
+        Ok(())
     }
 }
 
@@ -157,10 +167,13 @@ impl<'a> StatusHandle<'a> {
             trail: Vec::new()
         };
         if let Some (ref status) = self.status {
-            let mut shared_status = unwrap! (status.lock(), "Can't lock the status");
-            swap (&mut stack_status, &mut shared_status);
-            swap (&mut stack_status.trail, &mut shared_status.trail);  // Move the existing `trail` back to the `shared_status`.
-            shared_status.trail.push (stack_status);
+            {
+                let mut shared_status = unwrap! (status.lock(), "Can't lock the status");
+                swap (&mut stack_status, &mut shared_status);
+                swap (&mut stack_status.trail, &mut shared_status.trail);  // Move the existing `trail` back to the `shared_status`.
+                shared_status.trail.push (stack_status);
+            }
+            self.log.updated (status);
         } else {
             let status = Arc::new (Mutex::new (stack_status));
             self.status = Some (status.clone());
@@ -171,8 +184,11 @@ impl<'a> StatusHandle<'a> {
     /// Adds new text into the status line.
     pub fn append (&self, suffix: &str) {
         if let Some (ref status) = self.status {
-            let mut status = unwrap! (status.lock(), "Can't lock the status");
-            status.line.push_str (suffix)
+            {
+                let mut status = unwrap! (status.lock(), "Can't lock the status");
+                status.line.push_str (suffix)
+            }
+            self.log.updated (status);
         }
     }
 
@@ -201,7 +217,10 @@ pub struct LogState {
     /// Should allow us to examine the log from withing the unit tests, core dumps and live debugging sessions.
     tail: Mutex<VecDeque<LogEntry>>,
     /// Log to stdout if `None`.
-    log_file: Option<Mutex<fs::File>>
+    log_file: Option<Mutex<fs::File>>,
+    /// Dashboard is dumped here, allowing us to easily observe it from a command-line or the tests.  
+    /// No dumping if `None`.
+    dashboard_file: Option<Mutex<fs::File>>
 }
 
 impl LogState {
@@ -210,24 +229,36 @@ impl LogState {
         LogState {
             dashboard: Mutex::new (Vec::new()),
             tail: Mutex::new (VecDeque::with_capacity (64)),
-            log_file: None
+            log_file: None,
+            dashboard_file: None
         }
     }
 
     /// Initialize according to the MM command-line configuration.
     pub fn mm (conf: &Json) -> LogState {
-        let log_file = match conf["log"] {
-            Json::Null => None,
-            Json::String (ref path) => Some (Mutex::new (unwrap! (
-                fs::OpenOptions::new().append (true) .create (true) .open (path),
-                "Can't open log file {}", path
-            ))),
+        let (log_file, dashboard_file) = match conf["log"] {
+            Json::Null => (None, None),
+            Json::String (ref path) => {
+                let log_file = unwrap! (
+                    fs::OpenOptions::new().append (true) .create (true) .open (path),
+                    "Can't open log file {}", path
+                );
+
+                let dashboard_path = format! ("{}.dashboard", path);
+                let dashboard_file = unwrap! (
+                    fs::OpenOptions::new().write (true) .create (true) .open (&dashboard_path),
+                    "Can't open dashboard file {}", dashboard_path
+                );
+
+                (Some (Mutex::new (log_file)), Some (Mutex::new (dashboard_file)))
+            },
             ref x => panic! ("The 'log' is not a string: {:?}", x)
         };
         LogState {
             dashboard: Mutex::new (Vec::new()),
             tail: Mutex::new (VecDeque::with_capacity (64)),
-            log_file
+            log_file,
+            dashboard_file
         }
     }
 
@@ -242,10 +273,48 @@ impl LogState {
         }
     }
 
+    fn dump_dashboard (&self, dashboard: MutexGuard<Vec<Arc<Mutex<Status>>>>) {
+        if dashboard.len() == 0 {return}
+        let df = match self.dashboard_file {Some (ref df) => df, None => return};
+        let mut buf = String::with_capacity (dashboard.len() * 256);
+        let mut locked = Vec::new();
+        for status in dashboard.iter() {
+            if let Ok (status) = status.try_lock() {
+                let _ = writeln! (&mut buf, "{:?} {}", status.tags, status.line);
+            } else {
+                locked.push (status.clone())
+            }
+        }
+        drop (dashboard);  // Unlock the dashboard.
+        for status in locked {
+            if let Ok (status) = status.lock() {
+                let _ = writeln! (&mut buf, "{:?} {}", status.tags, status.line);
+            } else {
+                eprintln! ("dump_dashboard] Can't lock a status")
+            }
+        }
+
+        let mut df = match df.lock() {Ok (lock) => lock, Err (err) => {eprintln! ("dump_dashboard] Can't lock the file: {}", err); return}};
+        if let Err (err) = df.seek (SeekFrom::Start (0)) {eprintln! ("dump_dashboard] Can't seek the file: {}", err); return}
+        if let Err (err) = df.write_all (buf.as_bytes()) {eprintln! ("dump_dashboard] Can't write the file: {}", err); return}
+        if let Err (err) = df.set_len (buf.len() as u64) {eprintln! ("dump_dashboard] Can't truncate the file: {}", err); return}
+    }
+
     /// Invoked when the `StatusHandle` gets the first status.
     fn started (&self, status: Arc<Mutex<Status>>) {
         match self.dashboard.lock() {
-            Ok (mut dashboard) => dashboard.push (status),
+            Ok (mut dashboard) => {
+                dashboard.push (status);
+                self.dump_dashboard (dashboard)
+            },
+            Err (err) => eprintln! ("log] Can't lock the dashboard: {}", err)
+        }
+    }
+
+    /// Invoked when the `StatusHandle` updates the status.
+    fn updated (&self, _status: &Arc<Mutex<Status>>) {
+        match self.dashboard.lock() {
+            Ok (dashboard) => self.dump_dashboard (dashboard),
             Err (err) => eprintln! ("log] Can't lock the dashboard: {}", err)
         }
     }
@@ -256,6 +325,7 @@ impl LogState {
             Ok (mut dashboard) => {
                 if let Some (idx) = dashboard.iter().position (|e| Arc::ptr_eq (e, status)) {
                     dashboard.swap_remove (idx);
+                    self.dump_dashboard (dashboard)
                 } else {
                     eprintln! ("log] Warning, a finished StatusHandle was missing from the dashboard.");
                 }
@@ -302,9 +372,9 @@ impl LogState {
         cb (&*tail)
     }
 
-   /// Creates the status.
-   pub fn status<'b> (&self, tags: &[&TagParam], line: &str) -> StatusHandle {
-        let mut status = self.status_handle();
+    /// Creates the status or rewrites it if the tags match.
+    pub fn status<'b> (&self, tags: &[&TagParam], line: &str) -> StatusHandle {
+        let mut status = self.claim_status (tags) .unwrap_or (self.status_handle());
         status.status (tags, line);
         status
     }
@@ -383,6 +453,12 @@ impl LogState {
     }
 
     fn chunk2log (&self, chunk: String) {
+        // As of now we're logging from both the C and the Rust code and mixing the `println!` with the file writing to boot.
+        // On Windows these writes aren't atomic unfortunately.
+        // Duplicating the logging output here is a temporary workaround.
+        // This should become unnecessary in the future as we port more code to Rust or Rust logging.
+        if cfg! (windows) {print! ("⸗{}", chunk)}
+
         match self.log_file {
             Some (ref f) => match f.lock() {
                 Ok (mut f) => {
@@ -409,6 +485,18 @@ impl LogState {
 
 impl Drop for LogState {
     fn drop (&mut self) {
-        println! ("LogState] drop!");
+        let dashboard_copy = {
+            let dashboard = match self.dashboard.lock() {
+                Ok (d) => d,
+                Err (err) => {eprintln! ("LogState::drop] Can't lock `dashboard`: {}", err); return}
+            };
+            dashboard.clone()
+        };
+        if dashboard_copy.len() > 0 {
+            println! ("--- LogState] Remaining status entries. ---");
+            for status in &*dashboard_copy {self.finished (status)}
+        } else {
+            println! ("LogState] Bye!");
+        }
     }
 }

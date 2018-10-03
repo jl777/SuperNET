@@ -29,6 +29,7 @@ extern crate rand;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
+extern crate term;
 extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
@@ -50,13 +51,14 @@ use std::intrinsics::copy;
 use std::io::Write;
 use std::mem::{forget, size_of, uninitialized, zeroed};
 use std::net::{SocketAddr};
+use std::os::raw::{c_char, c_void};
+use std::ops::Deref;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::{null_mut, read_volatile};
-use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::os::raw::{c_char, c_void};
+use std::thread;
 use std::str;
 use tokio_core::reactor::Remote;
 
@@ -387,7 +389,7 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
 
 fn start_core_thread() -> Remote {
     let (tx, rx) = oneshot::channel();
-    unwrap! (std::thread::Builder::new().name ("CORE".into()) .spawn (move || {
+    unwrap! (thread::Builder::new().name ("CORE".into()) .spawn (move || {
         if let Err (err) = catch_unwind (AssertUnwindSafe (move || {
             let mut core = unwrap! (tokio_core::reactor::Core::new(), "!core");
             unwrap! (tx.send (core.remote()), "Can't send Remote.");
@@ -573,10 +575,11 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
     /// Performs the maintenance operations necessary to periodically refresh the resource.
     pub fn tick (&self) -> Result<(), String> {
         let now = now_float();
-        let last_start = f64::from_bits (self.last_start.load (Ordering::Relaxed) as u64);
         let last_finish = match * try_s! (self.shelf.lock()) {Some (ref rer_shelf) => rer_shelf.time, None => 0.};
+        let last_start = f64::from_bits (self.last_start.load (Ordering::Relaxed) as u64);
 
         if now - last_start > self.timeout_sec || (last_finish > last_start && now - last_start > self.every_n_sec) {
+            self.last_start.store (now.to_bits() as usize, Ordering::Relaxed);
             let sync = try_s! (self.sync.lock());
             let f = (*sync)();
             let shelf_tx = self.shelf.clone();
@@ -625,22 +628,25 @@ pub mod for_tests {
 
     use futures::Future;
 
-    use gstuff::{now_float, slurp};
+    use gstuff::{now_float, slurp, ISATTY};
 
     use hyper::{Request, StatusCode};
 
     use serde_json::{self as json, Value as Json};
+
+    use term;
 
     use rand::{thread_rng, Rng};
 
     use std::collections::HashSet;
     use std::env;
     use std::fs;
+    use std::io::{Write};
     use std::net::{IpAddr, Ipv4Addr};
     use std::path::{Path, PathBuf};
     use std::str::{from_utf8};
     use std::sync::Mutex;
-    use std::thread::sleep;
+    use std::thread::{sleep};
     use std::time::Duration;
 
     use super::slurp_req;
@@ -662,6 +668,40 @@ pub mod for_tests {
             // especially if the cached `running` check is also used to monitor the status of the process.
             if self.running() {
                 let _ = self.handle.kill();
+            }
+        }
+    }
+
+    /// When `drop`ped, dumps the given file to the stdout.
+    /// 
+    /// Used in the tests, copying the MM log to the test output.
+    /// 
+    /// Note that because of https://github.com/rust-lang/rust/issues/42474 it's currently impossible to share the MM log interactively,
+    /// hence we're doing it in the `drop`.
+    pub struct RaiiDump {
+        pub log_path: PathBuf
+    }
+    impl Drop for RaiiDump {
+        fn drop (&mut self) {
+            // `term` bypasses the stdout capturing, we should only use it if the capturing was disabled.
+            let nocapture = env::args().any (|a| a == "--nocapture");
+
+            let log = slurp (&self.log_path);
+
+            // Make sure the log is Unicode.
+            // We'll get the "io error when listing tests: Custom { kind: InvalidData, error: StringError("text was not valid unicode") }" otherwise.
+            let log = String::from_utf8_lossy (&log);
+            let log = log.trim();
+
+            if let (true, true, Some (mut t)) = (nocapture, *ISATTY, term::stdout()) {
+                let _ = t.fg (term::color::BRIGHT_YELLOW);
+                let _ = t.write (format! ("vvv {:?} vvv\n", self.log_path) .as_bytes());
+                let _ = t.fg (term::color::YELLOW);
+                let _ = t.write (log.as_bytes());
+                let _ = t.write (b"\n");
+                let _ = t.reset();
+            } else {
+                println! ("vvv {:?} vvv\n{}", self.log_path, log);
             }
         }
     }
