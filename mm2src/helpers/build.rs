@@ -159,10 +159,13 @@ fn generate_bindings() {
             "LP_CMCbtcprice",
             "LP_fundvalue",
             "jint",
+            "jdouble",
             "free_json",
             "LP_coinsearch",
             "LP_autoprice",
             "LP_instantdex_deposit",
+            "LP_mypriceset",
+            "LP_pricepings",
         ]
             .iter(),
         // types
@@ -190,6 +193,7 @@ fn generate_bindings() {
             "SPAWN_RPC",
             "LP_autorefs",
             "G",
+            "LP_mypubsock",
         ]
             .iter(),
     );

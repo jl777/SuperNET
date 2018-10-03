@@ -38,7 +38,7 @@ mod prices;
 
 use fxhash::FxHashMap;
 use gstuff::now_ms;
-use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON};
+use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON, SMALLVAL};
 use helpers::log::TagParam;
 use hyper::{StatusCode, HeaderMap};
 use prices::{lp_btcprice, BtcPrice};
@@ -508,8 +508,16 @@ int32_t LP_autoref_clear(char *base,char *rel)
     }
     return(-1);
 }
-
 */
+
+/// Returns a doube with the given `name` from the given `json`, but only if it's greter than `SMALLVAL`.
+fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
+    match unsafe {lp::jdouble (json, name as *mut c_char)} {
+        f if f > SMALLVAL => Some (f),
+        _ => None
+    }
+}
+
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
     // TODO: Figure out what this means and whether we need to log it.
     //println! ("AUTOPRICE numautorefs.{}", unsafe {lp::num_LP_autorefs});
@@ -624,12 +632,21 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     // Incremeted with RPC "autoprice" invoking `LP_autoprice`.
     let num_lp_autorefs = unsafe {lp::num_LP_autorefs};
 
+    let mut changed = 0;
+
     for i in 0..num_lp_autorefs {
         // RPC "autoprice" parameters, cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice
-        let autoref = unsafe {&lp::LP_autorefs[i as usize]};
+        let autoref = unsafe {&mut lp::LP_autorefs[i as usize]};
         let rel = try_s! (unsafe {CStr::from_ptr (autoref.rel.as_ptr())} .to_str());
         let base = try_s! (unsafe {CStr::from_ptr (autoref.base.as_ptr())} .to_str());
         if rel.is_empty() || base.is_empty() {continue}
+
+        let c_ctx = unsafe {ctx.btc_ctx() as *mut c_void};
+        let c_rel = try_s! (CString::new (rel));
+        let c_rel = c_rel.as_ptr() as *mut c_char;
+        let c_base = try_s! (CString::new (base));
+        let c_base = c_base.as_ptr() as *mut c_char;
+
         let buymargin = autoref.buymargin;
         let sellmargin = autoref.sellmargin;
         let offset = autoref.offset;
@@ -640,28 +657,22 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             if fundjson != null_mut() {
                 let missing = unsafe {lp::jint (fundjson, b"missing".as_ptr() as *mut c_char)};
                 if missing != 0 {
-    /*
-                    if ( LP_autorefs[i].fundbid[0] != 0 && (bidprice= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL && LP_autorefs[i].fundask[0] != 0 && (askprice= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
-                    {
-                        price = (bidprice + askprice) * 0.5;
-                        bidprice = (1. / price * (1. + buymargin));
-                        if ( LP_autorefs[i].lastbid < SMALLVAL )
-                            LP_autorefs[i].lastbid = bidprice;
-                        else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.9) + (0.1 * bidprice);
-                        bidprice = LP_autorefs[i].lastbid;
+                    if let (Some (mut bidprice), Some (mut askprice)) = (positive_f64 (fundjson, autoref.fundbid.as_ptr()), positive_f64 (fundjson, autoref.fundask.as_ptr())) {
+                        let price = (bidprice + askprice) * 0.5;
+                        bidprice = 1. / price * (1. + buymargin);
+                        if autoref.lastbid < SMALLVAL {autoref.lastbid = bidprice}
+                        else {autoref.lastbid = (autoref.lastbid * 0.9) + (0.1 * bidprice)}
+                        bidprice = autoref.lastbid;
                         askprice = price * (1. + sellmargin);
-                        if ( LP_autorefs[i].lastask < SMALLVAL )
-                            LP_autorefs[i].lastask = askprice;
-                        else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.9) + (0.1 * askprice);
-                        askprice = LP_autorefs[i].lastask;
-                        LP_mypriceset(1,&changed,rel,base,bidprice);
-                        LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,bidprice);
-                        LP_mypriceset(1,&changed,base,rel,askprice);
-                        LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,askprice);
-                        //printf("price %.8f -> %.8f %.8f\n",price,bidprice,askprice);
+                        if autoref.lastask < SMALLVAL {autoref.lastask = askprice}
+                        else {autoref.lastask = (autoref.lastask * 0.9) + (0.1 * askprice)}
+                        askprice = autoref.lastask;
+                        unsafe {lp::LP_mypriceset (1, &mut changed, c_rel, c_base, bidprice)};
+                        unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_rel, c_base, bidprice)};
+                        unsafe {lp::LP_mypriceset (1, &mut changed, c_base, c_rel, askprice)};
+                        unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_base, c_rel, askprice)};
                     }
-                    LP_autorefs[i].count++;
-*/
+                    autoref.count += 1
                 }
                 unsafe {lp::free_json (fundjson);}
             }
