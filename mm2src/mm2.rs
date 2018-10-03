@@ -105,6 +105,7 @@ mod lp_native_dex;
 use lp_native_dex::{lp_init};
 
 pub mod rpc;
+pub mod ordermatch;
 
 use crash_reports::init_crash_reports;
 
@@ -343,7 +344,7 @@ mod test {
             "method": "unknown_method",
         })));
 
-        assert_eq! (unknown_method.0, StatusCode::OK);
+        assert! (unknown_method.0.is_server_error());
 
         let mpnet = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
@@ -352,6 +353,18 @@ mod test {
         })));
         assert_eq!(mpnet.0, StatusCode::OK);
         unwrap! (mm.wait_for_log (1., &|log| log.contains ("MPNET onoff")));
+
+        let version = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "version",
+        })));
+        assert_eq!(version.0, StatusCode::OK);
+
+        let help = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "help",
+        })));
+        assert_eq!(version.0, StatusCode::OK);
 
         unwrap! (mm.stop());
     }
