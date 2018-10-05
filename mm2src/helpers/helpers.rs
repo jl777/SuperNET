@@ -106,6 +106,12 @@ impl fmt::Display for bits256 {
     }
 }
 
+/// Apparently helps to workaround `double` fluctuations occuring on *certain* systems.
+/// cf. https://stackoverflow.com/questions/19804472/double-randomly-adds-0-000000000000001.
+/// Not sure it's needed in Rust, the floating point operations should be determenistic here,
+/// but better safe than sorry.
+pub const SMALLVAL: f64 = 0.000000000000001;
+
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///
 /// Every MarketMaker has one and only one instance of `MmCtx`.

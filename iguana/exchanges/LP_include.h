@@ -637,6 +637,7 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp);
 char *LP_ticker(char *refbase,char *refrel);
 cJSON *LP_fundvalue(cJSON *argjson);
+int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
 
 struct LP_autoprice_ref
 {
@@ -662,6 +663,7 @@ extern char LP_gui[65];
 extern int32_t LP_canbind;
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
+extern int32_t LP_mypubsock;
 /**
  * Boolean. `1` if the command-line "myipaddr" field was used to set the `LP_myipaddr`.
  * 
