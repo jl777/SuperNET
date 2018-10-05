@@ -641,6 +641,7 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
 char *LP_ticker(char *refbase,char *refrel);
 cJSON *LP_fundvalue(cJSON *argjson);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
+void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel);
 
 struct LP_autoprice_ref
 {

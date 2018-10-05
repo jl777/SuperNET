@@ -641,6 +641,8 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         let base = try_s! (unsafe {CStr::from_ptr (autoref.base.as_ptr())} .to_str());
         if rel.is_empty() || base.is_empty() {continue}
 
+        let refrel = try_s! (unsafe {CStr::from_ptr (autoref.refrel.as_ptr())} .to_str());
+
         let c_ctx = unsafe {ctx.btc_ctx() as *mut c_void};
         let c_rel = try_s! (CString::new (rel));
         let c_rel = c_rel.as_ptr() as *mut c_char;
@@ -676,64 +678,72 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                 }
                 unsafe {lp::free_json (fundjson);}
             }
-        }
-/*
-        else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
-        {
-            //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
-            if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
-            {
-                if ( LP_autorefs[i].usdpeg != 0 )
-                {
-                    if ( price_usd > SMALLVAL )
-                        price = 1. / price_usd;
-                    else continue;
-                }
-                else
-                {
-                    if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
-                        price = kmd_btc / price_btc;
-                    else if ( strcmp(rel,"BCH") == 0 && bch_btc > SMALLVAL )
-                        price = bch_btc / price_btc;
-                    else if ( strcmp(rel,"LTC") == 0 && ltc_btc > SMALLVAL )
-                        price = ltc_btc / price_btc;
-                    else if ( strcmp(rel,"BTC") == 0 )
-                        price = 1. / price_btc;
-                    else continue;
-                }
-                if ( factor > 0. )
-                {
-                    //printf("USD %.8f KMDBTC %.8f pricebtc %.8f price %.8f -> factor %.8f %.8f\n",price_usd,kmd_btc,price_btc,price,factor,(price * factor) + offset);
-                    price = (price * factor) + offset;
-                }
-                newprice = (price * (1. + buymargin));
-                if ( LP_autorefs[i].lastbid < SMALLVAL )
-                    LP_autorefs[i].lastbid = newprice;
-                else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.99) + (0.01 * newprice);
-                newprice = LP_autorefs[i].lastbid;
-                LP_mypriceset(1,&changed,rel,base,newprice);
-                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
-                //printf("%s/%s price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",base,rel,price,buymargin,sellmargin,newprice,(1. / newprice) * (1. + sellmargin));
-                newprice = (1. / price) * (1. + sellmargin);
-                if ( LP_autorefs[i].lastask < SMALLVAL )
-                    LP_autorefs[i].lastask = newprice;
-                else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.99) + (0.01 * newprice);
-                newprice = LP_autorefs[i].lastask;
-                LP_mypriceset(1,&changed,base,rel,newprice);
-                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
-            } //else printf("null return from CMC\n");
+        } else if refrel == "coinmarketcap" {
+            let mut price_usd = 0f64;
+            let price_btc = unsafe {lp::LP_CMCbtcprice (&mut price_usd, autoref.refbase.as_ptr() as *mut c_char)};
+            if price_btc > SMALLVAL {
+                // cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice-using-usdpeg
+                let price = if autoref.usdpeg != 0 {
+                    if price_usd > SMALLVAL {
+                        1. / price_usd
+                    } else {
+                        continue
+                    }
+                } else {
+                    if rel == "KMD" && btc_price.kmd > SMALLVAL {
+                        btc_price.kmd / price_btc
+                    } else if rel == "BCH" && btc_price.bch > SMALLVAL {
+                        btc_price.bch / price_btc
+                    } else if rel == "LTC" && btc_price.ltc > SMALLVAL {
+                        btc_price.ltc / price_btc
+                    } else if rel == "BTC" {
+                        1. / price_btc
+                    } else {
+                        continue
+                    }
+                };
+
+                let price = if factor > 0. {(price * factor) + offset} else {price};
+
+                let newprice = {
+                    let with_margin = price * (1. + buymargin);
+
+                    if autoref.lastbid < SMALLVAL {
+                        autoref.lastbid = with_margin;
+                        with_margin
+                    } else {
+                        let moving = autoref.lastbid * 0.99 + (0.01 * with_margin);
+                        autoref.lastbid = moving;
+                        moving
+                    }
+                };
+
+                unsafe {lp::LP_mypriceset (1, &mut changed, c_rel, c_base, newprice)};
+                unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_rel, c_base, newprice)};
+
+                let newprice = {
+                    let with_margin = (1. / price) * (1. + sellmargin);
+                    if autoref.lastask < SMALLVAL {
+                        autoref.lastask = with_margin;
+                        with_margin
+                    } else {
+                        let moving = autoref.lastask * 0.99 + (0.01 * with_margin);
+                        autoref.lastask = moving;
+                        moving
+                    }
+                };
+                unsafe {lp::LP_mypriceset (1, &mut changed, c_base, c_rel, newprice)};
+                unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_base, c_rel, newprice)};
+            }
         }
         else
         {
-            basepp = LP_priceinfofind(base);
-            relpp = LP_priceinfofind(rel);
-            if ( basepp != 0 && relpp != 0 )
-            {
-                //printf("check ref-autoprice %s/%s %f %f (%.8f %.8f)\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel,relpp->fixedprices[basepp->ind],basepp->fixedprices[relpp->ind],LP_autorefs[i].lastbid,LP_autorefs[i].lastask);
-                LP_autopriceset(i,ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+            let basepp = unsafe {lp::LP_priceinfofind(c_base)};
+            let relpp = unsafe {lp::LP_priceinfofind(c_rel)};
+            if !basepp.is_null() && !relpp.is_null() {
+                unsafe {lp::LP_autopriceset (i, c_ctx, 1, basepp, relpp, 0., autoref.refbase.as_mut_ptr(), autoref.refrel.as_mut_ptr())};
             }
         }
-    */
     }
     unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, btc_price.kmd, btc_price.bch, btc_price.ltc)}
     Ok(())

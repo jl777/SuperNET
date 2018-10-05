@@ -166,6 +166,7 @@ fn generate_bindings() {
             "LP_instantdex_deposit",
             "LP_mypriceset",
             "LP_pricepings",
+            "LP_autopriceset",
         ]
             .iter(),
         // types
