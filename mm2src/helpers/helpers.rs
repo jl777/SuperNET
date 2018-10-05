@@ -55,7 +55,7 @@ use std::os::raw::{c_char, c_void};
 use std::ops::Deref;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
-use std::ptr::{null_mut, read_volatile};
+use std::ptr::{null, null_mut, read_volatile};
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::thread;
@@ -368,7 +368,7 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name == "mm2::crash_reports::rust_seh_handler" {return}
     if name == "veh_exception_filter" {return}
     if name == "helpers::stack_trace" {return}
-    if name == "mm2::log_stacktrace" {return}
+    if name == "helpers::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
     if name.starts_with ("helpers::stack_trace") {return}
     if name.starts_with ("mm2::crash_reports::signal_handler") {return}
@@ -392,6 +392,24 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
         });
         true
     });
+}
+
+#[no_mangle]
+pub extern fn log_stacktrace (desc: *const c_char) {
+    let desc = if desc == null() {
+        ""
+    } else {
+        match unsafe {CStr::from_ptr (desc)} .to_str() {
+            Ok (s) => s,
+            Err (err) => {
+                eprintln! ("log_stacktrace] Bad trace description: {}", err);
+                ""
+            }
+        }
+    };
+    let mut trace = String::with_capacity (4096);
+    stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+    eprintln! ("Stacktrace. {}\n{}", desc, trace);
 }
 
 fn start_core_thread() -> Remote {

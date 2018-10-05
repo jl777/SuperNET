@@ -635,12 +635,13 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     let mut changed = 0;
 
     for i in 0..num_lp_autorefs {
-        // RPC "autoprice" parameters, cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice
+        // RPC "autoprice" parameters, cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice.
         let autoref = unsafe {&mut lp::LP_autorefs[i as usize]};
         let rel = try_s! (unsafe {CStr::from_ptr (autoref.rel.as_ptr())} .to_str());
         let base = try_s! (unsafe {CStr::from_ptr (autoref.base.as_ptr())} .to_str());
         if rel.is_empty() || base.is_empty() {continue}
 
+        // About "refbase" and "refrel": https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#knowledge-base.
         let refrel = try_s! (unsafe {CStr::from_ptr (autoref.refrel.as_ptr())} .to_str());
 
         let c_ctx = unsafe {ctx.btc_ctx() as *mut c_void};
@@ -680,7 +681,9 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             }
         } else if refrel == "coinmarketcap" {
             let mut price_usd = 0f64;
+            helpers::log_stacktrace ("LP_CMCbtcprice\0".as_ptr() as *mut c_char);
             let price_btc = unsafe {lp::LP_CMCbtcprice (&mut price_usd, autoref.refbase.as_ptr() as *mut c_char)};
+            println! ("coinmarketcap LP_CMCbtcprice: {}, {}", price_btc, price_usd);
             if price_btc > SMALLVAL {
                 // cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice-using-usdpeg
                 let price = if autoref.usdpeg != 0 {
