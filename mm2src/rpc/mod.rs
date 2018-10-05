@@ -166,7 +166,7 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
             ctx.btc_ctx() as *mut c_void,
             0,
             my_ip_ptr.as_ptr() as *mut c_char,
-            -1,
+            lp::LP_mypubsock,
             c_json.0,
             remote_ip_ptr.as_ptr() as *mut c_char,
             ctx.rpc_ip_port.port()

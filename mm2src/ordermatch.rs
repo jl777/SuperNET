@@ -19,7 +19,7 @@
 //  marketmaker
 //
 use gstuff::now_ms;
-use helpers::{MmArc, find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS};
+use helpers::{MmArc, find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
 use libc::strcpy;
 use std::ffi::{CString};
 use std::ptr::null_mut;
@@ -1713,8 +1713,8 @@ pub struct AutoBuyInput {
 }
 
 pub fn lp_auto_buy(ctx: MmArc, input: AutoBuyInput) -> Result<String, String> {
-    if input.price < 0.000000000000001 {
-        return ERR!("Price is too low (minimum is 0.000000000000001)");
+    if input.price < SMALLVAL {
+        return ERR!("Price is too low, minimum is {}", SMALLVAL);
     }
 
     let mut fomo = 0;
@@ -1964,7 +1964,7 @@ pub fn lp_auto_buy(ctx: MmArc, input: AutoBuyInput) -> Result<String, String> {
         Ok(try_s!(c_char_to_string(lp::LP_trade(
             ctx.btc_ctx() as *mut c_void,
             my_ip.as_ptr() as *mut c_char,
-            -1,
+            lp::LP_mypubsock,
             &mut q as *mut lp::LP_quoteinfo,
             price,
             timeout as i32,
