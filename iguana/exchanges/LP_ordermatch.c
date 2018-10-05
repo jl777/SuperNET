@@ -622,7 +622,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
             if ( gtc->pending <= oldest+60 && time(NULL) > gtc->pending+LP_AUTOTRADE_TIMEOUT*10 )
             {
                 gtc->pending = qp->timestamp = (uint32_t)time(NULL);
-                LP_query(ctx,myipaddr,mypubsock,"request",qp);
+                LP_query("request",qp);
                 LP_Alicequery = *qp, LP_Alicemaxprice = gtc->Q.maxprice, Alice_expiration = qp->timestamp + 2*LP_AUTOTRADE_TIMEOUT, LP_Alicedestpubkey = qp->srchash;
                 char str[65]; printf("LP_gtc fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),gtc->Q.maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
                 break;
@@ -660,7 +660,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         LP_gtc_addorder(qp);
     }
     {
-        LP_query(ctx,myipaddr,mypubsock,"request",qp);
+        LP_query("request",qp);
         LP_Alicequery = *qp, LP_Alicemaxprice = qp->maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
     }
     if ( qp->gtc == 0 )
@@ -979,7 +979,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             LP_Alicereserved = *qp;
             LP_alicequery_clear();
             //printf("send CONNECT\n");
-            LP_query(ctx,myipaddr,mypubsock,"connect",qp);
+            LP_query("connect",qp);
         } else printf("LP_reserved %llu price %.8f vs maxprice %.8f\n",(long long)qp->aliceid,price,maxprice);
     } //else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(qp->quotetime),price,maxprice);
 }

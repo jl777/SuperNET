@@ -717,4 +717,15 @@ int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,doub
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr);
 void gen_quote_uuid(char *result, char *base, char* rel);
 int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
+uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout);
+uint32_t LP_rand();\
+void LP_gtc_addorder(struct LP_quoteinfo *qp);
+void LP_query(char *method,struct LP_quoteinfo *qp);
+extern struct LP_quoteinfo LP_Alicequery;
+extern double LP_Alicemaxprice;
+extern bits256 LP_Alicedestpubkey;
+
+cJSON *LP_quotejson(struct LP_quoteinfo *qp);
+void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr);
+char *LP_recent_swaps(int32_t limit,char *uuidstr);
 #endif

@@ -161,6 +161,7 @@ fn generate_bindings() {
             "LP_fundvalue",
             "jint",
             "jdouble",
+            "jprint",
             "free_json",
             "LP_coinsearch",
             "LP_autoprice",
@@ -177,9 +178,15 @@ fn generate_bindings() {
             "LP_basesatoshis",
             "LP_quoteinfoinit",
             "LP_quotedestinfo",
-            "LP_trade",
             "gen_quote_uuid",
             "decode_hex",
+            "LP_aliceid_calc",
+            "LP_rand",
+            "LP_gtc_addorder",
+            "LP_query",
+            "LP_quotejson",
+            "LP_mpnet_send",
+            "LP_recent_swaps",
         ]
             .iter(),
         // types
@@ -212,6 +219,9 @@ fn generate_bindings() {
             "LP_AUTOTRADE_TIMEOUT",
             "LP_RESERVETIME",
             "Alice_expiration",
+            "LP_Alicequery",
+            "LP_Alicemaxprice",
+            "LP_Alicedestpubkey",
         ]
             .iter(),
     );

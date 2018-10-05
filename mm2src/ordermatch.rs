@@ -19,8 +19,8 @@
 //  marketmaker
 //
 use gstuff::now_ms;
-use helpers::{MmArc, find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
-use libc::strcpy;
+use helpers::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
+use libc::{strcpy, strlen};
 use std::ffi::{CString};
 use std::ptr::null_mut;
 use std::os::raw::{c_void, c_char};
@@ -647,39 +647,51 @@ void LP_gtc_addorder(struct LP_quoteinfo *qp)
     DL_APPEND(GTCorders,gtc);
     portable_mutex_unlock(&LP_gtcmutex);
 }
-
-char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr)
-{
-    struct LP_gtcorder *gtc;
-    memset(qp->txid.bytes,0,sizeof(qp->txid));
-    qp->txid2 = qp->txid;
-    qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
-    if ( (qp->tradeid= tradeid) == 0 )
-        qp->tradeid = LP_rand();
-    qp->srchash = destpubkey;
-    strncpy(qp->uuidstr,uuidstr,sizeof(qp->uuidstr)-1);
-    qp->maxprice = maxprice;
-    qp->timestamp = (uint32_t)time(NULL);
-    if ( qp->gtc != 0 )
-    {
-        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
-        LP_gtc_addorder(qp);
+*/
+fn lp_trade(
+    qp: *mut lp::LP_quoteinfo,
+    price: f64,
+    timeout: i32,
+    trade_id: u32,
+    dest_pub_key: lp::bits256,
+    uuid: *mut c_char,
+) -> Result<String, String> {
+    unsafe {
+        (*qp).txid2 = lp::bits256::default();
+        (*qp).txid = lp::bits256::default();
+        (*qp).aliceid = lp::LP_aliceid_calc((*qp).desttxid, (*qp).destvout, (*qp).feetxid, (*qp).feevout);
+        (*qp).tradeid = if trade_id > 0 {
+            trade_id
+        } else {
+            lp::LP_rand()
+        };
+        (*qp).srchash = dest_pub_key;
+        strcpy((*qp).uuidstr.as_ptr() as *mut c_char, uuid);
+        (*qp).maxprice = price;
+        (*qp).timestamp = (now_ms()  / 1000) as u32;
+        if (*qp).gtc != 0 {
+            let uuid_len = strlen((*qp).uuidstr.as_ptr());
+            strcpy(
+                (*qp).uuidstr[uuid_len - 6..].as_ptr() as *mut c_char,
+                CString::new("cccccc").unwrap().as_ptr()
+            );
+            lp::LP_gtc_addorder(qp);
+        }
+        // TODO: discuss if LP_query should run in case of gtc order as LP_gtciteration will run it anyway
+        lp::LP_query(CString::new("request").unwrap().as_ptr() as *mut c_char, qp);
+        lp::LP_Alicequery = *qp;
+        lp::LP_Alicemaxprice = (*qp).maxprice;
+        lp::Alice_expiration = (*qp).timestamp + timeout as u32;
+        lp::LP_Alicedestpubkey = (*qp).srchash;
+        if (*qp).gtc == 0 {
+            let msg = lp::jprint(lp::LP_quotejson(qp), 1);
+            lp::LP_mpnet_send(1, msg, 1, null_mut());
+            free_c_ptr(msg as *mut c_void);
+        }
+        Ok(try_s!(c_char_to_string(lp::LP_recent_swaps(0, uuid))))
     }
-    {
-        LP_query(ctx,myipaddr,mypubsock,"request",qp);
-        LP_Alicequery = *qp, LP_Alicemaxprice = qp->maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
-    }
-    if ( qp->gtc == 0 )
-    {
-        cJSON *reqjson = LP_quotejson(qp);
-        char *msg = jprint(reqjson,1);
-        LP_mpnet_send(1,msg,1,0);
-        free(msg);
-    }
-    char str[65]; printf("LP_trade mpnet.%d fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->mpnet,qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),qp->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
-    return(LP_recent_swaps(0,uuidstr));
 }
-
+/*
 int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 {
     if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
@@ -1712,7 +1724,7 @@ pub struct AutoBuyInput {
     dest_pub_key: Option<String>
 }
 
-pub fn lp_auto_buy(ctx: MmArc, input: AutoBuyInput) -> Result<String, String> {
+pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
     if input.price < SMALLVAL {
         return ERR!("Price is too low, minimum is {}", SMALLVAL);
     }
@@ -1752,7 +1764,6 @@ pub fn lp_auto_buy(ctx: MmArc, input: AutoBuyInput) -> Result<String, String> {
         return ERR!("Rel coin is not found or inactive");
     }
 
-    let duration = input.duration.unwrap_or(unsafe { lp::LP_ORDERBOOK_DURATION });
     let mut timeout = input.timeout.unwrap_or(unsafe { lp::LP_AUTOTRADE_TIMEOUT });
     let mut num = 0;
     let num_ptr = &mut num as *mut i32;
@@ -1955,23 +1966,18 @@ pub fn lp_auto_buy(ctx: MmArc, input: AutoBuyInput) -> Result<String, String> {
         );
         let uuid_str: [c_char; 100] = [0; 100];
         lp::gen_quote_uuid(uuid_str.as_ptr() as *mut c_char, base_str.as_ptr() as *mut c_char, rel_str.as_ptr() as *mut c_char);
-        let my_ip = try_s!(CString::new(format!("{}", ctx.rpc_ip_port.ip())));
         let dest_pub_key = lp::bits256::default();
         if input.dest_pub_key.is_some() {
             let pub_key_str = try_s!(CString::new(input.dest_pub_key.unwrap()));
             lp::decode_hex(dest_pub_key.bytes.as_ptr() as *mut u8, 32, pub_key_str.as_ptr() as *mut c_char);
         }
-        Ok(try_s!(c_char_to_string(lp::LP_trade(
-            ctx.btc_ctx() as *mut c_void,
-            my_ip.as_ptr() as *mut c_char,
-            lp::LP_mypubsock,
+        Ok(try_s!(lp_trade(
             &mut q as *mut lp::LP_quoteinfo,
             price,
             timeout as i32,
-            duration as i32,
             0,
             dest_pub_key,
             uuid_str.as_ptr() as *mut c_char
-        ))))
+        )))
     }
 }

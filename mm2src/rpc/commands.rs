@@ -608,14 +608,14 @@ pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> HyRes {
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
 */
-pub fn buy(ctx: MmArc, json: &Json) ->  HyRes {
+pub fn buy(json: &Json) ->  HyRes {
     let input : AutoBuyInput = try_h!(serde_json::from_value(json.clone()));
-    rpc_response(200, try_h!(lp_auto_buy(ctx, input)))
+    rpc_response(200, try_h!(lp_auto_buy(input)))
 }
 
-pub fn sell(ctx: MmArc, json: &Json) ->  HyRes {
+pub fn sell(json: &Json) ->  HyRes {
     let input : AutoBuyInput = try_h!(serde_json::from_value(json.clone()));
-    rpc_response(200, try_h!(lp_auto_buy(ctx, input)))
+    rpc_response(200, try_h!(lp_auto_buy(input)))
 }
 /*
         else if ( coin[0] != 0 )
