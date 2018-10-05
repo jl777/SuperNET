@@ -55,14 +55,6 @@ use std::thread::sleep;
 /*
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 
-struct LP_autoprice_ref
-{
-    char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
-    double buymargin,sellmargin,factor,offset,lastbid,lastask;
-    cJSON *fundvalue;
-    uint32_t count;
-} LP_autorefs[1024];
-
 int32_t LP_autoprices,num_LP_autorefs;
 char LP_portfolio_base[128],LP_portfolio_rel[128];
 double LP_portfolio_relvolume;
@@ -748,7 +740,6 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             }
         }
     }
-    unsafe {lp::LP_autoprice_iter (ctx.btc_ctx() as *mut c_void, btcpp, btc_price.kmd, btc_price.bch, btc_price.ltc)}
     Ok(())
 }
 /*

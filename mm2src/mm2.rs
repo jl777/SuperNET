@@ -282,7 +282,7 @@ mod test {
         //     "ipaddr": "electrum1.cipig.net",
         //     "port": 10061
         // })));
-        // assert_eq! (electrum_pizza.0, StatusCode::OK);
+        // assert_eq! (electrum_dash.0, StatusCode::OK);
 
         let address = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,

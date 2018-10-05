@@ -148,7 +148,6 @@ fn generate_bindings() {
             "stats_JSON",
             "LP_priceinfofind",
             "prices_loop",
-            "LP_autoprice_iter",
             "LP_portfolio",
             "LP_coinfind",
             "LP_portfolio_trade",
