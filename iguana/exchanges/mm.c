@@ -30,6 +30,9 @@
 #endif // !_WIN_32
 
 uint32_t DOCKERFLAG;
+uint32_t LP_ORDERBOOK_DURATION = 180;
+uint32_t LP_AUTOTRADE_TIMEOUT = 30;
+uint32_t LP_RESERVETIME = 90;
 #include "stats.c"
 
 #include "../../crypto777/nanosrc/nn.h"

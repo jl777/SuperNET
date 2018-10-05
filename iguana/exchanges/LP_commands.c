@@ -450,42 +450,7 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"buy") == 0 )
-            {
-                int32_t fomo = 0; double vol;
-                if ( jobj(argjson,"fomo") != 0 )
-                {
-                    fomo = 1;
-                    price = 1.;
-                    vol = jdouble(argjson,"fomo");
-                } else vol = jdouble(argjson,"relvolume");
-                if ( price > SMALLVAL )
-                {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid"),jint(argjson,"fill"),jint(argjson,"gtc")));
-                } else return(clonestr("{\"error\":\"no price set\"}"));
-            }
-            else if ( strcmp(method,"sell") == 0 )
-            {
-                int32_t fomo = 0; double vol;
-                if ( jobj(argjson,"dump") != 0 )
-                {
-                    fomo = 1;
-                    price = 1.;
-                    vol = jdouble(argjson,"dump");
-                } else vol = jdouble(argjson,"basevolume");
-                if ( price > SMALLVAL )
-                {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid"),jint(argjson,"fill"),jint(argjson,"gtc")));
-                } else return(clonestr("{\"error\":\"no price set\"}"));
-            }
         }
-        /*else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
-        {
-            double relvolume;
-            if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
-                return(LP_bestfit(rel,relvolume));
-            else return(clonestr("{\"error\":\"no relvolume set\"}"));
-        }*/
         else if ( coin[0] != 0 )
         {
             if ( strcmp(method,"enable") == 0 )

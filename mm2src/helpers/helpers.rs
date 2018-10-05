@@ -80,6 +80,11 @@ pub mod etomiclib {include! ("c_headers/etomiclib.rs");}
 
 pub const MM_VERSION: &'static str = env! ("MM_VERSION");
 
+pub const SATOSHIS: u64 = 100000000;
+
+/// Converts u64 satoshis to f64
+pub fn sat_to_f(sat: u64) -> f64 { sat as f64 / SATOSHIS as f64 }
+
 /// Created by `void *bitcoin_ctx()`.
 pub enum BitcoinCtx {}
 
@@ -316,8 +321,27 @@ pub fn str_to_malloc (s: &str) -> *mut c_char {unsafe {
     buf as *mut c_char
 }}
 
+/// Converts *mut c_char to Rust String
+/// Doesn't free the allocated memory
+/// It's responsibility of the caller to free the memory when required
+/// Returns error in case of null pointer input
+pub fn c_char_to_string(ptr: *mut c_char) -> Result<String, String> { unsafe {
+    if !ptr.is_null() {
+        let res_str = try_s!(CStr::from_ptr(ptr).to_str());
+        let res_str = String::from(res_str);
+        Ok(res_str)
+    } else {
+        ERR!("Tried to convert null pointer to Rust String!")
+    }
+}}
+
 /// Frees C raw pointer
-pub fn free_c_ptr(ptr: *mut c_void) { unsafe { free(ptr as *mut libc::c_void); } }
+/// Does nothing in case of null pointer input
+pub fn free_c_ptr(ptr: *mut c_void) { unsafe {
+    if !ptr.is_null() {
+        free(ptr as *mut libc::c_void);
+    }
+}}
 
 //? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
@@ -517,6 +541,16 @@ pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>
 
         Ok(result)
     }))
+}
+
+/// Wrapper for LP_coinfind C function
+pub fn find_coin (coin: Option<&str>) -> Option<(*mut lp::iguana_info, String)> {
+    let coin = match coin {Some (c) => c, None => return None};
+    let coin_cs = unwrap! (CString::new (coin));
+    let coin_inf = unsafe {lp::LP_coinfind (coin_cs.as_ptr() as *mut c_char)};
+    if coin_inf == null_mut() {return None}
+    if unsafe {(*coin_inf).inactive} != 0 {return None}
+    Some ((coin_inf, coin.into()))
 }
 
 /// A closure that would (re)start a `Future` to synchronize with an external resource in `RefreshedExternalResource`.

@@ -19,7 +19,8 @@
 //
 use etomiccurl::get_gas_price_from_station;
 use helpers::{MM_VERSION, lp, MmArc, CJSON};
-use serde_json::{Value as Json};
+use ordermatch::{AutoBuyInput, lp_auto_buy};
+use serde_json::{self, Value as Json};
 use std::ffi::{CString};
 use std::os::raw::{c_void, c_char};
 use super::{err_response, rpc_response, HyRes, serialize_result};
@@ -109,82 +110,82 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
 */
 pub fn help() -> HyRes {
     rpc_response(200, "
-    available localhost RPC commands:
-    setprice(base, rel, price, broadcast=1)
-    autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*
-    goal(coin=*, val=<autocalc>)
-    myprice(base, rel)
-    enable(coin)
-    disable(coin)
-    notarizations(coin)
-    statsdisp(starttime=0, endtime=0, gui=\"\", pubkey=\"\", base=\"\", rel=\"\")
-    ticker(base=\"\", rel=\"\")
-    tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
-    pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]
-    getrawtransaction(coin, txid)
-    inventory(coin, reset=0, [passphrase=])
-    lastnonce()
-    cancel(uuid)
-    buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)
-    sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)
-    withdraw(coin, outputs[], broadcast=0)
-    eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)
-    txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)
-    sendrawtransaction(coin, signedtx)
-    swapstatus(pending=0, fast=0)
-    swapstatus(coin, limit=10)
-    swapstatus(base, rel, limit=10)
-    swapstatus(requestid, quoteid, pending=0, fast=0)
-    recentswaps(limit=3)
-    kickstart(requestid, quoteid)
-    notarizations(coin)
-    public API:
-    getcoins()
-    getcoin(coin)
-    portfolio()
-    getpeers()
-    passphrase(passphrase, gui, netid=0, seednode=\"\")
-    listunspent(coin, address)
-    setconfirms(coin, numconfirms, maxconfirms=6)
-    trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist
-    balance(coin, address)
-    balances(address)
-    fundvalue(address=\"\", holdings=[], divisor=0)
-    orderbook(base, rel, duration=3600)
-    getprices()
-    inuse()
-    movecoinbases(coin)
-    getmyprice(base, rel)
-    getprice(base, rel)
-    secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)
-    gen64addrs(passphrase, taddr=0, pubtype=60)
-    electrum(coin, ipaddr, port)
-    snapshot(coin, height)
-    snapshot_balance(coin, height, addresses[])
-    dividends(coin, height, <args>)
-    stop()
-    bot_list()
-    bot_statuslist()
-    bot_buy(base, rel, maxprice, relvolume) -> botid
-    bot_sell(base, rel, minprice, basevolume) -> botid
-    bot_settings(botid, newprice, newvolume)
-    bot_status(botid)
-    bot_stop(botid)
-    bot_pause(botid)
-    calcaddress(passphrase, coin=KMD)
-    convaddress(coin, address, destcoin)
-    instantdex_deposit(weeks, amount, broadcast=1)
-    instantdex_claim()
-    timelock(coin, duration, destaddr=(tradeaddr), amount)
-    unlockedspend(coin, txid)
-    opreturndecrypt(coin, txid, passphrase)
-    getendpoint(port=5555)
-    getfee(coin)
-    mpnet(onoff)
-    sleep(seconds=60)
-    listtransactions(coin, address, count=10, skip=0)
-    jpg(srcfile, destfile, power2=7, password, data=\"\", required, ind=0)
-    version
+        available localhost RPC commands:
+        setprice(base, rel, price, broadcast=1)
+        autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*
+        goal(coin=*, val=<autocalc>)
+        myprice(base, rel)
+        enable(coin)
+        disable(coin)
+        notarizations(coin)
+        statsdisp(starttime=0, endtime=0, gui=\"\", pubkey=\"\", base=\"\", rel=\"\")
+        ticker(base=\"\", rel=\"\")
+        tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+        pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]
+        getrawtransaction(coin, txid)
+        inventory(coin, reset=0, [passphrase=])
+        lastnonce()
+        cancel(uuid)
+        buy(base, rel, price, relvolume, timeout=10, duration=3600)
+        sell(base, rel, price, basevolume, timeout=10, duration=3600)
+        withdraw(coin, outputs[], broadcast=0)
+        eth_withdraw(coin, to, amount, gas, gas_price, broadcast=0)
+        txblast(coin, utxotxid, utxovout, utxovalue, txfee, passphrase, outputs[], broadcast=0)
+        sendrawtransaction(coin, signedtx)
+        swapstatus(pending=0, fast=0)
+        swapstatus(coin, limit=10)
+        swapstatus(base, rel, limit=10)
+        swapstatus(requestid, quoteid, pending=0, fast=0)
+        recentswaps(limit=3)
+        kickstart(requestid, quoteid)
+        notarizations(coin)
+        public API:
+        getcoins()
+        getcoin(coin)
+        portfolio()
+        getpeers()
+        passphrase(passphrase, gui, netid=0, seednode=\"\")
+        listunspent(coin, address)
+        setconfirms(coin, numconfirms, maxconfirms=6)
+        trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist
+        balance(coin, address)
+        balances(address)
+        fundvalue(address=\"\", holdings=[], divisor=0)
+        orderbook(base, rel, duration=3600)
+        getprices()
+        inuse()
+        movecoinbases(coin)
+        getmyprice(base, rel)
+        getprice(base, rel)
+        secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)
+        gen64addrs(passphrase, taddr=0, pubtype=60)
+        electrum(coin, ipaddr, port)
+        snapshot(coin, height)
+        snapshot_balance(coin, height, addresses[])
+        dividends(coin, height, <args>)
+        stop()
+        bot_list()
+        bot_statuslist()
+        bot_buy(base, rel, maxprice, relvolume) -> botid
+        bot_sell(base, rel, minprice, basevolume) -> botid
+        bot_settings(botid, newprice, newvolume)
+        bot_status(botid)
+        bot_stop(botid)
+        bot_pause(botid)
+        calcaddress(passphrase, coin=KMD)
+        convaddress(coin, address, destcoin)
+        instantdex_deposit(weeks, amount, broadcast=1)
+        instantdex_claim()
+        timelock(coin, duration, destaddr=(tradeaddr), amount)
+        unlockedspend(coin, txid)
+        opreturndecrypt(coin, txid, passphrase)
+        getendpoint(port=5555)
+        getfee(coin)
+        mpnet(onoff)
+        sleep(seconds=60)
+        listtransactions(coin, address, count=10, skip=0)
+        jpg(srcfile, destfile, power2=7, password, data=\"\", required, ind=0)
+        version
     ")
 }
 
@@ -606,42 +607,17 @@ pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> HyRes {
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"buy") == 0 )
-            {
-                int32_t fomo = 0; double vol;
-                if ( jobj(argjson,"fomo") != 0 )
-                {
-                    fomo = 1;
-                    price = 1.;
-                    vol = jdouble(argjson,"fomo");
-                } else vol = jdouble(argjson,"relvolume");
-                if ( price > SMALLVAL )
-                {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,base,rel,price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid"),jint(argjson,"fill"),jint(argjson,"gtc")));
-                } else return(clonestr("{\"error\":\"no price set\"}"));
-            }
-            else if ( strcmp(method,"sell") == 0 )
-            {
-                int32_t fomo = 0; double vol;
-                if ( jobj(argjson,"dump") != 0 )
-                {
-                    fomo = 1;
-                    price = 1.;
-                    vol = jdouble(argjson,"dump");
-                } else vol = jdouble(argjson,"basevolume");
-                if ( price > SMALLVAL )
-                {
-                    return(LP_autobuy(ctx,fomo,myipaddr,pubsock,rel,base,1./price,vol,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0,jstr(argjson,"uuid"),jint(argjson,"fill"),jint(argjson,"gtc")));
-                } else return(clonestr("{\"error\":\"no price set\"}"));
-            }
-        }
-        /*else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
-        {
-            double relvolume;
-            if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
-                return(LP_bestfit(rel,relvolume));
-            else return(clonestr("{\"error\":\"no relvolume set\"}"));
-        }*/
+*/
+pub fn buy(ctx: MmArc, json: &Json) ->  HyRes {
+    let input : AutoBuyInput = try_h!(serde_json::from_value(json.clone()));
+    rpc_response(200, try_h!(lp_auto_buy(ctx, input)))
+}
+
+pub fn sell(ctx: MmArc, json: &Json) ->  HyRes {
+    let input : AutoBuyInput = try_h!(serde_json::from_value(json.clone()));
+    rpc_response(200, try_h!(lp_auto_buy(ctx, input)))
+}
+/*
         else if ( coin[0] != 0 )
         {
             if ( strcmp(method,"enable") == 0 )

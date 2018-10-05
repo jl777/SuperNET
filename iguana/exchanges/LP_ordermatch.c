@@ -1678,9 +1678,20 @@ printf("CONNECTED.(%s)\n",jprint(argjson,0));
     return(retval);
 }
 
-char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid,char *uuidstr,int32_t fillflag,int32_t gtcflag)
+void gen_quote_uuid(char *result, char *base, char* rel) {
+    uint8_t uuidhash[256]; bits256 hash; uint64_t millis; int32_t len = 0;
+    memcpy(uuidhash,&G.LP_mypub25519,sizeof(bits256)), len += sizeof(bits256);
+    millis = OS_milliseconds();
+    memcpy(&uuidhash[len],&millis,sizeof(millis)), len += sizeof(millis);
+    memcpy(&uuidhash[len],base,(int32_t)strlen(base)), len += (int32_t)strlen(base);
+    memcpy(&uuidhash[len],rel,(int32_t)strlen(rel)), len += (int32_t)strlen(rel);
+    vcalc_sha256(0,hash.bytes,uuidhash,len);
+    bits256_str(result,hash);
+}
+
+char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid,char *_uuidstr,int32_t fillflag,int32_t gtcflag)
 {
-    uint64_t desttxfee,txfee,balance; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t num=0,maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos)); char _uuidstr[65];
+    uint64_t desttxfee,txfee,balance; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t num=0,maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( gui == 0 )
@@ -1825,20 +1836,7 @@ char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,cha
     Q.gtc = gtcflag;
     LP_mypriceset(0,&changed,rel,base,1. / maxprice);
     LP_mypriceset(0,&changed,base,rel,0.);
-    if ( uuidstr == 0 || uuidstr[0] == 0 )
-    {
-        uint8_t uuidhash[256]; bits256 hash; uint64_t millis; int32_t len = 0;
-        memcpy(uuidhash,&G.LP_mypub25519,sizeof(bits256)), len += sizeof(bits256);
-        millis = OS_milliseconds();
-        memcpy(&uuidhash[len],&millis,sizeof(millis)), len += sizeof(millis);
-        memcpy(&uuidhash[len],base,(int32_t)strlen(base)), len += (int32_t)strlen(base);
-        memcpy(&uuidhash[len],rel,(int32_t)strlen(rel)), len += (int32_t)strlen(rel);
-        vcalc_sha256(0,hash.bytes,uuidhash,len);
-        uuidstr = _uuidstr;
-        bits256_str(uuidstr,hash);
-        //char str[65]; printf("%s %llu %s %s -> uuid.%s\n",bits256_str(str,G.LP_mypub25519),(long long)millis,base,rel,uuidstr);
-    }
+    char uuidstr[65];
+    gen_quote_uuid(uuidstr, base, rel);
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey,uuidstr));
 }
-
-

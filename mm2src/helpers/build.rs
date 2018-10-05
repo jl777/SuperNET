@@ -62,6 +62,7 @@ fn bindgen<
             }
             builder = builder.whitelist_recursively(true);
             builder = builder.layout_tests(false);
+            builder = builder.derive_default(true);
             // Currently works for functions but not for variables such as `extern uint32_t DOCKERFLAG`.
             builder = builder.generate_comments(true);
             if cfg!(windows) {
@@ -163,10 +164,24 @@ fn generate_bindings() {
             "LP_coinsearch",
             "LP_autoprice",
             "LP_instantdex_deposit",
+            "LP_alicequery_clear",
+            "LP_address_utxo_reset",
+            "LP_autosplit",
+            "LP_txfees",
+            "LP_address_minmax",
+            "LP_fomoprice",
+            "LP_address_myutxopair",
+            "LP_basesatoshis",
+            "LP_quoteinfoinit",
+            "LP_quotedestinfo",
+            "LP_mypriceset",
+            "LP_trade",
+            "gen_quote_uuid",
+            "decode_hex",
         ]
             .iter(),
         // types
-        ["_bits256", "cJSON", "iguana_info",].iter(),
+        ["_bits256", "cJSON", "iguana_info", "LP_utxoinfo",].iter(),
         [
             // defines
             "bitcoind_RPC_inittime",
@@ -190,6 +205,10 @@ fn generate_bindings() {
             "SPAWN_RPC",
             "LP_autorefs",
             "G",
+            "LP_ORDERBOOK_DURATION",
+            "LP_AUTOTRADE_TIMEOUT",
+            "LP_RESERVETIME",
+            "Alice_expiration",
         ]
             .iter(),
     );
