@@ -68,8 +68,6 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 10 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 30
-#define LP_RESERVETIME (LP_AUTOTRADE_TIMEOUT * 3)
 #define ELECTRUM_TIMEOUT 13
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
@@ -100,7 +98,6 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define MAX_PSOCK_PORT 60000
 #define MIN_PSOCK_PORT 10000
 #define LP_GETINFO_INCR 30
-#define LP_ORDERBOOK_DURATION 180
 
 #define LP_MAXPEER_ERRORS 3
 #define LP_MINPEER_GOOD 20
@@ -701,4 +698,34 @@ struct LP_globals
     char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[65],LP_NXTaddr[64];
     struct LP_privkey LP_privkeys[100];
 } G;
+
+extern uint32_t LP_ORDERBOOK_DURATION;
+extern uint32_t LP_AUTOTRADE_TIMEOUT;
+extern uint32_t LP_RESERVETIME;
+extern uint32_t Alice_expiration;
+
+struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin);
+char *LP_autosplit(struct iguana_info *coin);
+void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel);
+int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr);
+double LP_fomoprice(char *base,char *rel,double *relvolumep);
+struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee);
+uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee);
+int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price,uint64_t satoshis,uint64_t destsatoshis);
+int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout,bits256 desthash,char *destaddr);
+int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
+char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr);
+void gen_quote_uuid(char *result, char *base, char* rel);
+int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
+uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout);
+uint32_t LP_rand();\
+void LP_gtc_addorder(struct LP_quoteinfo *qp);
+void LP_query(char *method,struct LP_quoteinfo *qp);
+extern struct LP_quoteinfo LP_Alicequery;
+extern double LP_Alicemaxprice;
+extern bits256 LP_Alicedestpubkey;
+
+cJSON *LP_quotejson(struct LP_quoteinfo *qp);
+void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr);
+char *LP_recent_swaps(int32_t limit,char *uuidstr);
 #endif

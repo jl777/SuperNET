@@ -38,7 +38,7 @@ mod prices;
 
 use fxhash::FxHashMap;
 use gstuff::now_ms;
-use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON, SMALLVAL};
+use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON, SMALLVAL, find_coin};
 use helpers::log::TagParam;
 use hyper::{StatusCode, HeaderMap};
 use prices::{lp_btcprice, BtcPrice};
@@ -1020,14 +1020,6 @@ pub fn prices_loop (ctx: MmArc) {
         if portfolio_cs != null_mut() {
             let portfolio_s = unwrap! (unsafe {CStr::from_ptr (portfolio_cs)} .to_str());
             let portfolio: Json = unwrap! (json::from_str (portfolio_s));
-            fn find_coin (coin: Option<&str>) -> Option<(*mut lp::iguana_info, String)> {
-                let coin = match coin {Some (c) => c, None => return None};
-                let coin_cs = unwrap! (CString::new (coin));
-                let coin_inf = unsafe {lp::LP_coinfind (coin_cs.as_ptr() as *mut c_char)};
-                if coin_inf == null_mut() {return None}
-                if unsafe {(*coin_inf).inactive} != 0 {return None}
-                Some ((coin_inf, coin.into()))
-            }
             let buy = find_coin (portfolio["buycoin"].as_str());
             let sell = find_coin (portfolio["sellcoin"].as_str());
             if let (Some ((buy, buycoin)), Some ((sell, sellcoin))) = (buy, sell) {

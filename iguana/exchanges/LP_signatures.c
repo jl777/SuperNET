@@ -715,7 +715,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
 }
 
-void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
+void LP_query(char *method,struct LP_quoteinfo *qp)
 {
     cJSON *reqjson; bits256 zero; char *msg; struct iguana_info *coin; int32_t flag = 0;
     if ( strcmp(method,"request") == 0 )

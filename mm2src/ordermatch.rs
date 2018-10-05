@@ -18,6 +18,12 @@
 //  ordermatch.rs
 //  marketmaker
 //
+use gstuff::now_ms;
+use helpers::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
+use libc::{strcpy, strlen};
+use std::ffi::{CString};
+use std::ptr::null_mut;
+use std::os::raw::{c_void, c_char};
 /*
 struct LP_gtcorder
 {
@@ -641,39 +647,51 @@ void LP_gtc_addorder(struct LP_quoteinfo *qp)
     DL_APPEND(GTCorders,gtc);
     portable_mutex_unlock(&LP_gtcmutex);
 }
-
-char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr)
-{
-    struct LP_gtcorder *gtc;
-    memset(qp->txid.bytes,0,sizeof(qp->txid));
-    qp->txid2 = qp->txid;
-    qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
-    if ( (qp->tradeid= tradeid) == 0 )
-        qp->tradeid = LP_rand();
-    qp->srchash = destpubkey;
-    strncpy(qp->uuidstr,uuidstr,sizeof(qp->uuidstr)-1);
-    qp->maxprice = maxprice;
-    qp->timestamp = (uint32_t)time(NULL);
-    if ( qp->gtc != 0 )
-    {
-        strcpy(&qp->uuidstr[strlen(qp->uuidstr)-6],"cccccc");
-        LP_gtc_addorder(qp);
+*/
+fn lp_trade(
+    qp: *mut lp::LP_quoteinfo,
+    price: f64,
+    timeout: i32,
+    trade_id: u32,
+    dest_pub_key: lp::bits256,
+    uuid: *mut c_char,
+) -> Result<String, String> {
+    unsafe {
+        (*qp).txid2 = lp::bits256::default();
+        (*qp).txid = lp::bits256::default();
+        (*qp).aliceid = lp::LP_aliceid_calc((*qp).desttxid, (*qp).destvout, (*qp).feetxid, (*qp).feevout);
+        (*qp).tradeid = if trade_id > 0 {
+            trade_id
+        } else {
+            lp::LP_rand()
+        };
+        (*qp).srchash = dest_pub_key;
+        strcpy((*qp).uuidstr.as_ptr() as *mut c_char, uuid);
+        (*qp).maxprice = price;
+        (*qp).timestamp = (now_ms()  / 1000) as u32;
+        if (*qp).gtc != 0 {
+            let uuid_len = strlen((*qp).uuidstr.as_ptr());
+            strcpy(
+                (*qp).uuidstr[uuid_len - 6..].as_ptr() as *mut c_char,
+                CString::new("cccccc").unwrap().as_ptr()
+            );
+            lp::LP_gtc_addorder(qp);
+        }
+        // TODO: discuss if LP_query should run in case of gtc order as LP_gtciteration will run it anyway
+        lp::LP_query(CString::new("request").unwrap().as_ptr() as *mut c_char, qp);
+        lp::LP_Alicequery = *qp;
+        lp::LP_Alicemaxprice = (*qp).maxprice;
+        lp::Alice_expiration = (*qp).timestamp + timeout as u32;
+        lp::LP_Alicedestpubkey = (*qp).srchash;
+        if (*qp).gtc == 0 {
+            let msg = lp::jprint(lp::LP_quotejson(qp), 1);
+            lp::LP_mpnet_send(1, msg, 1, null_mut());
+            free_c_ptr(msg as *mut c_void);
+        }
+        Ok(try_s!(c_char_to_string(lp::LP_recent_swaps(0, uuid))))
     }
-    {
-        LP_query(ctx,myipaddr,mypubsock,"request",qp);
-        LP_Alicequery = *qp, LP_Alicemaxprice = qp->maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = qp->srchash;
-    }
-    if ( qp->gtc == 0 )
-    {
-        cJSON *reqjson = LP_quotejson(qp);
-        char *msg = jprint(reqjson,1);
-        LP_mpnet_send(1,msg,1,0);
-        free(msg);
-    }
-    char str[65]; printf("LP_trade mpnet.%d fill.%d gtc.%d %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f etomicdest.(%s) uuid.%s fill.%d gtc.%d\n",qp->mpnet,qp->fill,qp->gtc,qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),qp->maxprice,qp->etomicdest,qp->uuidstr,qp->fill,qp->gtc);
-    return(LP_recent_swaps(0,uuidstr));
 }
-
+/*
 int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 {
     if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
@@ -1677,167 +1695,289 @@ printf("CONNECTED.(%s)\n",jprint(argjson,0));
     }
     return(retval);
 }
-
-char *LP_autobuy(void *ctx,int32_t fomoflag,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid,char *uuidstr,int32_t fillflag,int32_t gtcflag)
-{
-    uint64_t desttxfee,txfee,balance; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[4096]; int32_t num=0,maxiters=100,i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos)); char _uuidstr[65];
-    basecoin = LP_coinfind(base);
-    relcoin = LP_coinfind(rel);
-    if ( gui == 0 )
-        gui = "nogui";
-    if ( basecoin == 0 || basecoin->inactive != 0 || relcoin == 0 || relcoin->inactive != 0 )
-        return(clonestr("{\"error\":\"base or rel not found or inactive\"}"));
-    if ( LP_aliceonly(base) > 0 )
-        return(clonestr("{\"error\":\"GAME can only be alice coin\"}"));
-    printf("LP_autobuy %s/%s price %.8f vol %.8f nonce %u\n",base,rel,maxprice,relvolume,nonce);
-    if ( (lastnonce= LP_lastnonce) != 0 && nonce <= lastnonce )
-    {
-        printf("nonce.%u not bigger than lastnonce.%u\n",nonce,lastnonce);
-        return(clonestr("{\"error\":\"invalid nonce\"}"));
-    }
-    LP_lastnonce = nonce;
-    if ( duration <= 0 )
-        duration = LP_ORDERBOOK_DURATION;
-    if ( timeout <= 0 )
-        timeout = LP_AUTOTRADE_TIMEOUT;
-    if ( basecoin->electrum != 0 && relcoin->electrum != 0 )
-    {
-        if ( timeout < 2*LP_AUTOTRADE_TIMEOUT )
-            timeout = 2*LP_AUTOTRADE_TIMEOUT;
-    }
-    else if ( basecoin->electrum != 0 || relcoin->electrum != 0 )
-    {
-        if ( timeout < 1.5*LP_AUTOTRADE_TIMEOUT )
-            timeout = 1.5*LP_AUTOTRADE_TIMEOUT;
-    }
-    if ( time(NULL) < Alice_expiration )
-    {
-        cJSON *retjson = cJSON_CreateObject();
-        jaddstr(retjson,"error","only one pending request at a time");
-        jaddnum(retjson,"wait",Alice_expiration-time(NULL));
-        return(jprint(retjson,1));
-    } else LP_alicequery_clear();
-    if ( relcoin->etomic[0] != 0 )
-        LP_address_utxo_reset(&num,LP_coinfind("ETOMIC"));
-    else
-    {
-        LP_address_utxo_reset(&num,relcoin);
-        if ( num <= 1 )
-        {
-            if ( time(NULL) > relcoin->lastautosplit+300 )
-            {
-                relcoin->lastautosplit = (uint32_t)time(NULL);
-                return(LP_autosplit(relcoin));
-            }
-            return(clonestr("{\"error\":\"not enough utxo, please make more deposits\"}"));
-        }
-    }
-    LP_txfees(&txfee,&desttxfee,base,rel);
-    if ( txfee != 0 && txfee < 10000 )
-        txfee = 10000;
-    if ( desttxfee != 0 && desttxfee < 10000 )
-        desttxfee = 10000;
-    if ( fomoflag != 0 )
-    {
-        uint64_t median,minutxo,maxutxo;
-        maxprice = 0.; // fomo -> price is 1. and needs to be set
-        LP_address_minmax(0,&median,&minutxo,&maxutxo,relcoin,relcoin->smartaddr); // limit to largest utxo
-        if ( maxutxo > 0 )
-        {
-            relvolume = MIN(relvolume,dstr(maxutxo) - dstr(desttxfee)*3);
-            printf("maxutxo %.8f relvolume %.8f desttxfee %.8f\n",dstr(maxutxo),relvolume,dstr(desttxfee));
-            maxprice = LP_fomoprice(base,rel,&relvolume);
-            printf("fomoprice %.8f relvolume %.8f\n",maxprice,relvolume);
-            if ( maxprice == 0. )
-                return(clonestr("{\"error\":\"no orderbook entry found to handle request\"}"));
-        } else printf("no utxo available\n");
-    }
-    if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
-        return(clonestr("{\"error\":\"invalid parameter\"}"));
-    if ( strcmp("BTC",rel) == 0 )
-        maxprice *= 1.01;
-    else maxprice *= 1.001;
-    memset(pubkeys,0,sizeof(pubkeys));
-    destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
-    autxo = 0;
-    for (i=0; i<maxiters; i++)
-    {
-        memset(&A,0,sizeof(A));
-        if ( (autxo= LP_address_myutxopair(&A,0,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) != 0 )
-            break;
-        if ( fillflag != 0 )
-        {
-            return(clonestr("{\"error\":\"cant find a deposit that is big enough in size. make another deposit that is just a bit larger than what you want to trade\"}"));
-        }
-        destsatoshis *= 0.98;
-        if ( destsatoshis < desttxfee*LP_MINSIZE_TXFEEMULT )
-            break;
-    }
-    if ( destsatoshis < desttxfee*LP_MINSIZE_TXFEEMULT || i == maxiters )
-    {
-        return(clonestr("{\"error\":\"cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade\"}"));
-    }
-    printf("bestfit.[%d] selected alice (%.8f %.8f) for %.8f sats %.8f\n",i,dstr(autxo->payment.value),dstr(autxo->fee.value),dstr(destsatoshis),dstr(autxo->swap_satoshis));
-    if ( destsatoshis - desttxfee < autxo->swap_satoshis )
-    {
-        destsatoshis -= desttxfee;
-        autxo->swap_satoshis = destsatoshis;
-        //printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->swap_satoshis));
-    }
-    else if ( autxo->swap_satoshis - desttxfee < destsatoshis && relcoin->etomic[0] == 0)
-    {
-        autxo->swap_satoshis -= desttxfee;
-        destsatoshis = autxo->swap_satoshis;
-        printf("second path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->swap_satoshis));
-    }
-    if ( relcoin->etomic[0] == 0 && (destsatoshis < (autxo->payment.value / LP_MINCLIENTVOL) || autxo->payment.value < desttxfee*LP_MINSIZE_TXFEEMULT ))
-    {
-        printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
-        return(clonestr("{\"error\":\"cant find a deposit that is close enough in size. make another deposit that is a bit larger than what you want to trade\"}"));
-    }
-    bestsatoshis = 1.001 * LP_basesatoshis(dstr(destsatoshis),maxprice,txfee,desttxfee);
-    memset(&B,0,sizeof(B));
-    strcpy(B.coin,base);
-    if ( LP_quoteinfoinit(&Q,&B,rel,maxprice,bestsatoshis,destsatoshis) < 0 )
-        return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
-    if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
-        return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    if ( relcoin->etomic[0] != 0 || basecoin->etomic[0] != 0 )
-    {
-        struct iguana_info *coin;
-        if ( relcoin->etomic[0] != 0 )
-            strcpy(Q.etomicdest,relcoin->smartaddr);
-        else if (basecoin->etomic[0] != 0 )
-        {
-            strcpy(Q.etomicdest,basecoin->smartaddr);
-            //printf("Q.etomicdest (%s)\n",Q.etomicdest);
-        }
-        if ( relcoin->etomic[0] != 0 )
-        {
-            if ((coin= LP_coinfind("ETOMIC")) != 0 )
-                strcpy(Q.destaddr,coin->smartaddr);
-            else return(clonestr("{\"error\":\"cant find ETOMIC\"}"));
-        }
-    }
-    int32_t changed;
-    Q.mpnet = G.mpnet;
-    Q.fill = fillflag;
-    Q.gtc = gtcflag;
-    LP_mypriceset(0,&changed,rel,base,1. / maxprice);
-    LP_mypriceset(0,&changed,base,rel,0.);
-    if ( uuidstr == 0 || uuidstr[0] == 0 )
-    {
-        uint8_t uuidhash[256]; bits256 hash; uint64_t millis; int32_t len = 0;
-        memcpy(uuidhash,&G.LP_mypub25519,sizeof(bits256)), len += sizeof(bits256);
-        millis = OS_milliseconds();
-        memcpy(&uuidhash[len],&millis,sizeof(millis)), len += sizeof(millis);
-        memcpy(&uuidhash[len],base,(int32_t)strlen(base)), len += (int32_t)strlen(base);
-        memcpy(&uuidhash[len],rel,(int32_t)strlen(rel)), len += (int32_t)strlen(rel);
-        vcalc_sha256(0,hash.bytes,uuidhash,len);
-        uuidstr = _uuidstr;
-        bits256_str(uuidstr,hash);
-        //char str[65]; printf("%s %llu %s %s -> uuid.%s\n",bits256_str(str,G.LP_mypub25519),(long long)millis,base,rel,uuidstr);
-    }
-    return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey,uuidstr));
-}
 */
+fn zero_f() -> f64 { 0. }
+
+#[derive(Deserialize, Debug)]
+pub struct AutoBuyInput {
+    base: String,
+    rel: String,
+    price: f64,
+    #[serde(rename="relvolume")]
+    #[serde(default = "zero_f")]
+    rel_volume: f64,
+    #[serde(rename="basevolume")]
+    #[serde(default = "zero_f")]
+    base_volume: f64,
+    #[serde(default = "zero_f")]
+    fomo: f64,
+    #[serde(default = "zero_f")]
+    dump: f64,
+    timeout: Option<u32>,
+    duration: Option<u32>,
+    // TODO: remove this field on API refactoring, method should be separated from params
+    method: String,
+    fill: Option<u32>,
+    gtc: Option<u32>,
+    gui: Option<String>,
+    #[serde(rename="destpubkey")]
+    dest_pub_key: Option<String>
+}
+
+pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
+    if input.price < SMALLVAL {
+        return ERR!("Price is too low, minimum is {}", SMALLVAL);
+    }
+
+    let mut fomo = 0;
+    let (base, rel, mut volume, mut price) = match Some(input.method.as_ref()) {
+        Some("buy") => {
+            let volume = if input.fomo > 0. {
+                fomo = 1;
+                input.fomo
+            } else {
+                input.rel_volume
+            };
+            if volume <= 0. {
+                return ERR!("Volume must be greater than 0");
+            }
+            (find_coin(Some(&input.base)), find_coin(Some(&input.rel)), volume, input.price)
+        },
+        Some("sell") => {
+            let volume = if input.dump > 0. {
+                fomo = 1;
+                input.dump
+            } else {
+                input.base_volume
+            };
+            if volume <= 0. {
+                return ERR!("Volume must be greater than 0");
+            }
+            (find_coin(Some(&input.rel)), find_coin(Some(&input.base)), volume, 1. / input.price)
+        },
+        _ => return ERR!("Auto buy must be called only from buy/sell RPC methods")
+    };
+    if base.is_none() {
+        return ERR!("Base coin is not found or inactive");
+    }
+    if rel.is_none() {
+        return ERR!("Rel coin is not found or inactive");
+    }
+
+    let mut timeout = input.timeout.unwrap_or(unsafe { lp::LP_AUTOTRADE_TIMEOUT });
+    let mut num = 0;
+    let num_ptr = &mut num as *mut i32;
+
+    unsafe {
+        let base_coin = base.unwrap().0;
+        let rel_coin = rel.unwrap().0;
+        if (*base_coin).electrum != null_mut() && (*rel_coin).electrum != null_mut() {
+            if timeout < 2 * lp::LP_AUTOTRADE_TIMEOUT {
+                timeout = 2 * lp::LP_AUTOTRADE_TIMEOUT;
+            }
+        } else if (*base_coin).electrum != null_mut() || (*rel_coin).electrum != null_mut() {
+            if timeout < (1.5 * lp::LP_AUTOTRADE_TIMEOUT as f32) as u32 {
+                timeout = (1.5 * lp::LP_AUTOTRADE_TIMEOUT as f32) as u32;
+            }
+        }
+
+        if now_ms() / 1000 < lp::Alice_expiration as u64 {
+            return ERR!("Only 1 pending request at a time, wait {}",
+                            lp::Alice_expiration as u64 - now_ms() / 1000);
+        } else {
+            lp::LP_alicequery_clear();
+        }
+
+        if (*rel_coin).etomic[0] != 0 {
+            let etomic = find_coin(Some("ETOMIC"));
+            if etomic.is_none() {
+                return ERR!("ETOMIC is not found or inactive. It must be enabled for ETH/ERC20!");
+            }
+            let etomic_coin = etomic.unwrap().0;
+            lp::LP_address_utxo_reset(num_ptr, etomic_coin);
+        } else {
+            lp::LP_address_utxo_reset(num_ptr, rel_coin);
+            if num <= 1 {
+                if now_ms() / 1000 > ((*rel_coin).lastautosplit + 300).into() {
+                    (*rel_coin).lastautosplit = (now_ms() / 1000) as u32;
+                    let auto_split = lp::LP_autosplit(rel_coin);
+                    let auto_split_str = try_s!(c_char_to_string(auto_split));
+                    free_c_ptr(auto_split as *mut c_void);
+                    return Ok(auto_split_str);
+                }
+                return ERR!("not enough utxo, please make more deposits");
+            }
+        }
+        let mut tx_fee : u64 = 0;
+        let mut dest_tx_fee : u64 = 0;
+        let base_str = try_s!(CString::new(input.base.clone()));
+        let rel_str = try_s!(CString::new(input.rel.clone()));
+
+        lp::LP_txfees(
+            &mut tx_fee as *mut u64,
+            &mut dest_tx_fee as *mut u64,
+            base_str.as_ptr() as *mut c_char,
+            rel_str.as_ptr() as *mut c_char,
+        );
+        if tx_fee != 0 && tx_fee < 10000 {
+            tx_fee = 10000;
+        }
+        if dest_tx_fee != 0 && dest_tx_fee < 10000 {
+            dest_tx_fee = 10000;
+        }
+
+        if fomo > 0 {
+            let mut median : u64 = 0;
+            let mut min_utxo : u64 = 0;
+            let mut max_utxo : u64 = 0;
+            lp::LP_address_minmax(
+                0,
+                &mut median as *mut u64,
+                &mut min_utxo as *mut u64,
+                &mut max_utxo as *mut u64,
+                rel_coin,
+                (*rel_coin).smartaddr.as_ptr() as *mut i8,
+            );
+            if max_utxo > 0 {
+                volume = volume.min(sat_to_f(max_utxo) - sat_to_f(dest_tx_fee) * 3.);
+                price = lp::LP_fomoprice(
+                    base_str.as_ptr() as *mut c_char,
+                    rel_str.as_ptr() as *mut c_char,
+                    &mut volume as *mut f64
+                );
+                if price == 0. {
+                    return ERR!("no orderbook entry found to handle request");
+                }
+            } else {
+                return ERR!("No utxo available for fomo buy/sell");
+            }
+        }
+        if price <= 0. {
+            return ERR!("Resulting price is <= 0");
+        }
+        if volume <= 0. {
+            return ERR!("Resulting volume is <= 0");
+        }
+        if lp::LP_priceinfofind(base_str.as_ptr() as *mut c_char) == null_mut() {
+            return ERR!("No price info found for base coin {}", input.base);
+        }
+        if lp::LP_priceinfofind(rel_str.as_ptr() as *mut c_char) == null_mut() {
+            return ERR!("No price info found for rel coin {}", input.rel);
+        }
+
+        if input.rel == "BTC" {
+            price *= 1.01;
+        } else {
+            price *= 1.001;
+        }
+
+        let mut dest_satoshis = (SATOSHIS as f64 * volume) as u64 + 2 * dest_tx_fee;
+        let mut a_utxo: *mut lp::LP_utxoinfo = null_mut();
+        let mut a = lp::LP_utxoinfo::default();
+        let mut b = lp::LP_utxoinfo::default();
+        let utxos: [*mut lp::LP_address_utxo; 4096] = [null_mut(); 4096];
+        let fill_flag = input.fill.unwrap_or(0);
+        for i in 0..=100 {
+            if i == 100 {
+                return ERR!("cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade");
+            }
+            a_utxo = lp::LP_address_myutxopair(
+                &mut a as *mut lp::LP_utxoinfo,
+                0,
+                utxos.as_ptr() as *mut *mut lp::LP_address_utxo,
+                4096,
+                rel_coin,
+                (*rel_coin).smartaddr.as_ptr() as *mut i8,
+                tx_fee,
+                sat_to_f(dest_satoshis),
+                price,
+                dest_tx_fee
+            );
+            if a_utxo != null_mut() { break }
+            if fill_flag != 0 {
+                return ERR!("cant find a deposit that is big enough in size. make another deposit that is just a bit larger than what you want to trade");
+            }
+            dest_satoshis = (dest_satoshis as f64 * 0.98) as u64;
+            if dest_satoshis < dest_tx_fee * 10 { break }
+        }
+
+        if dest_satoshis < dest_tx_fee * 10 {
+            return ERR!("cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade");
+        }
+
+        if dest_satoshis - dest_tx_fee < (*a_utxo).swap_satoshis as u64 {
+            dest_satoshis -= dest_tx_fee;
+            (*a_utxo).swap_satoshis = dest_satoshis as i64;
+        } else if (*a_utxo).swap_satoshis as u64 - dest_tx_fee < dest_satoshis && (*rel_coin).etomic[0] == 0 {
+            (*a_utxo).swap_satoshis -= dest_tx_fee as i64;
+            dest_satoshis = (*a_utxo).swap_satoshis as u64;
+        }
+
+        if (*rel_coin).etomic[0] == 0 &&
+            (dest_satoshis < ((*a_utxo).payment.value / 1000) || (*a_utxo).payment.value < dest_tx_fee * 10) {
+            return ERR!("cant find a deposit that is close enough in size. make another deposit that is a bit larger than what you want to trade");
+        }
+        let best_satoshis = (1.001 * lp::LP_basesatoshis(sat_to_f(dest_satoshis), price, tx_fee, dest_tx_fee) as f64) as u64;
+        strcpy(b.coin.as_ptr() as *mut c_char, base_str.as_ptr());
+        let mut q = lp::LP_quoteinfo::default();
+        if lp::LP_quoteinfoinit(
+            &mut q as *mut lp::LP_quoteinfo,
+            &mut b as *mut lp::LP_utxoinfo,
+            rel_str.as_ptr() as *mut c_char,
+            price,
+            best_satoshis,
+            dest_satoshis,
+        ) < 0 {
+            return ERR!("cant set ordermatch quote");
+        }
+        if lp::LP_quotedestinfo(
+            &mut q as *mut lp::LP_quoteinfo,
+            (*a_utxo).payment.txid,
+            (*a_utxo).payment.vout,
+            (*a_utxo).fee.txid,
+            (*a_utxo).fee.vout,
+            lp::G.LP_mypub25519,
+            (*a_utxo).coinaddr.as_ptr() as *mut c_char,
+        ) < 0 {
+            return ERR!("cant set ordermatch quote info");
+        }
+        if (*rel_coin).etomic[0] != 0 || (*base_coin).etomic[0] != 0 {
+            if (*rel_coin).etomic[0] != 0 {
+                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*rel_coin).smartaddr.as_ptr());
+            } else if (*base_coin).etomic[0] != 0 {
+                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*base_coin).smartaddr.as_ptr());
+            }
+        }
+        let mut changed : i32 = 0;
+        q.mpnet = lp::G.mpnet;
+        q.fill = fill_flag;
+        q.gtc = input.gtc.unwrap_or(0);
+        lp::LP_mypriceset(0,
+                          &mut changed as *mut i32,
+                          rel_str.as_ptr() as *mut c_char,
+                          base_str.as_ptr() as *mut c_char,
+                          1. / price,
+        );
+        lp::LP_mypriceset(0,
+                          &mut changed as *mut i32,
+                          base_str.as_ptr() as *mut c_char,
+                          rel_str.as_ptr() as *mut c_char,
+                          0.,
+        );
+        let uuid_str: [c_char; 100] = [0; 100];
+        lp::gen_quote_uuid(uuid_str.as_ptr() as *mut c_char, base_str.as_ptr() as *mut c_char, rel_str.as_ptr() as *mut c_char);
+        let dest_pub_key = lp::bits256::default();
+        if input.dest_pub_key.is_some() {
+            let pub_key_str = try_s!(CString::new(input.dest_pub_key.unwrap()));
+            lp::decode_hex(dest_pub_key.bytes.as_ptr() as *mut u8, 32, pub_key_str.as_ptr() as *mut c_char);
+        }
+        Ok(try_s!(lp_trade(
+            &mut q as *mut lp::LP_quoteinfo,
+            price,
+            timeout as i32,
+            0,
+            dest_pub_key,
+            uuid_str.as_ptr() as *mut c_char
+        )))
+    }
+}

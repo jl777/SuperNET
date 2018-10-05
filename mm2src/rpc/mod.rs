@@ -160,12 +160,13 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
                                         "Error occurred");
     let remote_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", remote_addr.ip())),
                                         "Error occurred");
+
     let stats_result = unsafe {
         lp::stats_JSON(
             ctx.btc_ctx() as *mut c_void,
             0,
             my_ip_ptr.as_ptr() as *mut c_char,
-            -1,
+            lp::LP_mypubsock,
             c_json.0,
             remote_ip_ptr.as_ptr() as *mut c_char,
             ctx.rpc_ip_port.port()
@@ -224,9 +225,11 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
     let c_json = try_h!(CJSON::from_str(&req.to_string()));
     match method {
         Some ("autoprice") => auto_price(ctx, &req, c_json),
+        Some ("buy") => buy(&req),
         Some ("eth_gas_price") => eth_gas_price(),
         Some ("help") => help(),
         Some ("mpnet") => mpnet(&req),
+        Some ("sell") => sell(&req),
         Some ("stop") => stop (ctx),
         Some ("version") => version(),
         None => err_response (400, "Method is not set!"),

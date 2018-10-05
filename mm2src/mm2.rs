@@ -378,7 +378,7 @@ mod test {
             "userpass": mm.userpass,
             "method": "help",
         })));
-        assert_eq!(version.0, StatusCode::OK);
+        assert_eq!(help.0, StatusCode::OK);
 
         unwrap! (mm.stop());
     }
