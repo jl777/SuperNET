@@ -40,7 +40,7 @@ use std::ffi::{CString};
 use std::io::{Cursor, Read, Write};
 use std::mem::transmute;
 use std::net::{IpAddr, SocketAddr};
-use std::os::raw::{c_char, c_void};
+use std::os::raw::{c_char};
 use std::path::Path;
 use std::str;
 use std::str::from_utf8;
@@ -1448,6 +1448,7 @@ const BITCOIND_RPC_INITIALIZING: AtomicBool = AtomicBool::new (false);
 // See if the CRC32 we have in Rust matches the C version.
 #[test]
 fn test_crc32() {
+    use std::os::raw::c_void;
     assert_eq! (crc32::checksum_ieee (b"123456789"), 0xcbf43926);
     assert_eq! (unsafe {lp::calc_crc32 (0, b"123456789".as_ptr() as *mut c_void, 9)}, 0xcbf43926);
 }

@@ -78,7 +78,7 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
-use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, stack_trace, stack_trace_frame, BitcoinCtx, CJSON, MM_VERSION};
+use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
 use helpers::lp::{_bits256 as bits256};
 
 use rand::random;
@@ -309,7 +309,10 @@ mod test {
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains ("coinmarketcap LP_CMCbtcprice")));
+        unwrap! (mm.wait_for_log (9., &|log| {
+            log.contains ("[portfolio ext-price ref-num=0] Discovered the Bitcoin price of dash is 0.") ||
+            log.contains ("[portfolio ext-price ref-num=0] Waiting for the CoinGecko Bitcoin price of dash ... Done")
+        }));
 
         // Checking the autopricing logs here TDD-helps us with the porting effort.
         //

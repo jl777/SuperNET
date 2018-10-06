@@ -18,6 +18,8 @@
 //  marketmaker
 //
 
+#[macro_use]
+extern crate fomat_macros;
 extern crate futures;
 extern crate fxhash;
 #[macro_use]
@@ -36,18 +38,19 @@ extern crate unwrap;
 
 mod prices;
 
-use fxhash::FxHashMap;
-use gstuff::now_ms;
+use fxhash::{FxHashMap, FxHashSet};
+use gstuff::{now_ms, now_float};
 use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON, SMALLVAL, find_coin};
 use helpers::log::TagParam;
 use hyper::{StatusCode, HeaderMap};
-use prices::{lp_btcprice, BtcPrice};
+use prices::{lp_btcprice, Coins, CoinId, ExternalPrices, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
+use std::iter::once;
 use std::mem::{zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::thread::sleep;
@@ -511,8 +514,7 @@ fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
 }
 
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
-    // TODO: Figure out what this means and whether we need to log it.
-    //println! ("AUTOPRICE numautorefs.{}", unsafe {lp::num_LP_autorefs});
+    use std::collections::hash_map::Entry;
 
     // Natural singletons (there's only one "bittrex.com" in the internet).
     lazy_static! {
@@ -529,7 +531,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     try_s! (BITTREX_MARKETSUMMARIES.tick());
 
     let status = ctx.log.claim_status (&[&"portfolio", &("bittrex", "waiting")]);
-    let (nxtkmd, waiting_for_markets) = if try_s! (BITTREX_MARKETSUMMARIES.last_finish()) == 0.0 {
+    let (_nxtkmd, waiting_for_markets) = if try_s! (BITTREX_MARKETSUMMARIES.last_finish()) == 0.0 {
         match status {
             None => ctx.log.status (&[&"portfolio", &("bittrex", "waiting")], "Waiting for Bittrex market summaries..."),
             Some (status) => status
@@ -571,7 +573,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
 
     if waiting_for_markets {return Ok(())}
 
-    let kmdpp = unsafe {lp::LP_priceinfofind (b"KMD\0".as_ptr() as *mut c_char)};
+    let _kmdpp = unsafe {lp::LP_priceinfofind (b"KMD\0".as_ptr() as *mut c_char)};
 
     // `LP_ticker` does something with the swaps and it seems we only want to do this every 60 seconds.
     // (We want `AtomicU64` for `LAST_TIME` but it isn't yet stable).
@@ -588,47 +590,124 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         if cs != null_mut() {unsafe {libc::free (cs as *mut libc::c_void)}}
     }
 
-    lazy_static! {
-        /// A map from the configurable `cmc_key` to the corresponding price fetching resource.
-        static ref BTC_PRICE_RESOURCES: Mutex<FxHashMap<Option<String>, RefreshedExternalResource<BtcPrice>>> = Mutex::new (FxHashMap::default());
-    }
-    let btc_price = {
-        let cmc_key = match ctx.conf["cmc_key"] {
-            Json::Null => None,
-            Json::String (ref k) => Some (k.clone()),
-            _ => return ERR! ("cmc_key is not a string")
-        };
-        let mut btc_price_resources = try_s! (BTC_PRICE_RESOURCES.lock());
-        let resource = btc_price_resources.entry (cmc_key.clone())
-            .or_insert (RefreshedExternalResource::new (30., 40., Box::new (move || lp_btcprice (&cmc_key))));
-        try_s! (resource.tick());
-        let status_tags: &[&TagParam] = &[&"portfolio", &"waiting-cmc-gecko"];
-        let btc_price = try_s! (resource.with_result (|r| {match r {
-            Some (Ok (bp)) => {
-                ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Done! ({}, {}, {})", bp.kmd, bp.bch, bp.ltc));
-                Ok (Some (bp.clone()))
-            },
-            Some (Err (err)) => {
-                ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Error: {}", err)) .detach();
-                Ok (None)
-            },
-            None => {
-                ctx.log.status (status_tags, "Waiting for coin prices (KMD, BCH, LTC)...") .detach();
-                Ok (None)
-            }
-        }}));
-        if let Some (btc_price) = btc_price {btc_price}
-        else {return Ok(())}  // Wait for the prices.
-    };
-
     // Incremeted with RPC "autoprice" invoking `LP_autoprice`.
     let num_lp_autorefs = unsafe {lp::num_LP_autorefs};
 
+    let cmc_key = match ctx.conf["cmc_key"] {
+        Json::Null => None,
+        Json::String (ref k) => Some (k.clone()),
+        _ => return ERR! ("cmc_key is not a string")
+    };
+
+    // It's probably optimal if we'll have a single external resource future for every (`PricingProvider`, `PriceUnit`) we're gonna use.
+    // That way we get pricing reuse while generating less load on the providers.
+    // We can't have one resource per external provider because some of them only return a single currency (cf. CoinGecko "vs_currency").
+    // There might be a downside, in that with `RefreshedExternalResource` we can't (currently)
+    // speed up the pricing update whenever a new coin is discovered in a MM orderbook. We have to wait
+    // for the next `RefreshedExternalResource` revolution instead. TODO: Speed up the revolution when a new coin discovered.
+
+    // Default provider.
+    let provider = if let Some (ref k) = cmc_key {PricingProvider::CoinMarketCap (k.clone())} else {PricingProvider::CoinGecko};
+
+    // Coins the price of which we always need.
+    let always = [CoinId ("komodo".into()), CoinId ("bitcoin-cash".into()), CoinId ("litecoin".into())];
+
+    // Scan the orderbook (`LP_autorefs`) for the coins the price of which we might need later on.
+    // As of now the price we need might be in Bitcoins or United States Dollars (when using the "usdpeg" parameter).
+    // The price provider might also be different, depending on "refrel=coinmarketcap" and "cmc_key".
+    let coin_price_interest = {
+        let mut set = FxHashSet::default();
+
+        for i in 0 .. (num_lp_autorefs as usize) {
+            let refrel = try_s! (unsafe {CStr::from_ptr (lp::LP_autorefs[i].refrel.as_ptr())} .to_str());
+            let coin = try_s! (unsafe {CStr::from_ptr (lp::LP_autorefs[i].refbase.as_ptr())} .to_str());
+            if refrel != "coinmarketcap" || coin.is_empty() {continue}
+            let unit = if unsafe {lp::LP_autorefs[i].usdpeg} != 0 {PriceUnit::UsDollar} else {PriceUnit::Bitcoin};
+            set.insert ((provider.clone(), unit, CoinId (coin.into())));
+        }
+
+        // There are coins we always need the inforation on.
+        // Let's add them here in order for their prices to be fetched as well.
+        for coin in &always {set.insert ((provider.clone(), PriceUnit::Bitcoin, coin.clone()));}
+
+        set
+    };
+
+    lazy_static! {
+        static ref PRICE_RESOURCES: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Coins, RefreshedExternalResource<ExternalPrices>)>>
+            = Mutex::new (FxHashMap::default());
+    }
+
+    // Group the coins by (provider, unit) in order to have all the coins ready for the provider instance creation.
+    let mut coins: FxHashMap<(PricingProvider, PriceUnit), FxHashSet<CoinId>> = FxHashMap::default();
+    for (provider, unit, coin) in coin_price_interest {
+        match coins.entry ((provider.clone(), unit)) {
+            Entry::Vacant (ve) => {ve.insert (once (coin) .collect());},
+            Entry::Occupied (mut oe) => {oe.get_mut().insert (coin);}
+        };
+    }
+    for ((provider, unit), coins) in coins {
+        // Create and/or update the external provider instances.
+        let mut price_resources = try_s! (PRICE_RESOURCES.lock());
+        match price_resources.entry ((provider.clone(), unit)) {
+            Entry::Vacant (ve) => {
+                let coins = Coins (Arc::new (Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())));
+                let rer = RefreshedExternalResource::new (30., 40., Box::new ({
+                    let provider = provider.clone();
+                    let coins = coins.clone();
+                    move || lp_btcprice (&provider, unit, &coins)
+                }));
+                try_s! (rer.tick());
+                ve.insert ((coins, rer));
+            },
+            Entry::Occupied (mut oe) => {
+                for coin in coins {
+                    let mut coins = try_s! ((oe.get_mut().0).0.lock());
+                    coins.insert (coin, now_float());
+                }
+                try_s! (oe.get().1.tick())
+            }
+        }
+    }
+
+    let (kmd_btc, bch_btc, ltc_btc) = {
+        let price_resources = try_s! (PRICE_RESOURCES.lock());
+        let resource = & try_s! (price_resources.get (&(provider.clone(), PriceUnit::Bitcoin)) .ok_or ("Not in PRICE_RESOURCES")) .1;
+        let status_tags: &[&TagParam] = &[&"portfolio", &"waiting-cmc-gecko"];
+        let prices = try_s! (resource.with_result (|r| -> Result<Option<(f64, f64, f64)>, String> {
+            match r {
+                Some (Ok (ep)) => {
+                    if always.iter().all (|coin| ep.prices.contains_key (coin)) {
+                        let kmd = try_s! (ep.prices.get (&CoinId ("komodo".into())) .ok_or ("!komodo"));
+                        let bch = try_s! (ep.prices.get (&CoinId ("bitcoin-cash".into())) .ok_or ("!bitcoin-cash"));
+                        let ltc = try_s! (ep.prices.get (&CoinId ("litecoin".into())) .ok_or ("!litecoin"));
+                        if let Some (mut status) = ctx.log.claim_status (status_tags) {
+                            status.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Done! ({}, {}, {})", kmd, bch, ltc));
+                        }
+                        Ok (Some ((*kmd, *bch, *ltc)))
+                    } else {
+                        ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Still missing some.")) .detach();
+                        Ok (None)
+                    }
+                },
+                Some (Err (err)) => {
+                    ctx.log.status (status_tags, &format! ("Waiting for coin prices (KMD, BCH, LTC)... Error: {}", err)) .detach();
+                    Ok (None)
+                },
+                None => {
+                    ctx.log.status (status_tags, "Waiting for coin prices (KMD, BCH, LTC)...") .detach();
+                    Ok (None)
+                }
+            }
+        }));
+        if let Some (prices) = prices {prices} else {return Ok(())}  // Wait for the prices.
+    };
+
     let mut changed = 0;
 
-    for i in 0..num_lp_autorefs {
+    for ref_num in 0..num_lp_autorefs {
         // RPC "autoprice" parameters, cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice.
-        let autoref = unsafe {&mut lp::LP_autorefs[i as usize]};
+        let autoref = unsafe {&mut lp::LP_autorefs[ref_num as usize]};
         let rel = try_s! (unsafe {CStr::from_ptr (autoref.rel.as_ptr())} .to_str());
         let base = try_s! (unsafe {CStr::from_ptr (autoref.base.as_ptr())} .to_str());
         if rel.is_empty() || base.is_empty() {continue}
@@ -672,29 +751,61 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                 unsafe {lp::free_json (fundjson);}
             }
         } else if refrel == "coinmarketcap" {
-            let mut price_usd = 0f64;
-            helpers::log_stacktrace ("LP_CMCbtcprice\0".as_ptr() as *mut c_char);
-            let price_btc = unsafe {lp::LP_CMCbtcprice (&mut price_usd, autoref.refbase.as_ptr() as *mut c_char)};
-            println! ("coinmarketcap LP_CMCbtcprice: {}, {}", price_btc, price_usd);
-            if price_btc > SMALLVAL {
-                // cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice-using-usdpeg
-                let price = if autoref.usdpeg != 0 {
-                    if price_usd > SMALLVAL {
-                        1. / price_usd
-                    } else {
-                        continue
+            // See if the external pricing resource has provided us with the price.
+            let unit = if autoref.usdpeg != 0 {PriceUnit::UsDollar} else {PriceUnit::Bitcoin};
+            let refbase = try_s! (unsafe {CStr::from_ptr (autoref.refbase.as_ptr())} .to_str());
+            let refbase_coin_id = CoinId (refbase.into());
+            let extprice = {
+                let price_resources = try_s! (PRICE_RESOURCES.lock());
+                let resource = & try_s! (price_resources.get (&(provider.clone(), unit)) .ok_or ("Not in PRICE_RESOURCES")) .1;
+                let status_tags: &[&TagParam] = &[&"portfolio", &"ext-price", &("ref-num", ref_num)];
+                try_s! (resource.with_result (|r| -> Result<Option<f64>, String> {
+                    match r {
+                        Some (Ok (ep)) => {
+                            if let Some (price) = ep.prices.get (&refbase_coin_id) {
+                                if let Some (status) = ctx.log.claim_status (status_tags) {
+                                    status.append (&format! (" Done ({}).", price))
+                                } else {
+                                    // We want to log, for both the users and the tests (test_autoprice), that the external price has been fetched,
+                                    // but we don't want to do this on every iteration of the loop.
+                                    if !ctx.log.tail_any (status_tags) {  // Experimental use of API.
+                                        ctx.log.log ("💹", status_tags, &format! ("Discovered the {:?} price of {} is {}.", unit, refbase, price))
+                                    }
+                                }
+                                Ok (Some (*price))
+                            } else {
+                                ctx.log.status (status_tags, &format! ("Waiting for the {:?} {:?} price of {} ...", provider, unit, refbase)) .detach();
+                                Ok (None)
+                            }
+                        },
+                        Some (Err (err)) => {
+                            ctx.log.status (status_tags, &format! ("Waiting for the {:?} {:?} price of {} ... Error: {}", provider, unit, refbase, err)) .detach();
+                            Ok (None)
+                        },
+                        None => {
+                            ctx.log.status (status_tags, &format! ("Waiting for the {:?} {:?} price of {} ...", provider, unit, refbase)) .detach();
+                            Ok (None)
+                        }
                     }
-                } else {
-                    if rel == "KMD" && btc_price.kmd > SMALLVAL {
-                        btc_price.kmd / price_btc
-                    } else if rel == "BCH" && btc_price.bch > SMALLVAL {
-                        btc_price.bch / price_btc
-                    } else if rel == "LTC" && btc_price.ltc > SMALLVAL {
-                        btc_price.ltc / price_btc
-                    } else if rel == "BTC" {
-                        1. / price_btc
-                    } else {
-                        continue
+                }))
+            };
+
+            if let Some (extprice) = extprice {
+                // cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice-using-usdpeg
+                let price = match unit {
+                    PriceUnit::UsDollar => 1. / extprice,
+                    PriceUnit::Bitcoin => {
+                        if rel == "KMD" && kmd_btc > SMALLVAL {
+                            kmd_btc / extprice
+                        } else if rel == "BCH" && bch_btc > SMALLVAL {
+                            bch_btc / extprice
+                        } else if rel == "LTC" && ltc_btc > SMALLVAL {
+                            ltc_btc / extprice
+                        } else if rel == "BTC" {
+                            1. / extprice
+                        } else {
+                            continue
+                        }
                     }
                 };
 
@@ -736,7 +847,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             let basepp = unsafe {lp::LP_priceinfofind(c_base)};
             let relpp = unsafe {lp::LP_priceinfofind(c_rel)};
             if !basepp.is_null() && !relpp.is_null() {
-                unsafe {lp::LP_autopriceset (i, c_ctx, 1, basepp, relpp, 0., autoref.refbase.as_mut_ptr(), autoref.refrel.as_mut_ptr())};
+                unsafe {lp::LP_autopriceset (ref_num, c_ctx, 1, basepp, relpp, 0., autoref.refbase.as_mut_ptr(), autoref.refrel.as_mut_ptr())};
             }
         }
     }

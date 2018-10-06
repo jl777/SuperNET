@@ -1229,6 +1229,7 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
+    log_stacktrace ("LP_fundvalue");
     cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     KMDholdings = btcsum = 0.;

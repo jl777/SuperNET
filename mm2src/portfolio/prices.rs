@@ -19,11 +19,14 @@
 //
 
 use futures::{self, Future};
+use fxhash::{FxHashMap};
 use gstuff::now_float;
 use helpers::slurp_req;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
 use serde_json::{self as json};
+use std::borrow::Cow;
+use std::sync::{Arc, Mutex};
 
 /*
 struct LP_orderbookentry
@@ -1218,30 +1221,85 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
 
 */
 
-#[derive(Clone, Debug)]
-pub struct BtcPrice {
-    pub kmd: f64,
-    pub bch: f64,
-    pub ltc: f64,
-    pub at_time: f64
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
+pub enum PriceUnit {Bitcoin, UsDollar}
+
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+pub enum PricingProvider {CoinGecko, CoinMarketCap (String)}
+
+// A table for converting coin names to coin symbols and back.  
+// This is probably a temporary solution, we might have a proper table of coins somewhere (or maybe can get it).
+const COINS: [(&'static str, &'static str); 5] = [
+    ("bitcoin", "BTC"),
+    ("komodo", "KMD"),
+    ("bitcoin-cash", "BCH"),
+    ("litecoin", "LTC"),
+    ("dash", "DASH")
+];
+
+/// Things like "komodo", "bitcoin-cash" or "litecoin" are kept there.  
+/// The value is the one we're getting from the RPC API in "refbase".
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+pub struct CoinId (pub String);
+impl CoinId {
+    pub fn for_provider<'a, 'b> (&'a self, provider: &'b PricingProvider) -> Result<Cow<'static, str>, String> {
+        match provider {
+            PricingProvider::CoinGecko => Ok (self.0.clone().into()),
+            PricingProvider::CoinMarketCap (_) => {
+                match COINS.iter().find (|p| p.0 == self.0) {
+                    Some (p) => Ok (p.1.into()),
+                    None => ERR! ("Unknown coin: {}", self.0)
+                }
+            }
+        }
+    }
+    pub fn from_provider (provider: &PricingProvider, label: &str) -> Result<CoinId, String> {
+        match provider {
+            PricingProvider::CoinGecko => Ok (CoinId (label.into())),
+            PricingProvider::CoinMarketCap (_) => ERR! ("TBD")
+        }
+    }
 }
 
+/// Prices we've fetched from an external pricing provider (CoinMarketCap, CoinGecko).
+/// Note that there is a delay between updating `Coins` and getting new `ExternalPrices`.
+pub struct ExternalPrices {pub prices: FxHashMap<CoinId, f64>, pub at: f64}
+
+/// Coins discovered so far. Shared with the external resource future, in order not to create new futures for every new coin.
+/// It's a map from the coin id to the last time we've see it used. The latter allows us to eventually clean the map.
+#[derive(Clone, Debug)]
+pub struct Coins (pub Arc<Mutex<FxHashMap<CoinId, f64>>>);
+
 /// Load coin prices from CoinGecko or, if `cmc_key` is given, from CoinMarketCap.
-pub fn lp_btcprice (cmc_key: &Option<String>) -> Box<Future<Item=BtcPrice, Error=String> + Send> {
-    let (request, _curl_example) = if let Some (ref cmc_key) = cmc_key {
-        let url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=KMD,BCH,LTC&convert=BTC";
-        ( try_fus! (Request::builder().uri (url) .header ("X-CMC_PRO_API_KEY", &cmc_key[..]) .body (Body::empty())),
-          format! ("curl --header 'X-CMC_PRO_API_KEY: {}' '{}'", cmc_key, url) )
-    } else {
-        let url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=btc&ids=komodo,bitcoin-cash,litecoin";
-        ( try_fus! (Request::builder().uri (url) .body (Body::empty())),
-          format! ("curl '{}'", url) )
+pub fn lp_btcprice (provider: &PricingProvider, unit: PriceUnit, coins: &Coins) -> Box<Future<Item=ExternalPrices, Error=String> + Send> {
+    let coins: Vec<String> = {
+        let coins = try_fus! (coins.0.lock());
+        try_fus! (coins.keys().map (|c| c.for_provider (provider) .map (|s| s.into_owned())) .collect())
     };
-    //println! ("lp_btcprice] Fetching prices, akin to\n$ {}", _curl_example);
+
+    let (request, curl_example) = match provider {
+        PricingProvider::CoinMarketCap (ref cmc_key) => {
+            let url = fomat! (
+                "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
+                for coin in coins {(coin)} separated {','}
+                "&convert=" (match unit {PriceUnit::Bitcoin => "BTC", PriceUnit::UsDollar => "USD"})
+            );
+            ( try_fus! (Request::builder().uri (&url) .header ("X-CMC_PRO_API_KEY", &cmc_key[..]) .body (Body::empty())),
+            format! ("curl --header \"X-CMC_PRO_API_KEY: {}\" \"{}\"", cmc_key, url) )
+        },
+        PricingProvider::CoinGecko => {
+            let url = fomat! (
+                "https://api.coingecko.com/api/v3/coins/markets?ids="
+                for coin in coins {(coin)} separated {','}
+                "&vs_currency=" (match unit {PriceUnit::Bitcoin => "btc", PriceUnit::UsDollar => "usd"})
+            );
+            ( try_fus! (Request::builder().uri (&url) .body (Body::empty())),
+            format! ("curl \"{}\"", url) )
+        }
+    };
+    println! ("lp_btcprice] Fetching prices, akin to\n$ {}", curl_example);
 
     let f = slurp_req (request);
-
-    let cmc = cmc_key.is_some();
 
     #[derive(Deserialize, Debug)]
     struct CoinMarketCap {
@@ -1250,35 +1308,40 @@ pub fn lp_btcprice (cmc_key: &Option<String>) -> Box<Future<Item=BtcPrice, Error
 
     #[derive(Deserialize, Debug)]
     struct CoinGecko<'a> {
+        id: &'a str,
         symbol: &'a str,
         current_price: f64
     }
 
-    let f = f.then (move |r| -> Result<BtcPrice, String> {
+    let provider = provider.clone();
+    let f = f.then (move |r| -> Result<ExternalPrices, String> {
         let (status_code, headers, body) = try_s! (r);
         if status_code != StatusCode::OK {return ERR! ("status_code {:?}", status_code)}
         let ct = match headers.get (CONTENT_TYPE) {Some (ct) => ct, None => return ERR! ("No Content-Type")};
         let ct = try_s! (ct.to_str());
         if !ct.starts_with ("application/json") {return ERR! ("Content-Type not JSON: {}", ct)}
-        if cmc {
-            let reply: Vec<CoinMarketCap> = try_s! (json::from_slice (&body));
-            println! ("lp_btcprice] Parsed reply: {:?}", reply);
-            ERR! ("TBD")
-        } else {
-            let reply: Vec<CoinGecko> = match json::from_slice (&body) {
-                Ok (r) => r,
-                Err (err) => {
-                    eprintln! ("lp_btcprice] Bad CoinGecko response ({}): {}", err, String::from_utf8_lossy (&body));
-                    return ERR! ("Can't parse the CoinGecko response: {}", err)
+        match provider {
+            PricingProvider::CoinMarketCap (_) => {
+                let reply: Vec<CoinMarketCap> = try_s! (json::from_slice (&body));
+                println! ("lp_btcprice] Parsed reply: {:?}", reply);
+                ERR! ("TBD")
+            },
+            PricingProvider::CoinGecko => {
+                let reply: Vec<CoinGecko> = match json::from_slice (&body) {
+                    Ok (r) => r,
+                    Err (err) => {
+                        eprintln! ("lp_btcprice] Bad CoinGecko response ({}): {}", err, String::from_utf8_lossy (&body));
+                        return ERR! ("Can't parse the CoinGecko response: {}", err)
+                    }
+                };
+                //println! ("lp_btcprice] Parsed reply: {:?}", reply);
+                let mut prices: FxHashMap<CoinId, f64> = FxHashMap::default();
+                for cg in reply {
+                    let coin_id = try_s! (CoinId::from_provider (&provider, cg.id));
+                    prices.insert (coin_id, cg.current_price);
                 }
-            };
-            //println! ("lp_btcprice] Parsed reply: {:?}", reply);
-            Ok (BtcPrice {
-                kmd: try_s! (reply.iter().find (|e| e.symbol == "kmd") .ok_or ("!kmd")) .current_price,
-                bch: try_s! (reply.iter().find (|e| e.symbol == "bch") .ok_or ("!bch")) .current_price,
-                ltc: try_s! (reply.iter().find (|e| e.symbol == "ltc") .ok_or ("!ltc")) .current_price,
-                at_time: now_float()
-            })
+                Ok (ExternalPrices {prices, at: now_float()})
+            }
         }
     });
 

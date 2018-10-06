@@ -10,6 +10,7 @@ doctest = false
 [dependencies]
 # Using the `chrono` because the `time` formatting has serious limits, like the lack of subsecond support, IIRC.
 chrono = "0.4"
+fomat-macros = "0.2"
 futures = "0.1"
 fxhash = "0.2"
 gstuff = "0.5"
