@@ -1362,9 +1362,10 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
 
     // -B- [+] Decker ---
-    static uint32_t dead_ipbits[128];
-    static int dead_ipsize;
-    int in_dead_flag;
+    static uint32_t list_ipbits[128];
+    static int dead_or_alive[128]; // 0 - not set, -1 - dead, 1 - alive
+    static int list_ipsize;
+    int in_list_flag;
     uint32_t ip_pattern;
     // -E- [+] Decker ---
 
@@ -1374,23 +1375,30 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     //    return(-1);
 
     // -B- [+] Decker ---
-    if ((dead_ipsize == 0) || (dead_ipsize > 127)) {
-            for (int i_dead = 0; i_dead < 128; i_dead++) dead_ipbits[i_dead] = 0;
-            dead_ipsize = 0;
-            in_dead_flag = 0;
+    // every new ip in BUS topology network goes to dead or white list forever, until iguana restart
+    ip_pattern = (uint32_t)calc_ipbits(ipaddr);
+    if ((list_ipsize == 0) || (list_ipsize > 127)) {
+            for (int i_list = 0; i_list < 128; i_list++) { list_ipbits[i_list] = 0; dead_or_alive[i_list] = 0; }
+            list_ipsize = 0;
+            in_list_flag = -1;
     } else {
-        in_dead_flag = 0;
-        ip_pattern = (uint32_t)calc_ipbits(ipaddr);
-        for (int i_dead = 0; i_dead < dead_ipsize; i_dead++) if (dead_ipbits[i_dead] == ip_pattern) { in_dead_flag = 1; break; }
+        in_list_flag = -1;
+        for (int i_list = 0; i_list < list_ipsize; i_list++) if (list_ipbits[i_list] == ip_pattern) { in_list_flag = i_list; break; }
     }
 
-    if (in_dead_flag !=0) return -1;
-    if (checknode(ipaddr, Notaries_port, 5) != 0) {
-        dead_ipbits[dead_ipsize] = (uint32_t)calc_ipbits(ipaddr);
-        dead_ipsize++;
-        printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" " is dead!\n", ipaddr, Notaries_port);
-        return -1;
-    }
+    if (in_list_flag == -1) {
+        list_ipbits[list_ipsize] = ip_pattern;
+        if (checknode(ipaddr, Notaries_port, 5) != 0) {
+            dead_or_alive[list_ipsize] = -1;
+            list_ipsize++;
+            printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" " is dead!\n", ipaddr, Notaries_port);
+            return -1;
+        } else {
+            dead_or_alive[list_ipsize] = 1;
+            list_ipsize++;
+        }
+    } else
+        if (dead_or_alive[in_list_flag] == -1) return -1;
     // -E- [+] Decker ---
 
     portable_mutex_lock(&myinfo->notarymutex);
