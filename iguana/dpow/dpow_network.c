@@ -1360,16 +1360,38 @@ int checknode(char *hostname, int portno, int timeout_rw)
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
+
+    // -B- [+] Decker ---
+    static uint32_t dead_ipbits[128];
+    static int dead_ipsize;
+    int in_dead_flag;
+    uint32_t ip_pattern;
+    // -E- [+] Decker ---
+
     if ( myinfo->IAMNOTARY == 0 )
         return(-1);
     //if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
     //    return(-1);
 
-    // [+] Decker, if node doesn't respond in 5 sec, we shouldn't add it
-    if (checknode(ipaddr, Notaries_port, 5) != 0) {
-        printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" " is dead!\n", ipaddr, Notaries_port);
-    	return(-1);
+    // -B- [+] Decker ---
+    if ((dead_ipsize == 0) || (dead_ipsize > 127)) {
+            for (int i_dead = 0; i_dead < 128; i_dead++) dead_ipbits[i_dead] = 0;
+            dead_ipsize = 0;
+            in_dead_flag = 0;
+    } else {
+        in_dead_flag = 0;
+        ip_pattern = (uint32_t)calc_ipbits(ipaddr);
+        for (int i_dead = 0; i_dead < dead_ipsize; i_dead++) if (dead_ipbits[i_dead] == ip_pattern) { in_dead_flag = 1; break; }
     }
+
+    if (in_dead_flag !=0) return -1;
+    if (checknode(ipaddr, Notaries_port, 5) != 0) {
+        dead_ipbits[dead_ipsize] = (uint32_t)calc_ipbits(ipaddr);
+        dead_ipsize++;
+        printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" " is dead!\n", ipaddr, Notaries_port);
+        return -1;
+    }
+    // -E- [+] Decker ---
 
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
