@@ -1303,6 +1303,60 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified);
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified);
 
+int checknode(char *hostname, int portno, int timeout_rw)
+{
+#if defined(_linux) || defined(__linux__)
+
+    unsigned char iguana_reply[8]; // buffer for iguana reply
+
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+
+    unsigned char reply_dat[] = { 0x00, 0x53, 0x50, 0x00, 0x00, 0x70, 0x00, 0x00 };
+    unsigned int reply_dat_len = 8;
+    struct timeval timeout;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) return(-1); // error opening socket
+    server = gethostbyname(hostname);
+    if (server == NULL) { close(sockfd); return(-2); } // no such host
+
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr,
+         (char *)&serv_addr.sin_addr.s_addr,
+         server->h_length);
+
+    serv_addr.sin_port = htons(portno);
+
+    timeout.tv_sec = timeout_rw;
+    timeout.tv_usec = 0;
+
+    if (setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        { close(sockfd); return(-3); } // set rcv timeout filed
+
+    if (setsockopt (sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        { close(sockfd); return(-4); } // set send timeout filed
+
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
+        { close(sockfd); return(-5); } // port is closed
+
+    int recv_count;
+    if( ( recv_count = recv(sockfd, iguana_reply , sizeof(iguana_reply) , 0)) < 0)
+        { close(sockfd); return(-6); } // recv is failed
+
+    if ( recv_count != reply_dat_len ) { close(sockfd); return(-7); }// wrong reply size
+
+    if (memcmp(iguana_reply, reply_dat, reply_dat_len) != 0) { close(sockfd); return(-8); } // wrong / unknown reply, possible it's not iguana on remote
+
+    close(sockfd);
+#endif // __linux__
+    return 0;
+}
+
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
@@ -1310,6 +1364,13 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
         return(-1);
     //if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
     //    return(-1);
+
+    // [+] Decker, if node doesn't respond in 5 sec, we shouldn't add it
+    if (checknode(ipaddr, Notaries_port, 5) != 0) {
+        printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" "is dead!\n", ipaddr, Notaries_port);
+    	return(-1);
+    }
+
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
     {
