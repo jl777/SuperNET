@@ -1367,7 +1367,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
 
     // [+] Decker, if node doesn't respond in 5 sec, we shouldn't add it
     if (checknode(ipaddr, Notaries_port, 5) != 0) {
-        printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" "is dead!\n", ipaddr, Notaries_port);
+        printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" " is dead!\n", ipaddr, Notaries_port);
     	return(-1);
     }
 
