@@ -45,6 +45,7 @@ use hyper::rt::Stream;
 use libc::{malloc, free};
 use rand::random;
 use serde_json::{Value as Json};
+use std::any::Any;
 use std::fmt;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
@@ -151,7 +152,10 @@ pub struct MmCtx {
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
     ffi_handler: AtomicUsize,
-    stop_listeners: Mutex<Vec<Box<FnMut()->Result<(), String>>>>
+    /// Callbacks to invoke from `fn stop`.
+    stop_listeners: Mutex<Vec<Box<FnMut()->Result<(), String>>>>,
+    /// The context belonging to the `portfolio` crate: `PortfolioContext`.
+    pub portfolio_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>
 }
 impl MmCtx {
     pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
@@ -164,7 +168,8 @@ impl MmCtx {
             stop: AtomicBool::new (false),
             rpc_ip_port,
             ffi_handler: AtomicUsize::new (0),
-            stop_listeners: Mutex::new (Vec::new())
+            stop_listeners: Mutex::new (Vec::new()),
+            portfolio_ctx: Mutex::new (None)
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
@@ -218,6 +223,7 @@ unsafe impl Sync for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
 
+#[derive(Clone)]
 pub struct MmWeak (Weak<MmCtx>);
 // Same as `MmArc`.
 unsafe impl Send for MmWeak {}

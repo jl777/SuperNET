@@ -543,6 +543,8 @@ fn help() {
         // In the future, when MM2 is more widely used and thus we're working more tighly with the GUIs (BarterDEX, HyperDEX, dICO),
         // we might add the "refrel=coingecko" RPC option.
         "  cmc_key        ..  CoinMarketCap Professional API key. Switches from CoinGecko to CoinMarketCap.\n"
+        // cf. https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L12
+        "  coins          ..  Information about the currencies: their ticker symbols, names, ports, addresses, etc.\n"
         "  ethnode        ..  HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet).\n"
         "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
         "  log            ..  File path. Redirect (as of now only a part of) the log there.\n"

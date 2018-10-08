@@ -21,10 +21,10 @@
 use futures::{self, Future};
 use fxhash::{FxHashMap};
 use gstuff::now_float;
-use helpers::slurp_req;
+use helpers::{slurp_req, MmArc, MmWeak};
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
-use serde_json::{self as json};
+use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
@@ -1227,33 +1227,27 @@ pub enum PriceUnit {Bitcoin, UsDollar}
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum PricingProvider {CoinGecko, CoinMarketCap (String)}
 
-// A table for converting coin names to coin symbols and back.  
-// This is probably a temporary solution, we might have a proper table of coins somewhere (or maybe can get it).
-const COINS: [(&'static str, &'static str); 5] = [
-    ("bitcoin", "BTC"),
-    ("komodo", "KMD"),
-    ("bitcoin-cash", "BCH"),
-    ("litecoin", "LTC"),
-    ("dash", "DASH")
-];
-
 /// Things like "komodo", "bitcoin-cash" or "litecoin" are kept there.  
 /// The value is the one we're getting from the RPC API in "refbase".
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct CoinId (pub String);
 impl CoinId {
-    pub fn for_provider<'a, 'b> (&'a self, provider: &'b PricingProvider) -> Result<Cow<'static, str>, String> {
+    pub fn for_provider<'a, 'b> (&'a self, coins: &[Json], provider: &'b PricingProvider) -> Result<Cow<'static, str>, String> {
         match provider {
             PricingProvider::CoinGecko => Ok (self.0.clone().into()),
             PricingProvider::CoinMarketCap (_) => {
-                match COINS.iter().find (|p| p.0 == self.0) {
-                    Some (p) => Ok (p.1.into()),
-                    None => ERR! ("Unknown coin: {}", self.0)
+                let mut it = coins.iter();
+                loop {
+                    let coin_conf = match it.next() {Some (v) => v, None => break ERR! ("CoinId] Unknown coin: {}", self.0)};
+                    // https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L12
+                    let name = match coin_conf["name"].as_str() {Some (n) => n, None => continue};
+                    let ticker_symbol = match coin_conf["coin"].as_str() {Some (n) => n, None => continue};
+                    if name == self.0 || name.to_lowercase() == self.0  {break Ok (Cow::Owned (ticker_symbol.into()))}
                 }
             }
         }
     }
-    pub fn from_provider (provider: &PricingProvider, label: &str) -> Result<CoinId, String> {
+    pub fn from_provider (coins: &[Json], provider: &PricingProvider, label: &str) -> Result<CoinId, String> {
         match provider {
             PricingProvider::CoinGecko => Ok (CoinId (label.into())),
             PricingProvider::CoinMarketCap (_) => ERR! ("TBD")
@@ -1271,10 +1265,16 @@ pub struct ExternalPrices {pub prices: FxHashMap<CoinId, f64>, pub at: f64}
 pub struct Coins (pub Arc<Mutex<FxHashMap<CoinId, f64>>>);
 
 /// Load coin prices from CoinGecko or, if `cmc_key` is given, from CoinMarketCap.
-pub fn lp_btcprice (provider: &PricingProvider, unit: PriceUnit, coins: &Coins) -> Box<Future<Item=ExternalPrices, Error=String> + Send> {
+/// 
+/// NB: We're using the MM command-line configuration ("coins") to convert between the coin names and the ticker symbols,
+/// meaning that the price loader futures are not reusable across the MM instances (the `MmWeak` argument hints at it).
+pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUnit, coins: &Coins) -> Box<Future<Item=ExternalPrices, Error=String> + Send> {
     let coins: Vec<String> = {
+        let ctx = try_fus! (MmArc::from_weak (&ctx_weak) .ok_or ("Context expired"));
+        let coins_conf = try_fus! (ctx.conf["coins"].as_array().ok_or ("No 'coins' array in configuration"));
+
         let coins = try_fus! (coins.0.lock());
-        try_fus! (coins.keys().map (|c| c.for_provider (provider) .map (|s| s.into_owned())) .collect())
+        try_fus! (coins.keys().map (|c| c.for_provider (coins_conf, provider) .map (|s| s.into_owned())) .collect())
     };
 
     let (request, curl_example) = match provider {
@@ -1320,6 +1320,10 @@ pub fn lp_btcprice (provider: &PricingProvider, unit: PriceUnit, coins: &Coins) 
         let ct = match headers.get (CONTENT_TYPE) {Some (ct) => ct, None => return ERR! ("No Content-Type")};
         let ct = try_s! (ct.to_str());
         if !ct.starts_with ("application/json") {return ERR! ("Content-Type not JSON: {}", ct)}
+
+        let ctx = try_s! (MmArc::from_weak (&ctx_weak) .ok_or ("Context expired"));
+        let coins_conf = try_s! (ctx.conf["coins"].as_array().ok_or ("No 'coins' array in configuration"));
+
         match provider {
             PricingProvider::CoinMarketCap (_) => {
                 let reply: Vec<CoinMarketCap> = try_s! (json::from_slice (&body));
@@ -1337,7 +1341,7 @@ pub fn lp_btcprice (provider: &PricingProvider, unit: PriceUnit, coins: &Coins) 
                 //println! ("lp_btcprice] Parsed reply: {:?}", reply);
                 let mut prices: FxHashMap<CoinId, f64> = FxHashMap::default();
                 for cg in reply {
-                    let coin_id = try_s! (CoinId::from_provider (&provider, cg.id));
+                    let coin_id = try_s! (CoinId::from_provider (coins_conf, &provider, cg.id));
                     prices.insert (coin_id, cg.current_price);
                 }
                 Ok (ExternalPrices {prices, at: now_float()})

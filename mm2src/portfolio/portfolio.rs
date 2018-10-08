@@ -40,7 +40,7 @@ mod prices;
 
 use fxhash::{FxHashMap, FxHashSet};
 use gstuff::{now_ms, now_float};
-use helpers::{lp, slurp_url, MmArc, RefreshedExternalResource, CJSON, SMALLVAL, find_coin};
+use helpers::{lp, slurp_url, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL, find_coin};
 use helpers::log::TagParam;
 use hyper::{StatusCode, HeaderMap};
 use prices::{lp_btcprice, Coins, CoinId, ExternalPrices, PricingProvider, PriceUnit};
@@ -54,6 +54,38 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::thread::sleep;
+
+struct PortfolioContext {
+    // NB: We're using the MM configuration ("coins"), therefore every MM must have its own set of price resources.
+    //     That's why we keep the price resources in the `PortfolioContext` and not in a singleton.
+    price_resources: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Coins, RefreshedExternalResource<ExternalPrices>)>>
+}
+impl PortfolioContext {
+    /// Obtains a reference to this crate context, creating it if necessary.
+    fn from_ctx (ctx: &MmArc) -> Result<Arc<PortfolioContext>, String> {
+        let mut portfolio_ctx = try_s! (ctx.portfolio_ctx.lock());
+        if portfolio_ctx.is_none() {
+            let arc = Arc::new (PortfolioContext {
+                price_resources: Mutex::new (FxHashMap::default())
+            });
+            *portfolio_ctx = Some (arc.clone());
+            Ok (arc)
+        } else if let Some (ref portfolio_ctx) = *portfolio_ctx {
+            let portfolio_ctx: Arc<PortfolioContext> = match portfolio_ctx.clone().downcast() {
+                Ok (p) => p,
+                Err (_) => return ERR! ("Error casting into PortfolioContext")
+            };
+            Ok (portfolio_ctx)
+        } else {panic!()}
+    }
+
+    /// Obtains a reference to this crate context, creating it if necessary.
+    #[allow(dead_code)]
+    fn from_ctx_weak<'a> (ctx_weak: &'a MmWeak) -> Result<Arc<PortfolioContext>, String> {
+        let ctx = try_s! (MmArc::from_weak (ctx_weak) .ok_or ("Context expired"));
+        Self::from_ctx (&ctx)
+    }
+}
 
 /*
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
@@ -516,6 +548,9 @@ fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
     use std::collections::hash_map::Entry;
 
+
+    let portfolio_ctx = try_s! (PortfolioContext::from_ctx (ctx));
+
     // Natural singletons (there's only one "bittrex.com" in the internet).
     lazy_static! {
         static ref BITTREX_MARKETSUMMARIES: RefreshedExternalResource<(StatusCode, HeaderMap, Vec<u8>)> = RefreshedExternalResource::new (
@@ -633,11 +668,6 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         set
     };
 
-    lazy_static! {
-        static ref PRICE_RESOURCES: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Coins, RefreshedExternalResource<ExternalPrices>)>>
-            = Mutex::new (FxHashMap::default());
-    }
-
     // Group the coins by (provider, unit) in order to have all the coins ready for the provider instance creation.
     let mut coins: FxHashMap<(PricingProvider, PriceUnit), FxHashSet<CoinId>> = FxHashMap::default();
     for (provider, unit, coin) in coin_price_interest {
@@ -648,14 +678,15 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     }
     for ((provider, unit), coins) in coins {
         // Create and/or update the external provider instances.
-        let mut price_resources = try_s! (PRICE_RESOURCES.lock());
+        let mut price_resources = try_s! (portfolio_ctx.price_resources.lock());
         match price_resources.entry ((provider.clone(), unit)) {
             Entry::Vacant (ve) => {
                 let coins = Coins (Arc::new (Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())));
                 let rer = RefreshedExternalResource::new (30., 40., Box::new ({
                     let provider = provider.clone();
                     let coins = coins.clone();
-                    move || lp_btcprice (&provider, unit, &coins)
+                    let ctx_weak = ctx.weak();
+                    move || lp_btcprice (ctx_weak.clone(), &provider, unit, &coins)
                 }));
                 try_s! (rer.tick());
                 ve.insert ((coins, rer));
@@ -671,7 +702,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     }
 
     let (kmd_btc, bch_btc, ltc_btc) = {
-        let price_resources = try_s! (PRICE_RESOURCES.lock());
+        let price_resources = try_s! (portfolio_ctx.price_resources.lock());
         let resource = & try_s! (price_resources.get (&(provider.clone(), PriceUnit::Bitcoin)) .ok_or ("Not in PRICE_RESOURCES")) .1;
         let status_tags: &[&TagParam] = &[&"portfolio", &"waiting-cmc-gecko"];
         let prices = try_s! (resource.with_result (|r| -> Result<Option<(f64, f64, f64)>, String> {
@@ -756,7 +787,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
             let refbase = try_s! (unsafe {CStr::from_ptr (autoref.refbase.as_ptr())} .to_str());
             let refbase_coin_id = CoinId (refbase.into());
             let extprice = {
-                let price_resources = try_s! (PRICE_RESOURCES.lock());
+                let price_resources = try_s! (portfolio_ctx.price_resources.lock());
                 let resource = & try_s! (price_resources.get (&(provider.clone(), unit)) .ok_or ("Not in PRICE_RESOURCES")) .1;
                 let status_tags: &[&TagParam] = &[&"portfolio", &"ext-price", &("ref-num", ref_num)];
                 try_s! (resource.with_result (|r| -> Result<Option<f64>, String> {
