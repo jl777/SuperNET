@@ -519,7 +519,7 @@ void dpow_statemachinestart(void *ptr)
       free(destlockunspent);
     }
 
-    if ( 0 && strcmp("BTC",dest->symbol) == 0 )
+    if ( strcmp("KMD",src->symbol) == 0 )
     {
       // lock the src coin selected utxo if the source coin is KMD.
       srclockunspent = dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
@@ -634,7 +634,7 @@ void dpow_statemachinestart(void *ptr)
     }
 
     // unlock the src selected utxo on KMD, as those are the only ones we LOCK, and CHIPS does not like the lockunspent call.
-    if ( 0 && strcmp("BTC",dest->symbol) == 0 )
+    if ( strcmp("BTC",src->symbol) == 0 )
     {
       srcunlockunspent = dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
       if (strncmp(srcunlockunspent,"true", 4) == 0 )

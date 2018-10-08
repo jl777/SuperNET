@@ -1665,7 +1665,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
         if ( bp->myind == 0 )
             printf("matches.%d bestmatches.%d recv.%llx (%d %llx)\n",matches,bestmatches,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
-        if ( 0 && bp->myind == 0 && strcmp("CHIPS",dp->symbol) == 0 )
+        if ( 1 && bp->myind == 0 && strcmp("KMD",dp->symbol) == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
                 printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>median?"*":"");
@@ -2135,7 +2135,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
                 }
             }
         }
-        if ( 0 && bp->myind == 0 && dispflag != 0 )
+        if ( 1 && bp->myind == 0 && dispflag != 0 )
         {
             printf("%s.%d RECV.%-2d %llx (%2d %llx) %llx/%llx matches.%-2d best.%-2d %s\n",dp->symbol,bp->height,senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches,bestmatches,Notaries_elected[senderind][0]);
         }
@@ -2219,7 +2219,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         printf("maxiters expired for signed_nn_send dpowsock.%d\n",myinfo->dpowsock);
     //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    if ( 0 && bp->myind == 0 )
+    if ( 1 && bp->myind == 0 )
         printf("%d NANOSEND.%d %s.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,dp->symbol,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
