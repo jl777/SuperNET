@@ -1055,14 +1055,10 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( (netid > 0 && netid < 9) && (seednode == 0 || seednode[0] == 0) )
         {
-<<<<<<< HEAD
             if ( (netid & 1) != 0 )
                 strcpy(fixedseed,"46.4.78.11");
             else strcpy(fixedseed,"46.4.87.18");
             //sprintf(fixedseed,"5.9.253.%d",195 + netid);
-=======
-            sprintf(fixedseed,"5.9.253.%d",195 + netid);
->>>>>>> dev
             seednode = fixedseed;
         }
         if ( seednode == 0 || seednode[0] == 0 )
