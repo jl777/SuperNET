@@ -1303,13 +1303,110 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified);
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified);
 
+#ifdef CHECKNODEIP
+int checknode(char *hostname, int portno, int timeout_rw)
+{
+#if defined(_linux) || defined(__linux__)
+
+    unsigned char iguana_reply[8]; // buffer for iguana reply
+
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+
+    unsigned char reply_dat[] = { 0x00, 0x53, 0x50, 0x00, 0x00, 0x70, 0x00, 0x00 };
+    unsigned int reply_dat_len = 8;
+    struct timeval timeout;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) return(-1); // error opening socket
+    server = gethostbyname(hostname);
+    if (server == NULL) { close(sockfd); return(-2); } // no such host
+
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr,
+         (char *)&serv_addr.sin_addr.s_addr,
+         server->h_length);
+
+    serv_addr.sin_port = htons(portno);
+
+    timeout.tv_sec = timeout_rw;
+    timeout.tv_usec = 0;
+
+    if (setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        { close(sockfd); return(-3); } // set rcv timeout filed
+
+    if (setsockopt (sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        { close(sockfd); return(-4); } // set send timeout filed
+
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
+        { close(sockfd); return(-5); } // port is closed
+
+    int recv_count;
+    if( ( recv_count = recv(sockfd, iguana_reply , sizeof(iguana_reply) , 0)) < 0)
+        { close(sockfd); return(-6); } // recv is failed
+
+    if ( recv_count != reply_dat_len ) { close(sockfd); return(-7); }// wrong reply size
+
+    if (memcmp(iguana_reply, reply_dat, reply_dat_len) != 0) { close(sockfd); return(-8); } // wrong / unknown reply, possible it's not iguana on remote
+
+    close(sockfd);
+#endif // __linux__
+    return 0;
+}
+#endif
+
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
+
+    #ifdef CHECKNODEIP
+    // -B- [+] Decker ---
+    static uint32_t list_ipbits[128];
+    static int dead_or_alive[128]; // 0 - not set, -1 - dead, 1 - alive
+    static int list_ipsize;
+    int in_list_flag;
+    uint32_t ip_pattern;
+    // -E- [+] Decker ---
+    #endif
+
     if ( myinfo->IAMNOTARY == 0 )
         return(-1);
     //if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
     //    return(-1);
+
+    #ifdef CHECKNODEIP
+    // -B- [+] Decker ---
+    // every new ip in BUS topology network goes to dead or white list forever, until iguana restart
+    ip_pattern = (uint32_t)calc_ipbits(ipaddr);
+    if ((list_ipsize == 0) || (list_ipsize > 127)) {
+            for (int i_list = 0; i_list < 128; i_list++) { list_ipbits[i_list] = 0; dead_or_alive[i_list] = 0; }
+            list_ipsize = 0;
+            in_list_flag = -1;
+    } else {
+        in_list_flag = -1;
+        for (int i_list = 0; i_list < list_ipsize; i_list++) if (list_ipbits[i_list] == ip_pattern) { in_list_flag = i_list; break; }
+    }
+
+    if (in_list_flag == -1) {
+        list_ipbits[list_ipsize] = ip_pattern;
+        if (checknode(ipaddr, Notaries_port, 5) != 0) {
+            dead_or_alive[list_ipsize] = -1;
+            list_ipsize++;
+            printf("[Decker] Node " "\033[31m" "%s:%d" "\033[0m" " is dead!\n", ipaddr, Notaries_port);
+            return -1;
+        } else {
+            dead_or_alive[list_ipsize] = 1;
+            list_ipsize++;
+        }
+    } else
+        if (dead_or_alive[in_list_flag] == -1) return -1;
+    // -E- [+] Decker ---
+    #endif
+
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
     {
