@@ -19,13 +19,6 @@
 //  marketmaker
 //
 
-struct LP_gtcorder
-{
-    struct LP_gtcorder *next,*prev;
-    struct LP_quoteinfo Q;
-    uint32_t cancelled,pending;
-} *GTCorders;
-
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
 double LP_Alicemaxprice;
 bits256 LP_Alicedestpubkey,LP_bobs_reserved;
@@ -45,7 +38,7 @@ void LP_failedmsg(uint32_t requestid,uint32_t quoteid,double val,char *uuidstr)
         jaddnum(retjson,"requestid",requestid);
         jaddnum(retjson,"quoteid",quoteid);
         msg = jprint(retjson,1);
-        LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
+        LP_QUEUE_COMMAND(0,msg,IPC_ENDPOINT,-1,0);
         free(msg);
     }
 }
@@ -553,7 +546,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                     printf("send CONNECT for %u-%u\n",qp->R.requestid,qp->R.quoteid);
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                     if ( IPC_ENDPOINT >= 0 )
-                        LP_queuecommand(0,jprint(reqjson,0),IPC_ENDPOINT,-1,0);
+                        LP_QUEUE_COMMAND(0,jprint(reqjson,0),IPC_ENDPOINT,-1,0);
                 }
                 if ( qp->mpnet != 0 && qp->gtc == 0 )
                 {
@@ -855,7 +848,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
                 if ( IPC_ENDPOINT >= 0 )
                 {
                     msg = jprint(retjson,0);
-                    LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
+                    LP_QUEUE_COMMAND(0,msg,IPC_ENDPOINT,-1,0);
                     free(msg);
                 }
                 //jaddnum(retjson,"requestid",qp->R.requestid);

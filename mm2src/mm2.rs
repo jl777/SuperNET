@@ -106,6 +106,8 @@ use lp_native_dex::{lp_init};
 
 pub mod rpc;
 pub mod ordermatch;
+pub mod network;
+pub use network::lp_queue_command;
 
 use crash_reports::init_crash_reports;
 

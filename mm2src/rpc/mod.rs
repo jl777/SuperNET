@@ -26,6 +26,7 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use hyper::header::{HeaderValue, CONTENT_TYPE};
+use network::lp_queue_command;
 use serde::Serialize;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
@@ -142,7 +143,7 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
                 let json_str = json.to_string();
                 let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred");
                 unsafe {
-                    lp::LP_queuecommand(null_mut(),
+                    lp_queue_command(null_mut(),
                                         c_json_ptr.as_ptr() as *mut c_char,
                                         lp::IPC_ENDPOINT,
                                         1,

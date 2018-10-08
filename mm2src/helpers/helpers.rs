@@ -312,6 +312,9 @@ impl CJSON {
         let cs = try_s! (CString::new (json));
         CJSON::from_zero_terminated (cs.as_ptr())
     }
+    pub fn new () -> CJSON {
+        unwrap! (CJSON::from_str (""))
+    }
 }
 impl Drop for CJSON {
     fn drop (&mut self) {

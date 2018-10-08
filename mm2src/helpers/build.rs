@@ -174,23 +174,23 @@ fn generate_bindings() {
             "LP_txfees",
             "LP_address_minmax",
             "LP_fomoprice",
-            "LP_address_myutxopair",
-            "LP_basesatoshis",
             "LP_quoteinfoinit",
             "LP_quotedestinfo",
             "gen_quote_uuid",
             "decode_hex",
             "LP_aliceid_calc",
             "LP_rand",
-            "LP_gtc_addorder",
             "LP_query",
             "LP_quotejson",
             "LP_mpnet_send",
             "LP_recent_swaps",
+            "LP_address",
+            "LP_address_utxo_ptrs",
+            "LP_command_process",
         ]
             .iter(),
         // types
-        ["_bits256", "cJSON", "iguana_info", "LP_utxoinfo",].iter(),
+        ["_bits256", "cJSON", "iguana_info", "LP_utxoinfo", "electrum_info",].iter(),
         [
             // defines
             "bitcoind_RPC_inittime",
@@ -222,6 +222,8 @@ fn generate_bindings() {
             "LP_Alicequery",
             "LP_Alicemaxprice",
             "LP_Alicedestpubkey",
+            "GTCorders",
+            "LP_QUEUE_COMMAND",
         ]
             .iter(),
     );
@@ -242,7 +244,7 @@ fn generate_bindings() {
     bindgen(
         vec!["../../crypto777/nanosrc/nn.h".into()],
         "c_headers/nn.rs",
-        ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg"].iter(),
+        ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg", "nn_send"].iter(),
         empty(),
         ["AF_SP", "NN_PAIR"].iter(),
     );

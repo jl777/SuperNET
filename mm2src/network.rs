@@ -17,7 +17,17 @@
 //  LP_network.c
 //  marketmaker
 //
-
+use helpers::{lp, nn, MmArc, CJSON, free_c_ptr, str_to_malloc};
+use libc::{self, strlen};
+use serde_json::{self as json, Value as Json};
+use std::collections::VecDeque;
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_void, c_char};
+use std::ptr::null_mut;
+use std::sync::{Mutex};
+use std::thread::sleep;
+use std::time::Duration;
+/*
 struct psock
 {
     uint32_t lasttime,lastping,errors;
@@ -423,6 +433,154 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     return(nextbits);
 }
     
+struct LP_queuedcommand
+{
+    struct LP_queuedcommand *next,*prev;
+    char **retstrp;
+    int32_t responsesock,msglen,stats_JSONonly;
+    uint32_t queueid;
+    char msg[];
+} *LP_commandQ;
+*/
+
+struct QueuedCommand {
+    response_sock: i32,
+    stats_json_only: i32,
+    queue_id: u32,
+    msg: String,
+    // retstrp: *mut *mut c_char,
+}
+
+#[derive(Serialize)]
+struct CommandForNn {
+    result: Json,
+    #[serde(rename="queueid")]
+    queue_id: u32
+}
+
+lazy_static! {
+    static ref COMMAND_QUEUE: Mutex<VecDeque<QueuedCommand>> = Mutex::new(VecDeque::new());
+}
+
+fn queue_command(cmd: QueuedCommand) {
+    let mut queue = unwrap!(COMMAND_QUEUE.lock());
+    queue.push_back(cmd);
+}
+
+fn pop_command() -> Option<QueuedCommand> {
+    let mut queue = unwrap!(COMMAND_QUEUE.lock());
+    queue.pop_front()
+}
+
+fn is_queue_empty() -> bool {
+    let queue = unwrap!(COMMAND_QUEUE.lock());
+    queue.is_empty()
+}
+
+pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
+    loop {
+        if ctx.is_stopping() { break }
+        while !is_queue_empty() {
+            let cmd = unwrap!(pop_command());
+            let msg_json = unwrap!(json::from_str(&cmd.msg));
+            if cmd.stats_json_only < 0 { // broadcast passthrough
+                if cmd.response_sock >= 0 {
+                    let nn_command = CommandForNn {
+                        queue_id: 0,
+                        result: msg_json
+                    };
+                    let json_str = unwrap!(json::to_string(&nn_command));
+                    let c_str = unwrap!(CString::new(json_str));
+                    let size = nn::nn_send(
+                        cmd.response_sock,
+                        c_str.as_ptr() as *const c_void,
+                        strlen(c_str.as_ptr()) as usize,
+                        0i32,
+                    );
+                    if size <= 0i32 {
+                        /*printf(
+                            b"error sending event\n\x00" as *const u8 as *const libc::c_char,
+                        );*/
+                    }
+
+                }
+            } else {
+                let arg_json = unwrap!(CJSON::from_str(&cmd.msg));
+                let msg_c_str = unwrap!(CString::new(cmd.msg));
+                //printf("deQ.(%s)\n",jprint(argjson,0));
+                let mut retstr = lp::LP_command_process(
+                    ctx.btc_ctx() as *mut c_void,
+                    b"127.0.0.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+                    cmd.response_sock,
+                    arg_json.0,
+                    msg_c_str.as_ptr() as *mut u8,
+                    strlen(msg_c_str.as_ptr()) as i32,
+                    cmd.stats_json_only,
+                );
+                if !retstr.is_null() {
+                    if cmd.response_sock >= 0 {
+                        if cmd.queue_id != 0 {
+                            let ret_str_rust = unwrap!(CStr::from_ptr(retstr).to_str());
+                            let result = unwrap!(json::from_str(ret_str_rust));
+                            let nn_command = CommandForNn {
+                                queue_id: cmd.queue_id,
+                                result
+                            };
+                            free_c_ptr(retstr as *mut c_void);
+
+                            let json_str = unwrap!(json::to_string(&nn_command));
+                            retstr = str_to_malloc(&json_str);
+                        }
+                        //printf("send (%s)\n",retstr);
+                        let mut len = strlen(retstr);
+                        if cmd.queue_id == 0 {
+                            len += 1
+                        }
+                        let size = nn::nn_send(
+                            cmd.response_sock,
+                            retstr as *const c_void,
+                            len as usize,
+                            0i32,
+                        );
+                        if size <= 0 {
+                            /*printf(
+                                b"error sending result\n\x00" as *const u8
+                                    as *const libc::c_char,
+                            );*/
+                        }
+                    }
+                    free_c_ptr(retstr as *mut c_void);
+                }
+            }
+        }
+        sleep (Duration::from_millis (50))
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn lp_queue_command(
+    retstrp: *mut *mut c_char,
+    buf: *mut c_char,
+    response_sock: i32,
+    stats_json_only: i32,
+    queue_id: u32
+) {
+    if retstrp != null_mut() {
+        unsafe { *retstrp = null_mut() }
+    }
+
+    let msg = unsafe {
+        String::from(unwrap!(CStr::from_ptr(buf).to_str()))
+    };
+    let command = QueuedCommand {
+        msg,
+        queue_id,
+        response_sock,
+        stats_json_only
+    };
+    queue_command(command);
+}
+/*
 void mynn_close(int32_t sock)
 {
     struct nn_pollfd pfd; int32_t n; void *buf;
@@ -506,7 +664,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else LP_QUEUE_COMMAND(0,(char *)buf,ptr->publicsock,0,0);
+                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {
@@ -900,3 +1058,4 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     }
     return(pullsock);
 }
+*/

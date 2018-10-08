@@ -676,9 +676,9 @@ char LP_eth_node_url[2084];
 char LP_alice_contract[50];
 char LP_bob_contract[50];
 void (*SPAWN_RPC)(uint32_t);
+void (*LP_QUEUE_COMMAND)(char**,char*,int32_t,int32_t,uint32_t);
 
 extern int32_t IPC_ENDPOINT;
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 struct iguana_info *LP_coinsearch(char *symbol);
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson);
@@ -728,4 +728,14 @@ extern bits256 LP_Alicedestpubkey;
 cJSON *LP_quotejson(struct LP_quoteinfo *qp);
 void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr);
 char *LP_recent_swaps(int32_t limit,char *uuidstr);
+struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
+int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr);
+int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_address_utxo **utxos,int32_t n,uint64_t targetval);
+void LP_butxo_set(struct LP_utxoinfo *butxo,int32_t iambob,struct iguana_info *coin,struct LP_address_utxo *up,struct LP_address_utxo *up2,int64_t satoshis);
+struct LP_gtcorder
+{
+    struct LP_gtcorder *next,*prev;
+    struct LP_quoteinfo Q;
+    uint32_t cancelled,pending;
+} *GTCorders;
 #endif
