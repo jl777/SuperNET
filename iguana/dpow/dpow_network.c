@@ -1303,6 +1303,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified);
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified);
 
+#ifdef CHECKNODEIP
 int checknode(char *hostname, int portno, int timeout_rw)
 {
 #if defined(_linux) || defined(__linux__)
@@ -1356,11 +1357,13 @@ int checknode(char *hostname, int portno, int timeout_rw)
 #endif // __linux__
     return 0;
 }
+#endif
 
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
 
+    #ifdef CHECKNODEIP
     // -B- [+] Decker ---
     static uint32_t list_ipbits[128];
     static int dead_or_alive[128]; // 0 - not set, -1 - dead, 1 - alive
@@ -1368,12 +1371,14 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     int in_list_flag;
     uint32_t ip_pattern;
     // -E- [+] Decker ---
+    #endif
 
     if ( myinfo->IAMNOTARY == 0 )
         return(-1);
     //if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
     //    return(-1);
 
+    #ifdef CHECKNODEIP
     // -B- [+] Decker ---
     // every new ip in BUS topology network goes to dead or white list forever, until iguana restart
     ip_pattern = (uint32_t)calc_ipbits(ipaddr);
@@ -1400,6 +1405,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     } else
         if (dead_or_alive[in_list_flag] == -1) return -1;
     // -E- [+] Decker ---
+    #endif
 
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
