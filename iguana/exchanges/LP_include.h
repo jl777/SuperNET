@@ -738,5 +738,4 @@ struct LP_gtcorder
     struct LP_quoteinfo Q;
     uint32_t cancelled,pending;
 } *GTCorders;
-pthread_mutex_t LP_gtcmutex;
 #endif

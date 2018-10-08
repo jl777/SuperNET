@@ -20,10 +20,11 @@
 //
 use gstuff::now_ms;
 use helpers::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
-use libc::{self, strcpy, strlen, printf, strcmp, calloc, pthread_mutex_lock, pthread_mutex_unlock};
+use libc::{self, strcpy, strlen, printf, strcmp, calloc};
 use std::ffi::{CString};
-use std::ptr::null_mut;
 use std::os::raw::{c_void, c_char};
+use std::ptr::null_mut;
+use std::sync::Mutex;
 /*
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
 double LP_Alicemaxprice;
@@ -761,19 +762,16 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
 }
 */
 
-extern "C" {
-    #[link_name = "\u{1}LP_gtcmutex"]
-    pub static mut LP_gtcmutex: libc::pthread_mutex_t;
-}
+lazy_static! {static ref GTC_LOCK: Mutex<()> = Mutex::new(());}
 
 unsafe fn lp_gtc_addorder(qp: *mut lp::LP_quoteinfo) -> () {
+    let lock = unwrap!(GTC_LOCK.lock());
     let gtc = calloc(
         1usize,
         ::std::mem::size_of::<lp::LP_gtcorder>() as usize,
     ) as *mut lp::LP_gtcorder;
     (*gtc).Q = *qp;
     (*gtc).pending = (now_ms() / 1000) as u32;
-    pthread_mutex_lock(&mut LP_gtcmutex);
     if !lp::GTCorders.is_null() {
         (*gtc).prev = (*lp::GTCorders).prev;
         (*(*lp::GTCorders).prev).next = gtc;
@@ -784,7 +782,6 @@ unsafe fn lp_gtc_addorder(qp: *mut lp::LP_quoteinfo) -> () {
         (*lp::GTCorders).prev = lp::GTCorders;
         (*lp::GTCorders).next = null_mut();
     }
-    pthread_mutex_unlock(&mut LP_gtcmutex);
 }
 
 fn lp_trade(
