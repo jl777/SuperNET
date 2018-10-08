@@ -146,7 +146,7 @@ char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[65] = { "cli" };
 
-char *default_LPnodes[] = { "5.9.253.195", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
+char *default_LPnodes[] = { "46.4.78.11", "46.4.87.18", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
     //"24.54.206.138", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155", "173.212.225.176", "136.243.45.140"
 };
@@ -920,6 +920,23 @@ void gameaddrs()
     }
 }
 
+void emc2addrs()
+{
+    struct iguana_info *emc2coin,*kmdcoin; int32_t i; uint8_t pubkey33[33]; char emc2addr[64],kmdaddr[64];
+    emc2coin = LP_coinfind("EMC2");
+    kmdcoin = LP_coinfind("KMD");
+    if ( emc2coin != 0 && kmdcoin != 0 )
+    {
+        for (i=0; i<64; i++)
+        {
+            decode_hex(pubkey33,33,Notaries_elected1[i][1]);
+            bitcoin_address(emc2coin->symbol,emc2addr,emc2coin->taddr,emc2coin->pubtype,pubkey33,33);
+            bitcoin_address(kmdcoin->symbol,kmdaddr,kmdcoin->taddr,kmdcoin->pubtype,pubkey33,33);
+            printf("{\"%s\", \"%s\", \"%s\", \"%s\"},\n",Notaries_elected1[i][0],Notaries_elected1[i][1],kmdaddr,emc2addr);
+        }
+    }
+}
+
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
@@ -975,6 +992,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     else if ( 0 && strcmp(coin->symbol,"GAME") == 0 )
                     {
                         gameaddrs();
+                    }
+                    else if ( 0 && strcmp(coin->symbol,"EMC2") == 0 )
+                    {
+                        emc2addrs();
                     }
                     else if ( 0 && strcmp(coin->symbol,"SMART") == 0 )
                     {
