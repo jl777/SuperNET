@@ -78,7 +78,7 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
-use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, stack_trace, stack_trace_frame, BitcoinCtx, CJSON, MM_VERSION};
+use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
 use helpers::lp::{_bits256 as bits256};
 
 use rand::random;
@@ -274,6 +274,16 @@ mod test {
         })));
         assert_eq! (electrum_pizza.0, StatusCode::OK);
 
+        // Looks like we don't need enabling the coin to base the price on it.
+        // let electrum_dash = unwrap! (mm.rpc (json! ({
+        //     "userpass": mm.userpass,
+        //     "method": "electrum",
+        //     "coin": "DASH",
+        //     "ipaddr": "electrum1.cipig.net",
+        //     "port": 10061
+        // })));
+        // assert_eq! (electrum_dash.0, StatusCode::OK);
+
         let address = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
             "method": "calcaddress",
@@ -290,12 +300,19 @@ mod test {
             "method": "autoprice",
             "base": "PIZZA",
             "rel": "BEER",
-            "margin": 0.5
+            "margin": 0.5,
+            // We're basing the price of our order on the price of DASH, triggering the extra price fetch in `lp_autoprice_iter`.
+            "refbase": "dash",
+            "refrel": "coinmarketcap"
         })));
         assert_eq! (autoprice.0, StatusCode::OK);
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
+        unwrap! (mm.wait_for_log (9., &|log| {
+            log.contains ("[portfolio ext-price ref-num=0] Discovered the Bitcoin price of dash is 0.") ||
+            log.contains ("[portfolio ext-price ref-num=0] Waiting for the CoinGecko Bitcoin price of dash ... Done")
+        }));
 
         // Checking the autopricing logs here TDD-helps us with the porting effort.
         //
@@ -520,6 +537,11 @@ fn help() {
         "                     Set 0x105aFE60fDC8B5c021092b09E8a042135A4A976E for Ropsten testnet\n"
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         "  client         ..  '1' to use the client mode.\n"
+        // We don't currently want to change the RPC API,
+        // so the "refrel=coinmarketcap" designator will be using the CoinGecko behind the scenes,
+        // that is, unless the "cmc_key" is given.
+        // In the future, when MM2 is more widely used and thus we're working more tighly with the GUIs (BarterDEX, HyperDEX, dICO),
+        // we might add the "refrel=coingecko" RPC option.
         "  cmc_key        ..  CoinMarketCap Professional API key. Switches from CoinGecko to CoinMarketCap.\n"
         "  ethnode        ..  HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet).\n"
         "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
@@ -720,22 +742,4 @@ fn run_lp_main (conf: &str) -> Result<(), String> {
 
     try_s! (lp_main (c_conf, conf));
     Ok(())
-}
-
-#[no_mangle]
-pub extern fn log_stacktrace (desc: *const c_char) {
-    let desc = if desc == null() {
-        ""
-    } else {
-        match unsafe {CStr::from_ptr (desc)} .to_str() {
-            Ok (s) => s,
-            Err (err) => {
-                eprintln! ("log_stacktrace] Bad trace description: {}", err);
-                ""
-            }
-        }
-    };
-    let mut trace = String::with_capacity (4096);
-    stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
-    eprintln! ("Stacktrace. {}\n{}", desc, trace);
 }

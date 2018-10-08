@@ -73,7 +73,12 @@ impl<'a> TagParam<'a> for (String, &'a str) {
     fn val (&self) -> Option<String> {Some (String::from (self.1))}
 }
 
-#[derive(Eq, PartialEq)]
+impl<'a> TagParam<'a> for (&'a str, i32) {
+    fn key (&self) -> String {String::from (self.0)}
+    fn val (&self) -> Option<String> {Some (fomat! ((self.1)))}
+}
+
+#[derive(Clone, Eq, PartialEq)]
 pub struct Tag {
     pub key: String,
     pub val: Option<String>
@@ -101,6 +106,7 @@ impl fmt::Debug for Tag {
 }
 
 /// The status entry kept in the dashboard.
+#[derive(Clone)]
 pub struct Status {
     pub tags: Vec<Tag>,
     pub line: String,
@@ -108,6 +114,7 @@ pub struct Status {
     pub trail: Vec<Status>
 }
 
+#[derive(Clone)]
 pub struct LogEntry {
     pub time: u64,
     pub emotion: String,
@@ -409,6 +416,18 @@ impl LogState {
         found.pop()
     }
 
+    /// Returns `true` if there are recent log entries exactly matching the tags.
+    pub fn tail_any (&self, tags: &[&TagParam]) -> bool {
+        let tags: Vec<Tag> = tags.iter().map (|t| Tag {key: t.key(), val: t.val()}) .collect();
+        let tail = match self.tail.lock() {Ok (l) => l, _ => return false};
+        for en in tail.iter() {
+            if en.tags == tags {
+                return true
+            }
+        }
+        return false
+    }
+
     /// Creates a new human-readable log entry.
     /// 
     /// This is a bit different from the `println!` logging
@@ -456,7 +475,9 @@ impl LogState {
         // As of now we're logging from both the C and the Rust code and mixing the `println!` with the file writing to boot.
         // On Windows these writes aren't atomic unfortunately.
         // Duplicating the logging output here is a temporary workaround.
-        // This should become unnecessary in the future as we port more code to Rust or Rust logging.
+        // 
+        // To properly fix this we'll likely need a thread-local log access, in order to replace the `println!` with proper file writes.
+        // (Stdout redirection is not an option because multiple MM instances might be in flight).
         if cfg! (windows) {print! ("⸗{}", chunk)}
 
         match self.log_file {

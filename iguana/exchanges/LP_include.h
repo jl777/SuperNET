@@ -626,7 +626,6 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);
-void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp,double kmd_btc,double bch_btc,double ltc_btc);
 /// `num_LP_autorefs` is incremeted in `LP_autoprice`, invoked by RPC method "autoprice".
 extern int32_t num_LP_autorefs;
 extern int32_t LP_autoprices;
@@ -638,6 +637,7 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
 char *LP_ticker(char *refbase,char *refrel);
 cJSON *LP_fundvalue(cJSON *argjson);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
+void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel);
 
 struct LP_autoprice_ref
 {
