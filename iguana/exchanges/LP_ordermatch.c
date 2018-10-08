@@ -19,13 +19,6 @@
 //  marketmaker
 //
 
-struct LP_gtcorder
-{
-    struct LP_gtcorder *next,*prev;
-    struct LP_quoteinfo Q;
-    uint32_t cancelled,pending;
-} *GTCorders;
-
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
 double LP_Alicemaxprice;
 bits256 LP_Alicedestpubkey,LP_bobs_reserved;

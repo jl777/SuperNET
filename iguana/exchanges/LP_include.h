@@ -728,4 +728,15 @@ extern bits256 LP_Alicedestpubkey;
 cJSON *LP_quotejson(struct LP_quoteinfo *qp);
 void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr);
 char *LP_recent_swaps(int32_t limit,char *uuidstr);
+struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
+int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr);
+int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_address_utxo **utxos,int32_t n,uint64_t targetval);
+void LP_butxo_set(struct LP_utxoinfo *butxo,int32_t iambob,struct iguana_info *coin,struct LP_address_utxo *up,struct LP_address_utxo *up2,int64_t satoshis);
+struct LP_gtcorder
+{
+    struct LP_gtcorder *next,*prev;
+    struct LP_quoteinfo Q;
+    uint32_t cancelled,pending;
+} *GTCorders;
+pthread_mutex_t LP_gtcmutex;
 #endif
