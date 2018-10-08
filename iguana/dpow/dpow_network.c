@@ -2312,7 +2312,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                                 dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
                                 if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
-                                    //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
+                                    char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
                                     if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
                                     {
                                         if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
