@@ -146,7 +146,7 @@ char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[65] = { "cli" };
 
-char *default_LPnodes[] = { "5.9.253.195", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
+char *default_LPnodes[] = { "46.4.78.11", "46.4.87.18", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
     //"24.54.206.138", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155", "173.212.225.176", "136.243.45.140"
 };
@@ -1055,7 +1055,10 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( (netid > 0 && netid < 9) && (seednode == 0 || seednode[0] == 0) )
         {
-            sprintf(fixedseed,"5.9.253.%d",195 + netid);
+            if ( (seednode & 1) != 0 )
+                strcpy(fixedseed,"46.4.78.11");
+            else strcpy(fixedseed,"46.4.87.18");
+            //sprintf(fixedseed,"5.9.253.%d",195 + netid);
             seednode = fixedseed;
         }
         if ( seednode == 0 || seednode[0] == 0 )
