@@ -1996,14 +1996,14 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         if ( bestk >= 0 || bp->notaries[senderind].bestk < 0 )
         {
             bp->notaries[senderind].bestk = bestk;
-            if ( (bp->notaries[senderind].src.siglens[bestk]= siglens[0]) != 0 )
+            if ( bp->notaries[senderind].src.siglens[bestk] == 0 && (bp->notaries[senderind].src.siglens[bestk]= siglens[0]) != 0 )
             {
                 memcpy(bp->notaries[senderind].src.sigs[bestk],sigs[0],siglens[0]);
                 if ( bestk == bp->bestk && bestmask == bp->bestmask )
                     bp->srcsigsmasks[bestk] |= (1LL << senderind);
                 else bp->srcsigsmasks[bestk] &= ~(1LL << senderind);
             }
-            if ( (bp->notaries[senderind].dest.siglens[bestk]= siglens[1]) != 0 )
+            if ( bp->notaries[senderind].dest.siglens[bestk] == 0 && (bp->notaries[senderind].dest.siglens[bestk]= siglens[1]) != 0 )
             {
                 memcpy(bp->notaries[senderind].dest.sigs[bestk],sigs[1],siglens[1]);
                 if ( bestk == bp->bestk && bestmask == bp->bestmask )
