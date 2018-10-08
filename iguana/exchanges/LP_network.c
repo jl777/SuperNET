@@ -506,7 +506,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else lp_queue_command(0,(char *)buf,ptr->publicsock,0,0);
+                                } else LP_QUEUE_COMMAND(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {

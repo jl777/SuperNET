@@ -18,7 +18,7 @@
 //  marketmaker
 //
 use helpers::{lp, nn, MmArc, CJSON, free_c_ptr, str_to_malloc};
-use libc::{self, printf, strlen};
+use libc::{self, strlen};
 use serde_json::{self as json, Value as Json};
 use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
@@ -498,9 +498,9 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                         0i32,
                     );
                     if size <= 0i32 {
-                        printf(
+                        /*printf(
                             b"error sending event\n\x00" as *const u8 as *const libc::c_char,
-                        );
+                        );*/
                     }
 
                 }
@@ -543,10 +543,10 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                             0i32,
                         );
                         if size <= 0 {
-                            printf(
+                            /*printf(
                                 b"error sending result\n\x00" as *const u8
                                     as *const libc::c_char,
-                            );
+                            );*/
                         }
                     }
                     free_c_ptr(retstr as *mut c_void);

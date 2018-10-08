@@ -20,7 +20,7 @@
 //
 use gstuff::now_ms;
 use helpers::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
-use libc::{self, strcpy, strlen, printf, strcmp, calloc};
+use libc::{self, strcpy, strlen, strcmp, calloc};
 use std::ffi::{CString};
 use std::os::raw::{c_void, c_char};
 use std::ptr::null_mut;
@@ -319,7 +319,7 @@ unsafe fn lp_nearest_utxovalue(
             dist = (*up).U.value.wrapping_sub(targetval) as i64;
             //printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
             if (*up).spendheight <= 0i32 {
-                if dist >= 0i32 as libc::c_long && (dist as libc::c_ulong) < mindist {
+                if dist >= 0 && (dist as u64) < mindist {
                     //printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
                     mini = i;
                     mindist = dist as u64
@@ -328,21 +328,21 @@ unsafe fn lp_nearest_utxovalue(
         }
         i += 1
     }
-    if mini >= 0i32 && {
+    if mini >= 0 && {
         bestup = *utxos.offset(mini as isize);
         !bestup.is_null()
     } {
         bestdist = (*bestup).U.value.wrapping_sub(targetval) as i64;
-        replacei = -1i32;
+        replacei = -1;
         bestheight = (*bestup).U.height;
-        i = 0i32;
+        i = 0;
         while i < n {
             if i != mini && {
                 up = *utxos.offset(i as isize);
                 !up.is_null()
             } {
                 dist = (*up).U.value.wrapping_sub(targetval) as i64;
-                if dist > 0i32 as libc::c_long && (*up).U.height < bestheight {
+                if dist > 0 && (*up).U.height < bestheight {
                     if (dist as libc::c_double / bestdist as libc::c_double)
                         < ((bestheight as f64 - (*up).U.height as f64)
                             / 1000i32 as f64).sqrt() {
@@ -441,7 +441,7 @@ unsafe fn lp_base_satoshis(
         && price > 1e-15f64
         {
             return (100000000i64 as u64 as libc::c_double * (relvolume / price)
-                + (2i32 as libc::c_ulong).wrapping_mul(txfee) as libc::c_double)
+                + (2u64).wrapping_mul(txfee) as libc::c_double)
                 as u64;
         } else {
         return 0i32 as u64;
@@ -485,16 +485,16 @@ unsafe fn lp_address_myutxopair(
                 b"ETOMIC\x00" as *const u8 as *const libc::c_char,
             ) == 0i32
                 {
-                    targetval = (100000000i32 as libc::c_ulong)
-                        .wrapping_add((3i32 as libc::c_ulong).wrapping_mul(txfee))
+                    targetval = (100000000u64)
+                        .wrapping_add((3u64).wrapping_mul(txfee))
                 } else {
                 targetval = lp_base_satoshis(relvolume, price, txfee, desttxfee)
-                    .wrapping_add((3i32 as libc::c_ulong).wrapping_mul(txfee))
+                    .wrapping_add((3u64).wrapping_mul(txfee))
             }
             targetval2 = targetval
-                .wrapping_div(8i32 as libc::c_ulong)
-                .wrapping_mul(9i32 as libc::c_ulong)
-                .wrapping_add((3i32 as libc::c_ulong).wrapping_mul(txfee));
+                .wrapping_div(8u64)
+                .wrapping_mul(9u64)
+                .wrapping_add((3u64).wrapping_mul(txfee));
             fee = txfee;
             ratio = 100i32 as libc::c_double
         } else {
@@ -503,16 +503,16 @@ unsafe fn lp_address_myutxopair(
                 b"ETOMIC\x00" as *const u8 as *const libc::c_char,
             ) == 0i32
                 {
-                    targetval = (100000000i32 as libc::c_ulong)
-                        .wrapping_add((3i32 as libc::c_ulong).wrapping_mul(desttxfee))
+                    targetval = (100000000u64)
+                        .wrapping_add((3u64).wrapping_mul(desttxfee))
                 } else {
                 targetval = (relvolume * 100000000i64 as u64 as libc::c_double
-                    + (3i32 as libc::c_ulong).wrapping_mul(desttxfee) as libc::c_double)
+                    + (3u64).wrapping_mul(desttxfee) as libc::c_double)
                     as u64
             }
             targetval2 = targetval
-                .wrapping_div(777i32 as libc::c_ulong)
-                .wrapping_add((3i32 as libc::c_ulong).wrapping_mul(desttxfee));
+                .wrapping_div(777)
+                .wrapping_add((3 as u64).wrapping_mul(desttxfee));
             fee = desttxfee;
             ratio = 1000i32 as libc::c_double
         }
@@ -526,15 +526,15 @@ unsafe fn lp_address_myutxopair(
                 i = 0i32;
                 while i < m {
                     if (**utxos.offset(i as isize)).U.value >= targetval {
-                        printf(
+                        /*printf(
                             b"%.8f \x00" as *const u8 as *const libc::c_char,
                             (**utxos.offset(i as isize)).U.value as libc::c_double
                                 / 100000000i64 as u64 as libc::c_double,
-                        );
+                        );*/
                     }
                     i += 1
                 }
-                printf(
+                /*printf(
                     b"targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n\x00" as *const u8
                         as *const libc::c_char,
                     targetval as libc::c_double / 100000000i64 as u64 as libc::c_double,
@@ -543,10 +543,10 @@ unsafe fn lp_address_myutxopair(
                     fee as libc::c_double / 100000000i64 as u64 as libc::c_double,
                     (*coin).symbol.as_mut_ptr(),
                     coinaddr,
-                );
+                );*/
                 loop {
                     mini = -1i32;
-                    if targetval != 0i32 as libc::c_ulong && {
+                    if targetval != 0 && {
                         mini = lp_nearest_utxovalue(
                             coin,
                             coinaddr,
@@ -568,7 +568,7 @@ unsafe fn lp_address_myutxopair(
                                     coinaddr,
                                     utxos,
                                     m,
-                                    (targetval2.wrapping_add((2i32 as libc::c_ulong).wrapping_mul(fee))
+                                    (targetval2.wrapping_add((2 as u64).wrapping_mul(fee))
                                         as libc::c_double * 1.01f64)
                                         as u64,
                                 );
@@ -587,37 +587,37 @@ unsafe fn lp_address_myutxopair(
                                         );
                                         return butxo;
                                     } else {
-                                        printf(
+                                        /*printf(
                                             b"cant find utxos[mini %d]\n\x00" as *const u8
                                                 as *const libc::c_char,
                                             mini,
-                                        );
+                                        );*/
                                     }
                                 }
                             }
-                    } else if targetval != 0i32 as libc::c_ulong && mini >= 0i32 {
-                        printf(
+                    } else if targetval != 0 && mini >= 0 {
+                        /*printf(
                             b"targetval %.8f mini.%d\n\x00" as *const u8 as *const libc::c_char,
                             targetval as libc::c_double
                                 / 100000000i64 as u64 as libc::c_double,
                             mini,
-                        );
+                        );*/
                     }
-                    if targetval == 0i32 as libc::c_ulong || mini < 0i32 {
+                    if targetval == 0 || mini < 0 {
                         break;
                     }
                 }
             }
         }
         //else printf("no %s %s utxos pass LP_address_utxo_ptrs filter %.8f %.8f\n",coin->symbol,coinaddr,dstr(targetval),dstr(targetval2));
-        printf(
+        /*printf(
             b"address_myutxopair couldnt find %s %s targets %.8f %.8f\n\x00" as *const u8
                 as *const libc::c_char,
             (*coin).symbol.as_mut_ptr(),
             coinaddr,
             targetval as libc::c_double / 100000000i64 as u64 as libc::c_double,
             targetval2 as libc::c_double / 100000000i64 as u64 as libc::c_double,
-        );
+        );*/
         return null_mut();
     };
 }

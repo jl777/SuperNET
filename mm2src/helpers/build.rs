@@ -223,6 +223,7 @@ fn generate_bindings() {
             "LP_Alicemaxprice",
             "LP_Alicedestpubkey",
             "GTCorders",
+            "LP_QUEUE_COMMAND",
         ]
             .iter(),
     );

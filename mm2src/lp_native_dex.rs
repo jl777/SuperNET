@@ -32,7 +32,7 @@ use crc::crc32;
 use futures::{Future};
 use helpers::{lp, slurp_url, MmCtx, CJSON, MM_VERSION};
 use libc;
-use network::lp_command_q_loop;
+use network::{lp_command_q_loop, lp_queue_command};
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
@@ -1769,6 +1769,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     // to C functions defined here in the mm2 binary crate. Such functions should be shared dynamically
     // in order not to interfere with the linking of the etomicrs test binary.
     unsafe {lp::SPAWN_RPC = Some (rpc::spawn_rpc)};
+    unsafe {lp::LP_QUEUE_COMMAND = Some (lp_queue_command)};
 
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0, ctx_id)};
     unwrap! (prices.join());
