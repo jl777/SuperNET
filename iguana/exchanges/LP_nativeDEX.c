@@ -326,7 +326,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
-                    LP_queuecommand(0,jsonstr,pubsock,0,0);
+                    lp_queue_command(0,jsonstr,pubsock,0,0);
                     //if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                     //{
                     //}
@@ -409,7 +409,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                             //printf("self broadcast.(%s)\n",Broadcaststr);
                             str = Broadcaststr;
                             Broadcaststr = 0;
-                            LP_queuecommand(0,str,pubsock,0,0);
+                            lp_queue_command(0,str,pubsock,0,0);
                             /*if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
                                 //portable_mutex_lock(&LP_commandmutex);
@@ -1584,11 +1584,6 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradesloop,ctx) != 0 )
     {
         printf("error launching LP_tradessloop for ctx.%p\n",ctx);
-        exit(-1);
-    }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_commandQ_loop,ctx) != 0 )
-    {
-        printf("error launching LP_commandQ_loop for ctx.%p\n",ctx);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )

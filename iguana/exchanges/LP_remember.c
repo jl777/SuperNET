@@ -310,7 +310,7 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
                 jaddnum(reqjson,"requestid",swap->I.req.requestid);
                 jaddnum(reqjson,"quoteid",swap->I.req.quoteid);
                 outstr = jprint(reqjson,1);
-                LP_queuecommand(0,outstr,IPC_ENDPOINT,-1,0);
+                lp_queue_command(0,outstr,IPC_ENDPOINT,-1,0);
                 free(outstr);
             }
             free(fstr);

@@ -423,103 +423,6 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     return(nextbits);
 }
     
-struct LP_queuedcommand
-{
-    struct LP_queuedcommand *next,*prev;
-    char **retstrp;
-    int32_t responsesock,msglen,stats_JSONonly;
-    uint32_t queueid;
-    char msg[];
-} *LP_commandQ;
-    
-void LP_commandQ_loop(void *ctx)
-{
-    struct LP_queuedcommand *ptr,*tmp; int32_t len,size,nonz; char *retstr; cJSON *argjson,*retjson,*result;
-    while ( LP_STOP_RECEIVED == 0 )
-    {
-        nonz = 0;
-        DL_FOREACH_SAFE(LP_commandQ,ptr,tmp)
-        {
-            nonz++;
-            portable_mutex_lock(&LP_commandQmutex);
-            DL_DELETE(LP_commandQ,ptr);
-            portable_mutex_unlock(&LP_commandQmutex);
-            if ( ptr->stats_JSONonly < 0 ) // broadcast passthrough
-            {
-                if ( ptr->responsesock >= 0  )
-                {
-                    if ( (result= cJSON_Parse(ptr->msg)) != 0  )
-                    {
-                        retjson = cJSON_CreateObject();
-                        jaddnum(retjson,"queueid",0);
-                        jadd(retjson,"result",result);
-                        retstr = jprint(retjson,1);
-                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
-                            printf("error sending event\n");
-                        free(retstr);
-                    }
-                }
-            }
-            else if ( (argjson= cJSON_Parse(ptr->msg)) != 0 )
-            {
-                //printf("deQ.(%s)\n",jprint(argjson,0));
-                if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
-                {
-                    if ( ptr->retstrp != 0 )
-                        (*ptr->retstrp) = retstr;
-                    if ( 0 && ptr->queueid != 0 )
-                        printf("sock.%d queueid.%d processed.(%s) -> (%s)\n",ptr->responsesock,ptr->queueid,ptr->msg,retstr);
-                    if ( ptr->responsesock >= 0  )
-                    {
-                        if ( (result= cJSON_Parse(retstr)) != 0 && ptr->queueid != 0 )
-                        {
-                            free(retstr);
-                            retjson = cJSON_CreateObject();
-                            jaddnum(retjson,"queueid",ptr->queueid);
-                            jadd(retjson,"result",result);
-                            retstr = jprint(retjson,1);
-                            //printf("send (%s)\n",retstr);
-                        }
-                        len = (int32_t)strlen(retstr);
-                        if ( ptr->queueid == 0 )
-                            len++;
-                        if ( (size= nn_send(ptr->responsesock,retstr,len,0)) <= 0 )
-                            printf("error sending result\n");
-                    }
-                    if ( retstr != 0 )
-                    {
-                        if ( ptr->retstrp == 0 )
-                            free(retstr);
-                    }
-                }
-                else if ( ptr->retstrp != 0 )
-                    (*ptr->retstrp) = clonestr("{\"error\":\"timeout\"}");
-                free_json(argjson);
-            }
-            free(ptr);
-        }
-        if ( nonz == 0 )
-            usleep(50000);
-    }
-}
-    
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid)
-{
-    struct LP_queuedcommand *ptr; int32_t msglen;
-    msglen = (int32_t)strlen(buf) + 1;
-    portable_mutex_lock(&LP_commandQmutex);
-    ptr = calloc(1,sizeof(*ptr) + msglen + 1);
-    if ( (ptr->retstrp= retstrp) != 0 )
-        *retstrp = 0;
-    ptr->msglen = msglen;
-    ptr->queueid = queueid;
-    ptr->responsesock = responsesock;
-    ptr->stats_JSONonly = stats_JSONonly;
-    memcpy(ptr->msg,buf,msglen);
-    DL_APPEND(LP_commandQ,ptr);
-    portable_mutex_unlock(&LP_commandQmutex);
-}
-    
 void mynn_close(int32_t sock)
 {
     struct nn_pollfd pfd; int32_t n; void *buf;
@@ -603,7 +506,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0,0);
+                                } else lp_queue_command(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {

@@ -287,13 +287,12 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
 }
 */
 unsafe fn lp_nearest_utxovalue(
-    mut coin: *mut lp::iguana_info,
-    mut coinaddr: *mut libc::c_char,
-    mut utxos: *mut *mut lp::LP_address_utxo,
-    mut n: i32,
-    mut targetval: u64,
+    coin: *mut lp::iguana_info,
+    coinaddr: *mut libc::c_char,
+    utxos: *mut *mut lp::LP_address_utxo,
+    n: i32,
+    targetval: u64,
 ) -> i32 {
-    let mut i: i32 = 0;
     let mut replacei: i32 = 0;
     let mut bestheight: i32 = 0;
     let mut mini: i32 = -1i32;
@@ -312,7 +311,7 @@ unsafe fn lp_nearest_utxovalue(
         }
     }
     //printf("LP_nearest_utxovalue %s %s utxos[%d] target %.8f\n",coin->symbol,coinaddr,n,dstr(targetval));
-    i = 0i32;
+    let mut i = 0i32;
     while i < n {
         up = *utxos.offset(i as isize);
         if !up.is_null() {
@@ -364,12 +363,12 @@ unsafe fn lp_nearest_utxovalue(
 }
 
 unsafe fn lp_butxo_set(
-    mut butxo: *mut lp::LP_utxoinfo,
-    mut iambob: i32,
-    mut coin: *mut lp::iguana_info,
-    mut up: *mut lp::LP_address_utxo,
-    mut up2: *mut lp::LP_address_utxo,
-    mut satoshis: i64,
+    butxo: *mut lp::LP_utxoinfo,
+    iambob: i32,
+    coin: *mut lp::iguana_info,
+    up: *mut lp::LP_address_utxo,
+    up2: *mut lp::LP_address_utxo,
+    satoshis: i64,
 ) -> () {
     (*butxo).pubkey = lp::G.LP_mypub25519;
     strcpy(
@@ -431,10 +430,10 @@ void LP_abutxo_set(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP
 }
 */
 unsafe fn lp_base_satoshis(
-    mut relvolume: libc::c_double,
-    mut price: libc::c_double,
-    mut txfee: u64,
-    mut desttxfee: u64,
+    relvolume: libc::c_double,
+    price: libc::c_double,
+    txfee: u64,
+    desttxfee: u64,
 ) -> u64 {
     //printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume) / price) + 2*txfee),relvolume,price);
     if relvolume > desttxfee as libc::c_double / 100000000i64 as u64 as libc::c_double
@@ -449,16 +448,16 @@ unsafe fn lp_base_satoshis(
 }
 
 unsafe fn lp_address_myutxopair(
-    mut butxo: *mut lp::LP_utxoinfo,
-    mut iambob: i32,
-    mut utxos: *mut *mut lp::LP_address_utxo,
-    mut max: i32,
+    butxo: *mut lp::LP_utxoinfo,
+    iambob: i32,
+    utxos: *mut *mut lp::LP_address_utxo,
+    max: i32,
     mut coin: *mut lp::iguana_info,
     mut coinaddr: *mut libc::c_char,
-    mut txfee: u64,
-    mut relvolume: libc::c_double,
-    mut price: libc::c_double,
-    mut desttxfee: u64,
+    txfee: u64,
+    relvolume: libc::c_double,
+    price: libc::c_double,
+    desttxfee: u64,
 ) -> *mut lp::LP_utxoinfo {
     let mut ap: *mut lp::LP_address = null_mut();
     let mut fee: u64 = 0;
@@ -767,9 +766,8 @@ extern "C" {
     pub static mut LP_gtcmutex: libc::pthread_mutex_t;
 }
 
-unsafe fn lp_gtc_addorder(mut qp: *mut lp::LP_quoteinfo) -> () {
-    let mut gtc: *mut lp::LP_gtcorder = null_mut();
-    gtc = calloc(
+unsafe fn lp_gtc_addorder(qp: *mut lp::LP_quoteinfo) -> () {
+    let gtc = calloc(
         1usize,
         ::std::mem::size_of::<lp::LP_gtcorder>() as usize,
     ) as *mut lp::LP_gtcorder;

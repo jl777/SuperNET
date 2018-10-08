@@ -113,7 +113,7 @@ void LP_tradecommand_log(cJSON *argjson)
         if ( (jsonstr= jprint(argjson,0)) != 0 )
         {
             if ( IPC_ENDPOINT >= 0 )
-                LP_queuecommand(0,jsonstr,IPC_ENDPOINT,-1,0);
+                lp_queue_command(0,jsonstr,IPC_ENDPOINT,-1,0);
             fprintf(logfp,"%s\n",jsonstr);
             free(jsonstr);
             fflush(logfp);

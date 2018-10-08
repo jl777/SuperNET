@@ -499,7 +499,7 @@ char *LP_postprice_recv(cJSON *argjson)
                 {
                     if ( (argstr= jprint(argjson,0)) != 0 )
                     {
-                        LP_queuecommand(0,argstr,IPC_ENDPOINT,-1,0);
+                        lp_queue_command(0,argstr,IPC_ENDPOINT,-1,0);
                         free(argstr);
                     }
                 }
@@ -747,7 +747,7 @@ void LP_query(char *method,struct LP_quoteinfo *qp)
     {
         //printf("QUERY.(%s)\n",msg);
         if ( IPC_ENDPOINT >= 0 )
-            LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
+            lp_queue_command(0,msg,IPC_ENDPOINT,-1,0);
         memset(&zero,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         //if ( bits256_nonz(qp->srchash) != 0 )

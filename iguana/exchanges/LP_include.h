@@ -678,7 +678,7 @@ char LP_bob_contract[50];
 void (*SPAWN_RPC)(uint32_t);
 
 extern int32_t IPC_ENDPOINT;
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
+void lp_queue_command(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 struct iguana_info *LP_coinsearch(char *symbol);
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson);

@@ -32,6 +32,7 @@ use crc::crc32;
 use futures::{Future};
 use helpers::{lp, slurp_url, MmCtx, CJSON, MM_VERSION};
 use libc;
+use network::lp_command_q_loop;
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
@@ -1696,11 +1697,12 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         printf("error launching LP_tradessloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_commandQ_loop,ctx) != 0 )
-    {
-        printf("error launching LP_commandQ_loop for ctx.%p\n",ctx);
-        exit(-1);
-    }
+*/
+    let command_queue = try_s! (thread::Builder::new().name ("command_queue".into()) .spawn ({
+        let ctx = ctx.clone();
+        move || unsafe { lp_command_q_loop (ctx) }
+    }));
+/*
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
     {
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);
@@ -1770,6 +1772,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
 
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0, ctx_id)};
     unwrap! (prices.join());
+    unwrap! (command_queue.join());
     Ok(())
 }
 /*
