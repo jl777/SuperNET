@@ -478,7 +478,7 @@ char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
             return(retstr);
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
-    return("false");
+    return(0);
 }
 
 char *dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
@@ -493,7 +493,7 @@ char *dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,c
             return(retstr);
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
-    return("false");
+    return(0);
 }
 
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
