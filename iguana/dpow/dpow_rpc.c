@@ -490,7 +490,7 @@ int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
         {
             //printf("RESULT.(%s)\n",retstr);
-            free(retstr)
+            free(retstr);
             return(1);
         } //else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
