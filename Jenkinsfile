@@ -5,7 +5,8 @@ pipeline {
     stage('Prepare') {
       steps {
         sh '''cp -r /root/.env.client .env.client
-cp -r /root/.env.seed .env.seed'''
+cp -r /root/.env.seed .env.seed
+rustup install stable'''
       }
     }
     stage('Build') {
