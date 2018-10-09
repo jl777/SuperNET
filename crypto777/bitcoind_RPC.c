@@ -183,7 +183,7 @@ try_again:
     if ( curl_handle == 0 )
         curl_handle = curl_easy_init();
     headers = curl_slist_append(0,"Expect:");
-    
+
   	curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
     curl_easy_setopt(curl_handle,CURLOPT_HTTPHEADER,	headers);
     curl_easy_setopt(curl_handle,CURLOPT_URL,		url);
@@ -275,12 +275,13 @@ try_again:
             printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
             free(retstr);
+            printf("retstr freeed\n", );
             return(0);
         }
         free(retstr);
         sleep((1<<numretries));
         goto try_again;
-        
+
     }
     else
     {
@@ -345,7 +346,7 @@ try_again:
         memset(&chunk,0,sizeof(chunk));
         curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,WriteMemoryCallback);
         curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,(void *)&chunk);
-        
+
     }
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
     curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
@@ -427,7 +428,7 @@ try_again:
         free(retstr);
         sleep((1<<numretries));
         goto try_again;
-        
+
     }
     else
     {

@@ -476,8 +476,9 @@ char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
         {
             //printf("RESULT.(%s)\n",retstr);
             return(retstr);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+        } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
+    printf("bitcoind passthfu failed on lock\n", );
     return(0);
 }
 
@@ -491,8 +492,9 @@ char *dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,c
         {
             //printf("RESULT.(%s)\n",retstr);
             return(retstr);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+        } //else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
+    printf("bitcoind passthfu failed on unlock\n", );
     return(0);
 }
 
