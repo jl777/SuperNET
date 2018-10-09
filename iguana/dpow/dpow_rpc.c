@@ -478,7 +478,6 @@ char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
             return(retstr);
         } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
-    printf("bitcoind passthfu failed on lock\n");
     return(0);
 }
 

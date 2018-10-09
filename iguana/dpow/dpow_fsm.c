@@ -624,6 +624,7 @@ void dpow_statemachinestart(void *ptr)
     if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
     {
       destunlockunspent = dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      printf("destlockunspent: %s\n", destunlockunspent);
       if (strcmp(destunlockunspent,"true") == 0 )
         printf(">>>>UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
       free(destunlockunspent);

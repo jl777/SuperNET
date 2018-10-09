@@ -275,7 +275,6 @@ try_again:
             printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
             free(retstr);
-            printf("retstr freeed\n");
             return(0);
         }
         free(retstr);
