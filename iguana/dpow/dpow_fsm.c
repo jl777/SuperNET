@@ -507,25 +507,24 @@ void dpow_statemachinestart(void *ptr)
 
     if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
     {
-      // lock the dest utxo if destination coin is KMD.s
-      destlockunspent = dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-      if (strcmp(destlockunspent,"true") == 0 )
+      // lock the dest utxo if destination coin is KMD.
+      if (dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout) != 0) {
         printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
       else
         printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-      free(destlockunspent);
+      }
     }
 
     if ( ( strcmp("KMD",src->symbol) == 0 ) && (ep->src.prev_vout != -1) )
     {
       // lock the src coin selected utxo if the source coin is KMD.
-      srclockunspent = dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-      if (strcmp(srclockunspent,"true") == 0 )
+      if (dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0) {
         printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
       else
         printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-      free(srclockunspent);
+      }
     }
+
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;

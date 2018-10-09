@@ -466,7 +466,7 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
-char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
 {
     char buf[128],*retstr;
     if ( coin->FULLNODE < 0 )
@@ -475,7 +475,8 @@ char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
         {
             //printf("RESULT.(%s)\n",retstr);
-            return(retstr);
+            free(retstr);
+            return(1);
         } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
     return(0);
