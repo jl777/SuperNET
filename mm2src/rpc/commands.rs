@@ -927,8 +927,6 @@ pub fn sell(json: &Json) ->  HyRes {
         return(LP_peers());
     else if ( strcmp(method,"balances") == 0 )
         return(jprint(LP_balances(jstr(argjson,"address")),1));
-    else if ( strcmp(method,"fundvalue") == 0 )
-        return(jprint(LP_fundvalue(argjson),1));
     else if ( strcmp(method,"getprice") == 0 || strcmp(method,"getmyprice") == 0 )
     {
         double price,bid,ask;
