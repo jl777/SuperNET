@@ -3633,11 +3633,23 @@ uint32_t LP_sighash(char *symbol,int32_t zcash)
 int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash)
 {
     int32_t i,j,n,segtxlen,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t *segtx=0,segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; uint64_t spendamount; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
-    
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
+    if (zcash) {
+        msg->overwintered = msg->version >> 31;
+        if (msg->overwintered) {
+            msg->version = msg->version & 0x7FFFFFFF;
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version_group_id),&msg->version_group_id);
+        }
+    }
     if ( json != 0 )
     {
         jaddnum(json,"version",msg->version);
+        cJSON_AddBoolToObject(json, "overwintered", msg->overwintered);
+        if (msg->overwintered) {
+            char group_id_str[10];
+            sprintf(group_id_str, "%x", msg->version_group_id);
+            jaddstr(json, "versiongroupid", group_id_str);
+        }
         vinarray = cJSON_CreateArray();
         voutarray = cJSON_CreateArray();
         if ( rwflag == 0 )
@@ -3770,6 +3782,115 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
+    if (zcash && msg->overwintered) {
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->expiry_height),&msg->expiry_height);
+        if (json != 0) {
+            jaddnum(json, "expiryheight", msg->expiry_height);
+        }
+        if (msg->version >= 4) {
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->value_balance),&msg->value_balance);
+            if (json != 0) {
+                jaddnum(json, "valueBalance", dstr(msg->value_balance));
+            }
+            cJSON *v_shielded_spend = cJSON_CreateArray();
+            cJSON *v_shielded_output = cJSON_CreateArray();
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->shielded_spend_num),&msg->shielded_spend_num);
+            if (msg->shielded_spend_num > 0) {
+                if (extraused + sizeof(struct sapling_spend_description) * msg->shielded_spend_num > extralen) {
+                    printf("extraused.%d + shielded_spend.%d > extralen.%d\n", extraused, msg->shielded_spend_num,
+                           extralen);
+                    return (-1);
+                }
+                msg->shielded_spends = (struct sapling_spend_description *) &extraspace[extraused];
+                extraused += (sizeof(struct sapling_spend_description) * msg->shielded_spend_num);
+                for (i = 0; i < msg->shielded_spend_num; i++) {
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_spends[i].cv), msg->shielded_spends[i].cv.bytes);
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_spends[i].anchor), msg->shielded_spends[i].anchor.bytes);
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_spends[i].nullifier), msg->shielded_spends[i].nullifier.bytes);
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_spends[i].rk), msg->shielded_spends[i].rk.bytes);
+                    if (rwflag == 1) {
+                        memcpy(&serialized[len], msg->shielded_spends[i].zkproof, GROTH_PROOF_SIZE);
+                    } else {
+                        memcpy(msg->shielded_spends[i].zkproof, &serialized[len], GROTH_PROOF_SIZE);
+                    }
+                    len += GROTH_PROOF_SIZE;
+                    if (rwflag == 1) {
+                        memcpy(&serialized[len], msg->shielded_spends[i].spend_auth_sig, SAPLING_AUTH_SIG_SIZE);
+                    } else {
+                        memcpy(msg->shielded_spends[i].spend_auth_sig, &serialized[len], SAPLING_AUTH_SIG_SIZE);
+                    }
+                    len += SAPLING_AUTH_SIG_SIZE;
+                    if (json != 0) {
+                        cJSON *spend_item = cJSON_CreateObject();
+                        jaddbits256(spend_item, "cv", msg->shielded_spends[i].cv);
+                        jaddbits256(spend_item, "anchor", msg->shielded_spends[i].anchor);
+                        jaddbits256(spend_item, "nullifier", msg->shielded_spends[i].nullifier);
+                        jaddbits256(spend_item, "rk", msg->shielded_spends[i].rk);
+                        char proof_str[GROTH_PROOF_SIZE * 2 + 1];
+                        init_hexbytes_noT(proof_str, msg->shielded_spends[i].zkproof, GROTH_PROOF_SIZE);
+                        jaddstr(spend_item, "proof", proof_str);
+                        char auth_sig_str[SAPLING_AUTH_SIG_SIZE * 2 + 1];
+                        init_hexbytes_noT(auth_sig_str, msg->shielded_spends[i].spend_auth_sig, SAPLING_AUTH_SIG_SIZE);
+                        jaddstr(spend_item, "spendAuthSig", auth_sig_str);
+                        jaddi(v_shielded_spend, spend_item);
+                    }
+                }
+            }
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->shielded_output_num),&msg->shielded_output_num);
+            if (msg->shielded_output_num > 0) {
+                if (extraused + sizeof(struct sapling_output_description) * msg->shielded_output_num > extralen) {
+                    printf("extraused.%d + shielded_output.%d > extralen.%d\n", extraused, msg->shielded_output_num,
+                           extralen);
+                    return (-1);
+                }
+                msg->shielded_outputs = (struct sapling_output_description *) &extraspace[extraused];
+                extraused += (sizeof(struct sapling_output_description) * msg->shielded_output_num);
+                for (i = 0; i < msg->shielded_output_num; i++) {
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_outputs[i].cv), msg->shielded_outputs[i].cv.bytes);
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_outputs[i].cm), msg->shielded_outputs[i].cm.bytes);
+                    len += iguana_rwbignum(rwflag, &serialized[len], sizeof(msg->shielded_outputs[i].ephemeral_key), msg->shielded_outputs[i].ephemeral_key.bytes);
+                    if (rwflag == 1) {
+                        memcpy(&serialized[len], msg->shielded_outputs[i].enc_ciphertext, ENC_CIPHER_SIZE);
+                    } else {
+                        memcpy(msg->shielded_outputs[i].enc_ciphertext, &serialized[len], ENC_CIPHER_SIZE);
+                    }
+                    len += ENC_CIPHER_SIZE;
+                    if (rwflag == 1) {
+                        memcpy(&serialized[len], msg->shielded_outputs[i].out_ciphertext, OUT_CIPHER_SIZE);
+                    } else {
+                        memcpy(msg->shielded_outputs[i].out_ciphertext, &serialized[len], OUT_CIPHER_SIZE);
+                    }
+                    len += OUT_CIPHER_SIZE;
+                    if (rwflag == 1) {
+                        memcpy(&serialized[len], msg->shielded_outputs[i].zkproof, GROTH_PROOF_SIZE);
+                    } else {
+                        memcpy(msg->shielded_outputs[i].zkproof, &serialized[len], GROTH_PROOF_SIZE);
+                    }
+                    len += GROTH_PROOF_SIZE;
+                    if (json != 0) {
+                        cJSON *output_item = cJSON_CreateObject();
+                        jaddbits256(output_item, "cv", msg->shielded_outputs[i].cv);
+                        jaddbits256(output_item, "cmu", msg->shielded_outputs[i].cm);
+                        jaddbits256(output_item, "ephemeralKey", msg->shielded_outputs[i].ephemeral_key);
+                        char enc_cip_str[ENC_CIPHER_SIZE * 2 + 1];
+                        init_hexbytes_noT(enc_cip_str, msg->shielded_outputs[i].enc_ciphertext, ENC_CIPHER_SIZE);
+                        jaddstr(output_item, "encCiphertext", enc_cip_str);
+                        char out_cip_str[OUT_CIPHER_SIZE * 2 + 1];
+                        init_hexbytes_noT(out_cip_str, msg->shielded_outputs[i].out_ciphertext, OUT_CIPHER_SIZE);
+                        jaddstr(output_item, "outCiphertext", out_cip_str);
+                        jaddi(v_shielded_output, output_item);
+                        char proof_str[GROTH_PROOF_SIZE * 2 + 1];
+                        init_hexbytes_noT(proof_str, msg->shielded_outputs[i].zkproof, GROTH_PROOF_SIZE);
+                        jaddstr(output_item, "proof", proof_str);
+                    }
+                }
+            }
+            if (json != 0) {
+                cJSON_AddItemToObject(json, "vShieldedSpend", v_shielded_spend);
+                cJSON_AddItemToObject(json, "vShieldedOutput", v_shielded_output);
+            }
+        }
+    }
     //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
     if ( zcash == LP_IS_ZCASHPROTOCOL && msg->version > 1 )
     {
@@ -3792,6 +3913,18 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
                 memcpy(joinsplitpubkey+1,&serialized[len],32), len += 32;
                 memcpy(joinsplitsig,&serialized[len],64), len += 64;
             }
+        }
+    }
+    if (zcash == 1 && msg->version >= 4 && !(msg->shielded_spend_num == 0 && msg->shielded_output_num == 0)) {
+        if (rwflag == 1) {
+            memcpy(&serialized[len],msg->binding_sig,64), len += 64;
+        } else {
+            memcpy(msg->binding_sig,&serialized[len],64), len += 64;
+        }
+        if (json != 0) {
+            char binding_sig_str[64 * 2 + 1];
+            init_hexbytes_noT(binding_sig_str, msg->binding_sig, 64);
+            jaddstr(json, "bindingSig", binding_sig_str);
         }
     }
     if ( sigser != 0 && vinarray != 0 )
