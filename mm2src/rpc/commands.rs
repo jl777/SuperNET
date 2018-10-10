@@ -581,12 +581,12 @@ pub fn eth_gas_price() -> HyRes {
             }
 */
 pub fn buy(json: &Json) ->  HyRes {
-    let input : AutoBuyInput = try_h!(serde_json::from_value(json.clone()));
+    let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
     rpc_response(200, try_h!(lp_auto_buy(input)))
 }
 
 pub fn sell(json: &Json) ->  HyRes {
-    let input : AutoBuyInput = try_h!(serde_json::from_value(json.clone()));
+    let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
     rpc_response(200, try_h!(lp_auto_buy(input)))
 }
 /*
