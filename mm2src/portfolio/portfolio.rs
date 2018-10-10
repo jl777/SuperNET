@@ -24,6 +24,7 @@ extern crate futures;
 extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
+#[macro_use]
 extern crate helpers;
 extern crate hyper;
 #[macro_use]
@@ -40,14 +41,16 @@ mod prices;
 
 use fxhash::{FxHashMap, FxHashSet};
 use gstuff::{now_ms, now_float};
-use helpers::{lp, slurp_url, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL, find_coin};
+use helpers::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
+  HyRes, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL};
 use helpers::log::TagParam;
+use helpers::ser::de_none_if_empty;
 use hyper::{StatusCode, HeaderMap};
 use prices::{lp_btcprice, Coins, CoinId, ExternalPrices, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::iter::once;
-use std::mem::{zeroed};
+use std::mem::{forget, zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
@@ -915,103 +918,137 @@ void LP_autoprices_update(char *method,char *base,double basevol,char *rel,doubl
         }
     }
 }
+*/
 
-int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
-{
-    //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
-    struct LP_priceinfo *basepp,*relpp; int32_t i,retval = -1; char *fundvalue_bid,*fundvalue_ask,*refbase="",*refrel=""; double margin,minprice,buymargin,sellmargin,offset,factor,fixedprice; cJSON *fundvalue;
-    //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
-    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
-    {
-        if ( jobj(argjson,"minprice") != 0 )
-            minprice = jdouble(argjson,"minprice");
-        else minprice = 0.;
-        if ( (margin= jdouble(argjson,"margin")) == 0. )
-        {
-            buymargin = jdouble(argjson,"buymargin");
-            sellmargin = jdouble(argjson,"sellmargin");
-        }
-        else
-        {
-            buymargin = margin;
-            sellmargin = margin;
-        }
-        offset = jdouble(argjson,"offset");
-        factor = jdouble(argjson,"factor");
-        fixedprice = jdouble(argjson,"fixed");
-        basepp->fixedprices[relpp->ind] = fixedprice;
-        basepp->minprices[relpp->ind] = minprice;
-        if ( jobj(argjson,"maxprice") != 0 )
-            relpp->minprices[basepp->ind] = 1. / jdouble(argjson,"maxprice");
-        basepp->buymargins[relpp->ind] = buymargin;
-        basepp->sellmargins[relpp->ind] = sellmargin;
-        basepp->offsets[relpp->ind] = offset;
-        basepp->factors[relpp->ind] = factor;
-        refbase = jstr(argjson,"refbase");
-        refrel = jstr(argjson,"refrel");
-        fundvalue_bid = jstr(argjson,"fundvalue_bid");
-        fundvalue_ask = jstr(argjson,"fundvalue_ask");
-        if ( fundvalue_bid != 0 || fundvalue_ask != 0 || fixedprice > SMALLVAL || (refbase != 0 && refrel != 0 && strlen(refbase) > 0 && strlen(refrel) > 0) )
-        {
-            if ( fixedprice > SMALLVAL )
-            {
-                refbase = base;
-                refrel = rel;
-            }
-            for (i=0; i<num_LP_autorefs; i++)
-            {
-                if ( strcmp(base,LP_autorefs[i].base) == 0 && strcmp(rel,LP_autorefs[i].rel) == 0 )
-                {
-                    if ( fundvalue_bid != 0 || fundvalue_ask != 0 )
-                    {
-                        fundvalue = jduplicate(argjson);
-                        jdelete(fundvalue,"method");
-                        jaddstr(fundvalue,"method","fundvalue");
-                        LP_autorefs[i].fundvalue = fundvalue;
-                        safecopy(LP_autorefs[i].fundbid,fundvalue_bid,sizeof(LP_autorefs[i].fundbid));
-                        safecopy(LP_autorefs[i].fundask,fundvalue_ask,sizeof(LP_autorefs[i].fundask));
-                    }
-                    LP_autorefs[i].buymargin = buymargin;
-                    LP_autorefs[i].sellmargin = sellmargin;
-                    LP_autorefs[i].factor = factor;
-                    LP_autorefs[i].offset = offset;
-                    safecopy(LP_autorefs[i].refbase,refbase,sizeof(LP_autorefs[i].refbase));
-                    safecopy(LP_autorefs[i].refrel,refrel,sizeof(LP_autorefs[i].refrel));
-                    printf("%d Update ref %s/%s for %s/%s factor %.8f offset %.8f\n",i,refbase,refrel,base,rel,factor,offset);
-                    break;
-                }
-            }
-            if ( i == num_LP_autorefs && num_LP_autorefs < sizeof(LP_autorefs)/sizeof(*LP_autorefs) )
-            {
-                if ( fundvalue_bid != 0 || fundvalue_ask != 0 )
-                {
-                    fundvalue = jduplicate(argjson);
-                    jdelete(fundvalue,"method");
-                    jaddstr(fundvalue,"method","fundvalue");
-                    LP_autorefs[num_LP_autorefs].fundvalue = fundvalue;
-                    safecopy(LP_autorefs[num_LP_autorefs].fundbid,fundvalue_bid,sizeof(LP_autorefs[num_LP_autorefs].fundbid));
-                    safecopy(LP_autorefs[num_LP_autorefs].fundask,fundvalue_ask,sizeof(LP_autorefs[num_LP_autorefs].fundask));
-                }
-                LP_autorefs[num_LP_autorefs].usdpeg = juint(argjson,"usdpeg");
-                LP_autorefs[num_LP_autorefs].buymargin = buymargin;
-                LP_autorefs[num_LP_autorefs].sellmargin = sellmargin;
-                LP_autorefs[num_LP_autorefs].factor = factor;
-                LP_autorefs[num_LP_autorefs].offset = offset;
-                safecopy(LP_autorefs[num_LP_autorefs].refbase,refbase,sizeof(LP_autorefs[num_LP_autorefs].refbase));
-                safecopy(LP_autorefs[num_LP_autorefs].refrel,refrel,sizeof(LP_autorefs[num_LP_autorefs].refrel));
-                safecopy(LP_autorefs[num_LP_autorefs].base,base,sizeof(LP_autorefs[num_LP_autorefs].base));
-                safecopy(LP_autorefs[num_LP_autorefs].rel,rel,sizeof(LP_autorefs[num_LP_autorefs].rel));
-                printf("%d Using ref %s/%s for %s/%s factor %.8f, offset %.8f, margin %.8f/%.8f fixed %.8f\n",num_LP_autorefs,refbase,refrel,base,rel,factor,offset,buymargin,sellmargin,fixedprice);
-                num_LP_autorefs++;
-            }
-        }
-        LP_autoprices++;
-        retval = 0;
-    }
-    //LP_autoprice_iter(ctx,LP_priceinfofind("BTC"));
-    return(retval);
+/// JSON structure passed to the "autoprice" RPC call.  
+/// cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#autoprice
+#[derive(Clone, Deserialize, Debug, Serialize)]
+struct AutopriceReq {
+    base: String,
+    rel: String,
+    minprice: Option<f64>,
+    maxprice: Option<f64>,
+    margin: Option<f64>,
+    buymargin: Option<f64>,
+    sellmargin: Option<f64>,
+    offset: Option<f64>,
+    factor: Option<f64>,
+    fixed: Option<f64>,
+    #[serde(default, deserialize_with = "de_none_if_empty")]
+    refbase: Option<String>,
+    #[serde(default, deserialize_with = "de_none_if_empty")]
+    refrel: Option<String>,
+    #[serde(default, deserialize_with = "de_none_if_empty")]
+    fundvalue_bid: Option<String>,
+    #[serde(default, deserialize_with = "de_none_if_empty")]
+    fundvalue_ask: Option<String>,
+    usdpeg: Option<i32>
 }
 
+/// Handles the "autoprice" RPC call.
+pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
+    use lp::LP_priceinfo;
+    use std::ffi::CString;
+
+    let req: AutopriceReq = try_h! (json::from_value (req));
+
+    let c_base = try_h! (CString::new (&req.base[..]));
+    let c_base = c_base.as_ptr() as *mut c_char;
+    let basepp = unsafe {lp::LP_priceinfofind (c_base)};
+    if basepp == null_mut() {return rpc_err_response (500, &format! ("Can't find the base ({})", req.base))}
+    let basepp: &mut LP_priceinfo = unsafe {&mut *basepp};
+    let base_ind = basepp.ind as usize;
+
+    let c_rel = try_h! (CString::new (&req.rel[..]));
+    let c_rel = c_rel.as_ptr() as *mut c_char;
+    let relpp = unsafe {lp::LP_priceinfofind (c_rel)};
+    if relpp == null_mut() {return rpc_err_response (500, &format! ("Can't find the rel ({})", req.rel))}
+    let relpp: &mut LP_priceinfo = unsafe {&mut *relpp};
+    let rel_ind = relpp.ind as usize;
+
+    basepp.fixedprices[rel_ind] = if let Some (p) = req.fixed {p} else {0.};
+    basepp.minprices[rel_ind] = if let Some (p) = req.minprice {p} else {0.};
+    relpp.minprices[base_ind] = if let Some (p) = req.maxprice {1. / p} else {0.};
+    basepp.buymargins[rel_ind] = if let Some (p) = req.buymargin {p} else if let Some (p) = req.margin {p} else {0.};
+    basepp.sellmargins[rel_ind] = if let Some (p) = req.sellmargin {p} else if let Some (p) = req.margin {p} else {0.};
+    basepp.offsets[rel_ind] = if let Some (p) = req.offset {p} else {0.};
+    basepp.factors[rel_ind] = if let Some (p) = req.factor {p} else {0.};
+
+    if req.fundvalue_bid.is_none() && req.fundvalue_ask.is_none() && req.fixed.is_none()
+    && (req.refbase.is_none() || req.refrel.is_none()) {
+        return rpc_err_response (500, "No actionable parameters in the request")
+    }
+
+    let (refbase, refrel) = if req.fixed.is_some() {
+        (&req.base[..], &req.rel[..])
+    } else {
+        (req.refbase.as_ref().map_or ("", |s| &s[..]), req.refrel.as_ref().map_or ("", |s| &s[..]))
+    };
+
+    fn to_c_json (req: &AutopriceReq) -> Result<*mut lp::cJSON, String> {
+        let mut fundvalue = try_s! (json::to_value (&req));
+        fundvalue["method"] = "fundvalue".into();
+        let fundvalue = try_s! (json::to_string (&fundvalue));
+        let fundvalue = try_s! (CJSON::from_str (&fundvalue));
+        let c_json = fundvalue.0;
+        // TODO: We temporarily have a leak here.
+        // Going to pass a `Box<AutopriceReq>` in the future.
+        forget (fundvalue);
+        Ok (c_json)
+    }
+
+    // Use a global lock to lower the chance of races happening with the global `lp` arrays and `num_LP_autorefs`.
+    // In the future the global arrays will be replaced with the `MmCtx` vectors and will have their separate locks.
+    lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
+    let _lock = LOCK.lock();
+
+    // Let's try to find an existing base-rel entry and update it.
+
+    for i in 0 .. unsafe {lp::num_LP_autorefs as usize} {
+        let i_base = try_h! (unsafe {CStr::from_ptr (lp::LP_autorefs[i].base.as_ptr())} .to_str());
+        let i_rel = try_h! (unsafe {CStr::from_ptr (lp::LP_autorefs[i].rel.as_ptr())} .to_str());
+        if req.base == i_base && req.rel == i_rel {
+            let autoref = unsafe {&mut lp::LP_autorefs[i]};
+            if req.fundvalue_bid.is_some() && req.fundvalue_ask.is_some() {
+                autoref.fundvalue = try_h! (to_c_json (&req));
+                try_h! (safecopy! (autoref.fundbid, "{}", unwrap! (req.fundvalue_bid.as_ref())));
+                try_h! (safecopy! (autoref.fundask, "{}", unwrap! (req.fundvalue_ask.as_ref())));
+            }
+            autoref.buymargin = if let Some (p) = req.buymargin {p} else if let Some (p) = req.margin {p} else {0.};
+            autoref.sellmargin = if let Some (p) = req.sellmargin {p} else if let Some (p) = req.margin {p} else {0.};
+            autoref.offset = if let Some (p) = req.offset {p} else {0.};
+            autoref.factor = if let Some (p) = req.factor {p} else {0.};
+            try_h! (safecopy! (autoref.refbase, "{}", refbase));
+            try_h! (safecopy! (autoref.refrel, "{}", refrel));
+            println! ("lp_autoprice] {} Update ref {}/{} for {}/{} factor {:?} offset {:?}", i, refbase, refrel, req.base, req.rel, req.factor, req.offset);
+            return rpc_response (200, r#"{"result": "success", "status": "updated"}"#);
+        }
+    }
+
+    // If we haven't found an existing entry, let's create a new one.
+
+    let autoref = unsafe {&mut lp::LP_autorefs[lp::num_LP_autorefs as usize]};
+    if req.fundvalue_bid.is_some() || req.fundvalue_ask.is_some() {
+        autoref.fundvalue = try_h! (to_c_json (&req));
+        try_h! (safecopy! (autoref.fundbid, "{}", unwrap! (req.fundvalue_bid.as_ref())));
+        try_h! (safecopy! (autoref.fundask, "{}", unwrap! (req.fundvalue_ask.as_ref())));
+    }
+    autoref.usdpeg = match req.usdpeg {Some (v) if v != 0 => 1, _ => 0};
+    autoref.buymargin = if let Some (p) = req.buymargin {p} else if let Some (p) = req.margin {p} else {0.};
+    autoref.sellmargin = if let Some (p) = req.sellmargin {p} else if let Some (p) = req.margin {p} else {0.};
+    autoref.factor = if let Some (p) = req.factor {p} else {0.};
+    autoref.offset = if let Some (p) = req.offset {p} else {0.};
+    try_h! (safecopy! (autoref.refbase, "{}", refbase));
+    try_h! (safecopy! (autoref.refrel, "{}", refrel));
+    try_h! (safecopy! (autoref.base, "{}", req.base));
+    try_h! (safecopy! (autoref.rel, "{}", req.rel));
+    println! ("lp_autoprice] {} Using ref {}/{} for {}/{} factor {:?}, offset {:?}, margin {:?}/{:?} fixed {:?}",
+        unsafe {lp::num_LP_autorefs}, refbase, refrel, req.base, req.rel, req.factor, req.offset, req.buymargin, req.sellmargin, req.fixed);
+    unsafe {lp::num_LP_autorefs += 1}
+    return rpc_response (200, r#"{"result": "success", "status": "created"}"#);
+}
+
+/*
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui)
 {
     char *retstr2; uint64_t txfee,desttxfee; double bid,ask,maxprice; bits256 zero; uint32_t requestid,quoteid,iter,i; cJSON *retjson2; struct LP_utxoinfo A; struct LP_address_utxo *utxos[1000]; int32_t max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
@@ -1148,7 +1185,7 @@ pub fn prices_loop (ctx: MmArc) {
             btc_wait_status.take().map (|s| s.append (" Done."));
         }
 
-        if unsafe {lp::LP_autoprices} != 0 {
+        if unsafe {lp::num_LP_autorefs} != 0 {
             if let Err (err) = lp_autoprice_iter (&ctx, btcpp) {
                 ctx.log.log ("🤯", &[&"portfolio"], &format! ("!lp_autoprice_iter: {}", err));
                 // Keep trying, maybe the error will go away. But wait a bit in order not to overflow the log.

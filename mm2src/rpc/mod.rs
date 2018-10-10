@@ -17,17 +17,17 @@
 //
 //  Copyright © 2014-2018 SuperNET. All rights reserved.
 //
-use futures::{self, future, Future};
+use futures::{self, Future};
 use futures_cpupool::CpuPool;
 use gstuff;
-use helpers::{free_c_ptr, lp, MmArc, CORE};
-use hyper::{Response, Request, Body, Method};
+use helpers::{free_c_ptr, lp, rpc_response, rpc_err_response, err_to_rpc_json_string,
+  HyRes, MmArc, CORE};
+use hyper::{Request, Body, Method};
 use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
-use hyper::header::{HeaderValue, CONTENT_TYPE};
 use network::lp_queue_command;
-use serde::Serialize;
+use portfolio::lp_autoprice;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
@@ -37,16 +37,6 @@ use std::sync::Mutex;
 use super::CJSON;
 use tokio_core::net::TcpListener;
 use hex;
-
-/// Returns a JSON error HyRes on a failure.
-macro_rules! try_h {
-    ($e: expr) => {
-        match $e {
-            Ok (ok) => ok,
-            Err (err) => {return err_response (500, &ERRL! ("{}", err))}
-        }
-    }
-}
 
 mod commands;
 use self::commands::*;
@@ -84,27 +74,10 @@ macro_rules! unwrap_or_err_msg {
         match $e {
             Ok(ok) => ok,
             Err(_e) => {
-                return Ok(err_to_json_string($($args)*))
+                return Ok(err_to_rpc_json_string($($args)*))
             }
         }
     }
-}
-
-#[derive(Serialize)]
-struct ErrResponse {
-    error: String,
-}
-
-#[derive(Serialize)]
-struct SuccessResponse<T> {
-    result: T,
-}
-
-pub fn serialize_result<T> (result: T) -> Result<String, String>
-    where T: Serialize {
-    json::to_string(&SuccessResponse {
-        result
-    }).map_err(|e| err_to_json_string(&ERRL!("{}", e)))
 }
 
 struct RpcService {
@@ -136,9 +109,9 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
     if !json["queueid"].is_null() {
         if json["queueid"].is_u64() {
             if unsafe { lp::IPC_ENDPOINT == -1 } {
-                return Ok(err_to_json_string("Can't queue the command when ws endpoint is disabled!"));
+                return Ok(err_to_rpc_json_string("Can't queue the command when ws endpoint is disabled!"));
             } else if !remote_addr.ip().is_loopback() {
-                return Ok(err_to_json_string("Can queue the command from localhost only!"));
+                return Ok(err_to_rpc_json_string("Can queue the command from localhost only!"));
             } else {
                 let json_str = json.to_string();
                 let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred");
@@ -153,7 +126,7 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
                 return Ok(r#"{"result":"success","status":"queued"}"#.to_string());
             }
         } else {
-            return Ok(err_to_json_string("queueid must be unsigned integer!"));
+            return Ok(err_to_rpc_json_string("queueid must be unsigned integer!"));
         }
     }
 
@@ -183,33 +156,8 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
         free_c_ptr(stats_result as *mut c_void);
         Ok(res_str)
     } else {
-        Ok(err_to_json_string("Request execution result is empty"))
+        Ok(err_to_rpc_json_string("Request execution result is empty"))
     }
-}
-
-type HyRes = Box<Future<Item=Response<Body>, Error=String> + Send>;
-
-fn rpc_response<T>(status: u16, body: T) -> HyRes where Body: From<T> {
-    Box::new (
-        match Response::builder()
-            .status(status)
-            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-            .body(Body::from(body)) {
-                Ok (r) => future::ok::<Response<Body>, String> (r),
-                Err (err) => future::err::<Response<Body>, String> (ERRL! ("{}", err))
-            }
-    )
-}
-
-fn err_to_json_string(err: &str) -> String {
-    let err = ErrResponse {
-        error: err.to_owned(),
-    };
-    json::to_string(&err).unwrap()
-}
-
-fn err_response(status: u16, msg: &str) -> HyRes {
-    rpc_response(status, err_to_json_string(msg))
 }
 
 /// The dispatcher, with full control over the HTTP result and the way we run the `Future` producing it.
@@ -220,12 +168,12 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
     let method = match method {Some (ref s) => Some (&s[..]), None => None};
     let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
     if !remote_addr.ip().is_loopback() && !is_public_method(method) {
-        return err_response(400, "Selected method can be called from localhost only!")
+        return rpc_err_response(400, "Selected method can be called from localhost only!")
     }
     try_h!(auth(&req));
-    let c_json = try_h!(CJSON::from_str(&req.to_string()));
+    macro_rules! c_json {() => {try_h! (CJSON::from_str (&req.to_string()))}}
     match method {
-        Some ("autoprice") => auto_price(ctx, &req, c_json),
+        Some ("autoprice") => lp_autoprice (ctx, req),
         Some ("buy") => buy(&req),
         Some ("eth_gas_price") => eth_gas_price(),
         Some ("help") => help(),
@@ -233,8 +181,9 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
         Some ("sell") => sell(&req),
         Some ("stop") => stop (ctx),
         Some ("version") => version(),
-        None => err_response (400, "Method is not set!"),
+        None => rpc_err_response (400, "Method is not set!"),
         _ => {  // Evoke the old C code.
+            let c_json = c_json!();
             let cpu_pool_fut = CPUPOOL.spawn_fn(move || {
                 // Emulates the single-threaded execution of the old C code.
                 let _lock = SINGLE_THREADED_C_LOCK.lock();
@@ -253,7 +202,7 @@ impl Service for RpcService {
 
     fn call(&mut self, request: Request<Body>) -> HyRes {
         if request.method() != Method::POST {
-            return err_response (400, "Only POST requests are supported!")
+            return rpc_err_response (400, "Only POST requests are supported!")
         }
         let body_f = request.into_body().concat2();
 

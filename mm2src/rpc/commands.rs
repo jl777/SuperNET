@@ -18,12 +18,9 @@
 //  marketmaker
 //
 use etomiccurl::get_gas_price_from_station;
-use helpers::{MM_VERSION, lp, MmArc, CJSON};
+use helpers::{lp, rpc_response, rpc_err_response, HyRes, MmArc, MM_VERSION};
 use ordermatch::{AutoBuyInput, lp_auto_buy};
-use serde_json::{self, Value as Json};
-use std::ffi::{CString};
-use std::os::raw::{c_void, c_char};
-use super::{err_response, rpc_response, HyRes, serialize_result};
+use serde_json::{self as json, Value as Json};
 
 /*
 char *LP_numutxos()
@@ -259,12 +256,12 @@ pub fn version() -> HyRes { rpc_response(200, MM_VERSION) }
 */
 pub fn mpnet(json: &Json) -> HyRes {
     if !json["onoff"].is_u64() {
-        return err_response(400, "onoff must be unsigned int");
+        return rpc_err_response(400, "onoff must be unsigned int");
     }
 
     let onoff = json["onoff"].as_u64().unwrap();
     if onoff > 1 {
-        return err_response(400, "onoff must be 0 or 1");
+        return rpc_err_response(400, "onoff must be 0 or 1");
     }
 
     unsafe { lp::G.mpnet = onoff as u32 };
@@ -502,10 +499,10 @@ pub struct GasPriceResult {
 pub fn eth_gas_price() -> HyRes {
     let gas_price = get_gas_price_from_station(0);
     if gas_price > 0 {
-        let result = try_h!(serialize_result(GasPriceResult { gas_price }));
+        let result = try_h!(json::to_string(&GasPriceResult { gas_price }));
         rpc_response(200, result)
     } else {
-        err_response(500, "Could not get gas price from station")
+        rpc_err_response(500, "Could not get gas price from station")
     }
 }
 /*
@@ -514,32 +511,7 @@ pub fn eth_gas_price() -> HyRes {
         if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
-*/
-pub fn auto_price(ctx: MmArc, json: &Json, c_json: CJSON) -> HyRes {
-    if !json["base"].is_string() {
-        return err_response(400, "Base currency is not set or is not string");
-    }
 
-    if !json["rel"].is_string() {
-        return err_response(400, "Rel currency is not set or is not string");
-    }
-
-    let result = unsafe {
-        lp::LP_autoprice(
-            ctx.btc_ctx() as *mut c_void,
-            CString::new(json["base"].as_str().unwrap()).unwrap().as_ptr() as *mut c_char,
-            CString::new(json["rel"].as_str().unwrap()).unwrap().as_ptr() as *mut c_char,
-            c_json.0
-        )
-    };
-
-    if result < 0 {
-        err_response(500, "couldn't set autoprice")
-    } else {
-        rpc_response (200, r#"{"result": "success"}"#)
-    }
-}
-/*
             else if ( strcmp(method,"pricearray") == 0 )
             {
                 uint32_t firsttime;

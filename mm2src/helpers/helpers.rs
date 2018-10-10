@@ -28,6 +28,8 @@ extern crate hyper_rustls;
 extern crate rand;
 extern crate serde;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate term;
 extern crate tokio_core;
@@ -35,21 +37,22 @@ extern crate tokio_core;
 extern crate unwrap;
 
 pub mod log;
+pub mod ser;
 
-use futures::Future;
+use futures::{future, Future};
 use futures::sync::oneshot::{self, Receiver};
 use fxhash::FxHashMap;
 use gstuff::{any_to_str, now_float};
-use hyper::{Body, Client, Request, StatusCode, HeaderMap};
+use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::{malloc, free};
 use rand::random;
-use serde_json::{Value as Json};
+use serde_json::{self as json, Value as Json};
 use std::any::Any;
 use std::fmt;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
-use std::io::Write;
+use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
 use std::net::{SocketAddr};
 use std::os::raw::{c_char, c_void};
@@ -111,7 +114,7 @@ impl fmt::Display for bits256 {
 /// cf. https://stackoverflow.com/questions/19804472/double-randomly-adds-0-000000000000001.
 /// Not sure it's needed in Rust, the floating point operations should be determenistic here,
 /// but better safe than sorry.
-pub const SMALLVAL: f64 = 0.000000000000001;
+pub const SMALLVAL: f64 = 0.000000000000001;  // 1e-15f64
 
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///
@@ -360,6 +363,19 @@ pub fn free_c_ptr(ptr: *mut c_void) { unsafe {
 
 //? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
+/// Fills a C character array with a zero-terminated C string,
+/// returning an error if the string is too large.
+#[macro_export]
+macro_rules! safecopy {
+    ($to: expr, $format: expr, $($args: tt)+) => {{
+        use ::std::io::Write;
+        let to: &mut [i8] = &mut $to[..];  // Check the type.
+        let to: &mut [u8] = unsafe {::std::mem::transmute (to)};  // c_char to Rust.
+        let mut wr = ::std::io::Cursor::new (to);
+        write! (&mut wr, concat! ($format, "\0"), $($args)+)
+    }}
+}
+
 /// Use the value, preventing the compiler and linker from optimizing it away.
 pub fn black_box<T> (v: T) -> T {
     // https://github.com/rust-lang/rfcs/issues/1484#issuecomment-240853111
@@ -574,6 +590,58 @@ pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>
 
         Ok(result)
     }))
+}
+
+/// RPC response, returned by the RPC handlers.  
+/// NB: By default the future is executed on the shared asynchronous reactor (`CORE`),
+/// the handler is responsible for spawning the future on another reactor if it doesn't fit the `CORE` well.
+pub type HyRes = Box<Future<Item=Response<Body>, Error=String> + Send>;
+
+/// Returns a JSON error HyRes on a failure.
+#[macro_export]
+macro_rules! try_h {
+    ($e: expr) => {
+        match $e {
+            Ok (ok) => ok,
+            Err (err) => {return $crate::rpc_err_response (500, &ERRL! ("{}", err))}
+        }
+    }
+}
+
+/// Wraps a JSON string into the `HyRes` RPC response future.
+pub fn rpc_response<T>(status: u16, body: T) -> HyRes where Body: From<T> {
+    Box::new (
+        match Response::builder()
+            .status(status)
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .body(Body::from(body)) {
+                Ok (r) => future::ok::<Response<Body>, String> (r),
+                Err (err) => future::err::<Response<Body>, String> (ERRL! ("{}", err))
+            }
+    )
+}
+
+/// Converts the given `err` message into the `{error: $err}` JSON string.
+pub fn err_to_rpc_json_string(err: &str) -> String {
+    #[derive(Serialize)]
+    struct ErrResponse {
+        error: String,
+    }
+
+    let err = ErrResponse {
+        error: err.to_owned(),
+    };
+    json::to_string(&err).unwrap()
+}
+
+/// Returns the `{error: $msg}` JSON response with the given HTTP `status`.  
+/// Also logs the error (if possible).
+pub fn rpc_err_response(status: u16, msg: &str) -> HyRes {
+    // TODO: Like in most other places, we should check for a thread-local access to the proper log here.
+    // Might be a good idea to use emoji too, like "🤒" or "🤐" or "😕".
+    eprintln! ("RPC error response: {}", msg);
+
+    rpc_response(status, err_to_rpc_json_string(msg))
 }
 
 /// Wrapper for LP_coinfind C function

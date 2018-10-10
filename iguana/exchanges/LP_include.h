@@ -626,9 +626,8 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);
-/// `num_LP_autorefs` is incremeted in `LP_autoprice`, invoked by RPC method "autoprice".
+/// `num_LP_autorefs` is incremeted in `lp_autoprice`, invoked by RPC method "autoprice".
 extern int32_t num_LP_autorefs;
-extern int32_t LP_autoprices;
 char *LP_portfolio();
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui);
 struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
@@ -641,8 +640,12 @@ void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *base
 
 struct LP_autoprice_ref
 {
+    // AG: Most of these fields are already present in `fundvalue`, duplicating them
+    // might actually complicate things by introducing more unnecessary layers between the "autoprice" configuration and the price loop.
+    // Consider refactoring away the unnecessary fields.
     char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
     double buymargin,sellmargin,factor,offset,lastbid,lastask;
+    // TODO: Should replace this with `AutopriceReq`.
     cJSON *fundvalue;
     uint32_t count;
 };
