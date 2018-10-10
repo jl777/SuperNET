@@ -46,11 +46,12 @@ use chrono::{Local, TimeZone};
 use gstuff::now_ms;
 use serde_json::{Value as Json};
 use std::collections::VecDeque;
+use std::default::Default;
 use std::fs;
 use std::fmt::{self, Write as WriteFmt};
 use std::io::{Seek, SeekFrom, Write};
-use std::default::Default;
 use std::mem::swap;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub trait TagParam<'a> {
@@ -215,6 +216,12 @@ impl<'a> Drop for StatusHandle<'a> {
     }
 }
 
+/// Generates a MM dashboard file path from the MM log file path.
+pub fn dashboard_path (log_path: &Path) -> Result<PathBuf, String> {
+    let log_path = try_s! (log_path.to_str().ok_or ("Non-unicode log_path?"));
+    Ok (format! ("{}.dashboard", log_path) .into())
+}
+
 /// The shared log state of a MarketMaker instance.  
 /// Carried around by the MarketMaker state, `MmCtx`.  
 /// Keeps track of the log file and the status dashboard.
@@ -251,10 +258,10 @@ impl LogState {
                     "Can't open log file {}", path
                 );
 
-                let dashboard_path = format! ("{}.dashboard", path);
+                let dashboard_path = unwrap! (dashboard_path (Path::new (&path)));
                 let dashboard_file = unwrap! (
                     fs::OpenOptions::new().write (true) .create (true) .open (&dashboard_path),
-                    "Can't open dashboard file {}", dashboard_path
+                    "Can't open dashboard file {:?}", dashboard_path
                 );
 
                 (Some (Mutex::new (log_file)), Some (Mutex::new (dashboard_file)))

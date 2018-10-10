@@ -216,6 +216,7 @@ mod test {
     use gstuff::{now_float, slurp};
 
     use helpers::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
+    use helpers::log::dashboard_path;
 
     use hyper::StatusCode;
 
@@ -230,17 +231,7 @@ mod test {
     use std::thread::{self, sleep};
     use std::time::Duration;
 
-    /// Integration test for the "autoprice" mode.
-    /// Starts MM in background and files a buy request with it, in the "autoprice" mode,
-    /// then checks the logs to see that the price fetching code works.
-    #[test]
-    fn test_autoprice() {
-        // One of the ways we want to test the MarketMaker in the integration tests is by reading the logs.
-        // Just like the end users, we learn of what's MarketMaker doing from the logs,
-        // the information in the logs is actually a part of the user-visible functionality,
-        // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
-        // and to make an informed decision about whether the MarketMaker is performing correctly.
-
+    fn mm_spat() -> (&'static str, MarketMakerIt) {
         let passphrase = "SPATsRps3dhEtXwtnpRCKF";
         let mm = unwrap! (MarketMakerIt::start (
             json! ({
@@ -254,6 +245,21 @@ mod test {
             }),
             "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
             local_start));
+        (passphrase, mm)
+    }
+
+    /// Integration test for the "autoprice" mode.
+    /// Starts MM in background and files a buy request with it, in the "autoprice" mode,
+    /// then checks the logs to see that the price fetching code works.
+    #[test]
+    fn test_autoprice() {
+        // One of the ways we want to test the MarketMaker in the integration tests is by reading the logs.
+        // Just like the end users, we learn of what's MarketMaker doing from the logs,
+        // the information in the logs is actually a part of the user-visible functionality,
+        // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
+        // and to make an informed decision about whether the MarketMaker is performing correctly.
+
+        let (passphrase, mm) = mm_spat();
         let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
@@ -328,23 +334,28 @@ mod test {
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!") || log.contains ("--- LogState] Remaining status entries. ---")));
     }
 
+    #[test]
+    fn test_fundvalue() {
+        let (_, mm) = mm_spat();
+        let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
+        let _dump_dashboard = RaiiDump {log_path: unwrap! (dashboard_path (&mm.log_path))};
+        unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+
+        let fundvalue = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "fundvalue",
+            "address": "RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK"
+        })));
+        println! ("fundvalue response: {:?}", fundvalue);
+
+        unwrap! (mm.wait_for_log (19., &|log| log.contains ("Stacktrace. LP_fundvalue")));
+    }
+
     /// Integration test for RPC server.
     /// Check that MM doesn't crash in case of invalid RPC requests
     #[test]
     fn test_rpc() {
-        let passphrase = "SPATsRps3dhEtXwtnpRCKF";
-        let mm = unwrap! (MarketMakerIt::start (
-            json! ({
-                "gui": "nogui",
-                "client": 1,
-                "passphrase": passphrase,
-                "coins": [
-                    {"coin": "BEER","asset": "BEER", "rpcport": 8923},
-                    {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
-                ]
-            }),
-            "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
-            local_start));
+        let (_, mm) = mm_spat();
         let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
