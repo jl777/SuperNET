@@ -1,4 +1,6 @@
 #!/bin/bash
+# Unlock all lockunspents to make sure we can access all our utxo!
+komodo-cli lockunspent true `komodo-cli listlockunspent | jq -c .`
 
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; ./m_LP; cd ../iguana
@@ -35,6 +37,17 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"66.70.180.46\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"88.99.251.101\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.121.200\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"52.65.58.103\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"159.65.134.48\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"178.128.25.203\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"217.182.203.106\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"149.56.19.212\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"95.213.205.222\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"144.217.11.235\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"209.58.190.117\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"209.58.144.205\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"37.9.62.186\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"145.239.204.33\"}"
 
 #tests/addnotarys_7776
 coins/btc_7776
@@ -42,6 +55,7 @@ coins/btc_7776
 coins/kmd_7776
 coins/chips_7776
 coins/game_7776
+coins/emc2_7776
 ./wp_7776
 
 coins/revs_7776
@@ -77,6 +91,10 @@ coins/zilla_7776
 coins/vrsc_7776
 coins/rfox_7776
 coins/sec_7776
+coins/ccl_7776
+coins/hush_7776
+coins/pirate_7776
+coins/mgnx_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 

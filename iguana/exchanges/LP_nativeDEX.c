@@ -920,6 +920,23 @@ void gameaddrs()
     }
 }
 
+void emc2addrs()
+{
+    struct iguana_info *emc2coin,*kmdcoin; int32_t i; uint8_t pubkey33[33]; char emc2addr[64],kmdaddr[64];
+    emc2coin = LP_coinfind("EMC2");
+    kmdcoin = LP_coinfind("KMD");
+    if ( emc2coin != 0 && kmdcoin != 0 )
+    {
+        for (i=0; i<64; i++)
+        {
+            decode_hex(pubkey33,33,Notaries_elected1[i][1]);
+            bitcoin_address(emc2coin->symbol,emc2addr,emc2coin->taddr,emc2coin->pubtype,pubkey33,33);
+            bitcoin_address(kmdcoin->symbol,kmdaddr,kmdcoin->taddr,kmdcoin->pubtype,pubkey33,33);
+            printf("{\"%s\", \"%s\", \"%s\", \"%s\"},\n",Notaries_elected1[i][0],Notaries_elected1[i][1],kmdaddr,emc2addr);
+        }
+    }
+}
+
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
@@ -975,6 +992,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     else if ( 0 && strcmp(coin->symbol,"GAME") == 0 )
                     {
                         gameaddrs();
+                    }
+                    else if ( 0 && strcmp(coin->symbol,"EMC2") == 0 )
+                    {
+                        emc2addrs();
                     }
                     else if ( 0 && strcmp(coin->symbol,"SMART") == 0 )
                     {
@@ -1034,7 +1055,10 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( (netid > 0 && netid < 9) && (seednode == 0 || seednode[0] == 0) )
         {
-            sprintf(fixedseed,"5.9.253.%d",195 + netid);
+            if ( (netid & 1) != 0 )
+                strcpy(fixedseed,"46.4.78.11");
+            else strcpy(fixedseed,"46.4.87.18");
+            //sprintf(fixedseed,"5.9.253.%d",195 + netid);
             seednode = fixedseed;
         }
         if ( seednode == 0 || seednode[0] == 0 )
