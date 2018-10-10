@@ -27,6 +27,7 @@ And we have some of these:
 * We *need to change* the MarketMaker:
 A faster parallel API.
 A more transparent operation, telling user what's going on and what went wrong.
+Solve more things automatically, not requiring advanced fine-tuning from users, [a better UTXO (splitting/merging) algorithm in particular](https://github.com/artemii235/SuperNET/issues/157).
 Ways to more easily deploy it at home, behind NAT and on small computers (like on a spare mobile phone or on a Raspberry Pi 3).
 Running not only Alice but also Bob with GUI.
 Ability to embed the MarketMaker in the GUI applications.
