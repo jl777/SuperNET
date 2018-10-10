@@ -329,7 +329,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
                     memcpy(&serialized[len],sig,siglen);
                     len += siglen;
                     numsigs++;
-                } //else printf("%s -> %s src_or_dest.%d Missing sig from k.%d\n",bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,k);
+                } else printf("%s -> %s src_or_dest.%d Missing sig from k.%d\n",bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,k);
             } else serialized[len++] = 0;
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
             //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
@@ -581,7 +581,8 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         dpow_notarytx(myinfo,bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,pubkeys,numratified); // setcrcval
         signedtxid = dpow_notarytx(myinfo,bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,1,src_or_dest,pubkeys,numratified);
-        //printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
+        //if ( strcmp("GAME",coin->symbol) == 0 || strcmp("EMC2",coin->symbol) == 0 )
+        //    printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {
@@ -614,7 +615,14 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 else
                 {
                     bp->state = 0xffffffff;
-                    printf("dpow_sigscheck: mismatched txid.%s vs %s \n signedtx.(%s)\n",bits256_str(str,txid),retstr,bp->signedtx);
+                    printf("dpow_sigscheck: [src.%s] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bits256_str(str,txid),retstr);
+#ifdef LOGTX
+                    FILE * fptr;
+                    fptr = fopen("/home/node/failed_notarizations", "a+");
+                    unsigned long dwy_timestamp = time(NULL);
+                    fprintf(fptr, "%lu %s %s %d %s\n", dwy_timestamp, bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,bp->signedtx);
+                    fclose(fptr);
+#endif
                 }
                 free(retstr);
                 retstr = 0;
@@ -624,6 +632,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 printf("NULL return from sendrawtransaction. abort\n");
                 bp->state = 0xffffffff;
             }
-        } else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
+        } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
 }

@@ -584,10 +584,17 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     *completedp = 0;
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
-    bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    
+	if (strcmp(coin->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(coin->chain->symbol, changeaddr, 0x1c, coin->chain->pubtype, myinfo->persistent_pubkey33, 33);
+	else
+		bitcoin_address(changeaddr, coin->chain->pubtype, myinfo->persistent_pubkey33, 33);
+
     txfee = (coin->txfee + duplicates*coin->txfee/10);
     if ( strcmp(coin->symbol,"GAME") == 0 )
         printf("GAME txfee %.8f\n",dstr(txfee));
+    if ( strcmp(coin->symbol,"EMC2") == 0 )
+        printf("EMC2 txfee %.8f\n",dstr(txfee));
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
         if ( duplicates <= 0 )

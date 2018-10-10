@@ -327,6 +327,7 @@ char *_setVsigner(struct iguana_info *coin,struct vin_info *V,int32_t ind,char *
 
 char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,cJSON *txjson,struct vin_info *V);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
+int32_t bitcoin_addr2rmd160_ex(char *symbol, uint8_t taddr, uint8_t *addrtypep, uint8_t rmd160[20], char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *address);
 void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,cJSON *argjson);
@@ -560,6 +561,7 @@ bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 struct gecko_chain *category_find(bits256 categoryhash,bits256 subhash);
 void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 keyhash);
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len);
+char *bitcoin_address_ex(char *symbol, char *coinaddr, uint8_t taddr, uint8_t addrtype, uint8_t *pubkey_or_rmd160, int32_t len);
 char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port);
 int64_t iguana_txdetails(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *item,bits256 txid,int32_t vout,int32_t height);
 int32_t iguana_txidheight(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);
