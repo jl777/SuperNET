@@ -350,11 +350,37 @@ mod test {
         let fundvalue = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
             "method": "fundvalue",
-            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q"
+            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q",
+            "holdings": [
+                // Triggers the `LP_KMDvalue` code path and touches the `KMDholdings`.
+                {"coin": "KMD", "balance": 123},
+                // Triggers the `LP_CMCbtcprice` code path.
+                {"coin": "litecoin", "balance": 123},
+                // No such coin, should trigger the "no price source" part in the response.
+                {"coin": "- bogus coin -", "balance": 123}
+            ]
         })));
-        println! ("fundvalue response: {:?}", fundvalue);
+        assert! (fundvalue.0.is_success());
+        let fundvalue: Json = unwrap! (json::from_str (&fundvalue.1));
+        println! ("fundvalue response: {}", unwrap! (json::to_string_pretty (&fundvalue)));
 
-        unwrap! (mm.wait_for_log (19., &|log| log.contains ("Stacktrace. LP_fundvalue")));
+        assert! (!fundvalue["KMD_BTC"].is_null());
+        assert_eq! (fundvalue["KMDholdings"].as_i64(), Some (123));
+        assert! (!fundvalue["btc2kmd"].is_null());
+        assert! (!fundvalue["btcsum"].is_null());
+        assert! (!fundvalue["fundvalue"].is_null());
+
+        assert_eq! (fundvalue["holdings"][0]["coin"].as_str(), Some ("KMD"));
+        assert_eq! (fundvalue["holdings"][0]["KMD"].as_i64(), Some (123));
+
+        assert_eq! (fundvalue["holdings"][1]["coin"].as_str(), Some ("litecoin"));
+        assert_eq! (fundvalue["holdings"][1]["balance"].as_i64(), Some (123));
+
+        assert_eq! (fundvalue["holdings"][2]["coin"].as_str(), Some ("- bogus coin -"));
+        assert_eq! (fundvalue["holdings"][2]["error"].as_str(), Some ("no price source"));
+
+        unwrap! (mm.wait_for_log (1., &|log| log.contains ("LP_fundvalue successfully invoked LP_KMDvalue for KMD")));
+        unwrap! (mm.wait_for_log (1., &|log| log.contains ("LP_fundvalue successfully invoked LP_CMCbtcprice for litecoin")));
     }
 
     /// Integration test for RPC server.

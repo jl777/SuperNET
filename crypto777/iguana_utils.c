@@ -1036,6 +1036,7 @@ char *cmc_ticker(char *base)
 {
     char url[512];
     sprintf(url,"https://api.coinmarketcap.com/v1/ticker/%s/",base);
+    printf ("cmc_ticker, URL: %s\n", url);
     return(issue_curl(url));
 }
 

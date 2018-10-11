@@ -1229,7 +1229,6 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    log_stacktrace ("LP_fundvalue");
     cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     KMDholdings = btcsum = 0.;
@@ -1256,8 +1255,10 @@ cJSON *LP_fundvalue(cJSON *argjson)
                     newitem = cJSON_CreateObject();
                     jaddstr(newitem,"coin",symbol);
                     jaddnum(newitem,"balance",balance);
+                    printf ("LP_fundvalue, symbol: %s\n", symbol);
                     if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
                     {
+                        printf ("LP_fundvalue successfully invoked LP_KMDvalue for %s\n", symbol);
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
                         fundvalue += KMDvalue;
                         if ( strcmp(symbol,"KMD") == 0 )
@@ -1265,6 +1266,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
                     }
                     else if ( iter == 0 && (btcprice= LP_CMCbtcprice(&usdprice,symbol)) > SMALLVAL )
                     {
+                        printf ("LP_fundvalue successfully invoked LP_CMCbtcprice for %s\n", symbol);
                         btcsum += btcprice * balance;
                         jaddnum(newitem,"BTC",btcprice * balance);
                     }

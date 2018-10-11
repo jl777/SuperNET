@@ -1352,9 +1352,10 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
     Box::new (f)
 }
 
+use helpers::{rpc_response, rpc_err_response, HyRes};
+pub fn lp_fundvalue (_ctx: MmArc, req: Json) -> HyRes {
+
 /*
-cJSON *LP_fundvalue(cJSON *argjson)
-{
     cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     KMDholdings = btcsum = 0.;
@@ -1434,6 +1435,6 @@ cJSON *LP_fundvalue(cJSON *argjson)
         jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
     }
     return(retjson);
-}
-
 */
+    rpc_err_response (500, "TBD")
+}

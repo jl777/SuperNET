@@ -28,6 +28,7 @@ use hyper::rt::{Stream};
 use hyper::service::Service;
 use network::lp_queue_command;
 use portfolio::lp_autoprice;
+use portfolio::prices::lp_fundvalue;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
@@ -48,13 +49,15 @@ lazy_static! {
     pub static ref CPUPOOL: CpuPool = CpuPool::new(8);
 }
 
-// None is also public to skip auth and display proper error in case of method is missing
+/// Lists the RPC method not requiring the "userpass" authentication.  
+/// None is also public to skip auth and display proper error in case of method is missing
 const PUBLIC_METHODS : &[Option<&str>] = &[
     Some("psock"), Some("ticker"), Some("balances"), Some("getprice"), Some("notify"),
     Some("getpeers"), Some("orderbook"), Some("statsdisp"), Some("fundvalue"), Some("help"),
     Some("getcoins"), Some("pricearray"), Some("balance"), Some("tradesarray"), None
 ];
 
+/// Returns `true` if authentication is not required to call the remote method.
 fn is_public_method(method: Option<&str>) -> bool {
     PUBLIC_METHODS.iter().position(|&s| s == method).is_some()
 }
@@ -88,7 +91,6 @@ struct RpcService {
 }
 
 fn auth(json: &Json) -> Result<(), &'static str> {
-    // It's not required to authenticate to call remote method
     if !is_public_method(json["method"].as_str()) {
         if !json["userpass"].is_string() {
             return Err("Userpass is not set!");
@@ -176,6 +178,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
         Some ("autoprice") => lp_autoprice (ctx, req),
         Some ("buy") => buy(&req),
         Some ("eth_gas_price") => eth_gas_price(),
+        //Some ("fundvalue") => lp_fundvalue (ctx, req),
         Some ("help") => help(),
         Some ("mpnet") => mpnet(&req),
         Some ("sell") => sell(&req),

@@ -37,7 +37,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate unwrap;
 
-mod prices;
+pub mod prices;
 
 use fxhash::{FxHashMap, FxHashSet};
 use gstuff::{now_ms, now_float};
