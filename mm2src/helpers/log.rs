@@ -485,6 +485,9 @@ impl LogState {
         // 
         // To properly fix this we'll likely need a thread-local log access, in order to replace the `println!` with proper file writes.
         // (Stdout redirection is not an option because multiple MM instances might be in flight).
+        // 
+        // A simpler temporary fix might be to have a version of `printf` and `println!`
+        // primitives that uses a global Rust lock.
         if cfg! (windows) {print! ("⸗{}", chunk)}
 
         match self.log_file {

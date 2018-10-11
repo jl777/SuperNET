@@ -287,9 +287,10 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
     return(pairsock);
 }
 */
+#[allow(unused_assignments)]
 unsafe fn lp_nearest_utxovalue(
     coin: *mut lp::iguana_info,
-    coinaddr: *mut libc::c_char,
+    _coinaddr: *mut libc::c_char,
     utxos: *mut *mut lp::LP_address_utxo,
     n: i32,
     targetval: u64,
@@ -448,6 +449,7 @@ unsafe fn lp_base_satoshis(
     };
 }
 
+#[allow(unused_assignments)]
 unsafe fn lp_address_myutxopair(
     butxo: *mut lp::LP_utxoinfo,
     iambob: i32,
@@ -765,7 +767,7 @@ void LP_gtc_iteration(void *ctx,char *myipaddr,int32_t mypubsock)
 lazy_static! {static ref GTC_LOCK: Mutex<()> = Mutex::new(());}
 
 unsafe fn lp_gtc_addorder(qp: *mut lp::LP_quoteinfo) -> () {
-    let lock = unwrap!(GTC_LOCK.lock());
+    let _lock = unwrap!(GTC_LOCK.lock());
     let gtc = calloc(
         1usize,
         ::std::mem::size_of::<lp::LP_gtcorder>() as usize,

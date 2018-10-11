@@ -39,6 +39,7 @@ extern crate futures_cpupool;
 #[macro_use]
 extern crate gstuff;
 
+#[macro_use]
 extern crate helpers;
 
 extern crate hex;
@@ -261,6 +262,7 @@ mod test {
 
         let (passphrase, mm) = mm_spat();
         let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
+        let _dump_dashboard = RaiiDump {log_path: unwrap! (dashboard_path (&mm.log_path))};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
         // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
@@ -313,7 +315,11 @@ mod test {
             "refbase": "dash",
             "refrel": "coinmarketcap"
         })));
-        assert_eq! (autoprice.0, StatusCode::OK);
+        assert_eq! (autoprice.0, StatusCode::OK, "autoprice reply: {:?}", autoprice);
+
+        // TODO: Turn into a proper (human-readable, tagged) log entry?
+        unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_autoprice] 0 Using ref dash/coinmarketcap for PIZZA/BEER factor None")));
+
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
@@ -344,7 +350,7 @@ mod test {
         let fundvalue = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
             "method": "fundvalue",
-            "address": "RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK"
+            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q"
         })));
         println! ("fundvalue response: {:?}", fundvalue);
 
