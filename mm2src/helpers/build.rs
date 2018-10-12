@@ -138,6 +138,13 @@ fn generate_bindings() {
             "cJSON_Parse",
             "cJSON_GetErrorPtr",
             "cJSON_Delete",
+            "cJSON_GetArraySize",
+            "jitem",
+            "jint",
+            "jstr",
+            "jdouble",
+            "jprint",
+            "free_json",
             "LP_NXT_redeems",
             "LPinit",
             "LP_ports",
@@ -158,10 +165,6 @@ fn generate_bindings() {
             "LP_queuecommand",
             "LP_CMCbtcprice",
             "LP_fundvalue",
-            "jint",
-            "jdouble",
-            "jprint",
-            "free_json",
             "LP_coinsearch",
             "LP_autoprice",
             "LP_instantdex_deposit",
@@ -187,10 +190,19 @@ fn generate_bindings() {
             "LP_address",
             "LP_address_utxo_ptrs",
             "LP_command_process",
+            "LP_balances",
+            "LP_KMDvalue",
         ]
             .iter(),
         // types
-        ["_bits256", "cJSON", "iguana_info", "LP_utxoinfo", "electrum_info",].iter(),
+        [
+            "_bits256",
+            "cJSON",
+            "iguana_info",
+            "LP_utxoinfo",
+            "electrum_info",
+        ]
+            .iter(),
         [
             // defines
             "bitcoind_RPC_inittime",
@@ -232,19 +244,27 @@ fn generate_bindings() {
         vec!["../../crypto777/OS_portable.h".into()],
         "c_headers/OS_portable.rs",
         [
+            // functions
             "OS_init",
             "OS_ensure_directory",
             "OS_compatible_path",
             "calc_ipbits",
         ]
             .iter(),
-        empty(),
-        empty(),
+        empty(), // types
+        empty(), // defines
     );
     bindgen(
         vec!["../../crypto777/nanosrc/nn.h".into()],
         "c_headers/nn.rs",
-        ["nn_socket", "nn_connect", "nn_recv", "nn_freemsg", "nn_send"].iter(),
+        [
+            "nn_socket",
+            "nn_connect",
+            "nn_recv",
+            "nn_freemsg",
+            "nn_send",
+        ]
+            .iter(),
         empty(),
         ["AF_SP", "NN_PAIR"].iter(),
     );
@@ -341,7 +361,8 @@ fn root() -> PathBuf {
             &s[4..]
         } else {
             &s[..]
-        }).into()
+        })
+        .into()
     } else {
         super_net
     }
@@ -399,9 +420,10 @@ fn build_c_code(mm_version: &str) {
     cmake_prep_args.push("..".into());
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
     let _ = unwrap!(
-        cmd("cmake", cmake_prep_args).dir(root().join ("build"))
-        .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
-        .run(),
+        cmd("cmake", cmake_prep_args)
+            .dir(root().join("build"))
+            .stdout_to_stderr() // NB: stderr is visible through "cargo build -vv".
+            .run(),
         "!cmake"
     );
 
@@ -418,9 +440,10 @@ fn build_c_code(mm_version: &str) {
     }
     eprintln!("$ cmake{}", show_args(&cmake_args));
     let _ = unwrap!(
-        cmd("cmake", cmake_args).dir(root().join ("build"))
-        .stdout_to_stderr()  // NB: stderr is visible through "cargo build -vv".
-        .run(),
+        cmd("cmake", cmake_args)
+            .dir(root().join("build"))
+            .stdout_to_stderr() // NB: stderr is visible through "cargo build -vv".
+            .run(),
         "!cmake"
     );
 

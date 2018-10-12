@@ -1352,26 +1352,129 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
     Box::new (f)
 }
 
-use helpers::{rpc_response, rpc_err_response, HyRes};
-pub fn lp_fundvalue (_ctx: MmArc, req: Json) -> HyRes {
+#[derive(Clone, Deserialize, Debug)]
+struct FundvalueHoldingReq {
+    /// The name of the coin ("litecoin") or its ticker symbol ("KMD").
+    coin: String,
+    balance: f64
+}
+
+/// JSON structure passed to the "fundvalue" RPC call.  
+/// cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#fundvalue
+#[derive(Clone, Deserialize, Debug)]
+struct FundvalueReq {
+    /// The address (usually WIF) with some coins in it.
+    address: Option<String>,
+    #[serde(default)]
+    holdings: Vec<FundvalueHoldingReq>
+}
+
+#[allow(non_snake_case)]
+#[derive(Clone, Debug, Default, Serialize)]
+struct FundvalueHoldingRes {
+    coin: String,
+    balance: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    KMD: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    BTC: Option<f64>
+}
+
+#[allow(non_snake_case)]
+#[derive(Clone, Debug, Serialize)]
+struct FundvalueRes {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    KMD_BTC: Option<f64>,
+    KMDholdings: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    btc2kmd: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    btcsum: Option<f64>,
+    fundvalue: f64,
+    holdings: Vec<FundvalueHoldingRes>,
+    missing: u32,
+    /// "success"
+    result: String
+}
+
+use fxhash::{FxHashSet};
+use helpers::{lp, rpc_response, rpc_err_response, HyRes, SATOSHIDEN, SMALLVAL};
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_void};
+use std::ptr::null_mut;
+use super::{register_interest_in_coin_prices, PortfolioContext};
+
+pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
+    let req: FundvalueReq = try_h! (json::from_value (req));
+
+    // Combine the explicitly specified `holdings` and the coins that `LP_balances` finds in the `address`.
+
+    let mut holdings: Vec<FundvalueHoldingReq> = Vec::new();
+
+    if let Some (ref address) = req.address {
+        let address = try_h! (CString::new (&address[..]));
+        let balances = unsafe {lp::LP_balances (address.as_ptr() as *mut c_char)};
+        let n = unsafe {lp::cJSON_GetArraySize (balances)};
+        for i in 0..n {
+            let it = unsafe {lp::jitem (balances, i)};
+            let coin = unsafe {lp::jstr (it, b"coin\0".as_ptr() as *mut c_char)};
+            let balance = unsafe {lp::jdouble (it, b"balance\0".as_ptr() as *mut c_char)};
+            if coin != null_mut() {
+                let coin = try_h! (unsafe {CStr::from_ptr (coin)} .to_str()) .into();
+                holdings.push (FundvalueHoldingReq {coin, balance})
+            }
+        }
+        unsafe {lp::free_json (balances)};
+    }
+
+    for en in &req.holdings {holdings.push (en.clone())}
+
+    // Find all the coins that needs their price to be fetched from an external resource.
+
+    let mut ext_price_coins = FxHashSet::default();
+    let mut holdings_res: Vec<FundvalueHoldingRes> = Vec::new();
+    let mut fundvalue = 0;
+    let mut kmd_holdings = 0;
+
+    for en in &holdings {
+        if en.balance <= SMALLVAL {continue}
+        let coin = try_h! (CString::new (&en.coin[..]));
+        let coin = unsafe {lp::LP_coinfind (coin.as_ptr() as *mut c_char)};
+        if coin != null_mut() {
+            let kmd_value = unsafe {lp::LP_KMDvalue (coin, (SATOSHIDEN as f64 * en.balance) as i64)};
+            if kmd_value > 0 {
+                println! ("LP_fundvalue successfully invoked LP_KMDvalue for {}", en.coin);
+                holdings_res.push (FundvalueHoldingRes {
+                    coin: en.coin.clone(),
+                    balance: en.balance,
+                    KMD: Some (kmd_value),
+                    ..Default::default()
+                });
+                fundvalue += kmd_value;
+                if en.coin == "KMD" {kmd_holdings += kmd_value}
+                continue
+            }
+        }
+        ext_price_coins.insert (CoinId (en.coin.clone()));
+    }
+
+    // Add the externally priced coins to the price fetching queue.
+
+    // TODO: Get the default `PricingProvider` from `MmCtx` helper?
+    let ext_price_coins = FxHashMap::default();
+
+    let portfolio_ctx = try_h! (PortfolioContext::from_ctx (&ctx));
+    try_h! (register_interest_in_coin_prices (&ctx, &portfolio_ctx, ext_price_coins));
+
+    // Wait for the prices to arrive from the net.
+
+    // Create a dashboard status if the coins are not immediately available.
+
+    // Perform the calculations.
 
 /*
-    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
-    fundvalue = 0;
-    KMDholdings = btcsum = 0.;
-    array = cJSON_CreateArray();
-    for (iter=0; iter<2; iter++)
-    {
-        if ( iter == 0 )
-            holdings = jarray(&n,argjson,"holdings");
-        else
-        {
-            if ( (coinaddr= jstr(argjson,"address")) != 0 )
-            {
-                holdings = LP_balances(coinaddr);
-                n = cJSON_GetArraySize(holdings);
-            } else break;
-        }
         if ( holdings != 0 )
         {
             for (i=0; i<n; i++)

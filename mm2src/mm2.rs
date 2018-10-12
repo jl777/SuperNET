@@ -249,6 +249,18 @@ mod test {
         (passphrase, mm)
     }
 
+    /// Asks MM to enable the given currency (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/).
+    fn enable (mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32) {
+        let electrum = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "electrum",
+            "coin": coin,
+            "ipaddr": ipaddr,
+            "port": port
+        })));
+        assert_eq! (electrum.0, StatusCode::OK);
+    }
+
     /// Integration test for the "autoprice" mode.
     /// Starts MM in background and files a buy request with it, in the "autoprice" mode,
     /// then checks the logs to see that the price fetching code works.
@@ -265,24 +277,8 @@ mod test {
         let _dump_dashboard = RaiiDump {log_path: unwrap! (dashboard_path (&mm.log_path))};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
-        // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
-        let electrum_beer = unwrap! (mm.rpc (json! ({
-            "userpass": mm.userpass,
-            "method": "electrum",
-            "coin": "BEER",
-            "ipaddr": "electrum1.cipig.net",
-            "port": 10022
-        })));
-        assert_eq! (electrum_beer.0, StatusCode::OK);
-
-        let electrum_pizza = unwrap! (mm.rpc (json! ({
-            "userpass": mm.userpass,
-            "method": "electrum",
-            "coin": "PIZZA",
-            "ipaddr": "electrum1.cipig.net",
-            "port": 10024
-        })));
-        assert_eq! (electrum_pizza.0, StatusCode::OK);
+        enable (&mm, "BEER", "electrum1.cipig.net", 10022);
+        enable (&mm, "PIZZA", "electrum1.cipig.net", 10024);
 
         // Looks like we don't need enabling the coin to base the price on it.
         // let electrum_dash = unwrap! (mm.rpc (json! ({
@@ -350,7 +346,7 @@ mod test {
         let fundvalue = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
             "method": "fundvalue",
-            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q",
+            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q",  // We have some BEER and PIZZA here.
             "holdings": [
                 // Triggers the `LP_KMDvalue` code path and touches the `KMDholdings`.
                 {"coin": "KMD", "balance": 123},
@@ -360,9 +356,12 @@ mod test {
                 {"coin": "- bogus coin -", "balance": 123}
             ]
         })));
-        assert! (fundvalue.0.is_success());
+        assert! (fundvalue.0.is_success(), "{:?}", fundvalue);
         let fundvalue: Json = unwrap! (json::from_str (&fundvalue.1));
         println! ("fundvalue response: {}", unwrap! (json::to_string_pretty (&fundvalue)));
+
+        // NB: Ideally we'd have `LP_balances` find the BEER and PIZZA balances we have on the "address",
+        // but as of now I don't see a simple way to trigger the "importaddress" and "rescan" that seems necessary for that.
 
         assert! (!fundvalue["KMD_BTC"].is_null());
         assert_eq! (fundvalue["KMDholdings"].as_i64(), Some (123));

@@ -618,6 +618,7 @@ struct LP_priceinfo
 } LP_priceinfos[LP_MAXPRICEINFOS];
 
 // Gradual port temporaries.
+
 cJSON *LP_NXT_redeems();
 void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,uint32_t mm_ctx_id);
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid);
@@ -637,6 +638,7 @@ char *LP_ticker(char *refbase,char *refrel);
 cJSON *LP_fundvalue(cJSON *argjson);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
 void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel);
+cJSON *LP_balances(char *coinaddr);
 
 struct LP_autoprice_ref
 {

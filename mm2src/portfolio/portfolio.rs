@@ -48,6 +48,7 @@ use helpers::ser::de_none_if_empty;
 use hyper::{StatusCode, HeaderMap};
 use prices::{lp_btcprice, Coins, CoinId, ExternalPrices, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
+use std::collections::hash_map::Entry;
 use std::ffi::{CStr, CString};
 use std::iter::once;
 use std::mem::{forget, zeroed};
@@ -540,7 +541,7 @@ int32_t LP_autoref_clear(char *base,char *rel)
 }
 */
 
-/// Returns a doube with the given `name` from the given `json`, but only if it's greter than `SMALLVAL`.
+/// Returns a double with the given `name` from the given `json`, but only if it's greter than `SMALLVAL`.
 fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
     match unsafe {lp::jdouble (json, name as *mut c_char)} {
         f if f > SMALLVAL => Some (f),
@@ -548,10 +549,38 @@ fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
     }
 }
 
+type InterestingCoins = FxHashMap<(PricingProvider, PriceUnit), FxHashSet<CoinId>>;
+
+/// Adds the given coins into the list of coin prices to fetch. And triggers the price fetch.
+fn register_interest_in_coin_prices (ctx: &MmArc, pctx: &PortfolioContext, coins: InterestingCoins) -> Result<(), String> {
+    for ((provider, unit), coins) in coins {
+        // Create and/or update the external provider instances.
+        let mut price_resources = try_s! (pctx.price_resources.lock());
+        match price_resources.entry ((provider.clone(), unit)) {
+            Entry::Vacant (ve) => {
+                let coins = Coins (Arc::new (Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())));
+                let rer = RefreshedExternalResource::new (30., 40., Box::new ({
+                    let provider = provider.clone();
+                    let coins = coins.clone();
+                    let ctx_weak = ctx.weak();
+                    move || lp_btcprice (ctx_weak.clone(), &provider, unit, &coins)
+                }));
+                try_s! (rer.tick());
+                ve.insert ((coins, rer));
+            },
+            Entry::Occupied (mut oe) => {
+                for coin in coins {
+                    let mut coins = try_s! ((oe.get_mut().0).0.lock());
+                    coins.insert (coin, now_float());
+                }
+                try_s! (oe.get().1.tick())
+            }
+        }
+    }
+    Ok(())
+}
+
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
-    use std::collections::hash_map::Entry;
-
-
     let portfolio_ctx = try_s! (PortfolioContext::from_ctx (ctx));
 
     // Natural singletons (there's only one "bittrex.com" in the internet).
@@ -672,37 +701,14 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     };
 
     // Group the coins by (provider, unit) in order to have all the coins ready for the provider instance creation.
-    let mut coins: FxHashMap<(PricingProvider, PriceUnit), FxHashSet<CoinId>> = FxHashMap::default();
+    let mut coins: InterestingCoins = FxHashMap::default();
     for (provider, unit, coin) in coin_price_interest {
         match coins.entry ((provider.clone(), unit)) {
             Entry::Vacant (ve) => {ve.insert (once (coin) .collect());},
             Entry::Occupied (mut oe) => {oe.get_mut().insert (coin);}
         };
     }
-    for ((provider, unit), coins) in coins {
-        // Create and/or update the external provider instances.
-        let mut price_resources = try_s! (portfolio_ctx.price_resources.lock());
-        match price_resources.entry ((provider.clone(), unit)) {
-            Entry::Vacant (ve) => {
-                let coins = Coins (Arc::new (Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())));
-                let rer = RefreshedExternalResource::new (30., 40., Box::new ({
-                    let provider = provider.clone();
-                    let coins = coins.clone();
-                    let ctx_weak = ctx.weak();
-                    move || lp_btcprice (ctx_weak.clone(), &provider, unit, &coins)
-                }));
-                try_s! (rer.tick());
-                ve.insert ((coins, rer));
-            },
-            Entry::Occupied (mut oe) => {
-                for coin in coins {
-                    let mut coins = try_s! ((oe.get_mut().0).0.lock());
-                    coins.insert (coin, now_float());
-                }
-                try_s! (oe.get().1.tick())
-            }
-        }
-    }
+    try_s! (register_interest_in_coin_prices (&ctx, &portfolio_ctx, coins));
 
     let (kmd_btc, bch_btc, ltc_btc) = {
         let price_resources = try_s! (portfolio_ctx.price_resources.lock());
