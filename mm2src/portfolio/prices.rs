@@ -19,6 +19,7 @@
 //
 
 use futures::{self, Future};
+use futures::task::{self, Task};
 use fxhash::{FxHashMap};
 use gstuff::now_float;
 use helpers::{slurp_req, MmArc, MmWeak};
@@ -27,6 +28,7 @@ use hyper::header::CONTENT_TYPE;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
+use url;
 
 /*
 struct LP_orderbookentry
@@ -1257,42 +1259,44 @@ impl CoinId {
 
 /// Prices we've fetched from an external pricing provider (CoinMarketCap, CoinGecko).
 /// Note that there is a delay between updating `Coins` and getting new `ExternalPrices`.
+#[derive(Clone, Debug)]
 pub struct ExternalPrices {pub prices: FxHashMap<CoinId, f64>, pub at: f64}
 
 /// Coins discovered so far. Shared with the external resource future, in order not to create new futures for every new coin.
-/// It's a map from the coin id to the last time we've see it used. The latter allows us to eventually clean the map.
-#[derive(Clone, Debug)]
-pub struct Coins (pub Arc<Mutex<FxHashMap<CoinId, f64>>>);
+#[derive(Debug)]
+pub struct Coins {
+    /// A map from the coin id to the last time we've see it used. The latter allows us to eventually clean the map.
+    pub ids: Mutex<FxHashMap<CoinId, f64>>
+}
 
 /// Load coin prices from CoinGecko or, if `cmc_key` is given, from CoinMarketCap.
 /// 
 /// NB: We're using the MM command-line configuration ("coins") to convert between the coin names and the ticker symbols,
 /// meaning that the price loader futures are not reusable across the MM instances (the `MmWeak` argument hints at it).
-pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUnit, coins: &Coins) -> Box<Future<Item=ExternalPrices, Error=String> + Send> {
-    let coins: Vec<String> = {
+pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUnit, coins: &Arc<Coins>) -> Box<Future<Item=ExternalPrices, Error=String> + Send> {
+    let coin_labels: Vec<String> = {
         let ctx = try_fus! (MmArc::from_weak (&ctx_weak) .ok_or ("Context expired"));
         let coins_conf = try_fus! (ctx.conf["coins"].as_array().ok_or ("No 'coins' array in configuration"));
 
-        let coins = try_fus! (coins.0.lock());
-        try_fus! (coins.keys().map (|c| c.for_provider (coins_conf, provider) .map (|s| s.into_owned())) .collect())
+        let coin_ids = try_fus! (coins.ids.lock());
+        try_fus! (coin_ids.keys().map (|c| c.for_provider (coins_conf, provider) .map (|s| s.into_owned())) .collect())
     };
 
     let (request, curl_example) = match provider {
         PricingProvider::CoinMarketCap (ref cmc_key) => {
             let url = fomat! (
                 "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
-                for coin in coins {(coin)} separated {','}
+                for coin in coin_labels {(coin)} separated {','}
                 "&convert=" (match unit {PriceUnit::Bitcoin => "BTC", PriceUnit::UsDollar => "USD"})
             );
             ( try_fus! (Request::builder().uri (&url) .header ("X-CMC_PRO_API_KEY", &cmc_key[..]) .body (Body::empty())),
             format! ("curl --header \"X-CMC_PRO_API_KEY: {}\" \"{}\"", cmc_key, url) )
         },
         PricingProvider::CoinGecko => {
-            let url = fomat! (
-                "https://api.coingecko.com/api/v3/coins/markets?ids="
-                for coin in coins {(coin)} separated {','}
-                "&vs_currency=" (match unit {PriceUnit::Bitcoin => "btc", PriceUnit::UsDollar => "usd"})
-            );
+            let mut params = url::form_urlencoded::Serializer::new (String::new());
+            params.append_pair ("ids", &fomat! (for coin in coin_labels {(coin)} separated {','}));
+            params.append_pair ("vs_currency", match unit {PriceUnit::Bitcoin => "btc", PriceUnit::UsDollar => "usd"});
+            let url = fomat! ("https://api.coingecko.com/api/v3/coins/markets?" (params.finish()));
             ( try_fus! (Request::builder().uri (&url) .body (Body::empty())),
             format! ("curl \"{}\"", url) )
         }
@@ -1399,12 +1403,15 @@ struct FundvalueRes {
     result: String
 }
 
+use futures::{Async, Poll};
 use fxhash::{FxHashSet};
 use helpers::{lp, rpc_response, rpc_err_response, HyRes, SATOSHIDEN, SMALLVAL};
+use hyper::{Response};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 use std::ptr::null_mut;
-use super::{register_interest_in_coin_prices, PortfolioContext};
+use std::iter::once;
+use super::{default_pricing_provider, register_interest_in_coin_prices, PortfolioContext, InterestingCoins};
 
 pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
     let req: FundvalueReq = try_h! (json::from_value (req));
@@ -1460,17 +1467,89 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
         ext_price_coins.insert (CoinId (en.coin.clone()));
     }
 
-    // Add the externally priced coins to the price fetching queue.
-
-    // TODO: Get the default `PricingProvider` from `MmCtx` helper?
-    let ext_price_coins = FxHashMap::default();
-
-    let portfolio_ctx = try_h! (PortfolioContext::from_ctx (&ctx));
-    try_h! (register_interest_in_coin_prices (&ctx, &portfolio_ctx, ext_price_coins));
-
     // Wait for the prices to arrive from the net.
 
+    let portfolio_ctx = try_h! (PortfolioContext::from_ctx (&ctx));
+
+    struct WaitFut {
+        provider: PricingProvider,
+        ctx: MmArc,
+        portfolio_ctx: Arc<PortfolioContext>,
+        ext_price_coins: FxHashSet<CoinId>,
+        first_register: Option<f64>
+    }
+    let f = WaitFut {
+        provider: try_h! (default_pricing_provider (&ctx)),
+        ctx,
+        portfolio_ctx,
+        ext_price_coins,
+        first_register: None
+    };
+    impl Future for WaitFut {
+        type Item = ExternalPrices;
+        type Error = String;
+        fn poll (&mut self) -> Poll<ExternalPrices, String> {
+
+            // See if we've got the prices.
+
+            {
+                let price_resources = try_s! (self.portfolio_ctx.price_resources.lock());
+                if let Some ((_coins, resource)) = price_resources.get (&(self.provider.clone(), PriceUnit::Bitcoin)) {
+                    println! ("lp_fundvalue, WaitFut] Got a resource.");
+                    let prices: Option<ExternalPrices> = try_s! (resource.with_result (|result| {
+                        println! ("lp_fundvalue, WaitFut] result: {:?}", result);
+                        match result {
+                            Some (Ok (prices)) => {
+                                println! ("lp_fundvalue, WaitFut] prices: {:?} vs {:?}", prices, self.ext_price_coins);
+                                if self.ext_price_coins.iter().all (|id| prices.prices.contains_key (id)) {
+                                    println! ("lp_fundvalue, WaitFut] Match.");
+                                    return Ok (Some (prices.clone()))
+                                } else {
+                                    // TODO: Status: Got some prices, but still missing some coins.
+                                    // TODO: The "- bogus coin -" will never be fetched (CoinGecko simply ignores it).
+                                    //       We should return the "no price source" error when we know that there was a fresh price fetch
+                                    //       (e.g. when prices.at > first_register),
+                                    //       but only for the missing coins.
+                                    let first_register = if let Some (t) = self.first_register {t} else {0.};
+                                    if prices.at > first_register {
+                                        return Err (ERRL! ("Can't fetch some of the prices"))
+                                    }
+                                }
+                            },
+                            Some (Err (err)) => {
+                                // TODO: Status: There was an error fetching the prices.
+                            },
+                            None => {
+                                // TODO: Status: None fetched yet.
+                            }
+                        }
+                        Ok (None)
+                    }));
+                    if let Some (prices) = prices {return Ok (Async::Ready (prices))}
+                }
+            }
+
+            // Ask for the prices and wait for them.
+
+            let f_task = task::current();
+            let ext_price_coins: InterestingCoins = once (((self.provider.clone(), PriceUnit::Bitcoin), (self.ext_price_coins.clone(), vec! [f_task]))) .collect();
+
+            try_s! (register_interest_in_coin_prices (&self.ctx, &self.portfolio_ctx, ext_price_coins));
+            self.first_register = Some (now_float());
+
+            println! ("lp_fundvalue, WaitFut] Waiting for prices...");
+            Ok (Async::NotReady)
+        }
+    }
+
     // Create a dashboard status if the coins are not immediately available.
+
+    let f = f.then (move |r| {
+        let r = try_h! (r);
+        rpc_err_response (500, "TBD")
+    });
+
+    Box::new (f)
 
     // Perform the calculations.
 
@@ -1539,5 +1618,4 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
     }
     return(retjson);
 */
-    rpc_err_response (500, "TBD")
 }

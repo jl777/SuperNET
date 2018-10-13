@@ -36,10 +36,12 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate unwrap;
+extern crate url;
 
 pub mod prices;
 
 use fxhash::{FxHashMap, FxHashSet};
+use futures::task::Task;
 use gstuff::{now_ms, now_float};
 use helpers::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL};
@@ -62,7 +64,7 @@ use std::thread::sleep;
 struct PortfolioContext {
     // NB: We're using the MM configuration ("coins"), therefore every MM must have its own set of price resources.
     //     That's why we keep the price resources in the `PortfolioContext` and not in a singleton.
-    price_resources: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Coins, RefreshedExternalResource<ExternalPrices>)>>
+    price_resources: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Arc<Coins>, RefreshedExternalResource<ExternalPrices>)>>
 }
 impl PortfolioContext {
     /// Obtains a reference to this crate context, creating it if necessary.
@@ -549,35 +551,54 @@ fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
     }
 }
 
-type InterestingCoins = FxHashMap<(PricingProvider, PriceUnit), FxHashSet<CoinId>>;
+type InterestingCoins = FxHashMap<(PricingProvider, PriceUnit), (FxHashSet<CoinId>, Vec<Task>)>;
 
 /// Adds the given coins into the list of coin prices to fetch. And triggers the price fetch.
 fn register_interest_in_coin_prices (ctx: &MmArc, pctx: &PortfolioContext, coins: InterestingCoins) -> Result<(), String> {
-    for ((provider, unit), coins) in coins {
+    for ((provider, unit), (coins, listeners)) in coins {
         // Create and/or update the external provider instances.
         let mut price_resources = try_s! (pctx.price_resources.lock());
         match price_resources.entry ((provider.clone(), unit)) {
             Entry::Vacant (ve) => {
-                let coins = Coins (Arc::new (Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())));
+                let coins = Arc::new (Coins {
+                    ids: Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())
+                });
                 let rer = RefreshedExternalResource::new (30., 40., Box::new ({
                     let provider = provider.clone();
                     let coins = coins.clone();
                     let ctx_weak = ctx.weak();
                     move || lp_btcprice (ctx_weak.clone(), &provider, unit, &coins)
                 }));
+                try_s! (rer.add_listeners (listeners));
                 try_s! (rer.tick());
                 ve.insert ((coins, rer));
             },
             Entry::Occupied (mut oe) => {
-                for coin in coins {
-                    let mut coins = try_s! ((oe.get_mut().0).0.lock());
-                    coins.insert (coin, now_float());
+                {
+                    let shared_coins = &mut oe.get_mut().0;
+                    let mut coin_ids = try_s! (shared_coins.ids.lock());
+                    let now = now_float();
+                    for coin in coins {coin_ids.insert (coin, now);}
                 }
+                try_s! (oe.get().1.add_listeners (listeners));
                 try_s! (oe.get().1.tick())
             }
         }
     }
     Ok(())
+}
+
+fn default_pricing_provider (ctx: &MmArc) -> Result<PricingProvider, String> {
+    let cmc_key = match ctx.conf["cmc_key"] {
+        Json::Null => None,
+        Json::String (ref k) => Some (k.clone()),
+        _ => return ERR! ("cmc_key is not a string")
+    };
+
+    // Default provider.
+    let provider = if let Some (ref k) = cmc_key {PricingProvider::CoinMarketCap (k.clone())} else {PricingProvider::CoinGecko};
+
+    Ok (provider)
 }
 
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
@@ -660,12 +681,6 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     // Incremeted with RPC "autoprice" invoking `LP_autoprice`.
     let num_lp_autorefs = unsafe {lp::num_LP_autorefs};
 
-    let cmc_key = match ctx.conf["cmc_key"] {
-        Json::Null => None,
-        Json::String (ref k) => Some (k.clone()),
-        _ => return ERR! ("cmc_key is not a string")
-    };
-
     // It's probably optimal if we'll have a single external resource future for every (`PricingProvider`, `PriceUnit`) we're gonna use.
     // That way we get pricing reuse while generating less load on the providers.
     // We can't have one resource per external provider because some of them only return a single currency (cf. CoinGecko "vs_currency").
@@ -673,8 +688,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     // speed up the pricing update whenever a new coin is discovered in a MM orderbook. We have to wait
     // for the next `RefreshedExternalResource` revolution instead. TODO: Speed up the revolution when a new coin discovered.
 
-    // Default provider.
-    let provider = if let Some (ref k) = cmc_key {PricingProvider::CoinMarketCap (k.clone())} else {PricingProvider::CoinGecko};
+    let provider = try_s! (default_pricing_provider (ctx));
 
     // Coins the price of which we always need.
     let always = [CoinId ("komodo".into()), CoinId ("bitcoin-cash".into()), CoinId ("litecoin".into())];
@@ -704,9 +718,9 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     let mut coins: InterestingCoins = FxHashMap::default();
     for (provider, unit, coin) in coin_price_interest {
         match coins.entry ((provider.clone(), unit)) {
-            Entry::Vacant (ve) => {ve.insert (once (coin) .collect());},
-            Entry::Occupied (mut oe) => {oe.get_mut().insert (coin);}
-        };
+            Entry::Vacant (ve) => {ve.insert ((once (coin) .collect(), Vec::new()));},
+            Entry::Occupied (mut oe) => {oe.get_mut().0.insert (coin);}
+        }
     }
     try_s! (register_interest_in_coin_prices (&ctx, &portfolio_ctx, coins));
 

@@ -41,6 +41,7 @@ pub mod ser;
 
 use futures::{future, Future};
 use futures::sync::oneshot::{self, Receiver};
+use futures::task::Task;
 use fxhash::FxHashMap;
 use gstuff::{any_to_str, now_float};
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
@@ -688,7 +689,10 @@ pub struct RefreshedExternalResource<R: Send + 'static> {
     /// The time (in f64 seconds) when we last (re)started the `sync`.
     /// We want `AtomicU64` but it isn't yet stable.
     last_start: AtomicUsize,
-    shelf: Arc<Mutex<Option<RerShelf<R>>>>
+    shelf: Arc<Mutex<Option<RerShelf<R>>>>,
+    /// The `Future`s interested in the next update.  
+    /// When there is an updated the `Task::notify` gets invoked once and then the `Task` is removed from the `listeners` list.
+    listeners: Arc<Mutex<Vec<Task>>>
 }
 impl<R: Send + 'static> RefreshedExternalResource<R> {
     /// New instance of the external resource tracker.
@@ -706,8 +710,15 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             every_n_sec,
             timeout_sec: timeout_sec .max (every_n_sec),
             last_start: AtomicUsize::new (0f64.to_bits() as usize),
-            shelf: Arc::new (Mutex::new (None))
+            shelf: Arc::new (Mutex::new (None)),
+            listeners: Arc::new (Mutex::new (Vec::new()))
         }
+    }
+
+    pub fn add_listeners (&self, mut tasks: Vec<Task>) -> Result<(), String> {
+        let mut listeners = try_s! (self.listeners.lock());
+        listeners.append (&mut tasks);
+        Ok(())
     }
 
     /// Performs the maintenance operations necessary to periodically refresh the resource.
@@ -721,6 +732,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             let sync = try_s! (self.sync.lock());
             let f = (*sync)();
             let shelf_tx = self.shelf.clone();
+            let listeners = self.listeners.clone();
             let f = f.then (move |result| -> Result<(), ()> {
                 let mut shelf = match shelf_tx.lock() {Ok (l) => l, Err (err) => {
                     eprintln! ("RefreshedExternalResource::tick] Can't lock the shelf: {}", err);
@@ -731,7 +743,15 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
                     *shelf = Some (RerShelf {
                         time: now_float(),
                         result
-                    })
+                    });
+                    drop (shelf);  // Don't hold the lock unnecessarily.
+                    {
+                        let mut listeners = match listeners.lock() {Ok (l) => l, Err (err) => {
+                            eprintln! ("RefreshedExternalResource::tick] Can't lock the listeners: {}", err);
+                            return Err(())
+                        }};
+                        for task in listeners.drain (..) {task.notify()}
+                    }
                 }
                 Ok(())
             });
