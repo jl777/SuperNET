@@ -17,6 +17,21 @@
 //  LP_bitcoin.c
 //  marketmaker
 //
+#include <sodium/crypto_generichash_blake2b.h>
+const unsigned char ZCASH_PREVOUTS_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','P','r','e','v','o','u','t','H','a','s','h'};
+const unsigned char ZCASH_SEQUENCE_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','S','e','q','u','e','n','c','H','a','s','h'};
+const unsigned char ZCASH_OUTPUTS_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','O','u','t','p','u','t','s','H','a','s','h'};
+const unsigned char ZCASH_JOINSPLITS_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','J','S','p','l','i','t','s','H','a','s','h'};
+const unsigned char ZCASH_SHIELDED_SPENDS_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','S','S','p','e','n','d','s','H','a','s','h'};
+const unsigned char ZCASH_SHIELDED_OUTPUTS_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','S','O','u','t','p','u','t','H','a','s','h'};
+const unsigned char ZCASH_SIG_HASH_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','S','i','g','H','a','s','h', '\xBB', '\x09', '\xB8', '\x76'};
 
 union iguana_stacknum { int32_t val; int64_t val64; uint8_t rmd160[20]; bits256 hash2; uint8_t pubkey[33]; uint8_t sig[74]; };
 struct iguana_stackdata { uint8_t *data; uint16_t size; union iguana_stacknum U; };
@@ -2118,6 +2133,9 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
 char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len)
 {
     static void *ctx;
+    if (strcmp(symbol, "ZEC") == 0 && addrtype == 186) {
+        taddr = 28;
+    }
     int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64],bigpubkey[65]; bits256 hash; struct iguana_info *coin;
 #ifndef NOTETOMIC
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->etomic[0] != 0 )
@@ -2840,6 +2858,18 @@ cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txv
 {
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
+    if (txversion >= 3) {
+        cJSON_AddBoolToObject(json,"overwintered",1);
+        jaddnum(json,"expiryheight",0);
+        if (txversion == 3) {
+            jaddstr(json, "versiongroupid", "03c48270");
+        } else if (txversion == 4) {
+            jaddstr(json, "versiongroupid", "892f2085");
+            jaddnum(json, "valueBalance", 0.);
+            jadd(json, "vShieldedSpend", cJSON_CreateArray());
+            jadd(json, "vShieldedOutput", cJSON_CreateArray());
+        }
+    }
     if ( locktime == 0 && strcmp(symbol,"KMD") == 0 )
         locktime = (uint32_t)time(NULL);
     jaddnum(json,"locktime",locktime);
@@ -3415,7 +3445,115 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
         return(sigtxid);
     }
-    if ( (hashtype & SIGHASH_FORKID) == 0 || sbtcflag != 0 || btcpflag != 0 )
+    uint32_t overwintered = dest.version >> 31;
+    uint32_t version = dest.version & 0x7FFFFFFF;
+    if (overwintered && version >= 4) {
+        len = 0;
+        uint8_t for_sig_hash[1000], sig_hash[32];
+        len = iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.version), &dest.version);
+        len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.version_group_id), &dest.version_group_id);
+        uint8_t prev_outs[1000], hash_prev_outs[32];
+        int32_t prev_outs_len = 0;
+        for (i = 0; i < dest.tx_in; i++) {
+            prev_outs_len += iguana_rwbignum(1, &prev_outs[prev_outs_len], sizeof(dest.vins[i].prev_hash), dest.vins[i].prev_hash.bytes);
+            prev_outs_len += iguana_rwnum(1, &prev_outs[prev_outs_len], sizeof(dest.vins[i].prev_vout), &dest.vins[i].prev_vout);
+        }
+        crypto_generichash_blake2b_salt_personal(
+                hash_prev_outs,
+                32,
+                prev_outs,
+                (uint64_t)prev_outs_len,
+                NULL,
+                0,
+                NULL,
+                ZCASH_PREVOUTS_HASH_PERSONALIZATION
+        );
+        char hash_str[65];
+        init_hexbytes_noT(hash_str, hash_prev_outs, 32);
+        //printf("Prev outs hash %s\n", hash_str);
+        memcpy(&for_sig_hash[len], hash_prev_outs, 32);
+        len += 32;
+
+        uint8_t sequence[1000], sequence_hash[32];
+        int32_t sequence_len = 0;
+
+        for (i = 0; i < dest.tx_in; i++) {
+            sequence_len += iguana_rwnum(1, &sequence[sequence_len], sizeof(dest.vins[i].sequence),
+                                         &dest.vins[i].sequence);
+        }
+        crypto_generichash_blake2b_salt_personal(
+                sequence_hash,
+                32,
+                sequence,
+                (uint64_t)sequence_len,
+                NULL,
+                0,
+                NULL,
+                ZCASH_SEQUENCE_HASH_PERSONALIZATION
+        );
+        memcpy(&for_sig_hash[len], sequence_hash, 32);
+        len += 32;
+
+        uint8_t outputs[1000], hash_outputs[32];
+        int32_t outputs_len = 0;
+        for (i = 0; i < dest.tx_out; i++) {
+            outputs_len += iguana_rwnum(1, &outputs[outputs_len], sizeof(dest.vouts[i].value), &dest.vouts[i].value);
+            outputs[outputs_len++] = (uint8_t) dest.vouts[i].pk_scriptlen;
+            memcpy(&outputs[outputs_len], dest.vouts[i].pk_script, dest.vouts[i].pk_scriptlen);
+            outputs_len += dest.vouts[i].pk_scriptlen;
+        }
+
+        crypto_generichash_blake2b_salt_personal(
+                hash_outputs,
+                32,
+                outputs,
+                (uint64_t)outputs_len,
+                NULL,
+                0,
+                NULL,
+                ZCASH_OUTPUTS_HASH_PERSONALIZATION
+        );
+        memcpy(&for_sig_hash[len], hash_outputs, 32);
+        len += 32;
+
+        // no join splits, fill the hashJoinSplits with 32 zeros
+        memset(&for_sig_hash[len], 0, 32);
+        len += 32;
+        // no shielded spends, fill the hashShieldedSpends with 32 zeros
+        memset(&for_sig_hash[len], 0, 32);
+        len += 32;
+        // no shielded outputs, fill the hashShieldedOutputs with 32 zeros
+        memset(&for_sig_hash[len], 0, 32);
+        len += 32;
+
+        len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.lock_time), &dest.lock_time);
+        len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.expiry_height), &dest.expiry_height);
+        len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.value_balance), &dest.value_balance);
+        len += iguana_rwnum(1, &for_sig_hash[len], sizeof(hashtype),&hashtype);
+
+        len += iguana_rwbignum(1,&for_sig_hash[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
+        len += iguana_rwnum(1,&for_sig_hash[len],sizeof(dest.vins[vini].prev_vout),&dest.vins[vini].prev_vout);
+
+        for_sig_hash[len++] = (uint8_t)spendlen;
+        memcpy(&for_sig_hash[len],spendscript,spendlen), len += spendlen;
+        len += iguana_rwnum(1,&for_sig_hash[len],sizeof(spendamount),&spendamount);
+        len += iguana_rwnum(1,&for_sig_hash[len],sizeof(dest.vins[vini].sequence),&dest.vins[vini].sequence);
+
+        crypto_generichash_blake2b_salt_personal(
+                sig_hash,
+                32,
+                for_sig_hash,
+                (uint64_t)len,
+                NULL,
+                0,
+                NULL,
+                ZCASH_SIG_HASH_PERSONALIZATION
+        );
+
+        for (i=0; i<32; i++)
+            sigtxid.bytes[i] = sig_hash[i];
+    }
+    else if ( (hashtype & SIGHASH_FORKID) == 0 || sbtcflag != 0 || btcpflag != 0 )
     {
         for (i=0; i<dest.tx_in; i++)
         {
@@ -3634,18 +3772,23 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
 {
     int32_t i,j,n,segtxlen,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t *segtx=0,segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; uint64_t spendamount; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
+    uint32_t overwintered = msg->version >> 31;
+    uint32_t version = msg->version;
     if (zcash) {
-        msg->overwintered = msg->version >> 31;
-        if (msg->overwintered) {
-            msg->version = msg->version & 0x7FFFFFFF;
+        if (overwintered) {
             len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version_group_id),&msg->version_group_id);
         }
     }
     if ( json != 0 )
     {
-        jaddnum(json,"version",msg->version);
-        cJSON_AddBoolToObject(json, "overwintered", msg->overwintered);
-        if (msg->overwintered) {
+        if (overwintered) {
+            version = msg->version & 0x7FFFFFFF;
+            jaddnum(json,"version",msg->version & 0x7FFFFFFF);
+        } else {
+            jaddnum(json, "version", msg->version);
+        }
+        cJSON_AddBoolToObject(json, "overwintered", overwintered);
+        if (overwintered) {
             char group_id_str[10];
             sprintf(group_id_str, "%x", msg->version_group_id);
             jaddstr(json, "versiongroupid", group_id_str);
@@ -3782,12 +3925,12 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
-    if (zcash && msg->overwintered) {
+    if (zcash && overwintered) {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->expiry_height),&msg->expiry_height);
         if (json != 0) {
             jaddnum(json, "expiryheight", msg->expiry_height);
         }
-        if (msg->version >= 4) {
+        if (version >= 4) {
             len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->value_balance),&msg->value_balance);
             if (json != 0) {
                 jaddnum(json, "valueBalance", dstr(msg->value_balance));
@@ -3894,11 +4037,11 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
     //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
     if ( zcash == LP_IS_ZCASHPROTOCOL && msg->version > 1 )
     {
-        uint32_t numjoinsplits; struct iguana_msgjoinsplit joinsplit; uint8_t joinsplitpubkey[33],joinsplitsig[64];
-        len += iguana_rwvarint32(rwflag,&serialized[len],&numjoinsplits);
-        if ( numjoinsplits > 0 )
+        struct iguana_msgjoinsplit joinsplit; uint8_t joinsplitpubkey[33],joinsplitsig[64];
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->numjoinsplits),&msg->numjoinsplits);
+        if ( msg->numjoinsplits > 0 )
         {
-            for (i=0; i<numjoinsplits; i++)
+            for (i=0; i<msg->numjoinsplits; i++)
                 len += iguana_rwjoinsplit(rwflag,&serialized[len],&joinsplit);
             if ( rwflag != 0 )
             {
@@ -3979,9 +4122,24 @@ bits256 iguana_parsetxobj(char *symbol,uint8_t isPoS,int32_t *txstartp,uint8_t *
     if ( txobj == 0 )
         return(txid);
     vpnstr[0] = 0;
-    if ( (msg->version= juint(txobj,"version")) == 0 )
+    uint32_t version = juint(txobj,"version");
+    if (version == 0 ) {
         msg->version = 1;
+    } else {
+        msg->version = version;
+    }
+    if (is_cJSON_True(cJSON_GetObjectItem(txobj, "overwintered"))) {
+        msg->version = 1 << 31 | msg->version;
+        msg->version_group_id = (uint32_t)strtol(jstr(txobj, "versiongroupid"), NULL, 16);
+        msg->expiry_height = juint(txobj, "expiryheight");
+        if (version >= 4) {
+            msg->value_balance = (uint64_t) (jdouble(txobj, "valueBalance") * SATOSHIDEN);
+        }
+    }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
+    if (is_cJSON_True(cJSON_GetObjectItem(txobj, "overwintered"))) {
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version_group_id),&msg->version_group_id);
+    }
     if ( isPoS != 0 )
     {
         if ( (msg->timestamp= juint(txobj,"timestamp")) == 0 )
@@ -4029,6 +4187,15 @@ bits256 iguana_parsetxobj(char *symbol,uint8_t isPoS,int32_t *txstartp,uint8_t *
     }
     msg->lock_time = jint(txobj,"locktime");
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
+    if (is_cJSON_True(cJSON_GetObjectItem(txobj, "overwintered"))) {
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->expiry_height),&msg->expiry_height);
+        if (version >= 4) {
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->value_balance),&msg->value_balance);
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->shielded_spend_num),&msg->shielded_spend_num);
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->shielded_output_num),&msg->shielded_output_num);
+        }
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->numjoinsplits),&msg->numjoinsplits);
+    }
     //msg->txid = jbits256(txobj,"txid");
     *txstartp = 0;
     msg->allocsize = len;

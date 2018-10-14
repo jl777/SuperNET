@@ -169,7 +169,7 @@ struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_scrip
 
 struct iguana_msgtx
 {
-    uint32_t version,overwintered,version_group_id,tx_in,tx_out,lock_time,expiry_height;
+    uint32_t version,version_group_id,tx_in,tx_out,lock_time,expiry_height;
     struct iguana_msgvin *vins;
     struct iguana_msgvout *vouts;
     struct sapling_spend_description *shielded_spends;
@@ -177,7 +177,7 @@ struct iguana_msgtx
     bits256 txid;
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
-    uint8_t *serialized,shielded_spend_num,shielded_output_num;
+    uint8_t *serialized,shielded_spend_num,shielded_output_num,numjoinsplits;
     uint64_t value_balance;
     uint8_t binding_sig[64];
 };
