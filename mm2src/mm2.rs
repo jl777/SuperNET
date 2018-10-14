@@ -317,7 +317,7 @@ mod test {
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_autoprice] 0 Using ref dash/coinmarketcap for PIZZA/BEER factor None")));
 
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
+        unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
         unwrap! (mm.wait_for_log (9., &|log| {
             log.contains ("[portfolio ext-price ref-num=0] Discovered the Bitcoin price of dash is 0.") ||
@@ -364,22 +364,21 @@ mod test {
         // but as of now I don't see a simple way to trigger the "importaddress" and "rescan" that seems necessary for that.
 
         assert! (!fundvalue["KMD_BTC"].is_null());
-        assert_eq! (fundvalue["KMDholdings"].as_i64(), Some (123));
+        assert_eq! (fundvalue["KMDholdings"].as_f64(), Some (123.));
         assert! (!fundvalue["btc2kmd"].is_null());
         assert! (!fundvalue["btcsum"].is_null());
         assert! (!fundvalue["fundvalue"].is_null());
 
         assert_eq! (fundvalue["holdings"][0]["coin"].as_str(), Some ("KMD"));
-        assert_eq! (fundvalue["holdings"][0]["KMD"].as_i64(), Some (123));
+        assert_eq! (fundvalue["holdings"][0]["KMD"].as_f64(), Some (123.));
 
         assert_eq! (fundvalue["holdings"][1]["coin"].as_str(), Some ("litecoin"));
-        assert_eq! (fundvalue["holdings"][1]["balance"].as_i64(), Some (123));
+        assert_eq! (fundvalue["holdings"][1]["balance"].as_f64(), Some (123.));
 
         assert_eq! (fundvalue["holdings"][2]["coin"].as_str(), Some ("- bogus coin -"));
         assert_eq! (fundvalue["holdings"][2]["error"].as_str(), Some ("no price source"));
 
         unwrap! (mm.wait_for_log (1., &|log| log.contains ("LP_fundvalue successfully invoked LP_KMDvalue for KMD")));
-        unwrap! (mm.wait_for_log (1., &|log| log.contains ("LP_fundvalue successfully invoked LP_CMCbtcprice for litecoin")));
     }
 
     /// Integration test for RPC server.

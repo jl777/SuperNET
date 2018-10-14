@@ -22,7 +22,7 @@ use futures::{self, Future};
 use futures::task::{self, Task};
 use fxhash::{FxHashMap};
 use gstuff::now_float;
-use helpers::{slurp_req, MmArc, MmWeak};
+use helpers::{dstr, slurp_req, MmArc, MmWeak};
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
 use serde_json::{self as json, Value as Json};
@@ -1370,7 +1370,8 @@ struct FundvalueReq {
     /// The address (usually WIF) with some coins in it.
     address: Option<String>,
     #[serde(default)]
-    holdings: Vec<FundvalueHoldingReq>
+    holdings: Vec<FundvalueHoldingReq>,
+    divisor: Option<f64>
 }
 
 #[allow(non_snake_case)]
@@ -1381,34 +1382,43 @@ struct FundvalueHoldingRes {
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    KMD: Option<i64>,
+    KMD: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     BTC: Option<f64>
 }
 
 #[allow(non_snake_case)]
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Default, Serialize)]
 struct FundvalueRes {
     #[serde(skip_serializing_if = "Option::is_none")]
     KMD_BTC: Option<f64>,
     KMDholdings: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     btc2kmd: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    btcsum: Option<f64>,
+    btcsum: f64,
     fundvalue: f64,
     holdings: Vec<FundvalueHoldingRes>,
     missing: u32,
     /// "success"
-    result: String
+    result: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    divisor: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    NAV_KMD: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    NAV_BTC: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    assetNAV_KMD: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    assetNAV_BTC: Option<f64>
 }
 
 use futures::{Async, Poll};
 use fxhash::{FxHashSet};
-use helpers::{lp, rpc_response, rpc_err_response, HyRes, SATOSHIDEN, SMALLVAL};
-use hyper::{Response};
+use helpers::{lp, rpc_response, HyRes, SATOSHIDEN, SMALLVAL};
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_void};
+use std::os::raw::{c_char};
 use std::ptr::null_mut;
 use std::iter::once;
 use super::{default_pricing_provider, register_interest_in_coin_prices, PortfolioContext, InterestingCoins};
@@ -1442,30 +1452,35 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
 
     let mut ext_price_coins = FxHashSet::default();
     let mut holdings_res: Vec<FundvalueHoldingRes> = Vec::new();
-    let mut fundvalue = 0;
-    let mut kmd_holdings = 0;
+    let mut second_pass_holdings: Vec<FundvalueHoldingReq> = Vec::new();
 
-    for en in &holdings {
+    let mut fundvalue = 0;
+    let mut kmd_holdings = 0.;
+
+    for en in holdings {
         if en.balance <= SMALLVAL {continue}
         let coin = try_h! (CString::new (&en.coin[..]));
         let coin = unsafe {lp::LP_coinfind (coin.as_ptr() as *mut c_char)};
         if coin != null_mut() {
             let kmd_value = unsafe {lp::LP_KMDvalue (coin, (SATOSHIDEN as f64 * en.balance) as i64)};
             if kmd_value > 0 {
-                println! ("LP_fundvalue successfully invoked LP_KMDvalue for {}", en.coin);
+                println! ("LP_fundvalue successfully invoked LP_KMDvalue for {}; kmd_value {:?}", en.coin, kmd_value);
                 holdings_res.push (FundvalueHoldingRes {
                     coin: en.coin.clone(),
                     balance: en.balance,
-                    KMD: Some (kmd_value),
+                    KMD: Some (dstr (kmd_value)),
                     ..Default::default()
                 });
                 fundvalue += kmd_value;
-                if en.coin == "KMD" {kmd_holdings += kmd_value}
+                if en.coin == "KMD" {kmd_holdings += dstr (kmd_value)}
                 continue
             }
         }
         ext_price_coins.insert (CoinId (en.coin.clone()));
+        second_pass_holdings.push (en)
     }
+
+    ext_price_coins.insert (CoinId ("komodo".into()));
 
     // Wait for the prices to arrive from the net.
 
@@ -1492,6 +1507,8 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
 
             // See if we've got the prices.
 
+            // TODO: Create a dashboard status if the coins are not immediately available.
+
             {
                 let price_resources = try_s! (self.portfolio_ctx.price_resources.lock());
                 if let Some ((_coins, resource)) = price_resources.get (&(self.provider.clone(), PriceUnit::Bitcoin)) {
@@ -1500,20 +1517,23 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
                         println! ("lp_fundvalue, WaitFut] result: {:?}", result);
                         match result {
                             Some (Ok (prices)) => {
-                                println! ("lp_fundvalue, WaitFut] prices: {:?} vs {:?}", prices, self.ext_price_coins);
+                                // A price can be
+                                // a) fetched;
+                                // b) not fetched YET (at <= first_register);
+                                // c) definitely not fetched (at > first_register).
+                                // Stopping when only (a) and (c) remain.
+
+                                let first_register = if let Some (t) = self.first_register {t} else {0.};
+
                                 if self.ext_price_coins.iter().all (|id| prices.prices.contains_key (id)) {
-                                    println! ("lp_fundvalue, WaitFut] Match.");
+                                    // TODO: Finish the Status?
+                                    return Ok (Some (prices.clone()))
+                                } else if prices.at > first_register {
+                                    // Coin absent in even the fresh version, time to give up. TODO: Status?
                                     return Ok (Some (prices.clone()))
                                 } else {
-                                    // TODO: Status: Got some prices, but still missing some coins.
-                                    // TODO: The "- bogus coin -" will never be fetched (CoinGecko simply ignores it).
-                                    //       We should return the "no price source" error when we know that there was a fresh price fetch
-                                    //       (e.g. when prices.at > first_register),
-                                    //       but only for the missing coins.
-                                    let first_register = if let Some (t) = self.first_register {t} else {0.};
-                                    if prices.at > first_register {
-                                        return Err (ERRL! ("Can't fetch some of the prices"))
-                                    }
+                                    // Still waiting. TODO: Status?
+                                    return Ok (None)
                                 }
                             },
                             Some (Err (err)) => {
@@ -1542,80 +1562,81 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
         }
     }
 
-    // Create a dashboard status if the coins are not immediately available.
+    // Perform the calculations.
 
-    let f = f.then (move |r| {
-        let r = try_h! (r);
-        rpc_err_response (500, "TBD")
+    let f = f.then (move |ext_prices| {
+        let ext_prices = try_h! (ext_prices);
+        let mut missing = 0;
+        let mut btcsum = 0.;
+
+        for holding in second_pass_holdings {
+            if holding.balance <= SMALLVAL {missing += 1; continue}
+
+            if let Some (btcprice) = ext_prices.prices.get (&CoinId (holding.coin.clone())) {
+                btcsum += btcprice * holding.balance;
+                holdings_res.push (FundvalueHoldingRes {
+                    coin: holding.coin,
+                    balance: holding.balance,
+                    BTC: Some (btcprice * holding.balance),
+                    ..Default::default()
+                })
+            } else {
+                holdings_res.push (FundvalueHoldingRes {
+                    coin: holding.coin,
+                    balance: holding.balance,
+                    error: Some ("no price source".into()),
+                    ..Default::default()
+                })
+            }
+        }
+
+        let mut kmd_btc = None;
+        let mut btc2kmd = None;
+        let mut nav_kmd = None;
+        let mut nav_btc = None;
+        let mut asset_nav_kmd = None;
+        let mut asset_nav_btc = None;
+
+        let btcprice = ext_prices.prices.get (&CoinId ("komodo".into()));
+        if let Some (&btcprice) = btcprice {
+            if btcsum != 0. {
+                let mut num_kmd = btcsum / btcprice;
+                fundvalue += (num_kmd * SATOSHIDEN as f64) as i64;
+                kmd_btc = Some (btcprice);
+                num_kmd += kmd_holdings as f64;
+                btc2kmd = Some (num_kmd);
+
+                if let Some (divisor) = req.divisor {
+                    nav_kmd = Some (num_kmd / divisor);
+                    nav_btc = Some ((btcsum + (kmd_holdings as f64 * btcprice)) / divisor);
+                    //jaddnum(retjson,"NAV_USD",(usdprice * numKMD)/divisor);
+                }
+            } else if let Some (divisor) = req.divisor {
+                let num_kmd = dstr (fundvalue);
+                asset_nav_kmd = Some (num_kmd / divisor);
+                asset_nav_btc = Some ((btcprice * num_kmd) / divisor);
+                //jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
+            }
+        }
+
+        let res = FundvalueRes {
+            KMD_BTC: kmd_btc,
+            KMDholdings: kmd_holdings,
+            btc2kmd,
+            btcsum,
+            fundvalue: dstr (fundvalue),
+            holdings: holdings_res,
+            missing,
+            result: "success".into(),
+
+            divisor: req.divisor,
+            NAV_KMD: nav_kmd,
+            NAV_BTC: nav_btc,
+            assetNAV_KMD: asset_nav_kmd,
+            assetNAV_BTC: asset_nav_btc
+        };
+        rpc_response (200, try_h! (json::to_string (&res)))
     });
 
     Box::new (f)
-
-    // Perform the calculations.
-
-/*
-        if ( holdings != 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                item = jitem(holdings,i);
-                if ( (symbol= jstr(item,"coin")) != 0 && (balance= jdouble(item,"balance")) > SMALLVAL )
-                {
-                    newitem = cJSON_CreateObject();
-                    jaddstr(newitem,"coin",symbol);
-                    jaddnum(newitem,"balance",balance);
-                    if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
-                    {
-                        jaddnum(newitem,"KMD",dstr(KMDvalue));
-                        fundvalue += KMDvalue;
-                        if ( strcmp(symbol,"KMD") == 0 )
-                            KMDholdings += dstr(KMDvalue);
-                    }
-                    else if ( iter == 0 && (btcprice= LP_CMCbtcprice(&usdprice,symbol)) > SMALLVAL )
-                    {
-                        btcsum += btcprice * balance;
-                        jaddnum(newitem,"BTC",btcprice * balance);
-                    }
-                    else jaddstr(newitem,"error","no price source");
-                    jaddi(array,newitem);
-                } else missing++;
-            }
-        }
-    }
-    retjson = cJSON_CreateObject();
-    jaddstr(retjson,"result","success");
-    jaddnum(retjson,"missing",missing);
-    jadd(retjson,"holdings",array);
-    btcprice = LP_CMCbtcprice(&usdprice,"komodo");
-    divisor = jdouble(argjson,"divisor");
-    jaddnum(retjson,"KMDholdings",KMDholdings);
-    if ( btcsum != 0 )
-    {
-        if ( btcprice > SMALLVAL )
-        {
-            numKMD = (btcsum / btcprice);
-            fundvalue += numKMD * SATOSHIDEN;
-            jaddnum(retjson,"KMD_BTC",btcprice);
-            jaddnum(retjson,"btcsum",btcsum);
-            numKMD += KMDholdings;
-            jaddnum(retjson,"btc2kmd",numKMD);
-            if ( divisor != 0 )
-            {
-                jaddnum(retjson,"NAV_KMD",numKMD/divisor);
-                jaddnum(retjson,"NAV_BTC",(btcsum + (KMDholdings * btcprice))/divisor);
-                jaddnum(retjson,"NAV_USD",(usdprice * numKMD)/divisor);
-            }
-        }
-    }
-    jaddnum(retjson,"fundvalue",dstr(fundvalue));
-    if ( divisor != 0 )
-    {
-        jaddnum(retjson,"divisor",divisor);
-        numKMD = dstr(fundvalue);
-        jaddnum(retjson,"assetNAV_KMD",numKMD/divisor);
-        jaddnum(retjson,"assetNAV_BTC",(btcprice * numKMD)/divisor);
-        jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
-    }
-    return(retjson);
-*/
 }
