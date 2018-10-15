@@ -1032,14 +1032,6 @@ void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
     calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
 }
 
-char *cmc_ticker(char *base)
-{
-    char url[512];
-    sprintf(url,"https://api.coinmarketcap.com/v1/ticker/%s/",base);
-    printf ("cmc_ticker, URL: %s\n", url);
-    return(issue_curl(url));
-}
-
 char *bittrex_orderbook(char *base,char *rel,int32_t maxdepth)
 {
     char market[64],url[512];
@@ -1150,7 +1142,8 @@ double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *
     static int32_t counter;
     char *cmcstr; cJSON *cmcjson,*item; double weighted,theoretical = 0.;
     *avebidp = *aveaskp = *highbidp = *lowaskp = *CMC_averagep = 0.;
-    if ( (cmcstr= cmc_ticker(name)) != 0 )
+    //TODO//if ( (cmcstr= cmc_ticker(name)) != 0 )
+    if ((cmcstr = 0) != 0)
     {
         if ( (cmcjson= cJSON_Parse(cmcstr)) != 0 )
         {

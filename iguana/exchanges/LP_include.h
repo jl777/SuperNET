@@ -555,7 +555,6 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_numpeers();
-double LP_CMCbtcprice(double *price_usdp,char *symbol);
 char *basilisk_swapentry(int32_t fastflag,uint32_t requestid,uint32_t quoteid,int32_t forceflag);
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance);
 int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
@@ -635,7 +634,6 @@ struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *array);
 double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp);
 char *LP_ticker(char *refbase,char *refrel);
-cJSON *LP_fundvalue(cJSON *argjson);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
 void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel);
 cJSON *LP_balances(char *coinaddr);
@@ -647,8 +645,8 @@ struct LP_autoprice_ref
     // Consider refactoring away the unnecessary fields.
     char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16],usdpeg;
     double buymargin,sellmargin,factor,offset,lastbid,lastask;
-    // TODO: Should replace this with `AutopriceReq`.
-    cJSON *fundvalue;
+    // `Box::into_raw` of `AutopriceReq`.
+    void* fundvalue_req;
     uint32_t count;
 };
 extern struct LP_autoprice_ref LP_autorefs[1024];

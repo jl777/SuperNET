@@ -1375,8 +1375,8 @@ struct FundvalueReq {
 }
 
 #[allow(non_snake_case)]
-#[derive(Clone, Debug, Default, Serialize)]
-struct FundvalueHoldingRes {
+#[derive(Clone, Deserialize, Debug, Default, Serialize)]
+pub struct FundvalueHoldingRes {
     coin: String,
     balance: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1388,8 +1388,8 @@ struct FundvalueHoldingRes {
 }
 
 #[allow(non_snake_case)]
-#[derive(Clone, Debug, Default, Serialize)]
-struct FundvalueRes {
+#[derive(Clone, Deserialize, Debug, Default, Serialize)]
+pub struct FundvalueRes {
     #[serde(skip_serializing_if = "Option::is_none")]
     KMD_BTC: Option<f64>,
     KMDholdings: f64,
@@ -1398,16 +1398,20 @@ struct FundvalueRes {
     btcsum: f64,
     fundvalue: f64,
     holdings: Vec<FundvalueHoldingRes>,
-    missing: u32,
+    /// True if there are holdings with a zero balance.  
+    /// (Triggers a special code path in `lp_autoprice_iter`).
+    pub missing: u32,
     /// "success"
     result: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     divisor: Option<f64>,
+    /// Used in `lp_autoprice_iter`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    NAV_KMD: Option<f64>,
+    pub NAV_KMD: Option<f64>,
+    /// Used in `lp_autoprice_iter`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    NAV_BTC: Option<f64>,
+    pub NAV_BTC: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     assetNAV_KMD: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1423,7 +1427,12 @@ use std::ptr::null_mut;
 use std::iter::once;
 use super::{default_pricing_provider, register_interest_in_coin_prices, PortfolioContext, InterestingCoins};
 
-pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
+/// List the holdings, calculating the current price in BTC and KMD, summing things up.
+/// 
+/// NB: Besides the RPC it's also invoked from the `lp_autoprice_iter` to calculate the number of the `missing` holdings.
+/// 
+/// * `immediate` - Don't wait for the external pricing resources, returning a "no price source" error for any prices that aren't already available.
+pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
     let req: FundvalueReq = try_h! (json::from_value (req));
 
     // Combine the explicitly specified `holdings` and the coins that `LP_balances` finds in the `address`.
@@ -1491,14 +1500,16 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
         ctx: MmArc,
         portfolio_ctx: Arc<PortfolioContext>,
         ext_price_coins: FxHashSet<CoinId>,
-        first_register: Option<f64>
+        first_register: Option<f64>,
+        immediate: bool
     }
     let f = WaitFut {
         provider: try_h! (default_pricing_provider (&ctx)),
         ctx,
         portfolio_ctx,
         ext_price_coins,
-        first_register: None
+        first_register: None,
+        immediate
     };
     impl Future for WaitFut {
         type Item = ExternalPrices;
@@ -1521,14 +1532,14 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json) -> HyRes {
                                 // a) fetched;
                                 // b) not fetched YET (at <= first_register);
                                 // c) definitely not fetched (at > first_register).
-                                // Stopping when only (a) and (c) remain.
+                                // Stopping when only (a) and (c) remain, or when `immediate` is set.
 
                                 let first_register = if let Some (t) = self.first_register {t} else {0.};
 
                                 if self.ext_price_coins.iter().all (|id| prices.prices.contains_key (id)) {
                                     // TODO: Finish the Status?
                                     return Ok (Some (prices.clone()))
-                                } else if prices.at > first_register {
+                                } else if prices.at > first_register || self.immediate {
                                     // Coin absent in even the fresh version, time to give up. TODO: Status?
                                     return Ok (Some (prices.clone()))
                                 } else {

@@ -329,7 +329,6 @@ int32_t btc_convaddr(char *hexaddr,char *addr58);
 
 uint64_t RS_decode(char *rs);
 int32_t RS_encode(char *rsaddr,uint64_t id);
-char *cmc_ticker(char *base);
 
 void calc_sha1(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md2(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
