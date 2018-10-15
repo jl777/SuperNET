@@ -1660,7 +1660,7 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         txobj = bitcoin_txoutput(txobj,script,scriptlen,change);
         *changeoutp = numvouts;
     }
-    char *opretstr = "deadbeef";
+    int32_t origspendlen; char *passphrase = 0,*opretstr = "deadbeef";
     if ( opretstr != 0 )
     {
         spendlen = (int32_t)strlen(opretstr) >> 1;
