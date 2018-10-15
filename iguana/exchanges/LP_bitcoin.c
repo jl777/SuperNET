@@ -3726,7 +3726,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     return(sigtxid);
 }
 
-int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgjoinsplit *msg)
+int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgjoinsplit *msg,uint32_t proof_size)
 {
     int32_t len = 0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->vpub_old),&msg->vpub_old);
@@ -3746,9 +3746,9 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->vmacs[0]),msg->vmacs[0].bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->vmacs[1]),msg->vmacs[1].bytes);
     if ( rwflag == 1 )
-        memcpy(&serialized[len],msg->zkproof,sizeof(msg->zkproof));
-    else memcpy(msg->zkproof,&serialized[len],sizeof(msg->zkproof));
-    len += sizeof(msg->zkproof);
+        memcpy(&serialized[len],msg->zkproof,proof_size);
+    else memcpy(msg->zkproof,&serialized[len],proof_size);
+    len += proof_size;
     return(len);
 }
 
@@ -3774,15 +3774,20 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     uint32_t overwintered = msg->version >> 31;
     uint32_t version = msg->version;
+    // for version 4 the ZK proof size is 192, otherwise 296
+    uint32_t zksnark_proof_size = ZKSNARK_PROOF_SIZE;
     if (zcash) {
         if (overwintered) {
+            version = msg->version & 0x7FFFFFFF;
             len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version_group_id),&msg->version_group_id);
+            if (version >= 4) {
+                zksnark_proof_size = GROTH_PROOF_SIZE;
+            }
         }
     }
     if ( json != 0 )
     {
         if (overwintered) {
-            version = msg->version & 0x7FFFFFFF;
             jaddnum(json,"version",msg->version & 0x7FFFFFFF);
         } else {
             jaddnum(json, "version", msg->version);
@@ -4042,7 +4047,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
         if ( msg->numjoinsplits > 0 )
         {
             for (i=0; i<msg->numjoinsplits; i++)
-                len += iguana_rwjoinsplit(rwflag,&serialized[len],&joinsplit);
+                len += iguana_rwjoinsplit(rwflag,&serialized[len],&joinsplit,zksnark_proof_size);
             if ( rwflag != 0 )
             {
                 memset(joinsplitpubkey,0,sizeof(joinsplitpubkey)); // for now

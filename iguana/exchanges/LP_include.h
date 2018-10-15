@@ -187,7 +187,7 @@ struct iguana_msgjoinsplit
     uint64_t vpub_old,vpub_new;
     bits256 anchor,nullifiers[2],commitments[2],ephemeralkey;
     bits256 randomseed,vmacs[2];
-    uint8_t zkproof[GROTH_PROOF_SIZE];
+    uint8_t zkproof[ZKSNARK_PROOF_SIZE];
     uint8_t ciphertexts[2][601];
 };
 
