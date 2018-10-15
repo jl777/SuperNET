@@ -1660,6 +1660,65 @@ char *LP_createblasttransaction(uint64_t *changep,int32_t *changeoutp,cJSON **tx
         txobj = bitcoin_txoutput(txobj,script,scriptlen,change);
         *changeoutp = numvouts;
     }
+    char *opretstr = "deadbeef";
+    if ( opretstr != 0 )
+    {
+        spendlen = (int32_t)strlen(opretstr) >> 1;
+        if ( spendlen < sizeof(script)-60 )
+        {
+            if ( passphrase != 0 && passphrase[0] != 0 )
+            {
+                decode_hex(data,spendlen,opretstr);
+                offset = 2 + (spendlen >= 16);
+                origspendlen = spendlen;
+                crc32 = calc_crc32(0,data,spendlen);
+                spendlen = LP_opreturn_encrypt(&script[offset],(int32_t)sizeof(script)-offset,data,spendlen,passphrase,crc32&0xffff);
+                if ( spendlen < 0 )
+                {
+                    printf("error encrpting opreturn data\n");
+                    free_json(txobj);
+                    return(0);
+                }
+            } else offset = crc32 = 0;
+            len = 0;
+            script[len++] = SCRIPT_OP_RETURN;
+            if ( spendlen < 76 )
+                script[len++] = spendlen;
+            else if ( spendlen <= 0xff )
+            {
+                script[len++] = 0x4c;
+                script[len++] = spendlen;
+            }
+            else if ( spendlen <= 0xffff )
+            {
+                script[len++] = 0x4d;
+                script[len++] = (spendlen & 0xff);
+                script[len++] = ((spendlen >> 8) & 0xff);
+            }
+            if ( passphrase != 0 && passphrase[0] != 0 )
+            {
+                if ( offset != len )
+                {
+                    printf("offset.%d vs len.%d, reencrypt\n",offset,len);
+                    spendlen = LP_opreturn_encrypt(&script[len],(int32_t)sizeof(script)-len,data,origspendlen,passphrase,crc32&0xffff);
+                    if ( spendlen < 0 )
+                    {
+                        printf("error encrpting opreturn data\n");
+                        free_json(txobj);
+                        return(0);
+                    }
+                } //else printf("offset.%d already in right place\n",offset);
+            } else decode_hex(&script[len],spendlen,opretstr);
+            txobj = bitcoin_txoutput(txobj,script,len + spendlen,0);
+            //printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
+        }
+        else
+        {
+            printf("custom script.%d too long %d\n",i,spendlen);
+            free_json(txobj);
+            return(0);
+        }
+    }
     if ( (rawtxbytes= bitcoin_json2hex(coin->symbol,coin->isPoS,&txid,txobj,V)) == 0 )
         fprintf(stderr,"LP_createblasttransaction: error making rawtx suppress.%d\n",suppress_pubkeys);
     *txobjp = txobj;
