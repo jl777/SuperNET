@@ -30,8 +30,10 @@ const unsigned char ZCASH_SHIELDED_SPENDS_HASH_PERSONALIZATION[16] =
         {'Z','c','a','s','h','S','S','p','e','n','d','s','H','a','s','h'};
 const unsigned char ZCASH_SHIELDED_OUTPUTS_HASH_PERSONALIZATION[16] =
         {'Z','c','a','s','h','S','O','u','t','p','u','t','H','a','s','h'};
-const unsigned char ZCASH_SIG_HASH_PERSONALIZATION[16] =
+const unsigned char ZCASH_SIG_HASH_SAPLING_PERSONALIZATION[16] =
         {'Z','c','a','s','h','S','i','g','H','a','s','h', '\xBB', '\x09', '\xB8', '\x76'};
+const unsigned char ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION[16] =
+        {'Z','c','a','s','h','S','i','g','H','a','s','h', '\x19', '\x1B', '\xA8', '\x5B'};
 
 union iguana_stacknum { int32_t val; int64_t val64; uint8_t rmd160[20]; bits256 hash2; uint8_t pubkey[33]; uint8_t sig[74]; };
 struct iguana_stackdata { uint8_t *data; uint16_t size; union iguana_stacknum U; };
@@ -3447,7 +3449,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     }
     uint32_t overwintered = dest.version >> 31;
     uint32_t version = dest.version & 0x7FFFFFFF;
-    if (overwintered && version >= 4) {
+    if (overwintered && version >= 3) {
         len = 0;
         uint8_t for_sig_hash[1000], sig_hash[32];
         len = iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.version), &dest.version);
@@ -3519,16 +3521,20 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         // no join splits, fill the hashJoinSplits with 32 zeros
         memset(&for_sig_hash[len], 0, 32);
         len += 32;
-        // no shielded spends, fill the hashShieldedSpends with 32 zeros
-        memset(&for_sig_hash[len], 0, 32);
-        len += 32;
-        // no shielded outputs, fill the hashShieldedOutputs with 32 zeros
-        memset(&for_sig_hash[len], 0, 32);
-        len += 32;
+        if (version > 3) {
+            // no shielded spends, fill the hashShieldedSpends with 32 zeros
+            memset(&for_sig_hash[len], 0, 32);
+            len += 32;
+            // no shielded outputs, fill the hashShieldedOutputs with 32 zeros
+            memset(&for_sig_hash[len], 0, 32);
+            len += 32;
+        }
 
         len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.lock_time), &dest.lock_time);
         len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.expiry_height), &dest.expiry_height);
-        len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.value_balance), &dest.value_balance);
+        if (version > 3) {
+            len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.value_balance), &dest.value_balance);
+        }
         len += iguana_rwnum(1, &for_sig_hash[len], sizeof(hashtype),&hashtype);
 
         len += iguana_rwbignum(1,&for_sig_hash[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
@@ -3538,6 +3544,10 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         memcpy(&for_sig_hash[len],spendscript,spendlen), len += spendlen;
         len += iguana_rwnum(1,&for_sig_hash[len],sizeof(spendamount),&spendamount);
         len += iguana_rwnum(1,&for_sig_hash[len],sizeof(dest.vins[vini].sequence),&dest.vins[vini].sequence);
+        unsigned const char *sig_hash_personal = ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION;
+        if (version == 4) {
+            sig_hash_personal = ZCASH_SIG_HASH_SAPLING_PERSONALIZATION;
+        }
 
         crypto_generichash_blake2b_salt_personal(
                 sig_hash,
@@ -3547,7 +3557,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
                 NULL,
                 0,
                 NULL,
-                ZCASH_SIG_HASH_PERSONALIZATION
+                sig_hash_personal
         );
 
         for (i=0; i<32; i++)
