@@ -19,10 +19,11 @@
 //
 
 use futures::{self, Future};
-use futures::task::{self, Task};
+use futures::task::{self};
 use fxhash::{FxHashMap};
 use gstuff::now_float;
 use helpers::{dstr, slurp_req, MmArc, MmWeak};
+use helpers::log::TagParam;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
 use serde_json::{self as json, Value as Json};
@@ -1473,7 +1474,7 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
         if coin != null_mut() {
             let kmd_value = unsafe {lp::LP_KMDvalue (coin, (SATOSHIDEN as f64 * en.balance) as i64)};
             if kmd_value > 0 {
-                println! ("LP_fundvalue successfully invoked LP_KMDvalue for {}; kmd_value {:?}", en.coin, kmd_value);
+                println! ("lp_fundvalue] LP_KMDvalue of '{}' is {}.", en.coin, kmd_value);
                 holdings_res.push (FundvalueHoldingRes {
                     coin: en.coin.clone(),
                     balance: en.balance,
@@ -1518,14 +1519,23 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
 
             // See if we've got the prices.
 
-            // TODO: Create a dashboard status if the coins are not immediately available.
+            let status_tags: &[&TagParam] = &[&"portfolio", &"fundvalue", &"ext-prices"];
+            let ctx = self.ctx.clone();
+            let mut status = self.ctx.log.claim_status (status_tags);
 
             {
                 let price_resources = try_s! (self.portfolio_ctx.price_resources.lock());
                 if let Some ((_coins, resource)) = price_resources.get (&(self.provider.clone(), PriceUnit::Bitcoin)) {
-                    println! ("lp_fundvalue, WaitFut] Got a resource.");
                     let prices: Option<ExternalPrices> = try_s! (resource.with_result (|result| {
-                        println! ("lp_fundvalue, WaitFut] result: {:?}", result);
+                        let mut new_status_handle;
+                        /// Returns the status, creating it if necessary.
+                        macro_rules! status_cr {() => {if let Some (status) = status.as_mut() {status} else {
+                            new_status_handle = ctx.log.status (status_tags, &fomat! (
+                                "Waiting for prices (" for c in &self.ext_price_coins {(c.0)} separated {','} ") ..."
+                            ));
+                            &mut new_status_handle
+                        }}}
+
                         match result {
                             Some (Ok (prices)) => {
                                 // A price can be
@@ -1536,22 +1546,23 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
 
                                 let first_register = if let Some (t) = self.first_register {t} else {0.};
 
-                                if self.ext_price_coins.iter().all (|id| prices.prices.contains_key (id)) {
-                                    // TODO: Finish the Status?
+                                let present = self.ext_price_coins.iter().filter (|id| prices.prices.contains_key (id)) .count();
+
+                                if present == self.ext_price_coins.len() {
+                                    status.as_mut().map (|s| s.append (" Done."));
                                     return Ok (Some (prices.clone()))
                                 } else if prices.at > first_register || self.immediate {
-                                    // Coin absent in even the fresh version, time to give up. TODO: Status?
+                                    status_cr!().append (&format! (" {} out of {} obtained.", present, self.ext_price_coins.len()));
                                     return Ok (Some (prices.clone()))
                                 } else {
-                                    // Still waiting. TODO: Status?
-                                    return Ok (None)
+                                    status_cr!().detach().append (".")
                                 }
                             },
                             Some (Err (err)) => {
-                                // TODO: Status: There was an error fetching the prices.
+                                status_cr!().detach().append (&format! (" Error: {}", err))
                             },
                             None => {
-                                // TODO: Status: None fetched yet.
+                                status_cr!().detach().append (".")
                             }
                         }
                         Ok (None)
@@ -1568,7 +1579,6 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
             try_s! (register_interest_in_coin_prices (&self.ctx, &self.portfolio_ctx, ext_price_coins));
             self.first_register = Some (now_float());
 
-            println! ("lp_fundvalue, WaitFut] Waiting for prices...");
             Ok (Async::NotReady)
         }
     }

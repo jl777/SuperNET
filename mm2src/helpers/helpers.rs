@@ -771,7 +771,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
         })
     }
 
-    pub fn with_result<V, F: Fn (Option<&Result<R, String>>) -> Result<V, String>> (&self, cb: F) -> Result<V, String> {
+    pub fn with_result<V, F: FnMut (Option<&Result<R, String>>) -> Result<V, String>> (&self, mut cb: F) -> Result<V, String> {
         let shelf = try_s! (self.shelf.lock());
         match *shelf {
             Some (ref rer_shelf) => cb (Some (&rer_shelf.result)),

@@ -54,7 +54,7 @@ use serde_json::{self as json, Value as Json};
 use std::collections::hash_map::Entry;
 use std::ffi::{CStr, CString};
 use std::iter::once;
-use std::mem::{forget, zeroed};
+use std::mem::{zeroed};
 use std::os::raw::{c_char, c_void};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Mutex};
@@ -543,14 +543,6 @@ int32_t LP_autoref_clear(char *base,char *rel)
     return(-1);
 }
 */
-
-/// Returns a double with the given `name` from the given `json`, but only if it's greter than `SMALLVAL`.
-fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
-    match unsafe {lp::jdouble (json, name as *mut c_char)} {
-        f if f > SMALLVAL => Some (f),
-        _ => None
-    }
-}
 
 type InterestingCoins = FxHashMap<(PricingProvider, PriceUnit), (FxHashSet<CoinId>, Vec<Task>)>;
 
