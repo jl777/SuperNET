@@ -2135,7 +2135,8 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
 char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len)
 {
     static void *ctx;
-    if (strcmp(symbol, "ZEC") == 0 && addrtype == 186) {
+    // Zcash testnet uses different taddr value for p2pk and p2sh addresses, that's why this hardcode is here
+    if (strcmp(symbol, "ZECTEST") == 0 && addrtype == 186) {
         taddr = 28;
     }
     int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64],bigpubkey[65]; bits256 hash; struct iguana_info *coin;
@@ -3470,9 +3471,6 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
                 NULL,
                 ZCASH_PREVOUTS_HASH_PERSONALIZATION
         );
-        char hash_str[65];
-        init_hexbytes_noT(hash_str, hash_prev_outs, 32);
-        //printf("Prev outs hash %s\n", hash_str);
         memcpy(&for_sig_hash[len], hash_prev_outs, 32);
         len += 32;
 
