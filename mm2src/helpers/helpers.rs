@@ -36,6 +36,7 @@ extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
 
+pub mod iguana_utils;
 pub mod log;
 pub mod ser;
 

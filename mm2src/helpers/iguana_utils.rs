@@ -13,6 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
+// NB: We have some C methods here that aren't used in the MarketMaker.
+
+/*
 #include "../iguana/iguana777.h"
 
 int32_t smallprimes[168] =
@@ -1040,133 +1043,6 @@ char *bittrex_orderbook(char *base,char *rel,int32_t maxdepth)
     return(issue_curl(url));
 }
 
-double calc_theoretical(double weighted,double CMC_average,double changes[3])
-{
-    double theoretical = 0.; //adjusted = 0.,
-    if ( weighted > SMALLVAL && CMC_average > SMALLVAL )
-    {
-        theoretical = (weighted + CMC_average) * 0.5;
-        /*if ( changes[0] > SMALLVAL && changes[1] > SMALLVAL && changes[2] > SMALLVAL )
-        {
-            if ( changes[0] > changes[1] && changes[1] > changes[2] ) // breakout
-            {
-                adjusted = theoretical * (1. - (changes[0] + changes[1]) * .005);
-            }
-        }
-        else if ( changes[0] < -SMALLVAL && changes[1] < -SMALLVAL && changes[2] < -SMALLVAL ) //
-        {
-            if ( changes[0] < changes[1] && changes[1] < changes[2] ) // waterfall
-            {
-                adjusted = theoretical * (1. - (changes[0] + changes[1]) * .005);
-            }
-        }
-        if ( adjusted != 0. && theoretical != 0. )
-            theoretical = (theoretical + adjusted) * 0.5;*/
-    }
-    //printf("adjusted %.8f theoretical %.8f (%.8f + wt %.8f)\n",adjusted,theoretical,CMC_average,weighted);
-    return(theoretical);
-}
-
-double calc_weighted(double *avebidp,double *aveaskp,double *bids,double *bidvols,int32_t numbids,double *asks,double *askvols,int32_t numasks,double limit)
-{
-    int32_t i; double weighted = 0.,bidsum = 0., asksum = 0.,totalbids = 0.,totalasks = 0.;
-    bidsum = bids[0] * bidvols[0], totalbids = bidvols[0];
-    asksum = asks[0] * askvols[0], totalasks = askvols[0];
-    for (i=1; i<numbids; i++)
-    {
-        if ( totalbids > limit )
-            break;
-        bidsum += bids[i] * bidvols[i];
-        totalbids += bidvols[i];
-    }
-    for (i=1; i<numasks; i++)
-    {
-        if ( totalasks > limit )
-            break;
-        asksum += asks[i] * askvols[i];
-        totalasks += askvols[i];
-    }
-    if ( totalbids != 0. && totalasks != 0. )
-    {
-        *avebidp = (bidsum / totalbids);
-        *aveaskp = (asksum / totalasks);
-        weighted = (*avebidp + *aveaskp) * 0.5;
-    }
-    //printf("weighted %f\n",weighted);
-    return(weighted);
-}
-
-double weighted_orderbook(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,char *orderbookstr,double limit)
-{
-    cJSON *bookjson,*bid,*ask,*resobj,*item; int32_t i,numbids,numasks; double bidvols[50],bids[50],askvols[50],asks[50],weighted = 0.;
-    if ( orderbookstr != 0 )
-    {
-        if ( (bookjson= cJSON_Parse(orderbookstr)) != 0 )
-        {
-            if ( (resobj= jobj(bookjson,"result")) != 0 )
-            {
-                bid = jarray(&numbids,resobj,"buy");
-                if ( numbids > sizeof(bids)/sizeof(*bids) )
-                    numbids = (int32_t)(sizeof(bids)/sizeof(*bids));
-                ask = jarray(&numasks,resobj,"sell");
-                if ( numasks > sizeof(asks)/sizeof(*asks) )
-                    numasks = (int32_t)(sizeof(asks)/sizeof(*asks));
-                if ( bid != 0 && ask != 0 )
-                {
-                    for (i=0; i<numbids; i++)
-                    {
-                        item = jitem(bid,i);
-                        bidvols[i] = jdouble(item,"Quantity");
-                        bids[i] = jdouble(item,"Rate");
-                    }
-                    for (i=0; i<numasks; i++)
-                    {
-                        item = jitem(ask,i);
-                        askvols[i] = jdouble(item,"Quantity");
-                        asks[i] = jdouble(item,"Rate");
-                    }
-                    *highbidp = bids[0];
-                    *lowaskp = asks[0];
-                    weighted = calc_weighted(avebidp,aveaskp,bids,bidvols,numbids,asks,askvols,numasks,limit);
-                    //printf("weighted %.8f (%.8f %.8f)\n",weighted,*highbidp,*lowaskp);
-                }
-            }
-            free_json(bookjson);
-        }
-    }
-    return(weighted);
-}
-
-double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep)
-{
-    static int32_t counter;
-    char *cmcstr; cJSON *cmcjson,*item; double weighted,theoretical = 0.;
-    *avebidp = *aveaskp = *highbidp = *lowaskp = *CMC_averagep = 0.;
-    //TODO//if ( (cmcstr= cmc_ticker(name)) != 0 )
-    if ((cmcstr = 0) != 0)
-    {
-        if ( (cmcjson= cJSON_Parse(cmcstr)) != 0 )
-        {
-            if ( is_cJSON_Array(cmcjson) == 0 )
-                item = cmcjson;
-            else item = jitem(cmcjson,0);
-            *CMC_averagep = jdouble(item,"price_btc");
-            *USD_averagep = jdouble(item,"price_usd");
-            changes[0] = jdouble(item,"percent_change_1h");
-            changes[1] = jdouble(item,"percent_change_24h");
-            changes[2] = jdouble(item,"percent_change_7d");
-            weighted = weighted_orderbook(avebidp,aveaskp,highbidp,lowaskp,bittrex_orderbook(base,rel,25),1./(*CMC_averagep));
-            if ( *CMC_averagep > SMALLVAL && weighted > SMALLVAL )
-                theoretical = calc_theoretical(weighted,*CMC_averagep,changes);
-            if ( (0) && counter++ < 100 )
-                printf("HBLA.[%.8f %.8f] AVE.[%.8f %.8f] (%s) CMC %f %f %f %f\n",*highbidp,*lowaskp,*avebidp,*aveaskp,jprint(item,0),*CMC_averagep,changes[0],changes[1],changes[2]);
-            free_json(cmcjson);
-        }
-        free(cmcstr);
-    }
-    return(theoretical);
-}
-
 bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t len)
 {
     bits256 txid,revtxid; int32_t i;
@@ -1204,3 +1080,4 @@ bits256 iguana_merkle(char *symbol,bits256 *tree,int32_t txn_count)
     }
     return(tree[n]);
 }
+*/

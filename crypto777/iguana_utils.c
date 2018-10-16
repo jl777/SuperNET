@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+// NB: We have some methods here that aren't used in the MarketMaker.
+
 #include "../iguana/iguana777.h"
 
 int32_t smallprimes[168] =
