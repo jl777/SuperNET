@@ -4143,7 +4143,7 @@ bits256 iguana_parsetxobj(char *symbol,uint8_t isPoS,int32_t *txstartp,uint8_t *
     }
     if (is_cJSON_True(cJSON_GetObjectItem(txobj, "overwintered"))) {
         msg->version = 1 << 31 | msg->version;
-        msg->version_group_id = (uint32_t)strtol(jstr(txobj, "versiongroupid"), NULL, 16);
+        msg->version_group_id = (uint32_t)strtoul(jstr(txobj, "versiongroupid"), NULL, 16);
         msg->expiry_height = juint(txobj, "expiryheight");
         if (version >= 4) {
             msg->value_balance = (uint64_t) (jdouble(txobj, "valueBalance") * SATOSHIDEN);
