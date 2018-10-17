@@ -15,6 +15,23 @@
 
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
+#include <sodium/crypto_generichash_blake2b.h>
+const unsigned char ZCASH_PREVOUTS_HASH_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','P','r','e','v','o','u','t','H','a','s','h' };
+const unsigned char ZCASH_SEQUENCE_HASH_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','S','e','q','u','e','n','c','H','a','s','h' };
+const unsigned char ZCASH_OUTPUTS_HASH_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','O','u','t','p','u','t','s','H','a','s','h' };
+const unsigned char ZCASH_JOINSPLITS_HASH_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','J','S','p','l','i','t','s','H','a','s','h' };
+const unsigned char ZCASH_SHIELDED_SPENDS_HASH_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','S','S','p','e','n','d','s','H','a','s','h' };
+const unsigned char ZCASH_SHIELDED_OUTPUTS_HASH_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','S','O','u','t','p','u','t','H','a','s','h' };
+const unsigned char ZCASH_SIG_HASH_SAPLING_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','S','i','g','H','a','s','h', '\xBB', '\x09', '\xB8', '\x76' };
+const unsigned char ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION[16] =
+{ 'Z','c','a','s','h','S','i','g','H','a','s','h', '\x19', '\x1B', '\xA8', '\x5B' };
 
 // make sure coinbase outputs are matured
 
@@ -507,6 +524,164 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
 	
 	if (overwintered && version >= 3) {
 	// TODO: implement signing for overwintered & sapling
+
+		/*
+		// Test Vector for BLAKE2b-256 from ZIP-0143 / ZIP-0243
+		uint8_t hash[32];
+		unsigned char preimage[] = {
+			0x03, 0x00, 0x00, 0x80, 0x70, 0x82, 0xc4, 0x03, 0xd5, 0x3a, 0x63, 0x3b,
+			0xbe, 0xcf, 0x82, 0xfe, 0x9e, 0x94, 0x84, 0xd8, 0xa0, 0xe7, 0x27, 0xc7,
+			0x3b, 0xb9, 0xe6, 0x8c, 0x96, 0xe7, 0x2d, 0xec, 0x30, 0x14, 0x4f, 0x6a,
+			0x84, 0xaf, 0xa1, 0x36, 0xa5, 0xf2, 0x5f, 0x01, 0x95, 0x93, 0x61, 0xee,
+			0x6e, 0xb5, 0x6a, 0x74, 0x01, 0x21, 0x0e, 0xe2, 0x68, 0x22, 0x6f, 0x6c,
+			0xe7, 0x64, 0xa4, 0xf1, 0x0b, 0x7f, 0x29, 0xe5, 0x4d, 0xb3, 0x72, 0x72,
+			0xec, 0x55, 0xf4, 0xaf, 0xc6, 0xce, 0xbf, 0xe1, 0xc3, 0x5b, 0xdc, 0xde,
+			0xd7, 0x51, 0x9f, 0xf6, 0xef, 0xb3, 0x81, 0xab, 0x1d, 0x5a, 0x8d, 0xd0,
+			0x06, 0x0c, 0x13, 0xb2, 0xa5, 0x12, 0x93, 0x2b, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x48, 0x1c, 0xdd, 0x86, 0xb3, 0xcc, 0x43, 0x18,
+			0x01, 0x00, 0x00, 0x00
+		};
+		unsigned int preimage_len = 148;
+
+
+		//uint32_t consensusBranchId = 0x76b809bb; // Sapling
+		uint32_t consensusBranchId = 0x5ba81b19; // Overwinter
+												 //uint32_t consensusBranchId = 0x74736554; // Test dummy
+
+
+		uint32_t leConsensusBranchId = consensusBranchId; // htole32(consensusBranchId);
+		unsigned char personalization[16] = {0};
+		memcpy(personalization, "ZcashSigHash", 12);
+		memcpy(personalization + 12, &leConsensusBranchId, 4);
+
+
+		printf("sighash:\n");
+		crypto_generichash_blake2b_salt_personal(
+			hash,
+			32,
+			preimage,
+			(uint64_t)preimage_len,
+			NULL,
+			0,
+			NULL,
+			//personalization);
+			ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION);
+
+		for (int i = 0; i<32; i++) printf("%02x", hash[i]); printf("\n");
+		printf("5f0957950939a65c5a76128eaf552ca8e86066387325bd831f3cd32962ce1a65\n");
+		*/
+
+		len = 0;
+		uint8_t for_sig_hash[1000], sig_hash[32];
+		len = iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.version), &dest.version);
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.version_group_id), &dest.version_group_id);
+		uint8_t prev_outs[1000], hash_prev_outs[32];
+		int32_t prev_outs_len = 0;
+		for (i = 0; i < dest.tx_in; i++) {
+			prev_outs_len += iguana_rwbignum(1, &prev_outs[prev_outs_len], sizeof(dest.vins[i].prev_hash), dest.vins[i].prev_hash.bytes);
+			prev_outs_len += iguana_rwnum(1, &prev_outs[prev_outs_len], sizeof(dest.vins[i].prev_vout), &dest.vins[i].prev_vout);
+		}
+		crypto_generichash_blake2b_salt_personal(
+			hash_prev_outs,
+			32,
+			prev_outs,
+			(uint64_t)prev_outs_len,
+			NULL,
+			0,
+			NULL,
+			ZCASH_PREVOUTS_HASH_PERSONALIZATION
+		);
+		memcpy(&for_sig_hash[len], hash_prev_outs, 32);
+		len += 32;
+
+		uint8_t sequence[1000], sequence_hash[32];
+		int32_t sequence_len = 0;
+
+		for (i = 0; i < dest.tx_in; i++) {
+			sequence_len += iguana_rwnum(1, &sequence[sequence_len], sizeof(dest.vins[i].sequence),
+				&dest.vins[i].sequence);
+		}
+		crypto_generichash_blake2b_salt_personal(
+			sequence_hash,
+			32,
+			sequence,
+			(uint64_t)sequence_len,
+			NULL,
+			0,
+			NULL,
+			ZCASH_SEQUENCE_HASH_PERSONALIZATION
+		);
+		memcpy(&for_sig_hash[len], sequence_hash, 32);
+		len += 32;
+
+		uint8_t outputs[1000], hash_outputs[32];
+		int32_t outputs_len = 0;
+		for (i = 0; i < dest.tx_out; i++) {
+			outputs_len += iguana_rwnum(1, &outputs[outputs_len], sizeof(dest.vouts[i].value), &dest.vouts[i].value);
+			outputs[outputs_len++] = (uint8_t)dest.vouts[i].pk_scriptlen;
+			memcpy(&outputs[outputs_len], dest.vouts[i].pk_script, dest.vouts[i].pk_scriptlen);
+			outputs_len += dest.vouts[i].pk_scriptlen;
+		}
+
+		crypto_generichash_blake2b_salt_personal(
+			hash_outputs,
+			32,
+			outputs,
+			(uint64_t)outputs_len,
+			NULL,
+			0,
+			NULL,
+			ZCASH_OUTPUTS_HASH_PERSONALIZATION
+		);
+		memcpy(&for_sig_hash[len], hash_outputs, 32);
+		len += 32;
+
+		// no join splits, fill the hashJoinSplits with 32 zeros
+		memset(&for_sig_hash[len], 0, 32);
+		len += 32;
+		if (version > 3) {
+			// no shielded spends, fill the hashShieldedSpends with 32 zeros
+			memset(&for_sig_hash[len], 0, 32);
+			len += 32;
+			// no shielded outputs, fill the hashShieldedOutputs with 32 zeros
+			memset(&for_sig_hash[len], 0, 32);
+			len += 32;
+		}
+
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.lock_time), &dest.lock_time);
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.expiry_height), &dest.expiry_height);
+		if (version > 3) {
+			len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.value_balance), &dest.value_balance);
+		}
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(hashtype), &hashtype);
+
+		len += iguana_rwbignum(1, &for_sig_hash[len], sizeof(dest.vins[vini].prev_hash), dest.vins[vini].prev_hash.bytes);
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.vins[vini].prev_vout), &dest.vins[vini].prev_vout);
+
+		for_sig_hash[len++] = (uint8_t)spendlen;
+		memcpy(&for_sig_hash[len], spendscript, spendlen), len += spendlen;
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(spendamount), &spendamount);
+		len += iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.vins[vini].sequence), &dest.vins[vini].sequence);
+		unsigned const char *sig_hash_personal = ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION;
+		if (version == 4) {
+			sig_hash_personal = ZCASH_SIG_HASH_SAPLING_PERSONALIZATION;
+		}
+
+		crypto_generichash_blake2b_salt_personal(
+			sig_hash,
+			32,
+			for_sig_hash,
+			(uint64_t)len,
+			NULL,
+			0,
+			NULL,
+			sig_hash_personal
+		);
+
+		for (i = 0; i<32; i++)
+			sigtxid.bytes[i] = sig_hash[i];
 
 	}
 	else {
