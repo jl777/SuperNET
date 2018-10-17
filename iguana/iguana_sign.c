@@ -523,56 +523,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
 	uint32_t version = dest.version & 0x7FFFFFFF;
 	
 	if (overwintered && version >= 3) {
-	// TODO: implement signing for overwintered & sapling
-
-		/*
-		// Test Vector for BLAKE2b-256 from ZIP-0143 / ZIP-0243
-		uint8_t hash[32];
-		unsigned char preimage[] = {
-			0x03, 0x00, 0x00, 0x80, 0x70, 0x82, 0xc4, 0x03, 0xd5, 0x3a, 0x63, 0x3b,
-			0xbe, 0xcf, 0x82, 0xfe, 0x9e, 0x94, 0x84, 0xd8, 0xa0, 0xe7, 0x27, 0xc7,
-			0x3b, 0xb9, 0xe6, 0x8c, 0x96, 0xe7, 0x2d, 0xec, 0x30, 0x14, 0x4f, 0x6a,
-			0x84, 0xaf, 0xa1, 0x36, 0xa5, 0xf2, 0x5f, 0x01, 0x95, 0x93, 0x61, 0xee,
-			0x6e, 0xb5, 0x6a, 0x74, 0x01, 0x21, 0x0e, 0xe2, 0x68, 0x22, 0x6f, 0x6c,
-			0xe7, 0x64, 0xa4, 0xf1, 0x0b, 0x7f, 0x29, 0xe5, 0x4d, 0xb3, 0x72, 0x72,
-			0xec, 0x55, 0xf4, 0xaf, 0xc6, 0xce, 0xbf, 0xe1, 0xc3, 0x5b, 0xdc, 0xde,
-			0xd7, 0x51, 0x9f, 0xf6, 0xef, 0xb3, 0x81, 0xab, 0x1d, 0x5a, 0x8d, 0xd0,
-			0x06, 0x0c, 0x13, 0xb2, 0xa5, 0x12, 0x93, 0x2b, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x48, 0x1c, 0xdd, 0x86, 0xb3, 0xcc, 0x43, 0x18,
-			0x01, 0x00, 0x00, 0x00
-		};
-		unsigned int preimage_len = 148;
-
-
-		//uint32_t consensusBranchId = 0x76b809bb; // Sapling
-		uint32_t consensusBranchId = 0x5ba81b19; // Overwinter
-												 //uint32_t consensusBranchId = 0x74736554; // Test dummy
-
-
-		uint32_t leConsensusBranchId = consensusBranchId; // htole32(consensusBranchId);
-		unsigned char personalization[16] = {0};
-		memcpy(personalization, "ZcashSigHash", 12);
-		memcpy(personalization + 12, &leConsensusBranchId, 4);
-
-
-		printf("sighash:\n");
-		crypto_generichash_blake2b_salt_personal(
-			hash,
-			32,
-			preimage,
-			(uint64_t)preimage_len,
-			NULL,
-			0,
-			NULL,
-			//personalization);
-			ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION);
-
-		for (int i = 0; i<32; i++) printf("%02x", hash[i]); printf("\n");
-		printf("5f0957950939a65c5a76128eaf552ca8e86066387325bd831f3cd32962ce1a65\n");
-		*/
-
+	// sapling tx sighash preimage 
 		len = 0;
 		uint8_t for_sig_hash[1000], sig_hash[32];
 		len = iguana_rwnum(1, &for_sig_hash[len], sizeof(dest.version), &dest.version);
@@ -1073,10 +1024,6 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 				uint32_t sighash = SIGHASH_ALL; // in marketmaker we use LP_sighash(symbol,zcash) to determine sighash (depends on zcash type), but here SIGHASH_ALL is enough for now
 
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
-				printf("[ Decker ] vins.(%d) = %s\n", i, jprint(vins, i));
-
-				// TODO: *** how to get spendamount here from msg->vins[i] ? fix bitcoin_sigtxid (!)
-				//uint64_t spendamount = LP_outpoint_amount(symbol, msg->vins[i].prev_hash, msg->vins[i].prev_vout);
 
 				struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *jtxout = 0;
 				jtxout = dpow_gettxout(0, coin, msg->vins[i].prev_hash, msg->vins[i].prev_vout);
@@ -1086,7 +1033,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 				free(jtxout);
 
 				sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,spendamount, SIGHASH_ALL,vpnstr,suppress_pubkeys, zcash);
-                printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
+                // printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
                 if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                     jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
                 if ( msg->vins[i].spendscript == spendscript )
@@ -1111,7 +1058,6 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
         jaddnum(json,"size",len);
         jaddbits256(json,"txid",*txidp);
         //printf("TX.(%s) %p\n",jprint(json,0),json);
-		printf("JSON after: %s\n", cJSON_Print(json));
     }
     msg->allocsize = len;
     return(len);

@@ -600,16 +600,15 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
 	
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,txversion,0)) != 0 )
     {
-		printf("JSON: %s\n", cJSON_Print(txobj));
 		if ( duplicates <= 0 )
             duplicates = 1;
         spendlen = bitcoin_pubkeyspend(script,0,pubkey33);
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
-		printf("JSON: %s\n", cJSON_Print(txobj));
-		printf("addresses: %s\n", cJSON_Print(addresses));
+		//printf("JSON: %s\n", cJSON_Print(txobj));
+		//printf("addresses: %s\n", cJSON_Print(addresses));
         rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,txfee,addresses,0,0,0,0,"127.0.0.1",0,1);
-		printf("JSON: %s\n", cJSON_Print(txobj));
+		//printf("JSON: %s\n", cJSON_Print(txobj));
         if ( strcmp(coin->chain->symbol,"BTC") == 0 && cJSON_GetArraySize(vins) > duplicates/2 )
         {
             free(rawtx);
