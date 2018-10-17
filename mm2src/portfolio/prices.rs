@@ -18,17 +18,23 @@
 //  marketmaker
 //
 
-use common::{dstr, slurp_req, MmArc, MmWeak};
+use common::{dstr, lp, rpc_response, slurp_req, HyRes, SATOSHIDEN, SMALLVAL};
+use common::mm_ctx::{MmArc, MmWeak};
 use common::log::TagParam;
-use futures::{self, Future};
+use futures::{self, Future, Async, Poll};
 use futures::task::{self};
-use fxhash::{FxHashMap};
+use fxhash::{FxHashMap, FxHashSet};
 use gstuff::now_float;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
+use libc::{c_char};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
+use std::ffi::{CStr, CString};
+use std::iter::once;
+use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
+use super::{default_pricing_provider, register_interest_in_coin_prices, PortfolioContext, InterestingCoins};
 use url;
 
 /*
@@ -1418,15 +1424,6 @@ pub struct FundvalueRes {
     #[serde(skip_serializing_if = "Option::is_none")]
     assetNAV_BTC: Option<f64>
 }
-
-use futures::{Async, Poll};
-use fxhash::{FxHashSet};
-use common::{lp, rpc_response, HyRes, SATOSHIDEN, SMALLVAL};
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char};
-use std::ptr::null_mut;
-use std::iter::once;
-use super::{default_pricing_provider, register_interest_in_coin_prices, PortfolioContext, InterestingCoins};
 
 /// List the holdings, calculating the current price in BTC and KMD, summing things up.
 /// 

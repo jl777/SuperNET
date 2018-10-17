@@ -60,6 +60,7 @@ fn bindgen<
             for header_path in from {
                 builder = builder.header(header_path)
             }
+            builder = builder.ctypes_prefix("::libc");
             builder = builder.whitelist_recursively(true);
             builder = builder.layout_tests(false);
             builder = builder.derive_default(true);

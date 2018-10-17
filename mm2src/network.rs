@@ -17,12 +17,12 @@
 //  LP_network.c
 //  marketmaker
 //
-use common::{lp, nn, MmArc, CJSON, free_c_ptr, str_to_malloc};
-use libc::{self, strlen};
+use common::{free_c_ptr, lp, nn, str_to_malloc, CJSON};
+use common::mm_ctx::MmArc;
+use libc::{self, c_char, c_void, strlen};
 use serde_json::{self as json, Value as Json};
 use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_void, c_char};
 use std::ptr::null_mut;
 use std::sync::{Mutex};
 use std::thread::sleep;

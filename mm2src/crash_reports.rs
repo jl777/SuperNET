@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use common::{self, stack_trace, stack_trace_frame};
-use std::os::raw::c_int;
+use libc::c_int;
 use std::env;
 use std::io::stderr;
 use std::io::Write;

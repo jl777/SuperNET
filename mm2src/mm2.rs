@@ -64,6 +64,8 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
+use libc::{c_char, c_int, c_void};
+
 use rand::random;
 
 use serde_json::{self as json, Value as Json};
@@ -72,7 +74,6 @@ use std::env;
 use std::ffi::{CStr, CString, OsString};
 use std::fs;
 use std::io::{self, Read, Write};
-use std::os::raw::{c_char, c_int, c_void};
 use std::mem::{zeroed};
 use std::path::Path;
 use std::process::exit;
@@ -196,19 +197,15 @@ fn ensure_writable (dir_path: &Path) -> bool {
 
 #[cfg(test)]
 mod test {
-    use gstuff::{now_float, slurp};
-
     use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
     use common::log::dashboard_path;
-
+    use gstuff::{now_float, slurp};
     use hyper::StatusCode;
-
+    use libc::c_char;
     use serde_json::{self as json, Value as Json};
-
     use std::env;
     use std::ffi::CString;
     use std::fs;
-    use std::os::raw::c_char;
     use std::path::{Path, PathBuf};
     use std::str::{from_utf8_unchecked};
     use std::thread::{self, sleep};

@@ -18,7 +18,8 @@
 //  Copyright © 2014-2018 SuperNET. All rights reserved.
 //
 use common::{free_c_ptr, lp, rpc_response, rpc_err_response, err_to_rpc_json_string,
-  HyRes, MmArc, CORE};
+  HyRes, CORE};
+use common::mm_ctx::MmArc;
 use futures::{self, Future};
 use futures_cpupool::CpuPool;
 use gstuff;
@@ -26,6 +27,7 @@ use hyper::{Request, Body, Method};
 use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
+use libc::{c_char, c_void};
 use network::lp_queue_command;
 use portfolio::lp_autoprice;
 use portfolio::prices::lp_fundvalue;
@@ -33,7 +35,6 @@ use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
 use std::ptr::null_mut;
-use std::os::raw::{c_char, c_void};
 use std::sync::Mutex;
 use super::CJSON;
 use tokio_core::net::TcpListener;

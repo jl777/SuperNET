@@ -40,22 +40,23 @@ extern crate url;
 
 pub mod prices;
 
+use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
+  HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
+use common::mm_ctx::{MmArc, MmWeak};
+use common::log::TagParam;
+use common::ser::de_none_if_empty;
 use fxhash::{FxHashMap, FxHashSet};
 use futures::{Future, Stream};
 use futures::task::Task;
 use gstuff::{now_ms, now_float};
-use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
-  HyRes, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL};
-use common::log::TagParam;
-use common::ser::de_none_if_empty;
 use hyper::{StatusCode, HeaderMap};
+use libc::{c_char, c_void};
 use prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
 use std::collections::hash_map::Entry;
 use std::ffi::{CStr, CString};
 use std::iter::once;
 use std::mem::{zeroed};
-use std::os::raw::{c_char, c_void};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
