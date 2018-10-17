@@ -33,8 +33,10 @@ const unsigned char ZCASH_SIG_HASH_SAPLING_PERSONALIZATION[16] =
 const unsigned char ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION[16] =
 { 'Z','c','a','s','h','S','i','g','H','a','s','h', '\x19', '\x1B', '\xA8', '\x5B' };
 
-// make sure coinbase outputs are matured
 
+int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgjoinsplit *msg, uint32_t proof_size); // defined in iguana_msg.c
+
+// make sure coinbase outputs are matured
 int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *serialized,struct iguana_msgvin *msg)
 {
     int32_t p2shlen,len = 0; uint32_t tmp;
