@@ -106,7 +106,14 @@ struct iguana_msgblockhdr
     uint32_t timestamp,bits,nonce;
 } PACKEDSTRUCT;
 
+#define LP_IS_ZCASHPROTOCOL 1
+
+#define SIGHASH_FORKID 0x40
 #define ZKSNARK_PROOF_SIZE 296
+#define GROTH_PROOF_SIZE 192
+#define SAPLING_AUTH_SIG_SIZE 64
+#define ENC_CIPHER_SIZE 580
+#define OUT_CIPHER_SIZE 80
 #define ZCASH_SOLUTION_ELEMENTS 1344
 
 struct iguana_msgzblockhdr
@@ -161,14 +168,19 @@ struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_scrip
 
 struct iguana_msgtx
 {
-    uint32_t version,tx_in,tx_out,lock_time;
-    struct iguana_msgvin *vins;
-    struct iguana_msgvout *vouts;
-    bits256 txid;
-    int32_t allocsize,timestamp,numinputs,numoutputs;
-    int64_t inputsum,outputsum,txfee;
-    uint8_t *serialized;
+	uint32_t version, version_group_id, tx_in, tx_out, lock_time, expiry_height;
+	struct iguana_msgvin *vins;
+	struct iguana_msgvout *vouts;
+	struct sapling_spend_description *shielded_spends;
+	struct sapling_output_description *shielded_outputs;
+	bits256 txid;
+	int32_t allocsize, timestamp, numinputs, numoutputs;
+	int64_t inputsum, outputsum, txfee;
+	uint8_t *serialized, shielded_spend_num, shielded_output_num, numjoinsplits;
+	uint64_t value_balance;
+	uint8_t binding_sig[64];
 };// PACKEDSTRUCT;
+
 
 struct iguana_msgjoinsplit
 {
@@ -178,6 +190,17 @@ struct iguana_msgjoinsplit
     uint8_t zkproof[ZKSNARK_PROOF_SIZE];
     uint8_t ciphertexts[2][601];
 }PACKEDSTRUCT;
+
+struct sapling_spend_description {
+	bits256 cv, anchor, nullifier, rk;
+	uint8_t zkproof[GROTH_PROOF_SIZE], spend_auth_sig[SAPLING_AUTH_SIG_SIZE];
+};
+
+struct sapling_output_description {
+	bits256 cv, cm, ephemeral_key;
+	uint8_t zkproof[GROTH_PROOF_SIZE], enc_ciphertext[ENC_CIPHER_SIZE], out_ciphertext[OUT_CIPHER_SIZE];
+};
+
 
 struct iguana_packet { struct queueitem DL; struct iguana_peer *addr; struct tai embargo; int32_t datalen,getdatablock; uint8_t serialized[]; };
 
