@@ -18,12 +18,12 @@
 //  marketmaker
 //
 
+use common::{dstr, slurp_req, MmArc, MmWeak};
+use common::log::TagParam;
 use futures::{self, Future};
 use futures::task::{self};
 use fxhash::{FxHashMap};
 use gstuff::now_float;
-use helpers::{dstr, slurp_req, MmArc, MmWeak};
-use helpers::log::TagParam;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
 use serde_json::{self as json, Value as Json};
@@ -1421,7 +1421,7 @@ pub struct FundvalueRes {
 
 use futures::{Async, Poll};
 use fxhash::{FxHashSet};
-use helpers::{lp, rpc_response, HyRes, SATOSHIDEN, SMALLVAL};
+use common::{lp, rpc_response, HyRes, SATOSHIDEN, SMALLVAL};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char};
 use std::ptr::null_mut;

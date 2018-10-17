@@ -21,66 +21,48 @@
 
 #![allow(non_camel_case_types)]
 
+#[macro_use]
+extern crate common;
 extern crate crc;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
-
 #[cfg(feature = "etomic")]
 extern crate etomicrs;
-
 #[macro_use]
 extern crate fomat_macros;
-
 extern crate futures;
 extern crate futures_cpupool;
-
 #[macro_use]
 extern crate gstuff;
-
-#[macro_use]
-extern crate helpers;
-
 extern crate hex;
-
 extern crate hyper;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate lazy_static;
-
 extern crate libc;
-
 extern crate nix;
-
 extern crate portfolio;
-
 extern crate rand;
-
 extern crate serde;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-
 #[macro_use]
 extern crate unwrap;
-
 extern crate winapi;
-
 extern crate tokio_core;
+
+use common::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
+use common::lp::{_bits256 as bits256};
 
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 #[cfg(feature = "etomic")]
 pub use etomicrs::*;
 
 use gstuff::now_ms;
-
-use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
-use helpers::lp::{_bits256 as bits256};
 
 use rand::random;
 
@@ -216,8 +198,8 @@ fn ensure_writable (dir_path: &Path) -> bool {
 mod test {
     use gstuff::{now_float, slurp};
 
-    use helpers::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
-    use helpers::log::dashboard_path;
+    use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
+    use common::log::dashboard_path;
 
     use hyper::StatusCode;
 
@@ -703,7 +685,7 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
 /// Implements the `mm2 events` mode.  
 /// If the command-line arguments match the events mode and everything else works then this function will never return.
 fn events (args_os: &[OsString]) -> Result<(), String> {
-    use helpers::nn::*;
+    use common::nn::*;
 
     /*
     else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )

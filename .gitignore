@@ -281,5 +281,5 @@ iguana/exchanges/manychains
 /iguana/exchanges/etomicswap/target
 
 # Subcrate artefacts
-/mm2src/helpers/c_headers
+/mm2src/common/c_headers
 /mm2src/*/target

@@ -28,9 +28,9 @@
 // locktime claiming on sporadic assetchains
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
+use common::{lp, slurp_url, MmCtx, CJSON, MM_VERSION};
 use crc::crc32;
 use futures::{Future};
-use helpers::{lp, slurp_url, MmCtx, CJSON, MM_VERSION};
 use libc;
 use network::{lp_command_q_loop, lp_queue_command};
 use portfolio::prices_loop;

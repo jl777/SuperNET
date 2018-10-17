@@ -21,6 +21,8 @@
 
 #![allow(non_camel_case_types)]
 
+use common::{ str_to_malloc, MmArc };
+use common::etomiclib::*;
 use ethcore_transaction::{ Action, Transaction };
 use ethereum_types::{ U256, H160, H256 };
 use ethkey::{ KeyPair, Secret, Public, public_to_address };
@@ -41,8 +43,6 @@ use std::os::raw::{ c_char, c_int };
 use std::ffi::{ CStr };
 use std::str::FromStr;
 use regex::Regex;
-use helpers::{ str_to_malloc, MmArc };
-use helpers::etomiclib::*;
 use web3::futures::Future;
 use hex;
 use rlp;

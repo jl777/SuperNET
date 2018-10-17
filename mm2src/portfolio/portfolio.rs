@@ -19,13 +19,13 @@
 //
 
 #[macro_use]
+extern crate common;
+#[macro_use]
 extern crate fomat_macros;
 extern crate futures;
 extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
-#[macro_use]
-extern crate helpers;
 extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
@@ -44,10 +44,10 @@ use fxhash::{FxHashMap, FxHashSet};
 use futures::{Future, Stream};
 use futures::task::Task;
 use gstuff::{now_ms, now_float};
-use helpers::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
+use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL};
-use helpers::log::TagParam;
-use helpers::ser::de_none_if_empty;
+use common::log::TagParam;
+use common::ser::de_none_if_empty;
 use hyper::{StatusCode, HeaderMap};
 use prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};

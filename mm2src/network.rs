@@ -17,7 +17,7 @@
 //  LP_network.c
 //  marketmaker
 //
-use helpers::{lp, nn, MmArc, CJSON, free_c_ptr, str_to_malloc};
+use common::{lp, nn, MmArc, CJSON, free_c_ptr, str_to_malloc};
 use libc::{self, strlen};
 use serde_json::{self as json, Value as Json};
 use std::collections::VecDeque;

@@ -1,6 +1,6 @@
 //! A common dependency for the non-WASM crates.
 //! 
-//!                  helpers
+//!                   common
 //!                     ^
 //!                     |
 //!     subcrate A   ---+---   subcrate B
@@ -421,10 +421,10 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name.starts_with ("std::") {return}
     if name == "mm2::crash_reports::rust_seh_handler" {return}
     if name == "veh_exception_filter" {return}
-    if name == "helpers::stack_trace" {return}
-    if name == "helpers::log_stacktrace" {return}
+    if name == "common::stack_trace" {return}
+    if name == "common::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
-    if name.starts_with ("helpers::stack_trace") {return}
+    if name.starts_with ("common::stack_trace") {return}
     if name.starts_with ("mm2::crash_reports::signal_handler") {return}
 
     let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);

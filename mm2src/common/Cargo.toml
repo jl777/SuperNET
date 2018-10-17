@@ -1,11 +1,11 @@
 [package]
-name = "helpers"
+name = "common"
 version = "0.1.0"
 links = "marketmaker-mainnet-lib"
 
 [lib]
-name = "helpers"
-path = "helpers.rs"
+name = "common"
+path = "common.rs"
 doctest = false
 
 [dependencies]
