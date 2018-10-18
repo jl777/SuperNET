@@ -203,8 +203,9 @@ impl<'a> StatusHandle<'a> {
     /// Detach the handle from the status, allowing the status to remain in the dashboard when the handle is dropped.
     /// 
     /// The code should later manually finish the status (finding it with `LogState::find_status`).
-    pub fn detach (&mut self) {
-        self.status = None
+    pub fn detach (&mut self) -> &mut Self {
+        self.status = None;
+        self
     }
 }
 

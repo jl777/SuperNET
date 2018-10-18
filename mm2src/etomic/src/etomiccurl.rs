@@ -21,16 +21,16 @@
 
 #![allow(non_camel_case_types)]
 
-use std::os::raw::{ c_char };
+use common::{ post_json, fetch_json };
+use common::mm_ctx::MmArc;
+use common::log::StatusHandle;
+use common::etomiclib::*;
 use etomic::EthClient;
 use std::ffi::{ CStr, CString };
 use ethereum_types::{ U256, H256 };
 use hex;
-use libc;
+use libc::{self, c_char};
 use serde_json;
-use helpers::{ post_json, fetch_json, MmArc };
-use helpers::log::StatusHandle;
-use helpers::etomiclib::*;
 use std::str::FromStr;
 use web3::{ Transport };
 use tokio_timer::{ Interval, Timer };

@@ -21,57 +21,42 @@
 
 #![allow(non_camel_case_types)]
 
+#[macro_use]
+extern crate common;
 extern crate crc;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
-
 #[cfg(feature = "etomic")]
 extern crate etomicrs;
-
 #[macro_use]
 extern crate fomat_macros;
-
 extern crate futures;
 extern crate futures_cpupool;
-
 #[macro_use]
 extern crate gstuff;
-
-#[macro_use]
-extern crate helpers;
-
 extern crate hex;
-
 extern crate hyper;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate lazy_static;
-
 extern crate libc;
-
 extern crate nix;
-
 extern crate portfolio;
-
 extern crate rand;
-
 extern crate serde;
-
 #[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-
 #[macro_use]
 extern crate unwrap;
-
 extern crate winapi;
-
 extern crate tokio_core;
+
+use common::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
+use common::lp::{_bits256 as bits256};
 
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 #[cfg(feature = "etomic")]
@@ -79,8 +64,7 @@ pub use etomicrs::*;
 
 use gstuff::now_ms;
 
-use helpers::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
-use helpers::lp::{_bits256 as bits256};
+use libc::{c_char, c_int, c_void};
 
 use rand::random;
 
@@ -90,7 +74,6 @@ use std::env;
 use std::ffi::{CStr, CString, OsString};
 use std::fs;
 use std::io::{self, Read, Write};
-use std::os::raw::{c_char, c_int, c_void};
 use std::mem::{zeroed};
 use std::path::Path;
 use std::process::exit;
@@ -214,19 +197,15 @@ fn ensure_writable (dir_path: &Path) -> bool {
 
 #[cfg(test)]
 mod test {
+    use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
+    use common::log::dashboard_path;
     use gstuff::{now_float, slurp};
-
-    use helpers::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
-    use helpers::log::dashboard_path;
-
     use hyper::StatusCode;
-
+    use libc::c_char;
     use serde_json::{self as json, Value as Json};
-
     use std::env;
     use std::ffi::CString;
     use std::fs;
-    use std::os::raw::c_char;
     use std::path::{Path, PathBuf};
     use std::str::{from_utf8_unchecked};
     use std::thread::{self, sleep};
@@ -249,6 +228,18 @@ mod test {
         (passphrase, mm)
     }
 
+    /// Asks MM to enable the given currency (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/).
+    fn enable (mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32) {
+        let electrum = unwrap! (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "electrum",
+            "coin": coin,
+            "ipaddr": ipaddr,
+            "port": port
+        })));
+        assert_eq! (electrum.0, StatusCode::OK);
+    }
+
     /// Integration test for the "autoprice" mode.
     /// Starts MM in background and files a buy request with it, in the "autoprice" mode,
     /// then checks the logs to see that the price fetching code works.
@@ -265,24 +256,8 @@ mod test {
         let _dump_dashboard = RaiiDump {log_path: unwrap! (dashboard_path (&mm.log_path))};
         unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
-        // Enable the currencies (fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/BEER).
-        let electrum_beer = unwrap! (mm.rpc (json! ({
-            "userpass": mm.userpass,
-            "method": "electrum",
-            "coin": "BEER",
-            "ipaddr": "electrum1.cipig.net",
-            "port": 10022
-        })));
-        assert_eq! (electrum_beer.0, StatusCode::OK);
-
-        let electrum_pizza = unwrap! (mm.rpc (json! ({
-            "userpass": mm.userpass,
-            "method": "electrum",
-            "coin": "PIZZA",
-            "ipaddr": "electrum1.cipig.net",
-            "port": 10024
-        })));
-        assert_eq! (electrum_pizza.0, StatusCode::OK);
+        enable (&mm, "BEER", "electrum1.cipig.net", 10022);
+        enable (&mm, "PIZZA", "electrum1.cipig.net", 10024);
 
         // Looks like we don't need enabling the coin to base the price on it.
         // let electrum_dash = unwrap! (mm.rpc (json! ({
@@ -321,7 +296,7 @@ mod test {
         unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_autoprice] 0 Using ref dash/coinmarketcap for PIZZA/BEER factor None")));
 
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
-        unwrap! (mm.wait_for_log (9., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
+        unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
         unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
         unwrap! (mm.wait_for_log (9., &|log| {
             log.contains ("[portfolio ext-price ref-num=0] Discovered the Bitcoin price of dash is 0.") ||
@@ -350,11 +325,42 @@ mod test {
         let fundvalue = unwrap! (mm.rpc (json! ({
             "userpass": mm.userpass,
             "method": "fundvalue",
-            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q"
+            "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q",  // We have some BEER and PIZZA here.
+            "holdings": [
+                // Triggers the `LP_KMDvalue` code path and touches the `KMDholdings`.
+                {"coin": "KMD", "balance": 123},
+                // Triggers the `LP_CMCbtcprice` code path.
+                {"coin": "litecoin", "balance": 123},
+                // No such coin, should trigger the "no price source" part in the response.
+                {"coin": "- bogus coin -", "balance": 123}
+            ]
         })));
-        println! ("fundvalue response: {:?}", fundvalue);
+        assert! (fundvalue.0.is_success(), "{:?}", fundvalue);
+        let fundvalue: Json = unwrap! (json::from_str (&fundvalue.1));
+        println! ("fundvalue response: {}", unwrap! (json::to_string_pretty (&fundvalue)));
 
-        unwrap! (mm.wait_for_log (19., &|log| log.contains ("Stacktrace. LP_fundvalue")));
+        // NB: Ideally we'd have `LP_balances` find the BEER and PIZZA balances we have on the "address",
+        // but as of now I don't see a simple way to trigger the "importaddress" and "rescan" that seems necessary for that.
+
+        assert! (!fundvalue["KMD_BTC"].is_null());
+        assert_eq! (fundvalue["KMDholdings"].as_f64(), Some (123.));
+        assert! (!fundvalue["btc2kmd"].is_null());
+        assert! (!fundvalue["btcsum"].is_null());
+        assert! (!fundvalue["fundvalue"].is_null());
+
+        assert_eq! (fundvalue["holdings"][0]["coin"].as_str(), Some ("KMD"));
+        assert_eq! (fundvalue["holdings"][0]["KMD"].as_f64(), Some (123.));
+
+        assert_eq! (fundvalue["holdings"][1]["coin"].as_str(), Some ("litecoin"));
+        assert_eq! (fundvalue["holdings"][1]["balance"].as_f64(), Some (123.));
+
+        assert_eq! (fundvalue["holdings"][2]["coin"].as_str(), Some ("- bogus coin -"));
+        assert_eq! (fundvalue["holdings"][2]["error"].as_str(), Some ("no price source"));
+
+        unwrap! (mm.wait_for_log (1., &|log|
+            log.contains ("lp_fundvalue] LP_KMDvalue of 'KMD' is 12300000000") &&
+            log.contains ("[portfolio fundvalue ext-prices] Waiting for prices (litecoin,- bogus coin -,komodo) ... 2 out of 3 obtained")
+        ));
     }
 
     /// Integration test for RPC server.
@@ -676,7 +682,7 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
 /// Implements the `mm2 events` mode.  
 /// If the command-line arguments match the events mode and everything else works then this function will never return.
 fn events (args_os: &[OsString]) -> Result<(), String> {
-    use helpers::nn::*;
+    use common::nn::*;
 
     /*
     else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )

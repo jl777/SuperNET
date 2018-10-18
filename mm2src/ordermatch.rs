@@ -18,11 +18,10 @@
 //  ordermatch.rs
 //  marketmaker
 //
+use common::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
 use gstuff::now_ms;
-use helpers::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL};
-use libc::{self, strcpy, strlen, strcmp, calloc};
+use libc::{self, c_void, c_char, strcpy, strlen, strcmp, calloc};
 use std::ffi::{CString};
-use std::os::raw::{c_void, c_char};
 use std::ptr::null_mut;
 use std::sync::Mutex;
 /*

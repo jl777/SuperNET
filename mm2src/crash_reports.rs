@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
-use helpers::{self, stack_trace, stack_trace_frame};
-use std::os::raw::c_int;
+use common::{self, stack_trace, stack_trace_frame};
+use libc::c_int;
 use std::env;
 use std::io::stderr;
 use std::io::Write;
@@ -119,7 +119,7 @@ fn test_crash_handling() {
 pub fn init_crash_reports() {
     static ONCE: Once = Once::new();
     ONCE.call_once (|| {
-        helpers::init();
+        common::init();
 
         // Try to invoke the `rust_seh_handler` whenever the C code crashes.
         if cfg! (windows) {

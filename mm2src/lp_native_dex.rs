@@ -28,10 +28,11 @@
 // locktime claiming on sporadic assetchains
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
+use common::{lp, slurp_url, CJSON, MM_VERSION};
+use common::mm_ctx::MmCtx;
 use crc::crc32;
 use futures::{Future};
-use helpers::{lp, slurp_url, MmCtx, CJSON, MM_VERSION};
-use libc;
+use libc::{self, c_char};
 use network::{lp_command_q_loop, lp_queue_command};
 use portfolio::prices_loop;
 use rand::random;
@@ -41,7 +42,6 @@ use std::ffi::{CString};
 use std::io::{Cursor, Read, Write};
 use std::mem::transmute;
 use std::net::{IpAddr, SocketAddr};
-use std::os::raw::{c_char};
 use std::path::Path;
 use std::str;
 use std::str::from_utf8;
@@ -1449,7 +1449,7 @@ const BITCOIND_RPC_INITIALIZING: AtomicBool = AtomicBool::new (false);
 // See if the CRC32 we have in Rust matches the C version.
 #[test]
 fn test_crc32() {
-    use std::os::raw::c_void;
+    use libc::c_void;
     assert_eq! (crc32::checksum_ieee (b"123456789"), 0xcbf43926);
     assert_eq! (unsafe {lp::calc_crc32 (0, b"123456789".as_ptr() as *mut c_void, 9)}, 0xcbf43926);
 }

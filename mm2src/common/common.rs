@@ -1,6 +1,6 @@
 //! A common dependency for the non-WASM crates.
 //! 
-//!                  helpers
+//!                   common
 //!                     ^
 //!                     |
 //!     subcrate A   ---+---   subcrate B
@@ -36,32 +36,30 @@ extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
 
+pub mod for_tests;
+pub mod iguana_utils;
 pub mod log;
+pub mod mm_ctx;
 pub mod ser;
 
 use futures::{future, Future};
 use futures::sync::oneshot::{self, Receiver};
-use fxhash::FxHashMap;
+use futures::task::Task;
 use gstuff::{any_to_str, now_float};
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
 use hyper::rt::Stream;
-use libc::{malloc, free};
-use rand::random;
-use serde_json::{self as json, Value as Json};
-use std::any::Any;
+use libc::{c_char, c_void, malloc, free};
+use serde_json::{self as json};
 use std::fmt;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
-use std::net::{SocketAddr};
-use std::os::raw::{c_char, c_void};
-use std::ops::Deref;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::{null, null_mut, read_volatile};
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::str;
 use tokio_core::reactor::Remote;
@@ -110,191 +108,14 @@ impl fmt::Display for bits256 {
     }
 }
 
+pub const SATOSHIDEN: i64 = 100000000;
+pub fn dstr (x: i64) -> f64 {x as f64 / SATOSHIDEN as f64}
+
 /// Apparently helps to workaround `double` fluctuations occuring on *certain* systems.
 /// cf. https://stackoverflow.com/questions/19804472/double-randomly-adds-0-000000000000001.
 /// Not sure it's needed in Rust, the floating point operations should be determenistic here,
 /// but better safe than sorry.
 pub const SMALLVAL: f64 = 0.000000000000001;  // 1e-15f64
-
-/// MarketMaker state, shared between the various MarketMaker threads.
-///
-/// Every MarketMaker has one and only one instance of `MmCtx`.
-///
-/// Should fully replace `LP_globals`.
-///
-/// *Not* a singleton: we should be able to run multiple MarketMakers instances in a process.
-///
-/// Any function directly using `MmCtx` is automatically a stateful function.
-/// In the future we might want to replace direct state access with traceable and replayable
-/// state modifications
-/// (cf. https://github.com/artemii235/SuperNET/blob/mm2-dice/mm2src/README.md#purely-functional-core).
-/// 
-/// `MmCtx` never moves in memory (and it isn't `Send`), it is created and then destroyed in place
-/// (this invariant should make it a bit simpler thinking about aliasing and thread-safety,
-/// particularly of the C structures during the gradual port).
-/// Only the pointers (`MmArc`, `MmWeak`) can be moved around.
-/// 
-/// Threads only have the non-`mut` access to `MmCtx`, allowing us to directly share certain fields.
-pub struct MmCtx {
-    /// MM command-line configuration.
-    pub conf: Json,
-    /// Human-readable log and status dashboard.
-    pub log: log::LogState,
-    /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
-    btc_ctx: *mut BitcoinCtx,
-    /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
-    ///
-    /// Should be refactored away in the future. State should always be valid.
-    /// If there are things that are loaded in background then they should be separately optional,
-    /// without invalidating the entire state.
-    pub initialized: AtomicBool,
-    /// True if the MarketMaker instance needs to stop.
-    stop: AtomicBool,
-    /// IP and port for the RPC server to listen on.
-    pub rpc_ip_port: SocketAddr,
-    /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
-    /// 0 if the handler ID is allocated yet.
-    ffi_handler: AtomicUsize,
-    /// Callbacks to invoke from `fn stop`.
-    stop_listeners: Mutex<Vec<Box<FnMut()->Result<(), String>>>>,
-    /// The context belonging to the `portfolio` crate: `PortfolioContext`.
-    pub portfolio_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>
-}
-impl MmCtx {
-    pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
-        let log = log::LogState::mm (&conf);
-        MmArc (Arc::new (MmCtx {
-            conf,
-            log,
-            btc_ctx: unsafe {bitcoin_ctx()},
-            initialized: AtomicBool::new (false),
-            stop: AtomicBool::new (false),
-            rpc_ip_port,
-            ffi_handler: AtomicUsize::new (0),
-            stop_listeners: Mutex::new (Vec::new()),
-            portfolio_ctx: Mutex::new (None)
-        }))
-    }
-    /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
-    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
-    pub fn stop (&self) {
-        if self.stop.compare_and_swap (false, true, Ordering::Relaxed) == false {
-            let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
-            for listener in stop_listeners.iter_mut() {
-                if let Err (err) = listener() {
-                    eprintln! ("MmCtx::stop] Listener error: {}", err)
-                }
-            }
-        }
-    }
-    /// True if the MarketMaker instance needs to stop.
-    pub fn is_stopping (&self) -> bool {
-        if unsafe {lp::LP_STOP_RECEIVED != 0} {return true}
-        self.stop.load (Ordering::Relaxed)
-    }
-    /// Register a callback to be invoked when the MM receives the "stop" request.  
-    /// The callback is invoked immediately if the MM is stopped already.
-    pub fn on_stop (&self, mut cb: Box<FnMut()->Result<(), String>>) {
-        let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
-        if self.stop.load (Ordering::Relaxed) {
-            if let Err (err) = cb() {
-                eprintln! ("MmCtx::on_stop] Listener error: {}", err)
-            }
-        } else {
-            stop_listeners.push (cb)
-        }
-    }
-}
-impl Drop for MmCtx {
-    fn drop (&mut self) {
-        unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
-    }
-}
-
-// We don't want to send `MmCtx` across threads, it will only obstruct the normal use case
-// (and might result in undefined behavior if there's a C struct or value in the context that is aliased from the various MM threads).
-// Only the `MmArc` is `Send`.
-// Also, `MmCtx` not being `Send` allows us to easily keep various C pointers on the context,
-// which will likely come useful during the gradual port.
-//not-implemented-on-stable// impl !Send for MmCtx {}
-
-pub struct MmArc (Arc<MmCtx>);
-// NB: Explicit `Send` and `Sync` marks here should become unnecessary later,
-// after we finish the initial port and replace the C values with the corresponding Rust alternatives.
-unsafe impl Send for MmArc {}
-unsafe impl Sync for MmArc {}
-impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
-impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
-
-#[derive(Clone)]
-pub struct MmWeak (Weak<MmCtx>);
-// Same as `MmArc`.
-unsafe impl Send for MmWeak {}
-unsafe impl Sync for MmWeak {}
-
-lazy_static! {
-    /// A map from a unique context ID to the corresponding MM context, facilitating context access across the FFI boundaries.  
-    /// NB: The entries are not removed in order to keep the FFI handlers unique.
-    pub static ref MM_CTX_FFI: Mutex<FxHashMap<u32, MmWeak>> = Mutex::new (FxHashMap::default());
-}
-
-impl MmArc {
-    /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.
-    pub fn ffi_handler (&self) -> Result<u32, String> {
-        use std::collections::hash_map::Entry;
-
-        let mut mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
-        let have = self.ffi_handler.load (Ordering::Relaxed) as u32;
-        if have != 0 {return Ok (have)}
-        let mut tries = 0;
-        loop {
-            if tries > 999 {panic! ("MmArc] out of RIDs")} else {tries += 1}
-            let rid: u32 = random();
-            if rid == 0 {continue}
-            match mm_ctx_ffi.entry (rid) {
-                Entry::Occupied (_) => continue,  // Try another ID.
-                Entry::Vacant (ve) => {
-                    ve.insert (self.weak());
-                    self.ffi_handler.store (rid as usize, Ordering::Relaxed);
-                    return Ok (rid)
-                }
-            }
-        }
-    }
-
-    /// Tries getting access to the MM context.  
-    /// Fails if an invalid MM context handler is passed (no such context or dropped context).
-    pub fn from_ffi_handler (ffi_handler: u32) -> Result<MmArc, String> {
-        if ffi_handler == 0 {return ERR! ("MmArc] Zeroed ffi_handler")}
-        let mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
-        match mm_ctx_ffi.get (&ffi_handler) {
-            Some (weak) => match MmArc::from_weak (weak) {
-                Some (ctx) => Ok (ctx),
-                None => ERR! ("MmArc] ffi_handler {} is dead", ffi_handler)
-            },
-            None => ERR! ("MmArc] ffi_handler {} does not exists", ffi_handler)
-        }
-    }
-
-    /// Generates a weak link, to track the context without prolonging its life.
-    pub fn weak (&self) -> MmWeak {
-        MmWeak (Arc::downgrade (&self.0))
-    }
-
-    /// Tries to obtain the MM context from the weak link.  
-    pub fn from_weak (weak: &MmWeak) -> Option<MmArc> {
-        weak.0.upgrade().map (|arc| MmArc (arc))
-    }
-}
-
-#[no_mangle]
-pub fn r_btc_ctx (mm_ctx_id: u32) -> *mut c_void {
-    if let Ok (ctx) = MmArc::from_ffi_handler (mm_ctx_id) {
-        unsafe {ctx.btc_ctx() as *mut c_void}
-    } else {
-        null_mut()
-    }
-}
 
 /// RAII and MT wrapper for `cJSON`.
 pub struct CJSON (pub *mut lp::cJSON);
@@ -416,10 +237,10 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name.starts_with ("std::") {return}
     if name == "mm2::crash_reports::rust_seh_handler" {return}
     if name == "veh_exception_filter" {return}
-    if name == "helpers::stack_trace" {return}
-    if name == "helpers::log_stacktrace" {return}
+    if name == "common::stack_trace" {return}
+    if name == "common::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
-    if name.starts_with ("helpers::stack_trace") {return}
+    if name.starts_with ("common::stack_trace") {return}
     if name.starts_with ("mm2::crash_reports::signal_handler") {return}
 
     let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
@@ -686,7 +507,10 @@ pub struct RefreshedExternalResource<R: Send + 'static> {
     /// The time (in f64 seconds) when we last (re)started the `sync`.
     /// We want `AtomicU64` but it isn't yet stable.
     last_start: AtomicUsize,
-    shelf: Arc<Mutex<Option<RerShelf<R>>>>
+    shelf: Arc<Mutex<Option<RerShelf<R>>>>,
+    /// The `Future`s interested in the next update.  
+    /// When there is an updated the `Task::notify` gets invoked once and then the `Task` is removed from the `listeners` list.
+    listeners: Arc<Mutex<Vec<Task>>>
 }
 impl<R: Send + 'static> RefreshedExternalResource<R> {
     /// New instance of the external resource tracker.
@@ -704,8 +528,15 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             every_n_sec,
             timeout_sec: timeout_sec .max (every_n_sec),
             last_start: AtomicUsize::new (0f64.to_bits() as usize),
-            shelf: Arc::new (Mutex::new (None))
+            shelf: Arc::new (Mutex::new (None)),
+            listeners: Arc::new (Mutex::new (Vec::new()))
         }
+    }
+
+    pub fn add_listeners (&self, mut tasks: Vec<Task>) -> Result<(), String> {
+        let mut listeners = try_s! (self.listeners.lock());
+        listeners.append (&mut tasks);
+        Ok(())
     }
 
     /// Performs the maintenance operations necessary to periodically refresh the resource.
@@ -719,6 +550,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             let sync = try_s! (self.sync.lock());
             let f = (*sync)();
             let shelf_tx = self.shelf.clone();
+            let listeners = self.listeners.clone();
             let f = f.then (move |result| -> Result<(), ()> {
                 let mut shelf = match shelf_tx.lock() {Ok (l) => l, Err (err) => {
                     eprintln! ("RefreshedExternalResource::tick] Can't lock the shelf: {}", err);
@@ -729,7 +561,15 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
                     *shelf = Some (RerShelf {
                         time: now_float(),
                         result
-                    })
+                    });
+                    drop (shelf);  // Don't hold the lock unnecessarily.
+                    {
+                        let mut listeners = match listeners.lock() {Ok (l) => l, Err (err) => {
+                            eprintln! ("RefreshedExternalResource::tick] Can't lock the listeners: {}", err);
+                            return Err(())
+                        }};
+                        for task in listeners.drain (..) {task.notify()}
+                    }
                 }
                 Ok(())
             });
@@ -747,251 +587,11 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
         })
     }
 
-    pub fn with_result<V, F: Fn (Option<&Result<R, String>>) -> Result<V, String>> (&self, cb: F) -> Result<V, String> {
+    pub fn with_result<V, F: FnMut (Option<&Result<R, String>>) -> Result<V, String>> (&self, mut cb: F) -> Result<V, String> {
         let shelf = try_s! (self.shelf.lock());
         match *shelf {
             Some (ref rer_shelf) => cb (Some (&rer_shelf.result)),
             None => cb (None)
-        }
-    }
-}
-
-/// Helpers used in the unit and integration tests.
-pub mod for_tests {
-    use chrono::Local;
-
-    use duct::Handle;
-
-    use futures::Future;
-
-    use gstuff::{now_float, slurp, ISATTY};
-
-    use hyper::{Request, StatusCode};
-
-    use serde_json::{self as json, Value as Json};
-
-    use term;
-
-    use rand::{thread_rng, Rng};
-
-    use std::collections::HashSet;
-    use std::env;
-    use std::fs;
-    use std::io::{Write};
-    use std::net::{IpAddr, Ipv4Addr};
-    use std::path::{Path, PathBuf};
-    use std::str::{from_utf8};
-    use std::sync::Mutex;
-    use std::thread::{sleep};
-    use std::time::Duration;
-
-    use super::slurp_req;
-
-    /// Automatically kill a wrapped process.
-    pub struct RaiiKill {handle: Handle, running: bool}
-    impl RaiiKill {
-        pub fn from_handle (handle: Handle) -> RaiiKill {
-            RaiiKill {handle, running: true}
-        }
-        pub fn running (&mut self) -> bool {
-            if !self.running {return false}
-            match self.handle.try_wait() {Ok (None) => true, _ => {self.running = false; false}}
-        }
-    }
-    impl Drop for RaiiKill {
-        fn drop (&mut self) {
-            // The cached `running` check might provide some protection against killing a wrong process under the same PID,
-            // especially if the cached `running` check is also used to monitor the status of the process.
-            if self.running() {
-                let _ = self.handle.kill();
-            }
-        }
-    }
-
-    /// When `drop`ped, dumps the given file to the stdout.
-    /// 
-    /// Used in the tests, copying the MM log to the test output.
-    /// 
-    /// Note that because of https://github.com/rust-lang/rust/issues/42474 it's currently impossible to share the MM log interactively,
-    /// hence we're doing it in the `drop`.
-    pub struct RaiiDump {
-        pub log_path: PathBuf
-    }
-    impl Drop for RaiiDump {
-        fn drop (&mut self) {
-            // `term` bypasses the stdout capturing, we should only use it if the capturing was disabled.
-            let nocapture = env::args().any (|a| a == "--nocapture");
-
-            let log = slurp (&self.log_path);
-
-            // Make sure the log is Unicode.
-            // We'll get the "io error when listing tests: Custom { kind: InvalidData, error: StringError("text was not valid unicode") }" otherwise.
-            let log = String::from_utf8_lossy (&log);
-            let log = log.trim();
-
-            if let (true, true, Some (mut t)) = (nocapture, *ISATTY, term::stdout()) {
-                let _ = t.fg (term::color::BRIGHT_YELLOW);
-                let _ = t.write (format! ("vvv {:?} vvv\n", self.log_path) .as_bytes());
-                let _ = t.fg (term::color::YELLOW);
-                let _ = t.write (log.as_bytes());
-                let _ = t.write (b"\n");
-                let _ = t.reset();
-            } else {
-                println! ("vvv {:?} vvv\n{}", self.log_path, log);
-            }
-        }
-    }
-
-    lazy_static! {
-        /// A singleton with the IPs used by the MarketMakerIt instances created in this session.
-        static ref MM_IPS: Mutex<HashSet<IpAddr>> = Mutex::new (HashSet::new());
-    }
-
-    /// An instance of a MarketMaker process started by and for an integration test.  
-    /// Given that [in CI] the tests are executed before the build, the binary of that process is the tests binary.
-    pub struct MarketMakerIt {
-        /// The MarketMaker's current folder where it will try to open the database files.
-        pub folder: PathBuf,
-        /// Unique (to run multiple instances) IP, like "127.0.0.$x".
-        pub ip: IpAddr,
-        /// The file we redirected the standard output and error streams to.
-        pub log_path: PathBuf,
-        /// The PID of the MarketMaker process.
-        pub pc: Option<RaiiKill>,
-        /// RPC API key.
-        pub userpass: String
-    }
-    impl MarketMakerIt {
-        /// Create a new temporary directory and start a new MarketMaker process there.
-        /// 
-        /// * `conf` - The command-line configuration passed to the MarketMaker.
-        ///            Unique local IP address is injected as "myipaddr" unless this field is already present.
-        /// * `userpass` - RPC API key. We should probably extract it automatically from the MM log.
-        /// * `local` - Function to start the MarketMaker in a local thread, instead of spawning a process.
-        ///             Used when the `LOCAL_THREAD_MM` env is `1` and allows to more easily debug the tested MM.
-        pub fn start (mut conf: Json, userpass: String, local: fn (folder: PathBuf, log_path: PathBuf, conf: Json))
-        -> Result<MarketMakerIt, String> {
-            let executable = try_s! (env::args().next().ok_or ("No program name"));
-            let executable = try_s! (Path::new (&executable) .canonicalize());
-
-            let ip: IpAddr = if conf["myipaddr"].is_null() {  // Generate an unique IP.
-                let mut attempts = 0;
-                let mut rng = thread_rng();
-                loop {
-                    let ip4 = if cfg! (target_os = "macos") {
-                        // For some reason we can't use the 127.0.0.2-255 range of IPs on Travis/MacOS,
-                        // cf. https://travis-ci.org/artemii235/SuperNET/jobs/428167579
-                        // I plan to later look into this, but for now we're always using 127.0.0.1 on MacOS.
-                        //
-                        // P.S. 127.0.0.2:7783 works when tested with static+cURL,
-                        // cf. https://travis-ci.org/artemii235/SuperNET/builds/428350505
-                        // but with MM it mysteriously fails,
-                        // cf. https://travis-ci.org/artemii235/SuperNET/jobs/428341581#L4534.
-                        // I think that something might be wrong with the HTTP server on our side.
-                        // Hopefully porting it to Hyper (https://github.com/artemii235/SuperNET/issues/155) will help.
-                        if attempts > 0 {sleep (Duration::from_millis (1000 + attempts * 200))}
-                        Ipv4Addr::new (127, 0, 0, 1)
-                    } else {
-                        Ipv4Addr::new (127, 0, 0, rng.gen_range (1, 255))
-                    };
-                    if attempts > 128 {return ERR! ("Out of local IPs?")}
-                    let ip: IpAddr = ip4.clone().into();
-                    let mut mm_ips = try_s! (MM_IPS.lock());
-                    if mm_ips.contains (&ip) {attempts += 1; continue}
-                    mm_ips.insert (ip.clone());
-                    conf["myipaddr"] = format! ("{}", ip) .into();
-                    conf["rpcip"] = format! ("{}", ip) .into();
-
-                    if cfg! (target_os = "macos") && ip4.octets()[3] > 1 {
-                        // Make sure the local IP is enabled on MAC (and in the Travis CI).
-                        // cf. https://superuser.com/a/458877
-                        let cmd = cmd! ("sudo", "ifconfig", "lo0", "alias", format! ("{}", ip), "up");
-                        match cmd.stderr_to_stdout().read() {
-                            Err (err) => println! ("MarketMakerIt] Error trying to `up` the {}: {}", ip, err),
-                            Ok (output) => println! ("MarketMakerIt] Upped the {}: {}", ip, output)
-                        }
-                    }
-                    break ip
-                }
-            } else {  // Just use the IP given in the `conf`.
-                let ip: IpAddr = try_s! (try_s! (conf["myipaddr"].as_str().ok_or ("myipaddr is not a string")) .parse());
-                let mut mm_ips = try_s! (MM_IPS.lock());
-                if mm_ips.contains (&ip) {println! ("MarketMakerIt] Warning, IP {} was already used.", ip)}
-                mm_ips.insert (ip.clone());
-                ip
-            };
-
-            // Use a separate (unique) temporary folder for each MM.
-            // (We could also remove the old folders after some time in order not to spam the temporary folder.
-            // Though we don't always want to remove them right away, allowing developers to check the files).
-            let now = Local::now();
-            let folder = format! ("mm2_{}_{}", now.format ("%Y-%m-%d_%H-%M-%S-%3f"), ip);
-            let folder = env::temp_dir().join (folder);
-            try_s! (fs::create_dir (&folder));
-            try_s! (fs::create_dir (folder.join ("DB")));
-            let log_path = folder.join ("mm2.log");
-            conf["log"] = unwrap! (log_path.to_str()) .into();
-
-            // If `LOCAL_THREAD_MM` is set to `1`
-            // then instead of spawning a process we start the MarketMaker in a local thread,
-            // allowing us to easily *debug* the tested MarketMaker code.
-            // Note that this should only be used while running a single test,
-            // using this option while running multiple tests (or multiple MarketMaker instances) is currently UB.
-            let pc = if env::var ("LOCAL_THREAD_MM") == Ok ("1".into()) {
-                local (folder.clone(), log_path.clone(), conf);
-                None
-            } else {
-                Some (RaiiKill::from_handle (try_s! (cmd! (&executable, "test_mm_start", "--nocapture")
-                    .dir (&folder)
-                    .env ("_MM2_TEST_CONF", try_s! (json::to_string (&conf)))
-                    .env ("MM2_UNBUFFERED_OUTPUT", "1")
-                    .stderr_to_stdout().stdout (&log_path) .start())))
-            };
-
-            Ok (MarketMakerIt {folder, ip, log_path, pc, userpass})
-        }
-        pub fn log_as_utf8 (&self) -> Result<String, String> {
-            let mm_log = slurp (&self.log_path);
-            Ok (unsafe {String::from_utf8_unchecked (mm_log)})
-        }
-        /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
-        pub fn wait_for_log (&self, timeout_sec: f64, pred: &Fn (&str) -> bool) -> Result<(), String> {
-            let start = now_float();
-            let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
-            loop {
-                let mm_log = try_s! (self.log_as_utf8());
-                if pred (&mm_log) {return Ok(())}
-                if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
-                sleep (Duration::from_millis (ms));
-            }
-        }
-        /// Invokes the locally running MM and returns it's reply.
-        pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String), String> {
-            let payload = try_s! (json::to_string (&payload));
-            let uri = format! ("http://{}:7783", self.ip);
-            let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
-            let (status, _headers, body) = try_s! (slurp_req (request) .wait());
-            Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
-        }
-        /// Sends the &str payload to the locally running MM and returns it's reply.
-        pub fn rpc_str (&self, payload: &'static str) -> Result<(StatusCode, String), String> {
-            let uri = format! ("http://{}:7783", self.ip);
-            let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
-            let (status, _headers, body) = try_s! (slurp_req (request) .wait());
-            Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
-        }
-        /// Send the "stop" request to the locally running MM.
-        pub fn stop (&self) -> Result<(), String> {
-            let (status, body) = try_s! (self.rpc (json! ({"userpass": self.userpass, "method": "stop"})));
-            if status != StatusCode::OK {return ERR! ("MM didn't accept a stop. body: {}", body)}
-            Ok(())
-        }
-    }
-    impl Drop for MarketMakerIt {
-        fn drop (&mut self) {
-            if let Ok (mut mm_ips) = MM_IPS.lock() {
-                mm_ips.remove (&self.ip);
-            } else {println! ("MarketMakerIt] Can't lock MM_IPS.")}
         }
     }
 }

@@ -19,13 +19,13 @@
 //
 
 #[macro_use]
+extern crate common;
+#[macro_use]
 extern crate fomat_macros;
 extern crate futures;
 extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
-#[macro_use]
-extern crate helpers;
 extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
@@ -36,23 +36,28 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate unwrap;
+extern crate url;
 
-mod prices;
+pub mod prices;
 
+use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
+  HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
+use common::mm_ctx::{MmArc, MmWeak};
+use common::log::TagParam;
+use common::ser::de_none_if_empty;
 use fxhash::{FxHashMap, FxHashSet};
+use futures::{Future, Stream};
+use futures::task::Task;
 use gstuff::{now_ms, now_float};
-use helpers::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
-  HyRes, MmArc, MmWeak, RefreshedExternalResource, CJSON, SMALLVAL};
-use helpers::log::TagParam;
-use helpers::ser::de_none_if_empty;
 use hyper::{StatusCode, HeaderMap};
-use prices::{lp_btcprice, Coins, CoinId, ExternalPrices, PricingProvider, PriceUnit};
+use libc::{c_char, c_void};
+use prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
+use std::collections::hash_map::Entry;
 use std::ffi::{CStr, CString};
 use std::iter::once;
-use std::mem::{forget, zeroed};
-use std::os::raw::{c_char, c_void};
-use std::ptr::null_mut;
+use std::mem::{zeroed};
+use std::ptr::{null, null_mut};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
@@ -61,7 +66,7 @@ use std::thread::sleep;
 struct PortfolioContext {
     // NB: We're using the MM configuration ("coins"), therefore every MM must have its own set of price resources.
     //     That's why we keep the price resources in the `PortfolioContext` and not in a singleton.
-    price_resources: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Coins, RefreshedExternalResource<ExternalPrices>)>>
+    price_resources: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Arc<Coins>, RefreshedExternalResource<ExternalPrices>)>>
 }
 impl PortfolioContext {
     /// Obtains a reference to this crate context, creating it if necessary.
@@ -540,18 +545,57 @@ int32_t LP_autoref_clear(char *base,char *rel)
 }
 */
 
-/// Returns a doube with the given `name` from the given `json`, but only if it's greter than `SMALLVAL`.
-fn positive_f64 (json: *mut lp::cJSON, name: *const c_char) -> Option<f64> {
-    match unsafe {lp::jdouble (json, name as *mut c_char)} {
-        f if f > SMALLVAL => Some (f),
-        _ => None
+type InterestingCoins = FxHashMap<(PricingProvider, PriceUnit), (FxHashSet<CoinId>, Vec<Task>)>;
+
+/// Adds the given coins into the list of coin prices to fetch. And triggers the price fetch.
+fn register_interest_in_coin_prices (ctx: &MmArc, pctx: &PortfolioContext, coins: InterestingCoins) -> Result<(), String> {
+    for ((provider, unit), (coins, listeners)) in coins {
+        // Create and/or update the external provider instances.
+        let mut price_resources = try_s! (pctx.price_resources.lock());
+        match price_resources.entry ((provider.clone(), unit)) {
+            Entry::Vacant (ve) => {
+                let coins = Arc::new (Coins {
+                    ids: Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())
+                });
+                let rer = RefreshedExternalResource::new (30., 40., Box::new ({
+                    let provider = provider.clone();
+                    let coins = coins.clone();
+                    let ctx_weak = ctx.weak();
+                    move || lp_btcprice (ctx_weak.clone(), &provider, unit, &coins)
+                }));
+                try_s! (rer.add_listeners (listeners));
+                try_s! (rer.tick());
+                ve.insert ((coins, rer));
+            },
+            Entry::Occupied (mut oe) => {
+                {
+                    let shared_coins = &mut oe.get_mut().0;
+                    let mut coin_ids = try_s! (shared_coins.ids.lock());
+                    let now = now_float();
+                    for coin in coins {coin_ids.insert (coin, now);}
+                }
+                try_s! (oe.get().1.add_listeners (listeners));
+                try_s! (oe.get().1.tick())
+            }
+        }
     }
+    Ok(())
+}
+
+fn default_pricing_provider (ctx: &MmArc) -> Result<PricingProvider, String> {
+    let cmc_key = match ctx.conf["cmc_key"] {
+        Json::Null => None,
+        Json::String (ref k) => Some (k.clone()),
+        _ => return ERR! ("cmc_key is not a string")
+    };
+
+    // Default provider.
+    let provider = if let Some (ref k) = cmc_key {PricingProvider::CoinMarketCap (k.clone())} else {PricingProvider::CoinGecko};
+
+    Ok (provider)
 }
 
 fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), String> {
-    use std::collections::hash_map::Entry;
-
-
     let portfolio_ctx = try_s! (PortfolioContext::from_ctx (ctx));
 
     // Natural singletons (there's only one "bittrex.com" in the internet).
@@ -631,12 +675,6 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     // Incremeted with RPC "autoprice" invoking `LP_autoprice`.
     let num_lp_autorefs = unsafe {lp::num_LP_autorefs};
 
-    let cmc_key = match ctx.conf["cmc_key"] {
-        Json::Null => None,
-        Json::String (ref k) => Some (k.clone()),
-        _ => return ERR! ("cmc_key is not a string")
-    };
-
     // It's probably optimal if we'll have a single external resource future for every (`PricingProvider`, `PriceUnit`) we're gonna use.
     // That way we get pricing reuse while generating less load on the providers.
     // We can't have one resource per external provider because some of them only return a single currency (cf. CoinGecko "vs_currency").
@@ -644,8 +682,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     // speed up the pricing update whenever a new coin is discovered in a MM orderbook. We have to wait
     // for the next `RefreshedExternalResource` revolution instead. TODO: Speed up the revolution when a new coin discovered.
 
-    // Default provider.
-    let provider = if let Some (ref k) = cmc_key {PricingProvider::CoinMarketCap (k.clone())} else {PricingProvider::CoinGecko};
+    let provider = try_s! (default_pricing_provider (ctx));
 
     // Coins the price of which we always need.
     let always = [CoinId ("komodo".into()), CoinId ("bitcoin-cash".into()), CoinId ("litecoin".into())];
@@ -672,37 +709,14 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     };
 
     // Group the coins by (provider, unit) in order to have all the coins ready for the provider instance creation.
-    let mut coins: FxHashMap<(PricingProvider, PriceUnit), FxHashSet<CoinId>> = FxHashMap::default();
+    let mut coins: InterestingCoins = FxHashMap::default();
     for (provider, unit, coin) in coin_price_interest {
         match coins.entry ((provider.clone(), unit)) {
-            Entry::Vacant (ve) => {ve.insert (once (coin) .collect());},
-            Entry::Occupied (mut oe) => {oe.get_mut().insert (coin);}
-        };
-    }
-    for ((provider, unit), coins) in coins {
-        // Create and/or update the external provider instances.
-        let mut price_resources = try_s! (portfolio_ctx.price_resources.lock());
-        match price_resources.entry ((provider.clone(), unit)) {
-            Entry::Vacant (ve) => {
-                let coins = Coins (Arc::new (Mutex::new (coins.into_iter().map (|c| (c, now_float())) .collect())));
-                let rer = RefreshedExternalResource::new (30., 40., Box::new ({
-                    let provider = provider.clone();
-                    let coins = coins.clone();
-                    let ctx_weak = ctx.weak();
-                    move || lp_btcprice (ctx_weak.clone(), &provider, unit, &coins)
-                }));
-                try_s! (rer.tick());
-                ve.insert ((coins, rer));
-            },
-            Entry::Occupied (mut oe) => {
-                for coin in coins {
-                    let mut coins = try_s! ((oe.get_mut().0).0.lock());
-                    coins.insert (coin, now_float());
-                }
-                try_s! (oe.get().1.tick())
-            }
+            Entry::Vacant (ve) => {ve.insert ((once (coin) .collect(), Vec::new()));},
+            Entry::Occupied (mut oe) => {oe.get_mut().0.insert (coin);}
         }
     }
+    try_s! (register_interest_in_coin_prices (&ctx, &portfolio_ctx, coins));
 
     let (kmd_btc, bch_btc, ltc_btc) = {
         let price_resources = try_s! (portfolio_ctx.price_resources.lock());
@@ -759,30 +773,40 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
         let sellmargin = autoref.sellmargin;
         let offset = autoref.offset;
         let factor = autoref.factor;
-        let fundvalue = autoref.fundvalue;
-        if fundvalue != null_mut() {
-            let fundjson = unsafe {lp::LP_fundvalue (fundvalue)};
-            if fundjson != null_mut() {
-                let missing = unsafe {lp::jint (fundjson, b"missing".as_ptr() as *mut c_char)};
-                if missing != 0 {
-                    if let (Some (mut bidprice), Some (mut askprice)) = (positive_f64 (fundjson, autoref.fundbid.as_ptr()), positive_f64 (fundjson, autoref.fundask.as_ptr())) {
-                        let price = (bidprice + askprice) * 0.5;
-                        bidprice = 1. / price * (1. + buymargin);
-                        if autoref.lastbid < SMALLVAL {autoref.lastbid = bidprice}
-                        else {autoref.lastbid = (autoref.lastbid * 0.9) + (0.1 * bidprice)}
-                        bidprice = autoref.lastbid;
-                        askprice = price * (1. + sellmargin);
-                        if autoref.lastask < SMALLVAL {autoref.lastask = askprice}
-                        else {autoref.lastask = (autoref.lastask * 0.9) + (0.1 * askprice)}
-                        askprice = autoref.lastask;
-                        unsafe {lp::LP_mypriceset (1, &mut changed, c_rel, c_base, bidprice)};
-                        unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_rel, c_base, bidprice)};
-                        unsafe {lp::LP_mypriceset (1, &mut changed, c_base, c_rel, askprice)};
-                        unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_base, c_rel, askprice)};
-                    }
-                    autoref.count += 1
+        let fundvalue = autoref.fundvalue_req as *const AutopriceReq;
+        if fundvalue != null() {
+            let fundjson = try_s! (lp_fundvalue (ctx.clone(), try_s! (json::to_value (unsafe {&*fundvalue})), true) .wait());  // Immediate.
+            let fundjson = try_s! (fundjson.into_body().concat2().wait());  // Immediate.
+            let fundjson: FundvalueRes = try_s! (json::from_slice (&fundjson));
+            if fundjson.missing != 0 {
+                let fundbid = try_s! (unsafe {CStr::from_ptr (autoref.fundbid.as_ptr())} .to_str());
+                let fundbid = match fundbid {
+                    "NAV_KMD" => fundjson.NAV_KMD,
+                    "NAV_BTC" => fundjson.NAV_BTC,
+                    _ => return ERR! ("Unknown fundbid: {}", fundbid)
+                };
+                let fundask = try_s! (unsafe {CStr::from_ptr (autoref.fundask.as_ptr())} .to_str());
+                let fundask = match fundask {
+                    "NAV_KMD" => fundjson.NAV_KMD,
+                    "NAV_BTC" => fundjson.NAV_BTC,
+                    _ => return ERR! ("Unknown fundask: {}", fundask)
+                };
+                if let (Some (mut bidprice), Some (mut askprice)) = (fundbid.filter (|p| *p > SMALLVAL), fundask.filter (|p| *p > SMALLVAL)) {
+                    let price = (bidprice + askprice) * 0.5;
+                    bidprice = 1. / price * (1. + buymargin);
+                    if autoref.lastbid < SMALLVAL {autoref.lastbid = bidprice}
+                    else {autoref.lastbid = (autoref.lastbid * 0.9) + (0.1 * bidprice)}
+                    bidprice = autoref.lastbid;
+                    askprice = price * (1. + sellmargin);
+                    if autoref.lastask < SMALLVAL {autoref.lastask = askprice}
+                    else {autoref.lastask = (autoref.lastask * 0.9) + (0.1 * askprice)}
+                    askprice = autoref.lastask;
+                    unsafe {lp::LP_mypriceset (1, &mut changed, c_rel, c_base, bidprice)};
+                    unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_rel, c_base, bidprice)};
+                    unsafe {lp::LP_mypriceset (1, &mut changed, c_base, c_rel, askprice)};
+                    unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_base, c_rel, askprice)};
                 }
-                unsafe {lp::free_json (fundjson);}
+                autoref.count += 1
             }
         } else if refrel == "coinmarketcap" {
             // See if the external pricing resource has provided us with the price.
@@ -985,18 +1009,6 @@ pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
         (req.refbase.as_ref().map_or ("", |s| &s[..]), req.refrel.as_ref().map_or ("", |s| &s[..]))
     };
 
-    fn to_c_json (req: &AutopriceReq) -> Result<*mut lp::cJSON, String> {
-        let mut fundvalue = try_s! (json::to_value (&req));
-        fundvalue["method"] = "fundvalue".into();
-        let fundvalue = try_s! (json::to_string (&fundvalue));
-        let fundvalue = try_s! (CJSON::from_str (&fundvalue));
-        let c_json = fundvalue.0;
-        // TODO: We temporarily have a leak here.
-        // Going to pass a `Box<AutopriceReq>` in the future.
-        forget (fundvalue);
-        Ok (c_json)
-    }
-
     // Use a global lock to lower the chance of races happening with the global `lp` arrays and `num_LP_autorefs`.
     // In the future the global arrays will be replaced with the `MmCtx` vectors and will have their separate locks.
     lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
@@ -1010,7 +1022,7 @@ pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
         if req.base == i_base && req.rel == i_rel {
             let autoref = unsafe {&mut lp::LP_autorefs[i]};
             if req.fundvalue_bid.is_some() && req.fundvalue_ask.is_some() {
-                autoref.fundvalue = try_h! (to_c_json (&req));
+                autoref.fundvalue_req = Box::into_raw (Box::new (req.clone())) as *mut c_void;
                 try_h! (safecopy! (autoref.fundbid, "{}", unwrap! (req.fundvalue_bid.as_ref())));
                 try_h! (safecopy! (autoref.fundask, "{}", unwrap! (req.fundvalue_ask.as_ref())));
             }
@@ -1029,7 +1041,7 @@ pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
 
     let autoref = unsafe {&mut lp::LP_autorefs[lp::num_LP_autorefs as usize]};
     if req.fundvalue_bid.is_some() || req.fundvalue_ask.is_some() {
-        autoref.fundvalue = try_h! (to_c_json (&req));
+        autoref.fundvalue_req = Box::into_raw (Box::new (req.clone())) as *mut c_void;
         try_h! (safecopy! (autoref.fundbid, "{}", unwrap! (req.fundvalue_bid.as_ref())));
         try_h! (safecopy! (autoref.fundask, "{}", unwrap! (req.fundvalue_ask.as_ref())));
     }

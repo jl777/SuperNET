@@ -1,11 +1,11 @@
 [package]
-name = "helpers"
+name = "common"
 version = "0.1.0"
 links = "marketmaker-mainnet-lib"
 
 [lib]
-name = "helpers"
-path = "helpers.rs"
+name = "common"
+path = "common.rs"
 doctest = false
 
 [dependencies]
@@ -30,7 +30,7 @@ tokio-core = "0.1"
 unwrap = "1.2"
 
 [build-dependencies]
-bindgen = "0.40"
+bindgen = "0.42"
 cc = "1.0"
 duct = "0.11"
 gstuff = "0.5"

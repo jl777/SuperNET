@@ -26,14 +26,14 @@ double LP_portfolio_relvolume;
 
 void LP_portfolio_reset()
 {
-    struct iguana_info *coin,*tmp; cJSON *fundjson; int32_t i; struct LP_autoprice_ref *ptr;
+    struct iguana_info *coin,*tmp; void* fundjson; int32_t i; struct LP_autoprice_ref *ptr;
     for (i=0; i<num_LP_autorefs; i++)
     {
         ptr = &LP_autorefs[i];
-        if ( (fundjson= ptr->fundvalue) != 0 )
+        if ( (fundjson= ptr->fundvalue_req) != 0 )
         {
-            ptr->fundvalue = 0;
-            free_json(fundjson);
+            ptr->fundvalue_req = 0;
+            //it's a boxed `AutopriceReq` now, will free it after the port of `LP_portfolio_reset`// free_json(fundjson);
         }
     }
     memset(LP_autorefs,0,sizeof(LP_autorefs));

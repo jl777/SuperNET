@@ -21,10 +21,16 @@
 
 #![allow(non_camel_case_types)]
 
+use common::{ str_to_malloc };
+use common::mm_ctx::MmArc;
+use common::etomiclib::*;
 use ethcore_transaction::{ Action, Transaction };
 use ethereum_types::{ U256, H160, H256 };
 use ethkey::{ KeyPair, Secret, Public, public_to_address };
 use ethabi::{ Contract, Token };
+use libc::{ c_char, c_int };
+#[allow(unused_imports)]
+use libc::c_void;
 use web3::transports::{ Http, EventLoopHandle };
 use web3::{ self, Web3 };
 use web3::types::{
@@ -37,19 +43,14 @@ use web3::types::{
 };
 use std::sync::{ RwLock, Mutex };
 use std::collections::HashMap;
-use std::os::raw::{ c_char, c_int };
 use std::ffi::{ CStr };
 use std::str::FromStr;
 use regex::Regex;
-use helpers::{ str_to_malloc, MmArc };
-use helpers::etomiclib::*;
 use web3::futures::Future;
 use hex;
 use rlp;
 use std;
 use etomiccurl::get_gas_price_from_station;
-#[cfg(target_os = "macos")]
-use std::os::raw::c_void;
 
 static ALICE_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"}],"name":"initErc20Deal","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceSecret","type":"bytes"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobHash","type":"bytes20"}],"name":"initEthDeal","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deals","outputs":[{"name":"dealHash","type":"bytes20"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_dealId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_bob","type":"address"},{"name":"_aliceHash","type":"bytes20"},{"name":"_bobSecret","type":"bytes"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]"#;
 static BOB_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_aliceSecret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_bobHash","type":"bytes20"}],"name":"aliceClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_bob","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"aliceClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_bobSecret","type":"bytes32"},{"name":"_aliceHash","type":"bytes20"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"}],"name":"bobClaimsDeposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_tokenAddress","type":"address"},{"name":"_secretHash","type":"bytes20"}],"name":"bobClaimsPayment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Deposit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesErc20Payment","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_bobHash","type":"bytes20"},{"name":"_aliceHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthDeposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_txId","type":"bytes32"},{"name":"_alice","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"bobMakesEthPayment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"deposits","outputs":[{"name":"depositHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"payments","outputs":[{"name":"paymentHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]"#;
@@ -1677,7 +1678,7 @@ pub extern "C" fn alice_payment_status(payment_tx_id: *const c_char, eth_client:
             value: None,
             data: Some(web3::types::Bytes(encoded))
         }, Some(BlockNumber::Latest)).wait().unwrap();
-        let tokens = function.decode_output(&res.0).unwrap();
+        let tokens = unwrap! (function.decode_output(&res.0));
         match tokens[1] {
             Token::Uint(number) => number.into(),
             _ => panic!("Payment status must be Uint, check Alice contract ABI")
@@ -1780,8 +1781,7 @@ pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
 #[cfg(test)]
 pub mod test {
     use std::ffi::CString;
-    use libc;
-    use std::os::raw::{ c_int };
+    use libc::{self, c_char};
     use etomic::*;
 
     fn eth_client_for_test() -> *mut EthClient {
