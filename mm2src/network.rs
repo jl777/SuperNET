@@ -17,9 +17,10 @@
 //  LP_network.c
 //  marketmaker
 //
-use common::{free_c_ptr, lp, nn, str_to_malloc, CJSON};
+use common::{free_c_ptr, nn, str_to_malloc, CJSON};
 use common::mm_ctx::MmArc;
-use libc::{self, c_char, c_void, strlen};
+use libc::{c_char, c_void, strlen};
+use lp_native_dex::lp_command_process;
 use serde_json::{self as json, Value as Json};
 use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
@@ -495,26 +496,18 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                         cmd.response_sock,
                         c_str.as_ptr() as *const c_void,
                         strlen(c_str.as_ptr()) as usize,
-                        0i32,
+                        0,
                     );
-                    if size <= 0i32 {
-                        /*printf(
-                            b"error sending event\n\x00" as *const u8 as *const libc::c_char,
-                        );*/
-                    }
-
                 }
             } else {
-                let arg_json = unwrap!(CJSON::from_str(&cmd.msg));
-                let msg_c_str = unwrap!(CString::new(cmd.msg));
+                let c_json = unwrap!(CJSON::from_str(&cmd.msg));
+                let json = unwrap!(json::from_str(&cmd.msg));
                 //printf("deQ.(%s)\n",jprint(argjson,0));
-                let mut retstr = lp::LP_command_process(
-                    ctx.btc_ctx() as *mut c_void,
-                    b"127.0.0.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+                let mut retstr = lp_command_process(
+                    ctx.clone(),
                     cmd.response_sock,
-                    arg_json.0,
-                    msg_c_str.as_ptr() as *mut u8,
-                    strlen(msg_c_str.as_ptr()) as i32,
+                    json,
+                    c_json,
                     cmd.stats_json_only,
                 );
                 if !retstr.is_null() {
@@ -540,14 +533,8 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                             cmd.response_sock,
                             retstr as *const c_void,
                             len as usize,
-                            0i32,
+                            0,
                         );
-                        if size <= 0 {
-                            /*printf(
-                                b"error sending result\n\x00" as *const u8
-                                    as *const libc::c_char,
-                            );*/
-                        }
                     }
                     free_c_ptr(retstr as *mut c_void);
                 }

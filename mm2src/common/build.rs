@@ -140,6 +140,8 @@ fn generate_bindings() {
             "cJSON_GetErrorPtr",
             "cJSON_Delete",
             "cJSON_GetArraySize",
+            "j64bits",
+            "jarray",
             "jitem",
             "jint",
             "jstr",
@@ -193,6 +195,22 @@ fn generate_bindings() {
             "LP_command_process",
             "LP_balances",
             "LP_KMDvalue",
+            "LP_quoteparse",
+            "LP_requestinit",
+            "LP_tradecommand_log",
+            "bits256_cmp",
+            "bits256_str",
+            "LP_bob_competition",
+            "LP_alice_eligible",
+            "LP_trades_gotreserved",
+            "LP_quotecmp",
+            "LP_reserved",
+            "LP_tradecommandQ",
+            "LP_trades_gotconnect",
+            "LP_trades_gotconnected",
+            "LP_instantdex_proofcheck",
+            "LP_trades_gotrequest",
+            "LP_myprice",
         ]
             .iter(),
         // types
@@ -237,6 +255,8 @@ fn generate_bindings() {
             "LP_Alicedestpubkey",
             "GTCorders",
             "LP_QUEUE_COMMAND",
+            "LP_RTcount",
+            "LP_swapscount",
         ]
             .iter(),
     );
@@ -432,7 +452,7 @@ fn build_c_code(mm_version: &str) {
         "--build".into(),
         ".".into(),
         "--target".into(),
-        "marketmaker-mainnet-lib".into(),
+        "marketmaker-lib".into(),
     ];
     if !cfg!(windows) {
         // Doesn't currently work on AppVeyor.
@@ -448,7 +468,7 @@ fn build_c_code(mm_version: &str) {
         "!cmake"
     );
 
-    println!("cargo:rustc-link-lib=static=marketmaker-mainnet-lib");
+    println!("cargo:rustc-link-lib=static=marketmaker-lib");
 
     // Link in the libraries needed for MM1.
 

@@ -29,11 +29,12 @@
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
 use common::{lp, slurp_url, CJSON, MM_VERSION};
-use common::mm_ctx::MmCtx;
+use common::mm_ctx::{MmCtx, MmArc};
 use crc::crc32;
 use futures::{Future};
-use libc::{self, c_char};
+use libc::{self, c_char, c_void};
 use network::{lp_command_q_loop, lp_queue_command};
+use ordermatch::lp_trade_command;
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
@@ -43,6 +44,7 @@ use std::io::{Cursor, Read, Write};
 use std::mem::transmute;
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
+use std::ptr::null_mut;
 use std::str;
 use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -220,30 +222,33 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_tradebots.c"
 #include "LP_messages.c"
 #include "LP_commands.c"
-
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly)
-{
-    char *retstr=0; cJSON *retjson; bits256 zero;
-    if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
-        return(0);
-    if ( stats_JSONonly != 0 || LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
-    {
-        if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
-        {
-            //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
-            //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
-                //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
-        }
+*/
+pub unsafe fn lp_command_process(
+    ctx: MmArc,
+    pub_sock: i32,
+    json: Json,
+    c_json: CJSON,
+    stats_json_only: i32,
+) -> *mut libc::c_char {
+    let my_ip = unwrap!(CString::new(format!("{}", ctx.rpc_ip_port.ip())));
+    if !json["result"].is_null() || !json["error"].is_null() {
+        null_mut()
+    } else if stats_json_only != 0 || lp_trade_command(ctx.clone(), json, &c_json) <= 0 {
+        lp::stats_JSON(
+            ctx.btc_ctx() as *mut c_void,
+            0,
+            my_ip.as_ptr() as *mut c_char,
+            pub_sock,
+            c_json.0,
+            b"127.0.0.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+            stats_json_only as u16,
+        )
+    } else {
+        null_mut()
     }
-    else if ( LP_statslog_parse() > 0 && 0 )
-    {
-        memset(zero.bytes,0,sizeof(zero));
-        if ( (retjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
-            free_json(retjson);
-    }
-    return(retstr);
 }
 
+/*
 char *LP_decrypt(uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *ptr,int32_t *recvlenp)
 {
     uint8_t *nonce,*cipher; int32_t recvlen,cipherlen; char *jsonstr = 0;
