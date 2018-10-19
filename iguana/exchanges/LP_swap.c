@@ -850,7 +850,7 @@ void LP_bobloop(void *_swap)
 {
     uint8_t *data; char bobstr[65],alicestr[65]; int32_t bobwaittimeout,alicewaittimeout,maxlen,m,n,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
-    //printf("start swap iambob\n");
+    printf("start swap iambob\n");
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
     LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
     maxlen = 1024*1024 + sizeof(*swap);

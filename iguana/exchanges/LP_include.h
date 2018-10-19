@@ -157,7 +157,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_DONTCHANGE_ERRMSG0 "couldnt find coin locally installed"
 #define LP_DONTCHANGE_ERRMSG1 "coin is disabled"
 
-extern char GLOBAL_DBDIR[];
+extern char GLOBAL_DBDIR[512];
 extern int32_t IAMLP;
 
 struct iguana_msgvin
