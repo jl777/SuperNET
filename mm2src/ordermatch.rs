@@ -21,11 +21,16 @@
 use common::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON};
 use common::mm_ctx::MmArc;
 use gstuff::now_ms;
-use libc::{self, c_void, c_char, strcpy, strlen, strcmp, calloc, printf, rand};
+use libc::{self, c_void, c_char, strcpy, strlen, strcmp, calloc, rand};
 use serde_json::{Value as Json};
 use std::ffi::{CString};
 use std::ptr::null_mut;
 use std::sync::Mutex;
+
+#[link="c"]
+extern {
+    fn printf(_: *const libc::c_char, ...) -> libc::c_int;
+}
 /*
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
 double LP_Alicemaxprice;
@@ -1745,7 +1750,7 @@ pub unsafe fn lp_trade_command(
                     q.fill as i32,
                     q.gtc as i32,
                 );
-                rq = (q.R.requestid as u64) << 32i32 | q.R.quoteid as libc::c_ulong;
+                rq = (q.R.requestid as u64) << 32i32 | q.R.quoteid as u64;
                 // eat expired packets, some old timestamps floating about?
                 if q.uuidstr[0usize] == 0 || q.timestamp > 0 && now_ms() / 1000 > q.timestamp.wrapping_add(30 * 20) as u64 {
                     printf(
@@ -1776,7 +1781,7 @@ pub unsafe fn lp_trade_command(
                                 | lp::LP_Alicedestpubkey.ulongs[1usize]
                                 | lp::LP_Alicedestpubkey.ulongs[2usize]
                                 | lp::LP_Alicedestpubkey.ulongs[3usize]
-                                != 0 as libc::c_ulong) as libc::c_int
+                                != 0 as u64) as libc::c_int
                                 != 0
                                 {
                                     if lp::bits256_cmp(lp::LP_Alicedestpubkey, q.srchash) != 0 {
@@ -1832,9 +1837,9 @@ pub unsafe fn lp_trade_command(
                             {
                                 static mut RQS: [u64; 1024] = [0; 1024];
                                 i = 0;
-                                while (i as libc::c_ulong)
-                                    < (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
-                                    .wrapping_div(::std::mem::size_of::<u64>() as libc::c_ulong)
+                                while (i as u64)
+                                    < (::std::mem::size_of::<[u64; 1024]>() as u64)
+                                    .wrapping_div(::std::mem::size_of::<u64>() as u64)
                                     {
                                         if rq == RQS[i as usize] {
                                             return retval;
@@ -1843,23 +1848,23 @@ pub unsafe fn lp_trade_command(
                                         }
                                     }
                                 i = 0;
-                                while (i as libc::c_ulong)
-                                    < (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
-                                    .wrapping_div(::std::mem::size_of::<u64>() as libc::c_ulong)
+                                while (i as u64)
+                                    < (::std::mem::size_of::<[u64; 1024]>() as u64)
+                                    .wrapping_div(::std::mem::size_of::<u64>() as u64)
                                     {
-                                        if RQS[i as usize] == 0 as libc::c_ulong {
+                                        if RQS[i as usize] == 0 as u64 {
                                             break;
                                         }
                                         i += 1
                                     }
-                                if i as libc::c_ulong
-                                    == (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
-                                    .wrapping_div(::std::mem::size_of::<u64>() as libc::c_ulong)
+                                if i as u64
+                                    == (::std::mem::size_of::<[u64; 1024]>() as u64)
+                                    .wrapping_div(::std::mem::size_of::<u64>() as u64)
                                     {
-                                        i = (rand() as libc::c_ulong).wrapping_rem(
-                                            (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
+                                        i = (rand() as u64).wrapping_rem(
+                                            (::std::mem::size_of::<[u64; 1024]>() as u64)
                                                 .wrapping_div(
-                                                    ::std::mem::size_of::<u64>() as libc::c_ulong
+                                                    ::std::mem::size_of::<u64>() as u64
                                                 ),
                                         ) as i32
                                     }
@@ -1964,9 +1969,9 @@ pub unsafe fn lp_trade_command(
                                     {
                                         static mut RQS_0: [u64; 1024] = [0; 1024];
                                         i = 0;
-                                        while (i as libc::c_ulong)
-                                            < (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
-                                            .wrapping_div(::std::mem::size_of::<u64>() as libc::c_ulong)
+                                        while (i as u64)
+                                            < (::std::mem::size_of::<[u64; 1024]>() as u64)
+                                            .wrapping_div(::std::mem::size_of::<u64>() as u64)
                                             {
                                                 if rq == RQS_0[i as usize] {
                                                     return retval;
@@ -1975,23 +1980,23 @@ pub unsafe fn lp_trade_command(
                                                 }
                                             }
                                         i = 0;
-                                        while (i as libc::c_ulong)
-                                            < (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
-                                            .wrapping_div(::std::mem::size_of::<u64>() as libc::c_ulong)
+                                        while (i as u64)
+                                            < (::std::mem::size_of::<[u64; 1024]>() as u64)
+                                            .wrapping_div(::std::mem::size_of::<u64>() as u64)
                                             {
-                                                if RQS_0[i as usize] == 0 as libc::c_ulong {
+                                                if RQS_0[i as usize] == 0 as u64 {
                                                     break;
                                                 }
                                                 i += 1
                                             }
-                                        if i as libc::c_ulong
-                                            == (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
-                                            .wrapping_div(::std::mem::size_of::<u64>() as libc::c_ulong)
+                                        if i as u64
+                                            == (::std::mem::size_of::<[u64; 1024]>() as u64)
+                                            .wrapping_div(::std::mem::size_of::<u64>() as u64)
                                             {
-                                                i = (rand() as libc::c_ulong).wrapping_rem(
-                                                    (::std::mem::size_of::<[u64; 1024]>() as libc::c_ulong)
+                                                i = (rand() as u64).wrapping_rem(
+                                                    (::std::mem::size_of::<[u64; 1024]>() as u64)
                                                         .wrapping_div(
-                                                            ::std::mem::size_of::<u64>() as libc::c_ulong
+                                                            ::std::mem::size_of::<u64>() as u64
                                                         ),
                                                 ) as i32
                                             }
