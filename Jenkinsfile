@@ -9,8 +9,7 @@ pipeline {
     }
     stage('Build') {
       steps {
-        sh '''cargo build --bin mm2-nop --features nop
-cargo build -vv
+        sh '''cargo build -vv
 cargo test
 cargo test --package etomicrs'''
       }
