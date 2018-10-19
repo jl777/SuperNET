@@ -436,6 +436,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
                 item = cJSON_CreateObject();
                 jaddbits256(item,"txid",txid);
                 jaddnum(item,"vout",vout);
+				jaddnum(item, "amount", dstr(dpow_utxosize(coin->symbol)));
                 if ( k == 0 && bp->require0 != 0 )
                 {
                     script[0] = 0x76;
