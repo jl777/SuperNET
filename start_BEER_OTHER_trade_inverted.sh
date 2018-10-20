@@ -1,4 +1,5 @@
 #!/bin/bash
+sleep 5
 docker-compose exec -T clientnode ./enable
 sleep 3
 docker-compose exec -T seednode ./enable
