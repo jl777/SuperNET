@@ -170,7 +170,10 @@ impl MarketMakerIt {
         let folder = format! ("mm2_{}_{}", now.format ("%Y-%m-%d_%H-%M-%S-%3f"), ip);
         let folder = env::temp_dir().join (folder);
         try_s! (fs::create_dir (&folder));
-        try_s! (fs::create_dir (folder.join ("DB")));
+        let db_dir = folder.join ("DB");
+        conf["dbdir"] = unwrap! (db_dir.to_str()) .into();
+
+        try_s! (fs::create_dir (db_dir));
         let log_path = folder.join ("mm2.log");
         conf["log"] = unwrap! (log_path.to_str()) .into();
 

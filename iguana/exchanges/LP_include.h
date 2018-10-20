@@ -157,7 +157,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_DONTCHANGE_ERRMSG0 "couldnt find coin locally installed"
 #define LP_DONTCHANGE_ERRMSG1 "coin is disabled"
 
-extern char GLOBAL_DBDIR[];
+extern char GLOBAL_DBDIR[512];
 extern int32_t IAMLP;
 
 struct iguana_msgvin
@@ -493,7 +493,6 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char 
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest,bits256 txid);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly);
 int64_t LP_kmdvalue(char *symbol,int64_t satoshis);
 int64_t LP_komodo_interest(bits256 txid,int64_t value);
 void LP_availableset(bits256 txid,int32_t vout);
@@ -721,7 +720,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
 void gen_quote_uuid(char *result, char *base, char* rel);
 int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
 uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout);
-uint32_t LP_rand();\
+uint32_t LP_rand();
 void LP_gtc_addorder(struct LP_quoteinfo *qp);
 void LP_query(char *method,struct LP_quoteinfo *qp);
 extern struct LP_quoteinfo LP_Alicequery;
@@ -741,4 +740,20 @@ struct LP_gtcorder
     struct LP_quoteinfo Q;
     uint32_t cancelled,pending;
 } *GTCorders;
+int32_t LP_tradecommand(int32_t from_mpnet,void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
+struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector,int32_t fillflag,int32_t gtcflag);
+void LP_tradecommand_log(cJSON *argjson);
+extern uint32_t LP_RTcount,LP_swapscount;
+int32_t bits256_cmp(bits256 a,bits256 b);
+char *bits256_str(char hexstr[65],bits256 x);
+double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_t counter);
+struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp);
+int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2);
+void LP_reserved(struct LP_quoteinfo *qp);
+void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid);
+struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp);
+int64_t LP_instantdex_proofcheck(char *symbol,char *coinaddr,cJSON *proof,int32_t num);
+struct LP_quoteinfo *LP_trades_gotrequest(struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp);
+double LP_myprice(int32_t iambob,double *bidp,double *askp,char *base,char *rel);
+struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr);
 #endif

@@ -28,21 +28,23 @@
 // locktime claiming on sporadic assetchains
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
-use common::{lp, slurp_url, CJSON, MM_VERSION};
-use common::mm_ctx::MmCtx;
+use common::{lp, slurp_url, CJSON, MM_VERSION, os};
+use common::mm_ctx::{MmCtx, MmArc};
 use crc::crc32;
 use futures::{Future};
-use libc::{self, c_char};
+use libc::{self, c_char, c_void};
 use network::{lp_command_q_loop, lp_queue_command};
+use ordermatch::lp_trade_command;
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
 use std::fs;
-use std::ffi::{CString};
+use std::ffi::{CStr, CString};
 use std::io::{Cursor, Read, Write};
 use std::mem::transmute;
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
+use std::ptr::null_mut;
 use std::str;
 use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -220,30 +222,33 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_tradebots.c"
 #include "LP_messages.c"
 #include "LP_commands.c"
-
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly)
-{
-    char *retstr=0; cJSON *retjson; bits256 zero;
-    if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
-        return(0);
-    if ( stats_JSONonly != 0 || LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
-    {
-        if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
-        {
-            //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
-            //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
-                //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
-        }
+*/
+pub unsafe fn lp_command_process(
+    ctx: MmArc,
+    pub_sock: i32,
+    json: Json,
+    c_json: CJSON,
+    stats_json_only: i32,
+) -> *mut libc::c_char {
+    let my_ip = unwrap!(CString::new(format!("{}", ctx.rpc_ip_port.ip())));
+    if !json["result"].is_null() || !json["error"].is_null() {
+        null_mut()
+    } else if stats_json_only != 0 || lp_trade_command(ctx.clone(), json, &c_json) <= 0 {
+        lp::stats_JSON(
+            ctx.btc_ctx() as *mut c_void,
+            0,
+            my_ip.as_ptr() as *mut c_char,
+            pub_sock,
+            c_json.0,
+            b"127.0.0.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+            stats_json_only as u16,
+        )
+    } else {
+        null_mut()
     }
-    else if ( LP_statslog_parse() > 0 && 0 )
-    {
-        memset(zero.bytes,0,sizeof(zero));
-        if ( (retjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
-            free_json(retjson);
-    }
-    return(retstr);
 }
 
+/*
 char *LP_decrypt(uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *ptr,int32_t *recvlenp)
 {
     uint8_t *nonce,*cipher; int32_t recvlen,cipherlen; char *jsonstr = 0;
@@ -1454,6 +1459,63 @@ fn test_crc32() {
     assert_eq! (unsafe {lp::calc_crc32 (0, b"123456789".as_ptr() as *mut c_void, 9)}, 0xcbf43926);
 }
 
+fn global_dbdir() -> &'static Path {
+    Path::new (unwrap! (unsafe {CStr::from_ptr (lp::GLOBAL_DBDIR.as_ptr())} .to_str()))
+}
+
+/// Invokes `OS_ensure_directory`,
+/// then prints an error and returns `false` if the directory is not writeable.
+fn ensure_writable (dir_path: &Path) -> bool {
+    let c_dir_path = unwrap! (dir_path.to_str());
+    let c_dir_path = unwrap! (CString::new (c_dir_path));
+    unsafe {os::OS_ensure_directory (c_dir_path.as_ptr() as *mut c_char)};
+
+    /*
+    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
+    */
+    let r: [u8; 32] = random();
+    let mut check: Vec<u8> = Vec::with_capacity (r.len());
+    let fname = dir_path.join ("checkval");
+    let mut fp = match fs::File::create (&fname) {
+        Ok (fp) => fp,
+        Err (_) => {
+            eprintln! ("FATAL ERROR cant create {:?}", fname);
+            return false
+        }
+    };
+    if fp.write_all (&r) .is_err() {
+        eprintln! ("FATAL ERROR writing {:?}", fname);
+        return false
+    }
+    drop (fp);
+    let mut fp = match fs::File::open (&fname) {
+        Ok (fp) => fp,
+        Err (_) => {
+            eprintln! ("FATAL ERROR cant open {:?}", fname);
+            return false
+        }
+    };
+    if fp.read_to_end (&mut check).is_err() || check.len() != r.len() {
+        eprintln! ("FATAL ERROR reading {:?}", fname);
+        return false
+    }
+    if check != r {
+        eprintln! ("FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check);
+        return false
+    }
+    true
+}
+
+fn fix_directories() -> bool {
+    unsafe {os::OS_ensure_directory (lp::GLOBAL_DBDIR.as_ptr() as *mut c_char)};
+    let dbdir = global_dbdir();
+    if !ensure_writable (&dbdir.join ("SWAPS")) {return false}
+    if !ensure_writable (&dbdir.join ("GTC")) {return false}
+    if !ensure_writable (&dbdir.join ("PRICES")) {return false}
+    if !ensure_writable (&dbdir.join ("UNSPENTS")) {return false}
+    true
+}
+
 pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, conf: Json, c_conf: CJSON) -> Result<(), String> {
     unsafe {lp::bitcoind_RPC_inittime = 1};
     BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
@@ -1501,6 +1563,19 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
             }
             unwrap! (write! (&mut cur, "\0"))
         }
+    }
+    if !conf["dbdir"].is_null() {
+        let dbdir = unwrap! (conf["dbdir"].as_str()) .trim();
+        if !dbdir.is_empty() {
+            let global: &mut [c_char] = unsafe {&mut lp::GLOBAL_DBDIR[..]};
+            let global: &mut [u8] = unsafe {transmute (global)};
+            let mut cur = Cursor::new (global);
+            unwrap! (write! (&mut cur, "{}", dbdir));
+            unwrap! (write! (&mut cur, "\0"))
+        }
+    }
+    if !fix_directories() {
+        return ERR! ("Some of the required directories are not accessible.")
     }
     unsafe {lp::LP_mutex_init()};
 

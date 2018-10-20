@@ -127,7 +127,7 @@ uint32_t LP_rand()
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
-char GLOBAL_DBDIR[] = { "DB" };
+char GLOBAL_DBDIR[512] = { "DB" };
 char LP_myipaddr[64],USERHOME[512] = { "/root" };
 uint8_t LP_myipaddr_from_command_line = 0;
 char LP_gui[65] = { "cli" };
@@ -186,29 +186,6 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_portfolio.c"
 #include "LP_messages.c"
 #include "LP_commands.c"
-
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly)
-{
-    char *retstr=0; cJSON *retjson; bits256 zero;
-    if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
-        return(0);
-    if ( stats_JSONonly != 0 || LP_tradecommand(0,ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
-    {
-        if ( (retstr= stats_JSON(ctx,0,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
-        {
-            //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
-            //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
-                //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
-        }
-    }
-    else if ( LP_statslog_parse() > 0 && 0 )
-    {
-        memset(zero.bytes,0,sizeof(zero));
-        if ( (retjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
-            free_json(retjson);
-    }
-    return(retstr);
-}
 
 char *LP_decrypt(uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *ptr,int32_t *recvlenp)
 {
