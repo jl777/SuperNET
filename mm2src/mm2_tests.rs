@@ -5,6 +5,7 @@ use gstuff::{now_float, slurp};
 use hyper::StatusCode;
 use libc::c_char;
 use serde_json::{self as json, Value as Json};
+use std::borrow::Cow;
 use std::env;
 use std::ffi::CString;
 use std::fs;
@@ -43,21 +44,26 @@ fn enable_electrum(mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32) {
     assert_eq! (electrum.0, StatusCode::OK);
 }
 
-/// Asks MM to enable the given currency in native mode
-fn enable_native(mm: &MarketMakerIt, coin: &str) {
+/// Asks MM to enable the given currency in native mode.  
+/// Returns the RPC reply containing the corresponding wallet address.
+fn enable_native(mm: &MarketMakerIt, coin: &str) -> String {
     let native = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
         "method": "enable",
         "coin": coin,
     })));
     assert_eq! (native.0, StatusCode::OK);
+    native.1
 }
 
-/// Helper function enabling required coins
-fn enable_coins(mm: &MarketMakerIt) {
-    enable_native(mm, "BEER");
-    enable_native(mm, "ETOMIC");
-    enable_native(mm, "ETH");
+/// Enables BEER, ETOMIC and ETH.  
+/// Returns the RPC replies containing the corresponding wallet addresses.
+fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, String)> {
+    let mut replies = Vec::new();
+    replies.push (("BEER", enable_native (mm, "BEER")));
+    replies.push (("ETOMIC", enable_native(mm, "ETOMIC")));
+    replies.push (("ETH", enable_native (mm, "ETH")));
+    replies
 }
 
 /// Integration test for the "autoprice" mode.
@@ -359,55 +365,102 @@ fn test_events() {
     }
 }
 
-fn trade_base_rel(base: &str, rel: &str) {
-    let home_dir = unwrap!(dirs::home_dir());
-    let mut beer_path = home_dir.clone();;
-    let mut etomic_path = home_dir.clone();
-    beer_path.push(".komodo/BEER/BEER.conf");
-    etomic_path.push(".komodo/ETOMIC/ETOMIC.conf");
-    assert!(beer_path.exists(), "BEER config is not found");
-    assert!(etomic_path.exists(), "ETOMIC config is not found");
+#[cfg(windows)]
+fn get_special_folder_path() -> PathBuf {
+    use std::ffi::CStr;
+    use std::mem::zeroed;
+    use std::ptr::null_mut;
+    use winapi::um::shlobj::SHGetSpecialFolderPathA;
+    use winapi::shared::minwindef::MAX_PATH;
+    use winapi::um::shlobj::CSIDL_APPDATA;
 
-    let bob_passphrase = unwrap!(env::var("BOB_PASSPHRASE"));
-    let bob_userpass = unwrap!(env::var("BOB_USERPASS"));
-    let alice_passphrase = unwrap!(env::var("ALICE_PASSPHRASE"));
-    let alice_userpass = unwrap!(env::var("ALICE_USERPASS"));
+    let mut buf: [c_char; MAX_PATH + 1] = unsafe {zeroed()};
+    // https://docs.microsoft.com/en-us/windows/desktop/api/shlobj_core/nf-shlobj_core-shgetspecialfolderpatha
+    let rc = unsafe {SHGetSpecialFolderPathA (null_mut(), buf.as_mut_ptr(), CSIDL_APPDATA, 1)};
+    if rc != 1 {panic! ("!SHGetSpecialFolderPathA")}
+    Path::new (unwrap! (unsafe {CStr::from_ptr (buf.as_ptr())} .to_str())) .to_path_buf()
+}
+
+#[cfg(not(windows))]
+fn get_special_folder_path() -> PathBuf {panic!("!windows")}
+
+/// Determines komodod conf file location, emulating komodo/util.cpp/GetConfigFile.
+fn komodo_conf_path (ac_name: Option<&'static str>) -> Result<PathBuf, String> {
+    let confname: Cow<str> = if let Some (ac_name) = ac_name {
+        format! ("{}.conf", ac_name).into()
+    } else {
+        "komodo.conf".into()
+    };
+
+    // komodo/util.cpp/GetDefaultDataDir
+
+    let mut path = match dirs::home_dir() {
+        Some (hd) => hd,
+        None => Path::new ("/") .to_path_buf()
+    };
+
+    if cfg! (windows) {
+        // >= Vista: c:\Users\$username\AppData\Roaming
+        path = get_special_folder_path();
+        path.push ("Komodo");
+    } else if cfg! (target_os = "macos") {
+        path.push ("Library");
+        path.push ("Application Support");
+        path.push ("Komodo");
+    } else {
+        path.push (".komodo");
+    }
+
+    if let Some (ac_name) = ac_name {path.push (ac_name)}
+    Ok (path.join (&confname[..]))
+}
+
+fn trade_base_rel(base: &str, rel: &str) {
+    let beer_cfp = unwrap! (komodo_conf_path (Some ("BEER")));
+    let etomic_cfp = unwrap! (komodo_conf_path (Some ("ETOMIC")));
+    assert! (beer_cfp.exists(), "BEER config {:?} is not found", beer_cfp);
+    assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
+
+    let bob_passphrase = unwrap!(env::var("BOB_PASSPHRASE"), "!BOB_PASSPHRASE");
+    let bob_userpass = unwrap!(env::var("BOB_USERPASS"), "!BOB_USERPASS");
+    let alice_passphrase = unwrap!(env::var("ALICE_PASSPHRASE"), "!ALICE_PASSPHRASE");
+    let alice_userpass = unwrap!(env::var("ALICE_USERPASS"), "!ALICE_USERPASS");
 
     let coins = json!([
-                    {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":beer_path.to_str().unwrap()},
-                    {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":etomic_path.to_str().unwrap()},
-                    {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
-                ]);
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},
+        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str())},
+        {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
+    ]);
 
     let mm_bob = unwrap! (MarketMakerIt::start (
-                json! ({
-                    "gui": "nogui",
-                    "netid": 9999,
-                    "passphrase": bob_passphrase,
-                    "coins": coins,
-                    "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
-                    "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
-                    "ethnode":"http://195.201.0.6:8545"
-                }),
-                bob_userpass,
-                local_start
-            ));
+        json! ({
+            "gui": "nogui",
+            "netid": 9999,
+            "passphrase": bob_passphrase,
+            "coins": coins,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        bob_userpass,
+        local_start
+    ));
 
     let mm_alice = unwrap! (MarketMakerIt::start (
-                json! ({
-                    "gui": "nogui",
-                    "netid": 9999,
-                    "passphrase": alice_passphrase,
-                    "coins": coins,
-                    "seednode": format!("{}", mm_bob.ip),
-                    "client": 1,
-                    "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
-                    "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
-                    "ethnode":"http://195.201.0.6:8545"
-                }),
-                alice_userpass,
-                local_start
-            ));
+        json! ({
+            "gui": "nogui",
+            "netid": 9999,
+            "passphrase": alice_passphrase,
+            "coins": coins,
+            "seednode": fomat!((mm_bob.ip)),
+            "client": 1,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        alice_userpass,
+        local_start
+    ));
 
     let _bob_dump_log = RaiiDump {log_path: mm_bob.log_path.clone()};
     let _alice_dump_log = RaiiDump {log_path: mm_alice.log_path.clone()};
@@ -418,27 +471,29 @@ fn trade_base_rel(base: &str, rel: &str) {
     unwrap! (mm_bob.wait_for_log (5., &|log| log.contains (">>>>>>>>> DEX stats ")));
     unwrap! (mm_alice.wait_for_log (5., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
-    // enable coins on Bob side
-    enable_coins(&mm_bob);
-    // enable coins on Alice side
-    enable_coins(&mm_alice);
+    // Enable coins on Bob side. Print the replies in case we need the "smartaddress".
+    println! ("enable_coins (bob): {:?}", enable_coins (&mm_bob));
+    // Enable coins on Alice side. Print the replies in case we need the "smartaddress".
+    println! ("enable_coins (alice): {:?}", enable_coins (&mm_alice));
 
     // wait until Alice recognize Bob node by importing it's pubkey
     unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("set pubkey for")));
 
     // issue sell request on Bob side by setting BEER/ETH price
     println!("Issue bob sell request");
-    unwrap! (mm_bob.rpc (json! ({
+    let rc = unwrap! (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
         "method": "setprice",
         "base": base,
         "rel": rel,
         "price": 0.9
     })));
+    assert! (rc.0.is_success(), "!setprice: {}", rc.1);
+
     // issue BEER/ETH buy request from Alice side
     thread::sleep(Duration::from_secs(2));
     println!("Issue alice buy request");
-    unwrap! (mm_alice.rpc (json! ({
+    let rc = unwrap! (mm_alice.rpc (json! ({
         "userpass": mm_alice.userpass,
         "method": "buy",
         "base": base,
@@ -446,6 +501,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         "relvolume": 0.01,
         "price": 1
     })));
+    assert! (rc.0.is_success(), "!buy: {}", rc.1);
 
     // ensure the swap started
     unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("start swap iamalice")));
@@ -464,11 +520,43 @@ fn trade_base_rel(base: &str, rel: &str) {
 }
 
 /// Integration test for BEER/ETH and ETH/BEER trade
-/// This test is ignored because it requires additional environment setup:
+/// This test is ignored because as of now it requires additional environment setup:
 /// BEER and ETOMIC daemons must be running and fully synced for swaps to be successful
 /// The trades can't be executed concurrently now for 2 reasons:
 /// 1. Bob node starts listening 47772 port on all interfaces so no more Bobs can be started at once
 /// 2. Current UTXO handling algo might result to conflicts between concurrently running nodes
+/// 
+/// Steps that are currently necessary to run this test:
+/// 
+/// Obtain the wallet binaries (komodod, komodo-cli) from the Agama wallet (https://komodoplatform.com/komodo-wallets/).
+/// (Or use the Docker image artempikulin/komodod-etomic).
+/// 
+/// Obtain ~/.zcash-params (c:/Users/$username/AppData/Roaming/ZcashParams on Windows).
+/// 
+/// Start the wallets,
+///
+///     komodod -ac_name=BEER -ac_supply=100000000 -addnode=24.54.206.138
+/// 
+/// and
+/// 
+///     komodod -ac_name=ETOMIC -ac_supply=100000000 -addnode=78.47.196.146
+/// 
+/// Get rpcuser and rpcpassword from ETOMIC/ETOMIC.conf
+/// (c:/Users/$username/AppData/Roaming/Komodo/ETOMIC/ETOMIC.conf on Windows)
+/// and run
+/// 
+///     komodo-cli -rpcport=10271 -rpcuser=$u -rpcpassword=$p - ac_name=ETOMIC importaddress RKGn1jkeS7VNLfwY74esW7a8JFfLNj1Yoo
+/// 
+/// Share the wallet information with the test. On Windows:
+/// 
+///     set BOB_PASSPHRASE=...
+///     set BOB_USERPASS=...
+///     set ALICE_PASSPHRASE=...
+///     set ALICE_USERPASS=...
+/// 
+/// And run the test:
+/// 
+///     cargo test trade -- --nocapture --ignored
 #[test]
 #[ignore]
 fn test_trade() {
