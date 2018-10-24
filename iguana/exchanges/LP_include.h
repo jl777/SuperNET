@@ -465,13 +465,11 @@ struct electrum_info
 
 struct LP_trade
 {
-    struct LP_trade *next,*prev;
-    UT_hash_handle hh;
-    uint64_t aliceid;
+    uint64_t aliceid,lastprocessed,negotiationdone,connectsent,firstprocessed,newtime;
     int64_t besttrust,bestunconfcredits;
     double bestprice;
-    uint32_t negotiationdone,bestresponse,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime,cancelled;
-    char pairstr[64],funcid,iambob;
+    uint32_t bestresponse,firsttime,lasttime,cancelled,funcid;
+    char pairstr[64],iambob;
     struct LP_quoteinfo Qs[4],Q;
 };
 
@@ -750,10 +748,10 @@ double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_
 struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp);
 int32_t LP_quotecmp(int32_t strictflag,struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2);
 void LP_reserved(struct LP_quoteinfo *qp);
-void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid);
 struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp);
 int64_t LP_instantdex_proofcheck(char *symbol,char *coinaddr,cJSON *proof,int32_t num);
 struct LP_quoteinfo *LP_trades_gotrequest(struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp);
 double LP_myprice(int32_t iambob,double *bidp,double *askp,char *base,char *rel);
 struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr);
+int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp);
 #endif

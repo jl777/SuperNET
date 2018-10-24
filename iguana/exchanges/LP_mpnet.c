@@ -190,7 +190,8 @@ void LP_mpnet_process(void *ctx,char *myipaddr,int32_t pubsock,struct iguana_inf
         if ( (argjson= LP_mpnet_parse(coin,txid)) != 0 )
         {
             //printf("MPNET.(%s)\n",jprint(argjson,0));
-            LP_tradecommand(1,ctx,myipaddr,pubsock,argjson,0,0);
+            // TODO: Put the LP_tradecommand back when port LP_mpnet
+            // LP_tradecommand(1,ctx,myipaddr,pubsock,argjson,0,0);
             free_json(argjson);
         }
         LP_mpnet_add(txid);

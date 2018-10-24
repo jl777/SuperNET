@@ -19,17 +19,69 @@
 //  marketmaker
 //
 use common::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON};
-use common::mm_ctx::MmArc;
+use common::mm_ctx::{MmArc, MmWeak};
 use gstuff::now_ms;
+use fxhash::{FxHashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, strcmp, calloc, rand};
 use serde_json::{Value as Json};
+use std::collections::{VecDeque};
+use std::collections::hash_map::Entry;
 use std::ffi::{CString};
 use std::ptr::null_mut;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::thread;
 
 #[link="c"]
 extern {
     fn printf(_: *const libc::c_char, ...) -> libc::c_int;
+}
+
+struct OrdermatchContext {
+    pub lp_trades: Mutex<FxHashMap<u64, lp::LP_trade>>,
+    lp_trades_queue: Mutex<VecDeque<lp::LP_trade>>,
+}
+impl OrdermatchContext {
+    /// Obtains a reference to this crate context, creating it if necessary.
+    fn from_ctx (ctx: &MmArc) -> Result<Arc<OrdermatchContext>, String> {
+        let mut ordermatch_ctx = try_s! (ctx.ordermatch_ctx.lock());
+        if ordermatch_ctx.is_none() {
+            let arc = Arc::new (OrdermatchContext {
+                lp_trades: Mutex::new (FxHashMap::default()),
+                lp_trades_queue: Mutex::new (VecDeque::new())
+            });
+            *ordermatch_ctx = Some (arc.clone());
+            Ok (arc)
+        } else if let Some (ref ordermatch_ctx) = *ordermatch_ctx {
+            let ordermatch_ctx: Arc<OrdermatchContext> = match ordermatch_ctx.clone().downcast() {
+                Ok (p) => p,
+                Err (_) => return ERR! ("Error casting into OrdermatchContext")
+            };
+            Ok (ordermatch_ctx)
+        } else {panic!()}
+    }
+
+    /// Obtains a reference to this crate context, creating it if necessary.
+    #[allow(dead_code)]
+    fn from_ctx_weak (ctx_weak: &MmWeak) -> Result<Arc<OrdermatchContext>, String> {
+        let ctx = try_s! (MmArc::from_weak (ctx_weak) .ok_or ("Context expired"));
+        Self::from_ctx (&ctx)
+    }
+
+    fn add_trade_to_queue(&self, trade: lp::LP_trade) {
+        let mut queue = unwrap!(self.lp_trades_queue.lock());
+        queue.push_back(trade);
+    }
+
+    fn pop_trade_from_queue(&self) -> Option<lp::LP_trade> {
+        let mut queue = unwrap!(self.lp_trades_queue.lock());
+        queue.pop_front()
+    }
+
+    fn is_trade_queue_empty(&self) -> bool {
+        let queue = unwrap!(self.lp_trades_queue.lock());
+        queue.is_empty()
+    }
 }
 /*
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
@@ -293,31 +345,19 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
     return(pairsock);
 }
 */
-#[allow(unused_assignments)]
+
 unsafe fn lp_nearest_utxovalue(
-    coin: *mut lp::iguana_info,
-    _coinaddr: *mut libc::c_char,
     utxos: *mut *mut lp::LP_address_utxo,
     n: i32,
     targetval: u64,
 ) -> i32 {
-    let mut replacei: i32 = 0;
-    let mut bestheight: i32 = 0;
+    let mut replacei: i32;
+    let mut bestheight: i32;
     let mut mini: i32 = -1i32;
     let mut up: *mut lp::LP_address_utxo = null_mut();
     let mut bestup: *mut lp::LP_address_utxo = null_mut();
-    let mut backupep: *mut lp::electrum_info = null_mut();
-    let mut ep: *mut lp::electrum_info = null_mut();
-    let mut dist: i64 = 0;
-    let mut bestdist: i64 = 0;
+    let mut dist: i64;
     let mut mindist: u64 = (1i64 << 60) as u64;
-    ep = (*coin).electrum as *mut lp::electrum_info;
-    if !ep.is_null() {
-        backupep = (*ep).prev;
-        if backupep.is_null() {
-            backupep = ep
-        }
-    }
     //printf("LP_nearest_utxovalue %s %s utxos[%d] target %.8f\n",coin->symbol,coinaddr,n,dstr(targetval));
     let mut i = 0;
     while i < n {
@@ -339,7 +379,7 @@ unsafe fn lp_nearest_utxovalue(
         bestup = *utxos.offset(mini as isize);
         !bestup.is_null()
     } {
-        bestdist = (*bestup).U.value.wrapping_sub(targetval) as i64;
+        let bestdist = (*bestup).U.value.wrapping_sub(targetval) as i64;
         replacei = -1;
         bestheight = (*bestup).U.height;
         i = 0;
@@ -455,7 +495,6 @@ unsafe fn lp_base_satoshis(
     };
 }
 
-#[allow(unused_assignments)]
 unsafe fn lp_address_myutxopair(
     butxo: *mut lp::LP_utxoinfo,
     iambob: i32,
@@ -469,14 +508,14 @@ unsafe fn lp_address_myutxopair(
     desttxfee: u64,
 ) -> *mut lp::LP_utxoinfo {
     let mut ap: *mut lp::LP_address = null_mut();
-    let mut fee: u64 = 0;
-    let mut targetval: u64 = 0;
-    let mut targetval2: u64 = 0;
-    let mut m: i32 = 0;
-    let mut mini: i32 = 0;
-    let mut up: *mut lp::LP_address_utxo = null_mut();
+    let fee: u64;
+    let targetval: u64;
+    let targetval2: u64;
+    let m: i32;
+    let mut mini: i32;
+    let mut up: *mut lp::LP_address_utxo;
     let mut up2: *mut lp::LP_address_utxo = null_mut();
-    let mut ratio: f64 = 0.;
+    let ratio: f64;
     if (*coin).etomic[0usize] as libc::c_int != 0 {
         coin = lp::LP_coinfind(b"ETOMIC\x00" as *const u8 as *const libc::c_char as *mut libc::c_char);
         if !coin.is_null() {
@@ -531,18 +570,17 @@ unsafe fn lp_address_myutxopair(
             m = lp::LP_address_utxo_ptrs(coin, iambob, utxos, max, ap, coinaddr);
             if m > 1i32 {
                 let mut i: i32 = 0;
-                i = 0;
                 while i < m {
                     if (**utxos.offset(i as isize)).U.value >= targetval {
-                        /*printf(
+                        printf(
                             b"%.8f \x00" as *const u8 as *const libc::c_char,
                             (**utxos.offset(i as isize)).U.value as f64
                                 / 100000000i64 as u64 as f64,
-                        );*/
+                        );
                     }
                     i += 1
                 }
-                /*printf(
+                printf(
                     b"targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n\x00" as *const u8
                         as *const libc::c_char,
                     targetval as f64 / 100000000i64 as u64 as f64,
@@ -551,13 +589,11 @@ unsafe fn lp_address_myutxopair(
                     fee as f64 / 100000000i64 as u64 as f64,
                     (*coin).symbol.as_mut_ptr(),
                     coinaddr,
-                );*/
+                );
                 loop {
                     mini = -1i32;
                     if targetval != 0 && {
                         mini = lp_nearest_utxovalue(
-                            coin,
-                            coinaddr,
                             utxos,
                             m,
                             targetval.wrapping_add(fee),
@@ -572,8 +608,6 @@ unsafe fn lp_address_myutxopair(
                             < ratio - 1i32 as f64
                             {
                                 mini = lp_nearest_utxovalue(
-                                    coin,
-                                    coinaddr,
                                     utxos,
                                     m,
                                     (targetval2.wrapping_add((2 as u64).wrapping_mul(fee))
@@ -604,12 +638,12 @@ unsafe fn lp_address_myutxopair(
                                 }
                             }
                     } else if targetval != 0 && mini >= 0 {
-                        /*printf(
+                        printf(
                             b"targetval %.8f mini.%d\n\x00" as *const u8 as *const libc::c_char,
                             targetval as f64
                                 / 100000000i64 as u64 as f64,
                             mini,
-                        );*/
+                        );
                     }
                     if targetval == 0 || mini < 0 {
                         break;
@@ -618,14 +652,14 @@ unsafe fn lp_address_myutxopair(
             }
         }
         //else printf("no %s %s utxos pass LP_address_utxo_ptrs filter %.8f %.8f\n",coin->symbol,coinaddr,dstr(targetval),dstr(targetval2));
-        /*printf(
+        printf(
             b"address_myutxopair couldnt find %s %s targets %.8f %.8f\n\x00" as *const u8
                 as *const libc::c_char,
             (*coin).symbol.as_mut_ptr(),
             coinaddr,
-            targetval as f64 / 100000000i64 as u64 as f64,
-            targetval2 as f64 / 100000000i64 as u64 as f64,
-        );*/
+            targetval as f64 / 100000000.0,
+            targetval2 as f64 / 100000000.0,
+        );
         return null_mut();
     };
 }
@@ -1513,201 +1547,213 @@ int32_t LP_trades_canceluuid(char *uuidstr)
         fprintf(stderr,"uuid.%s %d cancelled\n",uuidstr,num);
     return(num);
 }
+*/
+pub unsafe fn lp_trades_loop(ctx: MmArc) {
+    let mut coin: *mut lp::iguana_info;
+    let mut timeout: u32;
+    let mut now: u64;
+    let mut q: lp::LP_quoteinfo;
+    let mut funcid: u32;
+    let mut flag: i32;
+    let mut pubp: *mut lp::LP_pubkey_info;
+    thread::sleep(Duration::from_secs(5));
 
-void LP_tradesloop(void *ctx)
-{
-    struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t timeout,funcid,flag,nonz; struct iguana_info *coin; struct LP_pubkey_info *pubp;
-    strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
-    LP_tradesloop_stats.threshold = 30000;
-    sleep(5);
-    while ( LP_STOP_RECEIVED == 0 )
-    {
-        LP_millistats_update(&LP_tradesloop_stats);
-        nonz = 0;
-        HASH_ITER(hh,LP_trades,tp,tmp)
-        {
-            if ( tp->negotiationdone != 0 || tp->cancelled != 0 )
+    loop {
+        if ctx.is_stopping() { break }
+
+        let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
+        let mut trades_map = unwrap!(ordermatch_ctx.lp_trades.lock());
+        let mut nonz = 0;
+        for (_, trade) in trades_map.iter_mut() {
+            if trade.negotiationdone != 0 || trade.cancelled != 0 {
                 continue;
-            //printf("check %s\n",tp->Q.uuidstr+32);
-            timeout = LP_AUTOTRADE_TIMEOUT;
-            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            now = (uint32_t)time(NULL);
-            if ( now > tp->lastprocessed )
-            {
-                if ( tp->iambob == 0 )
-                {
-                    if ( tp->bestprice > 0. )
-                    {
-                        if ( tp->connectsent == 0 )
-                        {
-                            LP_Alicemaxprice = tp->bestprice;
-                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                            tp->connectsent = now;
-                            //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                        }
-                        else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 20) == 19 )
-                        {
-                            //LP_Alicemaxprice = tp->bestprice;
-                            //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                            //printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                            if ( (pubp= LP_pubkeyfind(tp->Qs[LP_CONNECT].srchash)) != 0 )
-                                pubp->slowresponse++;
-                        }
+            }
+            timeout = lp::LP_AUTOTRADE_TIMEOUT;
+            coin = lp::LP_coinfind(trade.Q.srccoin.as_mut_ptr());
+            if coin != null_mut() && (*coin).electrum != null_mut() {
+                timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
+            }
+            coin = lp::LP_coinfind(trade.Q.destcoin.as_mut_ptr());
+            if coin != null_mut() && (*coin).electrum != null_mut() {
+                timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
+            }
+            now = now_ms() / 1000;
+            if now > trade.lastprocessed && trade.iambob == 0 && trade.bestprice > 0. {
+                if trade.connectsent == 0 {
+                    lp::LP_Alicemaxprice = trade.bestprice;
+                    lp::LP_reserved(&mut trade.Qs[lp::LP_CONNECT as usize]); // send LP_CONNECT
+                    (*trade).connectsent = now;
+                    //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                } else if now < trade.firstprocessed + timeout as u64 && ((trade.firstprocessed  + timeout as u64 - now) % 20) == 19 {
+                    //LP_Alicemaxprice = tp->bestprice;
+                    //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
+                    //printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                    pubp = lp::LP_pubkeyfind(trade.Qs[lp::LP_CONNECT as usize].srchash);
+                    if !pubp.is_null() {
+                        (*pubp).slowresponse += 1;
                     }
                 }
             }
         }
-        now = (uint32_t)time(NULL);
-        HASH_ITER(hh,LP_trades,tp,tmp)
-        {
-            timeout = LP_AUTOTRADE_TIMEOUT;
-            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( now > tp->firstprocessed+timeout*10 || tp->cancelled != 0 )
-            {
+        now = now_ms() / 1000;
+        for (key, trade) in (*trades_map).clone().iter_mut() {
+            timeout = lp::LP_AUTOTRADE_TIMEOUT;
+            coin = lp::LP_coinfind(trade.Q.srccoin.as_mut_ptr());
+            if coin != null_mut() && (*coin).electrum != null_mut() {
+                timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
+            }
+            coin = lp::LP_coinfind(trade.Q.destcoin.as_mut_ptr());
+            if coin != null_mut() && (*coin).electrum != null_mut() {
+                timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
+            }
+            if now > trade.firstprocessed + timeout as u64 * 10 || trade.cancelled != 0 {
                 //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
-                portable_mutex_lock(&LP_tradesmutex);
-                HASH_DELETE(hh,LP_trades,tp);
-                portable_mutex_unlock(&LP_tradesmutex);
-                free(tp);
+                trades_map.remove(key);
             }
         }
-        DL_FOREACH_SAFE(LP_tradesQ,qtp,tmp)
-        {
-            now = (uint32_t)time(NULL);
-            Q = qtp->Q;
-            funcid = qtp->funcid;
+
+        while !ordermatch_ctx.is_trade_queue_empty() {
+            now = now_ms() / 1000;
+            let mut qtp = unwrap!(ordermatch_ctx.pop_trade_from_queue());
+            q = qtp.Q;
+            funcid = qtp.funcid;
 //printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
-            portable_mutex_lock(&LP_tradesmutex);
-            DL_DELETE(LP_tradesQ,qtp);
-            HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
-            if ( tp != 0 && tp->cancelled != 0 )
-                
-            {
-                fprintf(stderr,"purging cancelled %s funcid.%d\n",tp->Q.uuidstr,tp->funcid);
-                HASH_DELETE(hh,LP_trades,tp);
-                free(tp);
-                continue;
-            }
-            if ( tp == 0 )
-            {
-                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*2 || qtp->cancelled != 0 ) // eat expired
-                    free(qtp);
-                else
-                {
-                    tp = qtp;
-                    HASH_ADD(hh,LP_trades,aliceid,sizeof(tp->aliceid),tp);
-                    portable_mutex_unlock(&LP_tradesmutex);
-                    if ( tp->iambob != 0 && funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
-                    {
-                        if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
-                            tp->Qs[LP_RESERVED] = Q;
+            match trades_map.entry(qtp.aliceid) {
+                Entry::Occupied(t) => {
+                    if t.get().cancelled != 0 {
+                        t.remove();
+                        continue;
                     }
-                    else if ( tp->iambob == 0 && funcid == LP_RESERVED ) // alice maybe sends LP_CONNECT
-                    {
-                        LP_trades_bestpricecheck(ctx,tp);
+                },
+                Entry::Vacant(t) => {
+                    if now > (q.timestamp + lp::LP_AUTOTRADE_TIMEOUT * 2) as u64 || qtp.cancelled != 0 {
+                        // eat expired?
+                    } else {
+                        if qtp.iambob != 0 && funcid == lp::LP_REQUEST { // bob maybe sends LP_RESERVED
+                            let qp = lp::LP_trades_gotrequest(
+                                &mut q,
+                                &mut qtp.Qs[lp::LP_REQUEST as usize],
+                            );
+                            if qp != null_mut() {
+                                qtp.Qs[lp::LP_RESERVED as usize] = q;
+                            }
+                        } else if qtp.iambob == 0 && funcid == lp::LP_RESERVED { // alice maybe sends LP_CONNECT
+                            lp::LP_trades_bestpricecheck(
+                                ctx.btc_ctx() as *mut c_void,
+                                &mut qtp
+                            );
+                        } else if qtp.iambob == 0 && funcid == lp::LP_CONNECTED {
+                            qtp.negotiationdone = now;
+                            //printf("alice sets negotiationdone.%u\n",now);
+                            lp::LP_trades_gotconnected(
+                                ctx.btc_ctx() as *mut c_void,
+                                &mut qtp.Q,
+                                &mut qtp.Qs[lp::LP_CONNECTED as usize],
+                                qtp.pairstr.as_mut_ptr()
+                            );
+                        }
+                        nonz += 1;
+                        qtp.firstprocessed =  now_ms() / 1000;
+                        qtp.lastprocessed =  now_ms() / 1000;
+                        if funcid == lp::LP_CONNECT && qtp.negotiationdone == 0 { // bob all done
+                            qtp.negotiationdone = now;
+                            //printf("bob sets negotiationdone.%u\n",now);
+                            lp::LP_trades_gotconnect(
+                                ctx.btc_ctx() as *mut c_void,
+                                &mut qtp.Q,
+                                &mut qtp.Qs[lp::LP_CONNECT as usize],
+                            );
+                        }
+                        t.insert(qtp);
                     }
-                    else if ( tp->iambob == 0 && funcid == LP_CONNECTED )
-                    {
-                        tp->negotiationdone = now;
-                        //printf("alice sets negotiationdone.%u\n",now);
-                        LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
-                    }
-                    nonz++;
-                    tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
-                    if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
-                    {
-                        tp->negotiationdone = now;
-                        //printf("bob sets negotiationdone.%u\n",now);
-                        LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
-                    }
+                    continue;
                 }
-                continue;
+            };
+
+            let trade = unwrap!(trades_map.get_mut(&qtp.aliceid));
+            (*trade).Q = qtp.Q;
+            if qtp.iambob == trade.iambob && qtp.pairstr[0] != 0 {
+                strcpy(trade.pairstr.as_mut_ptr(), qtp.pairstr.as_ptr());
             }
-            portable_mutex_unlock(&LP_tradesmutex);
-            tp->Q = qtp->Q;
-            if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
-                safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
 //printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d/%d done.%u\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob,tp->iambob,tp->negotiationdone);
-            free(qtp);
             flag = 0;
-            if ( tp->iambob == 0 )
-            {
-                if ( funcid == LP_RESERVED )
-                {
-                    if ( tp->connectsent == 0 )
-                        flag = LP_trades_bestpricecheck(ctx,tp);
-                }
-                else if ( funcid == LP_CONNECTED && tp->negotiationdone == 0 ) // alice all done  tp->connectsent != 0 &&
-                {
+            if trade.iambob == 0 {
+                if funcid == lp::LP_RESERVED {
+                    if trade.connectsent == 0 {
+                        flag = lp::LP_trades_bestpricecheck(ctx.btc_ctx() as *mut c_void, trade);
+                    }
+                } else if funcid == lp::LP_CONNECTED && trade.negotiationdone == 0 { // alice all done  tp->connectsent != 0 &&
                     flag = 1;
-                    tp->negotiationdone = now;
-                    LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
+                    (*trade).negotiationdone = now;
+                    lp::LP_trades_gotconnected(
+                        ctx.btc_ctx() as *mut c_void,
+                        &mut trade.Q,
+                        &mut trade.Qs[lp::LP_CONNECTED as usize],
+                        trade.pairstr.as_mut_ptr()
+                    );
                 }
-            }
-            else
-            {
-                if ( funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
-                {
-                    if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
-                    {
-                        tp->Qs[LP_RESERVED] = Q;
+            } else {
+                if funcid == lp::LP_REQUEST { // bob maybe sends LP_RESERVED
+                    let qp = lp::LP_trades_gotrequest(
+                        &mut q,
+                        &mut trade.Qs[lp::LP_REQUEST as usize],
+                    );
+                    if !qp.is_null() {
+                        (*trade).Qs[lp::LP_RESERVED as usize] = q;
                         flag = 1;
                     }
-                }
-                else if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
-                {
+                } else if funcid == lp::LP_CONNECT && trade.negotiationdone == 0 { // bob all done
                     flag = 1;
-                    tp->negotiationdone = now;
+                    (*trade).negotiationdone = now;
                     //printf("bob sets negotiationdone.%u\n",now);
-                    LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
+                    lp::LP_trades_gotconnect(
+                        ctx.btc_ctx() as *mut c_void,
+                        &mut trade.Q,
+                        &mut trade.Qs[lp::LP_CONNECT as usize],
+                    );
                 }
             }
-            if ( flag != 0 )
-            {
-                tp->lastprocessed = (uint32_t)time(NULL);
-                nonz++;
+            if flag != 0 {
+                (*trade).lastprocessed = now_ms() / 1000;
+                nonz += 1;
             }
         }
-        if ( nonz == 0 )
-            sleep(1);
+        // drop trades map before sleeping to unlock the mutex
+        drop(trades_map);
+        if nonz == 0 {
+            thread::sleep(Duration::from_secs(1));
+        }
     }
 }
 
-void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
-{
-    struct LP_trade *qtp; uint64_t aliceid; int32_t iambob;
-    if ( funcid < 0 || funcid >= sizeof(qtp->Qs)/sizeof(*qtp->Qs) )
+unsafe fn lp_trade_command_q(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char, funcid: u32) {
+    let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(ctx));
+
+    let mut trade = lp::LP_trade::default();
+    if funcid >= 4 {
         return;
-    if ( funcid == LP_REQUEST || funcid == LP_CONNECT )
-        iambob = 1;
-    else iambob = 0;
-    aliceid = qp->aliceid;
-    portable_mutex_lock(&LP_tradesmutex);
-    qtp = calloc(1,sizeof(*qtp));
-    qtp->funcid = funcid;
-    qtp->iambob = iambob;
-    qtp->aliceid = aliceid;
-    qtp->newtime = (uint32_t)time(NULL);
-    qtp->Q = *qp;
-    if ( pairstr != 0 )
-        safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
-    DL_APPEND(LP_tradesQ,qtp);
-    portable_mutex_unlock(&LP_tradesmutex);
-    //printf("queue.%d uuid.(%s)\n",funcid,qtp->Q.uuidstr);
+    }
+    trade.iambob = if funcid == lp::LP_REQUEST || funcid == lp::LP_CONNECT {
+        1
+    } else {
+        0
+    };
+    trade.aliceid = (*qp).aliceid;
+    trade.funcid = funcid;
+    trade.newtime = now_ms() / 1000;
+    trade.Q = *qp;
+    if pairstr != null_mut() {
+        strcpy(trade.pairstr.as_mut_ptr(), pairstr);
+    }
+    ordermatch_ctx.add_trade_to_queue(trade);
 }
-*/
+
 pub unsafe fn lp_trade_command(
     ctx: MmArc,
     json: Json,
     c_json: &CJSON,
 ) -> i32 {
-    let q_trades: i32 = 1i32;
+    let q_trades: i32 = 1;
     let mut str: [libc::c_char; 65] = [0; 65];
     let mut i: i32;
     let mut num: i32 = 0;
@@ -1817,14 +1863,15 @@ pub unsafe fn lp_trade_command(
                                                 }
                                             }
                                     } else {
-                                        lp::LP_tradecommandQ(
+                                        lp_trade_command_q(
+                                            &ctx,
                                             &mut q,
                                             lp::jstr(
                                                 c_json.0,
                                                 b"pair\x00" as *const u8 as *const libc::c_char
                                                     as *mut libc::c_char,
                                             ),
-                                            1i32,
+                                            1,
                                         );
                                     }
                                 }
@@ -1898,14 +1945,15 @@ pub unsafe fn lp_trade_command(
                                         ),
                                     );
                                 } else {
-                                    lp::LP_tradecommandQ(
+                                    lp_trade_command_q(
+                                        &ctx,
                                         &mut q,
                                         lp::jstr(
                                             c_json.0,
                                             b"pair\x00" as *const u8 as *const libc::c_char
                                                 as *mut libc::c_char,
                                         ),
-                                        3i32,
+                                        3,
                                     );
                                 }
                             }
@@ -1950,7 +1998,8 @@ pub unsafe fn lp_trade_command(
                                         &mut q2,
                                     );
                                 } else {
-                                    lp::LP_tradecommandQ(
+                                    lp_trade_command_q(
+                                        &ctx,
                                         &mut q,
                                         lp::jstr(
                                             c_json.0,
@@ -2026,14 +2075,15 @@ pub unsafe fn lp_trade_command(
                                                 &mut q2,
                                             );
                                         } else {
-                                            lp::LP_tradecommandQ(
+                                            lp_trade_command_q(
+                                                &ctx,
                                                 &mut q,
                                                 lp::jstr(
                                                     c_json.0,
                                                     b"pair\x00" as *const u8 as *const libc::c_char
                                                         as *mut libc::c_char,
                                                 ),
-                                                2i32,
+                                                2,
                                             );
                                         }
                                     }

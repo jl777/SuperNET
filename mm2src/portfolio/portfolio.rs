@@ -89,7 +89,7 @@ impl PortfolioContext {
 
     /// Obtains a reference to this crate context, creating it if necessary.
     #[allow(dead_code)]
-    fn from_ctx_weak<'a> (ctx_weak: &'a MmWeak) -> Result<Arc<PortfolioContext>, String> {
+    fn from_ctx_weak (ctx_weak: &MmWeak) -> Result<Arc<PortfolioContext>, String> {
         let ctx = try_s! (MmArc::from_weak (ctx_weak) .ok_or ("Context expired"));
         Self::from_ctx (&ctx)
     }

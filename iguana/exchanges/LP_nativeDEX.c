@@ -1558,11 +1558,6 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
         printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradesloop,ctx) != 0 )
-    {
-        printf("error launching LP_tradessloop for ctx.%p\n",ctx);
-        exit(-1);
-    }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
     {
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);

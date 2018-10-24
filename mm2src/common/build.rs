@@ -205,12 +205,13 @@ fn generate_bindings() {
             "LP_trades_gotreserved",
             "LP_quotecmp",
             "LP_reserved",
-            "LP_tradecommandQ",
             "LP_trades_gotconnect",
             "LP_trades_gotconnected",
             "LP_instantdex_proofcheck",
             "LP_trades_gotrequest",
             "LP_myprice",
+            "LP_pubkeyfind",
+            "LP_trades_bestpricecheck",
         ]
             .iter(),
         // types
@@ -220,6 +221,7 @@ fn generate_bindings() {
             "iguana_info",
             "LP_utxoinfo",
             "electrum_info",
+            "LP_trade",
         ]
             .iter(),
         [
@@ -257,6 +259,10 @@ fn generate_bindings() {
             "LP_QUEUE_COMMAND",
             "LP_RTcount",
             "LP_swapscount",
+            "LP_REQUEST",
+            "LP_RESERVED",
+            "LP_CONNECT",
+            "LP_CONNECTED",
         ]
             .iter(),
     );

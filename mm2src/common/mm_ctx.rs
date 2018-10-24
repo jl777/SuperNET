@@ -52,7 +52,9 @@ pub struct MmCtx {
     /// Callbacks to invoke from `fn stop`.
     stop_listeners: Mutex<Vec<Box<FnMut()->Result<(), String>>>>,
     /// The context belonging to the `portfolio` crate: `PortfolioContext`.
-    pub portfolio_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>
+    pub portfolio_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
+    /// The context belonging to the `ordermatch` mod: `OrdermatchContext`.
+    pub ordermatch_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
     pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
@@ -66,7 +68,8 @@ impl MmCtx {
             rpc_ip_port,
             ffi_handler: AtomicUsize::new (0),
             stop_listeners: Mutex::new (Vec::new()),
-            portfolio_ctx: Mutex::new (None)
+            portfolio_ctx: Mutex::new (None),
+            ordermatch_ctx: Mutex::new (None),
         }))
     }
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
