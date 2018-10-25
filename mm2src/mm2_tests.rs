@@ -471,8 +471,8 @@ fn trade_base_rel(base: &str, rel: &str) {
     println!("Alice log path: {}", mm_alice.log_path.display());
 
     // wait until both nodes RPC API is active
-    unwrap! (mm_bob.wait_for_log (5., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    unwrap! (mm_alice.wait_for_log (5., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     // Enable coins on Bob side. Print the replies in case we need the "smartaddress".
     println! ("enable_coins (bob): {:?}", enable_coins (&mm_bob));
@@ -480,7 +480,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     println! ("enable_coins (alice): {:?}", enable_coins (&mm_alice));
 
     // wait until Alice recognize Bob node by importing it's pubkey
-    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("set pubkey for")));
+    unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
 
     // issue sell request on Bob side by setting BEER/ETH price
     println!("Issue bob sell request");
@@ -501,7 +501,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         "method": "buy",
         "base": base,
         "rel": rel,
-        "relvolume": 0.01,
+        "relvolume": 0.1,  // Should be close enough to the existing UTXOs.
         "price": 1
     })));
     assert! (rc.0.is_success(), "!buy: {}", rc.1);

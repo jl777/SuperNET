@@ -361,6 +361,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
     //portable_mutex_lock(&LP_utxomutex);
+    portable_mutex_lock(&coin->addrmutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
         //char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
@@ -420,6 +421,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
         }
     }
     //portable_mutex_unlock(&LP_utxomutex);
+    portable_mutex_unlock(&coin->addrmutex);
     //printf("return n.%d for %s %s\n",n,coin->symbol,coinaddr);
     return(n);
 }
