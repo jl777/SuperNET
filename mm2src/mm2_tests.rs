@@ -6,7 +6,7 @@ use hyper::StatusCode;
 use libc::c_char;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
-use std::env;
+use std::env::{self, var};
 use std::ffi::CString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -27,7 +27,8 @@ fn mm_spat() -> (&'static str, MarketMakerIt) {
             ]
         }),
         "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
-        local_start));
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start()), _ => None}
+    ));
     (passphrase, mm)
 }
 
@@ -252,7 +253,7 @@ fn test_btc2kmd() {
 /// This is not a separate test but a helper used by `MarketMakerIt` to run the MarketMaker from the test binary.
 #[test]
 fn test_mm_start() {
-    if let Ok (conf) = env::var ("_MM2_TEST_CONF") {
+    if let Ok (conf) = var ("_MM2_TEST_CONF") {
         println! ("test_mm_start] Starting the MarketMaker...");
         let conf: Json = unwrap! (json::from_str (&conf));
         let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
@@ -275,8 +276,8 @@ fn chdir (dir: &Path) {
 #[cfg(not(windows))]
 fn chdir (_dir: &Path) {panic! ("chdir not implemented")}
 
-/// Used by `MarketMakerIt` when the `LOCAL_THREAD_MM` env is `1`, helping debug the tested MM.
-fn local_start (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
+/// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.
+fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
     unwrap! (thread::Builder::new().name ("MM".into()) .spawn (move || {
         if conf["log"].is_null() {
             conf["log"] = unwrap! (log_path.to_str()) .into();
@@ -295,6 +296,8 @@ fn local_start (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
     }));
 }
 
+fn local_start() -> fn (PathBuf, PathBuf, Json) {local_start_impl}
+
 /// Integration test for the "mm2 events" mode.
 /// Starts MM in background and verifies that "mm2 events" produces a non-empty feed of events.
 #[test]
@@ -302,7 +305,7 @@ fn test_events() {
     let executable = unwrap! (env::args().next());
     let executable = unwrap! (Path::new (&executable) .canonicalize());
     let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
-    match env::var ("_MM2_TEST_EVENTS_MODE") {
+    match var ("_MM2_TEST_EVENTS_MODE") {
         Ok (ref mode) if mode == "MM_EVENTS" => {
             println! ("test_events] Starting the `mm2 events`...");
             unwrap! (events (&["_test".into(), "events".into()]));
@@ -311,7 +314,7 @@ fn test_events() {
             let mut mm = unwrap! (MarketMakerIt::start (
                 json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
                 "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
-                local_start));
+                match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start()), _ => None}));
             let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
 
             let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
@@ -421,10 +424,10 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (beer_cfp.exists(), "BEER config {:?} is not found", beer_cfp);
     assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
 
-    let bob_passphrase = unwrap!(env::var("BOB_PASSPHRASE"), "!BOB_PASSPHRASE");
-    let bob_userpass = unwrap!(env::var("BOB_USERPASS"), "!BOB_USERPASS");
-    let alice_passphrase = unwrap!(env::var("ALICE_PASSPHRASE"), "!ALICE_PASSPHRASE");
-    let alice_userpass = unwrap!(env::var("ALICE_USERPASS"), "!ALICE_USERPASS");
+    let bob_passphrase = unwrap!(var("BOB_PASSPHRASE"), "!BOB_PASSPHRASE");
+    let bob_userpass = unwrap!(var("BOB_USERPASS"), "!BOB_USERPASS");
+    let alice_passphrase = unwrap!(var("ALICE_PASSPHRASE"), "!ALICE_PASSPHRASE");
+    let alice_userpass = unwrap!(var("ALICE_USERPASS"), "!ALICE_USERPASS");
 
     let coins = json!([
         {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},
@@ -443,7 +446,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "ethnode":"http://195.201.0.6:8545"
         }),
         bob_userpass,
-        local_start
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
     let mm_alice = unwrap! (MarketMakerIt::start (
@@ -459,7 +462,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "ethnode":"http://195.201.0.6:8545"
         }),
         alice_userpass,
-        local_start
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
     ));
 
     let _bob_dump_log = RaiiDump {log_path: mm_bob.log_path.clone()};

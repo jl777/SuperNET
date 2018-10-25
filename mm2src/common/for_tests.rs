@@ -110,8 +110,7 @@ impl MarketMakerIt {
     ///            Unique local IP address is injected as "myipaddr" unless this field is already present.
     /// * `userpass` - RPC API key. We should probably extract it automatically from the MM log.
     /// * `local` - Function to start the MarketMaker in a local thread, instead of spawning a process.
-    ///             Used when the `LOCAL_THREAD_MM` env is `1` and allows to more easily debug the tested MM.
-    pub fn start (mut conf: Json, userpass: String, local: fn (folder: PathBuf, log_path: PathBuf, conf: Json))
+    pub fn start (mut conf: Json, userpass: String, local: Option<fn (folder: PathBuf, log_path: PathBuf, conf: Json)>)
     -> Result<MarketMakerIt, String> {
         let executable = try_s! (env::args().next().ok_or ("No program name"));
         let executable = try_s! (Path::new (&executable) .canonicalize());
@@ -177,12 +176,12 @@ impl MarketMakerIt {
         let log_path = folder.join ("mm2.log");
         conf["log"] = unwrap! (log_path.to_str()) .into();
 
-        // If `LOCAL_THREAD_MM` is set to `1`
+        // If `local` is provided
         // then instead of spawning a process we start the MarketMaker in a local thread,
         // allowing us to easily *debug* the tested MarketMaker code.
         // Note that this should only be used while running a single test,
         // using this option while running multiple tests (or multiple MarketMaker instances) is currently UB.
-        let pc = if env::var ("LOCAL_THREAD_MM") == Ok ("1".into()) {
+        let pc = if let Some (local) = local {
             local (folder.clone(), log_path.clone(), conf);
             None
         } else {
