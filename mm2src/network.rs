@@ -492,7 +492,7 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                     };
                     let json_str = unwrap!(json::to_string(&nn_command));
                     let c_str = unwrap!(CString::new(json_str));
-                    nn::nn_send(
+                    let _size = nn::nn_send(
                         cmd.response_sock,
                         c_str.as_ptr() as *const c_void,
                         strlen(c_str.as_ptr()) as usize,
@@ -529,7 +529,7 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                         if cmd.queue_id == 0 {
                             len += 1
                         }
-                        nn::nn_send(
+                        let _size = nn::nn_send(
                             cmd.response_sock,
                             retstr as *const c_void,
                             len as usize,

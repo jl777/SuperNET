@@ -24,6 +24,23 @@
                 {"name": "LOCAL_THREAD_MM", "value": "1"}
             ],
             "externalConsole": false
+        },
+        {
+            "name": "test-trade",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/target/debug/mm2-2004fdfdf84cccc7.exe",
+            "args": ["test_trade", "--nocapture", "--ignored"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [
+                {"name": "LOCAL_THREAD_MM", "value": "bob"},
+                {"name": "BOB_PASSPHRASE", "value": "..."},
+                {"name": "BOB_USERPASS", "value": "..."},
+                {"name": "ALICE_PASSPHRASE", "value": "..."},
+                {"name": "ALICE_USERPASS", "value": "..."}
+            ],
+            "externalConsole": false
         }
     ]
 }

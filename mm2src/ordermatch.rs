@@ -2270,7 +2270,7 @@ pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
                 &mut a as *mut lp::LP_utxoinfo,
                 0,
                 utxos.as_ptr() as *mut *mut lp::LP_address_utxo,
-                4096,
+                utxos.len() as i32,
                 rel_coin,
                 (*rel_coin).smartaddr.as_ptr() as *mut i8,
                 tx_fee,
