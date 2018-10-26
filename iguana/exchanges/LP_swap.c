@@ -959,7 +959,7 @@ void LP_bobloop(void *_swap)
     G.LP_pendingswaps--;
 }
 
-void LP_aliceloop(void *_swap)
+void LP_aliceloop(struct basilisk_swap *_swap)
 {
     uint8_t *data; char bobstr[65],alicestr[65]; int32_t bobwaittimeout,alicewaittimeout,maxlen,n,m,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     LP_alicequery_clear();

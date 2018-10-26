@@ -45,6 +45,10 @@ struct LP_millistats
 extern int32_t IAMLP;
 char LP_methodstr[64];
 
+int32_t bits256_nonz(bits256 a) {
+    return (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0);
+}
+
 void LP_millistats_update(struct LP_millistats *mp)
 {
     double elapsed,millis;

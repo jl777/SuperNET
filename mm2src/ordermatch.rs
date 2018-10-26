@@ -18,11 +18,12 @@
 //  ordermatch.rs
 //  marketmaker
 //
-use common::{find_coin, lp, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON};
+use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON};
 use common::mm_ctx::{MmArc, MmWeak};
 use gstuff::now_ms;
 use fxhash::{FxHashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, strcmp, calloc, rand};
+use network::lp_queue_command;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
 use std::collections::hash_map::Entry;
@@ -957,138 +958,127 @@ char *LP_cancel_order(char *uuidstr)
     }
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
 }
+*/
+struct BasiliskSwap(pub *mut lp::basilisk_swap);
+unsafe impl Send for BasiliskSwap {}
 
-char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
-{
-    cJSON *retjson; char otheraddr[64],*msg; double bid,ask,price,qprice; int32_t changed,pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
-    if ( bits256_cmp(qp->desthash,G.LP_mypub25519) != 0 )
-    {
-        LP_aliceid(qp->tradeid,qp->aliceid,"error1",0,0);
-        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4000,qp->uuidstr);
-        return(clonestr("{\"result\",\"update stats\"}"));
+unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { // alice
+    if lp::bits256_cmp((*qp).desthash, lp::G.LP_mypub25519) != 0 {
+        lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error1\x00".as_ptr() as *mut c_char, 0, 0);
+        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4000.0, (*qp).uuidstr.as_mut_ptr());
+        return;
     }
-    printf("CONNECTED mpnet.%d fill.%d gtc.%d numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n",qp->mpnet,qp->fill,qp->gtc,G.LP_pendingswaps,qp->tradeid,qp->R.requestid,qp->R.quoteid,pairstr!=0?pairstr:"");
-    LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector,qp->fill,qp->gtc);
-    //printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
-    if ( LP_Alicequery.srccoin[0] != 0 && LP_Alicequery.destcoin[0] != 0 )
-    {
-        LP_mypriceset(0,&changed,LP_Alicequery.destcoin,LP_Alicequery.srccoin,0.);
-        LP_mypriceset(0,&changed,LP_Alicequery.srccoin,LP_Alicequery.destcoin,0.);
+    printf("CONNECTED mpnet.%d fill.%d gtc.%d numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n\x00".as_ptr() as *const c_char,
+           (*qp).mpnet, (*qp).fill, (*qp).gtc, lp::G.LP_pendingswaps, (*qp).tradeid, (*qp).R.requestid, (*qp).R.quoteid, pairstr);
+    let dex_selector = 0;
+    lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, (*qp).srccoin.as_mut_ptr(), (*qp).satoshis - (*qp).txfee, (*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
+//printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
+    let mut changed = 0;
+    if lp::LP_Alicequery.srccoin[0] != 0 && lp::LP_Alicequery.destcoin[0] != 0 {
+        lp::LP_mypriceset(0, &mut changed, lp::LP_Alicequery.destcoin.as_mut_ptr(), lp::LP_Alicequery.srccoin.as_mut_ptr(), 0.);
+        lp::LP_mypriceset(0, &mut changed, lp::LP_Alicequery.srccoin.as_mut_ptr(), lp::LP_Alicequery.destcoin.as_mut_ptr(), 0.);
     }
-    LP_alicequery_clear();
-    memset(&LP_Alicereserved,0,sizeof(LP_Alicereserved));
-    LP_aliceid(qp->tradeid,qp->aliceid,"connected",qp->R.requestid,qp->R.quoteid);
-    autxo = &A;
-    butxo = &B;
-    memset(autxo,0,sizeof(*autxo));
-    memset(butxo,0,sizeof(*butxo));
-    LP_abutxo_set(autxo,butxo,qp);
-    if ( (qprice= LP_quote_validate(autxo,butxo,qp,0)) <= SMALLVAL )
-    {
-        LP_availableset(qp->desttxid,qp->vout);
-        LP_availableset(qp->feetxid,qp->feevout);
-        LP_aliceid(qp->tradeid,qp->aliceid,"error4",0,0);
-        LP_failedmsg(qp->R.requestid,qp->R.quoteid,qprice,qp->uuidstr);
-        printf("quote %s/%s validate error %.0f\n",qp->srccoin,qp->destcoin,qprice);
-        return(clonestr("{\"error\":\"quote validation error\"}"));
+    lp::LP_alicequery_clear();
+    lp::LP_Alicereserved = lp::LP_quoteinfo::default();
+    lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"connected\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
+    let mut autxo = lp::LP_utxoinfo::default();
+    let mut butxo = lp::LP_utxoinfo::default();
+    lp::LP_abutxo_set(&mut autxo, &mut butxo, qp);
+    let qprice = lp::LP_quote_validate(&mut autxo, &mut butxo, qp, 0);
+    if qprice <= SMALLVAL {
+        lp::LP_availableset((*qp).desttxid, (*qp).vout);
+        lp::LP_availableset((*qp).feetxid, (*qp).feevout);
+        lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error4\x00".as_ptr() as *mut c_char, 0, 0);
+        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, qprice, (*qp).uuidstr.as_mut_ptr());
+        printf(b"quote %s/%s validate error %.0f\n\x00".as_ptr() as *const c_char, (*qp).srccoin, (*qp).destcoin, qprice);
+        return;
     }
-    if ( LP_myprice(0,&bid,&ask,qp->srccoin,qp->destcoin) <= SMALLVAL || bid <= SMALLVAL )
-    {
-        printf("this node has no price for %s/%s (%.8f %.8f)\n",qp->destcoin,qp->srccoin,bid,ask);
-        LP_availableset(qp->desttxid,qp->vout);
-        LP_availableset(qp->feetxid,qp->feevout);
-        LP_aliceid(qp->tradeid,qp->aliceid,"error5",0,0);
-        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4002,qp->uuidstr);
-        return(clonestr("{\"error\":\"no price set\"}"));
+    let mut bid = 0.;
+    let mut ask = 0.;
+    if lp::LP_myprice(0, &mut bid, &mut ask, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr()) <= SMALLVAL || bid <= SMALLVAL {
+        printf(b"this node has no price for %s/%s (%.8f %.8f)\n\x00".as_ptr() as *const c_char, (*qp).destcoin, (*qp).srccoin, bid, ask);
+        lp::LP_availableset((*qp).desttxid, (*qp).vout);
+        lp::LP_availableset((*qp).feetxid, (*qp).feevout);
+        lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error5\x00".as_ptr() as *mut c_char, 0, 0);
+        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4002.0, (*qp).uuidstr.as_mut_ptr());
+        return;
     }
-    //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
-    printf("%s/%s bid %.8f ask %.8f values %.8f %.8f\n",qp->srccoin,qp->destcoin,bid,ask,dstr(butxo->payment.value),dstr(butxo->deposit.value));
-    price = bid;
-    if ( (coin= LP_coinfind(qp->destcoin)) == 0 )
-    {
-        LP_aliceid(qp->tradeid,qp->aliceid,"error6",0,0);
-        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4003,qp->uuidstr);
-        return(clonestr("{\"error\":\"cant get alicecoin\"}"));
+//LP_RTmetrics_update(qp->srccoin,qp->destcoin);
+    printf(b"%s/%s bid %.8f ask %.8f values %.8f %.8f\n\x00".as_ptr() as *const c_char, (*qp).srccoin, (*qp).destcoin, bid, ask, (butxo.payment.value / SATOSHIS) as f64, (butxo.deposit.value / SATOSHIS) as f64);
+    let coin = lp::LP_coinfind((*qp).destcoin.as_mut_ptr());
+    if coin.is_null() {
+        lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error6\x00".as_ptr() as *mut c_char, 0, 0);
+        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4003.0, (*qp).uuidstr.as_mut_ptr());
+        return;
     }
-    qp->privkey = LP_privkey(coin->symbol,qp->destaddr,coin->taddr);
-    if ( bits256_nonz(qp->privkey) != 0 )//&& qp->quotetime >= qp->timestamp-3 )
-    {
-        retjson = cJSON_CreateObject();
-        if ( (swap= LP_swapinit(0,0,qp->privkey,&qp->R,qp,LP_dynamictrust(qp->othercredits,qp->srchash,LP_kmdvalue(qp->srccoin,qp->satoshis)) > 0)) == 0 )
-        {
-            jaddstr(retjson,"error","couldnt swapinit");
-            LP_availableset(qp->desttxid,qp->vout);
-            LP_availableset(qp->feetxid,qp->feevout);
-            LP_aliceid(qp->tradeid,qp->aliceid,"error7",qp->R.requestid,qp->R.quoteid);
-            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4004,qp->uuidstr);
-            return(jprint(retjson,1));
+    (*qp).privkey = lp::LP_privkey((*coin).symbol.as_mut_ptr(), (*qp).destaddr.as_mut_ptr(), (*coin).taddr);
+    if lp::bits256_nonz((*qp).privkey) != 0 { //&& qp->quotetime >= qp->timestamp-3 )
+        let swap = lp::LP_swapinit(0, 0, (*qp).privkey, &mut (*qp).R, qp,
+                                   (lp::LP_dynamictrust((*qp).othercredits, (*qp).srchash, lp::LP_kmdvalue((*qp).srccoin.as_mut_ptr(), (*qp).satoshis as i64)) > 0) as i32);
+        if swap.is_null() {
+            lp::LP_availableset((*qp).desttxid, (*qp).vout);
+            lp::LP_availableset((*qp).feetxid, (*qp).feevout);
+            lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error7\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
+            lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4004.0, (*qp).uuidstr.as_mut_ptr());
+            return;
         }
-        if ( pairstr == 0 || pairstr[0] == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
-        {
-            LP_aliceid(qp->tradeid,qp->aliceid,"error8",qp->R.requestid,qp->R.quoteid);
-            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4005,qp->uuidstr);
-            jaddstr(retjson,"error","couldnt create pairsock");
-        }
-        else if ( nn_connect(pairsock,pairstr) >= 0 )
-        {
-            //timeout = 1;
-            //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            swap->tradeid = qp->tradeid;
-            swap->N.pair = pairsock;
-            //autxo->S.swap = swap;
-            //swap->utxo = autxo;
-            LP_importaddress(qp->srccoin,qp->coinaddr);
-            LP_otheraddress(qp->destcoin,otheraddr,qp->srccoin,qp->coinaddr);
-            LP_importaddress(qp->srccoin,otheraddr);
-            LP_aliceid(qp->tradeid,qp->aliceid,"started",qp->R.requestid,qp->R.quoteid);
-            printf("alice pairstr.(%s) pairsock.%d pthread_t %ld\n",pairstr,pairsock,sizeof(pthread_t));
-            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)swap) == 0 )
-            {
-                retjson = LP_quotejson(qp);
-                jaddstr(retjson,"result","success");
-                LP_swapsfp_update(qp->R.requestid,qp->R.quoteid);
-                if ( IPC_ENDPOINT >= 0 )
-                {
-                    msg = jprint(retjson,0);
-                    LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
-                    free(msg);
-                }
-                //jaddnum(retjson,"requestid",qp->R.requestid);
-                //jaddnum(retjson,"quoteid",qp->R.quoteid);
+        let mut error = 0;
+        let pairsock = nn::nn_socket(nn::AF_SP as i32, nn::NN_PAIR as i32);
+        if pairstr.is_null() || *pairstr == 0 || pairsock < 0 {
+            lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error8\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
+            lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4005.0, (*qp).uuidstr.as_mut_ptr());
+            error = 1;
+        } else if nn::nn_connect(pairsock, pairstr) >= 0 {
+//timeout = 1;
+//nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+//nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            (*swap).tradeid = (*qp).tradeid;
+            (*swap).N.pair = pairsock;
+//autxo->S.swap = swap;
+//swap->utxo = autxo;
+            let mut otheraddr: [c_char; 64] = [0; 64];
+            lp::LP_importaddress((*qp).srccoin.as_mut_ptr(), (*qp).coinaddr.as_mut_ptr());
+            lp::LP_otheraddress((*qp).destcoin.as_mut_ptr(), otheraddr.as_mut_ptr(), (*qp).srccoin.as_mut_ptr(), (*qp).coinaddr.as_mut_ptr());
+            lp::LP_importaddress((*qp).srccoin.as_mut_ptr(), otheraddr.as_mut_ptr());
+            lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"started\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
+            printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
+            let b_swap = BasiliskSwap(swap);
+            unwrap!(thread::Builder::new().name("alice_loop".into()).spawn(move ||
+                    lp::LP_aliceloop(b_swap.0)
+            ));
+            let retjson = CJSON(lp::LP_quotejson(qp));
+            lp::jaddstr(retjson.0, b"result\x00".as_ptr() as *mut c_char, b"success\x00".as_ptr() as *mut c_char);
+            lp::LP_swapsfp_update((*qp).R.requestid, (*qp).R.quoteid);
+            if lp::IPC_ENDPOINT >= 0 {
+                let msg = lp::jprint(retjson.0, 0);
+                lp_queue_command(null_mut(), msg, lp::IPC_ENDPOINT, -1, 0);
+                free_c_ptr(msg as *mut c_void);
             }
-            else
-            {
-                LP_aliceid(qp->tradeid,qp->aliceid,"error9",qp->R.requestid,qp->R.quoteid);
-                jaddstr(retjson,"error","couldnt aliceloop");
-                LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4006,qp->uuidstr);
-            }
+//jaddnum(retjson,"requestid",qp->R.requestid);
+//jaddnum(retjson,"quoteid",qp->R.quoteid);
+            /*} else {
+                lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error9\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
+                lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4006.0, (*qp).uuidstr);
+            }*/
+        } else {
+            lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error10\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
+            printf(b"connect error %s\n\x00".as_ptr() as *const c_char, nn::nn_strerror(nn::nn_errno()));
+            lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4007.0, (*qp).uuidstr.as_mut_ptr());
         }
-        else
-        {
-            LP_aliceid(qp->tradeid,qp->aliceid,"error10",qp->R.requestid,qp->R.quoteid);
-            printf("connect error %s\n",nn_strerror(nn_errno()));
-            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4007,qp->uuidstr);
+//printf("connected result.(%s)\n",jprint(retjson,0));
+        if error == 1 {
+                lp::LP_availableset((*qp).desttxid, (*qp).vout);
+                lp::LP_availableset((*qp).feetxid, (*qp).feevout);
         }
-        //printf("connected result.(%s)\n",jprint(retjson,0));
-        if ( jobj(retjson,"error") != 0 )
-        {
-            LP_availableset(qp->desttxid,qp->vout);
-            LP_availableset(qp->feetxid,qp->feevout);
-        }
-        return(jprint(retjson,1));
-    }
-    else
-    {
-        LP_availableset(qp->desttxid,qp->vout);
-        LP_availableset(qp->feetxid,qp->feevout);
-        LP_aliceid(qp->tradeid,qp->aliceid,"error11",0,0);
-        printf("no privkey found coin.%s %s taddr.%u\n",qp->destcoin,qp->destaddr,coin->taddr);
-        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4008,qp->uuidstr);
-        return(clonestr("{\"error\",\"no privkey\"}"));
+    } else {
+        lp::LP_availableset((*qp).desttxid, (*qp).vout);
+        lp::LP_availableset((*qp).feetxid, (*qp).feevout);
+        lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error11\x00".as_ptr() as *mut c_char, 0, 0);
+        printf(b"no privkey found coin.%s %s taddr.%u\n\x00".as_ptr() as *mut c_char, (*qp).destcoin, (*qp).destaddr, (*coin).taddr as libc::c_uint);
+        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4008.0, (*qp).uuidstr.as_mut_ptr());
     }
 }
-
+/*
 int32_t LP_aliceonly(char *symbol)
 {
     return(0);
@@ -1162,24 +1152,24 @@ double LP_trades_alicevalidate(void *ctx,struct LP_quoteinfo *qp)
     }
     return(qprice);
 }
-
-void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
-{
-    double price=0.,maxprice = LP_Alicemaxprice;
-    //if ( LP_quotecmp(0,qp,&LP_Alicequery) == 0 )
-    {
-        price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
-        if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
-        {
-            qp->tradeid = LP_Alicequery.tradeid;
-            LP_Alicereserved = *qp;
-            LP_alicequery_clear();
-            //printf("send CONNECT\n");
-            LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-        } else printf("LP_reserved %llu price %.8f vs maxprice %.8f\n",(long long)qp->aliceid,price,maxprice);
-    } //else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(qp->quotetime),price,maxprice);
+*/
+unsafe fn lp_reserved(qp: *mut lp::LP_quoteinfo) {
+    let maxprice = lp::LP_Alicemaxprice;
+    let price = lp::LP_pricecache(qp, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), (*qp).txid, (*qp).vout);
+    if lp::LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice {
+        (*qp).tradeid = lp::LP_Alicequery.tradeid;
+        lp::LP_Alicereserved = *qp;
+        lp::LP_alicequery_clear();
+        //printf("send CONNECT\n");
+        lp::LP_query(
+            b"connect\x00" as *const u8 as *mut libc::c_char,
+            qp
+        );
+    } else {
+        println!("LP_reserved {} price {} vs maxprice {}", (*qp).aliceid, price, maxprice);
+    }
 }
-
+/*
 double LP_trades_bobprice(double *bidp,double *askp,struct LP_quoteinfo *qp)
 {
     double price; struct iguana_info *coin; char str[65];
@@ -1468,62 +1458,69 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
     }
     return(0);
 }
-
-struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
-{
-    char *retstr; int32_t changed; double val;
-    char str[65]; printf("alice %s received CONNECTED.(%llu) mpnet.%d fill.%d gtc.%d\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid,qp->mpnet,qp->fill,qp->gtc);
+*/
+unsafe fn lp_trades_gotconnected(
+    mut qp: *mut lp::LP_quoteinfo,
+    newqp: *mut lp::LP_quoteinfo,
+    pairstr: *mut c_char
+) -> *mut lp::LP_quoteinfo {
+    println!("alice {:x?} received CONNECTED.({}) mpnet.{} fill.{} gtc.{}",
+                lp::G.LP_mypub25519.bytes, (*qp).aliceid, (*qp).mpnet, (*qp).fill, (*qp).gtc);
     *newqp = *qp;
     qp = newqp;
-    if ( (val= LP_trades_alicevalidate(ctx,qp)) > 0. )
-    {
-        //printf("CONNECTED ALICE uuid.%s\n",qp->uuidstr);
-        LP_aliceid(qp->tradeid,qp->aliceid,"connected",0,0);
-        if ( (retstr= LP_connectedalice(qp,pairstr)) != 0 )
-            free(retstr);
-        LP_mypriceset(0,&changed,qp->destcoin,qp->srccoin,0.);
-        LP_alicequery_clear();
-        return(qp);
-    } else LP_failedmsg(qp->R.requestid,qp->R.quoteid,val,qp->uuidstr);
-    //printf("LP_trades_alicevalidate error\n");
-    return(0);
+    let val = lp::LP_trades_alicevalidate(qp);
+    let mut changed = 0;
+    if val > 0. {
+//printf("CONNECTED ALICE uuid.%s\n",qp->uuidstr);
+            lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"connected\x00" as *const u8 as *mut c_char, 0, 0);
+            lp_connected_alice(qp, pairstr);
+            lp::LP_mypriceset(0, &mut changed, (*qp).destcoin.as_mut_ptr(), (*qp).srccoin.as_mut_ptr(), 0.);
+            lp::LP_alicequery_clear();
+            return qp;
+    } else {
+        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, val, (*qp).uuidstr.as_mut_ptr());
+    }
+//printf("LP_trades_alicevalidate error\n");
+    null_mut()
 }
 
-int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
-{
-    double qprice; int32_t flag = 0; struct LP_quoteinfo Q; int64_t dynamictrust; char *retstr; struct LP_pubkey_info *pubp;
-    Q = tp->Q;
-    //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
-    if ( Q.satoshis != 0 && (pubp= LP_pubkeyadd(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
-    {
-        qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
-        LP_aliceid(Q.tradeid,tp->aliceid,"reserved",0,0);
-        if ( (retstr= LP_quotereceived(&Q)) != 0 )
-            free(retstr);
-        //LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
-        dynamictrust = LP_dynamictrust(Q.othercredits,Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
-        if ( tp->bestprice == 0. )
+unsafe fn lp_trades_bestpricecheck(tp: *mut lp::LP_trade) -> i32 {
+    let mut flag = 0;
+    let mut q = (*tp).Q;
+    let pubp = lp::LP_pubkeyadd(q.srchash);
+//printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
+    if q.satoshis != 0 && !pubp.is_null() { //(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
+        let qprice = q.destsatoshis as f64 / (q.satoshis - q.txfee) as f64;
+        lp::LP_aliceid(q.tradeid, (*tp).aliceid, b"reserved\x00" as *const u8 as *mut c_char, 0, 0);
+        let retstr = lp::LP_quotereceived(&mut q);
+        free_c_ptr(retstr as *mut c_void);
+//LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
+        let dynamictrust = lp::LP_dynamictrust(q.othercredits, q.srchash, lp::LP_kmdvalue(q.srccoin.as_mut_ptr(), q.satoshis as i64));
+        if (*tp).bestprice == 0. {
             flag = 1;
-        else if ( qprice < tp->bestprice && pubp->slowresponse <= tp->bestresponse*1.05 )
+        } else if qprice < (*tp).bestprice && (*pubp).slowresponse <= ((*tp).bestresponse as f64 * 1.05) as u32 {
             flag = 1;
-        else if ( qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust && pubp->slowresponse <= tp->bestresponse*1.1 )
+        } else if qprice < (*tp).bestprice * 1.01 && dynamictrust > (*tp).besttrust && (*pubp).slowresponse <= ((*tp).bestresponse as f64 * 1.1) as u32 {
             flag = 1;
-        else if ( qprice <= tp->bestprice && pubp->unconfcredits > tp->bestunconfcredits && pubp->slowresponse <= tp->bestresponse )
+        } else if qprice <= (*tp).bestprice && (*pubp).unconfcredits > (*tp).bestunconfcredits && (*pubp).slowresponse <= (*tp).bestresponse {
             flag = 1;
-        if ( flag != 0 )
-        {
-            tp->Qs[LP_CONNECT] = tp->Q;
-            tp->bestprice = qprice;
-            tp->besttrust = dynamictrust;
-            tp->bestunconfcredits = pubp->unconfcredits;
-            tp->bestresponse = pubp->slowresponse;
-            printf("aliceid.%llu got new bestprice %.8f dynamictrust %.8f (unconf %.8f) slowresponse.%d\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust),dstr(tp->bestunconfcredits),tp->bestresponse);
-            return(qprice);
+        }
+        if flag != 0 {
+            (*tp).Qs[lp::LP_CONNECT as usize] = (*tp).Q;
+            (*tp).bestprice = qprice;
+            (*tp).besttrust = dynamictrust;
+            (*tp).bestunconfcredits = (*pubp).unconfcredits;
+            (*tp).bestresponse = (*pubp).slowresponse;
+            println!("aliceid.{} got new bestprice {} dynamictrust {} (unconf {}) slowresponse.{}",
+                   (*tp).aliceid, (*tp).bestprice, dynamictrust as f64 / SATOSHIS as f64, (*tp).bestunconfcredits as f64 / SATOSHIS as f64, (*tp).bestresponse);
+            return 1
         } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
-    } else printf("alice didnt validate\n");
-    return(0);
+    } else {
+        println!("alice didnt validate");
+    }
+    0
 }
-
+/*
 int32_t LP_trades_canceluuid(char *uuidstr)
 {
     int32_t num = 0; struct LP_trade *qtp,*tp,*tmp;
@@ -1563,7 +1560,6 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
 
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
         let mut trades_map = unwrap!(ordermatch_ctx.lp_trades.lock());
-        let mut nonz = 0;
         for (_, trade) in trades_map.iter_mut() {
             if trade.negotiationdone != 0 || trade.cancelled != 0 {
                 continue;
@@ -1581,7 +1577,7 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
             if now > trade.lastprocessed && trade.iambob == 0 && trade.bestprice > 0. {
                 if trade.connectsent == 0 {
                     lp::LP_Alicemaxprice = trade.bestprice;
-                    lp::LP_reserved(&mut trade.Qs[lp::LP_CONNECT as usize]); // send LP_CONNECT
+                    lp_reserved(&mut trade.Qs[lp::LP_CONNECT as usize]); // send LP_CONNECT
                     (*trade).connectsent = now;
                     //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                 } else if now < trade.firstprocessed + timeout as u64 && ((trade.firstprocessed  + timeout as u64 - now) % 20) == 19 {
@@ -1638,21 +1634,16 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
                                 qtp.Qs[lp::LP_RESERVED as usize] = q;
                             }
                         } else if qtp.iambob == 0 && funcid == lp::LP_RESERVED { // alice maybe sends LP_CONNECT
-                            lp::LP_trades_bestpricecheck(
-                                ctx.btc_ctx() as *mut c_void,
-                                &mut qtp
-                            );
+                            lp_trades_bestpricecheck(&mut qtp);
                         } else if qtp.iambob == 0 && funcid == lp::LP_CONNECTED {
                             qtp.negotiationdone = now;
                             //printf("alice sets negotiationdone.%u\n",now);
-                            lp::LP_trades_gotconnected(
-                                ctx.btc_ctx() as *mut c_void,
+                            lp_trades_gotconnected(
                                 &mut qtp.Q,
                                 &mut qtp.Qs[lp::LP_CONNECTED as usize],
                                 qtp.pairstr.as_mut_ptr()
                             );
                         }
-                        nonz += 1;
                         qtp.firstprocessed =  now_ms() / 1000;
                         qtp.lastprocessed =  now_ms() / 1000;
                         if funcid == lp::LP_CONNECT && qtp.negotiationdone == 0 { // bob all done
@@ -1680,13 +1671,12 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
             if trade.iambob == 0 {
                 if funcid == lp::LP_RESERVED {
                     if trade.connectsent == 0 {
-                        flag = lp::LP_trades_bestpricecheck(ctx.btc_ctx() as *mut c_void, trade);
+                        flag = lp_trades_bestpricecheck(trade);
                     }
                 } else if funcid == lp::LP_CONNECTED && trade.negotiationdone == 0 { // alice all done  tp->connectsent != 0 &&
                     flag = 1;
                     (*trade).negotiationdone = now;
-                    lp::LP_trades_gotconnected(
-                        ctx.btc_ctx() as *mut c_void,
+                    lp_trades_gotconnected(
                         &mut trade.Q,
                         &mut trade.Qs[lp::LP_CONNECTED as usize],
                         trade.pairstr.as_mut_ptr()
@@ -1715,14 +1705,11 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
             }
             if flag != 0 {
                 (*trade).lastprocessed = now_ms() / 1000;
-                nonz += 1;
             }
         }
         // drop trades map before sleeping to unlock the mutex
         drop(trades_map);
-        if nonz == 0 {
-            thread::sleep(Duration::from_secs(1));
-        }
+        thread::sleep(Duration::from_secs(1));
     }
 }
 
@@ -1855,11 +1842,9 @@ pub unsafe fn lp_trade_command(
                                         if q.quotetime as u64 > now_ms() / 1000
                                             && lp::LP_alice_eligible(q.quotetime) > 0
                                             {
-                                                lp::LP_trades_gotreserved(ctx.btc_ctx() as *mut c_void, &mut q, &mut q2);
+                                                lp::LP_trades_gotreserved(&mut q, &mut q2);
                                                 if lp::LP_quotecmp(0, &mut q, &mut lp::LP_Alicequery) == 0 {
-                                                    lp::LP_reserved(
-                                                        &mut q,
-                                                    );
+                                                    lp_reserved(&mut q);
                                                 }
                                             }
                                     } else {
@@ -1934,8 +1919,7 @@ pub unsafe fn lp_trade_command(
                                     )
                                 }
                                 if q_trades == 0 {
-                                    lp::LP_trades_gotconnected(
-                                        ctx.btc_ctx() as *mut c_void,
+                                    lp_trades_gotconnected(
                                         &mut q,
                                         &mut q2,
                                         lp::jstr(
