@@ -158,6 +158,9 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_DONTCHANGE_ERRMSG1 "coin is disabled"
 
 extern char GLOBAL_DBDIR[512];
+
+/// `0` if the command-line configuration contains the `{"client": 1}` flag; `1` otherwise.  
+/// Rust code should use the (reversed) `MmCtx::am_client` instead.
 extern int32_t IAMLP;
 
 struct iguana_msgvin
@@ -655,7 +658,13 @@ extern double LP_profitratio;
 extern int32_t bitcoind_RPC_inittime;
 extern int32_t LP_showwif;
 extern char LP_gui[65];
+
+/// `0` in the "client" mode, `1` otherwise.
+/// My hypothesis is that we might be using the "client" mode to cull out the potentially short-lived instances of MM
+/// from the peer-to-peer netowkr in order to make the latter more stable.
 extern int32_t LP_canbind;
+
+/// Initialized from the "canbind" configuration knob.
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
 extern int32_t LP_mypubsock;

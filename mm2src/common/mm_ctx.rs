@@ -72,8 +72,10 @@ impl MmCtx {
             ordermatch_ctx: Mutex::new (None),
         }))
     }
+
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
+
     pub fn stop (&self) {
         if self.stop.compare_and_swap (false, true, Ordering::Relaxed) == false {
             let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
@@ -84,11 +86,13 @@ impl MmCtx {
             }
         }
     }
+
     /// True if the MarketMaker instance needs to stop.
     pub fn is_stopping (&self) -> bool {
         if unsafe {lp::LP_STOP_RECEIVED != 0} {return true}
         self.stop.load (Ordering::Relaxed)
     }
+
     /// Register a callback to be invoked when the MM receives the "stop" request.  
     /// The callback is invoked immediately if the MM is stopped already.
     pub fn on_stop (&self, mut cb: Box<FnMut()->Result<(), String>>) {
@@ -100,6 +104,15 @@ impl MmCtx {
         } else {
             stop_listeners.push (cb)
         }
+    }
+
+    /// `true` if the MarketMaker was configured with the `{"client": 1}` command-line flag.
+    /// 
+    /// Should be used instead of the C `IAMLP` (where 1 means NOT client).
+    /// 
+    /// Soon as we learn it, should clarify the exact meaning of what being a client means.
+    pub fn am_client (&self) -> bool {
+        self.conf["client"].as_i64() == Some (1)
     }
 }
 impl Drop for MmCtx {

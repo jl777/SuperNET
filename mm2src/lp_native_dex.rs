@@ -1516,7 +1516,7 @@ fn fix_directories() -> bool {
     true
 }
 
-pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, conf: Json, c_conf: CJSON) -> Result<(), String> {
+pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON) -> Result<(), String> {
     unsafe {lp::bitcoind_RPC_inittime = 1};
     BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
     if lp::LP_MAXPRICEINFOS > 255 {
@@ -1527,7 +1527,6 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     if unwrap! (conf["passphrase"].as_str()) .is_empty() {
         return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree")
     }
-    unsafe {lp::IAMLP = if amclient {0} else {1}};
     unsafe {libc::srand (random())};  // Seed the C RNG, we might need it as long as we're using C code.
     if conf["gui"] == 1 {
         // Replace "cli\0" with "gui\0".
@@ -1536,21 +1535,18 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
         let mut cur = Cursor::new (lp_gui);
         unwrap! (write! (&mut cur, "gui\0"))
     }
-    if conf["canbind"].is_null() {
-        unsafe {lp::LP_canbind = lp::IAMLP}
-    } else {
-        let canbind = unwrap! (conf["canbind"].as_i64());
-        if canbind < 0 {return ERR! ("Unexpected negative `canbind`")}
-        if canbind > 65535 {return ERR! ("canbind > u16")}
-        unsafe {lp::LP_canbind = canbind as i32};
-        println! (">>>>>>>>>>> set LP_canbind.{}", unsafe {lp::LP_canbind})
+
+    unsafe {
+        lp::LP_fixed_pairport = if conf["canbind"].is_null() {
+            0
+        } else {
+            let canbind = unwrap! (conf["canbind"].as_i64());
+            if canbind <= 1000 {return ERR! ("canbind <= 1000")}
+            if canbind > 65535 {return ERR! ("canbind > u16")}
+            canbind as u16
+        }
     }
-    if unsafe {lp::LP_canbind > 1000 && lp::LP_canbind < 65536} {
-        unsafe {lp::LP_fixed_pairport = lp::LP_canbind as u16}
-    }
-    if unsafe {lp::LP_canbind != 0} {
-        unsafe {lp::LP_canbind = 1}
-    }
+
     if !conf["userhome"].is_null() {
         let userhome = unwrap! (conf["userhome"].as_str()) .trim();
         if !userhome.is_empty() {
@@ -1652,6 +1648,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, amclient: bool, co
     } .to_string();
     let ip : IpAddr = try_s!(rpcip.parse());
     let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport));
+
+    unsafe {lp::IAMLP = if ctx.am_client() {0} else {1}}
+    unsafe {lp::LP_canbind = if ctx.am_client() {0} else {1}}
 
 /*
     if ( IAMLP != 0 )

@@ -141,10 +141,7 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
         if port > u16::max_value() as u64 {return ERR! ("port > u16")}
         let netid = conf["netid"].as_u64().unwrap_or (0) as u16;
         unsafe {lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid)};
-        let client = conf["client"].as_i64().unwrap_or (0);
-        if client < i32::min_value() as i64 {return ERR! ("client < i32")}
-        if client > i32::max_value() as i64 {return ERR! ("client > i32")}
-        try_s! (lp_init (port as u16, pullport, pubport, client == 1, conf, c_conf));
+        try_s! (lp_init (port as u16, pullport, pubport, conf, c_conf));
         Ok(())
     } else {ERR! ("!passphrase")}
 }
@@ -170,6 +167,14 @@ fn help() {
         "                     Default is 0x2896Db79fAF20ABC8776fc27D15719cf59b8138B (Mainnet).\n"
         "                     Set 0x105aFE60fDC8B5c021092b09E8a042135A4A976E for Ropsten testnet\n"
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
+        // I'm not quite sure what the "client mode" is, should be clarified as soon as we learn it.
+        // Does it turn Electrum-only mode on?
+        // Does it turn us into the Alice?
+        // Prevents us from fully joining the peer-to-peer network (by affecting `LP_canbind`)?
+        // Anything else?
+        // In MM2 we want to make the peers equal, allowing everyone to swap with everyone,
+        // the client-server model doesn't make a lot of sense then.
+        // cf. `IAMLP`, `MmCtx::am_client`.
         "  client         ..  '1' to use the client mode.\n"
         // We don't currently want to change the RPC API,
         // so the "refrel=coinmarketcap" designator will be using the CoinGecko behind the scenes,
