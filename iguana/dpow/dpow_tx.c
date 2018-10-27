@@ -271,7 +271,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
 
 	struct iguana_info *coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
 	uint32_t zcash = (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0);
-	printf("[Decker] dpow_notarytx: src.(%s) dst.(%s) src_or_dest.(%d) usesigs.(%d)\n", bp->srccoin->symbol, bp->destcoin->symbol, src_or_dest, usesigs);
+	//printf("[Decker] dpow_notarytx: src.(%s) dst.(%s) src_or_dest.(%d) usesigs.(%d)\n", bp->srccoin->symbol, bp->destcoin->symbol, src_or_dest, usesigs);
 	
 	signedtx[0] = 0;
     *numsigsp = 0;
@@ -304,7 +304,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
         {
             if ( pubkeys != 0 && numratified > 0 ) // state [1]
             {
-				printf("[Decker] dpow_notarytx: state [1]\n");
+		//printf("[Decker] dpow_notarytx: state [1]\n");
                 if ( src_or_dest != 0 )
                 {
                     txid = bp->notaries[k].ratifydestutxo;
@@ -325,7 +325,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
             }
             else // state [2]
             {
-				printf("[Decker] dpow_notarytx: state [2]\n");
+		//printf("[Decker] dpow_notarytx: state [2]\n");
                 ep = &bp->notaries[k];
                 cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
                 if ( bits256_nonz(cp->prev_hash) == 0 )
@@ -386,7 +386,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
 	// here if usesigs=0 we have unsigned tx (not preimage), if usesigs=1 - we have signed tx with sigs from nn_bus network (?)
 
     init_hexbytes_noT(signedtx,serialized,len);
-	printf("[Decker] dpow_notarytx: signedtx.(%s)\n", signedtx);
+    //printf("[Decker] dpow_notarytx: signedtx.(%s)\n", signedtx);
 
     //printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
     if ( usesigs == 0 && bestk >= 0 )

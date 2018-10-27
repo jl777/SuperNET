@@ -647,9 +647,9 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
             free_json(retjson);
         }
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
-		uint32_t zcash = (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0);
-		if (zcash)
-			printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);
+	uint32_t zcash = (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0);
+	/*if (zcash)
+		printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);*/
         free(paramstr);
         usleep(10000);
         return(retstr);
