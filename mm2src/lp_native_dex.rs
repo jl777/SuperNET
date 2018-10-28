@@ -30,8 +30,10 @@
 
 use common::{lp, slurp_url, CJSON, MM_VERSION, os};
 use common::mm_ctx::{MmCtx, MmArc};
+use common::nn::*;
 use crc::crc32;
 use futures::{Future};
+use gstuff::slurp;
 use libc::{self, c_char, c_void};
 use network::{lp_command_q_loop, lp_queue_command};
 use ordermatch::{lp_trade_command, lp_trades_loop};
@@ -41,7 +43,7 @@ use serde_json::{Value as Json};
 use std::fs;
 use std::ffi::{CStr, CString};
 use std::io::{Cursor, Read, Write};
-use std::mem::transmute;
+use std::mem::{size_of, transmute, zeroed};
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use std::ptr::null_mut;
@@ -1603,6 +1605,10 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         // Later we'll try to *bind* on this IP address,
         // and this will break under NAT or forwarding because the internal IP address will be different.
         // Which might be a good thing, allowing us to see a forwarding problem instead of silently not functioning.
+        // P.S. Looks like the binding currently *ignores* the "myipaddr", binding on "*" instead.
+        // TODO: I think we should fix it to bind on "myipaddr" when explicitly specified and on "*" otherwise.
+        // The automatic outer IP might help with NAT traversal, but it should NOT be affecting the `myipaddr`
+        // (manually setting the IP address to bind to and detecing the outer IP are different concerns, they should be separated).
 
         let ip_providers: [(&'static str, fn (&str) -> Result<IpAddr, String>); 2] = [
             ("http://checkip.amazonaws.com/", simple_ip_extractor),
@@ -1652,56 +1658,55 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::IAMLP = if ctx.am_client() {0} else {1}}
     unsafe {lp::LP_canbind = if ctx.am_client() {0} else {1}}
 
-/*
-    if ( IAMLP != 0 )
-    {
-        G.netid = juint(argjson,"netid");
-        LP_mypubsock = -1;
-        nanomsg_transportname(0,subaddr,myipaddr,mypubport);
-        nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
-        valid = 0;
-        if ( (LP_mypubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
-        {
-            valid = 0;
-            if ( nn_bind(LP_mypubsock,bindaddr) >= 0 )
-                valid++;
-            if ( valid > 0 )
-            {
-                timeout = 100;
-                nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                //timeout = 10;
-                //nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
+    if !ctx.am_client() {
+        unsafe {lp::G.netid = ctx.conf["netid"].as_u64().unwrap_or (0) as u16}
+        unsafe {lp::LP_mypubsock = -1}
+        // TODO: Use `myipaddr` when it was explicitly specified. And disentangle `myipaddr` from the detected outer IP.
+        //let subaddr = fomat! ("tcp://" (myipaddr) ':' (mypubport));
+        let bindaddr = fomat! ("tcp://*:" (mypubport));
+        unsafe {lp::LP_mypubsock = nn_socket (AF_SP as i32, NN_PUB as i32)}
+        if unsafe {lp::LP_mypubsock} >= 0 {
+            let bindaddr_c = try_s! (CString::new (&bindaddr[..]));
+            let bind_rc = unsafe {nn_bind (lp::LP_mypubsock, bindaddr_c.as_ptr())};
+            if bind_rc >= 0 {
+                let mut timeout: i32 = 100;
+                unsafe {nn_setsockopt (lp::LP_mypubsock, NN_SOL_SOCKET as i32, NN_SNDTIMEO as i32, &mut timeout as *mut i32 as *mut c_void, size_of::<i32>())};
+            } else {
+                println! ("error binding to ({}).{}", bindaddr, unsafe {lp::LP_mypubsock});
+                if unsafe {lp::LP_mypubsock} >= 0 {
+                    unsafe {nn_close (lp::LP_mypubsock); lp::LP_mypubsock = -1}
+                }
             }
-            else
-            {
-                printf("error binding to (%s).%d\n",subaddr,LP_mypubsock);
-                if ( LP_mypubsock >= 0 )
-                    nn_close(LP_mypubsock), LP_mypubsock = -1;
-            }
-        } else printf("error getting pubsock %d\n",LP_mypubsock);
-        printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,LP_mypubsock);
-        LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-    }
-    if ( (coinsjson= jobj(argjson,"coins")) == 0 )
-    {
-        if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 || (coins_str= OS_filestr(&filesize,"exchanges/coins.json")) != 0 )
-        {
-            unstringify(coins_str);
-            printf("UNSTRINGIFIED.(%s)\n",coins_str);
-            coinsjson = cJSON_Parse(coins_str);
-            free(coins_str);
-            // yes I know this coinsjson is not freed, not sure about if it is referenced
+        } else {
+            println! ("error getting pubsock {}", unsafe {lp::LP_mypubsock});
         }
+        println! (">>>>>>>>> myipaddr.({}) pubsock.{}", bindaddr, unsafe {lp::LP_mypubsock});
+        let mut mypullport = mypullport;
+        let mut pushaddr: [c_char; 256] = unsafe {zeroed()};
+        let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
+        unsafe {lp::LP_mypullsock = lp::LP_initpublicaddr (
+            ctx.btc_ctx() as *mut c_void, &mut mypullport, pushaddr.as_mut_ptr(), myipaddr_c.as_ptr() as *mut c_char, mypullport, 0)};
     }
-    if ( coinsjson == 0 )
-    {
-        printf("no coins object or coins.json file, must abort\n");
-        exit(-1);
-    }
-    LP_initcoins(ctx,LP_mypubsock,coinsjson);
-    RPC_port = myport;
-    G.waiting = 1;
-        LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
+    let coins_cjson: CJSON;
+    let coinsjson = if !ctx.conf["coins"].is_null() {
+        unsafe {lp::jobj (c_conf.0, b"coins\0".as_ptr() as *mut c_char)}
+    } else {
+        let mut coins = slurp (&"coins.json");
+        if coins.is_empty() {coins = slurp (&"exchanges/coins.json")}
+        coins.push (0);  // Make it C zero-terminated.
+        let coins_str = unsafe {lp::unstringify (coins.as_mut_ptr() as *mut c_char)};
+        coins_cjson = try_s! (CJSON::from_zero_terminated (coins_str));
+        if coins_cjson.0 == null_mut() {return ERR! ("no coins object or coins.json file")}
+        coins_cjson.0
+    };
+    unsafe {lp::LP_initcoins (ctx.btc_ctx() as *mut c_void, lp::LP_mypubsock, coinsjson)}
+    unsafe {lp::RPC_port = myport}
+    unsafe {lp::G.waiting = 1}
+    unsafe {lp::LP_initpeers (
+        lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port,
+        lp::juint (c_conf.0, b"netid\0".as_ptr() as *mut c_char) as u16,
+        lp::jstr (c_conf.0, b"seednode\0".as_ptr() as *mut c_char))}
+/*
     //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;

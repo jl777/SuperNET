@@ -384,6 +384,7 @@ struct LP_peerinfo
     uint16_t port,netid;
     char ipaddr[64];
 };
+extern struct LP_peerinfo *LP_mypeer;
 
 struct LP_quoteinfo
 {
@@ -632,6 +633,8 @@ char *LP_ticker(char *refbase,char *refrel);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
 void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel);
 cJSON *LP_balances(char *coinaddr);
+int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired);
+char *unstringify(char *str);
 
 struct LP_autoprice_ref
 {
@@ -668,6 +671,9 @@ extern int32_t LP_canbind;
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
 extern int32_t LP_mypubsock;
+/// Defaults to -1.
+extern int32_t LP_mypullsock;
+extern uint16_t RPC_port;
 /**
  * Boolean. `1` if the command-line "myipaddr" field was used to set the `LP_myipaddr`.
  * 

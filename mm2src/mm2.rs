@@ -184,6 +184,7 @@ fn help() {
         "  cmc_key        ..  CoinMarketCap Professional API key. Switches from CoinGecko to CoinMarketCap.\n"
         // cf. https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L12
         "  coins          ..  Information about the currencies: their ticker symbols, names, ports, addresses, etc.\n"
+        "                     If not present on the command line then we try the (stringified) coins.json and exchanges/coins.json.\n"
         "  dbdir          ..  MM database path. 'DB' by default.\n"
         "  ethnode        ..  HTTP url of ethereum node. Parity ONLY. Default is http://195.201.0.6:8555 (Mainnet).\n"
         "                     Set http://195.201.0.6:8545 for Ropsten testnet.\n"
