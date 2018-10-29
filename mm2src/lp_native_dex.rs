@@ -1708,6 +1708,14 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::LP_initcoins (ctx.btc_ctx() as *mut c_void, lp::LP_mypubsock, coinsjson)}
     unsafe {lp::RPC_port = myport}
     unsafe {lp::G.waiting = 1}
+    let myipaddr = {
+        println! ("lp_init] Passing `myipaddr` {} to C.", myipaddr);
+        let global: &mut [c_char] = unsafe {&mut lp::LP_myipaddr[..]};
+        let global: &mut [u8] = unsafe {transmute (global)};
+        let mut cur = Cursor::new (global);
+        unwrap! (write! (&mut cur, "{}\0", myipaddr));
+        unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
+    };
     unsafe {lp::LP_initpeers (
         lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port,
         lp::juint (c_conf.0, b"netid\0".as_ptr() as *mut c_char) as u16,
@@ -1834,14 +1842,6 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     sleep(5);
     exit(0);
 */
-    let myipaddr = {
-        println! ("lp_init] Passing `myipaddr` {} to C.", myipaddr);
-        let global: &mut [c_char] = unsafe {&mut lp::LP_myipaddr[..]};
-        let global: &mut [u8] = unsafe {transmute (global)};
-        let mut cur = Cursor::new (global);
-        unwrap! (write! (&mut cur, "{}\0", myipaddr));
-        unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
-    };
     let passphrase = try_s! (CString::new (unwrap! (ctx.conf["passphrase"].as_str())));
     let ctx_id = try_s! (ctx.ffi_handler());
 
