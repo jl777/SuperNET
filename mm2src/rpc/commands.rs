@@ -17,11 +17,14 @@
 //  rpc_commands.rs
 //  marketmaker
 //
-use common::{lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
+use common::{find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
 use common::mm_ctx::MmArc;
 use etomiccurl::get_gas_price_from_station;
+use gstuff::now_ms;
+use libc::c_char;
 use ordermatch::{AutoBuyInput, lp_auto_buy};
 use serde_json::{self as json, Value as Json};
+use std::ffi::CString;
 
 /*
 char *LP_numutxos()
@@ -804,33 +807,40 @@ pub fn sell(json: &Json) ->  HyRes {
                 jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG1);
                 return(jprint(retjson,1));
             }
-            if ( strcmp(method,"inventory") == 0 )
-            {
-                struct iguana_info *ptr; int32_t num;
-                if ( (ptr= LP_coinfind(coin)) != 0 )
-                {
-                    LP_address(ptr,ptr->smartaddr);
-                    if ( jint(argjson,"reset") != 0 )
-                    {
-                        ptr->privkeydepth = 0;
-                        LP_address_utxo_reset(&num,ptr);
-                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui,G.netid,G.seednode);
-                    }
-                    if ( bits256_nonz(G.LP_privkey) != 0 )
-                        LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
-                    else printf("no LP_privkey\n");
-                    retjson = cJSON_CreateObject();
-                    jaddstr(retjson,"result","success");
-                    jaddstr(retjson,"coin",coin);
-                    jaddnum(retjson,"timestamp",time(NULL));
-                    jadd(retjson,"alice",cJSON_Parse("[]"));
-                    //jadd(retjson,"alice",LP_inventory(coin));
-                    //jadd(retjson,"bob",LP_inventory(coin,1));
-                    //LP_smartutxos_push(ptr);
-                    LP_address_utxo_reset(&num,ptr);
-                    return(jprint(retjson,1));
-                }
-            }
+            */*/*/
+
+pub fn inventory (_ctx: MmArc, req: Json) -> HyRes {
+    let coin = match req["coin"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'coin' argument in request")};
+    let (ptr, _) = match find_coin (Some (coin)) {Some (t) => t, None => return rpc_err_response (500, &fomat! ("No such coin: " (coin)))};
+
+    unsafe {lp::LP_address (ptr, (*ptr).smartaddr.as_mut_ptr())};
+    if req["reset"].as_i64().unwrap_or (0) != 0 {
+        unsafe {(*ptr).privkeydepth = 0}
+        let mut num: i32 = 0;
+        unsafe {lp::LP_address_utxo_reset (&mut num, ptr)};
+        let passphrase = match req["passphrase"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'passphrase' in request")};
+        let passphrase = try_h! (CString::new (passphrase));
+        unsafe {lp::LP_passphrase_init (passphrase.as_ptr() as *mut c_char, lp::G.gui.as_mut_ptr(), lp::G.netid, lp::G.seednode.as_mut_ptr())};
+    }
+    if unsafe {lp::bits256_nonz (lp::G.LP_privkey)} != 0 {
+        unsafe {lp::LP_privkey_init (-1, ptr, lp::G.LP_privkey, lp::G.LP_mypub25519)};
+    } else {
+        println! ("inventory] no LP_privkey");
+    }
+    let retjson = json! ({
+        "result": "success",
+        "coin": coin,
+        "timestamp": now_ms() / 1000,
+        "alice": []  // LP_inventory(coin)
+        // "bob": LP_inventory(coin,1)
+    });
+    //LP_smartutxos_push(ptr);
+    let mut num: i32 = 0;
+    unsafe {lp::LP_address_utxo_reset (&mut num, ptr)};
+    rpc_response (200, try_h! (json::to_string (&retjson)))
+}
+
+            /*/*/*
             else if ( strcmp(method,"goal") == 0 )
                 return(LP_portfolio_goal(coin,jdouble(argjson,"val")));
             else if ( strcmp(method,"getcoin") == 0 )

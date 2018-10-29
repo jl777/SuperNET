@@ -181,6 +181,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
         Some ("eth_gas_price") => eth_gas_price(),
         Some ("fundvalue") => lp_fundvalue (ctx, req, false),
         Some ("help") => help(),
+        Some ("inventory") => inventory (ctx, req),
         Some ("mpnet") => mpnet(&req),
         Some ("sell") => sell(&req),
         Some ("stop") => stop (ctx),
