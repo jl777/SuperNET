@@ -1,3 +1,4 @@
+extern crate regex;
 extern crate dirs;
 use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 use common::log::dashboard_path;
@@ -424,10 +425,27 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (beer_cfp.exists(), "BEER config {:?} is not found", beer_cfp);
     assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
 
-    let bob_passphrase = unwrap!(var("BOB_PASSPHRASE"), "!BOB_PASSPHRASE");
-    let bob_userpass = unwrap!(var("BOB_USERPASS"), "!BOB_USERPASS");
-    let alice_passphrase = unwrap!(var("ALICE_PASSPHRASE"), "!ALICE_PASSPHRASE");
-    let alice_userpass = unwrap!(var("ALICE_USERPASS"), "!ALICE_USERPASS");
+    fn from_env_file (env: Vec<u8>) -> (Option<String>, Option<String>) {
+        use mm2_tests::regex::bytes::Regex;
+        let (mut passphrase, mut userpass) = (None, None);
+        for cap in unwrap! (Regex::new (r"(?m)^(PASSPHRASE|USERPASS)=(\w[\w ]+)$")) .captures_iter (&env) {
+            match cap.get (1) {
+                Some (name) if name.as_bytes() == b"PASSPHRASE" =>
+                    passphrase = cap.get (2) .map (|v| unwrap! (String::from_utf8 (v.as_bytes().into()))),
+                Some (name) if name.as_bytes() == b"USERPASS" =>
+                    userpass = cap.get (2) .map (|v| unwrap! (String::from_utf8 (v.as_bytes().into()))),
+                _ => ()
+            }
+        }
+        (passphrase, userpass)
+    }
+    let (bob_file_passphrase, bob_file_userpass) = from_env_file (slurp (&".env.seed"));
+    let (alice_file_passphrase, alice_file_userpass) = from_env_file (slurp (&".env.client"));
+
+    let bob_passphrase = unwrap! (var ("BOB_PASSPHRASE") .ok().or (bob_file_passphrase), "No BOB_PASSPHRASE or .env.seed/PASSPHRASE");
+    let bob_userpass = unwrap! (var ("BOB_USERPASS") .ok().or (bob_file_userpass), "No BOB_USERPASS or .env.seed/USERPASS");
+    let alice_passphrase = unwrap! (var ("ALICE_PASSPHRASE") .ok().or (alice_file_passphrase), "No ALICE_PASSPHRASE or .env.client/PASSPHRASE");
+    let alice_userpass = unwrap! (var ("ALICE_USERPASS") .ok().or (alice_file_userpass), "No ALICE_USERPASS or .env.client/USERPASS");
 
     let coins = json!([
         {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},

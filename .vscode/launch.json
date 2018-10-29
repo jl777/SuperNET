@@ -29,16 +29,15 @@
             "name": "test-trade",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/target/debug/mm2-2004fdfdf84cccc7.exe",
+            // Waiting for https://github.com/rust-lang/cargo/issues/1924.
+            "program": "${workspaceRoot}/target/debug/mm2-535ab107eef1799b.exe",
             "args": ["test_trade", "--nocapture", "--ignored"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
+            // Use ".env.client" to set PASSPHRASE and USERPASS for Alice,
+            //     ".env.seed" to set PASSPHRASE and USERPASS for Bob.
             "environment": [
                 {"name": "LOCAL_THREAD_MM", "value": "bob"},
-                {"name": "BOB_PASSPHRASE", "value": "..."},
-                {"name": "BOB_USERPASS", "value": "..."},
-                {"name": "ALICE_PASSPHRASE", "value": "..."},
-                {"name": "ALICE_USERPASS", "value": "..."}
             ],
             "externalConsole": false
         }
