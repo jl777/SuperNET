@@ -24,6 +24,7 @@ use lp_native_dex::lp_command_process;
 use serde_json::{self as json, Value as Json};
 use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::ptr::null_mut;
 use std::sync::{Mutex};
 use std::thread::sleep;
@@ -107,11 +108,10 @@ int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
 
 
 #endif
+*/
 
-char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
-{
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
-    return(str);
+pub fn nanomsg_transportname (bindflag: i32, ipaddr: &fmt::Display, port: u16) -> String {
+    fomat! ("tcp://" if bindflag == 0 {(ipaddr)} else {"*"} ':' (port))
 }
 
 
@@ -137,7 +137,7 @@ char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t por
  if ( freeflag != 0 )
  free(msg);
  return(sentbytes);
- }*/
+ }
 
 int32_t LP_sockcheck(int32_t sock)
 {

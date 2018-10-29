@@ -158,6 +158,9 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_DONTCHANGE_ERRMSG1 "coin is disabled"
 
 extern char GLOBAL_DBDIR[512];
+
+/// `0` if the command-line configuration contains the `{"client": 1}` flag; `1` otherwise.  
+/// Rust code should use the (reversed) `MmCtx::am_client` instead.
 extern int32_t IAMLP;
 
 struct iguana_msgvin
@@ -381,6 +384,7 @@ struct LP_peerinfo
     uint16_t port,netid;
     char ipaddr[64];
 };
+extern struct LP_peerinfo *LP_mypeer;
 
 struct LP_quoteinfo
 {
@@ -629,6 +633,8 @@ char *LP_ticker(char *refbase,char *refrel);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
 void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel);
 cJSON *LP_balances(char *coinaddr);
+int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired);
+char *unstringify(char *str);
 
 struct LP_autoprice_ref
 {
@@ -655,10 +661,19 @@ extern double LP_profitratio;
 extern int32_t bitcoind_RPC_inittime;
 extern int32_t LP_showwif;
 extern char LP_gui[65];
+
+/// `0` in the "client" mode, `1` otherwise.
+/// My hypothesis is that we might be using the "client" mode to cull out the potentially short-lived instances of MM
+/// from the peer-to-peer netowkr in order to make the latter more stable.
 extern int32_t LP_canbind;
+
+/// Initialized from the "canbind" configuration knob.
 extern uint16_t LP_fixed_pairport;
 extern char LP_myipaddr[64];
 extern int32_t LP_mypubsock;
+/// Defaults to -1.
+extern int32_t LP_mypullsock;
+extern uint16_t RPC_port;
 /**
  * Boolean. `1` if the command-line "myipaddr" field was used to set the `LP_myipaddr`.
  * 

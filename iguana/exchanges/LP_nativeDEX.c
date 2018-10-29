@@ -1428,58 +1428,6 @@ void* r_btc_ctx(uint32_t mm_ctx_id);
 void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson, uint32_t mm_ctx_id)
 {
     long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void* ctx;
-    if ( IAMLP != 0 )
-    {
-        G.netid = juint(argjson,"netid");
-        LP_mypubsock = -1;
-        nanomsg_transportname(0,subaddr,myipaddr,mypubport);
-        nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
-        valid = 0;
-        if ( (LP_mypubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
-        {
-            valid = 0;
-            if ( nn_bind(LP_mypubsock,bindaddr) >= 0 )
-                valid++;
-            if ( valid > 0 )
-            {
-                timeout = 100;
-                nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                //timeout = 10;
-                //nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
-            }
-            else
-            {
-                printf("error binding to (%s).%d\n",subaddr,LP_mypubsock);
-                if ( LP_mypubsock >= 0 )
-                    nn_close(LP_mypubsock), LP_mypubsock = -1;
-            }
-        } else printf("error getting pubsock %d\n",LP_mypubsock);
-        printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,LP_mypubsock);
-        if ((ctx = r_btc_ctx(mm_ctx_id)) == 0) return;
-        LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-    }
-    if ( (coinsjson= jobj(argjson,"coins")) == 0 )
-    {
-        if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 || (coins_str= OS_filestr(&filesize,"exchanges/coins.json")) != 0 )
-        {
-            unstringify(coins_str);
-            printf("UNSTRINGIFIED.(%s)\n",coins_str);
-            coinsjson = cJSON_Parse(coins_str);
-            free(coins_str);
-            // yes I know this coinsjson is not freed, not sure about if it is referenced
-        }
-    }
-    if ( coinsjson == 0 )
-    {
-        printf("no coins object or coins.json file, must abort\n");
-        exit(-1);
-    }
-    if ((ctx = r_btc_ctx(mm_ctx_id)) == 0) return;
-    LP_initcoins(ctx,LP_mypubsock,coinsjson);
-    RPC_port = myport;
-    G.waiting = 1;
-    printf("LPinit] LP_myipaddr: %s, myipaddr: %s\n", LP_myipaddr, myipaddr);  // delme
-    LP_initpeers(LP_mypubsock,LP_mypeer,myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
     //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;

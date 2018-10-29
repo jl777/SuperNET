@@ -828,7 +828,10 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_
     }
     return(0);
 }
-    
+
+/// NB: `publicaddr` is unitialized character buffer.
+///     LP_initpublicaddr puts the Nanomsg URL (myipaddr + mypullport) there.
+///     We can probably port it away.
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
     int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
