@@ -846,7 +846,7 @@ int32_t LP_calc_waittimeout(char *symbol)
     return(waittimeout);
 }
 
-void LP_bobloop(void *_swap)
+void LP_bobloop(struct basilisk_swap *_swap)
 {
     uint8_t *data; char bobstr[65],alicestr[65]; int32_t bobwaittimeout,alicewaittimeout,maxlen,m,n,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;

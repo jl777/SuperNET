@@ -233,18 +233,24 @@ pub unsafe fn lp_command_process(
     let my_ip = unwrap!(CString::new(format!("{}", ctx.rpc_ip_port.ip())));
     if !json["result"].is_null() || !json["error"].is_null() {
         null_mut()
-    } else if stats_json_only != 0 || lp_trade_command(ctx.clone(), json, &c_json) <= 0 {
-        lp::stats_JSON(
-            ctx.btc_ctx() as *mut c_void,
-            0,
-            my_ip.as_ptr() as *mut c_char,
-            pub_sock,
-            c_json.0,
-            b"127.0.0.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-            stats_json_only as u16,
-        )
     } else {
-        null_mut()
+        let mut trade_command = -1;
+        if stats_json_only == 0 {
+            trade_command = lp_trade_command(ctx.clone(), json, &c_json);
+        }
+        if trade_command <= 0 {
+            lp::stats_JSON(
+                ctx.btc_ctx() as *mut c_void,
+                0,
+                my_ip.as_ptr() as *mut c_char,
+                pub_sock,
+                c_json.0,
+                b"127.0.0.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+                stats_json_only as u16,
+            )
+        } else {
+            null_mut()
+        }
     }
 }
 
