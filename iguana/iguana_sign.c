@@ -505,9 +505,7 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
     return(json);
 }
 
-// TODO: with changes it bitcoin_sigtxid need additionally check bitcoin_verifyvins (!)
-// Old args: bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,int32_t vini,uint8_t *spendscript,int32_t spendlen,int32_t hashtype,char *vpnstr,int32_t suppress_pubkeys)
-bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *serialized, int32_t maxlen, struct iguana_msgtx *msgtx, int32_t vini, uint8_t *spendscript, int32_t spendlen, uint64_t spendamount, int32_t hashtype, char *vpnstr, int32_t suppress_pubkeys, int32_t zcash)
+bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *serialized, int32_t maxlen, struct iguana_msgtx *msgtx, int32_t vini, uint8_t *spendscript, int32_t spendlen, uint64_t spendamount, int32_t hashtype, char *vpnstr, int32_t suppress_pubkeys)
 {
     int32_t i,len; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
     dest = *msgtx;
@@ -728,14 +726,12 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 {
     int32_t i,n,len = 0,extraused=0; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; uint64_t spendamount; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
 	
-	uint32_t zcash = (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0); // we definitely need to determine somehow zcash-based coins here instead of compare coin names
-
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
+	len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
 	uint32_t overwintered = msg->version >> 31;
 	uint32_t version = msg->version;
 	// for version 4 the ZK proof size is 192, otherwise 296
 	uint32_t zksnark_proof_size = ZKSNARK_PROOF_SIZE;
-	if (zcash) { 
+	if (coin->sapling != 0) { 
 		if (overwintered) {
 			version = msg->version & 0x7FFFFFFF;
 			len += iguana_rwnum(rwflag, &serialized[len], sizeof(msg->version_group_id), &msg->version_group_id);
@@ -843,7 +839,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
 
-		if (zcash && overwintered) {
+		if ((coin->sapling !=0) && overwintered) {
 			len += iguana_rwnum(rwflag, &serialized[len], sizeof(msg->expiry_height), &msg->expiry_height);
 			if (json != 0) {
 				jaddnum(json, "expiryheight", msg->expiry_height);
@@ -959,7 +955,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 		}
 		//printf("lock_time.%08x len.%d\n",msg->lock_time,len);
 		
-		if (zcash == LP_IS_ZCASHPROTOCOL && msg->version > 1)
+		if ((coin->sapling != 0) && msg->version > 1)
 		{
 			struct iguana_msgjoinsplit joinsplit; uint8_t joinsplitpubkey[33], joinsplitsig[64];
 			len += iguana_rwnum(rwflag, &serialized[len], sizeof(msg->numjoinsplits), &msg->numjoinsplits);
@@ -982,7 +978,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 				}
 			}
 		}
-		if (zcash == 1 && msg->version >= 4 && !(msg->shielded_spend_num == 0 && msg->shielded_output_num == 0)) {
+		if ((coin->sapling != 0) && msg->version >= 4 && !(msg->shielded_spend_num == 0 && msg->shielded_output_num == 0)) {
 			if (rwflag == 1) {
 				memcpy(&serialized[len], msg->binding_sig, 64), len += 64;
 			}
@@ -1034,7 +1030,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 				//printf("spendamount = %.8f\n", dstr(spendamount));
 				free(jtxout);
 
-				sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,spendamount, SIGHASH_ALL,vpnstr,suppress_pubkeys, zcash);
+				sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,spendamount, SIGHASH_ALL,vpnstr,suppress_pubkeys);
                 // printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
                 if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                     jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
@@ -1349,7 +1345,6 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
             scriptlen = msgtx->vins[vini].spendlen;
         }
 
-		uint32_t zcash = (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0); // we definitely need to determine somehow zcash-based coins here instead of compare coin names
 		struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *jtxout = 0;
 		jtxout = dpow_gettxout(0, coin, msgtx->vins[vini].prev_hash, msgtx->vins[vini].prev_vout);
 		spendamount = jdouble(jtxout, "value") * SATOSHIDEN;
@@ -1357,7 +1352,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
 		//printf("spendamount = %.8f\n", dstr(spendamount));
 		free(jtxout);
 
-        sigtxid = bitcoin_sigtxid(coin,height,serialized,maxlen,msgtx,vini,script,scriptlen,spendamount,sighash,vpnstr,suppress_pubkeys,zcash);
+        sigtxid = bitcoin_sigtxid(coin,height,serialized,maxlen,msgtx,vini,script,scriptlen,spendamount,sighash,vpnstr,suppress_pubkeys);
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];

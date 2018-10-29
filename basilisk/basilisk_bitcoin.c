@@ -595,7 +595,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
         printf("%s txfee %.8f\n", coin->symbol, dstr(txfee));
     
 	uint32_t txversion = 1; // txversion = 1 for non-overwintered and non-sapling coins
-	if (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0)
+	if (coin->sapling != 0)
 		txversion = 4;
 	
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,txversion,0)) != 0 )

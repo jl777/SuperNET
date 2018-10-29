@@ -270,7 +270,6 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
     // int32_t preimage_len; uint8_t preimage[32768]; // here we will create preimage, when usesigs=0 (?)
 
 	struct iguana_info *coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
-	uint32_t zcash = (strcmp(coin->symbol, "VRSC") == 0 || strcmp(coin->symbol, "VRSCTEST") == 0);
 	//printf("[Decker] dpow_notarytx: src.(%s) dst.(%s) src_or_dest.(%d) usesigs.(%d)\n", bp->srccoin->symbol, bp->destcoin->symbol, src_or_dest, usesigs);
 	
 	signedtx[0] = 0;
@@ -279,14 +278,14 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
     len = numsigs = 0;
     version = 1;
 	
-	if (zcash) {
+	if (coin->sapling != 0) {
 		version = 4;
 		version = 1 << 31 | version; // overwintered
 	}
 	
 	len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
 	
-	if (zcash) {
+	if (coin->sapling != 0) {
 		uint32_t versiongroupid = 0x892f2085; // sapling
 		len += iguana_rwnum(1, &serialized[len], sizeof(versiongroupid), &versiongroupid);
 	}
@@ -370,7 +369,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
     }
     len += n;
 
-	if (zcash) {
+	if (coin->sapling != 0) {
 		uint32_t nExpiryHeight = 0;
 		uint64_t valueBalance = 0;
 		uint8_t nShieldedSpend = 0;
