@@ -14,10 +14,11 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_coins.c
+//  coins.rs
 //  marketmaker
 //
 
+/*
 char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 
 int32_t LP_is_slowcoin(char *symbol)
@@ -564,3 +565,4 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
         bitcoin_address(destcoin,otheraddr,dest->taddr,dest->pubtype,rmd160,20);
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
 }
+*/
