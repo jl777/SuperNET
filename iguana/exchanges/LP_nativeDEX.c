@@ -1522,7 +1522,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
     if (SPAWN_RPC != 0) SPAWN_RPC(mm_ctx_id);
     else
     {
-        printf("SPAWN_RPC is not initialized!\n",ctx);
+        printf("SPAWN_RPC is not initialized!\n");
         exit(-1);
     }
 

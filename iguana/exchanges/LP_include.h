@@ -389,12 +389,12 @@ extern struct LP_peerinfo *LP_mypeer;
 struct LP_quoteinfo
 {
     struct basilisk_request R;
-    bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
+    bits256 srchash,desthash,privkey;
     double maxprice;
     int64_t othercredits;
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime,tradeid,gtc,fill,mpnet;
-    int32_t vout,vout2,destvout,feevout,pair;
+    int32_t pair;
     char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64],etomicsrc[65],etomicdest[65],uuidstr[65];
 };
 
@@ -422,8 +422,7 @@ struct LP_pubkey_quote
 {
     struct LP_pubkey_quote *next,*prev;
     float price;
-    uint32_t maxutxo,aveutxo;
-    uint8_t baseind,relind,numutxos,scale;
+    uint8_t baseind,relind,scale;
 };
 
 struct LP_swapstats
@@ -722,7 +721,7 @@ double LP_fomoprice(char *base,char *rel,double *relvolumep);
 struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee);
 uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee);
 int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price,uint64_t satoshis,uint64_t destsatoshis);
-int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout,bits256 desthash,char *destaddr);
+int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desthash,char *destaddr);
 int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,double price);
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey,char *uuidstr);
 void gen_quote_uuid(char *result, char *base, char* rel);

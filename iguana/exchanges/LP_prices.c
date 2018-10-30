@@ -72,9 +72,6 @@ float LP_pubkey_price(int32_t *numutxosp,int64_t *avesatoshisp,int64_t *maxsatos
                 scale64 *= 10;
                 scale--;
             }
-            *numutxosp = pq->numutxos;
-            *avesatoshisp = pq->aveutxo * scale64;
-            *maxsatoshisp = pq->maxutxo * scale64;
             return(pq->price);
         }
     }
@@ -111,24 +108,12 @@ void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t reli
             scale64 *= 10;
             scale--;
         }
-        if ( numutxos >= 256 )
-            pq->numutxos = 255;
-        else pq->numutxos = numutxos;
         aveutxo = (balance + (scale64>>1)) / numutxos;
         if ( (ave64= (aveutxo / scale64)) >= (1LL << 32) )
             ave64 = (1LL << 32) - 1;
         max64 = ((maxutxo + (scale64>>1)) / scale64);
         if ( max64 >= (1LL << 32) )
             max64 = (1LL << 32) - 1;
-        pq->aveutxo = (uint32_t)ave64;
-        pq->maxutxo = (uint32_t)max64;
-        if ( 0 )
-        {
-            printf("price %.8f base.%s rel.%s utxocoin.%s balance %.8f numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",price,LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,dstr(balance),numutxos,pq->numutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
-            int64_t avesatoshis,maxsatoshis;
-            price = LP_pubkey_price(&numutxos,&avesatoshis,&maxsatoshis,pubp,baseind,relind);
-            printf("checkprice %.8f numutxos.%d ave %.8f max %.8f\n",price,numutxos,dstr(avesatoshis),dstr(maxsatoshis));
-        }
     }
 }
 

@@ -58,13 +58,8 @@ int32_t LP_mpnet_remove(bits256 txid)
 
 int32_t LP_mpnet_addorder(struct LP_quoteinfo *qp)
 {
-    uint64_t destvalue,destvalue2;
-    if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) > 0 )
-    {
-        LP_gtc_addorder(qp);
-        return(0);
-    }
-    return(-1);
+    LP_gtc_addorder(qp);
+    return(0);
 }
 
 void LP_mpnet_init() // problem is coins not enabled yet

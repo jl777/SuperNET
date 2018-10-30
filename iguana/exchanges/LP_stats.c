@@ -450,7 +450,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     if ( strcmp(method,"tradestatus") == 0 )
     {
         flag = 0;
-        aliceid = j64bits(lineobj,"aliceid");
+        aliceid = (uint64_t)juint(lineobj,"aliceid");
         requestid = juint(lineobj,"requestid");
         quoteid = juint(lineobj,"quoteid");
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
@@ -553,7 +553,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 {
     cJSON *item = cJSON_CreateObject();
     jaddnum(item,"timestamp",sp->Q.timestamp);
-    jadd64bits(item,"aliceid",sp->aliceid);
+    jaddnum(item,"aliceid",sp->aliceid);
     jaddbits256(item,"src",sp->Q.srchash);
     jaddstr(item,"base",sp->Q.srccoin);
     jaddnum(item,"basevol",dstr(sp->Q.satoshis));
@@ -587,7 +587,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 char *LP_swapstatus_recv(cJSON *argjson)
 {
     struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; //char str[65];
-    if ( (aliceid= j64bits(argjson,"aliceid")) == 0 )
+    if ( (aliceid= (uint64_t)juint(argjson,"aliceid")) == 0 )
         return(clonestr("{\"error\":\"LP_swapstatus_recv null aliceid\"}"));
     if ( (sp= LP_swapstats_find(aliceid)) == 0 )
     {

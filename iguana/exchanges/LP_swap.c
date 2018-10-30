@@ -1343,9 +1343,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     swap->bobspend.I.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
     swap->alicereclaim.I.suppress_pubkeys = 1;
-    swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
-    swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
-    swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
 #ifndef NOTETOMIC
     if (strcmp(alicestr, "ETOMIC") == 0) {
         swap->alicepayment.I.eth_amount = swap->I.alicerealsat;
@@ -1360,16 +1357,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->bobdeposit.I.eth_amount = LP_DEPOSITSATOSHIS(swap->I.bobrealsat);
     }
 #endif
-    LP_mark_spent(bobstr,qp->txid,qp->vout);
-    LP_mark_spent(bobstr,qp->txid2,qp->vout2);
-    LP_mark_spent(alicestr,qp->desttxid,qp->destvout);
-    if ( swap->I.iambob != 0 )
-        swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
-    else
-    {
-        swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
-        LP_mark_spent(swap->I.alicestr,qp->feetxid,qp->feevout);
-    }
     //char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s [%s %s]\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid),bobstr,alicestr);
     return(swap);
 }
@@ -1382,7 +1369,7 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
         ctx = bitcoin_ctx();
     swap = calloc(1,sizeof(*swap));
     memcpy(swap->uuidstr,qp->uuidstr,sizeof(swap->uuidstr));
-    swap->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
+    swap->aliceid = qp->aliceid;
     swap->I.req.quoteid = rp->quoteid;
     swap->ctx = ctx;
     vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));

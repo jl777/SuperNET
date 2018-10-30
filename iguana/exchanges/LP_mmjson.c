@@ -649,8 +649,6 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
         free_json(lineobj);
         if ( (decodestr= MMJSON_decode(linebuf,k)) == 0 || strcmp(decodestr,line) != 0 )
         {
-            for (i=0; i<k; i++)
-                printf("%d ",linebuf[i]);
             printf(" k.%d error decoding (%s) -> (%s)\n",k,line,decodestr==0?"":decodestr);
             if ( decodestr != 0 )
                 free(decodestr);

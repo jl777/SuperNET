@@ -122,7 +122,7 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
             continue;
         if ( refrel[0] != 0 && strcmp(rel,refbase) != 0 && strcmp(rel,refrel) != 0 )
             continue;
-        aliceid = j64bits(item,"aliceid");
+        aliceid = (uint64_t)juint(item,"aliceid");
         basesatoshis = SATOSHIDEN * jdouble(item,"basevol");
         srcpub = jbits256(item,"src");
         relsatoshis = SATOSHIDEN * jdouble(item,"relvol");

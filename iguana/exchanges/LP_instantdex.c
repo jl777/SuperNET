@@ -706,7 +706,7 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
     struct iguana_info *bob,*alice; int32_t flag = 0; char *retstr,*swapstr; bits256 zero; cJSON *item,*reqjson,*swapjson;
     item = cJSON_CreateObject();
     jaddnum(item,"iambob",iambob);
-    jadd64bits(item,"aliceid",sp->aliceid);
+    jaddnum(item,"aliceid",sp->aliceid);
     jaddnum(item,"requestid",sp->Q.R.requestid);
     jaddnum(item,"quoteid",sp->Q.R.quoteid);
     jaddstr(item,"base",sp->Q.srccoin);
@@ -741,7 +741,7 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
             {
                 reqjson = cJSON_CreateObject();
                 jaddstr(reqjson,"method","gettradestatus");
-                jadd64bits(reqjson,"aliceid",sp->aliceid);
+                jaddnum(reqjson,"aliceid",sp->aliceid);
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
             }

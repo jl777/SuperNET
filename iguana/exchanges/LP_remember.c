@@ -703,7 +703,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
         jaddstr(item,"etomicdest",rswap->etomicdest);
     jaddnum(item,"destamount",dstr(rswap->destamount));
     jaddnum(item,"alicetxfee",dstr(rswap->Atxfee));
-    jadd64bits(item,"aliceid",rswap->aliceid);
+    jaddnum(item,"aliceid",rswap->aliceid);
     array = cJSON_CreateArray();
     cJSON *tx_chain = cJSON_CreateArray();
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
@@ -771,7 +771,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
             safecopy(rswap->bobtomic,jstr(item,"bobtomic"),sizeof(rswap->bobtomic));
             safecopy(rswap->alicetomic,jstr(item,"alicetomic"),sizeof(rswap->alicetomic));
             rswap->tradeid = juint(item,"tradeid");
-            rswap->aliceid = j64bits(item,"aliceid");
+            rswap->aliceid = (uint64_t)juint(item,"aliceid");
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )
                 decode_hex(rswap->secretAm,20,secretstr);
             if ( (secretstr= jstr(item,"secretAm256")) != 0 && strlen(secretstr) == 64 )
@@ -1892,7 +1892,7 @@ char *LP_recent_swaps(int32_t limit,char *uuidstr)
         jaddstr(item,"rel",LP_Alicequery.destcoin);
         jaddnum(item,"relvalue",dstr(LP_Alicequery.destsatoshis));
         jaddbits256(item,"desthash",G.LP_mypub25519);
-        jadd64bits(item,"aliceid",LP_aliceid_calc(LP_Alicequery.desttxid,LP_Alicequery.destvout,LP_Alicequery.feetxid,LP_Alicequery.feevout));
+        jaddnum(item,"aliceid",LP_Alicequery.aliceid);
         jadd(retjson,"pending",item);
     } else Alice_expiration = 0;
     if ( uuidstr != 0 )

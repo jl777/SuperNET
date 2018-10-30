@@ -59,7 +59,7 @@ void LP_tradebot_updatestats(struct LP_tradebot *bot,struct LP_tradebot_trade *t
         {
             tp->basevol = dstr(j64bits(swapjson,"satoshis"));
             tp->relvol = dstr(j64bits(swapjson,"destsatoshis"));
-            tp->aliceid = j64bits(swapjson,"aliceid");
+            tp->aliceid = (uint64_t)juint(swapjson,"aliceid");
             if ( (status= jstr(swapjson,"status")) != 0 )
             {
                 if ( strcmp(status,"finished") == 0 )
@@ -137,7 +137,7 @@ cJSON *LP_tradebot_tradejson(struct LP_tradebot_trade *tp,int32_t dispflag)
         jaddnum(item,"quoteid",tp->quoteid);
     } else jaddnum(item,"tradeid",tp->tradeid);
     if ( tp->aliceid != 0 )
-        jadd64bits(item,"aliceid",tp->aliceid);
+        jaddnum(item,"aliceid",tp->aliceid);
     if ( tp->basevol > SMALLVAL && tp->relvol > SMALLVAL )
     {
         if ( dispflag > 0 )
@@ -280,7 +280,7 @@ struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pen
     tp->dispdir = bot->dispdir;
     strcpy(tp->base,bot->base);
     strcpy(tp->rel,bot->rel);
-    tp->aliceid = j64bits(pending,"aliceid");
+    tp->aliceid = (uint64_t)juint(pending,"aliceid");
     tp->basevol = jdouble(pending,"basevalue");
     tp->relvol = jdouble(pending,"relvalue");
     printf("tradebot pending basevol %.8f relvol %.8f\n",tp->basevol,tp->relvol);

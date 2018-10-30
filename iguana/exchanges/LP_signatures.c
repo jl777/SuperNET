@@ -53,7 +53,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jaddnum(retjson,"gtc",qp->gtc);
     if ( qp->fill != 0 )
         jaddnum(retjson,"fill",qp->fill);
-    jadd64bits(retjson,"aliceid",qp->aliceid);
+    jaddnum(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
@@ -67,11 +67,6 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jaddstr(retjson,"address",qp->coinaddr);
     if ( qp->timestamp != 0 )
         jaddnum(retjson,"timestamp",qp->timestamp);
-    if ( bits256_nonz(qp->txid) != 0 )
-    {
-        jaddbits256(retjson,"txid",qp->txid);
-        jaddnum(retjson,"vout",qp->vout);
-    }
     if ( bits256_nonz(qp->srchash) != 0 )
         jaddbits256(retjson,"srchash",qp->srchash);
     if ( qp->txfee != 0 )
@@ -82,23 +77,6 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jadd64bits(retjson,"satoshis",qp->satoshis);
     if ( bits256_nonz(qp->desthash) != 0 )
         jaddbits256(retjson,"desthash",qp->desthash);
-    if ( bits256_nonz(qp->txid2) != 0 )
-    {
-        jaddbits256(retjson,"txid2",qp->txid2);
-        jaddnum(retjson,"vout2",qp->vout2);
-    }
-    if ( bits256_nonz(qp->desttxid) != 0 )
-    {
-        if ( qp->destaddr[0] != 0 )
-            jaddstr(retjson,"destaddr",qp->destaddr);
-        jaddbits256(retjson,"desttxid",qp->desttxid);
-        jaddnum(retjson,"destvout",qp->destvout);
-    }
-    if ( bits256_nonz(qp->feetxid) != 0 )
-    {
-        jaddbits256(retjson,"feetxid",qp->feetxid);
-        jaddnum(retjson,"feevout",qp->feevout);
-    }
     if ( qp->desttxfee != 0 )
         jadd64bits(retjson,"desttxfee",qp->desttxfee);
     if ( qp->destsatoshis != 0 )
@@ -153,19 +131,11 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 #endif
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     safecopy(qp->etomicdest,jstr(argjson,"etomicdest"),sizeof(qp->etomicdest));
-    qp->aliceid = j64bits(argjson,"aliceid");
+    qp->aliceid = (uint64_t)juint(argjson,"aliceid");
     qp->tradeid = juint(argjson,"tradeid");
     qp->timestamp = juint(argjson,"timestamp");
     qp->quotetime = juint(argjson,"quotetime");
-    qp->txid = jbits256(argjson,"txid");
-    qp->txid2 = jbits256(argjson,"txid2");
-    qp->vout = jint(argjson,"vout");
-    qp->vout2 = jint(argjson,"vout2");
-    qp->feevout = jint(argjson,"feevout");
     qp->srchash = jbits256(argjson,"srchash");
-    qp->desttxid = jbits256(argjson,"desttxid");
-    qp->feetxid = jbits256(argjson,"feetxid");
-    qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
     qp->txfee = j64bits(argjson,"txfee");
     if ( (qp->satoshis= j64bits(argjson,"satoshis")) > qp->txfee && fabs(qp->maxprice) < SMALLVAL )
@@ -214,10 +184,6 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
         printf("quoteinit error.(%d %d %d %d) %.8f vs %.8f\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis),dstr(utxo->deposit.value),dstr(LP_DEPOSITSATOSHIS(qp->satoshis)));
         return(-1);
     }*/
-    qp->txid = utxo->payment.txid;
-    qp->vout = utxo->payment.vout;
-    qp->txid2 = utxo->deposit.txid;
-    qp->vout2 = utxo->deposit.vout;
     if ( qp->desttxfee >= qp->destsatoshis )
     {
         printf("quoteinit desttxfee %.8f < %.8f destsatoshis\n",dstr(qp->desttxfee),dstr(qp->destsatoshis));
@@ -229,13 +195,10 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     return(0);
 }
 
-int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout,bits256 desthash,char *destaddr)
+// stateless function
+int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desthash,char *destaddr)
 {
-    qp->desttxid = desttxid;
-    qp->destvout = destvout;
     qp->desthash = desthash;
-    qp->feetxid = feetxid;
-    qp->feevout = feevout;
     safecopy(qp->destaddr,destaddr,sizeof(qp->destaddr));
     return(0);
 }
@@ -245,12 +208,12 @@ char *LP_quotereceived(struct LP_quoteinfo *qp)
     struct LP_cacheinfo *ptr; double price;
     //LP_quoteparse(&Q,argjson);
     price = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
-    if ( (ptr= LP_cacheadd(qp->srccoin,qp->destcoin,qp->txid,qp->vout,price,qp)) != 0 )
-    {
-        ptr->Q = *qp;
+    //if ( (ptr= LP_cacheadd(qp->srccoin,qp->destcoin,qp->txid,qp->vout,price,qp)) != 0 )
+    //{
+      //  ptr->Q = *qp;
         printf(">>>>>>>>>> received quote %s/%s %.8f\n",qp->srccoin,qp->destcoin,price);
         return(clonestr("{\"result\":\"updated\"}"));
-    } else return(clonestr("{\"error\":\"nullptr\"}"));
+    //} else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
 int32_t LP_bitcoinsig_add(cJSON *item,bits256 priv,uint8_t *pubsecp,bits256 sighash)
@@ -718,19 +681,6 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 void LP_query(char *method,struct LP_quoteinfo *qp)
 {
     cJSON *reqjson; bits256 zero; char *msg; struct iguana_info *coin; int32_t flag = 0;
-    if ( strcmp(method,"request") == 0 )
-    {
-        if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
-        {
-            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT*4,qp->srchash);
-            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT*4,qp->srchash);
-        }
-        else
-        {
-            printf("couldnt find my txid to make request\n");
-            return;
-        }
-    }
     reqjson = LP_quotejson(qp);
     if ( bits256_nonz(qp->desthash) != 0 )
         flag = 1;
