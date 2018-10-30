@@ -159,8 +159,10 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 extern char GLOBAL_DBDIR[512];
 
+/// I Am Liquidity Provider (that is, Bob, Maker).  
 /// `0` if the command-line configuration contains the `{"client": 1}` flag; `1` otherwise.  
-/// Rust code should use the (reversed) `MmCtx::am_client` instead.
+/// Rust code should use the (reversed) `MmCtx::am_client` instead.  
+/// Eventually this option should go away, in MM2 we're trying not to lock the daemon into the Alice or Bob modes.
 extern int32_t IAMLP;
 
 struct iguana_msgvin
@@ -480,6 +482,7 @@ uint32_t LP_sighash(char *symbol,int32_t zcash);
 int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
+/// Find the given address in `coin->addresses`.
 struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
@@ -634,6 +637,8 @@ void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *base
 cJSON *LP_balances(char *coinaddr);
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired);
 char *unstringify(char *str);
+int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode);
+int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub);
 
 struct LP_autoprice_ref
 {

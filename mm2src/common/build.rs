@@ -226,6 +226,8 @@ fn generate_bindings() {
             "LP_abutxo_set",
             "LP_quote_validate",
             "LP_availableset",
+            "LP_passphrase_init",
+            "LP_privkey_init",
             "LP_privkey",
             "LP_swapinit",
             "LP_importaddress",

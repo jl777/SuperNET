@@ -664,33 +664,6 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
                 jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG1);
                 return(jprint(retjson,1));
             }
-            if ( strcmp(method,"inventory") == 0 )
-            {
-                struct iguana_info *ptr; int32_t num;
-                if ( (ptr= LP_coinfind(coin)) != 0 )
-                {
-                    LP_address(ptr,ptr->smartaddr);
-                    if ( jint(argjson,"reset") != 0 )
-                    {
-                        ptr->privkeydepth = 0;
-                        LP_address_utxo_reset(&num,ptr);
-                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui,G.netid,G.seednode);
-                    }
-                    if ( bits256_nonz(G.LP_privkey) != 0 )
-                        LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
-                    else printf("no LP_privkey\n");
-                    retjson = cJSON_CreateObject();
-                    jaddstr(retjson,"result","success");
-                    jaddstr(retjson,"coin",coin);
-                    jaddnum(retjson,"timestamp",time(NULL));
-                    jadd(retjson,"alice",cJSON_Parse("[]"));
-                    //jadd(retjson,"alice",LP_inventory(coin));
-                    //jadd(retjson,"bob",LP_inventory(coin,1));
-                    //LP_smartutxos_push(ptr);
-                    LP_address_utxo_reset(&num,ptr);
-                    return(jprint(retjson,1));
-                }
-            }
             else if ( strcmp(method,"goal") == 0 )
                 return(LP_portfolio_goal(coin,jdouble(argjson,"val")));
             else if ( strcmp(method,"getcoin") == 0 )
