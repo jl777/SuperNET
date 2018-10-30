@@ -69,7 +69,7 @@ use hyper_rustls::HttpsConnector;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
-use lp::{_bits256 as bits256};
+pub use lp::{_bits256 as bits256};
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod os {include! ("c_headers/OS_portable.rs");}
@@ -106,6 +106,28 @@ impl fmt::Display for bits256 {
         let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
         f.write_str (hex)
     }
+}
+
+/// [functional]
+pub fn bitcoin_address (coin: &str, addrtype: u8, rmd160: [u8; 20usize]) -> Result<String, String> {
+    let coinaddr: [u8; 64] = unsafe {zeroed()};
+    let coin = try_s! (CString::new (coin));
+    unsafe {lp::bitcoin_address (coin.as_ptr() as *mut c_char, coinaddr.as_ptr() as *mut c_char, 0, addrtype, rmd160.as_ptr() as *mut u8, 20)};
+    Ok (try_s! (try_s! (CStr::from_bytes_with_nul (&coinaddr[..])) .to_str()) .to_string())
+}
+
+/// Port of `HASH_ITER` over `iguana_info`.  
+/// [functional]
+pub unsafe fn coins_iter (mut coins: *mut lp::iguana_info, cb: &mut FnMut (*mut lp::iguana_info) -> Result<(), String>) -> Result<(), String> {
+    if coins.is_null() {return Ok(())}
+    let mut tmp = (*coins).hh.next as *mut lp::iguana_info;
+
+    while !coins.is_null() {
+        try_s! (cb (coins));
+        coins = tmp;
+        tmp = if !tmp.is_null() {(*tmp).hh.next as *mut lp::iguana_info} else {null_mut()}
+    }
+    Ok(())
 }
 
 pub const SATOSHIDEN: i64 = 100000000;

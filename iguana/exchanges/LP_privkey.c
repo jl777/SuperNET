@@ -711,6 +711,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
     }
 }
 
+// TODO: Remove "netid", cf. https://discordapp.com/channels/412898016371015680/476025090627207168/506854295484760068.
 int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode)
 {
     static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;

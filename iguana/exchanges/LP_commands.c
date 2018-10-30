@@ -112,44 +112,13 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
             G.USERPASS_COUNTER = 1;
             LP_cmdcount++;
         }
-        // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
-        if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
-        {
-            bits256 passhash; char str[65],str2[65];
-            vcalc_sha256(0,passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-            if ( bits256_cmp(passhash,G.LP_passhash) == 0 )
-                authenticated = 1;
-            else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
-        }
         char passhashstr[65]; bits256_str(passhashstr,G.LP_passhash);
         if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || (strcmp(userpass,G.USERPASS) != 0 && strcmp(userpass,passhashstr) != 0)) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         if ( jobj(argjson,"userpass") != 0 )
             jdelete(argjson,"userpass");
         LP_cmdcount++;
-        if ( strcmp(method,"passphrase") == 0 )
-        {
-            char coinaddr[64],pub33str[67];
-            G.USERPASS_COUNTER = 1;
-            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode")) < 0 )
-                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
-            {
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"userpass",G.USERPASS);
-                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
-                jaddstr(retjson,"pubsecp",pub33str);
-                bitcoin_address("KMD",coinaddr,0,60,G.LP_myrmd160,20);
-                jaddstr(retjson,"KMD",coinaddr);
-                bitcoin_address("BTC",coinaddr,0,0,G.LP_myrmd160,20);
-                jaddstr(retjson,"BTC",coinaddr);
-                jaddstr(retjson,"NXT",G.LP_NXTaddr);
-                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
-                return(jprint(retjson,1));
-            }
-        }
-        else if ( strcmp(method,"instantdex_deposit") == 0 )
+        if ( strcmp(method,"instantdex_deposit") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
@@ -263,7 +232,7 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         else if ( strcmp(method,"getpeers") == 0 )
             return(LP_peers());
         else if ( strcmp(method,"getcoins") == 0 )
-            return(jprint(LP_coinsjson(0),1));
+            return(jprint(LP_coinsjson(0),1));  // Was also superficially ported in RPC `passphrase`.
         else if ( strcmp(method,"notarizations") == 0 )
         {
             if ( (ptr= LP_coinsearch(coin)) != 0 )
