@@ -8,7 +8,7 @@ use futures::Future;
 
 use gstuff::{now_float, slurp, ISATTY};
 
-use hyper::{Request, StatusCode};
+use hyper::{Request, StatusCode, HeaderMap};
 
 use serde_json::{self as json, Value as Json};
 
@@ -210,23 +210,23 @@ impl MarketMakerIt {
         }
     }
     /// Invokes the locally running MM and returns it's reply.
-    pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String), String> {
+    pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String, HeaderMap), String> {
         let payload = try_s! (json::to_string (&payload));
         let uri = format! ("http://{}:7783", self.ip);
         let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
-        let (status, _headers, body) = try_s! (slurp_req (request) .wait());
-        Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
+        let (status, headers, body) = try_s! (slurp_req (request) .wait());
+        Ok ((status, try_s! (from_utf8 (&body)) .trim().into(), headers))
     }
     /// Sends the &str payload to the locally running MM and returns it's reply.
-    pub fn rpc_str (&self, payload: &'static str) -> Result<(StatusCode, String), String> {
+    pub fn rpc_str (&self, payload: &'static str) -> Result<(StatusCode, String, HeaderMap), String> {
         let uri = format! ("http://{}:7783", self.ip);
         let request = try_s! (Request::builder().method ("POST") .uri (uri) .body (payload.into()));
-        let (status, _headers, body) = try_s! (slurp_req (request) .wait());
-        Ok ((status, try_s! (from_utf8 (&body)) .trim().into()))
+        let (status, headers, body) = try_s! (slurp_req (request) .wait());
+        Ok ((status, try_s! (from_utf8 (&body)) .trim().into(), headers))
     }
     /// Send the "stop" request to the locally running MM.
     pub fn stop (&self) -> Result<(), String> {
-        let (status, body) = try_s! (self.rpc (json! ({"userpass": self.userpass, "method": "stop"})));
+        let (status, body, _headers) = try_s! (self.rpc (json! ({"userpass": self.userpass, "method": "stop"})));
         if status != StatusCode::OK {return ERR! ("MM didn't accept a stop. body: {}", body)}
         Ok(())
     }

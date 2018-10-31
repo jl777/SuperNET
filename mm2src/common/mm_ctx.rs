@@ -1,4 +1,5 @@
 use fxhash::FxHashMap;
+use hyper::header::HeaderValue;
 use libc::{c_void};
 use rand::random;
 use serde_json::{Value as Json};
@@ -46,6 +47,8 @@ pub struct MmCtx {
     stop: AtomicBool,
     /// IP and port for the RPC server to listen on.
     pub rpc_ip_port: SocketAddr,
+    /// CORS header value for RPC server (ACCESS_CONTROL_ALLOW_ORIGIN)
+    pub rpc_cors: HeaderValue,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
     ffi_handler: AtomicUsize,
@@ -57,7 +60,7 @@ pub struct MmCtx {
     pub ordermatch_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
-    pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
+    pub fn new (conf: Json, rpc_ip_port: SocketAddr, rpc_cors: HeaderValue) -> MmArc {
         let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {
             conf,
@@ -66,6 +69,7 @@ impl MmCtx {
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
             rpc_ip_port,
+            rpc_cors,
             ffi_handler: AtomicUsize::new (0),
             stop_listeners: Mutex::new (Vec::new()),
             portfolio_ctx: Mutex::new (None),

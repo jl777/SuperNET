@@ -4,6 +4,7 @@ use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 use common::log::dashboard_path;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
+use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use libc::c_char;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
@@ -22,6 +23,7 @@ fn mm_spat() -> (&'static str, MarketMakerIt) {
             "gui": "nogui",
             "client": 1,
             "passphrase": passphrase,
+            "rpccors": "http://localhost:4000",
             "coins": [
                 {"coin": "BEER","asset": "BEER", "rpcport": 8923},
                 {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
@@ -206,15 +208,18 @@ fn test_rpc() {
         "port": 10022
     })));
     assert! (no_method.0.is_client_error());
+    assert_eq!((no_method.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
 
     let not_json = unwrap! (mm.rpc_str("It's just a string"));
     assert! (not_json.0.is_server_error());
+    assert_eq!((not_json.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
 
     let unknown_method = unwrap! (mm.rpc (json! ({
         "method": "unknown_method",
     })));
 
     assert! (unknown_method.0.is_server_error());
+    assert_eq!((unknown_method.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
 
     let mpnet = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
@@ -222,6 +227,8 @@ fn test_rpc() {
         "onoff": 1,
     })));
     assert_eq!(mpnet.0, StatusCode::OK);
+    assert_eq!((mpnet.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
+
     unwrap! (mm.wait_for_log (1., &|log| log.contains ("MPNET onoff")));
 
     let version = unwrap! (mm.rpc (json! ({
@@ -229,12 +236,14 @@ fn test_rpc() {
         "method": "version",
     })));
     assert_eq!(version.0, StatusCode::OK);
+    assert_eq!((version.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
 
     let help = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
         "method": "help",
     })));
     assert_eq!(help.0, StatusCode::OK);
+    assert_eq!((help.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
 
     unwrap! (mm.stop());
 }
@@ -340,7 +349,7 @@ fn test_events() {
                             else {MmState::Starting}
                     },
                     MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
-                        let (status, body) = unwrap! (mm.rpc (json! (
+                        let (status, body, _headers) = unwrap! (mm.rpc (json! (
                             {"userpass": mm.userpass, "method": "getendpoint"})));
                         println! ("test_events] getendpoint response: {:?}, {}", status, body);
                         assert_eq! (status, StatusCode::OK);

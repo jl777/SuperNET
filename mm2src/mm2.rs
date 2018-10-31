@@ -193,6 +193,8 @@ fn help() {
         "  netid          ..  Subnetwork. Affects ports and keys.\n"
         "  passphrase *   ..  Wallet seed.\n"
         "  profitmargin   ..  Adds to `LP_profitratio`.\n"
+        "  rpccors        ..  Access-Control-Allow-Origin header value in all RPC responses.\n"
+        "                     Default is localhost:3000 for development\n"
         "  rpcip          ..  IP address to bind to for RPC server. Overrides the 127.0.0.1 default\n"
         "  rpcport        ..  If > 1000 overrides the 7783 default.\n"
         "  userhome       ..  System home directory of a user ('/root' by default).\n"

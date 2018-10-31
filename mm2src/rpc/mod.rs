@@ -24,6 +24,7 @@ use futures::{self, Future};
 use futures_cpupool::CpuPool;
 use gstuff;
 use hyper::{Request, Body, Method};
+use hyper::header::{ACCESS_CONTROL_ALLOW_ORIGIN};
 use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
@@ -164,12 +165,11 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
 }
 
 /// The dispatcher, with full control over the HTTP result and the way we run the `Future` producing it.
-fn dispatcher (req: Json, remote_addr: SocketAddr, ctx_h: u32) -> HyRes {
+fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
     lazy_static! {static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());}
 
     let method = req["method"].as_str().map (|s| s.to_string());
     let method = match method {Some (ref s) => Some (&s[..]), None => None};
-    let ctx = try_h! (MmArc::from_ffi_handler (ctx_h));
     if !remote_addr.ip().is_loopback() && !is_public_method(method) {
         return rpc_err_response(400, "Selected method can be called from localhost only!")
     }
@@ -206,21 +206,29 @@ impl Service for RpcService {
     type Future = HyRes;
 
     fn call(&mut self, request: Request<Body>) -> HyRes {
+        let ctx = try_h! (MmArc::from_ffi_handler (self.ctx_h));
+        let rpc_cors = ctx.rpc_cors.clone();
+
         if request.method() != Method::POST {
             return rpc_err_response (400, "Only POST requests are supported!")
         }
         let body_f = request.into_body().concat2();
 
         let remote_addr = self.remote_addr.clone();
-        let ctx_h = self.ctx_h;
 
         let f = body_f.then (move |req| -> HyRes {
             let req = try_h! (req);
             let req: Json = try_h! (json::from_slice (&req));
-            dispatcher (req, remote_addr, ctx_h)
+            dispatcher (req, remote_addr, ctx)
         });
 
-        Box::new (f)
+        Box::new (f.map( |mut res| {
+            res.headers_mut().insert(
+                ACCESS_CONTROL_ALLOW_ORIGIN,
+                rpc_cors
+            );
+            res
+        }))
     }
 }
 
