@@ -18,6 +18,71 @@
 //  marketmaker
 //
 
+struct UtxoCoinInfo {
+    /// https://en.bitcoin.it/wiki/List_of_address_prefixes
+    /// https://github.com/jl777/coins/blob/master/coins
+    pub_type: u8,
+    p2sh_type: u8,
+    wif_type: u8,
+    wif_t_addr: u8,
+    t_addr: u8,
+    /// True if coins uses Proof of Stake consensus algo
+    /// Proof of Work is expected by default
+    /// https://en.bitcoin.it/wiki/Proof_of_Stake
+    /// https://en.bitcoin.it/wiki/Proof_of_work
+    is_pos: bool,
+    /// Special field for Zcash and it's forks
+    /// Defines if Overwinter network upgrade was activated
+    /// https://z.cash/upgrade/overwinter/
+    overwintered: bool,
+    /// The tx version used to detect the transaction ser/de/signing algo
+    /// For now it's mostly used for Zcash and forks because they changed the algo in
+    /// Overwinter and then Sapling upgrades
+    /// https://github.com/zcash/zips/blob/master/zip-0243.rst
+    tx_version: u32,
+    /// If true - use Segwit protocol
+    /// https://en.bitcoin.it/wiki/Segregated_Witness
+    segwit: bool,
+    /// Default decimals amount is 8 (BTC and almost all other UTXO coins)
+    /// But there are forks which have different decimals:
+    /// Peercoin has 6
+    /// Emercoin has 6
+    /// Bitcoin Diamond has 7
+    decimals: u8,
+    /// Is coin protected by Komodo dPoW?
+    /// https://komodoplatform.com/security-delayed-proof-of-work-dpow/
+    notarized: bool
+}
+
+/// Only ETH and ERC20 tokens are supported currently
+/// It's planned to support another ERC token standards
+enum EthTokenType {
+    /// The Ethereum itself or it's forks: ETC and others
+    Base,
+    /// ERC20 token: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
+    /// The string param defines to what base coin the token belongs (ETH, ETC or another fork)
+    Erc20(String)
+}
+
+struct EthCoinInfo {
+    /// Default ETH decimals is 18 but tokens can have any number (even zero or > 18)
+    decimals: u8,
+    token_type: EthTokenType,
+    /// The address of Smart contract representing Alice side. Raw bytes form
+    alice_contract_address: Vec<u8>,
+    /// The address of Smart contract representing Bob side. Raw bytes form
+    bob_contract_address: Vec<u8>,
+}
+
+enum CoinProtocol {
+    Utxo(UtxoCoinInfo),
+    Eth(EthCoinInfo),
+}
+
+struct Coin {
+    protocol: CoinProtocol,
+    symbol: String,
+}
 /*
 char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 
