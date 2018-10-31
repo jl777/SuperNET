@@ -18,6 +18,7 @@
 //  marketmaker
 //
 
+/*
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
     int32_t enable_utxos = 0;
@@ -710,10 +711,14 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
         }
     }
 }
+*/
 
-// TODO: Remove "netid", cf. https://discordapp.com/channels/412898016371015680/476025090627207168/506854295484760068.
-int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode)
-{
+pub fn lp_passphrase_init (passphrase: Option<&str>, gui: Option<&str>, seednode: Option<&str>) -> Result<(), String> {
+    let passphrase = match passphrase {
+        None | Some ("") => return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree"),
+        Some (s) => s.to_string()
+    };
+    /*
     static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;
     uint8_t pubkey33[100];
     if ( ctx == 0 )
@@ -765,8 +770,11 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     G.initializing = 0;
     //LP_cmdchannels();
     return(0);
+    */
+    Ok(())
 }
 
+/*
 void LP_privkey_tests()
 {
     char wifstr[64],str[65],str2[65]; bits256 privkey,checkkey; int32_t i; uint8_t tmptype;
@@ -1122,4 +1130,4 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
 
 
 
-
+*/

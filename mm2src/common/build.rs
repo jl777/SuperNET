@@ -263,6 +263,9 @@ fn generate_bindings() {
             .iter(),
         [
             // defines
+            "LP_eth_node_url",
+            "LP_alice_contract",
+            "LP_bob_contract",
             "bitcoind_RPC_inittime",
             "GLOBAL_DBDIR",
             "DOCKERFLAG",

@@ -689,9 +689,9 @@ extern uint16_t RPC_port;
  */
 extern uint8_t LP_myipaddr_from_command_line;
 extern char USERHOME[512];
-char LP_eth_node_url[2084];
-char LP_alice_contract[50];
-char LP_bob_contract[50];
+extern char LP_eth_node_url[2084];
+extern char LP_alice_contract[50];
+extern char LP_bob_contract[50];
 void (*SPAWN_RPC)(uint32_t);
 void (*LP_QUEUE_COMMAND)(char**,char*,int32_t,int32_t,uint32_t);
 

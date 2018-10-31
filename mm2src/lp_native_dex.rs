@@ -1533,9 +1533,6 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     }
     unsafe {lp::LP_showwif = if conf["wif"] == 1 {1} else {0}};
     println! ("showwif.{} version: {} {}", unsafe {lp::LP_showwif}, MM_VERSION, crc32::checksum_ieee (MM_VERSION.as_bytes()));
-    if unwrap! (conf["passphrase"].as_str()) .is_empty() {
-        return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree")
-    }
     unsafe {libc::srand (random())};  // Seed the C RNG, we might need it as long as we're using C code.
     if conf["gui"] == 1 {
         // Replace "cli\0" with "gui\0".
@@ -1562,11 +1559,11 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
             let global: &mut [c_char] = unsafe {&mut lp::USERHOME[..]};
             let global: &mut [u8] = unsafe {transmute (global)};
             let mut cur = Cursor::new (global);
-            unwrap! (write! (&mut cur, "{}", userhome));
+            try_s! (write! (&mut cur, "{}", userhome));
             if cfg! (target_os = "macos") {
-                unwrap! (write! (&mut cur, "/Library/Application Support"))
+                try_s! (write! (&mut cur, "/Library/Application Support"))
             }
-            unwrap! (write! (&mut cur, "\0"))
+            try_s! (write! (&mut cur, "\0"))
         }
     }
     if !conf["dbdir"].is_null() {
@@ -1575,8 +1572,8 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
             let global: &mut [c_char] = unsafe {&mut lp::GLOBAL_DBDIR[..]};
             let global: &mut [u8] = unsafe {transmute (global)};
             let mut cur = Cursor::new (global);
-            unwrap! (write! (&mut cur, "{}", dbdir));
-            unwrap! (write! (&mut cur, "\0"))
+            try_s! (write! (&mut cur, "{}", dbdir));
+            try_s! (write! (&mut cur, "\0"))
         }
     }
     if !fix_directories() {
@@ -1714,24 +1711,38 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::RPC_port = myport}
     unsafe {lp::G.waiting = 1}
     let myipaddr = {
-        println! ("lp_init] Passing `myipaddr` {} to C.", myipaddr);
-        let global: &mut [c_char] = unsafe {&mut lp::LP_myipaddr[..]};
-        let global: &mut [u8] = unsafe {transmute (global)};
-        let mut cur = Cursor::new (global);
-        unwrap! (write! (&mut cur, "{}\0", myipaddr));
+        try_s! (unsafe {safecopy! (lp::LP_myipaddr, "{}", myipaddr)});
         unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
     };
     unsafe {lp::LP_initpeers (
         lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port,
         lp::juint (c_conf.0, b"netid\0".as_ptr() as *mut c_char) as u16,
         lp::jstr (c_conf.0, b"seednode\0".as_ptr() as *mut c_char))}
+
+    if let Some (ethnode) = ctx.conf["ethnode"].as_str() {
+        try_s! (unsafe {safecopy! (lp::LP_eth_node_url, "{}", ethnode)})
+    } else {
+        // use default mainnet Parity node address
+        try_s! (unsafe {safecopy! (lp::LP_eth_node_url, "{}", "http://195.201.0.6:8555")})
+    }
+
+    if let Some (alice_contract) = ctx.conf["alice_contract"].as_str() {
+        try_s! (unsafe {safecopy! (lp::LP_alice_contract, "{}", alice_contract)})
+    } else {
+        // use default mainnet Alice contract address
+        try_s! (unsafe {safecopy! (lp::LP_alice_contract, "{}", "0x9bc5418ceded51db08467fc4b62f32c5d9ebda55")})
+    }
+
+    if let Some (bob_contract) = ctx.conf["bob_contract"].as_str() {
+        try_s! (unsafe {safecopy! (lp::LP_bob_contract, "{}", bob_contract)})
+    } else {
+        // use default mainnet Bob contract address
+        try_s! (unsafe {safecopy! (lp::LP_bob_contract, "{}", "0x2896Db79fAF20ABC8776fc27D15719cf59b8138B")})
+    }
+
+    try_s! (common::lp_privkey::lp_passphrase_init (ctx.conf["passphrase"].as_str(), ctx.conf["gui"].as_str(), ctx.conf["seednode"].as_str()));
 /*
-    //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-    //strcpy(LP_publicaddr,pushaddr);
-    //LP_publicport = mypullport;
-    //LP_mybussock = LP_coinbus(mybusport);
-    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport);
-    LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
+    lp::LP_passphrase_init (passphrase, jstr(argjson,"gui"), juint(argjson,"netid"), jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

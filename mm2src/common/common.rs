@@ -39,6 +39,7 @@ extern crate unwrap;
 pub mod for_tests;
 pub mod iguana_utils;
 pub mod log;
+pub mod lp_privkey;
 pub mod mm_ctx;
 pub mod ser;
 
@@ -203,8 +204,6 @@ pub fn free_c_ptr(ptr: *mut c_void) { unsafe {
         free(ptr as *mut libc::c_void);
     }
 }}
-
-//? pub fn bytes_to_malloc (slice: &[u8]) -> *mut c_void
 
 /// Fills a C character array with a zero-terminated C string,
 /// returning an error if the string is too large.

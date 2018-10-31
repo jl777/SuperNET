@@ -45,6 +45,10 @@ struct LP_millistats
 extern int32_t IAMLP;
 char LP_methodstr[64];
 
+char LP_eth_node_url[2084];
+char LP_alice_contract[50];
+char LP_bob_contract[50];
+
 int32_t bits256_nonz(bits256 a) {
     return (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0);
 }
@@ -1428,31 +1432,7 @@ void* r_btc_ctx(uint32_t mm_ctx_id);
 void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson, uint32_t mm_ctx_id)
 {
     long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void* ctx;
-    //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-    //strcpy(LP_publicaddr,pushaddr);
-    //LP_publicport = mypullport;
-    //LP_mybussock = LP_coinbus(mybusport);
-    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport);
-    if (jstr(argjson, "ethnode") != NULL) {
-        strcpy(LP_eth_node_url, jstr(argjson, "ethnode"));
-    } else {
-        // use default mainnet Parity node address
-        strcpy(LP_eth_node_url, "http://195.201.0.6:8555");
-    }
 
-    if (jstr(argjson, "alice_contract") != NULL) {
-        strcpy(LP_alice_contract, jstr(argjson, "alice_contract"));
-    } else {
-        // use default mainnet Alice contract address
-        strcpy(LP_alice_contract, "0x9bc5418ceded51db08467fc4b62f32c5d9ebda55");
-    }
-
-    if (jstr(argjson, "bob_contract") != NULL) {
-        strcpy(LP_bob_contract, jstr(argjson, "bob_contract"));
-    } else {
-        // use default mainnet Bob contract address
-        strcpy(LP_bob_contract, "0x2896Db79fAF20ABC8776fc27D15719cf59b8138B");
-    }
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef NOTETOMIC
     extern void *LP_eth_client;
