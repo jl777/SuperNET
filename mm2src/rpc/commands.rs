@@ -17,14 +17,16 @@
 //  rpc_commands.rs
 //  marketmaker
 //
-use common::{find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
+use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
 use common::mm_ctx::MmArc;
 use etomiccurl::get_gas_price_from_station;
 use gstuff::now_ms;
-use libc::c_char;
+use libc::{c_char, c_void, free};
 use ordermatch::{AutoBuyInput, lp_auto_buy};
 use serde_json::{self as json, Value as Json};
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
+use std::mem::zeroed;
+use std::ptr::null_mut;
 
 /*
 char *LP_numutxos()
@@ -205,43 +207,68 @@ pub fn version() -> HyRes { rpc_response(200, MM_VERSION) }
             G.USERPASS_COUNTER = 1;
             LP_cmdcount++;
         }
-        // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
-        if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
-        {
-            bits256 passhash; char str[65],str2[65];
-            vcalc_sha256(0,passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-            if ( bits256_cmp(passhash,G.LP_passhash) == 0 )
-                authenticated = 1;
-            else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
-        }
-        char passhashstr[65]; bits256_str(passhashstr,G.LP_passhash);
-        if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || (strcmp(userpass,G.USERPASS) != 0 && strcmp(userpass,passhashstr) != 0)) )
-            return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
-        if ( jobj(argjson,"userpass") != 0 )
-            jdelete(argjson,"userpass");
-        LP_cmdcount++;
-        if ( strcmp(method,"passphrase") == 0 )
-        {
-            char coinaddr[64],pub33str[67];
-            G.USERPASS_COUNTER = 1;
-            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode")) < 0 )
-                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
-            {
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"userpass",G.USERPASS);
-                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
-                jaddstr(retjson,"pubsecp",pub33str);
-                bitcoin_address("KMD",coinaddr,0,60,G.LP_myrmd160,20);
-                jaddstr(retjson,"KMD",coinaddr);
-                bitcoin_address("BTC",coinaddr,0,0,G.LP_myrmd160,20);
-                jaddstr(retjson,"BTC",coinaddr);
-                jaddstr(retjson,"NXT",G.LP_NXTaddr);
-                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
-                return(jprint(retjson,1));
-            }
-        }
+*/
+
+/// JSON structure passed to the "passphrase" RPC call.  
+/// cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#passphrase
+#[derive(Clone, Deserialize, Debug)]
+struct PassphraseReq {
+    passphrase: String,
+    /// Optional because we're checking the `passphrase` hash first.
+    userpass: Option<String>,
+    /// Defaults to "cli" (in `LP_passphrase_init`).
+    gui: Option<String>,
+    seednode: Option<String>
+}
+
+pub fn passphrase (req: Json) -> HyRes {
+    let matching_userpass = super::auth (&req) .is_ok();
+    let req: PassphraseReq = try_h! (json::from_value (req));
+
+    let mut passhash: bits256 = unsafe {zeroed()};
+    unsafe {lp::vcalc_sha256 (null_mut(), passhash.bytes.as_mut_ptr(), req.passphrase.as_ptr() as *mut u8, req.passphrase.len() as i32)};
+    let matching_passphrase = unsafe {lp::bits256_cmp (passhash, lp::G.LP_passhash)} == 0;
+    if !matching_passphrase {
+        println! ("passphrase] passhash {} != G {}", passhash, unsafe {lp::G.LP_passhash});
+        if !matching_userpass {return rpc_err_response (500, "authentication error")}
+    }
+
+    unsafe {lp::G.USERPASS_COUNTER = 1}
+
+    let rc = unsafe {lp::LP_passphrase_init (
+        req.passphrase.as_ptr() as *mut c_char,
+        req.gui.map (|s| s.as_ptr() as *mut c_char) .unwrap_or (null_mut()),
+        lp::G.netid,
+        req.seednode.map (|s| s.as_ptr() as *mut c_char) .unwrap_or (null_mut())
+    )};
+    if rc < 0 {return rpc_err_response (500, "couldnt change passphrase")}
+
+    let mut coins = Vec::new();
+    try_h! (unsafe {coins_iter (lp::LP_coins, &mut |coin| {
+        let coin_json = lp::LP_coinjson (coin, lp::LP_showwif);
+        let cjs = lp::jprint (coin_json, 1);
+        let cjs_copy = Vec::from (CStr::from_ptr (cjs) .to_bytes());
+        free (cjs as *mut c_void);
+        lp::free_json (coin_json);
+        let rcjs: Json = try_s! (json::from_slice (&cjs_copy));
+        coins.push (rcjs);
+        Ok(())
+    })});
+
+    let retjson = json! ({
+        "result": "success",
+        "userpass": try_h! (unsafe {CStr::from_ptr (lp::G.USERPASS.as_ptr())} .to_str()),
+        "mypubkey": fomat! ((unsafe {lp::G.LP_mypub25519})),
+        "pubsecp": hex::encode (unsafe {&lp::G.LP_pubsecp[..]}),
+        "KMD": try_h! (bitcoin_address ("KMD", 60, unsafe {lp::G.LP_myrmd160})),
+        "BTC": try_h! (bitcoin_address ("BTC", 0, unsafe {lp::G.LP_myrmd160})),
+        "NXT": try_h! (unsafe {CStr::from_ptr (lp::G.LP_NXTaddr.as_ptr())} .to_str()),
+        "coins": coins
+    });
+
+    rpc_response (200, try_h! (json::to_string (&retjson)))
+}
+/*
         else if ( strcmp(method,"instantdex_deposit") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
@@ -379,7 +406,7 @@ pub fn stop (ctx: MmArc) -> HyRes {
         else if ( strcmp(method,"getpeers") == 0 )
             return(LP_peers());
         else if ( strcmp(method,"getcoins") == 0 )
-            return(jprint(LP_coinsjson(0),1));
+            return(jprint(LP_coinsjson(0),1));  // Was also superficially ported in RPC `passphrase`.
         else if ( strcmp(method,"notarizations") == 0 )
         {
             if ( (ptr= LP_coinsearch(coin)) != 0 )

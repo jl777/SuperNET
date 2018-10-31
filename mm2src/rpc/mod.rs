@@ -53,10 +53,23 @@ lazy_static! {
 
 /// Lists the RPC method not requiring the "userpass" authentication.  
 /// None is also public to skip auth and display proper error in case of method is missing
-const PUBLIC_METHODS : &[Option<&str>] = &[
-    Some("psock"), Some("ticker"), Some("balances"), Some("getprice"), Some("notify"),
-    Some("getpeers"), Some("orderbook"), Some("statsdisp"), Some("fundvalue"), Some("help"),
-    Some("getcoins"), Some("pricearray"), Some("balance"), Some("tradesarray"), None
+const PUBLIC_METHODS : &[Option<&str>] = &[  // Sorted alphanumerically (on the first letter) for readability.
+    Some("balance"),
+    Some("balances"),
+    Some("fundvalue"),
+    Some("getprice"),
+    Some("getpeers"),
+    Some("getcoins"),
+    Some("help"),
+    Some("notify"),
+    Some("orderbook"),
+    Some("passphrase"),  // Manually checks the "passphrase".
+    Some("pricearray"),
+    Some("psock"),
+    Some("statsdisp"),
+    Some("tradesarray"),
+    Some("ticker"),
+    None
 ];
 
 /// Returns `true` if authentication is not required to call the remote method.
@@ -98,7 +111,7 @@ fn auth(json: &Json) -> Result<(), &'static str> {
             return Err("Userpass is not set!");
         }
 
-        let userpass = unsafe { CStr::from_ptr(lp::G.USERPASS.as_ptr()).to_str().unwrap() };
+        let userpass = unsafe {unwrap! (CStr::from_ptr (lp::G.USERPASS.as_ptr()) .to_str())};
         let pass_hash = hex::encode(unsafe { lp::G.LP_passhash.bytes });
 
         if json["userpass"].as_str() != Some(userpass) && json["userpass"].as_str() != Some(&pass_hash) {
@@ -175,7 +188,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
     }
     try_h!(auth(&req));
     macro_rules! c_json {() => {try_h! (CJSON::from_str (&req.to_string()))}}
-    match method {
+    match method {  // Sorted alphanumerically (on the first latter) for readability.
         Some ("autoprice") => lp_autoprice (ctx, req),
         Some ("buy") => buy(&req),
         Some ("eth_gas_price") => eth_gas_price(),
@@ -183,6 +196,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
         Some ("help") => help(),
         Some ("inventory") => inventory (ctx, req),
         Some ("mpnet") => mpnet(&req),
+        Some ("passphrase") => passphrase (req),
         Some ("sell") => sell(&req),
         Some ("stop") => stop (ctx),
         Some ("version") => version(),

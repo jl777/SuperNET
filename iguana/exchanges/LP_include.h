@@ -331,6 +331,7 @@ struct iguana_info
     bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
 };
+extern struct iguana_info *LP_coins;
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };
 
@@ -639,6 +640,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
 char *unstringify(char *str);
 int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode);
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub);
+void vcalc_sha256(char hashstr[(256 >> 3) * 2 + 1],uint8_t hash[256 >> 3],uint8_t *src,int32_t len);
+cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif);
 
 struct LP_autoprice_ref
 {
@@ -708,7 +711,10 @@ struct LP_globals
     uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter,mpnet;
-    int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
+    int32_t LP_IAMLP,LP_pendingswaps;
+    /// We set it to `1` in RPC "passphrase".
+    int32_t USERPASS_COUNTER;
+    int32_t LP_numprivkeys,initializing,waiting,LP_numskips;
     char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[65],LP_NXTaddr[64];
     struct LP_privkey LP_privkeys[100];
 } G;
