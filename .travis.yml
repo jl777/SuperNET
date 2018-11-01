@@ -24,6 +24,7 @@ before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install jemalloc lftp; fi
 script:
 - export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"`
+- export CARGO_BUILD_RUSTFLAGS='-C debuginfo=1'
 - rm -rf build
 - cargo build --bin mm2-nop --features nop
 - export TAG=`echo "$(git rev-parse --short HEAD)"`

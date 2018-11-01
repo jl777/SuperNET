@@ -14,6 +14,11 @@ name = "mm2-nop"
 path = "mm2src/mm2-nop.rs"
 required-features = ["nop"]
 
+[profile.dev]
+# Enable light optimizations. We want a debuggable version but not a completely dumb one.
+# Can override this with "set CARGO_BUILD_RUSTFLAGS=-C opt-level=0".
+opt-level = 1
+
 [features]
 # Uncomment in order to enable ETOMIC builds by default:
 default = ["etomic"]
