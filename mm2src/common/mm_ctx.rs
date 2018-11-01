@@ -47,6 +47,8 @@ pub struct MmCtx {
     stop: AtomicBool,
     /// IP and port for the RPC server to listen on.
     pub rpc_ip_port: SocketAddr,
+    // TODO: Refactor away, CORS headers should be generated in the RPC layer,
+    // there is no need to complicate stuff by pulling them through several other layers.
     /// CORS header value for RPC server (ACCESS_CONTROL_ALLOW_ORIGIN)
     pub rpc_cors: HeaderValue,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
