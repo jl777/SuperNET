@@ -125,22 +125,24 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
                         -> Result<String, String> {
     if !json["queueid"].is_null() {
         if json["queueid"].is_u64() {
-            if unsafe { lp::IPC_ENDPOINT == -1 } {
-                return Ok(err_to_rpc_json_string("Can't queue the command when ws endpoint is disabled!"));
-            } else if !remote_addr.ip().is_loopback() {
-                return Ok(err_to_rpc_json_string("Can queue the command from localhost only!"));
-            } else {
-                let json_str = json.to_string();
-                let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred");
-                unsafe {
-                    lp_queue_command(null_mut(),
-                                        c_json_ptr.as_ptr() as *mut c_char,
-                                        lp::IPC_ENDPOINT,
-                                        1,
-                                        json["queueid"].as_u64().unwrap() as u32
-                    );
+            if json["queueid"].as_u64().unwrap() > 0 {
+                if unsafe { lp::IPC_ENDPOINT == -1 } {
+                    return Ok(err_to_rpc_json_string("Can't queue the command when ws endpoint is disabled!"));
+                } else if !remote_addr.ip().is_loopback() {
+                    return Ok(err_to_rpc_json_string("Can queue the command from localhost only!"));
+                } else {
+                    let json_str = json.to_string();
+                    let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred");
+                    unsafe {
+                        lp_queue_command(null_mut(),
+                                         c_json_ptr.as_ptr() as *mut c_char,
+                                         lp::IPC_ENDPOINT,
+                                         1,
+                                         json["queueid"].as_u64().unwrap() as u32
+                        );
+                    }
+                    return Ok(r#"{"result":"success","status":"queued"}"#.to_string());
                 }
-                return Ok(r#"{"result":"success","status":"queued"}"#.to_string());
             }
         } else {
             return Ok(err_to_rpc_json_string("queueid must be unsigned integer!"));
