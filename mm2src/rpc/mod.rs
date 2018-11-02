@@ -198,7 +198,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
         Some ("help") => help(),
         Some ("inventory") => inventory (ctx, req),
         Some ("mpnet") => mpnet(&req),
-        Some ("passphrase") => passphrase (req),
+        Some ("passphrase") => passphrase (ctx, req),
         Some ("sell") => sell(&req),
         Some ("stop") => stop (ctx),
         Some ("version") => version(),

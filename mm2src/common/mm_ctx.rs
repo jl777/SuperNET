@@ -37,7 +37,7 @@ pub struct MmCtx {
     pub log: log::LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
     btc_ctx: *mut BitcoinCtx,
-    /// Set to true after `LP_passphrase_init`, indicating that we have a usable state.
+    /// Set to true after `lp_passphrase_init`, indicating that we have a usable state.
     ///
     /// Should be refactored away in the future. State should always be valid.
     /// If there are things that are loaded in background then they should be separately optional,

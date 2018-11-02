@@ -18,13 +18,14 @@
 //  marketmaker
 //
 use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
+use common::lp_privkey::lp_passphrase_init;
 use common::mm_ctx::MmArc;
 use etomiccurl::get_gas_price_from_station;
 use gstuff::now_ms;
-use libc::{c_char, c_void, free};
+use libc::{c_void, free};
 use ordermatch::{AutoBuyInput, lp_auto_buy};
 use serde_json::{self as json, Value as Json};
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr};
 use std::mem::zeroed;
 use std::ptr::null_mut;
 
@@ -216,12 +217,12 @@ struct PassphraseReq {
     passphrase: String,
     /// Optional because we're checking the `passphrase` hash first.
     userpass: Option<String>,
-    /// Defaults to "cli" (in `LP_passphrase_init`).
+    /// Defaults to "cli" (in `lp_passphrase_init`).
     gui: Option<String>,
     seednode: Option<String>
 }
 
-pub fn passphrase (req: Json) -> HyRes {
+pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
     let matching_userpass = super::auth (&req) .is_ok();
     let req: PassphraseReq = try_h! (json::from_value (req));
 
@@ -235,13 +236,8 @@ pub fn passphrase (req: Json) -> HyRes {
 
     unsafe {lp::G.USERPASS_COUNTER = 1}
 
-    let rc = unsafe {lp::LP_passphrase_init (
-        req.passphrase.as_ptr() as *mut c_char,
-        req.gui.map (|s| s.as_ptr() as *mut c_char) .unwrap_or (null_mut()),
-        lp::G.netid,
-        req.seednode.map (|s| s.as_ptr() as *mut c_char) .unwrap_or (null_mut())
-    )};
-    if rc < 0 {return rpc_err_response (500, "couldnt change passphrase")}
+    unsafe {try_h! (lp_passphrase_init (&ctx,
+        Some (&req.passphrase), req.gui.as_ref().map (|s| &s[..]), req.seednode.as_ref().map (|s| &s[..])))};
 
     let mut coins = Vec::new();
     try_h! (unsafe {coins_iter (lp::LP_coins, &mut |coin| {
@@ -836,18 +832,19 @@ pub fn sell(json: &Json) ->  HyRes {
             }
             */*/*/
 
-pub fn inventory (_ctx: MmArc, req: Json) -> HyRes {
+pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
     let coin = match req["coin"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'coin' argument in request")};
     let (ptr, _) = match find_coin (Some (coin)) {Some (t) => t, None => return rpc_err_response (500, &fomat! ("No such coin: " (coin)))};
 
     unsafe {lp::LP_address (ptr, (*ptr).smartaddr.as_mut_ptr())};
     if req["reset"].as_i64().unwrap_or (0) != 0 {
+        // AG: I wonder if we can narrow down the meaning of "reset" in order to touch the minimal amount of state?
+        //     Reinitializing the state of a running program is generally a bad idea.
         unsafe {(*ptr).privkeydepth = 0}
         let mut num: i32 = 0;
         unsafe {lp::LP_address_utxo_reset (&mut num, ptr)};
         let passphrase = match req["passphrase"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'passphrase' in request")};
-        let passphrase = try_h! (CString::new (passphrase));
-        unsafe {lp::LP_passphrase_init (passphrase.as_ptr() as *mut c_char, lp::G.gui.as_mut_ptr(), lp::G.netid, lp::G.seednode.as_mut_ptr())};
+        unsafe {try_h! (lp_passphrase_init (&ctx, Some (passphrase), None, None))};
     }
     if unsafe {lp::bits256_nonz (lp::G.LP_privkey)} != 0 {
         unsafe {lp::LP_privkey_init (-1, ptr, lp::G.LP_privkey, lp::G.LP_mypub25519)};

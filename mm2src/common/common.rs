@@ -36,6 +36,20 @@ extern crate tokio_core;
 #[macro_use]
 extern crate unwrap;
 
+/// Fills a C character array with a zero-terminated C string,
+/// returning an error if the string is too large.
+#[macro_export]
+#[allow(unused_unsafe)]
+macro_rules! safecopy {
+    ($to: expr, $format: expr, $($args: tt)+) => {{
+        use ::std::io::Write;
+        let to: &mut [i8] = &mut $to[..];  // Check the type.
+        let to: &mut [u8] = unsafe {::std::mem::transmute (to)};  // c_char to Rust.
+        let mut wr = ::std::io::Cursor::new (to);
+        write! (&mut wr, concat! ($format, "\0"), $($args)+)
+    }}
+}
+
 pub mod for_tests;
 pub mod iguana_utils;
 pub mod log;
@@ -204,19 +218,6 @@ pub fn free_c_ptr(ptr: *mut c_void) { unsafe {
         free(ptr as *mut libc::c_void);
     }
 }}
-
-/// Fills a C character array with a zero-terminated C string,
-/// returning an error if the string is too large.
-#[macro_export]
-macro_rules! safecopy {
-    ($to: expr, $format: expr, $($args: tt)+) => {{
-        use ::std::io::Write;
-        let to: &mut [i8] = &mut $to[..];  // Check the type.
-        let to: &mut [u8] = unsafe {::std::mem::transmute (to)};  // c_char to Rust.
-        let mut wr = ::std::io::Cursor::new (to);
-        write! (&mut wr, concat! ($format, "\0"), $($args)+)
-    }}
-}
 
 /// Use the value, preventing the compiler and linker from optimizing it away.
 pub fn black_box<T> (v: T) -> T {

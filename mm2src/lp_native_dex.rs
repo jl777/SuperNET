@@ -29,6 +29,7 @@
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
 use common::{lp, slurp_url, CJSON, MM_VERSION, os};
+use common::lp_privkey::lp_passphrase_init;
 use common::mm_ctx::{MmCtx, MmArc};
 use common::nn::*;
 use crc::crc32;
@@ -1740,9 +1741,9 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         try_s! (unsafe {safecopy! (lp::LP_bob_contract, "{}", "0x2896Db79fAF20ABC8776fc27D15719cf59b8138B")})
     }
 
-    try_s! (common::lp_privkey::lp_passphrase_init (ctx.conf["passphrase"].as_str(), ctx.conf["gui"].as_str(), ctx.conf["seednode"].as_str()));
+    unsafe {try_s! (lp_passphrase_init (&ctx,
+        ctx.conf["passphrase"].as_str(), ctx.conf["gui"].as_str(), ctx.conf["seednode"].as_str()))};
 /*
-    lp::LP_passphrase_init (passphrase, jstr(argjson,"gui"), juint(argjson,"netid"), jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

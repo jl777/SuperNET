@@ -584,6 +584,7 @@ struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
 int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue);
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr);
 int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
+void LP_closepeers();
 void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,uint16_t netid,char *seednode);
 int32_t LP_trades_canceluuid(char *uuidstr);
 int _decreasing_uint64(const void *a,const void *b);
@@ -638,10 +639,12 @@ void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *base
 cJSON *LP_balances(char *coinaddr);
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired);
 char *unstringify(char *str);
-int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode);
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub);
 void vcalc_sha256(char hashstr[(256 >> 3) * 2 + 1],uint8_t hash[256 >> 3],uint8_t *src,int32_t len);
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif);
+void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase);
+bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
+void LP_priceinfos_clear();
 
 struct LP_autoprice_ref
 {

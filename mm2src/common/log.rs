@@ -189,7 +189,8 @@ impl<'a> StatusHandle<'a> {
         }
     }
 
-    /// Adds new text into the status line.
+    /// Adds new text into the status line.  
+    /// Does nothing if the status handle is empty (if the status wasn't created yet).
     pub fn append (&self, suffix: &str) {
         if let Some (ref status) = self.status {
             {

@@ -711,62 +711,6 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
     }
 }
 
-// TODO: Remove "netid", cf. https://discordapp.com/channels/412898016371015680/476025090627207168/506854295484760068.
-int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode)
-{
-    static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;
-    uint8_t pubkey33[100];
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    if ( G.LP_pendingswaps != 0 )
-        return(-1);
-    if ( netid != G.netid )
-    {
-        if ( IAMLP != 0 )
-        {
-            printf("sorry, LP nodes can only set netid during startup\n");
-            return(-1);
-        }
-        else
-        {
-            printf(">>>>>>>>>>>>> netid.%d vs G.netid %d\n",netid,G.netid);
-            LP_closepeers();
-            LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
-        }
-    }
-    G.initializing = 1;
-    if ( gui == 0 )
-        gui = "cli";
-    counter = G.USERPASS_COUNTER;
-    HASH_ITER(hh,LP_coins,coin,tmp)
-    {
-        coin->importedprivkey = 0;
-    }
-    while ( G.waiting == 0 )
-    {
-        printf("waiting for G.waiting\n");
-        sleep(5);
-    }
-    memset(&G,0,sizeof(G));
-    G.netid = netid;
-    safecopy(G.seednode,seednode,sizeof(G.seednode));
-
-    vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-    LP_privkey_updates(ctx,LP_mypubsock,passphrase);
-    bitcoin_pubkey33(ctx, pubkey33, G.LP_privkey);
-    calc_rmd160_sha256(G.LP_myrmd160, pubkey33, 33);
-    init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
-    G.LP_sessionid = (uint32_t)time(NULL);
-    safecopy(G.gui,gui,sizeof(G.gui));
-    LP_tradebot_pauseall();
-    LP_portfolio_reset();
-    LP_priceinfos_clear();
-    G.USERPASS_COUNTER = counter;
-    G.initializing = 0;
-    //LP_cmdchannels();
-    return(0);
-}
-
 void LP_privkey_tests()
 {
     char wifstr[64],str[65],str2[65]; bits256 privkey,checkkey; int32_t i; uint8_t tmptype;

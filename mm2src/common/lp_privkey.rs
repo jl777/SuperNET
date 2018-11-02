@@ -18,6 +18,19 @@
 //  marketmaker
 //
 
+extern crate hex;
+
+use gstuff::now_ms;
+use libc::{c_char, c_void};
+use std::borrow::Cow;
+use std::ffi::{CStr, CString};
+use std::mem::zeroed;
+use std::ptr::null_mut;
+use std::thread::sleep;
+use std::time::Duration;
+use super::{coins_iter, lp};
+use super::mm_ctx::MmCtx;
+
 /*
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
@@ -713,64 +726,71 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 }
 */
 
-pub fn lp_passphrase_init (passphrase: Option<&str>, gui: Option<&str>, seednode: Option<&str>) -> Result<(), String> {
+/// Resets the context (most of which resides currently in `lp::G` but eventually would move into `MmCtx`).
+/// Restarts the peer connections.
+/// Reloads the coin keys.
+/// 
+/// AG: If possible, I think we should avoid calling this function on a working MM, using it for initialization only,
+///     in order to avoid the possibility of invalid state.
+#[allow(unused_unsafe)]
+pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Option<&str>, seednode: Option<&str>) -> Result<(), String> {
     let passphrase = match passphrase {
         None | Some ("") => return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree"),
         Some (s) => s.to_string()
     };
-    /*
-    static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;
-    uint8_t pubkey33[100];
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    if ( G.LP_pendingswaps != 0 )
-        return(-1);
-    if ( netid != G.netid )
-    {
-        if ( IAMLP != 0 )
-        {
-            printf("sorry, LP nodes can only set netid during startup\n");
-            return(-1);
+    if lp::G.LP_pendingswaps != 0 {return ERR! ("There are pending swaps")}
+    lp::LP_closepeers();
+    let seednode_c = match seednode {
+        Some (s) => try_s! (CString::new (s)),
+        None => try_s! (CString::new (try_s! (CStr::from_ptr (lp::G.seednode.as_ptr()) .to_str())))  // Reuse the existing `seednode`.
+    };
+    let netid = lp::G.netid;
+    lp::LP_initpeers (lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port, netid, seednode_c.as_ptr() as *mut c_char);
+    lp::G.initializing = 1;
+    let gui: Cow<str> = match gui {
+        Some (g) => g.into(),
+        None => match try_s! (CStr::from_ptr (lp::G.gui.as_ptr()) .to_str()) {
+            "" => "cli".into(),  // Default.
+            have => have.to_string().into()  // Reuse the existing `gui`.
         }
-        else
-        {
-            printf(">>>>>>>>>>>>> netid.%d vs G.netid %d\n",netid,G.netid);
-            LP_closepeers();
-            LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
-        }
-    }
-    G.initializing = 1;
-    if ( gui == 0 )
-        gui = "cli";
-    counter = G.USERPASS_COUNTER;
-    HASH_ITER(hh,LP_coins,coin,tmp)
-    {
-        coin->importedprivkey = 0;
-    }
-    while ( G.waiting == 0 )
-    {
-        printf("waiting for G.waiting\n");
-        sleep(5);
-    }
-    memset(&G,0,sizeof(G));
-    G.netid = netid;
-    safecopy(G.seednode,seednode,sizeof(G.seednode));
+    };
+    let userpass_counter = lp::G.USERPASS_COUNTER;
+    try_s! (coins_iter (lp::LP_coins, &mut |coin| {
+        (*coin).importedprivkey = 0;
+        Ok(())
+    }));
 
-    vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-    LP_privkey_updates(ctx,LP_mypubsock,passphrase);
-    bitcoin_pubkey33(ctx, pubkey33, G.LP_privkey);
-    calc_rmd160_sha256(G.LP_myrmd160, pubkey33, 33);
-    init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
-    G.LP_sessionid = (uint32_t)time(NULL);
-    safecopy(G.gui,gui,sizeof(G.gui));
-    LP_tradebot_pauseall();
-    LP_portfolio_reset();
-    LP_priceinfos_clear();
-    G.USERPASS_COUNTER = counter;
-    G.initializing = 0;
-    //LP_cmdchannels();
-    return(0);
-    */
+    {
+        let mut status = ctx.log.status_handle();
+        while lp::G.waiting == 0 {
+            status.status (&[&"lp_passphrase_init"], "Waiting for `G.waiting`...");
+            sleep (Duration::from_millis (100))
+        }
+        status.append (" Done.");
+    }
+
+    lp::G = zeroed();
+    lp::G.initializing = 1;
+    lp::G.netid = netid;
+    try_s! (safecopy! (lp::G.seednode, "{}", if let Some (ref s) = seednode {s} else {""}));
+
+    lp::vcalc_sha256 (null_mut(), lp::G.LP_passhash.bytes.as_mut_ptr(), passphrase.as_ptr() as *mut u8, passphrase.len() as i32);
+    let passphrase_c = try_s! (CString::new (&passphrase[..]));
+    lp::LP_privkey_updates (ctx.btc_ctx() as *mut c_void, lp::LP_mypubsock, passphrase_c.as_ptr() as *mut c_char);
+    let mut pubkey33: [u8; 100] = zeroed();
+    lp::bitcoin_pubkey33 (ctx.btc_ctx() as *mut c_void, pubkey33.as_mut_ptr(), lp::G.LP_privkey);
+    lp::calc_rmd160_sha256 (lp::G.LP_myrmd160.as_mut_ptr(), pubkey33.as_mut_ptr(), 33);
+    try_s! (safecopy! (lp::G.LP_myrmd160str, "{}", hex::encode (lp::G.LP_myrmd160)));
+    lp::G.LP_sessionid = (now_ms() / 1000) as u32;
+    try_s! (safecopy! (lp::G.gui, "{}", gui));
+    lp::LP_tradebot_pauseall();
+    lp::LP_portfolio_reset();
+    lp::LP_priceinfos_clear();
+
+    // Copy some of the fields from the old G.
+    lp::G.USERPASS_COUNTER = userpass_counter;
+
+    lp::G.initializing = 0;
     Ok(())
 }
 
