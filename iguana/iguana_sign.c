@@ -567,8 +567,14 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
 		memcpy(&for_sig_hash[len], sequence_hash, 32);
 		len += 32;
 
-		uint8_t outputs[1000], hash_outputs[32];
+		uint8_t *outputs, hash_outputs[32];
 		int32_t outputs_len = 0;
+				
+		for (i = 0; i < dest.tx_out; i++) { outputs_len += sizeof(dest.vouts[i].value); outputs_len++;  outputs_len += dest.vouts[i].pk_scriptlen; } // calc size for outputs buffer
+		// printf("[Decker] outputs_len = %d\n", outputs_len);
+		outputs = malloc(outputs_len);
+
+		outputs_len = 0;
 		for (i = 0; i < dest.tx_out; i++) {
 			outputs_len += iguana_rwnum(1, &outputs[outputs_len], sizeof(dest.vouts[i].value), &dest.vouts[i].value);
 			outputs[outputs_len++] = (uint8_t)dest.vouts[i].pk_scriptlen;
@@ -588,6 +594,8 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
 		);
 		memcpy(&for_sig_hash[len], hash_outputs, 32);
 		len += 32;
+
+		free(outputs);
 
 		// no join splits, fill the hashJoinSplits with 32 zeros
 		memset(&for_sig_hash[len], 0, 32);
