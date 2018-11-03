@@ -80,7 +80,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
         int supressfreq = DPOW_CHECKPOINTFREQ;
-        if ( is_STAKED() != 0 ) {
+        if ( is_STAKED(dp->symbol) != 0 ) {
             supressfreq = 3;
         }
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
