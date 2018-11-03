@@ -18,11 +18,11 @@
 //  marketmaker
 //
 use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
-use common::lp_privkey::lp_passphrase_init;
 use common::mm_ctx::MmArc;
 use etomiccurl::get_gas_price_from_station;
 use gstuff::now_ms;
 use libc::{c_void, free};
+use lp_native_dex::lp_passphrase_init;
 use ordermatch::{AutoBuyInput, lp_auto_buy};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr};

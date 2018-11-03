@@ -18,19 +18,6 @@
 //  marketmaker
 //
 
-extern crate hex;
-
-use gstuff::now_ms;
-use libc::{c_char, c_void};
-use std::borrow::Cow;
-use std::ffi::{CStr, CString};
-use std::mem::zeroed;
-use std::ptr::null_mut;
-use std::thread::sleep;
-use std::time::Duration;
-use super::{coins_iter, lp};
-use super::mm_ctx::MmCtx;
-
 /*
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
@@ -724,77 +711,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
         }
     }
 }
-*/
 
-/// Resets the context (most of which resides currently in `lp::G` but eventually would move into `MmCtx`).
-/// Restarts the peer connections.
-/// Reloads the coin keys.
-/// 
-/// AG: If possible, I think we should avoid calling this function on a working MM, using it for initialization only,
-///     in order to avoid the possibility of invalid state.
-#[allow(unused_unsafe)]
-pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Option<&str>, seednode: Option<&str>) -> Result<(), String> {
-    let passphrase = match passphrase {
-        None | Some ("") => return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree"),
-        Some (s) => s.to_string()
-    };
-    if lp::G.LP_pendingswaps != 0 {return ERR! ("There are pending swaps")}
-    lp::LP_closepeers();
-    let seednode_c = match seednode {
-        Some (s) => try_s! (CString::new (s)),
-        None => try_s! (CString::new (try_s! (CStr::from_ptr (lp::G.seednode.as_ptr()) .to_str())))  // Reuse the existing `seednode`.
-    };
-    let netid = lp::G.netid;
-    lp::LP_initpeers (lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port, netid, seednode_c.as_ptr() as *mut c_char);
-    lp::G.initializing = 1;
-    let gui: Cow<str> = match gui {
-        Some (g) => g.into(),
-        None => match try_s! (CStr::from_ptr (lp::G.gui.as_ptr()) .to_str()) {
-            "" => "cli".into(),  // Default.
-            have => have.to_string().into()  // Reuse the existing `gui`.
-        }
-    };
-    let userpass_counter = lp::G.USERPASS_COUNTER;
-    try_s! (coins_iter (lp::LP_coins, &mut |coin| {
-        (*coin).importedprivkey = 0;
-        Ok(())
-    }));
-
-    {
-        let mut status = ctx.log.status_handle();
-        while lp::G.waiting == 0 {
-            status.status (&[&"lp_passphrase_init"], "Waiting for `G.waiting`...");
-            sleep (Duration::from_millis (100))
-        }
-        status.append (" Done.");
-    }
-
-    lp::G = zeroed();
-    lp::G.initializing = 1;
-    lp::G.netid = netid;
-    try_s! (safecopy! (lp::G.seednode, "{}", if let Some (ref s) = seednode {s} else {""}));
-
-    lp::vcalc_sha256 (null_mut(), lp::G.LP_passhash.bytes.as_mut_ptr(), passphrase.as_ptr() as *mut u8, passphrase.len() as i32);
-    let passphrase_c = try_s! (CString::new (&passphrase[..]));
-    lp::LP_privkey_updates (ctx.btc_ctx() as *mut c_void, lp::LP_mypubsock, passphrase_c.as_ptr() as *mut c_char);
-    let mut pubkey33: [u8; 100] = zeroed();
-    lp::bitcoin_pubkey33 (ctx.btc_ctx() as *mut c_void, pubkey33.as_mut_ptr(), lp::G.LP_privkey);
-    lp::calc_rmd160_sha256 (lp::G.LP_myrmd160.as_mut_ptr(), pubkey33.as_mut_ptr(), 33);
-    try_s! (safecopy! (lp::G.LP_myrmd160str, "{}", hex::encode (lp::G.LP_myrmd160)));
-    lp::G.LP_sessionid = (now_ms() / 1000) as u32;
-    try_s! (safecopy! (lp::G.gui, "{}", gui));
-    lp::LP_tradebot_pauseall();
-    lp::LP_portfolio_reset();
-    lp::LP_priceinfos_clear();
-
-    // Copy some of the fields from the old G.
-    lp::G.USERPASS_COUNTER = userpass_counter;
-
-    lp::G.initializing = 0;
-    Ok(())
-}
-
-/*
 void LP_privkey_tests()
 {
     char wifstr[64],str[65],str2[65]; bits256 privkey,checkkey; int32_t i; uint8_t tmptype;
