@@ -58,6 +58,18 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
+int is_STAKED(const char *chain_name) {
+  int STAKED = 0;
+  if ( (strcmp(chain_name, "STAKED") == 0) || (strncmp(chain_name, "STAKED", 6) == 0) )
+    STAKED = 1;
+  else if ( (strcmp(chain_name, "STKD") == 0) || (strncmp(chain_name, "STKD", 4) == 0) )
+    STAKED = 2;
+  else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
+    STAKED =  3;
+  //fprintf(stderr, "This chains is: %s which is: %d\n", chain_name,STAKED);
+  return(STAKED);
+};
+
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
@@ -67,11 +79,12 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+DPOW_CHECKPOINTFREQ )
+        int supressfreq = DPOW_CHECKPOINTFREQ;
+        if ( is_STAKED() != 0 ) {
+            supressfreq = 3;
+        }
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
-            if ( (strncmp(dp->symbol, "STKD", 4) == 0) || (strncmp(dp->symbol, "STAKED", 6) == 0) )
-              suppress = 0;
-            else
               suppress = 1;
               //fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
         }
