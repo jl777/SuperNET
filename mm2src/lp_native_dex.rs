@@ -174,11 +174,6 @@ char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[65] = { "cli" };
 
-char *default_LPnodes[] = { "5.9.253.195", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
-    //"24.54.206.138", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
-    //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155", "173.212.225.176", "136.243.45.140"
-};
-
 // stubs
 
 void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
@@ -1036,57 +1031,55 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
     }
     printf("privkey updates\n");
 }
+*/
 
-void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,uint16_t netid,char *seednode)
-{
-    int32_t i,j; uint32_t r; uint16_t pushport,subport,busport; char fixedseed[64];
-    LP_ports(&pushport,&subport,&busport,netid);
-    if ( IAMLP != 0 )
-    {
-        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,pushport,subport,1,G.LP_sessionid,netid);
-        if ( myipaddr == 0 || mypeer == 0 )
-        {
-            printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
-            exit(-1);
-        }
-        if ( seednode == 0 || seednode[0] == 0 )
-        {
-            if ( netid == 0 )
-            {
-                printf("load default seednodes\n");
-                for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
-                {
-                    LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid,netid);
-                }
-            }
-        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,1,G.LP_sessionid,netid);
+/// Aka `default_LPnodes`. Initial nodes of the peer-to-peer network.
+const P2P_SEED_NODES: [&'static str; 5] = [
+    "5.9.253.195",
+    "173.212.225.176",
+    "136.243.45.140",
+    "23.254.202.142",
+    "45.32.19.196"
+];
+
+/// Setup the peer-to-peer network.
+#[allow(unused_variables)]  // delme
+pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_peerinfo, myipaddr: &IpAddr, myport: u16,
+                            netid: u16, seednode: Option<&str>) -> Result<(), String> {
+    // Pick our ports.
+    let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
+    lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid);
+
+    // Add ourselves into the list of known peers.
+    let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
+    mypeer = lp::LP_addpeer (mypeer, pubsock, myipaddr_c.as_ptr() as *mut c_char, myport, pullport, pubport, 1, lp::G.LP_sessionid, netid);
+    lp::LP_mypeer = mypeer;
+    if mypeer == null_mut() {return ERR! ("Error adding {} into the p2p ring", myipaddr)}
+
+    type IP<'a> = Cow<'a, str>;
+
+    /// True if the node is a liquid provider (e.g. Bob, server).  
+    /// NB: We want the peers to be equal, freely functioning as either a Bob or an Alice, and I wonder how the p2p LP flags are affected by that.
+    type IsLp = bool;
+
+    let seeds: Vec<(IP, IsLp)> = if let Some (seednode) = seednode {
+        vec! [(seednode.into(), true)]
+    } else if netid > 0 && netid < 9 {
+        vec! [(format! ("5.9.253.{}", 195 + netid) .into(), true)]
+    } else if netid == 0 {
+        P2P_SEED_NODES.iter().map (|ip| (Cow::Borrowed (&ip[..]), false)) .collect()
+    } else {  // Default netid is 0. If we're using a non-default netid then we should skip adding the hardcoded seed nodes.
+        Vec::new()
+    };
+
+    for (seed, is_lp) in seeds {
+        let ip = try_s! (CString::new (&seed[..]));
+        lp::LP_addpeer (mypeer, pubsock, ip.as_ptr() as *mut c_char, myport, pullport, pubport, if is_lp {1} else {0}, lp::G.LP_sessionid, netid);
     }
-    else
-    {
-        if ( myipaddr == 0 )
-        {
-            printf("couldnt get myipaddr\n");
-            exit(-1);
-        }
-        if ( (netid > 0 && netid < 9) && (seednode == 0 || seednode[0] == 0) )
-        {
-            sprintf(fixedseed,"5.9.253.%d",195 + netid);
-            seednode = fixedseed;
-        }
-        if ( seednode == 0 || seednode[0] == 0 )
-        {
-            printf("default seed nodes for netid.%d\n",netid);
-            OS_randombytes((void *)&r,sizeof(r));
-            r = 0;
-            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
-            {
-                i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
-                LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid,netid);
-            }
-        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,1,G.LP_sessionid,netid);
-    }
+    Ok(())
 }
 
+/*
 void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime;
@@ -1531,6 +1524,9 @@ fn fix_directories() -> bool {
 /// Restarts the peer connections.
 /// Reloads the coin keys.
 /// 
+/// Besides the `passphrase` it also allows changing the `seednode` and `gui` at runtime.  
+/// AG: While there might be value in changing `seednode` at runtime, I'm not sure if changing `gui` is actually necessary.
+/// 
 /// AG: If possible, I think we should avoid calling this function on a working MM, using it for initialization only,
 ///     in order to avoid the possibility of invalid state.
 #[allow(unused_unsafe)]
@@ -1540,13 +1536,23 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
         Some (s) => s.to_string()
     };
     if lp::G.LP_pendingswaps != 0 {return ERR! ("There are pending swaps")}
-    lp::LP_closepeers();
-    let seednode_c = match seednode {
-        Some (s) => try_s! (CString::new (s)),
-        None => try_s! (CString::new (try_s! (CStr::from_ptr (lp::G.seednode.as_ptr()) .to_str())))  // Reuse the existing `seednode`.
-    };
+
+    // Prepare and check some of the `lp_initpeers` parameters.
+
     let netid = lp::G.netid;
-    lp::LP_initpeers (lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port, netid, seednode_c.as_ptr() as *mut c_char);
+    let myipaddr: IpAddr = try_s! (try_s! (CStr::from_ptr (lp::LP_myipaddr.as_ptr()) .to_str()) .parse());
+    let seednode: Option<Cow<str>> = match seednode {
+        Some (s) => Some (s.into()),  // Use a new `seednode`.
+        None => match try_s! (CStr::from_ptr (lp::G.seednode.as_ptr()) .to_str()) {
+            "" => None,  // No `seednode` specified or known.
+            s => Some (s.to_string().into())  // Reuse the existing `seednode`.
+        }
+    };
+    let seednode = seednode.as_ref().map (|s| &s[..]);
+
+    lp::LP_closepeers();
+    try_s! (lp_initpeers (ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port, netid, seednode));
+
     lp::G.initializing = 1;
     let gui: Cow<str> = match gui {
         Some (g) => g.into(),
@@ -1780,14 +1786,11 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::LP_initcoins (ctx.btc_ctx() as *mut c_void, lp::LP_mypubsock, coinsjson)}
     unsafe {lp::RPC_port = myport}
     unsafe {lp::G.waiting = 1}
-    let myipaddr = {
-        try_s! (unsafe {safecopy! (lp::LP_myipaddr, "{}", myipaddr)});
-        unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char}
-    };
-    unsafe {lp::LP_initpeers (
-        lp::LP_mypubsock, lp::LP_mypeer, lp::LP_myipaddr.as_mut_ptr(), lp::RPC_port,
-        lp::juint (c_conf.0, b"netid\0".as_ptr() as *mut c_char) as u16,
-        lp::jstr (c_conf.0, b"seednode\0".as_ptr() as *mut c_char))}
+    try_s! (unsafe {safecopy! (lp::LP_myipaddr, "{}", myipaddr)});
+    try_s! (unsafe {lp_initpeers (
+        &ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port,
+        ctx.conf["netid"].as_u64().unwrap_or (0) as u16,
+        ctx.conf["seednode"].as_str())});
 
     if let Some (ethnode) = ctx.conf["ethnode"].as_str() {
         try_s! (unsafe {safecopy! (lp::LP_eth_node_url, "{}", ethnode)})
@@ -1942,6 +1945,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::SPAWN_RPC = Some (rpc::spawn_rpc)};
     unsafe {lp::LP_QUEUE_COMMAND = Some (lp_queue_command)};
 
+    let myipaddr = unsafe {lp::LP_myipaddr.as_ptr() as *mut c_char};
     unsafe {lp::LPinit (myipaddr, myport, mypullport, mypubport, passphrase.as_ptr() as *mut c_char, c_conf.0, ctx_id)};
     unwrap! (prices.join());
     unwrap! (trades.join());

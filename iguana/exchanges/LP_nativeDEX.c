@@ -140,6 +140,7 @@ char LP_myipaddr[64],USERHOME[512] = { "/root" };
 uint8_t LP_myipaddr_from_command_line = 0;
 char LP_gui[65] = { "cli" };
 
+// cf. `P2P_SEED_NODES`
 char *default_LPnodes[] = { "5.9.253.195", "173.212.225.176", "136.243.45.140", "23.254.202.142", "45.32.19.196"
     //"24.54.206.138", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155", "173.212.225.176", "136.243.45.140"
@@ -970,57 +971,6 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         }
     }
     printf("privkey updates\n");
-}
-
-void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,uint16_t netid,char *seednode)
-{
-    printf("LP_initpeers] myipaddr: %s\n", myipaddr);  // delme
-    int32_t i,j; uint32_t r; uint16_t pushport,subport,busport; char fixedseed[64];
-    LP_ports(&pushport,&subport,&busport,netid);
-    if ( IAMLP != 0 )
-    {
-        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,pushport,subport,1,G.LP_sessionid,netid);
-        if ( myipaddr == 0 || mypeer == 0 )
-        {
-            printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
-            exit(-1);
-        }
-        if ( seednode == 0 || seednode[0] == 0 )
-        {
-            if ( netid == 0 )
-            {
-                printf("load default seednodes\n");
-                for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
-                {
-                    LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid,netid);
-                }
-            }
-        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,1,G.LP_sessionid,netid);
-    }
-    else
-    {
-        if ( myipaddr == 0 )
-        {
-            printf("couldnt get myipaddr\n");
-            exit(-1);
-        }
-        if ( (netid > 0 && netid < 9) && (seednode == 0 || seednode[0] == 0) )
-        {
-            sprintf(fixedseed,"5.9.253.%d",195 + netid);
-            seednode = fixedseed;
-        }
-        if ( seednode == 0 || seednode[0] == 0 )
-        {
-            printf("default seed nodes for netid.%d\n",netid);
-            OS_randombytes((void *)&r,sizeof(r));
-            r = 0;
-            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
-            {
-                i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
-                LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid,netid);
-            }
-        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,1,G.LP_sessionid,netid);
-    }
 }
 
 void LP_pubkeysloop(void *ctx)

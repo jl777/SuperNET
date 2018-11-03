@@ -156,7 +156,7 @@ fn generate_bindings() {
             "jaddnum",
             "LP_NXT_redeems",
             "LPinit",
-            "LP_initpeers",
+            "LP_addpeer",
             "LP_initpublicaddr",
             "LP_ports",
             "unbuffered_output_support",
