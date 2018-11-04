@@ -16,7 +16,14 @@ use std::str::{from_utf8_unchecked};
 use std::thread::{self, sleep};
 use std::time::Duration;
 
-fn mm_spat() -> (&'static str, MarketMakerIt) {
+/// Create RAII variables to the effect of dumping the log and the status dashboard at the end of the scope.
+pub fn mm_dump (log_path: &Path) -> (RaiiDump, RaiiDump) {(
+    RaiiDump {log_path: log_path.to_path_buf()},
+    RaiiDump {log_path: unwrap! (dashboard_path (log_path))}
+)}
+
+/// A typical MM instance.
+fn mm_spat() -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
     let passphrase = "SPATsRps3dhEtXwtnpRCKF";
     let mm = unwrap! (MarketMakerIt::start (
         json! ({
@@ -32,7 +39,8 @@ fn mm_spat() -> (&'static str, MarketMakerIt) {
         "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start()), _ => None}
     ));
-    (passphrase, mm)
+    let (dump_log, dump_dashboard) = mm_dump (&mm.log_path);
+    (passphrase, mm, dump_log, dump_dashboard)
 }
 
 /// Asks MM to enable the given currency in electrum mode
@@ -81,9 +89,7 @@ fn test_autoprice() {
     // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
     // and to make an informed decision about whether the MarketMaker is performing correctly.
 
-    let (passphrase, mm) = mm_spat();
-    let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
-    let _dump_dashboard = RaiiDump {log_path: unwrap! (dashboard_path (&mm.log_path))};
+    let (passphrase, mm, _dump_log, _dump_dashboard) = mm_spat();
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     enable_electrum(&mm, "BEER", "electrum1.cipig.net", 10022);
@@ -147,9 +153,7 @@ fn test_autoprice() {
 
 #[test]
 fn test_fundvalue() {
-    let (_, mm) = mm_spat();
-    let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
-    let _dump_dashboard = RaiiDump {log_path: unwrap! (dashboard_path (&mm.log_path))};
+    let (_, mm, _dump_log, _dump_dashboard) = mm_spat();
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let fundvalue = unwrap! (mm.rpc (json! ({
@@ -197,8 +201,7 @@ fn test_fundvalue() {
 /// Check that MM doesn't crash in case of invalid RPC requests
 #[test]
 fn test_rpc() {
-    let (_, mm) = mm_spat();
-    let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
+    let (_, mm, _dump_log, _dump_dashboard) = mm_spat();
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let no_method = unwrap! (mm.rpc (json! ({
@@ -325,7 +328,7 @@ fn test_events() {
                 json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
                 "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
                 match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start()), _ => None}));
-            let _dump_log = RaiiDump {log_path: mm.log_path.clone()};
+            let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
 
             let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
                 .env ("_MM2_TEST_EVENTS_MODE", "MM_EVENTS")
@@ -492,8 +495,8 @@ fn trade_base_rel(base: &str, rel: &str) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
     ));
 
-    let _bob_dump_log = RaiiDump {log_path: mm_bob.log_path.clone()};
-    let _alice_dump_log = RaiiDump {log_path: mm_alice.log_path.clone()};
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
+    let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
     println!("Bob log path: {}", mm_bob.log_path.display());
     println!("Alice log path: {}", mm_alice.log_path.display());
 
