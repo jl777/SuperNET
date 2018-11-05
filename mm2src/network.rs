@@ -19,15 +19,13 @@
 //
 use common::{free_c_ptr, nn, str_to_malloc, CJSON};
 use common::mm_ctx::MmArc;
+use crossbeam::channel;
 use libc::{c_char, c_void, strlen};
 use lp_native_dex::lp_command_process;
 use serde_json::{self as json, Value as Json};
-use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::ptr::null_mut;
-use std::sync::{Mutex};
-use std::thread::sleep;
 use std::time::Duration;
 /*
 struct psock
@@ -460,114 +458,97 @@ struct CommandForNn {
 }
 
 lazy_static! {
-    static ref COMMAND_QUEUE: Mutex<VecDeque<QueuedCommand>> = Mutex::new(VecDeque::new());
-}
-
-fn queue_command(cmd: QueuedCommand) {
-    let mut queue = unwrap!(COMMAND_QUEUE.lock());
-    queue.push_back(cmd);
-}
-
-fn pop_command() -> Option<QueuedCommand> {
-    let mut queue = unwrap!(COMMAND_QUEUE.lock());
-    queue.pop_front()
-}
-
-fn is_queue_empty() -> bool {
-    let queue = unwrap!(COMMAND_QUEUE.lock());
-    queue.is_empty()
+    // TODO: Move to `MmCtx`.
+    static ref COMMAND_QUEUE: (channel::Sender<QueuedCommand>, channel::Receiver<QueuedCommand>) = channel::unbounded();
 }
 
 /// The thread processing the peer-to-peer messaging bus.
 pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
     loop {
         if ctx.is_stopping() { break }
-        while !is_queue_empty() {
-            let cmd = unwrap!(pop_command());
-            let msg_json = unwrap!(json::from_str(&cmd.msg));
-            if cmd.stats_json_only < 0 { // broadcast passthrough
+
+        let cmd = match (*COMMAND_QUEUE).1.recv_timeout (Duration::from_millis (100)) {
+            Ok (cmd) => cmd,
+            Err (channel::RecvTimeoutError::Timeout) => continue,  // And check `is_stopping`.
+            Err (channel::RecvTimeoutError::Disconnected) => break
+        };
+
+        let msg_json = unwrap!(json::from_str(&cmd.msg));
+        if cmd.stats_json_only < 0 { // broadcast passthrough
+            if cmd.response_sock >= 0 {
+                let nn_command = CommandForNn {
+                    queue_id: 0,
+                    result: msg_json
+                };
+                let json_str = unwrap!(json::to_string(&nn_command));
+                let c_str = unwrap!(CString::new(json_str));
+                let _size = nn::nn_send(
+                    cmd.response_sock,
+                    c_str.as_ptr() as *const c_void,
+                    strlen(c_str.as_ptr()) as usize,
+                    0,
+                );
+            }
+        } else {
+            let c_json = unwrap!(CJSON::from_str(&cmd.msg));
+            let json = unwrap!(json::from_str(&cmd.msg));
+            //printf("deQ.(%s)\n",jprint(argjson,0));
+            let mut retstr = lp_command_process(
+                ctx.clone(),
+                cmd.response_sock,
+                json,
+                c_json,
+                cmd.stats_json_only,
+            );
+            if !retstr.is_null() {
                 if cmd.response_sock >= 0 {
-                    let nn_command = CommandForNn {
-                        queue_id: 0,
-                        result: msg_json
-                    };
-                    let json_str = unwrap!(json::to_string(&nn_command));
-                    let c_str = unwrap!(CString::new(json_str));
+                    if cmd.queue_id != 0 {
+                        let ret_str_rust = unwrap!(CStr::from_ptr(retstr).to_str());
+                        let result = unwrap!(json::from_str(ret_str_rust));
+                        let nn_command = CommandForNn {
+                            queue_id: cmd.queue_id,
+                            result
+                        };
+                        free_c_ptr(retstr as *mut c_void);
+
+                        let json_str = unwrap!(json::to_string(&nn_command));
+                        retstr = str_to_malloc(&json_str);
+                    }
+                    //printf("send (%s)\n",retstr);
+                    let mut len = strlen(retstr);
+                    if cmd.queue_id == 0 {
+                        len += 1
+                    }
                     let _size = nn::nn_send(
                         cmd.response_sock,
-                        c_str.as_ptr() as *const c_void,
-                        strlen(c_str.as_ptr()) as usize,
+                        retstr as *const c_void,
+                        len as usize,
                         0,
                     );
                 }
-            } else {
-                let c_json = unwrap!(CJSON::from_str(&cmd.msg));
-                let json = unwrap!(json::from_str(&cmd.msg));
-                //printf("deQ.(%s)\n",jprint(argjson,0));
-                let mut retstr = lp_command_process(
-                    ctx.clone(),
-                    cmd.response_sock,
-                    json,
-                    c_json,
-                    cmd.stats_json_only,
-                );
-                if !retstr.is_null() {
-                    if cmd.response_sock >= 0 {
-                        if cmd.queue_id != 0 {
-                            let ret_str_rust = unwrap!(CStr::from_ptr(retstr).to_str());
-                            let result = unwrap!(json::from_str(ret_str_rust));
-                            let nn_command = CommandForNn {
-                                queue_id: cmd.queue_id,
-                                result
-                            };
-                            free_c_ptr(retstr as *mut c_void);
-
-                            let json_str = unwrap!(json::to_string(&nn_command));
-                            retstr = str_to_malloc(&json_str);
-                        }
-                        //printf("send (%s)\n",retstr);
-                        let mut len = strlen(retstr);
-                        if cmd.queue_id == 0 {
-                            len += 1
-                        }
-                        let _size = nn::nn_send(
-                            cmd.response_sock,
-                            retstr as *const c_void,
-                            len as usize,
-                            0,
-                        );
-                    }
-                    free_c_ptr(retstr as *mut c_void);
-                }
+                free_c_ptr(retstr as *mut c_void);
             }
         }
-        sleep (Duration::from_millis (50))
     }
 }
 
 /// Register an RPC command that came internally or from the peer-to-peer bus.
 #[no_mangle]
-pub extern "C" fn lp_queue_command(
-    retstrp: *mut *mut c_char,
-    buf: *mut c_char,
-    response_sock: i32,
-    stats_json_only: i32,
-    queue_id: u32
-) {
+pub extern "C" fn lp_queue_command (retstrp: *mut *mut c_char, buf: *mut c_char, response_sock: i32,
+                                    stats_json_only: i32, queue_id: u32) -> () {
     if retstrp != null_mut() {
         unsafe { *retstrp = null_mut() }
     }
 
-    let msg = unsafe {
-        String::from(unwrap!(CStr::from_ptr(buf).to_str()))
-    };
-    let command = QueuedCommand {
+    if buf == null_mut() {panic! ("!buf")}
+    let msg = String::from (unwrap! (unsafe {CStr::from_ptr (buf)} .to_str()));
+    let cmd = QueuedCommand {
         msg,
         queue_id,
         response_sock,
         stats_json_only
     };
-    queue_command(command);
+    unwrap! ((*COMMAND_QUEUE).0.send (cmd))
 }
 /*
 void mynn_close(int32_t sock)

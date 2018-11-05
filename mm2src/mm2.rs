@@ -24,6 +24,7 @@
 #[macro_use]
 extern crate common;
 extern crate crc;
+extern crate crossbeam;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate duct;
