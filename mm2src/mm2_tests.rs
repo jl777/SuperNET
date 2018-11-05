@@ -68,11 +68,12 @@ fn enable_native(mm: &MarketMakerIt, coin: &str) -> String {
     native.1
 }
 
-/// Enables BEER, ETOMIC and ETH.  
+/// Enables BEER, PIZZA, ETOMIC and ETH.
 /// Returns the RPC replies containing the corresponding wallet addresses.
 fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, String)> {
     let mut replies = Vec::new();
     replies.push (("BEER", enable_native (mm, "BEER")));
+    replies.push (("PIZZA", enable_native (mm, "PIZZA")));
     replies.push (("ETOMIC", enable_native(mm, "ETOMIC")));
     replies.push (("ETH", enable_native (mm, "ETH")));
     replies
@@ -432,9 +433,12 @@ fn komodo_conf_path (ac_name: Option<&'static str>) -> Result<PathBuf, String> {
 }
 
 fn trade_base_rel(base: &str, rel: &str) {
+    // Keep BEER here for some time as coin maybe will be back
     let beer_cfp = unwrap! (komodo_conf_path (Some ("BEER")));
+    let pizza_cfp = unwrap! (komodo_conf_path (Some ("PIZZA")));
     let etomic_cfp = unwrap! (komodo_conf_path (Some ("ETOMIC")));
     assert! (beer_cfp.exists(), "BEER config {:?} is not found", beer_cfp);
+    assert! (pizza_cfp.exists(), "PIZZA config {:?} is not found", pizza_cfp);
     assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
 
     fn from_env_file (env: Vec<u8>) -> (Option<String>, Option<String>) {
@@ -461,6 +465,7 @@ fn trade_base_rel(base: &str, rel: &str) {
 
     let coins = json!([
         {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},
+        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"confpath":unwrap!(pizza_cfp.to_str())},
         {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str())},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
     ]);
@@ -512,7 +517,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     // wait until Alice recognize Bob node by importing it's pubkey
     unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
 
-    // issue sell request on Bob side by setting BEER/ETH price
+    // issue sell request on Bob side by setting PIZZA/ETH price
     println!("Issue bob sell request");
     let rc = unwrap! (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
@@ -523,7 +528,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     })));
     assert! (rc.0.is_success(), "!setprice: {}", rc.1);
 
-    // issue BEER/ETH buy request from Alice side
+    // issue PIZZA/ETH buy request from Alice side
     thread::sleep(Duration::from_secs(2));
     println!("Issue alice buy request");
     let rc = unwrap! (mm_alice.rpc (json! ({
@@ -552,9 +557,9 @@ fn trade_base_rel(base: &str, rel: &str) {
     unwrap! (mm_alice.stop());
 }
 
-/// Integration test for BEER/ETH and ETH/BEER trade
+/// Integration test for PIZZA/ETH and ETH/PIZZA trade
 /// This test is ignored because as of now it requires additional environment setup:
-/// BEER and ETOMIC daemons must be running and fully synced for swaps to be successful
+/// PIZZA and ETOMIC daemons must be running and fully synced for swaps to be successful
 /// The trades can't be executed concurrently now for 2 reasons:
 /// 1. Bob node starts listening 47772 port on all interfaces so no more Bobs can be started at once
 /// 2. Current UTXO handling algo might result to conflicts between concurrently running nodes
@@ -563,17 +568,22 @@ fn trade_base_rel(base: &str, rel: &str) {
 /// 
 /// Obtain the wallet binaries (komodod, komodo-cli) from the Agama wallet (https://komodoplatform.com/komodo-wallets/).
 /// (Or use the Docker image artempikulin/komodod-etomic).
+/// (Or compile them from source: https://github.com/jl777/komodo/tree/dev)
 /// 
 /// Obtain ~/.zcash-params (c:/Users/$username/AppData/Roaming/ZcashParams on Windows).
 /// 
-/// Start the wallets,
+/// Start the wallets
 ///
-///     komodod -ac_name=BEER -ac_supply=100000000 -addnode=24.54.206.138
-/// 
+///     komodod -ac_name=PIZZA -ac_supply=100000000 -addnode=24.54.206.138
+///
 /// and
-/// 
+///
 ///     komodod -ac_name=ETOMIC -ac_supply=100000000 -addnode=78.47.196.146
-/// 
+///
+///
+///
+
+///
 /// Get rpcuser and rpcpassword from ETOMIC/ETOMIC.conf
 /// (c:/Users/$username/AppData/Roaming/Komodo/ETOMIC/ETOMIC.conf on Windows)
 /// and run
@@ -593,6 +603,6 @@ fn trade_base_rel(base: &str, rel: &str) {
 #[test]
 #[ignore]
 fn test_trade() {
-    trade_base_rel("BEER", "ETH");
-    trade_base_rel("ETH", "BEER");
+    trade_base_rel("PIZZA", "ETH");
+    trade_base_rel("ETH", "PIZZA");
 }

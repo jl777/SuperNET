@@ -1538,7 +1538,6 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
     if lp::G.LP_pendingswaps != 0 {return ERR! ("There are pending swaps")}
 
     // Prepare and check some of the `lp_initpeers` parameters.
-
     let netid = lp::G.netid;
     let myipaddr: IpAddr = try_s! (try_s! (CStr::from_ptr (lp::LP_myipaddr.as_ptr()) .to_str()) .parse());
     let seednode: Option<Cow<str>> = match seednode {
@@ -1578,6 +1577,7 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
 
     lp::G = zeroed();
     lp::G.initializing = 1;
+    // TODO: netid is set to lp::G.netid previously, is it really required here?
     lp::G.netid = netid;
     try_s! (safecopy! (lp::G.seednode, "{}", if let Some (ref s) = seednode {s} else {""}));
 
@@ -1741,10 +1741,10 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
 
     unsafe {lp::IAMLP = if ctx.am_client() {0} else {1}}
     unsafe {lp::LP_canbind = if ctx.am_client() {0} else {1}}
+    unsafe {lp::G.netid = ctx.conf["netid"].as_u64().unwrap_or (0) as u16}
+    unsafe {lp::LP_mypubsock = -1}
 
     if !ctx.am_client() {
-        unsafe {lp::G.netid = ctx.conf["netid"].as_u64().unwrap_or (0) as u16}
-        unsafe {lp::LP_mypubsock = -1}
         // TODO: Use `myipaddr` when it was explicitly specified. And disentangle `myipaddr` from the detected outer IP.
         //let subaddr = fomat! ("tcp://" (myipaddr) ':' (mypubport));
         let bindaddr = fomat! ("tcp://*:" (mypubport));
