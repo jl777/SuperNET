@@ -319,10 +319,20 @@ struct LP_transaction
     struct LP_outpoint outpoints[];
 };
 
+struct LP_tx_history_item
+{
+    struct LP_tx_history_item *next,*prev;
+    char address[50],category[10],blockhash[70],txid[70];
+    double_t amount;
+    uint32_t vout,blockindex,blocktime,time;
+};
+
 struct iguana_info
 {
     UT_hash_handle hh;
-    portable_mutex_t txmutex,addrmutex,addressutxo_mutex; struct LP_transaction *transactions; struct LP_address *addresses;
+    portable_mutex_t txmutex,addrmutex,addressutxo_mutex,tx_history_mutex;
+    struct LP_transaction *transactions;
+    struct LP_address *addresses;
     uint64_t txfee,do_autofill_merge;
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
@@ -337,6 +347,7 @@ struct iguana_info
     void *curl_handle; portable_mutex_t curl_mutex;
     bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
+    struct LP_tx_history_item *tx_history;
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t height; uint32_t vout:30,suppress:1,pad:1; };
@@ -612,5 +623,5 @@ int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
 void HashGroestl(void * buf, const void * pbegin, int len);
 bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
-
+cJSON *electrum_address_history_cached(struct iguana_info *coin);
 #endif

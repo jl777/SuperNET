@@ -562,6 +562,17 @@ cJSON *electrum_strarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     } else return(0);
 }
 
+cJSON *electrum_jsonarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,cJSON *arg,int32_t timeout)
+{
+    cJSON *retjson;
+    if ( arg != NULL )
+    {
+        if ( retjsonp == 0 )
+            retjsonp = &retjson;
+        return(electrum_submit(symbol,ep,retjsonp,method,jprint(arg,0),timeout));
+    } else return(0);
+}
+
 cJSON *electrum_intarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,int32_t arg,int32_t timeout)
 {
     char params[64]; cJSON *retjson;
@@ -1197,6 +1208,145 @@ void LP_dedicatedloop(void *arg)
     //free(ep);
 }
 
+cJSON *tx_history_to_json(struct LP_tx_history_item *item, struct iguana_info *coin) {
+    cJSON *json = cJSON_CreateObject();
+    jaddstr(json, "txid", item->txid);
+    jaddstr(json, "category", item->category);
+    jaddnum(json, "amount", item->amount);
+    jaddstr(json, "blockhash", item->blockhash);
+    jaddnum(json, "blockindex", item->blockindex);
+    jaddnum(json, "blocktime", item->blocktime);
+    jaddnum(json, "time", item->time);
+    if (item->blockindex > 0) {
+        jaddnum(json, "confirmations", coin->height - item->blockindex + 1);
+    } else {
+        jaddnum(json, "confirmations", 0);
+    }
+    return json;
+}
+
+int it_cmp(struct LP_tx_history_item *item1, struct LP_tx_history_item *item2) {
+    return(item1->time < item2->time);
+}
+
+void LP_electrum_txhistory_loop(void *_coin)
+{
+    struct iguana_info *coin = _coin;
+    while (coin != NULL && coin->electrum != NULL && coin->inactive == 0) {
+        cJSON *history = cJSON_CreateObject();
+        if (strcmp(coin->symbol, "BCH") == 0) {
+            electrum_scripthash_cmd(coin->symbol, coin->taddr, coin->electrum, &history, "get_history",
+                                    coin->smartaddr);
+        } else {
+            electrum_strarg(coin->symbol, coin->electrum, &history, "blockchain.address.get_history", coin->smartaddr,
+                            ELECTRUM_TIMEOUT);
+        }
+        if (jobj(history, "error") != NULL) {
+            printf("Error getting electrum history %s\n", jprint(history, 1));
+            sleep(10);
+            continue;
+        }
+        int history_size = cJSON_GetArraySize(history);
+        for (int i = history_size - 1; i >= 0; i--) {
+            cJSON *history_item = jitem(history, i);
+            cJSON *tx_item = cJSON_CreateObject();
+            char *tx_hash = jstr(history_item, "tx_hash");
+            struct LP_tx_history_item *iter;
+            int found = 0;
+            int confirmed = 0;
+            DL_FOREACH(coin->tx_history, iter) {
+                if (strcmp(iter->txid, tx_hash) == 0) {
+                    found = 1;
+                    if (iter->blockindex > 0) {
+                        confirmed = 1;
+                    }
+                    break;
+                }
+            }
+            struct LP_tx_history_item *item;
+            if (!found) {
+                // allocate new if not found
+                item = malloc(sizeof(struct LP_tx_history_item));
+                memset(item, 0, sizeof(struct LP_tx_history_item));
+            } else if (confirmed == 0) {
+                // update existing if found and not confirmed
+                item = iter;
+            } else {
+                continue;
+            }
+
+            cJSON *params = cJSON_CreateArray();
+            jaddistr(params, tx_hash);
+            jaddi(params, cJSON_CreateBool(cJSON_True));
+            while(1) {
+                electrum_jsonarg(coin->symbol, coin->electrum, &tx_item, "blockchain.transaction.get", params,
+                                 ELECTRUM_TIMEOUT);
+                if (jobj(tx_item, "error") != NULL) {
+                    printf("Error getting electrum tx %s %s\n", jstri(params, 0), jprint(tx_item, 1));
+                    tx_item = cJSON_CreateObject();
+                    sleep(5);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            free_json(params);
+            if (!found) {
+                strcpy(item->txid, jstr(tx_item, "txid"));
+                // receive by default, but if at least 1 vin contains our address the category is send
+                strcpy(item->category, "receive");
+                cJSON *vin = jobj(tx_item, "vin");
+                for (int j = 0; j < cJSON_GetArraySize(vin); j++) {
+                    cJSON *vin_item = jitem(vin, j);
+                    if (strcmp(coin->smartaddr, jstr(vin_item, "address")) == 0) {
+                        strcpy(item->category, "send");
+                        break;
+                    }
+                }
+                int size = 0;
+                cJSON *vout = jarray(&size, tx_item, "vout");
+                for (int k = 0; k < size; k++) {
+                    cJSON *vout_item = jitem(vout, k);
+                    int addresses_size = 0;
+                    cJSON *addresses = jarray(&addresses_size, jobj(vout_item, "scriptPubKey"), "addresses");
+                    for (int z = 0; z < addresses_size; z++) {
+                        if (strcmp(coin->smartaddr, jstri(addresses, z)) == 0) {
+                            if (strcmp(item->category, "receive") == 0) {
+                                item->amount += jdouble(vout_item, "value");
+                            }
+                        } else {
+                            if (strcmp(item->category, "send") == 0) {
+                                item->amount -= jdouble(vout_item, "value");
+                            }
+                        }
+                    }
+                }
+            }
+            if (juint(history_item, "height") > 0) {
+                item->time = juint(tx_item, "time");
+                strcpy(item->blockhash, jstr(tx_item, "blockhash"));
+                item->blockindex = juint(tx_item, "height");
+                item->blocktime = juint(tx_item, "blocktime");
+            } else {
+                // set current time temporary until confirmed
+                item->time = (uint32_t)time(NULL);
+                printf("Pending tx item %s\n", jprint(tx_item, 0));
+            }
+            if (!found) {
+                DL_APPEND(coin->tx_history, item);
+            }
+            free_json(tx_item);
+        }
+        int (*ptr)(struct LP_tx_history_item*, struct LP_tx_history_item*) = &it_cmp;
+        // we don't want the history to be accessed while sorting
+        portable_mutex_lock(&coin->tx_history_mutex);
+        DL_SORT(coin->tx_history, ptr);
+        portable_mutex_unlock(&coin->tx_history_mutex);
+        free_json(history);
+        sleep(10);
+    }
+}
+
 cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
 {
     struct electrum_info *ep,*prev,*cur; int32_t kickval,already; cJSON *retjson,*array,*item;
@@ -1291,6 +1441,24 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         cJSON_Delete(balance);
     }
 #endif
+    if (coin->electrum != 0 && cur == 0) {
+        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_electrum_txhistory_loop,(void *)coin) != 0 )
+        {
+            printf("error launching LP_electrum_tx_history_loop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
+            jaddstr(retjson,"error","couldnt launch electrum tx history thread");
+        }
+    }
     //printf("(%s)\n",jprint(retjson,0));
     return(retjson);
+}
+
+cJSON *electrum_address_history_cached(struct iguana_info *coin) {
+    cJSON *retjson = cJSON_CreateArray();
+    struct LP_tx_history_item *item;
+    portable_mutex_lock(&coin->tx_history_mutex);
+    DL_FOREACH(coin->tx_history, item) {
+        jaddi(retjson, tx_history_to_json(item, coin));
+    }
+    portable_mutex_unlock(&coin->tx_history_mutex);
+    return retjson;
 }

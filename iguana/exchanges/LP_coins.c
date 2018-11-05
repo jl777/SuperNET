@@ -368,6 +368,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     portable_mutex_init(&coin->txmutex);
     portable_mutex_init(&coin->addrmutex);
     portable_mutex_init(&coin->addressutxo_mutex);
+    portable_mutex_init(&coin->tx_history_mutex);
     portable_mutex_lock(&LP_coinmutex);
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
     portable_mutex_unlock(&LP_coinmutex);

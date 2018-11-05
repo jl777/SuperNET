@@ -535,6 +535,9 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     memset(zero.bytes,0,sizeof(zero));
+    if (coinaddr == NULL) {
+        coinaddr = coin->smartaddr;
+    }
     if ( coin->electrum == 0 )
     {
         if ( count == 0 )
@@ -555,7 +558,9 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
             free_json(array);
         }
         return(retjson);
-    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
+    } else {
+        return(electrum_address_history_cached(coin));
+    }
 }
 
 int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item)
