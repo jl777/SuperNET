@@ -1330,7 +1330,6 @@ void LP_electrum_txhistory_loop(void *_coin)
             } else {
                 // set current time temporary until confirmed
                 item->time = (uint32_t)time(NULL);
-                printf("Pending tx item %s\n", jprint(tx_item, 0));
             }
             if (!found) {
                 DL_APPEND(coin->tx_history, item);
