@@ -53,7 +53,7 @@ lazy_static! {
 
 /// Lists the RPC method not requiring the "userpass" authentication.  
 /// None is also public to skip auth and display proper error in case of method is missing
-const PUBLIC_METHODS : &[Option<&str>] = &[  // Sorted alphanumerically (on the first letter) for readability.
+const PUBLIC_METHODS: &[Option<&str>] = &[  // Sorted alphanumerically (on the first letter) for readability.
     Some("balance"),
     Some("balances"),
     Some("fundvalue"),
@@ -61,7 +61,7 @@ const PUBLIC_METHODS : &[Option<&str>] = &[  // Sorted alphanumerically (on the 
     Some("getpeers"),
     Some("getcoins"),
     Some("help"),
-    Some("notify"),
+    Some("notify"),  // Manually checks the peer's public key.
     Some("orderbook"),
     Some("passphrase"),  // Manually checks the "passphrase".
     Some("pricearray"),
@@ -71,11 +71,6 @@ const PUBLIC_METHODS : &[Option<&str>] = &[  // Sorted alphanumerically (on the 
     Some("ticker"),
     None
 ];
-
-/// Returns `true` if authentication is not required to call the remote method.
-fn is_public_method(method: Option<&str>) -> bool {
-    PUBLIC_METHODS.iter().position(|&s| s == method).is_some()
-}
 
 #[allow(unused_macros)]
 macro_rules! unwrap_or_err_response {
@@ -106,7 +101,7 @@ struct RpcService {
 }
 
 fn auth(json: &Json) -> Result<(), &'static str> {
-    if !is_public_method(json["method"].as_str()) {
+    if !PUBLIC_METHODS.contains(&json["method"].as_str()) {
         if !json["userpass"].is_string() {
             return Err("Userpass is not set!");
         }
@@ -185,7 +180,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
 
     let method = req["method"].as_str().map (|s| s.to_string());
     let method = match method {Some (ref s) => Some (&s[..]), None => None};
-    if !remote_addr.ip().is_loopback() && !is_public_method(method) {
+    if !remote_addr.ip().is_loopback() && !PUBLIC_METHODS.contains(&method) {
         return rpc_err_response(400, "Selected method can be called from localhost only!")
     }
     try_h!(auth(&req));
@@ -198,6 +193,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
         Some ("help") => help(),
         Some ("inventory") => inventory (ctx, req),
         Some ("mpnet") => mpnet(&req),
+        //Some ("notify") => lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         Some ("passphrase") => passphrase (ctx, req),
         Some ("sell") => sell(&req),
         Some ("stop") => stop (ctx),

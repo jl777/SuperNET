@@ -1577,7 +1577,6 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
 
     lp::G = zeroed();
     lp::G.initializing = 1;
-    // TODO: netid is set to lp::G.netid previously, is it really required here?
     lp::G.netid = netid;
     try_s! (safecopy! (lp::G.seednode, "{}", if let Some (ref s) = seednode {s} else {""}));
 

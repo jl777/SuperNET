@@ -478,6 +478,7 @@ fn is_queue_empty() -> bool {
     queue.is_empty()
 }
 
+/// The thread processing the peer-to-peer messaging bus.
 pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
     loop {
         if ctx.is_stopping() { break }
@@ -544,6 +545,7 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
     }
 }
 
+/// Register an RPC command that came internally or from the peer-to-peer bus.
 #[no_mangle]
 pub extern "C" fn lp_queue_command(
     retstrp: *mut *mut c_char,

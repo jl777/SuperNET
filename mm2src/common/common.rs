@@ -301,7 +301,7 @@ pub extern fn log_stacktrace (desc: *const c_char) {
     };
     let mut trace = String::with_capacity (4096);
     stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
-    eprintln! ("Stacktrace. {}\n{}", desc, trace);
+    println! ("Stacktrace. {}\n{}", desc, trace);
 }
 
 fn start_core_thread() -> Remote {

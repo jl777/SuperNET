@@ -382,6 +382,27 @@ fn test_events() {
     }
 }
 
+/// Invokes the RPC "notify" method, adding a node to the peer-to-peer ring.
+#[test]
+fn test_notify() {
+    let (_passphrase, mm, _dump_log, _dump_dashboard) = mm_spat();
+    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+
+    let notify = unwrap! (mm.rpc (json! ({
+        "method": "notify",
+        "rmd160": "9562c4033b6ac1ea2378636a782ce5fdf7ee9a2d",
+        "pub": "5eb48483573d44f1b24e33414273384c2f0ae15ecab7f700fb3042f904b09820",
+        "pubsecp": "0342407c81e408d9d6cdec35576d7284b712ee4062cb908574b5bc6bb46406f8ad",
+        "timestamp": 1541434098,
+        "sig":  "1f1e2198d890eeb2fc0004d092ff1266c1be10ca16a0cbe169652c2dc1b3150e5918fd9c7fc5161a8f05f4384eb05fc92e4e9c1abb551795f447b0433954f29990",
+        "isLP": "45.32.19.196",
+        "session": 1540419658,
+    })));
+    assert_eq! (notify.0, StatusCode::OK, "notify reply: {:?}", notify);
+    //unwrap! (mm.wait_for_log (19., &|log| log.contains ("5eb48483573d44f1b24e33414273384c2f0ae15ecab7f700fb3042f904b09820")));
+    //unwrap! (mm.wait_for_log (9., &|log| log.contains ("LP_notify_recv] got isLP 45.32.19.196")));
+}
+
 #[cfg(windows)]
 fn get_special_folder_path() -> PathBuf {
     use std::ffi::CStr;
@@ -573,17 +594,14 @@ fn trade_base_rel(base: &str, rel: &str) {
 /// Obtain ~/.zcash-params (c:/Users/$username/AppData/Roaming/ZcashParams on Windows).
 /// 
 /// Start the wallets
-///
+/// 
 ///     komodod -ac_name=PIZZA -ac_supply=100000000 -addnode=24.54.206.138
-///
+/// 
 /// and
-///
+/// 
 ///     komodod -ac_name=ETOMIC -ac_supply=100000000 -addnode=78.47.196.146
-///
-///
-///
-
-///
+/// 
+/// 
 /// Get rpcuser and rpcpassword from ETOMIC/ETOMIC.conf
 /// (c:/Users/$username/AppData/Roaming/Komodo/ETOMIC/ETOMIC.conf on Windows)
 /// and run

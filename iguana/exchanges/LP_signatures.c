@@ -589,6 +589,10 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 char *LP_notify_recv(cJSON *argjson)
 {
     bits256 pub; struct LP_pubkey_info *pubp; char *ipaddr;
+
+    log_stacktrace ("LP_notify_recv");
+    printf("LP_notify_recv] argjson: %s\n", cJSON_Print (argjson));
+
     pub = jbits256(argjson,"pub");
     if ( bits256_nonz(pub) != 0 )
     {
@@ -596,13 +600,13 @@ char *LP_notify_recv(cJSON *argjson)
             LP_pubkey_sigcheck(pubp,argjson);
         if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
         {
-            //printf("notify got isLP %s %d\n",ipaddr,jint(argjson,"ismine"));
+            printf("LP_notify_recv] got isLP %s %d\n",ipaddr,jint(argjson,"ismine"));
             LP_peer_recv(ipaddr,jint(argjson,"ismine"),pubp);
             if ( IAMLP != 0 && G.LP_IAMLP == 0 && strcmp(ipaddr,LP_myipaddr) == 0 )
             {
                 if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
                 {
-                    char str[65]; printf("that's me! and it is from %s which isnt me\n",bits256_str(str,pub));
+                    char str[65]; printf("LP_notify_recv] that's me! and it is from %s which isnt me\n",bits256_str(str,pub));
                     G.LP_IAMLP = 1;
                 }
             }
