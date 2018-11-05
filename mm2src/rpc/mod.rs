@@ -17,8 +17,7 @@
 //
 //  Copyright © 2014-2018 SuperNET. All rights reserved.
 //
-use common::{free_c_ptr, lp, rpc_response, rpc_err_response, err_to_rpc_json_string,
-  HyRes, CORE};
+use common::{free_c_ptr, lp, rpc_response, rpc_err_response, HyRes, CORE};
 use common::mm_ctx::MmArc;
 use futures::{self, Future};
 use futures_cpupool::CpuPool;
@@ -82,17 +81,6 @@ macro_rules! unwrap_or_err_response {
     }
 }
 
-macro_rules! unwrap_or_err_msg {
-    ($e:expr, $($args:tt)*) => {
-        match $e {
-            Ok(ok) => ok,
-            Err(_e) => {
-                return Ok(err_to_rpc_json_string($($args)*))
-            }
-        }
-    }
-}
-
 struct RpcService {
     /// Allows us to get the `MmCtx` if it is still around.
     ctx_h: u32,
@@ -116,38 +104,39 @@ fn auth(json: &Json) -> Result<(), &'static str> {
     Ok(())
 }
 
-fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJSON)
-                        -> Result<String, String> {
-    if !json["queueid"].is_null() {
-        if json["queueid"].is_u64() {
-            if json["queueid"].as_u64().unwrap() > 0 {
-                if unsafe { lp::IPC_ENDPOINT == -1 } {
-                    return Ok(err_to_rpc_json_string("Can't queue the command when ws endpoint is disabled!"));
-                } else if !remote_addr.ip().is_loopback() {
-                    return Ok(err_to_rpc_json_string("Can queue the command from localhost only!"));
-                } else {
-                    let json_str = json.to_string();
-                    let c_json_ptr = unwrap_or_err_msg!(CString::new(json_str), "Error occurred");
-                    unsafe {
-                        lp_queue_command(null_mut(),
-                                         c_json_ptr.as_ptr() as *mut c_char,
-                                         lp::IPC_ENDPOINT,
-                                         1,
-                                         json["queueid"].as_u64().unwrap() as u32
-                        );
-                    }
-                    return Ok(r#"{"result":"success","status":"queued"}"#.to_string());
-                }
-            }
+fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJSON) -> HyRes {
+    // NB: `queueid` of `0` should be ignored, cf. https://github.com/atomiclabs/hyperdex/pull/563#issuecomment-434959074.
+    let queueid = match json["queueid"] {
+        Json::Number (ref n) => match n.as_u64() {
+            Some (n) => n,
+            None => return rpc_err_response (500, "The 'queueid' must be unsigned integer")
+        },
+        Json::Null => 0,
+        _ => return rpc_err_response (500, "The 'queueid' must be unsigned integer")
+    };
+
+    if queueid > 0 {
+        if unsafe { lp::IPC_ENDPOINT == -1 } {
+            return rpc_err_response (500, "Can't queue the command when the WebSocket endpoint is disabled")
+        } else if !remote_addr.ip().is_loopback() {
+            return rpc_err_response (500, &format! ("IP {} is not local. Only the local HTTP clients can use the queue", remote_addr.ip()))
         } else {
-            return Ok(err_to_rpc_json_string("queueid must be unsigned integer!"));
+            let json_str = json.to_string();
+            let c_json_ptr = try_h! (CString::new (json_str));
+            unsafe {
+                lp_queue_command(null_mut(),
+                                    c_json_ptr.as_ptr() as *mut c_char,
+                                    lp::IPC_ENDPOINT,
+                                    1,
+                                    json["queueid"].as_u64().unwrap() as u32
+                );
+            }
+            return rpc_response (200, r#"{"result": "success", "status": "queued"}"#)
         }
     }
 
-    let my_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", ctx.rpc_ip_port.ip())),
-                                        "Error occurred");
-    let remote_ip_ptr = unwrap_or_err_msg!(CString::new(format!("{}", remote_addr.ip())),
-                                        "Error occurred");
+    let my_ip_ptr = try_h! (CString::new (fomat! ((ctx.rpc_ip_port.ip()))));
+    let remote_ip_ptr = try_h! (CString::new (fomat! ((remote_addr.ip()))));
 
     let stats_result = unsafe {
         lp::stats_JSON(
@@ -162,15 +151,18 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
     };
 
     if !stats_result.is_null() {
-        let res_str = unsafe {
-            unwrap_or_err_msg!(CStr::from_ptr(stats_result).to_str(),
-            "Request execution result is empty")
-        };
-        let res_str = String::from (res_str);
+        let res_str = try_h! (unsafe {CStr::from_ptr(stats_result)} .to_str()) .to_string();
         free_c_ptr(stats_result as *mut c_void);
-        Ok(res_str)
+
+        // #220, See if `stats_JSON` returned an error and reflect this in the HTTP status.
+        #[derive(Deserialize)] struct MaybeError<'a> {error: Option<&'a str>}
+        let status = if let Ok (maybe_error) = json::from_str::<MaybeError> (&res_str) {
+            if maybe_error.error.is_some() {500} else {200}
+        } else {200};
+
+        rpc_response (status, res_str)
     } else {
-        Ok(err_to_rpc_json_string("Request execution result is empty"))
+        rpc_err_response (500, "Empty result from stats_JSON")
     }
 }
 
@@ -192,10 +184,10 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
         Some ("fundvalue") => lp_fundvalue (ctx, req, false),
         Some ("help") => help(),
         Some ("inventory") => inventory (ctx, req),
-        Some ("mpnet") => mpnet(&req),
+        Some ("mpnet") => mpnet (&req),
         //Some ("notify") => lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         Some ("passphrase") => passphrase (ctx, req),
-        Some ("sell") => sell(&req),
+        Some ("sell") => sell (&req),
         Some ("stop") => stop (ctx),
         Some ("version") => version(),
         None => rpc_err_response (400, "Method is not set!"),
@@ -206,7 +198,7 @@ fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
                 let _lock = SINGLE_THREADED_C_LOCK.lock();
                 rpc_process_json (ctx, remote_addr, req, c_json)
             });
-            rpc_response (200, Body::wrap_stream (cpu_pool_fut.into_stream()))
+            Box::new (cpu_pool_fut)
         }
     }
 }
