@@ -3,12 +3,11 @@
 // TODO: As we discussed with Artem, skip a status update if it is equal to the previous update.
 // TODO: Sort the tags while converting `&[&TagParam]` to `Vec<Tag>`.
 
-#[cfg(test)]
-mod test {
+#[doc(hidden)]
+pub mod test {
     use super::LogState;
 
-    #[test]
-    fn test_status() {
+    pub fn test_status() {
         let log = LogState::in_memory();
 
         log.with_dashboard (&mut |dashboard| assert_eq! (dashboard.len(), 0));
