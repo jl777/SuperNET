@@ -54,7 +54,7 @@ use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, sleep};
 use std::time::Duration;
-use super::rpc;
+use super::rpc::{self, SINGLE_THREADED_C_LOCK};
 
 /*
 #include <stdio.h>
@@ -234,6 +234,7 @@ pub unsafe fn lp_command_process(
     if !json["result"].is_null() || !json["error"].is_null() {
         null_mut()
     } else {
+        let _lock = SINGLE_THREADED_C_LOCK.lock();
         let mut trade_command = -1;
         if stats_json_only == 0 {
             trade_command = lp_trade_command(ctx.clone(), json, &c_json);

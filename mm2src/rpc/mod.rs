@@ -166,10 +166,13 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
     }
 }
 
+lazy_static! {
+    /// Emulating the single-threaded execution for the older C code.
+    pub static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());
+}
+
 /// The dispatcher, with full control over the HTTP result and the way we run the `Future` producing it.
 fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
-    lazy_static! {static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());}
-
     let method = req["method"].as_str().map (|s| s.to_string());
     let method = match method {Some (ref s) => Some (&s[..]), None => None};
     if !remote_addr.ip().is_loopback() && !PUBLIC_METHODS.contains(&method) {
