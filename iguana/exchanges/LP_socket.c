@@ -1225,7 +1225,7 @@ cJSON *tx_history_to_json(struct LP_tx_history_item *item, struct iguana_info *c
     return json;
 }
 
-int it_cmp(struct LP_tx_history_item *item1, struct LP_tx_history_item *item2) {
+int history_item_cmp(struct LP_tx_history_item *item1, struct LP_tx_history_item *item2) {
     return(item1->time < item2->time);
 }
 
@@ -1254,6 +1254,7 @@ void LP_electrum_txhistory_loop(void *_coin)
             struct LP_tx_history_item *iter;
             int found = 0;
             int confirmed = 0;
+            portable_mutex_lock(&coin->tx_history_mutex);
             DL_FOREACH(coin->tx_history, iter) {
                 if (strcmp(iter->txid, tx_hash) == 0) {
                     found = 1;
@@ -1263,6 +1264,7 @@ void LP_electrum_txhistory_loop(void *_coin)
                     break;
                 }
             }
+            portable_mutex_unlock(&coin->tx_history_mutex);
             struct LP_tx_history_item *item;
             if (!found) {
                 // allocate new if not found
@@ -1332,11 +1334,13 @@ void LP_electrum_txhistory_loop(void *_coin)
                 item->time = (uint32_t)time(NULL);
             }
             if (!found) {
+                portable_mutex_lock(&coin->tx_history_mutex);
                 DL_APPEND(coin->tx_history, item);
+                portable_mutex_unlock(&coin->tx_history_mutex);
             }
             free_json(tx_item);
         }
-        int (*ptr)(struct LP_tx_history_item*, struct LP_tx_history_item*) = &it_cmp;
+        int (*ptr)(struct LP_tx_history_item*, struct LP_tx_history_item*) = &history_item_cmp;
         // we don't want the history to be accessed while sorting
         portable_mutex_lock(&coin->tx_history_mutex);
         DL_SORT(coin->tx_history, ptr);
@@ -1451,7 +1455,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     return(retjson);
 }
 
-cJSON *electrum_address_history_cached(struct iguana_info *coin) {
+cJSON *address_history_cached(struct iguana_info *coin) {
     cJSON *retjson = cJSON_CreateArray();
     struct LP_tx_history_item *item;
     portable_mutex_lock(&coin->tx_history_mutex);

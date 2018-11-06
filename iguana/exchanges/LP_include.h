@@ -623,5 +623,6 @@ int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
 void HashGroestl(void * buf, const void * pbegin, int len);
 bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
-cJSON *electrum_address_history_cached(struct iguana_info *coin);
+cJSON *address_history_cached(struct iguana_info *coin);
+int history_item_cmp(struct LP_tx_history_item *item1, struct LP_tx_history_item *item2);
 #endif
