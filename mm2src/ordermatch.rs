@@ -476,7 +476,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                     retval = 0;
                 },
                 Err(e) => {
-                    println!("Got error launching bob swap loop: {}", ERRL!("{}", e));
+                    log!({"Got error launching bob swap loop: {}", e});
                     lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3002.0, (*qp).uuidstr.as_mut_ptr());
                 }
             }
@@ -590,7 +590,7 @@ fn lp_trade(
         lp::LP_query(b"request\x00".as_ptr() as *mut c_char, qp);
         lp::LP_Alicequery = *qp;
         lp::LP_Alicemaxprice = (*qp).maxprice;
-        println!("Alice max price: {}", lp::LP_Alicemaxprice);
+        log!({"Alice max price: {}", lp::LP_Alicemaxprice});
         lp::Alice_expiration = (*qp).timestamp + timeout as u32;
         lp::LP_Alicedestpubkey = (*qp).srchash;
         if (*qp).gtc == 0 {
@@ -780,7 +780,7 @@ unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { 
                     }
                 },
                 Err(e) => {
-                    println!("Got error trying to start alice loop {}", ERRL!("{}", e));
+                    log!({"Got error trying to start alice loop {}", e});
                     lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error9\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
                     lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4006.0, (*qp).uuidstr.as_mut_ptr());
                 }
@@ -886,7 +886,7 @@ unsafe fn lp_reserved(qp: *mut lp::LP_quoteinfo) {
             qp
         );
     } else {
-        println!("LP_reserved {} price {} vs maxprice {}", (*qp).aliceid, price, maxprice);
+        log!({"LP_reserved {} price {} vs maxprice {}", (*qp).aliceid, price, maxprice});
     }
 }
 /*
@@ -968,7 +968,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let mut ask = 0.;
     let my_price = lp::LP_trades_bobprice(&mut bid, &mut ask, qp);
     if my_price == 0. {
-        println!("myprice {} bid {} ask {}", my_price, bid, ask);
+        log!({"myprice {} bid {} ask {}", my_price, bid, ask});
         return null_mut();
     }
     let mut a = lp::LP_utxoinfo::default();
@@ -990,7 +990,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
             if ecoin != null_mut() {
                 strcpy((*qp).coinaddr.as_mut_ptr(), (*ecoin).smartaddr.as_ptr());
             } else {
-                println!("ETOMIC coin not found");
+                log!("ETOMIC coin not found");
                 return null_mut();
             }
         }
@@ -1005,9 +1005,10 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         range = qprice - my_price;
         price = my_price + ((r as f64 * range) / 100.);
         bestprice = lp_bob_competition(ctx, &mut counter, (*qp).aliceid, price, 0);
-        println!("{} >>>>>>> myprice {} qprice {} r.{} range {} -> {}, bestprice {} counter.{}", (*qp).aliceid, my_price, qprice, r, range, price, bestprice, counter);
+        log!({"{} >>>>>>> myprice {} qprice {} r.{} range {} -> {}, bestprice {} counter.{}",
+            (*qp).aliceid, my_price, qprice, r, range, price, bestprice, counter});
         if counter > 3 && price > bestprice + SMALLVAL {
-            println!("skip if late or bad price");
+            log!("skip if late or bad price");
             return null_mut();
         }
     } else {
@@ -1032,7 +1033,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         if ecoin != null_mut() {
             strcpy((*qp).coinaddr.as_mut_ptr(), (*ecoin).smartaddr.as_ptr());
         } else {
-            println!("ETOMIC coin not found\n");
+            log!("ETOMIC coin not found");
             return null_mut();
         }
     }
@@ -1080,14 +1081,14 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         free_c_ptr(msg as *mut c_void);
     }
     lp::free_json(reqjson);
-    println!("Send RESERVED id.{}",(*qp).aliceid);
+    log!({"Send RESERVED id.{}",(*qp).aliceid});
     qp
 }
 
 unsafe fn lp_trades_gotreserved(qp: *mut lp::LP_quoteinfo, newqp: *mut lp::LP_quoteinfo) -> *mut lp::LP_quoteinfo {
-    println!("alice {:x?} received RESERVED.({}) {} mpnet.{} fill.{} gtc.{}",
+    log!({"alice {:x?} received RESERVED.({}) {} mpnet.{} fill.{} gtc.{}",
              lp::G.LP_mypub25519.bytes, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str()),
-             (*qp).destsatoshis / ((*qp).satoshis + 1), (*qp).mpnet, (*qp).fill, (*qp).gtc);
+             (*qp).destsatoshis / ((*qp).satoshis + 1), (*qp).mpnet, (*qp).fill, (*qp).gtc});
     *newqp = *qp;
     let qp = newqp;
     // let qprice = lp::LP_trades_alicevalidate(qp);
@@ -1115,21 +1116,21 @@ unsafe fn lp_trades_got_connect(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, new_qp: 
     let mut ask = 0.;
     let my_price = lp::LP_trades_bobprice(&mut bid, &mut ask, qp);
     if my_price == 0. {
-        println!("Bob my price is zero!");
+        log!("Bob my price is zero!");
         return null_mut();
     }
     //let q_price = lp::LP_trades_pricevalidate(qp, coin, my_price);
     //if q_price < 0. {
-    //    println!("Bob q_price is less than zero!");
+    //    log!("Bob q_price is less than zero!");
     //    return null_mut();
     //}
     //if lp::LP_reservation_check((*qp).txid, (*qp).vout, (*qp).desthash) == 0 && lp::LP_reservation_check((*qp).txid2, (*qp).vout2, (*qp).desthash) == 0 {
-    println!("bob {:x?} received CONNECT.({})", lp::G.LP_mypub25519.bytes, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str()));
+    log!({"bob {:x?} received CONNECT.({})", lp::G.LP_mypub25519.bytes, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str())});
     lp_connect_start_bob(&ctx, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), qp);
     return qp;
     //} else {
     //    lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -1.0, (*qp).uuidstr.as_mut_ptr());
-    //    println!("connect message from non-reserved ({})", (*qp).aliceid);
+    //    log!({"connect message from non-reserved ({})", (*qp).aliceid});
     //}
 }
 
@@ -1138,8 +1139,8 @@ unsafe fn lp_trades_gotconnected(
     newqp: *mut lp::LP_quoteinfo,
     pairstr: *mut c_char
 ) -> *mut lp::LP_quoteinfo {
-    println!("alice {:x?} received CONNECTED.({}) mpnet.{} fill.{} gtc.{}",
-                lp::G.LP_mypub25519.bytes, (*qp).aliceid, (*qp).mpnet, (*qp).fill, (*qp).gtc);
+    log!({"alice {:x?} received CONNECTED.({}) mpnet.{} fill.{} gtc.{}",
+                lp::G.LP_mypub25519.bytes, (*qp).aliceid, (*qp).mpnet, (*qp).fill, (*qp).gtc});
     *newqp = *qp;
     qp = newqp;
     // let val = lp::LP_trades_alicevalidate(qp);
@@ -1186,12 +1187,12 @@ unsafe fn lp_trades_bestpricecheck(tp: *mut lp::LP_trade) -> i32 {
             (*tp).besttrust = dynamictrust;
             (*tp).bestunconfcredits = (*pubp).unconfcredits;
             (*tp).bestresponse = (*pubp).slowresponse;
-            println!("aliceid.{} got new bestprice {} dynamictrust {} (unconf {}) slowresponse.{}",
-                   (*tp).aliceid, (*tp).bestprice, dynamictrust as f64 / SATOSHIS as f64, (*tp).bestunconfcredits as f64 / SATOSHIS as f64, (*tp).bestresponse);
+            log!({"aliceid.{} got new bestprice {} dynamictrust {} (unconf {}) slowresponse.{}",
+                   (*tp).aliceid, (*tp).bestprice, dynamictrust as f64 / SATOSHIS as f64, (*tp).bestunconfcredits as f64 / SATOSHIS as f64, (*tp).bestresponse});
             return 1
         } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
     } else {
-        println!("alice didnt validate");
+        log!("alice didnt validate");
     }
     0
 }
@@ -1254,7 +1255,7 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
                     lp::LP_Alicemaxprice = trade.bestprice;
                     lp_reserved(&mut trade.Qs[lp::LP_CONNECT as usize]); // send LP_CONNECT
                     (*trade).connectsent = now;
-                    println!("send LP_connect aliceid.{} {}", trade.aliceid, trade.bestprice);
+                    log!({"send LP_connect aliceid.{} {}", trade.aliceid, trade.bestprice});
                 } else if now < trade.firstprocessed + timeout as u64 && ((trade.firstprocessed  + timeout as u64 - now) % 20) == 19 {
                     //LP_Alicemaxprice = tp->bestprice;
                     //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
@@ -1372,7 +1373,7 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
                 } else if funcid == lp::LP_CONNECT && trade.negotiationdone == 0 { // bob all done
                     flag = 1;
                     (*trade).negotiationdone = now;
-                    println!("bob sets negotiationdone.{}", now_ms() / 1000);
+                    log!({"bob sets negotiationdone.{}", now_ms() / 1000});
                     lp_trades_got_connect(
                         &ctx,
                         &mut trade.Q,

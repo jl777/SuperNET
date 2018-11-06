@@ -18,6 +18,7 @@ features = []
 
 [dependencies]
 common = { path = "../common" }
+fomat-macros = "0.2"
 rlp = { git = "https://github.com/paritytech/parity-common", rev = "0045887fecd2fec39e56c962a0b27e2caf3b9474" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
 ethereum-types = "~0.3"

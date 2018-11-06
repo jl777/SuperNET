@@ -256,7 +256,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
             let remote_addr = match socket.peer_addr() {
                 Ok (addr) => addr,
                 Err (err) => {
-                    eprintln! ("spawn_rpc] No peer_addr: {}", err);
+                    log! ({"spawn_rpc] No peer_addr: {}", err});
                     return Ok(())
                 }
             };
@@ -270,11 +270,11 @@ pub extern fn spawn_rpc(ctx_h: u32) {
                     },
                 )
                 .map(|_| ())
-                .map_err (|err| eprintln! ("spawn_rpc] HTTP error: {}", err))
+                .map_err (|err| log! ({"spawn_rpc] HTTP error: {}", err}))
             );
             Ok(())
         })
-        .map_err (|err| eprintln! ("spawn_rpc] accept error: {}", err));
+        .map_err (|err| log! ({"spawn_rpc] accept error: {}", err}));
 
     // Finish the server `Future` when `shutdown_rx` fires.
 
@@ -283,7 +283,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
     let mut shutdown_tx = Some (shutdown_tx);
     ctx.on_stop (Box::new (move || {
         if let Some (shutdown_tx) = shutdown_tx.take() {
-            println! ("rpc] on_stop, firing shutdown_tx!");
+            log! ("rpc] on_stop, firing shutdown_tx!");
             if let Err (_) = shutdown_tx.send(()) {ERR! ("shutdown_tx already closed")} else {Ok(())}
         } else {ERR! ("on_stop callback called twice!")}
     }));

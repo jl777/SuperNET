@@ -212,7 +212,7 @@ fn help() {
 fn main() {
     init_crash_reports();
     unsafe {os::OS_init()};
-    println!("BarterDEX MarketMaker {} \n", MM_VERSION);
+    log!({"BarterDEX MarketMaker {}", MM_VERSION});
 
     // Temporarily simulate `argv[]` for the C version of the main method.
     let args: Vec<String> = env::args().map (|mut arg| {arg.push ('\0'); arg}) .collect();
@@ -228,13 +228,13 @@ fn main() {
 
     if first_arg == Some ("btc2kmd") && args_os.get (2) .is_some() {
         match btc2kmd (unwrap! (args_os[2].to_str(), "Bad argument encoding")) {
-            Ok (output) => println! ("{}", output),
-            Err (err) => eprintln! ("btc2kmd error] {}", err)
+            Ok (output) => log! ((output)),
+            Err (err) => log! ({"btc2kmd error] {}", err})
         }
         return
     }
 
-    if let Err (err) = events (&args_os) {eprintln! ("events error] {}", err); return}
+    if let Err (err) = events (&args_os) {log! ({"events error] {}", err}); return}
 
     let second_arg = args_os.get (2) .and_then (|arg| arg.to_str());
     if first_arg == Some ("vanity") && second_arg.is_some() {vanity (unwrap! (second_arg)); return}
@@ -250,7 +250,7 @@ fn main() {
 
     if let Some (conf) = first_arg {
         if let Err (err) = run_lp_main (conf) {
-            eprintln! ("{}", err);
+            log! ((err));
             exit (1);
         }
     }
@@ -342,7 +342,7 @@ fn vanity (substring: &str) {
     let ctx = unsafe {bitcoin_ctx()};
     unsafe {lp::LP_initcoins (ctx as *mut c_void, -1, unwrap! (CJSON::from_str ("[]")) .0)};
     let timestamp = now_ms() / 1000;
-    println! ("start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp);
+    log! ({"start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp});
     for i in 0..1000000000 {
         privkey.bytes = random();
         unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
@@ -350,11 +350,11 @@ fn vanity (substring: &str) {
         if &coinaddr[1 .. substring.len()] == &substring[0 .. substring.len() - 1] {  // Print on near match.
             unsafe {bitcoin_priv2wif ("KMD\0".as_ptr(), 0, wifstr.as_mut_ptr(), privkey, 188)};
             let wifstr = unwrap! (unsafe {CStr::from_ptr (wifstr.as_ptr())} .to_str());
-            println! ("i.{} {} -> {} wif.{}", i, privkey, coinaddr, wifstr);
+            log! ({"i.{} {} -> {} wif.{}", i, privkey, coinaddr, wifstr});
             if coinaddr.as_bytes()[substring.len()] == substring.as_bytes()[substring.len() - 1] {break}  // Stop on full match.
         }
     }
-    println! ("done vanitygen.({}) done {} elapsed {}\n", substring, now_ms() / 1000, now_ms() / 1000 - timestamp);
+    log! ({"done vanitygen.({}) done {} elapsed {}\n", substring, now_ms() / 1000, now_ms() / 1000 - timestamp});
 }
 
 /// Parses the `first_argument` as JSON and starts LP_main.

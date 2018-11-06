@@ -1,4 +1,7 @@
+#[macro_use]
 extern crate common;
+#[macro_use]
+extern crate fomat_macros;
 extern crate web3;
 extern crate ethabi;
 extern crate ethcore_transaction;

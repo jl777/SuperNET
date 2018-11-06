@@ -3,55 +3,86 @@
 // TODO: As we discussed with Artem, skip a status update if it is equal to the previous update.
 // TODO: Sort the tags while converting `&[&TagParam]` to `Vec<Tag>`.
 
-#[doc(hidden)]
-pub mod test {
-    use super::LogState;
-
-    pub fn test_status() {
-        let log = LogState::in_memory();
-
-        log.with_dashboard (&mut |dashboard| assert_eq! (dashboard.len(), 0));
-
-        let mut handle = log.status_handle();
-        for n in 1..=3 {
-            handle.status (&[&"tag1", &"tag2"], &format! ("line {}", n));
-
-            log.with_dashboard (&mut |dashboard| {
-                assert_eq! (dashboard.len(), 1);
-                let status = unwrap! (dashboard[0].lock());
-                assert! (status.tags.iter().any (|tag| tag.key == "tag1"));
-                assert! (status.tags.iter().any (|tag| tag.key == "tag2"));
-                assert_eq! (status.tags.len(), 2);
-                assert_eq! (status.line, format! ("line {}", n));
-            });
-        }
-        drop (handle);
-
-        log.with_dashboard (&mut |dashboard| assert_eq! (dashboard.len(), 0));  // The status was dumped into the log.
-        log.with_tail (&mut |tail| {
-            assert_eq! (tail.len(), 1);
-            assert_eq! (tail[0].line, "line 3");
-            assert! (tail[0].trail.iter().any (|status| status.line == "line 2"));
-            assert! (tail[0].trail.iter().any (|status| status.line == "line 1"));
-
-            assert! (tail[0].tags.iter().any (|tag| tag.key == "tag1"));
-            assert! (tail[0].tags.iter().any (|tag| tag.key == "tag2"));
-            assert_eq! (tail[0].tags.len(), 2);
-        })
-    }
-}
-
-use chrono::{Local, TimeZone};
+use chrono::{Local, TimeZone, Utc};
+use chrono::format::DelayedFormat;
+use chrono::format::strftime::StrftimeItems;
 use gstuff::now_ms;
+use regex::Regex;
 use serde_json::{Value as Json};
 use std::collections::VecDeque;
 use std::default::Default;
+use std::env;
 use std::fs;
 use std::fmt::{self, Write as WriteFmt};
 use std::io::{Seek, SeekFrom, Write};
 use std::mem::swap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
+
+lazy_static! {
+    /// True if we're likely to be under a capturing cargo test.
+    static ref CAPTURING_TEST: bool = {
+        // See if we're running under a test.
+        // Only the "cargo test" uses the "deps" dir to run the MM2.
+        // Plus `mm2-\w+` is a giveaway.
+        let ex = unwrap! (Regex::new (r#"(?x) target [/\\] debug [/\\] deps [/\\] mm2-\w+ (.exe)? $"#));
+        let mut args = env::args();
+        let cmd = unwrap! (args.next());
+        if ex.is_match (&cmd) {
+            !args.any (|a| a == "--nocapture")
+        } else {false}
+    };
+}
+
+#[doc(hidden)]
+pub fn chunk2log (mut chunk: String) {
+    extern {fn printf(_: *const ::libc::c_char, ...) -> ::libc::c_int;}
+
+    if *CAPTURING_TEST {
+        // `printf` isn't captured by the Rust tests,
+        // we should fall back to `println!` while running under a capturing test.
+        println! ("{}", chunk)
+    } else {
+        chunk.push ('\n');
+        chunk.push ('\0');
+        unsafe {printf (chunk.as_ptr() as *const ::libc::c_char);}
+    }
+}
+
+#[doc(hidden)]
+pub fn short_log_time() -> DelayedFormat<StrftimeItems<'static>> {
+    // NB: Given that the debugging logs are targeted at the developers and not the users
+    // I think it's better to output the time in UTC here
+    // in order for the developers to more easily match the events between the various parts of the peer-to-peer system.
+    let time = Utc.timestamp_millis (now_ms() as i64);
+    time.format ("%d %H:%M:%S")
+}
+
+/// Debug logging.
+/// 
+/// This logging SHOULD be human-readable but it is not intended for the end users specifically.
+/// Rather, it's being used as debugging and testing tool.
+/// 
+/// For the user-targeted logging use the `LogState::log` instead.
+/// 
+/// On Windows the Rust standard output and the standard output of the MM1 C library are not compatible,
+/// they will overlap and overwrite each other if used togather.
+/// In order to avoid it, all logging MUST be done through this macros and NOT through `println!` or `eprintln!`.
+#[macro_export]
+macro_rules! log {
+    ($($args: tt)+) => {{
+        use std::fmt::Write;
+
+        // We can optimize this with a stack-allocated SmallVec from https://github.com/arcnmx/stack-rs, though it doesn't worth the trouble at the moment.
+        let mut buf = String::new();
+        unwrap! (wite! (&mut buf,
+            ($crate::log::short_log_time()) ", "
+            (::gstuff::filename (file!())) ':' (line!()) "] "
+            $($args)+)
+        );
+        $crate::log::chunk2log (buf)
+    }}
+}
 
 pub trait TagParam<'a> {
     fn key (&self) -> String;
@@ -142,10 +173,10 @@ impl LogEntry {
 
         let time = Local.timestamp_millis (self.time as i64);
 
-        witeln! (buf,
+        wite! (buf,
             if self.emotion.is_empty() {'·'} else {(self.emotion)}
             ' '
-            (time.format ("%Y-%m-%d %H:%M:%S"))
+            (time.format ("%Y-%m-%d %H:%M:%S %z"))
             ' '
             // TODO: JSON-escape the keys and values when necessary.
             '[' for t in &self.tags {(t.key) if let Some (ref v) = t.val {'=' (v)}} separated {' '} "] "
@@ -232,7 +263,7 @@ pub struct LogState {
     /// Should allow us to examine the log from withing the unit tests, core dumps and live debugging sessions.
     tail: Mutex<VecDeque<LogEntry>>,
     /// Log to stdout if `None`.
-    log_file: Option<Mutex<fs::File>>,
+    _log_file: Option<Mutex<fs::File>>,
     /// Dashboard is dumped here, allowing us to easily observe it from a command-line or the tests.  
     /// No dumping if `None`.
     dashboard_file: Option<Mutex<fs::File>>
@@ -244,7 +275,7 @@ impl LogState {
         LogState {
             dashboard: Mutex::new (Vec::new()),
             tail: Mutex::new (VecDeque::with_capacity (64)),
-            log_file: None,
+            _log_file: None,
             dashboard_file: None
         }
     }
@@ -272,7 +303,7 @@ impl LogState {
         LogState {
             dashboard: Mutex::new (Vec::new()),
             tail: Mutex::new (VecDeque::with_capacity (64)),
-            log_file,
+            _log_file: log_file,
             dashboard_file
         }
     }
@@ -305,14 +336,14 @@ impl LogState {
             if let Ok (status) = status.lock() {
                 let _ = writeln! (&mut buf, "{:?} {}", status.tags, status.line);
             } else {
-                eprintln! ("dump_dashboard] Can't lock a status")
+                log! ("dump_dashboard] Can't lock a status")
             }
         }
 
-        let mut df = match df.lock() {Ok (lock) => lock, Err (err) => {eprintln! ("dump_dashboard] Can't lock the file: {}", err); return}};
-        if let Err (err) = df.seek (SeekFrom::Start (0)) {eprintln! ("dump_dashboard] Can't seek the file: {}", err); return}
-        if let Err (err) = df.write_all (buf.as_bytes()) {eprintln! ("dump_dashboard] Can't write the file: {}", err); return}
-        if let Err (err) = df.set_len (buf.len() as u64) {eprintln! ("dump_dashboard] Can't truncate the file: {}", err); return}
+        let mut df = match df.lock() {Ok (lock) => lock, Err (err) => {log! ({"dump_dashboard] Can't lock the file: {}", err}); return}};
+        if let Err (err) = df.seek (SeekFrom::Start (0)) {log! ({"dump_dashboard] Can't seek the file: {}", err}); return}
+        if let Err (err) = df.write_all (buf.as_bytes()) {log! ({"dump_dashboard] Can't write the file: {}", err}); return}
+        if let Err (err) = df.set_len (buf.len() as u64) {log! ({"dump_dashboard] Can't truncate the file: {}", err}); return}
     }
 
     /// Invoked when the `StatusHandle` gets the first status.
@@ -322,7 +353,7 @@ impl LogState {
                 dashboard.push (status);
                 self.dump_dashboard (dashboard)
             },
-            Err (err) => eprintln! ("log] Can't lock the dashboard: {}", err)
+            Err (err) => log! ({"log] Can't lock the dashboard: {}", err})
         }
     }
 
@@ -330,7 +361,7 @@ impl LogState {
     fn updated (&self, _status: &Arc<Mutex<Status>>) {
         match self.dashboard.lock() {
             Ok (dashboard) => self.dump_dashboard (dashboard),
-            Err (err) => eprintln! ("log] Can't lock the dashboard: {}", err)
+            Err (err) => log! ({"log] Can't lock the dashboard: {}", err})
         }
     }
 
@@ -342,15 +373,15 @@ impl LogState {
                     dashboard.swap_remove (idx);
                     self.dump_dashboard (dashboard)
                 } else {
-                    eprintln! ("log] Warning, a finished StatusHandle was missing from the dashboard.");
+                    log! ("log] Warning, a finished StatusHandle was missing from the dashboard.");
                 }
             },
-            Err (err) => eprintln! ("log] Can't lock the dashboard: {}", err)
+            Err (err) => log! ({"log] Can't lock the dashboard: {}", err})
         }
         let mut status = match status.lock() {
             Ok (status) => status,
             Err (err) => {
-                eprintln! ("log] Can't lock the status: {}", err);
+                log! ({"log] Can't lock the status: {}", err});
                 return
             }
         };
@@ -363,13 +394,13 @@ impl LogState {
                 swap (&mut log.trail, &mut status.trail);
                 let mut chunk = String::with_capacity (256);
                 if let Err (err) = log.format (&mut chunk) {
-                    eprintln! ("log] Error formatting log entry: {}", err);
+                    log! ({"log] Error formatting log entry: {}", err});
                 }
                 tail.push_back (log);
                 Some (chunk)
             },
             Err (err) => {
-                eprintln! ("log] Can't lock the tail: {}", err);
+                log! ({"log] Can't lock the tail: {}", err});
                 None
             }
         };
@@ -420,7 +451,7 @@ impl LogState {
                 status: Some (status_arc)
             })}
         }
-        if found.len() > 1 {eprintln! ("log] Dashboard tags not unique!")}
+        if found.len() > 1 {log! ("log] Dashboard tags not unique!")}
         found.pop()
     }
 
@@ -464,7 +495,7 @@ impl LogState {
 
         let mut chunk = String::with_capacity (256);
         if let Err (err) = entry.format (&mut chunk) {
-            eprintln! ("log] Error formatting log entry: {}", err);
+            log! ({"log] Error formatting log entry: {}", err});
             return
         }
 
@@ -473,24 +504,15 @@ impl LogState {
                 if tail.len() == tail.capacity() {let _ = tail.pop_front();}
                 tail.push_back (entry)
             },
-            Err (err) => eprintln! ("log] Can't lock the tail: {}", err)
+            Err (err) => log! ({"log] Can't lock the tail: {}", err})
         }
 
         self.chunk2log (chunk)
     }
 
     fn chunk2log (&self, chunk: String) {
-        // As of now we're logging from both the C and the Rust code and mixing the `println!` with the file writing to boot.
-        // On Windows these writes aren't atomic unfortunately.
-        // Duplicating the logging output here is a temporary workaround.
-        // 
-        // To properly fix this we'll likely need a thread-local log access, in order to replace the `println!` with proper file writes.
-        // (Stdout redirection is not an option because multiple MM instances might be in flight).
-        // 
-        // A simpler temporary fix might be to have a version of `printf` and `println!`
-        // primitives that uses a global Rust lock.
-        if cfg! (windows) {print! ("⸗{}", chunk)}
-
+        ::log::chunk2log (chunk)
+        /*
         match self.log_file {
             Some (ref f) => match f.lock() {
                 Ok (mut f) => {
@@ -506,6 +528,7 @@ impl LogState {
             },
             None => println! ("{}", chunk)
         }
+        */
     }
 
     /// Writes into the *raw* portion of the log, the one not shared with the UI.
@@ -520,15 +543,53 @@ impl Drop for LogState {
         let dashboard_copy = {
             let dashboard = match self.dashboard.lock() {
                 Ok (d) => d,
-                Err (err) => {eprintln! ("LogState::drop] Can't lock `dashboard`: {}", err); return}
+                Err (err) => {log! ({"LogState::drop] Can't lock `dashboard`: {}", err}); return}
             };
             dashboard.clone()
         };
         if dashboard_copy.len() > 0 {
-            println! ("--- LogState] Remaining status entries. ---");
+            log! ("--- LogState] Remaining status entries. ---");
             for status in &*dashboard_copy {self.finished (status)}
         } else {
-            println! ("LogState] Bye!");
+            log! ("LogState] Bye!");
         }
+    }
+}
+
+#[doc(hidden)]
+pub mod test {
+    use super::LogState;
+
+    pub fn test_status() {
+        let log = LogState::in_memory();
+
+        log.with_dashboard (&mut |dashboard| assert_eq! (dashboard.len(), 0));
+
+        let mut handle = log.status_handle();
+        for n in 1..=3 {
+            handle.status (&[&"tag1", &"tag2"], &format! ("line {}", n));
+
+            log.with_dashboard (&mut |dashboard| {
+                assert_eq! (dashboard.len(), 1);
+                let status = unwrap! (dashboard[0].lock());
+                assert! (status.tags.iter().any (|tag| tag.key == "tag1"));
+                assert! (status.tags.iter().any (|tag| tag.key == "tag2"));
+                assert_eq! (status.tags.len(), 2);
+                assert_eq! (status.line, format! ("line {}", n));
+            });
+        }
+        drop (handle);
+
+        log.with_dashboard (&mut |dashboard| assert_eq! (dashboard.len(), 0));  // The status was dumped into the log.
+        log.with_tail (&mut |tail| {
+            assert_eq! (tail.len(), 1);
+            assert_eq! (tail[0].line, "line 3");
+            assert! (tail[0].trail.iter().any (|status| status.line == "line 2"));
+            assert! (tail[0].trail.iter().any (|status| status.line == "line 1"));
+
+            assert! (tail[0].tags.iter().any (|tag| tag.key == "tag1"));
+            assert! (tail[0].tags.iter().any (|tag| tag.key == "tag2"));
+            assert_eq! (tail[0].tags.len(), 2);
+        })
     }
 }

@@ -1308,7 +1308,7 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
             format! ("curl \"{}\"", url) )
         }
     };
-    println! ("lp_btcprice] Fetching prices, akin to\n$ {}", curl_example);
+    log! ({"lp_btcprice] Fetching prices, akin to\n$ {}", curl_example});
 
     let f = slurp_req (request);
 
@@ -1338,18 +1338,18 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
         match provider {
             PricingProvider::CoinMarketCap (_) => {
                 let reply: Vec<CoinMarketCap> = try_s! (json::from_slice (&body));
-                println! ("lp_btcprice] Parsed reply: {:?}", reply);
+                log! ({"lp_btcprice] Parsed reply: {:?}", reply});
                 ERR! ("TBD")
             },
             PricingProvider::CoinGecko => {
                 let reply: Vec<CoinGecko> = match json::from_slice (&body) {
                     Ok (r) => r,
                     Err (err) => {
-                        eprintln! ("lp_btcprice] Bad CoinGecko response ({}): {}", err, String::from_utf8_lossy (&body));
+                        log! ({"lp_btcprice] Bad CoinGecko response ({}): {}", err, String::from_utf8_lossy (&body)});
                         return ERR! ("Can't parse the CoinGecko response: {}", err)
                     }
                 };
-                //println! ("lp_btcprice] Parsed reply: {:?}", reply);
+                //log! ({"lp_btcprice] Parsed reply: {:?}", reply});
                 let mut prices: FxHashMap<CoinId, f64> = FxHashMap::default();
                 for cg in reply {
                     let coin_id = try_s! (CoinId::from_provider (coins_conf, &provider, cg.id));
@@ -1471,7 +1471,7 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
         if coin != null_mut() {
             let kmd_value = unsafe {lp::LP_KMDvalue (coin, (SATOSHIDEN as f64 * en.balance) as i64)};
             if kmd_value > 0 {
-                println! ("lp_fundvalue] LP_KMDvalue of '{}' is {}.", en.coin, kmd_value);
+                log! ({"lp_fundvalue] LP_KMDvalue of '{}' is {}.", en.coin, kmd_value});
                 holdings_res.push (FundvalueHoldingRes {
                     coin: en.coin.clone(),
                     balance: en.balance,

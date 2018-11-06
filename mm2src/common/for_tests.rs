@@ -79,7 +79,7 @@ impl Drop for RaiiDump {
             let _ = t.write (b"\n");
             let _ = t.reset();
         } else {
-            println! ("vvv {:?} vvv\n{}", self.log_path, log);
+            log! ({"vvv {:?} vvv\n{}", self.log_path, log});
         }
     }
 }
@@ -148,8 +148,8 @@ impl MarketMakerIt {
                     // cf. https://superuser.com/a/458877
                     let cmd = cmd! ("sudo", "ifconfig", "lo0", "alias", format! ("{}", ip), "up");
                     match cmd.stderr_to_stdout().read() {
-                        Err (err) => println! ("MarketMakerIt] Error trying to `up` the {}: {}", ip, err),
-                        Ok (output) => println! ("MarketMakerIt] Upped the {}: {}", ip, output)
+                        Err (err) => log! ({"MarketMakerIt] Error trying to `up` the {}: {}", ip, err}),
+                        Ok (output) => log! ({"MarketMakerIt] Upped the {}: {}", ip, output})
                     }
                 }
                 break ip
@@ -157,7 +157,7 @@ impl MarketMakerIt {
         } else {  // Just use the IP given in the `conf`.
             let ip: IpAddr = try_s! (try_s! (conf["myipaddr"].as_str().ok_or ("myipaddr is not a string")) .parse());
             let mut mm_ips = try_s! (MM_IPS.lock());
-            if mm_ips.contains (&ip) {println! ("MarketMakerIt] Warning, IP {} was already used.", ip)}
+            if mm_ips.contains (&ip) {log! ({"MarketMakerIt] Warning, IP {} was already used.", ip})}
             mm_ips.insert (ip.clone());
             ip
         };
@@ -235,6 +235,6 @@ impl Drop for MarketMakerIt {
     fn drop (&mut self) {
         if let Ok (mut mm_ips) = MM_IPS.lock() {
             mm_ips.remove (&self.ip);
-        } else {println! ("MarketMakerIt] Can't lock MM_IPS.")}
+        } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
     }
 }

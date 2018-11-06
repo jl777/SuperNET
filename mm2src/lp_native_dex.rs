@@ -1484,28 +1484,28 @@ fn ensure_writable (dir_path: &Path) -> bool {
     let mut fp = match fs::File::create (&fname) {
         Ok (fp) => fp,
         Err (_) => {
-            eprintln! ("FATAL ERROR cant create {:?}", fname);
+            log! ({"FATAL ERROR cant create {:?}", fname});
             return false
         }
     };
     if fp.write_all (&r) .is_err() {
-        eprintln! ("FATAL ERROR writing {:?}", fname);
+        log! ({"FATAL ERROR writing {:?}", fname});
         return false
     }
     drop (fp);
     let mut fp = match fs::File::open (&fname) {
         Ok (fp) => fp,
         Err (_) => {
-            eprintln! ("FATAL ERROR cant open {:?}", fname);
+            log! ({"FATAL ERROR cant open {:?}", fname});
             return false
         }
     };
     if fp.read_to_end (&mut check).is_err() || check.len() != r.len() {
-        eprintln! ("FATAL ERROR reading {:?}", fname);
+        log! ({"FATAL ERROR reading {:?}", fname});
         return false
     }
     if check != r {
-        eprintln! ("FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check);
+        log! ({"FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check});
         return false
     }
     true
@@ -1608,7 +1608,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         return ERR! ("LP_MAXPRICEINFOS {} wont fit in a u8, need to increase the width of the baseind and relind for struct LP_pubkey_quote", lp::LP_MAXPRICEINFOS)
     }
     unsafe {lp::LP_showwif = if conf["wif"] == 1 {1} else {0}};
-    println! ("showwif.{} version: {} {}", unsafe {lp::LP_showwif}, MM_VERSION, crc32::checksum_ieee (MM_VERSION.as_bytes()));
+    log! ({"showwif.{} version: {} {}", unsafe {lp::LP_showwif}, MM_VERSION, crc32::checksum_ieee (MM_VERSION.as_bytes())});
     unsafe {libc::srand (random())};  // Seed the C RNG, we might need it as long as we're using C code.
     if conf["gui"] == 1 {
         // Replace "cli\0" with "gui\0".
@@ -1698,29 +1698,29 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         let mut ip_providers_it = ip_providers.iter();
         loop {
             let (url, extactor) = match ip_providers_it.next() {Some (t) => t, None => return ERR! ("Can't fetch the real IP")};
-            println! ("lp_init] Trying to fetch the real IP from '{}' ...", url);
+            log! ({"lp_init] Trying to fetch the real IP from '{}' ...", url});
             let (status, _headers, ip) = match slurp_url (url) .wait() {
                 Ok (t) => t,
                 Err (err) => {
-                    println! ("lp_init] Failed to fetch IP from '{}': {}", url, err);
+                    log! ({"lp_init] Failed to fetch IP from '{}': {}", url, err});
                     continue
                 }
             };
             if !status.is_success() {
-                println! ("lp_init] Failed to fetch IP from '{}': status {:?}", url, status);
+                log! ({"lp_init] Failed to fetch IP from '{}': status {:?}", url, status});
                 continue
             }
             let ip = match from_utf8 (&ip) {
                 Ok (ip) => ip,
                 Err (err) => {
-                    println! ("lp_init] Failed to fetch IP from '{}', not UTF-8: {}", url, err);
+                    log! ({"lp_init] Failed to fetch IP from '{}', not UTF-8: {}", url, err});
                     continue
                 }
             };
             match extactor (ip) {
                 Ok (ip) => break ip,
                 Err (err) => {
-                    println! ("lp_init] Failed to parse IP '{}' fetched from '{}': {}", ip, url, err);
+                    log! ({"lp_init] Failed to parse IP '{}' fetched from '{}': {}", ip, url, err});
                     continue
                 }
             }
@@ -1756,15 +1756,15 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
                 let mut timeout: i32 = 100;
                 unsafe {nn_setsockopt (lp::LP_mypubsock, NN_SOL_SOCKET as i32, NN_SNDTIMEO as i32, &mut timeout as *mut i32 as *mut c_void, size_of::<i32>())};
             } else {
-                println! ("error binding to ({}).{}", bindaddr, unsafe {lp::LP_mypubsock});
+                log! ({"error binding to ({}).{}", bindaddr, unsafe {lp::LP_mypubsock}});
                 if unsafe {lp::LP_mypubsock} >= 0 {
                     unsafe {nn_close (lp::LP_mypubsock); lp::LP_mypubsock = -1}
                 }
             }
         } else {
-            println! ("error getting pubsock {}", unsafe {lp::LP_mypubsock});
+            log! ({"error getting pubsock {}", unsafe {lp::LP_mypubsock}});
         }
-        println! (">>>>>>>>> myipaddr.({}) pubsock.{}", bindaddr, unsafe {lp::LP_mypubsock});
+        log! ({">>>>>>>>> myipaddr.({}) pubsock.{}", bindaddr, unsafe {lp::LP_mypubsock}});
         let mut mypullport = mypullport;
         let mut pushaddr: [c_char; 256] = unsafe {zeroed()};
         let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));

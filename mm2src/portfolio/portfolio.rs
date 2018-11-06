@@ -1032,7 +1032,8 @@ pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
             autoref.factor = if let Some (p) = req.factor {p} else {0.};
             try_h! (safecopy! (autoref.refbase, "{}", refbase));
             try_h! (safecopy! (autoref.refrel, "{}", refrel));
-            println! ("lp_autoprice] {} Update ref {}/{} for {}/{} factor {:?} offset {:?}", i, refbase, refrel, req.base, req.rel, req.factor, req.offset);
+            log! ({"lp_autoprice] {} Update ref {}/{} for {}/{} factor {:?} offset {:?}",
+                i, refbase, refrel, req.base, req.rel, req.factor, req.offset});
             return rpc_response (200, r#"{"result": "success", "status": "updated"}"#);
         }
     }
@@ -1054,8 +1055,8 @@ pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
     try_h! (safecopy! (autoref.refrel, "{}", refrel));
     try_h! (safecopy! (autoref.base, "{}", req.base));
     try_h! (safecopy! (autoref.rel, "{}", req.rel));
-    println! ("lp_autoprice] {} Using ref {}/{} for {}/{} factor {:?}, offset {:?}, margin {:?}/{:?} fixed {:?}",
-        unsafe {lp::num_LP_autorefs}, refbase, refrel, req.base, req.rel, req.factor, req.offset, req.buymargin, req.sellmargin, req.fixed);
+    log! ({"lp_autoprice] {} Using ref {}/{} for {}/{} factor {:?}, offset {:?}, margin {:?}/{:?} fixed {:?}",
+        unsafe {lp::num_LP_autorefs}, refbase, refrel, req.base, req.rel, req.factor, req.offset, req.buymargin, req.sellmargin, req.fixed});
     unsafe {lp::num_LP_autorefs += 1}
     return rpc_response (200, r#"{"result": "success", "status": "created"}"#);
 }

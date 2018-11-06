@@ -26,6 +26,7 @@ extern crate libc;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate rand;
+extern crate regex;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -50,9 +51,11 @@ macro_rules! safecopy {
     }}
 }
 
+#[macro_use]
+pub mod log;
+
 pub mod for_tests;
 pub mod iguana_utils;
-pub mod log;
 pub mod lp_privkey;
 pub mod mm_ctx;
 pub mod ser;
@@ -294,14 +297,14 @@ pub extern fn log_stacktrace (desc: *const c_char) {
         match unsafe {CStr::from_ptr (desc)} .to_str() {
             Ok (s) => s,
             Err (err) => {
-                eprintln! ("log_stacktrace] Bad trace description: {}", err);
+                log! ({"log_stacktrace] Bad trace description: {}", err});
                 ""
             }
         }
     };
     let mut trace = String::with_capacity (4096);
     stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
-    println! ("Stacktrace. {}\n{}", desc, trace);
+    log! ({"Stacktrace. {}\n{}", desc, trace});
 }
 
 fn start_core_thread() -> Remote {
@@ -312,7 +315,7 @@ fn start_core_thread() -> Remote {
             unwrap! (tx.send (core.remote()), "Can't send Remote.");
             loop {core.turn (None)}
         })) {
-            eprintln! ("CORE panic! {:?}", any_to_str (&*err));
+            log! ({"CORE panic! {:?}", any_to_str (&*err)});
             abort()
         }
     }), "!spawn");
@@ -482,7 +485,7 @@ pub fn err_to_rpc_json_string(err: &str) -> String {
 pub fn rpc_err_response(status: u16, msg: &str) -> HyRes {
     // TODO: Like in most other places, we should check for a thread-local access to the proper log here.
     // Might be a good idea to use emoji too, like "🤒" or "🤐" or "😕".
-    eprintln! ("RPC error response: {}", msg);
+    log! ({"RPC error response: {}", msg});
 
     rpc_response(status, err_to_rpc_json_string(msg))
 }
@@ -575,7 +578,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             let listeners = self.listeners.clone();
             let f = f.then (move |result| -> Result<(), ()> {
                 let mut shelf = match shelf_tx.lock() {Ok (l) => l, Err (err) => {
-                    eprintln! ("RefreshedExternalResource::tick] Can't lock the shelf: {}", err);
+                    log! ({"RefreshedExternalResource::tick] Can't lock the shelf: {}", err});
                     return Err(())
                 }};
                 let shelf_time = match *shelf {Some (ref r) => r.time, None => 0.};
@@ -587,7 +590,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
                     drop (shelf);  // Don't hold the lock unnecessarily.
                     {
                         let mut listeners = match listeners.lock() {Ok (l) => l, Err (err) => {
-                            eprintln! ("RefreshedExternalResource::tick] Can't lock the listeners: {}", err);
+                            log! ({"RefreshedExternalResource::tick] Can't lock the listeners: {}", err});
                             return Err(())
                         }};
                         for task in listeners.drain (..) {task.notify()}

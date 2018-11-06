@@ -113,7 +113,7 @@ fn test_autoprice() {
     })));
     assert_eq! (address.0, StatusCode::OK);
     let address: Json = unwrap! (json::from_str (&address.1));
-    println! ("test_autoprice] coinaddr: {}.", unwrap! (address["coinaddr"].as_str(), "!coinaddr"));
+    log! ({"test_autoprice] coinaddr: {}.", unwrap! (address["coinaddr"].as_str(), "!coinaddr")});
 
     // Trigger the autoprice.
 
@@ -172,7 +172,7 @@ fn test_fundvalue() {
     })));
     assert! (fundvalue.0.is_success(), "{:?}", fundvalue);
     let fundvalue: Json = unwrap! (json::from_str (&fundvalue.1));
-    println! ("fundvalue response: {}", unwrap! (json::to_string_pretty (&fundvalue)));
+    log! ({"fundvalue response: {}", unwrap! (json::to_string_pretty (&fundvalue))});
 
     // NB: Ideally we'd have `LP_balances` find the BEER and PIZZA balances we have on the "address",
     // but as of now I don't see a simple way to trigger the "importaddress" and "rescan" that seems necessary for that.
@@ -268,7 +268,7 @@ fn test_btc2kmd() {
 #[test]
 fn test_mm_start() {
     if let Ok (conf) = var ("_MM2_TEST_CONF") {
-        println! ("test_mm_start] Starting the MarketMaker...");
+        log! ("test_mm_start] Starting the MarketMaker...");
         let conf: Json = unwrap! (json::from_str (&conf));
         let c_json = unwrap! (CString::new (unwrap! (json::to_string (&conf))));
         let c_conf = unwrap! (CJSON::from_zero_terminated (c_json.as_ptr() as *const c_char));
@@ -300,7 +300,7 @@ fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
             assert_eq! (log_path, path);
         }
 
-        println! ("local_start] MM in a thread, log {:?}.", log_path);
+        log! ({"local_start] MM in a thread, log {:?}.", log_path});
 
         chdir (&folder);
 
@@ -321,7 +321,7 @@ fn test_events() {
     let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
     match var ("_MM2_TEST_EVENTS_MODE") {
         Ok (ref mode) if mode == "MM_EVENTS" => {
-            println! ("test_events] Starting the `mm2 events`...");
+            log! ("test_events] Starting the `mm2 events`...");
             unwrap! (events (&["_test".into(), "events".into()]));
         },
         _ => {
@@ -355,7 +355,7 @@ fn test_events() {
                     MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
                         let (status, body, _headers) = unwrap! (mm.rpc (json! (
                             {"userpass": mm.userpass, "method": "getendpoint"})));
-                        println! ("test_events] getendpoint response: {:?}, {}", status, body);
+                        log! ({"test_events] getendpoint response: {:?}, {}", status, body});
                         assert_eq! (status, StatusCode::OK);
                         //let expected_endpoint = format! ("\"endpoint\":\"ws://{}:5555\"", mm.ip);
                         assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""), "{}", body);
@@ -531,23 +531,23 @@ fn trade_base_rel(base: &str, rel: &str) {
 
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
-    println!("Bob log path: {}", mm_bob.log_path.display());
-    println!("Alice log path: {}", mm_alice.log_path.display());
+    log!({"Bob log path: {}", mm_bob.log_path.display()});
+    log!({"Alice log path: {}", mm_alice.log_path.display()});
 
     // wait until both nodes RPC API is active
     unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
     unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     // Enable coins on Bob side. Print the replies in case we need the "smartaddress".
-    println! ("enable_coins (bob): {:?}", enable_coins (&mm_bob));
+    log! ({"enable_coins (bob): {:?}", enable_coins (&mm_bob)});
     // Enable coins on Alice side. Print the replies in case we need the "smartaddress".
-    println! ("enable_coins (alice): {:?}", enable_coins (&mm_alice));
+    log! ({"enable_coins (alice): {:?}", enable_coins (&mm_alice)});
 
     // wait until Alice recognize Bob node by importing it's pubkey
     unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
 
     // issue sell request on Bob side by setting PIZZA/ETH price
-    println!("Issue bob sell request");
+    log!("Issue bob sell request");
     let rc = unwrap! (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
         "method": "setprice",
@@ -559,7 +559,7 @@ fn trade_base_rel(base: &str, rel: &str) {
 
     // issue PIZZA/ETH buy request from Alice side
     thread::sleep(Duration::from_secs(2));
-    println!("Issue alice buy request");
+    log!("Issue alice buy request");
     let rc = unwrap! (mm_alice.rpc (json! ({
         "userpass": mm_alice.userpass,
         "method": "buy",

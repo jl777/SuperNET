@@ -230,7 +230,7 @@ pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
     unsafe {lp::vcalc_sha256 (null_mut(), passhash.bytes.as_mut_ptr(), req.passphrase.as_ptr() as *mut u8, req.passphrase.len() as i32)};
     let matching_passphrase = unsafe {lp::bits256_cmp (passhash, lp::G.LP_passhash)} == 0;
     if !matching_passphrase {
-        println! ("passphrase] passhash {} != G {}", passhash, unsafe {lp::G.LP_passhash});
+        log! ({"passphrase] passhash {} != G {}", passhash, unsafe {lp::G.LP_passhash}});
         if !matching_userpass {return rpc_err_response (500, "authentication error")}
     }
 
@@ -292,7 +292,7 @@ pub fn mpnet(json: &Json) -> HyRes {
     }
 
     unsafe { lp::G.mpnet = onoff as u32 };
-    println!("MPNET onoff.{}", onoff);
+    log!({"MPNET onoff.{}", onoff});
     rpc_response (200, r#"{"result": "success"}"#)
 }
 /*
@@ -849,7 +849,7 @@ pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
     if unsafe {lp::bits256_nonz (lp::G.LP_privkey)} != 0 {
         unsafe {lp::LP_privkey_init (-1, ptr, lp::G.LP_privkey, lp::G.LP_mypub25519)};
     } else {
-        println! ("inventory] no LP_privkey");
+        log! ("inventory] no LP_privkey");
     }
     let retjson = json! ({
         "result": "success",
