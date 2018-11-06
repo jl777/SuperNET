@@ -595,13 +595,16 @@ fn trade_base_rel(base: &str, rel: &str) {
 /// 
 /// Start the wallets
 /// 
-///     komodod -ac_name=PIZZA -ac_supply=100000000 -addnode=24.54.206.138
+///     komodod -ac_name=PIZZA -ac_supply=100000000 -addnode=24.54.206.138 -addnode=78.47.196.146
 /// 
 /// and
 /// 
 ///     komodod -ac_name=ETOMIC -ac_supply=100000000 -addnode=78.47.196.146
 /// 
-/// 
+/// and (if you want to test BEER coin):
+///
+///     komodod -ac_name=BEER -ac_supply=100000000 -addnode=78.47.196.146 -addnode=43.245.162.106 -addnode=88.99.153.2 -addnode=94.130.173.120 -addnode=195.201.12.150 -addnode=23.152.0.28
+///
 /// Get rpcuser and rpcpassword from ETOMIC/ETOMIC.conf
 /// (c:/Users/$username/AppData/Roaming/Komodo/ETOMIC/ETOMIC.conf on Windows)
 /// and run
