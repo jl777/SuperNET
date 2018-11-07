@@ -223,6 +223,13 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_messages.c"
 #include "LP_commands.c"
 */
+
+/// Process a previously queued command that wasn't handled by the RPC `dispatcher`.  
+/// NB: It might be preferable to port more commands into the RPC `dispatcher`, rather than `lp_command_process`, because:  
+/// 1) It allows us to more easily test such commands through the local HTTP endpoint;  
+/// 2) It allows the command handler to run asynchronously and use more time wihtout slowing down the queue loop;  
+/// 3) By being present in the `dispatcher` table the commands are easier to find and to be accounted for;  
+/// 4) No need for `unsafe`, `CJSON` and `*mut c_char` there.
 pub unsafe fn lp_command_process(
     ctx: MmArc,
     pub_sock: i32,

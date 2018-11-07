@@ -211,7 +211,7 @@ fn test_rpc() {
         "ipaddr": "electrum1.cipig.net",
         "port": 10022
     })));
-    assert! (no_method.0.is_client_error());
+    assert! (no_method.0.is_server_error());
     assert_eq!((no_method.2)[ACCESS_CONTROL_ALLOW_ORIGIN], "http://localhost:4000");
 
     let not_json = unwrap! (mm.rpc_str("It's just a string"));

@@ -17,16 +17,20 @@
 //  LP_network.c
 //  marketmaker
 //
-use common::{free_c_ptr, nn, str_to_malloc, CJSON};
+
+use common::{free_c_ptr, nn, slice_to_malloc, HyRes, CJSON, CORE};
 use common::mm_ctx::MmArc;
 use crossbeam::channel;
+use futures::{future, Future, Stream};
 use libc::{c_char, c_void, strlen};
 use lp_native_dex::lp_command_process;
+use rpc::{dispatcher, DispatcherRes};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::ptr::null_mut;
 use std::time::Duration;
+
 /*
 struct psock
 {
@@ -462,8 +466,57 @@ lazy_static! {
     static ref COMMAND_QUEUE: (channel::Sender<QueuedCommand>, channel::Receiver<QueuedCommand>) = channel::unbounded();
 }
 
+/// Sends a reply to the `cmd.response_sock` peer.
+fn reply_to_peer (cmd: QueuedCommand, mut reply: Vec<u8>) -> Result<(), String> {
+    if cmd.response_sock >= 0 {
+        if cmd.queue_id != 0 {
+            let result = try_s! (json::from_slice (&reply));
+            let nn_command = CommandForNn {
+                queue_id: cmd.queue_id,
+                result
+            };
+
+            reply = try_s! (json::to_vec (&nn_command))
+        }
+
+        // See also commits ce09bcd and 62f3cba: looks like we need the wired string to be zero-terminated.
+        reply.push (0);
+
+        let _size = unsafe {nn::nn_send(
+            cmd.response_sock,
+            slice_to_malloc (&reply),  // Officially it should be `nn_allocmsg` but looks like `malloc` will do.
+            reply.len() as usize,
+            0,
+        )};
+    }
+    Ok(())
+}
+
+/// Run the RPC handler and send it's reply to a peer.
+fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
+    let f = handler.then (move |r| -> Box<Future<Item=(), Error=()> + Send> {
+        let res = match r {Ok (r) => r, Err (err) => {
+            log! ("rpc_reply_to_peer] handler error: " (err));
+            return Box::new (future::err(()))
+        }};
+        let body_f = res.into_body().concat2();
+        Box::new (body_f.then (move |body| -> Result<(), ()> {
+            let body = match body {Ok (r) => r, Err (err) => {
+                log! ("rpc_reply_to_peer] error getting the body from the RPC handler: " (err));
+                return Err(())
+            }};
+            if let Err (err) = reply_to_peer (cmd, body.to_vec()) {
+                log! ("reply_to_peer error: " (err));
+                return Err(())
+            }
+            Ok(())
+        }))
+    });
+    CORE.spawn (|_| f)
+}
+
 /// The thread processing the peer-to-peer messaging bus.
-pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
+pub unsafe fn lp_command_q_loop(ctx: MmArc) {
     loop {
         if ctx.is_stopping() { break }
 
@@ -490,10 +543,18 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                 );
             }
         } else {
-            let c_json = unwrap!(CJSON::from_str(&cmd.msg));
             let json = unwrap!(json::from_str(&cmd.msg));
-            //printf("deQ.(%s)\n",jprint(argjson,0));
-            let mut retstr = lp_command_process(
+            let json = match dispatcher (json, None, ctx.clone()) {
+                DispatcherRes::Match (handler) => {
+                    rpc_reply_to_peer (handler, cmd);
+                    continue
+                },
+                DispatcherRes::NoMatch (req) => req
+            };
+
+            // Invokes `lp_trade_command` and the older `stats_JSON` code.
+            let c_json = unwrap!(CJSON::from_str(&cmd.msg));
+            let retstr = lp_command_process(
                 ctx.clone(),
                 cmd.response_sock,
                 json,
@@ -501,32 +562,12 @@ pub unsafe fn lp_command_q_loop(ctx: MmArc) -> () {
                 cmd.stats_json_only,
             );
             if !retstr.is_null() {
-                if cmd.response_sock >= 0 {
-                    if cmd.queue_id != 0 {
-                        let ret_str_rust = unwrap!(CStr::from_ptr(retstr).to_str());
-                        let result = unwrap!(json::from_str(ret_str_rust));
-                        let nn_command = CommandForNn {
-                            queue_id: cmd.queue_id,
-                            result
-                        };
-                        free_c_ptr(retstr as *mut c_void);
-
-                        let json_str = unwrap!(json::to_string(&nn_command));
-                        retstr = str_to_malloc(&json_str);
-                    }
-                    //printf("send (%s)\n",retstr);
-                    let mut len = strlen(retstr);
-                    if cmd.queue_id == 0 {
-                        len += 1
-                    }
-                    let _size = nn::nn_send(
-                        cmd.response_sock,
-                        retstr as *const c_void,
-                        len as usize,
-                        0,
-                    );
-                }
+                let retvec = CStr::from_ptr (retstr) .to_bytes().to_vec();
                 free_c_ptr(retstr as *mut c_void);
+
+                if let Err (err) = reply_to_peer (cmd, retvec) {
+                    log! ("reply_to_peer error: " (err))
+                }
             }
         }
     }
