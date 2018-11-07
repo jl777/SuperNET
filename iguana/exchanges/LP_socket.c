@@ -1342,6 +1342,7 @@ void LP_electrum_txhistory_loop(void *_coin)
         }
         int (*ptr)(struct LP_tx_history_item*, struct LP_tx_history_item*) = &history_item_cmp;
         // we don't want the history to be accessed while sorting
+        struct LP_tx_history_item *_tmp;
         portable_mutex_lock(&coin->tx_history_mutex);
         DL_SORT(coin->tx_history, ptr);
         portable_mutex_unlock(&coin->tx_history_mutex);

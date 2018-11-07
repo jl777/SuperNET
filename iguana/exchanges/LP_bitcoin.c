@@ -17,7 +17,12 @@
 //  LP_bitcoin.c
 //  marketmaker
 //
+#ifdef _WIN32
+#include "../../OSlibs/win/libsodium/include/sodium/crypto_generichash_blake2b.h"
+#else
 #include <sodium/crypto_generichash_blake2b.h>
+#endif
+
 const unsigned char ZCASH_PREVOUTS_HASH_PERSONALIZATION[16] =
         {'Z','c','a','s','h','P','r','e','v','o','u','t','H','a','s','h'};
 const unsigned char ZCASH_SEQUENCE_HASH_PERSONALIZATION[16] =

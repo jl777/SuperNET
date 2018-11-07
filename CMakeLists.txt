@@ -13,8 +13,10 @@ set(CMAKE_CXX_EXTENSIONS Off)
 
 include(cmake/DownloadProject.cmake)
 
+if(NOT WIN32)
 hunter_add_package(libsodium)
 find_package(libsodium CONFIG REQUIRED)
+endif()
 
 # Download and install nanomsg at CMake configure time
 download_project(PROJ nanomsg
@@ -27,7 +29,10 @@ download_project(PROJ nanomsg
         )
 
 find_library(NANOMSG_LIBRARY NAMES nanomsg PATHS ${DEPS_INSTALL_PREFIX}/lib NO_DEFAULT_PATH)
-include_directories("${CMAKE_SOURCE_DIR}" ${LIBSODIUM_ROOT})
+if(NOT WIN32)
+include_directories(${LIBSODIUM_ROOT})
+endif()
+include_directories(${CMAKE_SOURCE_DIR})
 add_subdirectory(cpp-ethereum)
 add_subdirectory(iguana/exchanges)
 add_subdirectory(iguana/exchanges/etomicswap)
