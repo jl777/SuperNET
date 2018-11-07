@@ -38,9 +38,16 @@ lazy_static! {
 pub fn chunk2log (mut chunk: String) {
     extern {fn printf(_: *const ::libc::c_char, ...) -> ::libc::c_int;}
 
-    if *CAPTURING_TEST {
-        // `printf` isn't captured by the Rust tests,
-        // we should fall back to `println!` while running under a capturing test.
+    // The C and the Rust standard outputs overlap on Windows,
+    // so we use the C `printf` in order to avoid that.
+
+    // On the other hand, on Darwin the `printf` is getting buffered or something, breaking some tests,
+    // so we only want to use the `printf` on Windows and not on Darwin.
+
+    // Also, `printf` isn't captured by the Rust tests,
+    // so we should fall back to `println!` while running under a capturing test.
+
+    if cfg! (not (windows)) || *CAPTURING_TEST {
         println! ("{}", chunk)
     } else {
         chunk.push ('\n');
