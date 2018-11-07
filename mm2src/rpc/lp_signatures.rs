@@ -19,6 +19,7 @@
 //  marketmaker
 //
 
+/*
 struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector,int32_t fillflag,int32_t gtcflag)
 {
     struct basilisk_request R;
@@ -586,6 +587,27 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     LP_reserved_msg(1,"","",zero,jprint(reqjson,1));
 }
 
+*/
+
+use common::{lp, rpc_err_response, rpc_response, HyRes, CJSON};
+use common::mm_ctx::MmArc;
+use libc::c_char;
+use serde_json::{self as json, Value as Json};
+use std::ffi::CStr;
+use std::ptr::null_mut;
+
+pub fn lp_notify_recv (_ctx: MmArc, req: Json) -> HyRes {
+    log! ("lp_notify_recv] Rust version invoked.");
+    let mut req = try_h! (json::to_vec (&req));
+    req.push (0);
+    let c_json = try_h! (CJSON::from_zero_terminated (req.as_ptr() as *const c_char));
+    let reply = unsafe {lp::LP_notify_recv (c_json.0)};
+    if reply == null_mut() {return rpc_err_response (500, "LP_notify_recv == null")}
+    let reply = try_h! (unsafe {CStr::from_ptr (reply)} .to_str());
+    rpc_response (200, reply)
+}
+
+/*
 char *LP_notify_recv(cJSON *argjson)
 {
     bits256 pub; struct LP_pubkey_info *pubp; char *ipaddr;
@@ -714,4 +736,4 @@ void LP_query(char *method,struct LP_quoteinfo *qp)
         LP_mpnet_send(0,msg,1,qp->coinaddr);
     free(msg);
 }
-
+*/

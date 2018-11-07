@@ -43,6 +43,8 @@ use hex;
 mod commands;
 use self::commands::*;
 
+mod lp_signatures;
+
 lazy_static! {
     /// Shared HTTP server.
     pub static ref HTTP: Http = Http::new();
@@ -197,7 +199,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "help" => help(),
         "inventory" => inventory (ctx, req),
         "mpnet" => mpnet (&req),
-        //"notify" => lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
+        "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "passphrase" => passphrase (ctx, req),
         "sell" => sell (&req),
         "stop" => stop (ctx),

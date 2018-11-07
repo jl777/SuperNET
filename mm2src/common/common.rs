@@ -260,18 +260,27 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
 
     // Skip common and less than informative frames.
 
-    if name.starts_with ("backtrace::") {return}
-    if name.starts_with ("core::") {return}
-    if name.starts_with ("alloc::") {return}
-    if name.starts_with ("panic_unwind::") {return}
-    if name.starts_with ("std::") {return}
     if name == "mm2::crash_reports::rust_seh_handler" {return}
     if name == "veh_exception_filter" {return}
     if name == "common::stack_trace" {return}
     if name == "common::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
+
+    // Alphanumerically sorted on first letter.
+    if name.starts_with ("alloc::") {return}
+    if name.starts_with ("backtrace::") {return}
     if name.starts_with ("common::stack_trace") {return}
+    if name.starts_with ("futures::") {return}
+    if name.starts_with ("hyper::") {return}
     if name.starts_with ("mm2::crash_reports::signal_handler") {return}
+    if name.starts_with ("panic_unwind::") {return}
+    if name.starts_with ("std::") {return}
+    if name.starts_with ("scoped_tls::") {return}
+    if name.starts_with ("tokio::") {return}
+    if name.starts_with ("tokio_core::") {return}
+    if name.starts_with ("tokio_reactor::") {return}
+    if name.starts_with ("tokio_executor::") {return}
+    if name.starts_with ("tokio_timer::") {return}
 
     let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
 }

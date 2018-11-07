@@ -644,6 +644,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
 void LP_priceinfos_clear();
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid);
+char *LP_notify_recv(cJSON *argjson);
 
 struct LP_autoprice_ref
 {

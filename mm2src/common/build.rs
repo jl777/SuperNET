@@ -157,6 +157,7 @@ fn generate_bindings() {
             "LP_NXT_redeems",
             "LPinit",
             "LP_addpeer",
+            "LP_notify_recv",
             "LP_initpublicaddr",
             "LP_ports",
             "unbuffered_output_support",
