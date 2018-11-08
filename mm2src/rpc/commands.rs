@@ -23,7 +23,7 @@ use etomiccurl::get_gas_price_from_station;
 use gstuff::now_ms;
 use libc::{c_void, free};
 use lp_native_dex::lp_passphrase_init;
-use ordermatch::{AutoBuyInput, lp_auto_buy};
+use lp_ordermatch::{AutoBuyInput, lp_auto_buy};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr};
 use std::mem::zeroed;

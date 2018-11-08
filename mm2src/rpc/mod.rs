@@ -28,7 +28,7 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::{c_char, c_void};
-use network::lp_queue_command;
+use lp_network::lp_queue_command;
 use portfolio::lp_autoprice;
 use portfolio::prices::lp_fundvalue;
 use serde_json::{self as json, Value as Json};

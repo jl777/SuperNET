@@ -23,7 +23,7 @@ use common::mm_ctx::{MmArc, MmWeak};
 use gstuff::now_ms;
 use fxhash::{FxHashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
-use network::lp_queue_command;
+use lp_network::lp_queue_command;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
 use std::collections::hash_map::Entry;
