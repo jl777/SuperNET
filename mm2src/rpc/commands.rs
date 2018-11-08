@@ -846,7 +846,7 @@ pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
         let passphrase = match req["passphrase"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'passphrase' in request")};
         unsafe {try_h! (lp_passphrase_init (&ctx, Some (passphrase), None, None))};
     }
-    if unsafe {lp::bits256_nonz (lp::G.LP_privkey)} != 0 {
+    if unsafe {lp::G.LP_privkey.nonz()} {
         unsafe {lp::LP_privkey_init (-1, ptr, lp::G.LP_privkey, lp::G.LP_mypub25519)};
     } else {
         log! ("inventory] no LP_privkey");

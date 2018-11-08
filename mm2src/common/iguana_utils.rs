@@ -13,7 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
-// NB: We have some C methods here that aren't used in the MarketMaker.
+use hex::FromHex;
+
+// NB: We have some C methods here from the Bitcoin/Komodod codebase that aren't used in the MarketMaker.
 
 /*
 #include "../iguana/iguana777.h"
@@ -366,39 +368,24 @@ int32_t unhex(char c)
 
 unsigned char _decode_hex(char *hex) { return((unhex(hex[0])<<4) | unhex(hex[1])); }
 
-int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
-{
-    int32_t adjust,i = 0;
-    //printf("decode.(%s)\n",hex);
-    if ( is_hexstr(hex,n) <= 0 )
-    {
-        memset(bytes,0,n);
-        return(n);
+*/
+
+/// Unpacks a `hex` string into the corresponding array of `bytes`.
+pub fn decode_hex (bytes: &mut [u8], hex: &[u8]) -> Result<(), String> {
+    if bytes.len() == 32 {
+        // This length is often used (cf. bits256) and we decode it without a temporary vector.
+        // Consider also using `from_hex` directly.
+        let buf: [u8; 32] = try_s! (FromHex::from_hex (hex));
+        bytes.copy_from_slice (&buf);
+    } else {
+        let vec: Vec<u8> = try_s! (FromHex::from_hex (hex));
+        if vec.len() != bytes.len() {return ERR! ("Unpacked hex length {} is not {}", vec.len(), bytes.len())}
+        bytes.copy_from_slice (&vec);
     }
-    if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
-        hex[--n] = 0;
-    if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
-        hex[--n] = 0;
-    if ( n == 0 || (hex[n*2+1] == 0 && hex[n*2] != 0) )
-    {
-        if ( n > 0 )
-        {
-            bytes[0] = unhex(hex[0]);
-            printf("decode_hex n.%d hex[0] (%c) -> %d hex.(%s) [n*2+1: %d] [n*2: %d %c] len.%ld\n",n,hex[0],bytes[0],hex,hex[n*2+1],hex[n*2],hex[n*2],(long)strlen(hex));
-        }
-        bytes++;
-        hex++;
-        adjust = 1;
-    } else adjust = 0;
-    if ( n > 0 )
-    {
-        for (i=0; i<n; i++)
-            bytes[i] = _decode_hex(&hex[i*2]);
-    }
-    //bytes[i] = 0;
-    return(n + adjust);
+    Ok(())
 }
 
+/*
 int32_t init_hexbytes_noT(char *hexbytes,unsigned char *message,long len)
 {
     int32_t i;

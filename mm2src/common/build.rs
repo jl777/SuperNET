@@ -210,7 +210,6 @@ fn generate_bindings() {
             "LP_tradecommand_log",
             "bits256_cmp",
             "bits256_str",
-            "bits256_nonz",
             "vcalc_sha256",
             "calc_rmd160_sha256",
             "bitcoin_address",

@@ -23,6 +23,7 @@ extern crate gstuff;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+extern crate hex;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate rand;
@@ -64,10 +65,11 @@ use futures::{future, Future};
 use futures::sync::oneshot::{self, Receiver};
 use futures::task::Task;
 use gstuff::{any_to_str, now_float};
+use hex::FromHex;
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::{c_char, c_void, malloc, free};
-use serde_json::{self as json};
+use serde_json::{self as json, Value as Json};
 use std::fmt;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
@@ -123,6 +125,30 @@ impl fmt::Display for bits256 {
         let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
         let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
         f.write_str (hex)
+    }
+}
+
+/// Decodes a HEX string into a 32-bytes array.  
+/// But only if the HEX string is 64 characters long, returning a zeroed array otherwise.  
+/// (Use `fn nonz` to check if the array is zeroed).  
+/// A port of cJSON.c/jbits256.
+pub fn jbits256 (json: &Json) -> Result<bits256, String> {
+    let mut hash: bits256 = unsafe {zeroed()};
+    if let Some (hex) = json.as_str() {
+        if hex.len() == 64 {
+            //try_s! (::common::iguana_utils::decode_hex (unsafe {&mut hash.bytes[..]}, hex.as_bytes()));
+            let bytes: [u8; 32] = try_s! (FromHex::from_hex (hex));
+            unsafe {hash.bytes.copy_from_slice (&bytes)}
+        }
+    }
+    Ok (hash)
+}
+
+impl bits256 {
+    /// Returns true if the hash is not zero.  
+    /// Port of `#define bits256_nonz`.
+    pub fn nonz (&self) -> bool {
+        unsafe {self.ulongs[0] != 0 && self.ulongs[1] != 0 && self.ulongs[2] != 0 && self.ulongs[3] != 0}
     }
 }
 

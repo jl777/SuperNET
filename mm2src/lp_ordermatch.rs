@@ -429,7 +429,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             priv_key = lp::LP_privkey((*e_coin).symbol.as_mut_ptr(), (*e_coin).smartaddr.as_mut_ptr(), (*e_coin).taddr);
         }
     }
-    if lp::bits256_nonz(priv_key) != 0 && lp::bits256_cmp(lp::G.LP_mypub25519, (*qp).srchash) == 0 {
+    if priv_key.nonz() && lp::bits256_cmp(lp::G.LP_mypub25519, (*qp).srchash) == 0 {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
         let d_trust = lp::LP_dynamictrust((*qp).othercredits, (*qp).desthash, lp::LP_kmdvalue((*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis as i64));
         let swap = lp::LP_swapinit(1, 0, priv_key, &mut (*qp).R, qp, (d_trust > 0) as i32);
@@ -738,7 +738,7 @@ unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { 
         return;
     }
     (*qp).privkey = lp::LP_privkey((*coin).symbol.as_mut_ptr(), (*coin).smartaddr.as_mut_ptr(), (*coin).taddr);
-    if lp::bits256_nonz((*qp).privkey) != 0 { //&& qp->quotetime >= qp->timestamp-3 )
+    if (*qp).privkey.nonz() { //&& qp->quotetime >= qp->timestamp-3 )
         let swap = lp::LP_swapinit(0, 0, (*qp).privkey, &mut (*qp).R, qp,
                                    (lp::LP_dynamictrust((*qp).othercredits, (*qp).srchash, lp::LP_kmdvalue((*qp).srccoin.as_mut_ptr(), (*qp).satoshis as i64)) > 0) as i32);
         if swap.is_null() {
@@ -977,7 +977,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let butxo = &mut b as *mut lp::LP_utxoinfo;
     lp::LP_abutxo_set(autxo, butxo, qp);
     strcpy((*qp).coinaddr.as_mut_ptr(), (*coin).smartaddr.as_ptr());
-    if lp::bits256_nonz((*qp).srchash) == 0 || lp::bits256_cmp((*qp).srchash, lp::G.LP_mypub25519) == 0 {
+    if (*qp).srchash.nonz() == false || lp::bits256_cmp((*qp).srchash, lp::G.LP_mypub25519) == 0 {
         qprice = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
         strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
         if (*coin).etomic[0] != 0 {
