@@ -38,6 +38,7 @@ use hyper::header::{HeaderValue};
 use libc::{self, c_char, c_void};
 use lp_network::{lp_command_q_loop, lp_queue_command};
 use lp_ordermatch::{lp_trade_command, lp_trades_loop};
+use peers;
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
@@ -1059,6 +1060,7 @@ pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_p
     lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid);
 
     // Add ourselves into the list of known peers.
+    try_s! (peers::initialize (netid, lp::G.LP_mypub25519, pubport, lp::G.LP_sessionid));
     let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
     mypeer = lp::LP_addpeer (mypeer, pubsock, myipaddr_c.as_ptr() as *mut c_char, myport, pullport, pubport, 1, lp::G.LP_sessionid, netid);
     lp::LP_mypeer = mypeer;
@@ -1080,8 +1082,9 @@ pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_p
         Vec::new()
     };
 
-    for (seed, is_lp) in seeds {
-        let ip = try_s! (CString::new (&seed[..]));
+    for (seed_ip, is_lp) in seeds {
+        try_s! (peers::investigate_peer (&seed_ip, pubport));
+        let ip = try_s! (CString::new (&seed_ip[..]));
         lp::LP_addpeer (mypeer, pubsock, ip.as_ptr() as *mut c_char, myport, pullport, pubport, if is_lp {1} else {0}, lp::G.LP_sessionid, netid);
     }
     Ok(())
@@ -1557,10 +1560,6 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
     };
     let seednode = seednode.as_ref().map (|s| &s[..]);
 
-    lp::LP_closepeers();
-    try_s! (lp_initpeers (ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port, netid, seednode));
-
-    lp::G.initializing = 1;
     let gui: Cow<str> = match gui {
         Some (g) => g.into(),
         None => match try_s! (CStr::from_ptr (lp::G.gui.as_ptr()) .to_str()) {
@@ -1597,6 +1596,10 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
     try_s! (safecopy! (lp::G.LP_myrmd160str, "{}", hex::encode (lp::G.LP_myrmd160)));
     lp::G.LP_sessionid = (now_ms() / 1000) as u32;
     try_s! (safecopy! (lp::G.gui, "{}", gui));
+
+    lp::LP_closepeers();
+    try_s! (lp_initpeers (ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port, netid, seednode));
+
     lp::LP_tradebot_pauseall();
     lp::LP_portfolio_reset();
     lp::LP_priceinfos_clear();
@@ -1609,7 +1612,8 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
 }
 
 pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON) -> Result<(), String> {
-    unsafe {lp::bitcoind_RPC_inittime = 1};
+    unsafe {lp::G.initializing = 1}  // Tells some of the spawned threads to wait till the `lp_passphrase_init` is done.
+    unsafe {lp::bitcoind_RPC_inittime = 1}
     BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
     if lp::LP_MAXPRICEINFOS > 255 {
         return ERR! ("LP_MAXPRICEINFOS {} wont fit in a u8, need to increase the width of the baseind and relind for struct LP_pubkey_quote", lp::LP_MAXPRICEINFOS)
@@ -1794,10 +1798,6 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::RPC_port = myport}
     unsafe {lp::G.waiting = 1}
     try_s! (unsafe {safecopy! (lp::LP_myipaddr, "{}", myipaddr)});
-    try_s! (unsafe {lp_initpeers (
-        &ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port,
-        ctx.conf["netid"].as_u64().unwrap_or (0) as u16,
-        ctx.conf["seednode"].as_str())});
 
     if let Some (ethnode) = ctx.conf["ethnode"].as_str() {
         try_s! (unsafe {safecopy! (lp::LP_eth_node_url, "{}", ethnode)})

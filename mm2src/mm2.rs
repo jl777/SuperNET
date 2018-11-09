@@ -44,6 +44,7 @@ extern crate hyper;
 extern crate lazy_static;
 extern crate libc;
 extern crate nix;
+extern crate peers;
 extern crate portfolio;
 extern crate rand;
 extern crate serde;

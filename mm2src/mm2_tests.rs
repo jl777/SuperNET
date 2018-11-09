@@ -594,9 +594,9 @@ fn trade_base_rel(base: &str, rel: &str) {
 /// 
 /// Steps that are currently necessary to run this test:
 /// 
-/// Obtain the wallet binaries (komodod, komodo-cli) from the Agama wallet (https://komodoplatform.com/komodo-wallets/).
+/// Obtain the wallet binaries (komodod, komodo-cli) from the [Agama wallet](https://github.com/KomodoPlatform/Agama/releases/).
 /// (Or use the Docker image artempikulin/komodod-etomic).
-/// (Or compile them from source: https://github.com/jl777/komodo/tree/dev)
+/// (Or compile them from [source](https://github.com/jl777/komodo/tree/dev))
 /// 
 /// Obtain ~/.zcash-params (c:/Users/$username/AppData/Roaming/ZcashParams on Windows).
 /// 
@@ -616,7 +616,7 @@ fn trade_base_rel(base: &str, rel: &str) {
 /// (c:/Users/$username/AppData/Roaming/Komodo/ETOMIC/ETOMIC.conf on Windows)
 /// and run
 /// 
-///     komodo-cli -rpcport=10271 -rpcuser=$u -rpcpassword=$p - ac_name=ETOMIC importaddress RKGn1jkeS7VNLfwY74esW7a8JFfLNj1Yoo
+///     komodo-cli -ac_name=ETOMIC importaddress RKGn1jkeS7VNLfwY74esW7a8JFfLNj1Yoo
 /// 
 /// Share the wallet information with the test. On Windows:
 /// 

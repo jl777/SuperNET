@@ -22,6 +22,7 @@
 use common::{jbits256, lp, rpc_response, HyRes, CJSON};
 use common::mm_ctx::MmArc;
 use libc::c_char;
+use peers;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 
@@ -618,6 +619,7 @@ pub fn lp_notify_recv (_ctx: MmArc, req: Json) -> HyRes {
                 log! ("lp_notify_recv] Got our IP from a peer (" (pubk) "). G.LP_IAMLP = 1.");
                 unsafe {lp::G.LP_IAMLP = 1}
             }
+            try_h! (peers::investigate_peer (peer_ip, unsafe {lp::RPC_port + 20}));
             unsafe {lp::LP_addpeer (
                 lp::LP_mypeer,
                 lp::LP_mypubsock,
