@@ -266,7 +266,6 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
         fn LP_wifstr_valid (symbol: *const u8, wifstr: *const u8) -> i32;
         fn LP_convaddress (symbol: *const u8, address: *const u8, dest: *const u8) -> *const c_char;
         fn bitcoin_wif2priv (symbol: *const u8, wiftaddr: u8, addrtypep: *mut u8, privkeyp: *mut bits256, wifstr: *const c_char) -> i32;
-        fn bits256_cmp (a: bits256, b: bits256) -> i32;
     }
 
     let wif_or_btc_z = format! ("{}\0", wif_or_btc);
@@ -285,7 +284,7 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
         let rc = unsafe {bitcoin_wif2priv (b"KMD\0".as_ptr(), 0, &mut tmptype, &mut checkkey, kmdwif.as_ptr())};
         if rc < 0 {return ERR! ("!bitcoin_wif2priv")}
         let kmdwif = try_s! (unsafe {CStr::from_ptr (kmdwif.as_ptr())} .to_str());
-        if unsafe {bits256_cmp (privkey, checkkey)} == 0 {
+        if privkey == checkkey {
             Ok (format! ("BTC {} -> KMD {}: privkey {}", wif_or_btc, kmdwif, privkey))
         } else {
             Err (format! ("ERROR BTC {} {} != KMD {} {}", wif_or_btc, privkey, kmdwif, checkkey))

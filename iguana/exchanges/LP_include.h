@@ -480,7 +480,13 @@ struct LP_trade
 };
 
 uint32_t LP_sighash(char *symbol,int32_t zcash);
+
+/// Cryptographically checks the `pubp.pubkey`
+/// using the `item` fields "rmd160", "pubsecp", "sig" and "timestamp".
+/// Initializes `pubp.rmd160`, `pubp.pubsecp`, `pubp.sig`, `pubp.siglen`, `pubp.timestamp`,
+/// or increments `pubp.numerrors` on error.
 int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item);
+
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
 /// Find the given address in `coin->addresses`.
@@ -569,7 +575,11 @@ int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64]);
 void LP_portfolio_reset();
 int32_t LP_autoref_clear(char *base,char *rel);
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
+
+/// Points at the `LP_pubkey_info` structure corresponding to the given hash,
+/// allocating that structure on the `LP_pubkeyinfos` as necessary.
 struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey);
+
 uint32_t LP_atomic_locktime(char *base,char *rel);
 struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey);
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel);
@@ -644,7 +654,9 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
 void LP_priceinfos_clear();
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid);
-char *LP_notify_recv(cJSON *argjson);
+
+/// Finds an `ipaddr` peer entry, increments the `numrecv` counter, sets the `recvtime` timestamp, updates the `pubkey` and `pairsock`.
+void LP_peer_recv(char *ipaddr,int32_t ismine,struct LP_pubkey_info *pubp);
 
 struct LP_autoprice_ref
 {
@@ -709,12 +721,16 @@ struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
 struct LP_globals
 {
     //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
-    bits256 LP_mypub25519,LP_privkey,LP_mypriv25519,LP_passhash;
+    /// Our public peer-to-peer key.
+    bits256 LP_mypub25519;
+    bits256 LP_privkey,LP_mypriv25519,LP_passhash;
     uint64_t LP_skipstatus[10000];
     uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter,mpnet;
-    int32_t LP_IAMLP,LP_pendingswaps;
+    /// True (`1`) if we've been notified by other peers about ourselves (cf. `fn lp_notify_recv`).
+    int32_t LP_IAMLP;
+    int32_t LP_pendingswaps;
     /// We set it to `1` in RPC "passphrase".
     int32_t USERPASS_COUNTER;
     int32_t LP_numprivkeys,initializing,waiting,LP_numskips;

@@ -128,6 +128,27 @@ impl fmt::Display for bits256 {
     }
 }
 
+impl std::cmp::PartialEq for bits256 {
+    /// Should be preferred to `bits256_cmp`.
+    fn eq (&self, other: &bits256) -> bool {
+        unsafe {
+            self.ulongs[0] == other.ulongs[0] &&
+            self.ulongs[1] == other.ulongs[1] &&
+            self.ulongs[2] == other.ulongs[2] &&
+            self.ulongs[3] == other.ulongs[3]
+        }
+    }
+}
+impl std::cmp::Eq for bits256 {}
+
+impl bits256 {
+    /// Returns true if the hash is not zero.  
+    /// Port of `#define bits256_nonz`.
+    pub fn nonz (&self) -> bool {
+        unsafe {self.ulongs[0] != 0 && self.ulongs[1] != 0 && self.ulongs[2] != 0 && self.ulongs[3] != 0}
+    }
+}
+
 /// Decodes a HEX string into a 32-bytes array.  
 /// But only if the HEX string is 64 characters long, returning a zeroed array otherwise.  
 /// (Use `fn nonz` to check if the array is zeroed).  
@@ -142,14 +163,6 @@ pub fn jbits256 (json: &Json) -> Result<bits256, String> {
         }
     }
     Ok (hash)
-}
-
-impl bits256 {
-    /// Returns true if the hash is not zero.  
-    /// Port of `#define bits256_nonz`.
-    pub fn nonz (&self) -> bool {
-        unsafe {self.ulongs[0] != 0 && self.ulongs[1] != 0 && self.ulongs[2] != 0 && self.ulongs[3] != 0}
-    }
 }
 
 /// [functional]
@@ -291,6 +304,9 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
     if name == "common::stack_trace" {return}
     if name == "common::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
+
+    if filename == "boxed.rs" {return}
+    if filename == "panic.rs" {return}
 
     // Alphanumerically sorted on first letter.
     if name.starts_with ("alloc::") {return}

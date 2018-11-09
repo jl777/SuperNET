@@ -228,7 +228,7 @@ pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
 
     let mut passhash: bits256 = unsafe {zeroed()};
     unsafe {lp::vcalc_sha256 (null_mut(), passhash.bytes.as_mut_ptr(), req.passphrase.as_ptr() as *mut u8, req.passphrase.len() as i32)};
-    let matching_passphrase = unsafe {lp::bits256_cmp (passhash, lp::G.LP_passhash)} == 0;
+    let matching_passphrase = unsafe {passhash == lp::G.LP_passhash};
     if !matching_passphrase {
         log! ({"passphrase] passhash {} != G {}", passhash, unsafe {lp::G.LP_passhash}});
         if !matching_userpass {return rpc_err_response (500, "authentication error")}
@@ -928,8 +928,6 @@ pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
         return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"dPoW") == 0 )
         return(LP_dPoW_recv(argjson));
-    else if ( strcmp(method,"notify") == 0 )
-        return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"balances") == 0 )

@@ -378,6 +378,9 @@ pub fn decode_hex (bytes: &mut [u8], hex: &[u8]) -> Result<(), String> {
         let buf: [u8; 32] = try_s! (FromHex::from_hex (hex));
         bytes.copy_from_slice (&buf);
     } else {
+        // Refactoring vector: Hex decoding shouldn't be more complex than a simple loop,
+        // there's no need for temporary buffers,
+        // should take some time eventually to reimplement and test this as such.
         let vec: Vec<u8> = try_s! (FromHex::from_hex (hex));
         if vec.len() != bytes.len() {return ERR! ("Unpacked hex length {} is not {}", vec.len(), bytes.len())}
         bytes.copy_from_slice (&vec);

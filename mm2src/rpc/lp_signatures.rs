@@ -19,6 +19,12 @@
 //  marketmaker
 //
 
+use common::{jbits256, lp, rpc_response, HyRes, CJSON};
+use common::mm_ctx::MmArc;
+use libc::c_char;
+use serde_json::{self as json, Value as Json};
+use std::ffi::{CStr, CString};
+
 /*
 struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector,int32_t fillflag,int32_t gtcflag)
 {
@@ -589,56 +595,46 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 */
 
-use common::{lp, rpc_err_response, rpc_response, HyRes, CJSON};
-use common::mm_ctx::MmArc;
-use libc::c_char;
-use serde_json::{self as json, Value as Json};
-use std::ffi::CStr;
-use std::ptr::null_mut;
-
 pub fn lp_notify_recv (_ctx: MmArc, req: Json) -> HyRes {
-    log! ("lp_notify_recv] Rust version invoked.");
-    let mut req = try_h! (json::to_vec (&req));
-    req.push (0);
-    let c_json = try_h! (CJSON::from_zero_terminated (req.as_ptr() as *const c_char));
-    let reply = unsafe {lp::LP_notify_recv (c_json.0)};
-    if reply == null_mut() {return rpc_err_response (500, "LP_notify_recv == null")}
-    let reply = try_h! (unsafe {CStr::from_ptr (reply)} .to_str());
-    rpc_response (200, reply)
+    //log! ("lp_notify_recv] req: " [req]);
+    let pubk = try_h! (jbits256 (&req["pub"]));
+    if pubk.nonz() {
+        let c_json = {
+            let mut req = try_h! (json::to_vec (&req));
+            req.push (0);
+            try_h! (CJSON::from_zero_terminated (req.as_ptr() as *const c_char))
+        };
+
+        let pubp = unsafe {lp::LP_pubkeyadd (pubk)};
+        unsafe {lp::LP_pubkey_sigcheck (pubp, c_json.0)};
+
+        if let Some (peer_ip) = req["isLP"].as_str() {
+            log! ("lp_notify_recv] hailed by peer: " (peer_ip));
+            let peer_ip_c = try_h! (CString::new (peer_ip));
+            let ismine = req["ismine"].as_i64().unwrap_or (0) as i32;
+            unsafe {lp::LP_peer_recv (peer_ip_c.as_ptr() as *mut c_char, ismine, pubp)};
+            let myipaddr = try_h! (unsafe {CStr::from_ptr (lp::LP_myipaddr.as_ptr())} .to_str());
+            if unsafe {lp::G.LP_IAMLP == 0} && peer_ip == myipaddr && unsafe {pubk != lp::G.LP_mypub25519} {
+                log! ("lp_notify_recv] Got our IP from a peer (" (pubk) "). G.LP_IAMLP = 1.");
+                unsafe {lp::G.LP_IAMLP = 1}
+            }
+            unsafe {lp::LP_addpeer (
+                lp::LP_mypeer,
+                lp::LP_mypubsock,
+                peer_ip_c.as_ptr() as *mut c_char,
+                lp::RPC_port,
+                lp::RPC_port + 10,
+                lp::RPC_port + 20,
+                1,
+                req["session"].as_u64().unwrap_or (0) as u32,
+                lp::G.netid
+            )};
+        }
+    }
+    rpc_response (200, r#"{"result": "success", "notify": "received"}"#)
 }
 
 /*
-char *LP_notify_recv(cJSON *argjson)
-{
-    bits256 pub; struct LP_pubkey_info *pubp; char *ipaddr;
-
-    log_stacktrace ("LP_notify_recv");
-    printf("LP_notify_recv] argjson: %s\n", cJSON_Print (argjson));
-
-    pub = jbits256(argjson,"pub");
-    if ( bits256_nonz(pub) != 0 )
-    {
-        if ( (pubp= LP_pubkeyadd(pub)) != 0 )
-            LP_pubkey_sigcheck(pubp,argjson);
-        if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
-        {
-            printf("LP_notify_recv] got isLP %s %d\n",ipaddr,jint(argjson,"ismine"));
-            LP_peer_recv(ipaddr,jint(argjson,"ismine"),pubp);
-            if ( IAMLP != 0 && G.LP_IAMLP == 0 && strcmp(ipaddr,LP_myipaddr) == 0 )
-            {
-                if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
-                {
-                    char str[65]; printf("LP_notify_recv] that's me! and it is from %s which isnt me\n",bits256_str(str,pub));
-                    G.LP_IAMLP = 1;
-                }
-            }
-            LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"),G.netid);
-        }
-        //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
-    }
-    return(clonestr("{\"result\":\"success\",\"notify\":\"received\"}"));
-}
-
 void LP_smartutxos_push(struct iguana_info *coin)
 {
     uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; cJSON *array,*item,*req;

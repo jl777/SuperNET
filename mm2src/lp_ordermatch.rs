@@ -429,7 +429,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             priv_key = lp::LP_privkey((*e_coin).symbol.as_mut_ptr(), (*e_coin).smartaddr.as_mut_ptr(), (*e_coin).taddr);
         }
     }
-    if priv_key.nonz() && lp::bits256_cmp(lp::G.LP_mypub25519, (*qp).srchash) == 0 {
+    if priv_key.nonz() && lp::G.LP_mypub25519 == (*qp).srchash {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
         let d_trust = lp::LP_dynamictrust((*qp).othercredits, (*qp).desthash, lp::LP_kmdvalue((*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis as i64));
         let swap = lp::LP_swapinit(1, 0, priv_key, &mut (*qp).R, qp, (d_trust > 0) as i32);
@@ -694,7 +694,7 @@ struct BasiliskSwap(pub *mut lp::basilisk_swap);
 unsafe impl Send for BasiliskSwap {}
 
 unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { // alice
-    if lp::bits256_cmp((*qp).desthash, lp::G.LP_mypub25519) != 0 {
+    if (*qp).desthash != lp::G.LP_mypub25519 {
         lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error1\x00".as_ptr() as *mut c_char, 0, 0);
         lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4000.0, (*qp).uuidstr.as_mut_ptr());
         return;
@@ -977,7 +977,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let butxo = &mut b as *mut lp::LP_utxoinfo;
     lp::LP_abutxo_set(autxo, butxo, qp);
     strcpy((*qp).coinaddr.as_mut_ptr(), (*coin).smartaddr.as_ptr());
-    if (*qp).srchash.nonz() == false || lp::bits256_cmp((*qp).srchash, lp::G.LP_mypub25519) == 0 {
+    if (*qp).srchash.nonz() == false || (*qp).srchash == lp::G.LP_mypub25519 {
         qprice = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
         strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
         if (*coin).etomic[0] != 0 {
@@ -1489,7 +1489,7 @@ pub unsafe fn lp_trade_command(
                             | lp::LP_Alicedestpubkey.ulongs[2usize]
                             | lp::LP_Alicedestpubkey.ulongs[3usize]
                             != 0 as u64) as libc::c_int != 0 {
-                            if lp::bits256_cmp(lp::LP_Alicedestpubkey, q.srchash) != 0 {
+                            if lp::LP_Alicedestpubkey != q.srchash {
                                 printf(
                                     b"got reserved response from different node %s\n\x00"
                                         as *const u8
@@ -1506,8 +1506,7 @@ pub unsafe fn lp_trade_command(
                             }
                         }
                         // alice
-                        if lp::bits256_cmp(lp::G.LP_mypub25519, q.desthash) == 0
-                            && lp::bits256_cmp(lp::G.LP_mypub25519, q.srchash) != 0 {
+                        if lp::G.LP_mypub25519 == q.desthash && lp::G.LP_mypub25519 != q.srchash {
                             if q_trades == 0 {
                                 if q.quotetime as u64 > now_ms() / 1000
                                     && lp::LP_alice_eligible(q.quotetime) > 0
@@ -1533,8 +1532,7 @@ pub unsafe fn lp_trade_command(
                     } else if method == Some("connected") {
                         lp_bob_competition(&ctx, &mut counter, aliceid, qprice, 1000);
                         // alice
-                        if lp::bits256_cmp(lp::G.LP_mypub25519, q.desthash) == 0
-                            && lp::bits256_cmp(lp::G.LP_mypub25519, q.srchash) != 0
+                        if lp::G.LP_mypub25519 == q.desthash && lp::G.LP_mypub25519 != q.srchash
                             {
                                 static mut RQS: [u64; 1024] = [0; 1024];
                                 i = 0;
@@ -1665,8 +1663,7 @@ pub unsafe fn lp_trade_command(
                         } else if method == Some("connect") {
                             lp_bob_competition(&ctx, &mut counter, aliceid, qprice, 1000);
                             // bob
-                            if lp::bits256_cmp(lp::G.LP_mypub25519, q.srchash) == 0
-                                && lp::bits256_cmp(lp::G.LP_mypub25519, q.desthash) != 0 {
+                            if lp::G.LP_mypub25519 == q.srchash && lp::G.LP_mypub25519 != q.desthash {
                                 static mut RQS_0: [u64; 1024] = [0; 1024];
                                 i = 0;
                                 while (i as u64)
