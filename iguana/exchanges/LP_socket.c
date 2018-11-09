@@ -1229,9 +1229,57 @@ int history_item_cmp(struct LP_tx_history_item *item1, struct LP_tx_history_item
     return(item1->time < item2->time);
 }
 
+void LP_electrum_get_tx_until_success(struct iguana_info *coin, char *tx_hash, cJSON **res) {
+    cJSON *params = cJSON_CreateArray();
+    jaddistr(params, tx_hash);
+    jaddi(params, cJSON_CreateBool(cJSON_True));
+    while(1) {
+        electrum_jsonarg(coin->symbol, coin->electrum, res, "blockchain.transaction.get", params,
+                         ELECTRUM_TIMEOUT);
+        if (jobj(*res, "error") != NULL) {
+            printf("Error getting electrum tx %s %s %s\n", coin->symbol, jstri(params, 0), jprint(*res, 1));
+            *res = cJSON_CreateObject();
+            sleep(5);
+            continue;
+        } else {
+            break;
+        }
+    }
+    free_json(params);
+}
+
+char *LP_get_address_from_tx_out(cJSON *tx_out) {
+    cJSON *script_pub_key = jobj(tx_out, "scriptPubKey");
+    if (script_pub_key == 0) {
+        printf("No scriptPubKey on tx_out: %s\n", jprint(tx_out, 0));
+        return 0;
+    }
+
+    struct cJSON *addresses = jobj(script_pub_key, "addresses");
+    if (addresses == 0) {
+        printf("No addresses on tx_out: %s\n", jprint(tx_out, 0));
+        return NULL;
+    }
+
+    if (!is_cJSON_Array(addresses)) {
+        printf("Addresses are not array on tx out: %s\n", jprint(tx_out, 0));
+        return NULL;
+    }
+
+    if (cJSON_GetArraySize(addresses) > 1) {
+        printf("Addresses array size is > 1 on tx out: %s\n", jprint(tx_out, 0));
+        return NULL;
+    }
+    return jstri(addresses, 0);
+}
+
 void LP_electrum_txhistory_loop(void *_coin)
 {
     struct iguana_info *coin = _coin;
+    if (strcmp(coin->symbol, "QTUM") == 0 || strcmp(coin->symbol, "CRW") == 0 || strcmp(coin->symbol, "BTX") == 0) {
+        printf("Tx history loop doesn't support QTUM, CRW and BTX! yet\n");
+        return;
+    }
     while (coin != NULL && coin->electrum != NULL && coin->inactive == 0) {
         cJSON *history = cJSON_CreateObject();
         if (strcmp(coin->symbol, "BCH") == 0) {
@@ -1242,7 +1290,7 @@ void LP_electrum_txhistory_loop(void *_coin)
                             ELECTRUM_TIMEOUT);
         }
         if (jobj(history, "error") != NULL) {
-            printf("Error getting electrum history %s\n", jprint(history, 1));
+            printf("Error getting electrum history of coin %s %s\n", coin->symbol, jprint(history, 1));
             sleep(10);
             continue;
         }
@@ -1251,6 +1299,7 @@ void LP_electrum_txhistory_loop(void *_coin)
             cJSON *history_item = jitem(history, i);
             cJSON *tx_item = cJSON_CreateObject();
             char *tx_hash = jstr(history_item, "tx_hash");
+            LP_electrum_get_tx_until_success(coin, tx_hash, &tx_item);
             struct LP_tx_history_item *iter;
             int found = 0;
             int confirmed = 0;
@@ -1277,42 +1326,47 @@ void LP_electrum_txhistory_loop(void *_coin)
                 continue;
             }
 
-            cJSON *params = cJSON_CreateArray();
-            jaddistr(params, tx_hash);
-            jaddi(params, cJSON_CreateBool(cJSON_True));
-            while(1) {
-                electrum_jsonarg(coin->symbol, coin->electrum, &tx_item, "blockchain.transaction.get", params,
-                                 ELECTRUM_TIMEOUT);
-                if (jobj(tx_item, "error") != NULL) {
-                    printf("Error getting electrum tx %s %s\n", jstri(params, 0), jprint(tx_item, 1));
-                    tx_item = cJSON_CreateObject();
-                    sleep(5);
-                    continue;
-                } else {
-                    break;
-                }
-            }
-            free_json(params);
             if (!found) {
                 strcpy(item->txid, jstr(tx_item, "txid"));
                 // receive by default, but if at least 1 vin contains our address the category is send
                 strcpy(item->category, "receive");
                 cJSON *vin = jobj(tx_item, "vin");
+                cJSON *prev_tx_item = NULL;
                 for (int j = 0; j < cJSON_GetArraySize(vin); j++) {
                     cJSON *vin_item = jitem(vin, j);
-                    if (strcmp(coin->smartaddr, jstr(vin_item, "address")) == 0) {
-                        strcpy(item->category, "send");
-                        break;
+                    char *address = jstr(vin_item, "address");
+                    if (address != NULL) {
+                        if (strcmp(coin->smartaddr, jstr(vin_item, "address")) == 0) {
+                            strcpy(item->category, "send");
+                            break;
+                        }
+                    } else {
+                        // At least BTC and LTC doesn't have an address field for Vins.
+                        // Need to get previous tx and check the output
+                        cJSON *params = cJSON_CreateArray();
+                        // some transactions use few vouts of one prev tx so we can reuse it
+                        if (prev_tx_item == 0 || strcmp(jstr(prev_tx_item, "txid"), jstr(vin_item, "txid")) != 0) {
+                            if (prev_tx_item != 0) {
+                                free_json(prev_tx_item);
+                                prev_tx_item = NULL;
+                            }
+                            LP_electrum_get_tx_until_success(coin, jstr(vin_item, "txid"), &prev_tx_item);
+                        }
+                        char *vout_address = LP_get_address_from_tx_out(jitem(jobj(prev_tx_item, "vout"), jint(vin_item, "vout")));
+                        if (strcmp(coin->smartaddr, vout_address) == 0) {
+                            strcpy(item->category, "send");
+                            break;
+                        }
+                        free_json(params);
                     }
                 }
                 int size = 0;
                 cJSON *vout = jarray(&size, tx_item, "vout");
                 for (int k = 0; k < size; k++) {
                     cJSON *vout_item = jitem(vout, k);
-                    int addresses_size = 0;
-                    cJSON *addresses = jarray(&addresses_size, jobj(vout_item, "scriptPubKey"), "addresses");
-                    for (int z = 0; z < addresses_size; z++) {
-                        if (strcmp(coin->smartaddr, jstri(addresses, z)) == 0) {
+                    char *vout_address = LP_get_address_from_tx_out(vout_item);
+                    if (vout_address != 0) {
+                        if (strcmp(coin->smartaddr, vout_address) == 0) {
                             if (strcmp(item->category, "receive") == 0) {
                                 item->amount += jdouble(vout_item, "value");
                             }
@@ -1327,7 +1381,7 @@ void LP_electrum_txhistory_loop(void *_coin)
             if (juint(history_item, "height") > 0) {
                 item->time = juint(tx_item, "time");
                 strcpy(item->blockhash, jstr(tx_item, "blockhash"));
-                item->blockindex = juint(tx_item, "height");
+                item->blockindex = juint(history_item, "height");
                 item->blocktime = juint(tx_item, "blocktime");
             } else {
                 // set current time temporary until confirmed
