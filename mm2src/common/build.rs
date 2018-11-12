@@ -208,7 +208,7 @@ fn generate_bindings() {
             "LP_quoteparse",
             "LP_requestinit",
             "LP_tradecommand_log",
-            "bits256_str",  // cf. `impl fmt::Display for bits256`
+            "bits256_str", // cf. `impl fmt::Display for bits256`
             "vcalc_sha256",
             "calc_rmd160_sha256",
             "bitcoin_address",
@@ -461,6 +461,43 @@ fn path2s(path: PathBuf) -> String {
     unwrap!(path.to_str(), "Non-stringy path {:?}", path).into()
 }
 
+fn libtorrent() {
+    // TODO: If we decide to keep linking with libtorrent then we should distribute the
+    //       https://github.com/arvidn/libtorrent/blob/master/LICENSE.
+
+    if cfg!(windows) {
+        /* As of now we're using a manual build to experiment with libtorrent.
+        wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip
+        unzip boost_1_68_0.zip
+        cd boost_1_68_0
+        bootstrap
+        cd ..
+        set PATH=%PATH%;C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
+        set BOOST_BUILD_PATH=C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
+        set BOOST_ROOT=C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
+        b2 --version
+        git clone --depth=1 git@github.com:arvidn/libtorrent.git
+        cd libtorrent
+        b2 release toolset=msvc-14.1 address-model=64 link=static dht=on debug-symbols=off
+        */
+
+        let lib = root().join(r"x64\libtorrent\bin\msvc-14.1\release\address-model-64\link-static\threading-multi\libtorrent.lib");
+        if lib.exists() {
+            println!("cargo:rustc-link-lib=static=libtorrent");
+            println!(
+                "cargo:rustc-link-search=native={}",
+                unwrap!(unwrap!(lib.parent()).to_str())
+            );
+
+            let bl = root().join (r"x64\boost_1_68_0\bin.v2\libs\system\build\msvc-14.1\release\address-model-64\link-static\threading-multi");
+            println!("cargo:rustc-link-lib=static=libboost_system-vc141-mt-x64-1_68");
+            println!("cargo:rustc-link-search=native={}", unwrap!(bl.to_str()));
+
+            println!("cargo:rustc-link-lib=iphlpapi"); // NotifyAddrChange.
+        }
+    }
+}
+
 /// Build helper C code.
 ///
 /// I think "git clone ... && cargo build" should be enough to start hacking on the Rust code.
@@ -634,6 +671,7 @@ fn main() {
     }
 
     windows_requirements();
+    libtorrent();
     let mm_version = mm_version();
     build_c_code(&mm_version);
     generate_bindings();
