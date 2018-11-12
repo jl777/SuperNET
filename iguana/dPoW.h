@@ -29,7 +29,7 @@
 #define DPOW_VERSION 0x1782
 #define DPOW_UTXOSIZE dpow_utxosize(coin->symbol) //10000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 1200
+#define DPOW_DURATION 300
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
@@ -109,7 +109,7 @@ struct dpow_recvdata { uint64_t recvmask,bestmask; int8_t bestk; };
 
 struct dpow_block
 {
-    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM;
+    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM,mysrcutxo,mydestutxo;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
@@ -119,6 +119,7 @@ struct dpow_block
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk,matches,bestmatches;
     cJSON *ratified;
+    uint16_t CCid;
     uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768]; uint8_t ratifyrawtx[2][32768]; uint32_t pendingcrcs[2];
@@ -134,6 +135,8 @@ struct pax_transaction
     char symbol[16],coinaddr[64]; uint8_t rmd160[20],shortflag;
 };
 
+#define DPOW_MAXIPBITS 512
+
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; uint64_t lastrecvmask;
@@ -143,8 +146,9 @@ struct dpow_info
     uint32_t SRCREALTIME,lastsrcupdate,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
     int32_t lastheight,maxblocks,SRCHEIGHT,DESTHEIGHT,prevDESTHEIGHT,SHORTFLAG,ratifying,minsigs,freq;
     struct pax_transaction *PAX;
+    uint32_t fullCCid;
     portable_mutex_t paxmutex,dexmutex;
-    uint32_t ipbits[128],numipbits;
+    uint32_t ipbits[DPOW_MAXIPBITS],numipbits;
     struct dpow_block **blocks,*currentbp;
 };
 
@@ -158,7 +162,7 @@ struct komodo_ccdataMoMoM
 };
 
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-int32_t dpow_paxpending(uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,int32_t src_or_dest,struct dpow_block *bp);
+int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp);
 void dex_updateclient(struct supernet_info *myinfo);
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field);
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);

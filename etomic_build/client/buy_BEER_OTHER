@@ -1,0 +1,4 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"setprice\",\"base\":\"$1\",\"rel\":\"BEER\",\"price\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"buy\",\"base\":\"BEER\",\"rel\":\"$1\",\"relvolume\":0.1,\"price\":1}"

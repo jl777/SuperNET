@@ -127,9 +127,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)dp->minsigs;
-        if ( strcmp(dp->dest,"KMD") != 0 )
+        //if ( strcmp(dp->dest,"KMD") != 0 )
             ptrs[3] = (void *)DPOW_DURATION;
-        else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
+        //else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
@@ -360,7 +360,9 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         dp->srcconfirms = DPOW_FIFOSIZE;
     if ( strcmp("BTC",dp->dest) == 0 )
     {
-        dp->freq = DPOW_CHECKPOINTFREQ;
+        if ( freq == 0 )
+            dp->freq = DPOW_CHECKPOINTFREQ;
+        else dp->freq = freq;
         dp->minsigs = Notaries_BTCminsigs; //DPOW_MINSIGS;
     }
     else
@@ -382,7 +384,12 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     char tmp[67];
     safecopy(tmp,pubkey,sizeof(tmp));
     decode_hex(dp->minerkey33,33,tmp);
-    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
+    
+	if (strcmp(src->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(src->chain->symbol, srcaddr, 0x1c, src->chain->pubtype, dp->minerkey33, 33);
+	else
+		bitcoin_address(srcaddr, src->chain->pubtype, dp->minerkey33, 33);
+
     if ( (retstr= dpow_validateaddress(myinfo,src,srcaddr)) != 0 )
     {
         json = cJSON_Parse(retstr);
@@ -428,13 +435,11 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     portable_mutex_init(&dp->paxmutex);
     portable_mutex_init(&dp->dexmutex);
     PAX_init();
-    //printf(">>>>>>>>>>>>>>> call paxpending\n");
-    //uint8_t buf[32768];
-    //dpow_paxpending(buf);
+    dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d CCid.%u\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs,dp->fullCCid);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -535,7 +540,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY" 
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION"
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
@@ -954,6 +959,18 @@ ZERO_ARGS(dpow,cancelratify)
 {
     myinfo->DPOWS[0]->cancelratify = 1;
     return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
+}
+
+ZERO_ARGS(dpow,ipaddrs)
+{
+    char ipaddr[64]; cJSON *array; int32_t i;
+    array = cJSON_CreateArray();
+    for (i=0; i<myinfo->numdpowipbits; i++)
+    {
+        expand_ipbits(ipaddr,myinfo->dpowipbits[i]);
+        jaddistr(array,ipaddr);
+    }
+    return(jprint(array,1));
 }
 
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)

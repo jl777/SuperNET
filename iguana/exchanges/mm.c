@@ -164,6 +164,7 @@ int main(int argc, const char * argv[])
 {
     char dirname[512]; double incr; cJSON *retjson;
     OS_init();
+    printf("BarterDEX Marketmaker %s \n",MM_VERSION);
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
@@ -341,6 +342,12 @@ int main(int argc, const char * argv[])
         exit(0);
     }
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    if ( ensure_writable(dirname) < 0 )
+    {
+        printf("couldnt write to (%s)\n",dirname);
+        exit(0);
+    }
+    sprintf(dirname,"%s/GTC",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( ensure_writable(dirname) < 0 )
     {
         printf("couldnt write to (%s)\n",dirname);

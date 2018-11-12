@@ -97,7 +97,7 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             printf("bitcoin_sign illegal privkey\n");
             return(-1);
         }
-        if ( strcmp(symbol,"BCH") == 0 || strcmp(symbol,"BTG") == 0 )
+        if ( strcmp(symbol,"BCH") == 0 || strcmp(symbol,"BTG") == 0 || strcmp(symbol,"CMM") == 0 )
         {
             //char str[65]; printf("BCH/BTG deterministic signature %s\n",bits256_str(str,txhash2));
             funcp = 0;
