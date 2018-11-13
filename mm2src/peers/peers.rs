@@ -12,6 +12,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate unwrap;
 
+#[doc(hidden)]
+pub mod tests;
+
 use common::bits256;
 
 /// * `netid` - We ignore the peers not matching the `netid`. Usually 0.

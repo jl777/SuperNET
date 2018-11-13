@@ -408,7 +408,10 @@ fn test_notify() {
 // So instead of running the `common` unit tests from a separate binary I'm simply proxying them here.
 // Let's see how this approach will fare (PDIA: positive practices scale through diffusion).
 #[test]
-fn test_status() {common::log::test::test_status()}
+fn test_status() {common::log::tests::test_status()}
+
+#[test]
+fn test_dht() {peers::tests::test_dht()}
 
 #[cfg(windows)]
 fn get_special_folder_path() -> PathBuf {

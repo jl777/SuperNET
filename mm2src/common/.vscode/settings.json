@@ -1,0 +1,6 @@
+{
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/../../x64/libtorrent/include",
+    "${workspaceFolder}/../../x64/boost_1_68_0"
+  ]
+}

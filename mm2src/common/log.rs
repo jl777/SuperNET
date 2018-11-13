@@ -564,7 +564,7 @@ impl Drop for LogState {
 }
 
 #[doc(hidden)]
-pub mod test {
+pub mod tests {
     use super::LogState;
 
     pub fn test_status() {

@@ -471,6 +471,8 @@ fn libtorrent() {
         unzip boost_1_68_0.zip
         cd boost_1_68_0
         bootstrap
+        # cf. https://stackoverflow.com/questions/10022180/how-to-build-boost-required-modules-only
+        b2 release toolset=msvc-14.1 address-model=64 link=static stage --with-date_time --with-system
         cd ..
         set PATH=%PATH%;C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
         set BOOST_BUILD_PATH=C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
@@ -482,15 +484,35 @@ fn libtorrent() {
         */
 
         let lib = root().join(r"x64\libtorrent\bin\msvc-14.1\release\address-model-64\link-static\threading-multi\libtorrent.lib");
-        if lib.exists() {
+        let bl = root().join (r"x64\boost_1_68_0\stage\lib");
+        if lib.exists() && bl.exists() {
+            let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
+            let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
+            let lib_path = Path::new(&out_dir).join("libdht.a");
+            let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
+            if lm_dht >= lm_lib - SLIDE {
+                cc::Build::new()
+                    .file("dht.cc")
+                    .warnings(true)
+                    .include(r"..\..\x64\libtorrent\include")
+                    .include(r"..\..\x64\boost_1_68_0")
+                    // https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt?view=vs-2017
+                    .define("_WIN32_WINNT", "0x0600")
+                    // cf. https://stackoverflow.com/questions/4573536/ehsc-vc-eha-synchronous-vs-asynchronous-exception-handling
+                    .flag ("/EHsc")
+                    .compile("dht");
+            }
+            println!("cargo:rustc-link-lib=static=dht");
+            println!("cargo:rustc-link-search=native={}", out_dir);
+
             println!("cargo:rustc-link-lib=static=libtorrent");
             println!(
                 "cargo:rustc-link-search=native={}",
                 unwrap!(unwrap!(lib.parent()).to_str())
             );
 
-            let bl = root().join (r"x64\boost_1_68_0\bin.v2\libs\system\build\msvc-14.1\release\address-model-64\link-static\threading-multi");
             println!("cargo:rustc-link-lib=static=libboost_system-vc141-mt-x64-1_68");
+            println!("cargo:rustc-link-lib=static=libboost_date_time-vc141-mt-x64-1_68");
             println!("cargo:rustc-link-search=native={}", unwrap!(bl.to_str()));
 
             println!("cargo:rustc-link-lib=iphlpapi"); // NotifyAddrChange.
@@ -508,12 +530,11 @@ fn build_c_code(mm_version: &str) {
     // Link in the Windows-specific crash handling code.
 
     if cfg!(windows) {
-        let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
         let lm_seh = unwrap!(last_modified_sec(&"seh.c"), "Can't stat seh.c");
         let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
         let lib_path = Path::new(&out_dir).join("libseh.a");
         let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
-        if lm_build_rs.max(lm_seh) >= lm_lib - SLIDE {
+        if lm_seh >= lm_lib - SLIDE {
             cc::Build::new().file("seh.c").warnings(true).compile("seh");
         }
         println!("cargo:rustc-link-lib=static=seh");
