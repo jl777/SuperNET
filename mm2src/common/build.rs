@@ -474,9 +474,9 @@ fn libtorrent() {
         # cf. https://stackoverflow.com/questions/10022180/how-to-build-boost-required-modules-only
         b2 release toolset=msvc-14.1 address-model=64 link=static stage --with-date_time --with-system
         cd ..
-        set PATH=%PATH%;C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
-        set BOOST_BUILD_PATH=C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
-        set BOOST_ROOT=C:\Users\Artemciy\Downloads\qwe\boost_1_68_0
+        set PATH=%PATH%;c:\spool\synced\komodo\SuperNET\x64\boost_1_68_0
+        set BOOST_BUILD_PATH=c:\spool\synced\komodo\SuperNET\x64\boost_1_68_0
+        set BOOST_ROOT=c:\spool\synced\komodo\SuperNET\x64\boost_1_68_0
         b2 --version
         git clone --depth=1 git@github.com:arvidn/libtorrent.git
         cd libtorrent
