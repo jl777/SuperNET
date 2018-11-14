@@ -561,23 +561,26 @@ fn libtorrent() {
         let _ = fs::create_dir(&build);
 
         // https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-cmake
-        unwrap!(
-            cmd!(
-                "cmake",
-                "..",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_CXX_STANDARD=11",
-                "-DBUILD_SHARED_LIBS=off",
-                "-Di2p=off",
-                "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
-            )
-            .dir(&build)
-            .stdout_to_stderr()
-            .run(),
-            "Can't cmake"
+        let _ = cmd!(
+            "cmake",
+            "..",
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_CXX_STANDARD=11",
+            "-DBUILD_SHARED_LIBS=off",
+            "-Di2p=off",
+            "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
+        )
+        .dir(&build)
+        .stdout_to_stderr()
+        .run(); // NB: Returns an error despite working.
+        assert!(
+            build.join("Makefile").exists(),
+            "Can't cmake: Makefile wasn't generated"
         );
+
+        // NB: Shouldn't be too greedy on parallelism here because Rust will be building some other crates in parallel to `common`.
         unwrap!(
-            cmd!("make", "-j3").dir(&build).stdout_to_stderr().run(),
+            cmd!("make", "-j2").dir(&build).stdout_to_stderr().run(),
             "Can't make"
         );
 
