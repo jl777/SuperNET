@@ -9,7 +9,7 @@ matrix:
   - os: osx
     compiler: clang
     env: OS_NAME=Darwin
-    osx_image: xcode9.2
+    osx_image: xcode10.1
 before_install:
 - wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh
 - sh /tmp/rustup-init.sh -y --default-toolchain stable
