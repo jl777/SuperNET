@@ -484,7 +484,7 @@ fn libtorrent() {
         */
 
         let lib = root().join(r"x64\libtorrent\bin\msvc-14.1\release\address-model-64\link-static\threading-multi\libtorrent.lib");
-        let bl = root().join (r"x64\boost_1_68_0\stage\lib");
+        let bl = root().join(r"x64\boost_1_68_0\stage\lib");
         if lib.exists() && bl.exists() {
             let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
             let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
@@ -499,7 +499,7 @@ fn libtorrent() {
                     // https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt?view=vs-2017
                     .define("_WIN32_WINNT", "0x0600")
                     // cf. https://stackoverflow.com/questions/4573536/ehsc-vc-eha-synchronous-vs-asynchronous-exception-handling
-                    .flag ("/EHsc")
+                    .flag("/EHsc")
                     .compile("dht");
             }
             println!("cargo:rustc-link-lib=static=dht");
@@ -517,6 +517,102 @@ fn libtorrent() {
 
             println!("cargo:rustc-link-lib=iphlpapi"); // NotifyAddrChange.
         }
+    } else if cfg!(target_os = "macos") {
+        // NB: Homebrew's version of libtorrent-rasterbar (1.1.10) is currently too old.
+
+        let boost_system_mt = Path::new("/usr/local/lib/libboost_system-mt.a");
+        if !boost_system_mt.exists() {
+            unwrap!(
+                cmd!("brew", "install", "boost").stdout_to_stderr().run(),
+                "Can't brew install boost"
+            );
+            assert!(boost_system_mt.exists());
+        }
+
+        let x64 = root().join("x64");
+        let _ = fs::create_dir(&x64);
+
+        let tgz = x64.join("libtorrent-rasterbar-1.2.0-rc.tar.gz");
+        if !tgz.exists() {
+            if !Path::new("/usr/local/bin/wget").exists() {
+                unwrap!(cmd!("brew", "install", "wget").stdout_to_stderr().run());
+            }
+
+            unwrap!(cmd!(
+                "wget",
+                "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz"
+            ).dir(&x64).stdout_to_stderr().run(), "Can't wget libtorrent-rasterbar-1.2.0-rc.tar.gz");
+            assert!(tgz.exists());
+        }
+
+        let rasterbar = x64.join("libtorrent-rasterbar-1.2.0-rc");
+        if !rasterbar.exists() {
+            unwrap!(
+                cmd!("tar", "-xzf", "libtorrent-rasterbar-1.2.0-rc.tar.gz")
+                    .dir(&x64)
+                    .stdout_to_stderr()
+                    .run(),
+                "Can't unpack libtorrent-rasterbar-1.2.0-rc.tar.gz"
+            );
+            assert!(rasterbar.exists());
+        }
+
+        let build = rasterbar.join("build");
+        let _ = fs::create_dir(&build);
+
+        // https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-cmake
+        unwrap!(
+            cmd!(
+                "cmake",
+                "..",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_CXX_STANDARD=11",
+                "-DBUILD_SHARED_LIBS=off",
+                "-Di2p=off",
+                "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
+            )
+            .dir(&build)
+            .stdout_to_stderr()
+            .run(),
+            "Can't cmake"
+        );
+        unwrap!(
+            cmd!("make", "-j3").dir(&build).stdout_to_stderr().run(),
+            "Can't make"
+        );
+
+        let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
+        let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
+        let lib_path = Path::new(&out_dir).join("libdht.a");
+        let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
+        if lm_dht >= lm_lib - SLIDE {
+            cc::Build::new()
+                .file("dht.cc")
+                .warnings(true)
+                .flag("-std=c++11")
+                .include(root().join("x64/libtorrent-rasterbar-1.2.0-rc/include"))
+                .include(r"/usr/local/Cellar/boost/1.68.0/include/")
+                .compile("dht");
+        }
+        println!("cargo:rustc-link-lib=static=dht");
+        println!("cargo:rustc-link-search=native={}", out_dir);
+
+        println!("cargo:rustc-link-lib=static=torrent-rasterbar");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            unwrap!(
+                root()
+                    .join("x64/libtorrent-rasterbar-1.2.0-rc/build")
+                    .to_str()
+            )
+        );
+
+        println!("cargo:rustc-link-lib=c++");
+        println!("cargo:rustc-link-lib=ssl"); // OpenSSL.
+        println!("cargo:rustc-link-lib=boost_system-mt");
+        println!("cargo:rustc-link-lib=iconv"); // CMake picks it for libtorrent.
+        println!("cargo:rustc-link-lib=framework=CoreFoundation");
+        println!("cargo:rustc-link-lib=framework=SystemConfiguration");
     }
 }
 
@@ -558,7 +654,7 @@ fn build_c_code(mm_version: &str) {
     cmake_prep_args.push("-DCMAKE_BUILD_TYPE=Debug".into());
     cmake_prep_args.push("..".into());
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
-    let _ = unwrap!(
+    unwrap!(
         cmd("cmake", cmake_prep_args)
             .dir(root().join("build"))
             .stdout_to_stderr() // NB: stderr is visible through "cargo build -vv".
@@ -578,7 +674,7 @@ fn build_c_code(mm_version: &str) {
         cmake_args.push(format!("{}", num_cpus::get()));
     }
     eprintln!("$ cmake{}", show_args(&cmake_args));
-    let _ = unwrap!(
+    unwrap!(
         cmd("cmake", cmake_args)
             .dir(root().join("build"))
             .stdout_to_stderr() // NB: stderr is visible through "cargo build -vv".
