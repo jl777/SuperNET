@@ -531,7 +531,7 @@ fn build_libtorrent() {
         "Can't cmake: Makefile wasn't generated"
     );
 
-    let lt_flags = build().join("CMakeFiles/torrent-rasterbar.dir/flags.make");
+    let lt_flags = build.join("CMakeFiles/torrent-rasterbar.dir/flags.make");
     assert!(lt_flags.exists(), "No flags.make at {:?}", lt_flags);
     let lt_flags = String::from_utf8_lossy(&slurp(&lt_flags)).into_owned();
     eprintln!("libtorrent CMake flags:\n---\n{}---", lt_flags);
