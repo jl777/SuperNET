@@ -516,12 +516,12 @@ fn build_libtorrent() {
     // https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-cmake
     let _ = ecmd!(
         "cmake",
-        "..",
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_CXX_STANDARD=11",
         "-DBUILD_SHARED_LIBS=off",
         "-Di2p=off",
-        if cfg!(target_os = "macos") {"-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"} else {""}
+        if cfg!(target_os = "macos") {"-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"} else {""},
+        ".."
     )
     .dir(&build)
     .stdout_to_stderr()
