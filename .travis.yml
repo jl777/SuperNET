@@ -2,22 +2,22 @@ language: c
 matrix:
   include:
   - os: linux
-    compiler: clang
+    compiler: gcc
     env: OS_NAME=Linux
     sudo: required
     dist: trusty
     addons:
       apt:
         sources:
-          - llvm-toolchain-trusty-5.0
+          - ubuntu-toolchain-r-test
         packages:
           - libboost-dev
           - libboost-system-dev
           - wget
           - lftp
-          - clang-5.0
+          - g++-7
     env:
-      - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+      - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
   - os: osx
     compiler: clang
     env: OS_NAME=Darwin

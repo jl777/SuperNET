@@ -531,6 +531,11 @@ fn build_libtorrent() {
         "Can't cmake: Makefile wasn't generated"
     );
 
+    let lt_flags = build().join("CMakeFiles/torrent-rasterbar.dir/flags.make");
+    assert!(lt_flags.exists(), "No flags.make at {:?}", lt_flags);
+    let lt_flags = String::from_utf8_lossy(&slurp(&lt_flags)).into_owned();
+    eprintln!("libtorrent CMake flags:\n---\n{}---", lt_flags);
+
     // NB: Shouldn't be too greedy on parallelism here because Rust will be building some other crates in parallel to `common`.
     unwrap!(
         ecmd!("make", "-j2").dir(&build).stdout_to_stderr().run(),
@@ -656,11 +661,6 @@ fn libtorrent() {
                     .to_str()
             )
         );
-
-        let lt_flags = root().join("x64/libtorrent-rasterbar-1.2.0-rc/build/CMakeFiles/torrent-rasterbar.dir/flags.make");
-        assert!(lt_flags.exists(), "No flags.make at {:?}", lt_flags);
-        let lt_flags = String::from_utf8_lossy(&slurp(&lt_flags)).into_owned();
-        eprintln!("libtorrent CMake flags:\n---\n{}---", lt_flags);
 
         let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
         let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
