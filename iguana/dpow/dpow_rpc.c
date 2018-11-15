@@ -370,7 +370,7 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
     return(blockhash);
 }
 
-char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
 {
     char buf[128],*retstr;
     if ( coin->FULLNODE < 0 )
@@ -379,13 +379,14 @@ char *dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,cha
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
         {
             //printf("RESULT.(%s)\n",retstr);
-            return(retstr);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+            free(retstr);
+            return(1);
+        } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
     return(0);
 }
 
-char *dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
 {
     char buf[128],*retstr;
     if ( coin->FULLNODE < 0 )
@@ -394,11 +395,13 @@ char *dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,c
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
         {
             //printf("RESULT.(%s)\n",retstr);
-            return(retstr);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+            free(retstr);
+            return(1);
+        } //else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
     return(0);
 }
+  
 
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
 {
@@ -644,6 +647,9 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
             free_json(retjson);
         }
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+	
+	/*if (coin->sapling != 0)
+		printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);*/
         free(paramstr);
         usleep(10000);
         return(retstr);

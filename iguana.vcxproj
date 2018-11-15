@@ -113,14 +113,14 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NATIVE_WINDOWS;WIN32;IGUANA_LOG2PACKETSIZE=20;IGUANA_MAXPACKETSIZE=1572864;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NATIVE_WINDOWS;WIN32;ISNOTARYNODE=1;LIQUIDITY_PROVIDER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StructMemberAlignment>1Byte</StructMemberAlignment>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>.\OSlibs\win\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>pthread_lib.lib;Ws2_32.lib;nanomsg.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>pthread_lib.lib;Ws2_32.lib;nanomsg.lib;libcurl.lib;libsodium.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -151,7 +151,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN64;_WIN64;_CRT_SECURE_NO_WARNINGS;NATIVE_WINDOWS;WIN32;_CONSOLE;NDEBUG;IGUANA_LOG2PACKETSIZE=20;IGUANA_MAXPACKETSIZE=1572864;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;_WIN64;_CRT_SECURE_NO_WARNINGS;NATIVE_WINDOWS;WIN32;_CONSOLE;NDEBUG;ISNOTARYNODE=1;LIQUIDITY_PROVIDER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StructMemberAlignment>1Byte</StructMemberAlignment>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -160,7 +160,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;Advapi32.lib;$(SolutionDir)OSlibs\win\x64\pthread_lib.lib;libcurl.lib;nanomsg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Advapi32.lib;$(SolutionDir)OSlibs\win\x64\pthread_lib.lib;libcurl.lib;nanomsg.lib;libsodium.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>.\OSlibs\win\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
