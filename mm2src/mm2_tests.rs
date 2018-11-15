@@ -1,11 +1,13 @@
 extern crate regex;
 extern crate dirs;
+use common;
 use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 use common::log::dashboard_path;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use libc::c_char;
+use peers;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::env::{self, var};

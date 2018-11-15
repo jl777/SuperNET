@@ -34,6 +34,7 @@ use common::nn::*;
 use crc::crc32;
 use futures::{Future};
 use gstuff::{now_ms, slurp};
+use hex;
 use hyper::header::{HeaderValue};
 use libc::{self, c_char, c_void};
 use lp_network::{lp_command_q_loop, lp_queue_command};

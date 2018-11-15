@@ -14,6 +14,8 @@ RUN \
     apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9 &&\
     # openssl-sys requirements, cf. https://crates.io/crates/openssl-sys
     apt-get install -y pkg-config libssl-dev &&\
+    # libtorrent needs Boost.
+    apt-get install -y libboost-dev libboost-system-dev &&\
     apt-get clean
 
 #Cmake 3.12.0 supports multi-platform -j option, it allows to use all cores for concurrent build to speed up it

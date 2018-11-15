@@ -21,6 +21,7 @@ use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, 
 use common::mm_ctx::MmArc;
 use etomiccurl::get_gas_price_from_station;
 use gstuff::now_ms;
+use hex;
 use libc::{c_void, free};
 use lp_native_dex::lp_passphrase_init;
 use lp_ordermatch::{AutoBuyInput, lp_auto_buy};

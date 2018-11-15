@@ -6,6 +6,12 @@ matrix:
     env: OS_NAME=Linux
     sudo: required
     dist: trusty
+    addons:
+      apt:
+        packages:
+          libboost-dev
+          libboost-system-dev
+          wget
   - os: osx
     compiler: clang
     env: OS_NAME=Darwin

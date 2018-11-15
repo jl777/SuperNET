@@ -54,7 +54,7 @@ extern "C" void dht_init() try {
     }
     bootstrapped:
 
-	std::array<char, 32> seed;
+    std::array<char, 32> seed;
     std::random_device rd;
     std::default_random_engine rng (rd());
     std::uniform_int_distribution<std::default_random_engine::result_type> dist
@@ -64,7 +64,7 @@ extern "C" void dht_init() try {
     lt::dht::secret_key sk;
     std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
 
-    for (int i = 0; i < 77; ++i) {
+    for (int i = 0; i < 55; ++i) {
         s.post_dht_stats();
 
         if (i < 9) {
