@@ -521,7 +521,7 @@ fn build_libtorrent() {
         "-DCMAKE_CXX_STANDARD=11",
         "-DBUILD_SHARED_LIBS=off",
         "-Di2p=off",
-        "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
+        if cfg!(target_os = "macos") {"-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"} else {""}
     )
     .dir(&build)
     .stdout_to_stderr()
