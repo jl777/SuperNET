@@ -8,14 +8,17 @@ matrix:
     dist: trusty
     addons:
       apt:
+        update: true
         sources:
           - ubuntu-toolchain-r-test
+          # https://stackoverflow.com/questions/45276457/how-to-use-latest-boost-version-in-travis-ci
+          # https://launchpad.net/~mhier/+archive/ubuntu/libboost-latest
+          - sourceline: 'ppa:mhier/libboost-latest'
         packages:
-          - libboost-dev
-          - libboost-system-dev
           - wget
           - lftp
           - g++-7
+          - boost1.67
     env:
       - MATRIX_EVAL="export CC=gcc-7 CXX=g++-7"
   - os: osx
