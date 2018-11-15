@@ -17,7 +17,7 @@ extern crate unwrap;
 extern crate winapi;
 
 use duct::cmd;
-use gstuff::last_modified_sec;
+use gstuff::{last_modified_sec, slurp};
 use std::env;
 use std::fs;
 use std::io::Read;
@@ -405,7 +405,7 @@ macro_rules! ecmd {
             args.push(Into::<String>::into($arg));
         )*
         eprintln!("$ {}{}", $program, show_args(&args));
-        $crate::cmd($program, args)
+        cmd($program, args)
     }};
 }
 
@@ -657,6 +657,11 @@ fn libtorrent() {
             )
         );
 
+        let lt_flags = root().join("x64/libtorrent-rasterbar-1.2.0-rc/build/CMakeFiles/torrent-rasterbar.dir/flags.make");
+        assert!(lt_flags.exists(), "No flags.make at {:?}", lt_flags);
+        let lt_flags = String::from_utf8_lossy(&slurp(&lt_flags)).into_owned();
+        eprintln!("libtorrent CMake flags:\n---\n{}---", lt_flags);
+
         let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
         let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
         let lib_path = Path::new(&out_dir).join("libdht.a");
@@ -668,7 +673,7 @@ fn libtorrent() {
                 // cf. x64/libtorrent-rasterbar-1.2.0-rc/build/CMakeFiles/torrent-rasterbar.dir/flags.make
                 // Mismatch between the libtorrent and the dht.cc flags
                 // might produce weird "undefined reference" link errors.
-                .flag("-std=gnu++14")
+                .flag("-std=c++14")
                 .include(root().join("x64/libtorrent-rasterbar-1.2.0-rc/include"))
                 .include("/usr/local/include")
                 .compile("dht");

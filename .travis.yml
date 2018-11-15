@@ -2,28 +2,33 @@ language: c
 matrix:
   include:
   - os: linux
-    compiler: gcc
+    compiler: clang
     env: OS_NAME=Linux
     sudo: required
     dist: trusty
     addons:
       apt:
+        sources:
+          - llvm-toolchain-trusty-5.0
         packages:
-          libboost-dev
-          libboost-system-dev
-          wget
+          - libboost-dev
+          - libboost-system-dev
+          - wget
+          - lftp
+          - clang-5.0
+    env:
+      - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
   - os: osx
     compiler: clang
     env: OS_NAME=Darwin
     osx_image: xcode10.1
 before_install:
+- eval "${MATRIX_EVAL}"
 - wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh
 - sh /tmp/rustup-init.sh -y --default-toolchain stable
 - source $HOME/.cargo/env
 - rustup component add rustfmt-preview
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh;
-  fi
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update && sudo apt-get install -y lftp;
   fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh;
   fi
