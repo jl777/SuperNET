@@ -3,22 +3,18 @@ matrix:
   include:
   - os: linux
     compiler: gcc
-    env: OS_NAME=Linux
     sudo: required
     dist: xenial
     addons:
       apt:
         update: true
-        sources:
-          - ubuntu-toolchain-r-test
         packages:
           - wget
           - lftp
-          - g++-7
           - libboost-dev
           - libboost-system-dev
     env:
-      - MATRIX_EVAL="export CC=gcc-7 CXX=g++-7"
+      - OS_NAME=Linux
   - os: osx
     compiler: clang
     env: OS_NAME=Darwin

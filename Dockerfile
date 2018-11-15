@@ -5,7 +5,7 @@
 # 
 # docker build --tag mm2 .
 
-FROM ubuntu:17.10
+FROM ubuntu:xenial
 
 RUN \
     apt-get update &&\
