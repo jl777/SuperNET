@@ -17,7 +17,7 @@ matrix:
           - lftp
           - g++-7
     env:
-      - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+      - MATRIX_EVAL="export CC=gcc-7 CXX=g++-7"
   - os: osx
     compiler: clang
     env: OS_NAME=Darwin
@@ -34,6 +34,7 @@ before_install:
   fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install jemalloc lftp; fi
 script:
+- eval "${MATRIX_EVAL}"
 - export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"`
 - export CARGO_BUILD_RUSTFLAGS='-C debuginfo=1'
 - rm -rf build
