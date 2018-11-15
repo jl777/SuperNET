@@ -519,8 +519,13 @@ fn build_libtorrent() {
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_CXX_STANDARD=11",
         "-DBUILD_SHARED_LIBS=off",
+        "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true", // Adds "-fPIC".
         "-Di2p=off",
-        if cfg!(target_os = "macos") {"-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"} else {""},
+        if cfg!(target_os = "macos") {
+            "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
+        } else {
+            ""
+        },
         ".."
     )
     .dir(&build)
