@@ -513,24 +513,24 @@ fn hget(url: &str, to: PathBuf) {
         request: Request<Body>,
         to: PathBuf,
     ) -> Box<Future<Item = (), Error = ()> + Send> {
-        Box::new (client.request (request) .then (move |res| -> Box<Future<Item=(), Error=()> + Send> {
-            let res = unwrap! (res);
+        Box::new(client.request(request) .then(move |res| -> Box<Future<Item=(), Error=()> + Send> {
+            let res = unwrap!(res);
             let status = res.status();
             if status == StatusCode::FOUND {
-                let location = unwrap! (res.headers()[LOCATION].to_str());
+                let location = unwrap!(res.headers()[LOCATION].to_str());
 
-                epintln! ("hget] Redirected to "
-                    if location.len() < 99 {  // 99 here is a numeracally convenient screen width.
+                epintln!("hget] Redirected to "
+                    if location.len() < 99 {  // 99 here is a numerically convenient screen width.
                         (location) " …"
                     } else {
                         (&location[0..33]) '…' (&location[location.len()-44..location.len()]) " …"
                     }
                 );
 
-                let request = unwrap! (Request::builder().uri (location) .body (Body::empty()));
-                rec (client, request, to)
+                let request = unwrap!(Request::builder().uri(location) .body(Body::empty()));
+                rec(client, request, to)
             } else if status == StatusCode::OK {
-                let mut file = unwrap! (fs::File::create (&to), "hget] Can't create {:?}", to);
+                let mut file = unwrap!(fs::File::create(&to), "hget] Can't create {:?}", to);
                 // "cargo build -vv" shares the stderr with the user but buffers it on a line by line basis,
                 // meaning that without some dirty terminal tricks we won't be able to share
                 // a download status one-liner.
@@ -539,22 +539,22 @@ fn hget(url: &str, to: PathBuf) {
                 // with the user in order not to keep her in the dark.
                 let mut received = 0;
                 let mut last_status_update = now_float();
-                let len: Option<usize> = res.headers().get (CONTENT_LENGTH) .map (|hv| unwrap! (unwrap! (hv.to_str()).parse()));
-                Box::new (res.into_body().for_each(move |chunk| {
+                let len: Option<usize> = res.headers().get(CONTENT_LENGTH) .map(|hv| unwrap!(unwrap!(hv.to_str()).parse()));
+                Box::new(res.into_body().for_each(move |chunk| {
                     received += chunk.len();
                     if now_float() - last_status_update > 3. {
                         last_status_update = now_float();
-                        epintln! (
+                        epintln!(
                             {"hget] Fetched {:.1} MiB", received as f64 / 1024.}
-                            if let Some (len) = len {{" out of {:.0}", len as f64 / 1024.}}
+                            if let Some(len) = len {{" out of {:.0}", len as f64 / 1024.}}
                             " …"
                         );
                     }
-                    unwrap! (file.write_all (&chunk));
+                    unwrap!(file.write_all(&chunk));
                     Ok(())
-                }).then(move |r| -> Result<(), ()> {unwrap! (r); Ok(())}))
+                }).then(move |r| -> Result<(), ()> {unwrap!(r); Ok(())}))
             } else {
-                panic! ("hget] Unknown status: {:?} (headers: {:?}", status, res.headers())
+                panic!("hget] Unknown status: {:?} (headers: {:?}", status, res.headers())
             }
         }))
     }
@@ -640,6 +640,7 @@ fn libtorrent() {
         // allowing us to build Boost only once.
         // NB: The Windows build is different from `fn build_libtorrent` in that we're
         // 1) Using the cached marketmaker_depends.
+        //    (It's only cached after a successful build, cf. https://www.appveyor.com/docs/build-cache/#saving-cache-for-failed-build).
         // 2) Using ".bat" files and "cmd /c" shims.
         // 3) Using "b2" and pointing it at the Boost sources,
         // as recommended at https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-bbv2,
@@ -649,6 +650,8 @@ fn libtorrent() {
         // Though as of now having both build systems tested gives as a leeway in case one of them breaks.
         let mmd = root().join("marketmaker_depends");
         let _ = fs::create_dir(&mmd);
+
+        // TODO: Consider not keeping the boost_1_68_0.zip in the cached marketmaker_depends.
 
         if !mmd.join("boost_1_68_0.zip").exists() {
             hget(
@@ -661,6 +664,8 @@ fn libtorrent() {
             ));
         }
 
+        // TODO: Consider not keeping the libtorrent-rasterbar-1.2.0-rc.tar.gz in the cached marketmaker_depends.
+
         if !mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz").exists() {
             hget (
                 "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
@@ -672,9 +677,11 @@ fn libtorrent() {
             ));
         }
 
+        // TODO: Consider removing the unnecessary folders: doc (80 MiB), libs (358 MiB)
+        //       in order to lighten the marketmaker_depends cache a bit.
+
         let boost = mmd.join("boost_1_68_0");
         if !boost.exists() {
-            // TODO: Given that `mmd` is cached, should use a temporary directory in order to ensure a full unzip.
             // TODO: Unzip without requiring the user to install unzip.
             unwrap!(
                 ecmd!("unzip", "boost_1_68_0.zip")
@@ -724,7 +731,6 @@ fn libtorrent() {
 
         let rasterbar = mmd.join("libtorrent-rasterbar-1.2.0-rc");
         if !rasterbar.exists() {
-            // TODO: Given that `mmd` is cached, should use a temporary directory in order to ensure a full unzip.
             unwrap!(
                 ecmd!("tar", "-xzf", "libtorrent-rasterbar-1.2.0-rc.tar.gz")
                     .dir(&mmd)
