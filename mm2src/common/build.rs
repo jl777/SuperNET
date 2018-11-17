@@ -10,19 +10,29 @@
 extern crate bindgen;
 extern crate cc;
 extern crate duct;
+#[macro_use]
+extern crate fomat_macros;
+extern crate futures;
+extern crate futures_cpupool;
 extern crate gstuff;
+extern crate hyper;
+extern crate hyper_rustls;
 extern crate num_cpus;
 #[macro_use]
 extern crate unwrap;
 extern crate winapi;
 
 use duct::cmd;
-use gstuff::{last_modified_sec, slurp};
+use futures::{Future, Stream};
+use futures_cpupool::CpuPool;
+use gstuff::{last_modified_sec, now_float, slurp};
+use hyper_rustls::HttpsConnector;
 use std::env;
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::iter::empty;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 /// Ongoing (RLS) builds might interfere with a precise time comparison.
 const SLIDE: f64 = 60.;
@@ -477,24 +487,94 @@ fn path2s(path: PathBuf) -> String {
     unwrap!(path.to_str(), "Non-stringy path {:?}", path).into()
 }
 
+/// Downloads a file, placing it into the given path
+/// and sharing the download status on the standard error stream.
+///
+/// Panics on errors.
+///
+/// The idea is to replace wget and cURL build dependencies, particularly on Windows.
+/// Being able to see the status of the download in the terminal
+/// seems more important here than the Future-based parallelism.
+fn hget(url: &str, to: PathBuf) {
+    // NB: Not using reqwest because I don't see a "hyper-rustls" option in
+    // https://github.com/seanmonstar/reqwest/commit/82bc1be89e576b34f09f0f016b0ff38a22820ac5
+    use hyper::client::HttpConnector;
+    use hyper::header::{CONTENT_LENGTH, LOCATION};
+    use hyper::{Body, Client, Request, StatusCode};
+
+    eprintln!("hget] Downloading {} ...", url);
+
+    let https = HttpsConnector::new(1);
+    let pool = CpuPool::new(1);
+    let client = Arc::new(Client::builder().executor(pool.clone()).build(https));
+
+    fn rec(
+        client: Arc<Client<HttpsConnector<HttpConnector>>>,
+        request: Request<Body>,
+        to: PathBuf,
+    ) -> Box<Future<Item = (), Error = ()> + Send> {
+        Box::new (client.request (request) .then (move |res| -> Box<Future<Item=(), Error=()> + Send> {
+            let res = unwrap! (res);
+            let status = res.status();
+            if status == StatusCode::FOUND {
+                let location = unwrap! (res.headers()[LOCATION].to_str());
+
+                epintln! ("hget] Redirected to "
+                    if location.len() < 99 {  // 99 here is a numeracally convenient screen width.
+                        (location) " …"
+                    } else {
+                        (&location[0..33]) '…' (&location[location.len()-44..location.len()]) " …"
+                    }
+                );
+
+                let request = unwrap! (Request::builder().uri (location) .body (Body::empty()));
+                rec (client, request, to)
+            } else if status == StatusCode::OK {
+                let mut file = unwrap! (fs::File::create (&to), "hget] Can't create {:?}", to);
+                // "cargo build -vv" shares the stderr with the user but buffers it on a line by line basis,
+                // meaning that without some dirty terminal tricks we won't be able to share
+                // a download status one-liner.
+                // The alternative, then, is to share the status updates based on time:
+                // If the download was working for five-ten seconds we want to share the status
+                // with the user in order not to keep her in the dark.
+                let mut received = 0;
+                let mut last_status_update = now_float();
+                let len: Option<usize> = res.headers().get (CONTENT_LENGTH) .map (|hv| unwrap! (unwrap! (hv.to_str()).parse()));
+                Box::new (res.into_body().for_each(move |chunk| {
+                    received += chunk.len();
+                    if now_float() - last_status_update > 3. {
+                        last_status_update = now_float();
+                        epintln! (
+                            {"hget] Fetched {:.1} MiB", received as f64 / 1024.}
+                            if let Some (len) = len {{" out of {:.0}", len as f64 / 1024.}}
+                            " …"
+                        );
+                    }
+                    unwrap! (file.write_all (&chunk));
+                    Ok(())
+                }).then(move |r| -> Result<(), ()> {unwrap! (r); Ok(())}))
+            } else {
+                panic! ("hget] Unknown status: {:?} (headers: {:?}", status, res.headers())
+            }
+        }))
+    }
+
+    let request = unwrap!(Request::builder().uri(url).body(Body::empty()));
+    unwrap!(pool.spawn(rec(client, request, to)).wait())
+}
+
+/// Downloads and builds libtorrent.
+/// Only for UNIX and macOS as of now (Windows needs a different approach to Boost).
 fn build_libtorrent() {
     let x64 = root().join("x64");
     let _ = fs::create_dir(&x64);
 
     let tgz = x64.join("libtorrent-rasterbar-1.2.0-rc.tar.gz");
     if !tgz.exists() {
-        if !Path::new("/usr/bin/wget").exists() && !Path::new("/usr/local/bin/wget").exists() {
-            if cfg!(target_os = "macos") {
-                unwrap!(ecmd!("brew", "install", "wget").stdout_to_stderr().run());
-            } else {
-                panic!("Missing /usr/bin/wget or /usr/local/bin/wget");
-            }
-        }
-
-        unwrap!(ecmd!(
-            "wget",
-            "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz"
-        ).dir(&x64).stdout_to_stderr().run(), "Can't wget libtorrent-rasterbar-1.2.0-rc.tar.gz");
+        hget (
+            "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
+            tgz.clone()
+        );
         assert!(tgz.exists());
     }
 
@@ -514,23 +594,26 @@ fn build_libtorrent() {
     let _ = fs::create_dir(&build);
 
     // https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-cmake
-    let _ = ecmd!(
-        "cmake",
-        "-DCMAKE_BUILD_TYPE=Release",
-        "-DCMAKE_CXX_STANDARD=11",
-        "-DBUILD_SHARED_LIBS=off",
-        "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true", // Adds "-fPIC".
-        "-Di2p=off",
-        if cfg!(target_os = "macos") {
-            "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
-        } else {
-            ""
-        },
-        ".."
-    )
-    .dir(&build)
-    .stdout_to_stderr()
-    .run(); // NB: Returns an error despite working.
+    unwrap!(
+        ecmd!(
+            "cmake",
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_CXX_STANDARD=11",
+            "-DBUILD_SHARED_LIBS=off",
+            "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true", // Adds "-fPIC".
+            "-Di2p=off",
+            if cfg!(target_os = "macos") {
+                "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
+            } else {
+                ""
+            },
+            ".."
+        )
+        .dir(&build)
+        .stdout_to_stderr()
+        .unchecked()
+        .run()
+    ); // NB: Returns an error despite working.
     assert!(
         build.join("Makefile").exists(),
         "Can't cmake: Makefile wasn't generated"
@@ -553,57 +636,160 @@ fn libtorrent() {
     //       https://github.com/arvidn/libtorrent/blob/master/LICENSE.
 
     if cfg!(windows) {
-        /* As of now we're using a manual build to experiment with libtorrent.
-        wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip
-        unzip boost_1_68_0.zip
-        cd boost_1_68_0
-        bootstrap
-        # cf. https://stackoverflow.com/questions/10022180/how-to-build-boost-required-modules-only
-        b2 release toolset=msvc-14.1 address-model=64 link=static stage --with-date_time --with-system
-        cd ..
-        set PATH=%PATH%;c:\spool\synced\komodo\SuperNET\x64\boost_1_68_0
-        set BOOST_BUILD_PATH=c:\spool\synced\komodo\SuperNET\x64\boost_1_68_0
-        set BOOST_ROOT=c:\spool\synced\komodo\SuperNET\x64\boost_1_68_0
-        b2 --version
-        git clone --depth=1 git@github.com:arvidn/libtorrent.git
-        cd libtorrent
-        b2 release toolset=msvc-14.1 address-model=64 link=static dht=on debug-symbols=off
-        */
+        // NB: The "marketmaker_depends" folder is cached in the AppVeyour build,
+        // allowing us to build Boost only once.
+        // NB: The Windows build is different from `fn build_libtorrent` in that we're
+        // 1) Using the cached marketmaker_depends.
+        // 2) Using ".bat" files and "cmd /c" shims.
+        // 3) Using "b2" and pointing it at the Boost sources,
+        // as recommended at https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-bbv2,
+        // in hopes of avoiding the otherwise troubling Boost linking concerns.
+        //
+        // We can try building the Windows libtorrent with CMake.
+        // Though as of now having both build systems tested gives as a leeway in case one of them breaks.
+        let mmd = root().join("marketmaker_depends");
+        let _ = fs::create_dir(&mmd);
 
-        let lib = root().join(r"x64\libtorrent\bin\msvc-14.1\release\address-model-64\link-static\threading-multi\libtorrent.lib");
-        let bl = root().join(r"x64\boost_1_68_0\stage\lib");
-        if lib.exists() && bl.exists() {
-            let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
-            let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
-            let lib_path = Path::new(&out_dir).join("libdht.a");
-            let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
-            if lm_dht >= lm_lib - SLIDE {
-                cc::Build::new()
-                    .file("dht.cc")
-                    .warnings(true)
-                    .include(r"..\..\x64\libtorrent\include")
-                    .include(r"..\..\x64\boost_1_68_0")
-                    // https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt?view=vs-2017
-                    .define("_WIN32_WINNT", "0x0600")
-                    // cf. https://stackoverflow.com/questions/4573536/ehsc-vc-eha-synchronous-vs-asynchronous-exception-handling
-                    .flag("/EHsc")
-                    .compile("dht");
-            }
-            println!("cargo:rustc-link-lib=static=dht");
-            println!("cargo:rustc-link-search=native={}", out_dir);
-
-            println!("cargo:rustc-link-lib=static=libtorrent");
-            println!(
-                "cargo:rustc-link-search=native={}",
-                unwrap!(unwrap!(lib.parent()).to_str())
+        if !mmd.join("boost_1_68_0.zip").exists() {
+            hget(
+                "https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip",
+                mmd.join("boost_1_68_0.zip.tmp"),
             );
-
-            println!("cargo:rustc-link-lib=static=libboost_system-vc141-mt-x64-1_68");
-            println!("cargo:rustc-link-lib=static=libboost_date_time-vc141-mt-x64-1_68");
-            println!("cargo:rustc-link-search=native={}", unwrap!(bl.to_str()));
-
-            println!("cargo:rustc-link-lib=iphlpapi"); // NotifyAddrChange.
+            unwrap!(fs::rename(
+                mmd.join("boost_1_68_0.zip.tmp"),
+                mmd.join("boost_1_68_0.zip")
+            ));
         }
+
+        if !mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz").exists() {
+            hget (
+                "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
+                mmd.join ("libtorrent-rasterbar-1.2.0-rc.tar.gz.tmp")
+            );
+            unwrap!(fs::rename(
+                mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz.tmp"),
+                mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz")
+            ));
+        }
+
+        let boost = mmd.join("boost_1_68_0");
+        if !boost.exists() {
+            // TODO: Given that `mmd` is cached, should use a temporary directory in order to ensure a full unzip.
+            // TODO: Unzip without requiring the user to install unzip.
+            unwrap!(
+                ecmd!("unzip", "boost_1_68_0.zip")
+                    .dir(&mmd)
+                    .stdout_to_stderr()
+                    .run(),
+                "Can't unzip boost. Missing http://gnuwin32.sourceforge.net/packages/unzip.htm ?"
+            );
+            assert!(boost.exists());
+        }
+
+        let b2 = boost.join("b2.exe");
+        if !b2.exists() {
+            unwrap!(
+                ecmd!("cmd", "/c", "bootstrap.bat")
+                    .dir(&boost)
+                    .stdout_to_stderr()
+                    .run()
+            );
+            assert!(b2.exists());
+        }
+
+        let boost_system = boost.join("stage/lib/libboost_system-vc141-mt-x64-1_68.lib");
+        if !boost_system.exists() {
+            unwrap!(
+                ecmd!(
+                    // For some weird reason this particular executable won't start without the "cmd /c"
+                    // even though some other executables (copied into the same folder) are working NP.
+                    "cmd",
+                    "/c",
+                    "b2.exe",
+                    "release",
+                    "toolset=msvc-14.1",
+                    "address-model=64",
+                    "link=static",
+                    "stage",
+                    "--with-date_time",
+                    "--with-system"
+                )
+                .dir(&boost)
+                .stdout_to_stderr()
+                .unchecked()
+                .run()
+            );
+            assert!(boost_system.exists());
+        }
+
+        let rasterbar = mmd.join("libtorrent-rasterbar-1.2.0-rc");
+        if !rasterbar.exists() {
+            // TODO: Given that `mmd` is cached, should use a temporary directory in order to ensure a full unzip.
+            unwrap!(
+                ecmd!("tar", "-xzf", "libtorrent-rasterbar-1.2.0-rc.tar.gz")
+                    .dir(&mmd)
+                    .stdout_to_stderr()
+                    .run(),
+                "Can't unpack libtorrent-rasterbar-1.2.0-rc.tar.gz"
+            );
+            assert!(rasterbar.exists());
+        }
+
+        let lt = rasterbar.join(
+            r"bin\msvc-14.1\release\address-model-64\link-static\threading-multi\libtorrent.lib",
+        );
+        if !lt.exists() {
+            unwrap!(
+                ecmd! (
+                    "cmd", "/c",
+                    "b2 release toolset=msvc-14.1 address-model=64 link=static dht=on debug-symbols=off"
+                )
+                .env(
+                    "PATH",
+                    format!("{};{}", unwrap!(boost.to_str()), unwrap!(env::var("PATH")))
+                )
+                .env("BOOST_BUILD_PATH", unwrap!(boost.to_str()))
+                .env("BOOST_ROOT", unwrap!(boost.to_str()))
+                .dir(&rasterbar)
+                .stdout_to_stderr()
+                .run()
+            );
+            assert!(lt.exists());
+        }
+
+        let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");
+        let out_dir = unwrap!(env::var("OUT_DIR"), "!OUT_DIR");
+        let lib_path = Path::new(&out_dir).join("libdht.a");
+        let lm_lib = last_modified_sec(&lib_path).unwrap_or(0.);
+        if lm_dht >= lm_lib - SLIDE {
+            cc::Build::new()
+                .file("dht.cc")
+                .warnings(true)
+                .include(rasterbar.join("include"))
+                .include(boost)
+                // https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt?view=vs-2017
+                .define("_WIN32_WINNT", "0x0600")
+                // cf. https://stackoverflow.com/questions/4573536/ehsc-vc-eha-synchronous-vs-asynchronous-exception-handling
+                .flag("/EHsc")
+                .compile("dht");
+        }
+        println!("cargo:rustc-link-lib=static=dht");
+        println!("cargo:rustc-link-search=native={}", out_dir);
+
+        println!("cargo:rustc-link-lib=static=libtorrent");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            unwrap!(unwrap!(lt.parent()).to_str())
+        );
+
+        println!("cargo:rustc-link-lib=static=libboost_system-vc141-mt-x64-1_68");
+        println!("cargo:rustc-link-lib=static=libboost_date_time-vc141-mt-x64-1_68");
+        println!(
+            "cargo:rustc-link-search=native={}",
+            unwrap!(unwrap!(boost_system.parent()).to_str())
+        );
+
+        println!("cargo:rustc-link-lib=iphlpapi"); // NotifyAddrChange.
     } else if cfg!(target_os = "macos") {
         // NB: Homebrew's version of libtorrent-rasterbar (1.1.10) is currently too old.
 
@@ -679,6 +865,7 @@ fn libtorrent() {
                 // Mismatch between the libtorrent and the dht.cc flags
                 // might produce weird "undefined reference" link errors.
                 .flag("-std=c++14")
+                .flag("-fPIC")
                 .include(root().join("x64/libtorrent-rasterbar-1.2.0-rc/include"))
                 .include("/usr/local/include")
                 .compile("dht");

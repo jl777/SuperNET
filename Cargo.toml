@@ -9,6 +9,7 @@ version = "0.1.0"
 name = "mm2"
 path = "mm2src/mm2.rs"
 
+# TODO: Use workarounds from https://github.com/rust-lang/cargo/issues/2644 instead.
 [[bin]]
 name = "mm2-nop"
 path = "mm2src/mm2-nop.rs"

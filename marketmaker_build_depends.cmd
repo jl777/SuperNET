@@ -93,3 +93,7 @@ if not exist marketmaker_depends\curl\build\lib\Release\libcurl.dll (
 copy marketmaker_depends\curl\build\lib\Release\libcurl_imp.lib x64\libcurl.lib
 copy marketmaker_depends\curl\build\lib\Release\libcurl_imp.exp x64\libcurl.exp
 copy marketmaker_depends\curl\build\lib\Release\libcurl.dll x64\libcurl.dll
+
+rem Show what we've got here, in case we'd want to clear the cached folder, etc.
+echo marketmaker_build_depends] dir marketmaker_depends
+dir marketmaker_depends

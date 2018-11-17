@@ -8,7 +8,7 @@
 //!         |                      |
 //!         +-----------+----------+
 //!                     |
-//!                   main
+//!                   binary
 
 extern crate backtrace;
 extern crate chrono;
