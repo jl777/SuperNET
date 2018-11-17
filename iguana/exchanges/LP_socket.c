@@ -1237,8 +1237,10 @@ void LP_electrum_get_tx_until_success(struct iguana_info *coin, char *tx_hash, c
         electrum_jsonarg(coin->symbol, coin->electrum, res, "blockchain.transaction.get", params,
                          ELECTRUM_TIMEOUT);
         if (jobj(*res, "error") != NULL) {
-            printf("Error getting electrum tx %s %s %s\n", coin->symbol, jstri(params, 0), jprint(*res, 1));
+            char *msg = jprint(*res, 1);
+            printf("Error getting electrum tx %s %s %s\n", coin->symbol, jstri(params, 0), msg);
             *res = cJSON_CreateObject();
+            free(msg);
             sleep(5);
             continue;
         } else {
@@ -1290,16 +1292,16 @@ void LP_electrum_txhistory_loop(void *_coin)
                             ELECTRUM_TIMEOUT);
         }
         if (jobj(history, "error") != NULL) {
-            printf("Error getting electrum history of coin %s %s\n", coin->symbol, jprint(history, 1));
+            char *msg = jprint(history, 1);
+            printf("Error getting electrum history of coin %s %s\n", coin->symbol, msg);
+            free(msg);
             sleep(10);
             continue;
         }
         int history_size = cJSON_GetArraySize(history);
         for (int i = history_size - 1; i >= 0; i--) {
             cJSON *history_item = jitem(history, i);
-            cJSON *tx_item = cJSON_CreateObject();
             char *tx_hash = jstr(history_item, "tx_hash");
-            LP_electrum_get_tx_until_success(coin, tx_hash, &tx_item);
             struct LP_tx_history_item *iter;
             int found = 0;
             int confirmed = 0;
@@ -1325,7 +1327,8 @@ void LP_electrum_txhistory_loop(void *_coin)
             } else {
                 continue;
             }
-
+            cJSON *tx_item = cJSON_CreateObject();
+            LP_electrum_get_tx_until_success(coin, tx_hash, &tx_item);
             if (!found) {
                 strcpy(item->txid, jstr(tx_item, "txid"));
                 // receive by default, but if at least 1 vin contains our address the category is send

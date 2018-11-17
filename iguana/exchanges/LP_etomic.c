@@ -844,8 +844,10 @@ void LP_etomic_txhistory_loop(void *_coin)
             result = eth_tx_history_etherscan(coin->smartaddr);
             if (result) {
                 json = cJSON_Parse(result);
-                if (json && is_cJSON_Array(jobj(json, "result"))) {
-                    LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                if (json) {
+                    if (is_cJSON_Array(jobj(json, "result"))) {
+                        LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                    }
                     free_json(json);
                 }
                 free(result);
@@ -856,8 +858,10 @@ void LP_etomic_txhistory_loop(void *_coin)
             result = internal_eth_tx_history_etherscan(coin->smartaddr);
             if (result) {
                 json = cJSON_Parse(result);
-                if (json && is_cJSON_Array(jobj(json, "result"))) {
-                    LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                if (json) {
+                    if (is_cJSON_Array(jobj(json, "result"))) {
+                        LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                    }
                     free_json(json);
                 }
                 free(result);
@@ -866,8 +870,10 @@ void LP_etomic_txhistory_loop(void *_coin)
             result = erc20_tx_history_etherscan(coin->smartaddr, coin->etomic);
             if (result) {
                 json = cJSON_Parse(result);
-                if (json && is_cJSON_Array(jobj(json, "result"))) {
-                    LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                if (json) {
+                    if (is_cJSON_Array(jobj(json, "result"))) {
+                        LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                    }
                     free_json(json);
                 }
                 free(result);
