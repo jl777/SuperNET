@@ -592,7 +592,7 @@ fn cmake_opt_out(path: &AsRef<Path>, dependencies: &[&str]) {
     in_place(path, &mut |mut clists| {
         for dep in dependencies {
             let exp = unwrap!(regex::bytes::Regex::new(
-                &fomat! (r"(?xm) ^ \s* find_public_dependency\(" (regex::escape (dep)) r"\) $")
+                &fomat! (r"(?xm) ^ \s*? find_public_dependency\(" (regex::escape (dep)) r"\) $")
             ));
             clists = exp.replace_all(&clists, b"# $0" as &[u8]).into();
         }
