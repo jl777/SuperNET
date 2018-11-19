@@ -11,11 +11,7 @@ echo MM_VERSION: %MM_VERSION%
 echo [#1] Install Rust, build nanomsg, curl and pthreads ...
 call marketmaker_build_depends.cmd
 
-echo [#2] Build the Rust dependencies.
-
-cargo build --bin mm2-nop --features nop
-
-echo [#3] Build MM1 and MM2.
+echo [#2] Build MM1 and MM2.
 
 rem Increased verbosity here allows us to see the MM1 CMake logs.
 cargo build -vv

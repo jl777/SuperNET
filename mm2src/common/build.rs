@@ -18,6 +18,7 @@ extern crate gstuff;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate num_cpus;
+extern crate regex;
 #[macro_use]
 extern crate unwrap;
 extern crate winapi;
@@ -563,13 +564,49 @@ fn hget(url: &str, to: PathBuf) {
     unwrap!(pool.spawn(rec(client, request, to)).wait())
 }
 
+/// Loads the `path`, runs `update` on it and saves back the result if it differs.
+fn in_place(path: &AsRef<Path>, update: &mut FnMut(Vec<u8>) -> Vec<u8>) {
+    let path: &Path = path.as_ref();
+    if !path.is_file() {
+        return;
+    }
+    let dir = unwrap!(path.parent());
+    let name = unwrap!(unwrap!(path.file_name()).to_str());
+    let bulk = slurp(&path);
+    if bulk.is_empty() {
+        return;
+    }
+    let updated = update(bulk.clone());
+    if bulk != updated {
+        let tmp = dir.join(fomat! ((name) ".tmp"));
+        {
+            let mut file = unwrap!(fs::File::create(&tmp));
+            unwrap!(file.write_all(&updated));
+        }
+        unwrap!(fs::rename(tmp, path))
+    }
+}
+
+/// Disable specific optional dependencies in CMakeLists.txt.
+fn cmake_disable(path: &AsRef<Path>, dependencies: &[&str]) {
+    in_place(path, &mut |mut clists| {
+        for dep in dependencies {
+            let exp = unwrap!(regex::bytes::Regex::new(
+                &fomat! (r"(?m)^find_public_dependency\(" (regex::escape (dep)) r"\)$")
+            ));
+            clists = exp.replace_all(&clists, b"# $0" as &[u8]).into();
+        }
+        clists
+    })
+}
+
 /// Downloads and builds libtorrent.
 /// Only for UNIX and macOS as of now (Windows needs a different approach to Boost).
 fn build_libtorrent() {
-    let x64 = root().join("x64");
-    let _ = fs::create_dir(&x64);
+    let mmd = root().join("marketmaker_depends");
+    let _ = fs::create_dir(&mmd);
 
-    let tgz = x64.join("libtorrent-rasterbar-1.2.0-rc.tar.gz");
+    let tgz = mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz");
     if !tgz.exists() {
         hget (
             "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
@@ -578,16 +615,20 @@ fn build_libtorrent() {
         assert!(tgz.exists());
     }
 
-    let rasterbar = x64.join("libtorrent-rasterbar-1.2.0-rc");
+    let rasterbar = mmd.join("libtorrent-rasterbar-1.2.0-rc");
     if !rasterbar.exists() {
         unwrap!(
             ecmd!("tar", "-xzf", "libtorrent-rasterbar-1.2.0-rc.tar.gz")
-                .dir(&x64)
+                .dir(&mmd)
                 .stdout_to_stderr()
                 .run(),
             "Can't unpack libtorrent-rasterbar-1.2.0-rc.tar.gz"
         );
         assert!(rasterbar.exists());
+
+        // NB: Building against OpenSSL imposes additional restrictions on the server configuration,
+        // e.g. certain versions of GCC, Boost, libtorrent and OpenSSL will not compile due to the various C++ compatibility issues.
+        cmake_disable(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL"]);
     }
 
     let build = rasterbar.join("build");
@@ -651,37 +692,22 @@ fn libtorrent() {
         let mmd = root().join("marketmaker_depends");
         let _ = fs::create_dir(&mmd);
 
-        // TODO: Consider not keeping the boost_1_68_0.zip in the cached marketmaker_depends.
-
-        if !mmd.join("boost_1_68_0.zip").exists() {
-            hget(
-                "https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip",
-                mmd.join("boost_1_68_0.zip.tmp"),
-            );
-            unwrap!(fs::rename(
-                mmd.join("boost_1_68_0.zip.tmp"),
-                mmd.join("boost_1_68_0.zip")
-            ));
-        }
-
-        // TODO: Consider not keeping the libtorrent-rasterbar-1.2.0-rc.tar.gz in the cached marketmaker_depends.
-
-        if !mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz").exists() {
-            hget (
-                "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
-                mmd.join ("libtorrent-rasterbar-1.2.0-rc.tar.gz.tmp")
-            );
-            unwrap!(fs::rename(
-                mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz.tmp"),
-                mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz")
-            ));
-        }
-
         // TODO: Consider removing the unnecessary folders: doc (80 MiB), libs (358 MiB)
         //       in order to lighten the marketmaker_depends cache a bit.
 
         let boost = mmd.join("boost_1_68_0");
         if !boost.exists() {
+            if !mmd.join("boost_1_68_0.zip").exists() {
+                hget(
+                    "https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip",
+                    mmd.join("boost_1_68_0.zip.tmp"),
+                );
+                unwrap!(fs::rename(
+                    mmd.join("boost_1_68_0.zip.tmp"),
+                    mmd.join("boost_1_68_0.zip")
+                ));
+            }
+
             // TODO: Unzip without requiring the user to install unzip.
             unwrap!(
                 ecmd!("unzip", "boost_1_68_0.zip")
@@ -691,6 +717,7 @@ fn libtorrent() {
                 "Can't unzip boost. Missing http://gnuwin32.sourceforge.net/packages/unzip.htm ?"
             );
             assert!(boost.exists());
+            let _ = fs::remove_file(mmd.join("boost_1_68_0.zip"));
         }
 
         let b2 = boost.join("b2.exe");
@@ -731,6 +758,17 @@ fn libtorrent() {
 
         let rasterbar = mmd.join("libtorrent-rasterbar-1.2.0-rc");
         if !rasterbar.exists() {
+            if !mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz").exists() {
+                hget (
+                    "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
+                    mmd.join ("libtorrent-rasterbar-1.2.0-rc.tar.gz.tmp")
+                );
+                unwrap!(fs::rename(
+                    mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz.tmp"),
+                    mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz")
+                ));
+            }
+
             unwrap!(
                 ecmd!("tar", "-xzf", "libtorrent-rasterbar-1.2.0-rc.tar.gz")
                     .dir(&mmd)
@@ -739,6 +777,9 @@ fn libtorrent() {
                 "Can't unpack libtorrent-rasterbar-1.2.0-rc.tar.gz"
             );
             assert!(rasterbar.exists());
+            let _ = fs::remove_file(mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz"));
+
+            cmake_disable(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL"]);
         }
 
         let lt = rasterbar.join(
@@ -819,9 +860,7 @@ fn libtorrent() {
             )
         );
         println!("cargo:rustc-link-lib=c++");
-        println!("cargo:rustc-link-lib=ssl"); // OpenSSL.
         println!("cargo:rustc-link-lib=boost_system-mt");
-        println!("cargo:rustc-link-lib=iconv"); // CMake picks it for libtorrent.
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
         println!("cargo:rustc-link-lib=framework=SystemConfiguration");
 
@@ -880,11 +919,7 @@ fn libtorrent() {
         println!("cargo:rustc-link-search=native={}", out_dir);
 
         println!("cargo:rustc-link-lib=stdc++");
-        // println!("cargo:rustc-link-lib=ssl"); // OpenSSL.
         println!("cargo:rustc-link-lib=boost_system");
-        // println!("cargo:rustc-link-lib=iconv"); // CMake picks it for libtorrent.
-        // println!("cargo:rustc-link-lib=framework=CoreFoundation");
-        // println!("cargo:rustc-link-lib=framework=SystemConfiguration");
     }
 }
 
@@ -1053,11 +1088,6 @@ fn main() {
     // Rebuild when we change certain features.
     //println!("rerun-if-env-changed=CARGO_FEATURE_ETOMIC");
     //println!("rerun-if-env-changed=CARGO_FEATURE_NOP");
-
-    // Used with mm2-nop.rs in order to separately the dependencies build from the MM1 C build.
-    if env::var_os("CARGO_FEATURE_NOP").is_some() {
-        return;
-    }
 
     windows_requirements();
     libtorrent();

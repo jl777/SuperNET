@@ -9,12 +9,6 @@ version = "0.1.0"
 name = "mm2"
 path = "mm2src/mm2.rs"
 
-# TODO: Use workarounds from https://github.com/rust-lang/cargo/issues/2644 instead.
-[[bin]]
-name = "mm2-nop"
-path = "mm2src/mm2-nop.rs"
-required-features = ["nop"]
-
 [profile.dev]
 # Enable light optimizations. We want a debuggable version but not a completely dumb one.
 # Can override this with "set CARGO_BUILD_RUSTFLAGS=-C opt-level=0".
@@ -24,8 +18,6 @@ opt-level = 1
 # Uncomment in order to enable ETOMIC builds by default:
 default = ["etomic"]
 etomic = ["etomicrs"]
-# Used with "mm2-nop.rs" and tells "build.rs" to skip the C build.
-nop = []
 
 [dependencies]
 common = { path = "mm2src/common" }

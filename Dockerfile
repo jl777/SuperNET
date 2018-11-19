@@ -5,6 +5,8 @@
 # 
 # docker build --tag mm2 .
 
+# TODO: https://docs.docker.com/develop/develop-images/multistage-build/
+
 FROM ubuntu:xenial
 
 RUN \
@@ -51,9 +53,7 @@ RUN cd /mm2 &&\
     echo "MM_VERSION is $MM_VERSION" &&\
     echo -n "$MM_VERSION" > MM_VERSION
 
-# Build just the dependencies first.
-RUN cd /mm2 &&\
-    cargo build --bin mm2-nop --features nop
+RUN cd /mm2 && cargo fetch
 
 # This will overwrite the Git version with the local one.
 # Only needed when we're developing or changing something locally.
@@ -65,6 +65,7 @@ RUN cd /mm2 &&\
     cargo build -vv &&\
     mv target/debug/mm2 /usr/local/bin/marketmaker-mainnet &&\
     cargo test &&\
+    cargo test --package etomicrs &&\
     cargo clean
 
 CMD marketmaker-testnet
