@@ -9,9 +9,12 @@ pipeline {
     }
     stage('Build') {
       steps {
-        sh '''cargo build -vv
+        sh '''
+export CC=gcc-5 CXX=g++-5
+cargo build -vv
 cargo test
-cargo test --package etomicrs'''
+cargo test --package etomicrs
+'''
       }
     }
     stage('Test Trade') {
