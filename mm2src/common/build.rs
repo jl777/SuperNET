@@ -855,7 +855,7 @@ fn libtorrent() {
             "cargo:rustc-link-search=native={}",
             unwrap!(
                 root()
-                    .join("x64/libtorrent-rasterbar-1.2.0-rc/build")
+                    .join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build")
                     .to_str()
             )
         );
@@ -873,7 +873,7 @@ fn libtorrent() {
                 .file("dht.cc")
                 .warnings(true)
                 .flag("-std=c++11")
-                .include(root().join("x64/libtorrent-rasterbar-1.2.0-rc/include"))
+                .include(root().join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/include"))
                 .include(r"/usr/local/Cellar/boost/1.68.0/include/")
                 .compile("dht");
         }
@@ -893,7 +893,7 @@ fn libtorrent() {
             "cargo:rustc-link-search=native={}",
             unwrap!(
                 root()
-                    .join("x64/libtorrent-rasterbar-1.2.0-rc/build")
+                    .join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build")
                     .to_str()
             )
         );
@@ -906,12 +906,12 @@ fn libtorrent() {
             cc::Build::new()
                 .file("dht.cc")
                 .warnings(true)
-                // cf. x64/libtorrent-rasterbar-1.2.0-rc/build/CMakeFiles/torrent-rasterbar.dir/flags.make
+                // cf. marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build/CMakeFiles/torrent-rasterbar.dir/flags.make
                 // Mismatch between the libtorrent and the dht.cc flags
                 // might produce weird "undefined reference" link errors.
                 .flag("-std=c++14")
                 .flag("-fPIC")
-                .include(root().join("x64/libtorrent-rasterbar-1.2.0-rc/include"))
+                .include(root().join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/include"))
                 .include("/usr/local/include")
                 .compile("dht");
         }
