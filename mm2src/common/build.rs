@@ -588,11 +588,11 @@ fn in_place(path: &AsRef<Path>, update: &mut FnMut(Vec<u8>) -> Vec<u8>) {
 }
 
 /// Disable specific optional dependencies in CMakeLists.txt.
-fn cmake_disable(path: &AsRef<Path>, dependencies: &[&str]) {
+fn cmake_opt_out(path: &AsRef<Path>, dependencies: &[&str]) {
     in_place(path, &mut |mut clists| {
         for dep in dependencies {
             let exp = unwrap!(regex::bytes::Regex::new(
-                &fomat! (r"(?m)^find_public_dependency\(" (regex::escape (dep)) r"\)$")
+                &fomat! (r"(?xm) ^ \s* find_public_dependency\(" (regex::escape (dep)) r"\) $")
             ));
             clists = exp.replace_all(&clists, b"# $0" as &[u8]).into();
         }
@@ -628,7 +628,7 @@ fn build_libtorrent() {
 
         // NB: Building against OpenSSL imposes additional restrictions on the server configuration,
         // e.g. certain versions of GCC, Boost, libtorrent and OpenSSL will not compile due to the various C++ compatibility issues.
-        cmake_disable(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL"]);
+        cmake_opt_out(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL", "LibGcrypt"]);
     }
 
     let build = rasterbar.join("build");
@@ -779,7 +779,7 @@ fn libtorrent() {
             assert!(rasterbar.exists());
             let _ = fs::remove_file(mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz"));
 
-            cmake_disable(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL"]);
+            cmake_opt_out(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL", "LibGcrypt"]);
         }
 
         let lt = rasterbar.join(
