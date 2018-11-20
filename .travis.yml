@@ -27,7 +27,7 @@ script:
   - cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
   - cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
 # Debug build on Linux, might help to troubleshoot some issues that are hard to reproduce
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; cd ../ && mkdir build-debug && cd build-debug; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ../ && mkdir build-debug && cd build-debug; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_BUILD_TYPE=Debug -DMM_VERSION="$VERSION-Debug" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT; fi
 
