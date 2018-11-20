@@ -10,6 +10,12 @@
 #include <cpp-ethereum/libethcore/TransactionBase.h>
 #include <inttypes.h>
 
+#ifndef NDEBUG
+#define BACKWARD_HAS_DW 1
+#include "backward.hpp"
+using namespace backward;
+#endif
+
 using namespace dev;
 using namespace dev::eth;
 
@@ -859,3 +865,10 @@ uint8_t isValidAddress(char *address)
     std::regex r("^(0x|0X)?[a-fA-F0-9]{40}$");
     return static_cast<uint8_t>(std::regex_match(address, r));
 }
+
+#if !defined(NDEBUG) && defined(__linux__)
+void print_stack_trace() {
+    StackTrace st; st.load_here(32);
+    Printer p; p.print(st);
+}
+#endif
