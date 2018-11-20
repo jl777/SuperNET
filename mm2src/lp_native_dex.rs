@@ -35,7 +35,6 @@ use crc::crc32;
 use futures::{Future};
 use gstuff::{now_ms, slurp};
 use hex;
-use hyper::header::{HeaderValue};
 use libc::{self, c_char, c_void};
 use lp_network::{lp_command_q_loop, lp_queue_command};
 use lp_ordermatch::{lp_trade_command, lp_trades_loop};
@@ -1745,11 +1744,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         "127.0.0.1"
     } .to_string();
     let ip : IpAddr = try_s!(rpcip.parse());
-    let rpc_cors = match conf["rpccors"].as_str() {
-        Some(s) => try_s!(HeaderValue::from_str(s)),
-        None => HeaderValue::from_static("http://localhost:3000"),
-    };
-    let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport), rpc_cors);
+    let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport));
 
     unsafe {lp::IAMLP = if ctx.am_client() {0} else {1}}
     unsafe {lp::LP_canbind = if ctx.am_client() {0} else {1}}

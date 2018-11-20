@@ -196,8 +196,8 @@ fn help() {
         "  passphrase *   ..  Wallet seed.\n"
         "  profitmargin   ..  Adds to `LP_profitratio`.\n"
         // cf. https://github.com/atomiclabs/hyperdex/pull/563/commits/6d17c0c994693b768e30130855c679a7849a2b27
-        "  rpccors        ..  Access-Control-Allow-Origin header value in all RPC responses.\n"
-        "                     Default is localhost:3000 for development\n"
+        "  rpccors        ..  Access-Control-Allow-Origin header value to be used in all the RPC responses.\n"
+        "                     Default is currently 'http://localhost:3000'\n"
         "  rpcip          ..  IP address to bind to for RPC server. Overrides the 127.0.0.1 default\n"
         "  rpcport        ..  If > 1000 overrides the 7783 default.\n"
         "  userhome       ..  System home directory of a user ('/root' by default).\n"

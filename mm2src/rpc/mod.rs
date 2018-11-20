@@ -23,7 +23,7 @@ use futures::{self, Future};
 use futures_cpupool::CpuPool;
 use gstuff;
 use hyper::{Request, Body, Method};
-use hyper::header::{ACCESS_CONTROL_ALLOW_ORIGIN};
+use hyper::header::{HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN};
 use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
@@ -216,7 +216,12 @@ impl Service for RpcService {
 
     fn call(&mut self, request: Request<Body>) -> HyRes {
         let ctx = try_h! (MmArc::from_ffi_handler (self.ctx_h));
-        let rpc_cors = ctx.rpc_cors.clone();
+
+        // https://github.com/artemii235/SuperNET/issues/219
+        let rpc_cors = match ctx.conf["rpccors"].as_str() {
+            Some(s) => try_h!(HeaderValue::from_str(s)),
+            None => HeaderValue::from_static("http://localhost:3000"),
+        };
 
         if request.method() != Method::POST {
             return rpc_err_response (400, "Only POST requests are supported!")
@@ -252,13 +257,15 @@ impl Service for RpcService {
             }
         });
 
-        Box::new (f.map( |mut res| {
+        let f = f.map (|mut res| {
             res.headers_mut().insert(
                 ACCESS_CONTROL_ALLOW_ORIGIN,
                 rpc_cors
             );
             res
-        }))
+        });
+
+        Box::new (f)
     }
 }
 
