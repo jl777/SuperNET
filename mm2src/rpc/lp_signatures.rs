@@ -596,7 +596,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 */
 
-pub fn lp_notify_recv (_ctx: MmArc, req: Json) -> HyRes {
+pub fn lp_notify_recv (ctx: MmArc, req: Json) -> HyRes {
     //log! ("lp_notify_recv] req: " [req]);
     let pubk = try_h! (jbits256 (&req["pub"]));
     if pubk.nonz() {
@@ -619,7 +619,7 @@ pub fn lp_notify_recv (_ctx: MmArc, req: Json) -> HyRes {
                 log! ("lp_notify_recv] Got our IP from a peer (" (pubk) "). G.LP_IAMLP = 1.");
                 unsafe {lp::G.LP_IAMLP = 1}
             }
-            try_h! (peers::investigate_peer (peer_ip, unsafe {lp::RPC_port + 20}));
+            try_h! (peers::investigate_peer (&ctx, peer_ip, unsafe {lp::RPC_port + 20}));
             unsafe {lp::LP_addpeer (
                 lp::LP_mypeer,
                 lp::LP_mypubsock,

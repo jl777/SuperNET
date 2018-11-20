@@ -60,6 +60,8 @@ pub struct MmCtx {
     pub portfolio_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
     /// The context belonging to the `ordermatch` mod: `OrdermatchContext`.
     pub ordermatch_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
+    /// The context belonging to the `peers` crate: `PeersContext`.
+    pub peers_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
     pub fn new (conf: Json, rpc_ip_port: SocketAddr, rpc_cors: HeaderValue) -> MmArc {
@@ -76,6 +78,7 @@ impl MmCtx {
             stop_listeners: Mutex::new (Vec::new()),
             portfolio_ctx: Mutex::new (None),
             ordermatch_ctx: Mutex::new (None),
+            peers_ctx: Mutex::new (None),
         }))
     }
 
@@ -210,4 +213,23 @@ pub fn r_btc_ctx (mm_ctx_id: u32) -> *mut c_void {
     } else {
         null_mut()
     }
+}
+
+/// Helps getting a crate context from a corresponding `MmCtx` field.
+/// 
+/// * `ctx_field` - A dedicated crate context field in `MmCtx`, such as the `MmCtx::portfolio_ctx`.
+/// * `constructor` - Generates the initial crate context.
+pub fn from_ctx<T, C> (ctx_field: &Mutex<Option<Arc<Any + 'static + Send + Sync>>>, constructor: C) -> Result<Arc<T>, String>
+where C: FnOnce()->Result<T, String>, T: 'static + Send + Sync {
+    let mut ctx_field = try_s! (ctx_field.lock());
+    if let Some (ref ctx) = *ctx_field {
+        let ctx: Arc<T> = match ctx.clone().downcast() {
+            Ok (p) => p,
+            Err (_) => return ERR! ("Error casting the context field")
+        };
+        return Ok (ctx)
+    }
+    let arc = Arc::new (try_s! (constructor()));
+    *ctx_field = Some (arc.clone());
+    return Ok (arc)
 }

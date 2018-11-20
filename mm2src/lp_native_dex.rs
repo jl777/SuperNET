@@ -1054,14 +1054,14 @@ const P2P_SEED_NODES: [&'static str; 5] = [
 
 /// Setup the peer-to-peer network.
 #[allow(unused_variables)]  // delme
-pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_peerinfo, myipaddr: &IpAddr, myport: u16,
+pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_peerinfo, myipaddr: &IpAddr, myport: u16,
                             netid: u16, seednode: Option<&str>) -> Result<(), String> {
     // Pick our ports.
     let (mut pullport, mut pubport, mut busport) = (0, 0, 0);
     lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid);
 
     // Add ourselves into the list of known peers.
-    try_s! (peers::initialize (netid, lp::G.LP_mypub25519, pubport, lp::G.LP_sessionid));
+    try_s! (peers::initialize (ctx, netid, lp::G.LP_mypub25519, pubport, lp::G.LP_sessionid));
     let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
     mypeer = lp::LP_addpeer (mypeer, pubsock, myipaddr_c.as_ptr() as *mut c_char, myport, pullport, pubport, 1, lp::G.LP_sessionid, netid);
     lp::LP_mypeer = mypeer;
@@ -1084,7 +1084,7 @@ pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_p
     };
 
     for (seed_ip, is_lp) in seeds {
-        try_s! (peers::investigate_peer (&seed_ip, pubport));
+        try_s! (peers::investigate_peer (ctx, &seed_ip, pubport));
         let ip = try_s! (CString::new (&seed_ip[..]));
         lp::LP_addpeer (mypeer, pubsock, ip.as_ptr() as *mut c_char, myport, pullport, pubport, if is_lp {1} else {0}, lp::G.LP_sessionid, netid);
     }
@@ -1542,7 +1542,7 @@ fn fix_directories() -> bool {
 /// AG: If possible, I think we should avoid calling this function on a working MM, using it for initialization only,
 ///     in order to avoid the possibility of invalid state.
 #[allow(unused_unsafe)]
-pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Option<&str>, seednode: Option<&str>) -> Result<(), String> {
+pub unsafe fn lp_passphrase_init (ctx: &MmArc, passphrase: Option<&str>, gui: Option<&str>, seednode: Option<&str>) -> Result<(), String> {
     let passphrase = match passphrase {
         None | Some ("") => return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree"),
         Some (s) => s.to_string()

@@ -42,7 +42,7 @@ pub mod prices;
 
 use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
-use common::mm_ctx::{MmArc, MmWeak};
+use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::log::TagParam;
 use common::ser::de_none_if_empty;
 use fxhash::{FxHashMap, FxHashSet};
@@ -71,20 +71,11 @@ struct PortfolioContext {
 impl PortfolioContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx (ctx: &MmArc) -> Result<Arc<PortfolioContext>, String> {
-        let mut portfolio_ctx = try_s! (ctx.portfolio_ctx.lock());
-        if portfolio_ctx.is_none() {
-            let arc = Arc::new (PortfolioContext {
+        Ok (try_s! (from_ctx (&ctx.portfolio_ctx, move || {
+            Ok (PortfolioContext {
                 price_resources: Mutex::new (FxHashMap::default())
-            });
-            *portfolio_ctx = Some (arc.clone());
-            Ok (arc)
-        } else if let Some (ref portfolio_ctx) = *portfolio_ctx {
-            let portfolio_ctx: Arc<PortfolioContext> = match portfolio_ctx.clone().downcast() {
-                Ok (p) => p,
-                Err (_) => return ERR! ("Error casting into PortfolioContext")
-            };
-            Ok (portfolio_ctx)
-        } else {panic!()}
+            })
+        })))
     }
 
     /// Obtains a reference to this crate context, creating it if necessary.

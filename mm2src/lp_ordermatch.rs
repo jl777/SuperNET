@@ -19,7 +19,7 @@
 //  marketmaker
 //
 use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
-use common::mm_ctx::{MmArc, MmWeak};
+use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use gstuff::now_ms;
 use fxhash::{FxHashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
@@ -54,22 +54,13 @@ struct OrdermatchContext {
 impl OrdermatchContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx (ctx: &MmArc) -> Result<Arc<OrdermatchContext>, String> {
-        let mut ordermatch_ctx = try_s! (ctx.ordermatch_ctx.lock());
-        if ordermatch_ctx.is_none() {
-            let arc = Arc::new (OrdermatchContext {
+        Ok (try_s! (from_ctx (&ctx.ordermatch_ctx, move || {
+            Ok (OrdermatchContext {
                 lp_trades: Mutex::new (FxHashMap::default()),
                 lp_trades_queue: Mutex::new (VecDeque::new()),
                 bob_competitions: Mutex::new ([BobCompetition::default(); 512]),
-            });
-            *ordermatch_ctx = Some (arc.clone());
-            Ok (arc)
-        } else if let Some (ref ordermatch_ctx) = *ordermatch_ctx {
-            let ordermatch_ctx: Arc<OrdermatchContext> = match ordermatch_ctx.clone().downcast() {
-                Ok (p) => p,
-                Err (_) => return ERR! ("Error casting into OrdermatchContext")
-            };
-            Ok (ordermatch_ctx)
-        } else {panic!()}
+            })
+        })))
     }
 
     /// Obtains a reference to this crate context, creating it if necessary.
