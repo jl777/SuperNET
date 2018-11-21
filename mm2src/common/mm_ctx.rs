@@ -37,7 +37,7 @@ pub struct MmCtx {
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
     btc_ctx: *mut BitcoinCtx,
     /// Set to true after `lp_passphrase_init`, indicating that we have a usable state.
-    ///
+    /// 
     /// Should be refactored away in the future. State should always be valid.
     /// If there are things that are loaded in background then they should be separately optional,
     /// without invalidating the entire state.
@@ -48,7 +48,7 @@ pub struct MmCtx {
     pub rpc_ip_port: SocketAddr,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
-    ffi_handler: AtomicUsize,
+    ffi_handle: AtomicUsize,
     /// Callbacks to invoke from `fn stop`.
     stop_listeners: Mutex<Vec<Box<FnMut()->Result<(), String>>>>,
     /// The context belonging to the `portfolio` crate: `PortfolioContext`.
@@ -68,7 +68,7 @@ impl MmCtx {
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
             rpc_ip_port,
-            ffi_handler: AtomicUsize::new (0),
+            ffi_handle: AtomicUsize::new (0),
             stop_listeners: Mutex::new (Vec::new()),
             portfolio_ctx: Mutex::new (None),
             ordermatch_ctx: Mutex::new (None),
@@ -153,11 +153,11 @@ lazy_static! {
 
 impl MmArc {
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.
-    pub fn ffi_handler (&self) -> Result<u32, String> {
+    pub fn ffi_handle (&self) -> Result<u32, String> {
         use std::collections::hash_map::Entry;
 
         let mut mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
-        let have = self.ffi_handler.load (Ordering::Relaxed) as u32;
+        let have = self.ffi_handle.load (Ordering::Relaxed) as u32;
         if have != 0 {return Ok (have)}
         let mut tries = 0;
         loop {
@@ -168,7 +168,7 @@ impl MmArc {
                 Entry::Occupied (_) => continue,  // Try another ID.
                 Entry::Vacant (ve) => {
                     ve.insert (self.weak());
-                    self.ffi_handler.store (rid as usize, Ordering::Relaxed);
+                    self.ffi_handle.store (rid as usize, Ordering::Relaxed);
                     return Ok (rid)
                 }
             }
@@ -177,15 +177,15 @@ impl MmArc {
 
     /// Tries getting access to the MM context.  
     /// Fails if an invalid MM context handler is passed (no such context or dropped context).
-    pub fn from_ffi_handler (ffi_handler: u32) -> Result<MmArc, String> {
-        if ffi_handler == 0 {return ERR! ("MmArc] Zeroed ffi_handler")}
+    pub fn from_ffi_handle (ffi_handle: u32) -> Result<MmArc, String> {
+        if ffi_handle == 0 {return ERR! ("MmArc] Zeroed ffi_handle")}
         let mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
-        match mm_ctx_ffi.get (&ffi_handler) {
+        match mm_ctx_ffi.get (&ffi_handle) {
             Some (weak) => match MmArc::from_weak (weak) {
                 Some (ctx) => Ok (ctx),
-                None => ERR! ("MmArc] ffi_handler {} is dead", ffi_handler)
+                None => ERR! ("MmArc] ffi_handle {} is dead", ffi_handle)
             },
-            None => ERR! ("MmArc] ffi_handler {} does not exists", ffi_handler)
+            None => ERR! ("MmArc] ffi_handle {} does not exists", ffi_handle)
         }
     }
 
@@ -202,7 +202,7 @@ impl MmArc {
 
 #[no_mangle]
 pub fn r_btc_ctx (mm_ctx_id: u32) -> *mut c_void {
-    if let Ok (ctx) = MmArc::from_ffi_handler (mm_ctx_id) {
+    if let Ok (ctx) = MmArc::from_ffi_handle (mm_ctx_id) {
         unsafe {ctx.btc_ctx() as *mut c_void}
     } else {
         null_mut()

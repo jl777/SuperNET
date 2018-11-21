@@ -1935,7 +1935,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     exit(0);
 */
     let passphrase = try_s! (CString::new (unwrap! (ctx.conf["passphrase"].as_str())));
-    let ctx_id = try_s! (ctx.ffi_handler());
+    let ctx_id = try_s! (ctx.ffi_handle());
 
     // `LPinit` currently fails to stop in a timely manner, so we're dropping the `lp_init` context early
     // in order to be able to use and test the `Drop` implementations withing the context.

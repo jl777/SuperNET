@@ -316,7 +316,7 @@ pub extern "C" fn wait_for_confirmation(
         let slice = CStr::from_ptr(tx_id).to_str().unwrap();
         let tx_hash = H256::from_str(&slice[2..]).unwrap();
 
-        let ctx = unwrap!(MmArc::from_ffi_handler((*eth_client).ctx_id()), "No context");
+        let ctx = unwrap!(MmArc::from_ffi_handle((*eth_client).ctx_id()), "No context");
         let tx_hash_str = format!("0x{:02x}", tx_hash);
         let status = ctx.log.status(&[&"transaction", &(tx_hash_str, "waiting")], "Waiting for confirmations...");
         let wait = WaitForReceipt::new(

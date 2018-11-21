@@ -55,6 +55,7 @@ macro_rules! safecopy {
 #[macro_use]
 pub mod log;
 
+pub mod for_c;
 pub mod for_tests;
 pub mod iguana_utils;
 pub mod lp_privkey;
@@ -77,7 +78,7 @@ use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
-use std::ptr::{null, null_mut, read_volatile};
+use std::ptr::{null_mut, read_volatile};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
@@ -343,24 +344,6 @@ pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output:
         });
         true
     });
-}
-
-#[no_mangle]
-pub extern fn log_stacktrace (desc: *const c_char) {
-    let desc = if desc == null() {
-        ""
-    } else {
-        match unsafe {CStr::from_ptr (desc)} .to_str() {
-            Ok (s) => s,
-            Err (err) => {
-                log! ({"log_stacktrace] Bad trace description: {}", err});
-                ""
-            }
-        }
-    };
-    let mut trace = String::with_capacity (4096);
-    stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
-    log! ({"Stacktrace. {}\n{}", desc, trace});
 }
 
 fn start_core_thread() -> Remote {

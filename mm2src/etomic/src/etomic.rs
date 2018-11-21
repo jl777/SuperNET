@@ -80,7 +80,7 @@ pub struct EthClient {
 
 impl EthClient {
     pub fn new(secret: Vec<u8>, url: &str, alice_contract: H160, bob_contract: H160, mm_ctx_id: u32) -> Self {
-        unwrap! (MmArc::from_ffi_handler (mm_ctx_id), "No context");
+        unwrap! (MmArc::from_ffi_handle (mm_ctx_id), "No context");
         let (event_loop, transport) = unwrap!(Http::new(url),
             "Could not init Http transport for ETH client, check the ethnode json arg");
         let web3 = Web3::new(transport);

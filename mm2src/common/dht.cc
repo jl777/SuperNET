@@ -14,6 +14,8 @@
 #include "libtorrent/session.hpp"
 
 extern "C" void dht_init() try {
+    if (1 == 1) return;
+
     lt::settings_pack sett;
     sett.set_bool (lt::settings_pack::enable_dht, false);
     sett.set_int (lt::settings_pack::alert_mask, 0x7fffffff);
@@ -26,7 +28,6 @@ extern "C" void dht_init() try {
         ",router.bitcomet.com:6881"
         ",dht.aelitis.com:6881");
 
-    std::cout << "dht_init:" << __LINE__ << "] Starting the session ..." << std::endl;
     lt::session s (sett);
 
     lt::dht::dht_settings dsett;

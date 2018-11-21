@@ -215,7 +215,7 @@ impl Service for RpcService {
     type Future = HyRes;
 
     fn call(&mut self, request: Request<Body>) -> HyRes {
-        let ctx = try_h! (MmArc::from_ffi_handler (self.ctx_h));
+        let ctx = try_h! (MmArc::from_ffi_handle (self.ctx_h));
 
         // https://github.com/artemii235/SuperNET/issues/219
         let rpc_cors = match ctx.conf["rpccors"].as_str() {
@@ -276,7 +276,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
     // then we might want to refactor into starting it ideomatically in order to benefit from a more graceful shutdown,
     // cf. https://github.com/hyperium/hyper/pull/1640.
 
-    let ctx = unwrap! (MmArc::from_ffi_handler (ctx_h), "No context");
+    let ctx = unwrap! (MmArc::from_ffi_handle (ctx_h), "No context");
 
     let listener = unwrap! (TcpListener::bind2 (&ctx.rpc_ip_port), "Can't bind on {}", ctx.rpc_ip_port);
 

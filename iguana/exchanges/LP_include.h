@@ -24,8 +24,11 @@
 #include <stdint.h>
 
 // Things we presently share with the C code from Rust.
+// cf. "for_c.rs"
 
-void log_stacktrace(const char* desc);
+void log_stacktrace (const char const* desc);
+int32_t peers_send_compat (uint32_t ctx, int32_t sock, const uint8_t const* data, int32_t datalen);
+int32_t peers_recv_compact (uint32_t ctx, int32_t sock, uint8_t** data);
 
 // ---
 
@@ -798,7 +801,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
 int32_t LP_importaddress(char *symbol,char *address);
 void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr);
 void LP_swapsfp_update(uint32_t requestid,uint32_t quoteid);
-void LP_aliceloop(struct basilisk_swap *_swap);
+void LP_aliceloop(uint32_t ctx, struct basilisk_swap *_swap);
 void LP_unavailableset(bits256 txid,int32_t vout,uint32_t expiration,bits256 otherpub);
 double LP_trades_pricevalidate(struct LP_quoteinfo *qp,struct iguana_info *coin,double price);
 uint32_t LP_allocated(bits256 txid,int32_t vout);
@@ -806,6 +809,6 @@ double LP_trades_bobprice(double *bidp,double *askp,struct LP_quoteinfo *qp);
 int32_t LP_RTmetrics_blacklisted(bits256 pubkey);
 int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey);
 int32_t LP_nanobind(void *ctx,char *pairstr);
-void LP_bobloop(struct basilisk_swap *_swap);
+void LP_bobloop(uint32_t ctx, struct basilisk_swap *_swap);
 cJSON *LP_instantdex_txids(int32_t appendonly,char *coinaddr);
 #endif

@@ -401,6 +401,7 @@ unsafe fn lp_base_satoshis(
 }
 
 unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char, qp: *mut lp::LP_quoteinfo) -> i32 {
+    let ctx_ffi_handle = unwrap!(ctx.ffi_handle());
     let dex_selector = 0;
     let mut pair: i32 = -1;
     let mut retval: i32 = -1;
@@ -430,11 +431,13 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             return -1;
         }
         pair = lp::LP_nanobind(ctx.btc_ctx() as *mut c_void, pair_str.as_mut_ptr());
+        log! ("LP_nanobind was called; pair: " (pair) "; pair_str: " (CStr::from_ptr (pair_str.as_ptr()) .to_str().unwrap()));
+        unwrap! (peers::bind (ctx, pair, (*qp).desthash));
         if pair >= 0 {
             (*swap).N.pair = pair;
             let b_swap = BasiliskSwap(swap);
             let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn(move ||
-                lp::LP_bobloop(b_swap.0)
+                lp::LP_bobloop(ctx_ffi_handle, b_swap.0)
             );
             match loop_thread {
                 Ok(_h) => {
@@ -684,7 +687,7 @@ char *LP_cancel_order(char *uuidstr)
 struct BasiliskSwap(pub *mut lp::basilisk_swap);
 unsafe impl Send for BasiliskSwap {}
 
-unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { // alice
+unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { // alice
     if (*qp).desthash != lp::G.LP_mypub25519 {
         lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error1\x00".as_ptr() as *mut c_char, 0, 0);
         lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4000.0, (*qp).uuidstr.as_mut_ptr());
@@ -738,6 +741,8 @@ unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { 
             return;
         }
         let pairsock = nn::nn_socket(nn::AF_SP as i32, nn::NN_PAIR as i32);
+        let ctx = unwrap! (MmArc::from_ffi_handle (ctx_ffi_handle));
+        unwrap! (peers::bind (&ctx, pairsock, (*qp).srchash));
         if pairstr.is_null() || *pairstr == 0 || pairsock < 0 {
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error8\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4005.0, (*qp).uuidstr.as_mut_ptr());
@@ -757,7 +762,7 @@ unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { 
             printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
             let b_swap = BasiliskSwap(swap);
             let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn(move ||
-                    lp::LP_aliceloop(b_swap.0)
+                    lp::LP_aliceloop(ctx_ffi_handle, b_swap.0)
             );
             match alice_loop_thread {
                 Ok(_h) => {
@@ -948,6 +953,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     *newqp = *qp;
     let qp = newqp;
     let mut str: [c_char; 65] = [0; 65];
+    // AG: The Alice p2p ID seems to be in the `qp.desthash`.
     printf(b"bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n\x00".as_ptr() as *const c_char, lp::bits256_str(str.as_mut_ptr(), lp::G.LP_mypub25519), (*qp).uuidstr[32..].as_ptr(), (*qp).mpnet, (*qp).fill, (*qp).gtc);
     let coin = lp::LP_coinfind((*qp).srccoin.as_mut_ptr());
     let other_coin = lp::LP_coinfind((*qp).destcoin.as_mut_ptr());
@@ -1116,7 +1122,8 @@ unsafe fn lp_trades_got_connect(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, new_qp: 
     //    return null_mut();
     //}
     //if lp::LP_reservation_check((*qp).txid, (*qp).vout, (*qp).desthash) == 0 && lp::LP_reservation_check((*qp).txid2, (*qp).vout2, (*qp).desthash) == 0 {
-    log!({"bob {:x?} received CONNECT.({})", lp::G.LP_mypub25519.bytes, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str())});
+    // AG: The Alice p2p ID seems to be in the `qp.desthash`.
+    log!({"bob {} received CONNECT.({})", lp::G.LP_mypub25519, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str())});
     lp_connect_start_bob(&ctx, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), qp);
     return qp;
     //} else {
@@ -1126,12 +1133,13 @@ unsafe fn lp_trades_got_connect(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, new_qp: 
 }
 
 unsafe fn lp_trades_gotconnected(
+    ctx: u32,
     mut qp: *mut lp::LP_quoteinfo,
     newqp: *mut lp::LP_quoteinfo,
     pairstr: *mut c_char
 ) -> *mut lp::LP_quoteinfo {
-    log!({"alice {:x?} received CONNECTED.({}) mpnet.{} fill.{} gtc.{}",
-                lp::G.LP_mypub25519.bytes, (*qp).aliceid, (*qp).mpnet, (*qp).fill, (*qp).gtc});
+    log!({"alice {} received CONNECTED.({}) mpnet.{} fill.{} gtc.{}",
+            lp::G.LP_mypub25519, (*qp).aliceid, (*qp).mpnet, (*qp).fill, (*qp).gtc});
     *newqp = *qp;
     qp = newqp;
     // let val = lp::LP_trades_alicevalidate(qp);
@@ -1140,7 +1148,7 @@ unsafe fn lp_trades_gotconnected(
     if val > 0. {
 //printf("CONNECTED ALICE uuid.%s\n",qp->uuidstr);
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"connected\x00" as *const u8 as *mut c_char, 0, 0);
-            lp_connected_alice(qp, pairstr);
+            lp_connected_alice(ctx, qp, pairstr);
             lp::LP_mypriceset(0, &mut changed, (*qp).destcoin.as_mut_ptr(), (*qp).srccoin.as_mut_ptr(), 0.);
             lp::LP_alicequery_clear();
             return qp;
@@ -1307,6 +1315,7 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
                             qtp.negotiationdone = now;
                             //printf("alice sets negotiationdone.%u\n",now);
                             lp_trades_gotconnected(
+                                unwrap!(ctx.ffi_handle()),
                                 &mut qtp.Q,
                                 &mut qtp.Qs[lp::LP_CONNECTED as usize],
                                 qtp.pairstr.as_mut_ptr()
@@ -1345,6 +1354,7 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
                     flag = 1;
                     (*trade).negotiationdone = now;
                     lp_trades_gotconnected(
+                        unwrap!(ctx.ffi_handle()),
                         &mut trade.Q,
                         &mut trade.Qs[lp::LP_CONNECTED as usize],
                         trade.pairstr.as_mut_ptr()
@@ -1559,10 +1569,8 @@ pub unsafe fn lp_trade_command(
                                         ) as i32
                                     }
                                 RQS[i as usize] = rq;
-                                printf(
-                                    b"CONNECTED.(%s)\n\x00" as *const u8 as *const libc::c_char,
-                                    lp::jprint(c_json.0, 0),
-                                );
+                                // AG: Bob's p2p ID (`LP_mypub25519`) is in `json["srchash"]`.
+                                log!("CONNECTED.(" (json) ")");
                                 proof = lp::jarray(
                                     &mut num,
                                     c_json.0,
@@ -1578,6 +1586,7 @@ pub unsafe fn lp_trade_command(
                                 }
                                 if q_trades == 0 {
                                     lp_trades_gotconnected(
+                                        unwrap!(ctx.ffi_handle()),
                                         &mut q,
                                         &mut q2,
                                         lp::jstr(
