@@ -23,9 +23,12 @@ use common::mm_ctx::{from_ctx, MmArc};
 use fxhash::FxHashMap;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
+    dht_thread: Mutex<Option<thread::JoinHandle<()>>>,
     sock2peer: Mutex<FxHashMap<i32, bits256>>
 }
 
@@ -34,9 +37,22 @@ impl PeersContext {
     pub fn from_ctx (ctx: &MmArc) -> Result<Arc<PeersContext>, String> {
         Ok (try_s! (from_ctx (&ctx.peers_ctx, move || {
             Ok (PeersContext {
+                dht_thread: Mutex::new (None),
                 sock2peer: Mutex::new (FxHashMap::default())
             })
         })))
+    }
+}
+
+/// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
+/// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
+/// This seems like a good enough reason to use a separate thread for managing the libtorrent,
+/// allowing it to initialize and then stop at its own pace.
+fn dht_thread (ctx: MmArc) {
+    loop {
+        if ctx.is_stopping() {break}
+        thread::sleep (Duration::from_secs (1));
+        log! ("dht_thread] zzz...");
     }
 }
 
@@ -47,13 +63,40 @@ impl PeersContext {
 ///                      which might help if the user configured this port in firewall and forwarding rules.
 ///                      We're not limited to this port though and might try other ports as well.
 /// * `session_id` - Identifies our incarnation, allowing other peers to know if they're talking with the same instance.
-pub fn initialize (_ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16, session_id: u32) -> Result<(), String> {
+pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16, session_id: u32) -> Result<(), String> {
+    let mut bootstrap_status = ctx.log.status_handle();
+    bootstrap_status.status (&[&"dht-boot"], "DHT initializing ...");
+
+    let pctx = try_s! (PeersContext::from_ctx (&ctx));
+    *try_s! (pctx.dht_thread.lock()) =
+        Some (try_s! (thread::Builder::new().name ("dht".into()) .spawn ({
+            let ctx = ctx.clone();
+            move || dht_thread (ctx)
+        })));
+    ctx.on_stop ({
+        let ctx = ctx.clone();
+        let pctx = pctx.clone();
+        Box::new (move || -> Result<(), String> {
+            if let Ok (mut dht_thread) = pctx.dht_thread.lock() {
+                if let Some (dht_thread) = dht_thread.take() {
+                    let join_status = ctx.log.status (&[&"dht-stop"], "Waiting for the dht_thread to stop...");
+                    let _ = dht_thread.join();
+                    join_status.append (" Done.");
+                }
+            }
+            Ok(())
+        })
+    });
+
     // NB: From the `fn test_trade` logs it looks like the `session_id` isn't shared with the peers currently.
     log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port) " session " (session_id));
     if !our_public_key.nonz() {return ERR! ("No public key")}
 
     *try_s! (common::for_c::PEERS_SEND_COMPAT.lock()) = Some (peers_send_compat);
     *try_s! (common::for_c::PEERS_RECV_COMPAT.lock()) = Some (peers_recv_compact);
+
+    bootstrap_status.status (&[&"dht", &"boot"], "DHT bootstrapping ...");
+    bootstrap_status.status (&[&"dht", &"boot"], "DHT discovering peers (N) ...");
 
     Ok(())
 }

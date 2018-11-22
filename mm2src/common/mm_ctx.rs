@@ -82,7 +82,10 @@ impl MmCtx {
     pub fn stop (&self) {
         if self.stop.compare_and_swap (false, true, Ordering::Relaxed) == false {
             let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
-            for listener in stop_listeners.iter_mut() {
+            // NB: It is important that we `drain` the `stop_listeners` rather than simply iterating over them
+            // because otherwise there might be reference counting instances remaining in a listener
+            // that would prevent the contexts from properly `Drop`ping.
+            for mut listener in stop_listeners.drain (..) {
                 if let Err (err) = listener() {
                     log! ({"MmCtx::stop] Listener error: {}", err})
                 }
