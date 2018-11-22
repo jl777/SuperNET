@@ -18,6 +18,7 @@
 /// A common context shared between the functions and tracked on the Rust side.
 struct dugout_struct_t {
     char const* err;
+    /// cf. https://www.libtorrent.org/reference-Settings.html
     lt::settings_pack* sett;
     lt::session* session;
 };
@@ -32,13 +33,14 @@ extern "C" char const* delete_dugout (dugout_t* dugout) try {
     return strdup (ex.what());
 }
 
-extern "C" dugout_t dht_init() {
+extern "C" dugout_t dht_init (char const* listen_interfaces) {
     dugout_t dugout = {};
 
     try {
         lt::settings_pack* sett = dugout.sett = new lt::settings_pack;
         sett->set_bool (lt::settings_pack::enable_dht, false);
         sett->set_int (lt::settings_pack::alert_mask, 0x7fffffff);
+        sett->set_str (lt::settings_pack::listen_interfaces, listen_interfaces);
 
         sett->set_str (lt::settings_pack::dht_bootstrap_nodes,
             // https://stackoverflow.com/a/32797766/257568
@@ -76,8 +78,33 @@ extern "C" void dht_alerts (dugout_t* dugout, void (*cb) (void*, lt::alert*), vo
     dugout->err = strdup (ex.what());
 }
 
+extern "C" char const* alert_message (lt::alert const* alert) {
+    return strdup (alert->message().c_str());
+}
+
 extern "C" bool is_dht_bootstrap_alert (lt::alert const* alert) {
     return alert->type() == lt::dht_bootstrap_alert::alert_type;
+}
+
+template <class A>
+char const* endpoint_format (A const* alert) {
+    std::ostringstream ss;
+    ss << alert->address.to_string() << ':' << alert->port;
+    if (alert->socket_type == lt::socket_type_t::tcp || alert->socket_type == lt::socket_type_t::tcp_ssl) ss << "@tcp";
+    else if (alert->socket_type == lt::socket_type_t::udp) ss << "@udp";
+    return strdup (ss.str().c_str());
+}
+
+extern "C" char const* as_listen_succeeded_alert (lt::alert const* alert) {
+    if (alert->type() == lt::listen_succeeded_alert::alert_type)
+        return endpoint_format (static_cast<lt::listen_succeeded_alert const*> (alert));
+    return nullptr;
+}
+
+extern "C" char const* as_listen_failed_alert (lt::alert const* alert) {
+    if (alert->type() == lt::listen_failed_alert::alert_type)
+        return endpoint_format (static_cast<lt::listen_failed_alert const*> (alert));
+    return nullptr;
 }
 
 /*

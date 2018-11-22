@@ -32,6 +32,7 @@ lazy_static! {
             !args.any (|a| a == "--nocapture")
         } else {false}
     };
+    static ref PRINTF_LOCK: Mutex<()> = Mutex::new(());
 }
 
 #[doc(hidden)]
@@ -52,7 +53,11 @@ pub fn chunk2log (mut chunk: String) {
     } else {
         chunk.push ('\n');
         chunk.push ('\0');
-        unsafe {printf (chunk.as_ptr() as *const ::libc::c_char);}
+        // NB: Using `printf` simultaneously from multiple threads will crash on Windows.
+        // This lock here helps some, but we might still race with the unguarded C code.
+        if let Ok (_lock) = PRINTF_LOCK.lock() {
+            unsafe {printf (chunk.as_ptr() as *const ::libc::c_char);}
+        }
     }
 }
 
