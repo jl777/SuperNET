@@ -20,7 +20,7 @@ extern crate unwrap;
 pub mod tests;
 
 use common::bits256;
-use common::log::TagParam;
+use common::log::{StatusHandle, TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
 use fxhash::FxHashMap;
 use libc::{c_char, c_void};
@@ -59,9 +59,14 @@ impl Drop for dugout_t {
     }
 }
 
+enum Alert {}
+
 extern "C" {
-    fn dht_init() -> dugout_t;
     fn delete_dugout (dugout: *mut dugout_t) -> *const c_char;
+    fn dht_init() -> dugout_t;
+    fn enable_dht (dugout: *mut dugout_t);
+    fn dht_alerts (dugout: *mut dugout_t, cb: extern fn (cbctx: *mut c_void, alert: *mut Alert), cbctx: *mut c_void);
+    fn is_dht_bootstrap_alert (alert: *const Alert) -> bool;
 }
 
 /// The peer-to-peer and connectivity information local to the MM2 instance.
@@ -91,19 +96,44 @@ fn dht_thread (ctx: MmArc) {
     let status_tags: &[&TagParam] = &[&"dht-boot"];
     bootstrap_status.status (status_tags, "DHT initializing ...");
 
-    let dugout = unsafe {dht_init()};
+    let mut dugout = unsafe {dht_init()};
     if let Some (err) = dugout.has_err() {
         bootstrap_status.status (status_tags, &fomat! ("DHT initialization error: " (err)));
         return
     }
+       
+    // Skip DHT bootstrapping if we're already stopping. But give libtorrent a bit of time first, just in case.
+    if ctx.is_stopping() {thread::sleep (Duration::from_millis (200)); return}
 
-    //bootstrap_status.status (status_tags, "DHT bootstrapping ...");
-    //bootstrap_status.status (status_tags, "DHT discovering peers (N) ...");
+    bootstrap_status.status (status_tags, "DHT bootstrapping ...");
+    unsafe {enable_dht (&mut dugout)};
+    if let Some (err) = dugout.has_err() {
+        bootstrap_status.status (status_tags, &fomat! ("DHT bootstrap error: " (err)));
+        return
+    }
+
+    struct CbCtx<'a> {
+        bootstrap_status: Option<StatusHandle<'a>>
+    }
+    let mut cbctx = CbCtx {
+        bootstrap_status: Some (bootstrap_status)
+    };
 
     loop {
+        extern fn cb (cbctx: *mut c_void, alert: *mut Alert) {
+            let cbctx = cbctx as *mut CbCtx;
+            let cbctx: &mut CbCtx = unsafe {&mut *cbctx};
+
+            if unsafe {is_dht_bootstrap_alert (alert)} {
+                if let Some (status) = cbctx.bootstrap_status.take() {
+                    status.append (" Done.")
+                }
+            }
+        }
+        unsafe {dht_alerts (&mut dugout, cb, &mut cbctx as *mut CbCtx as *mut c_void)};
+
         if ctx.is_stopping() {break}
-        thread::sleep (Duration::from_secs (1));
-        log! ("dht_thread] zzz...");
+        thread::sleep (Duration::from_millis (50));
     }
 }
 

@@ -175,7 +175,7 @@ impl Default for LogEntry {
 }
 
 impl LogEntry {
-    fn format (&self, buf: &mut String) -> Result<(), fmt::Error> {
+    pub fn format (&self, buf: &mut String) -> Result<(), fmt::Error> {
         use fmt::Write;
 
         let time = Local.timestamp_millis (self.time as i64);

@@ -40,8 +40,6 @@ extern "C" dugout_t dht_init() {
         sett->set_bool (lt::settings_pack::enable_dht, false);
         sett->set_int (lt::settings_pack::alert_mask, 0x7fffffff);
 
-        if (1 == 1) throw std::runtime_error ("qwe");
-
         sett->set_str (lt::settings_pack::dht_bootstrap_nodes,
             // https://stackoverflow.com/a/32797766/257568
             "router.utorrent.com:6881"
@@ -62,27 +60,31 @@ extern "C" dugout_t dht_init() {
     return dugout;
 }
 
-extern "C" void dht_bootstrap (dugout_t* dugout) try {
-    if (1 == 1) throw std::runtime_error ("zxc");
+extern "C" void enable_dht (dugout_t* dugout) try {
     if (!dugout->sett || !dugout->session) throw std::runtime_error ("Not initialized");
 	dugout->sett->set_bool (lt::settings_pack::enable_dht, true);
 	dugout->session->apply_settings (*dugout->sett);
+} catch (std::exception const& ex) {
+    dugout->err = strdup (ex.what());
+}
 
-    std::cout << "dht_init:" << __LINE__ << "] Waiting for the dht_bootstrap_alert ..." << std::endl;
+extern "C" void dht_alerts (dugout_t* dugout, void (*cb) (void*, lt::alert*), void* cbctx) try {
+    std::vector<lt::alert*> alerts;
+    dugout->session->pop_alerts (&alerts);
+    for (lt::alert* a : alerts) cb (cbctx, a);
+} catch (std::exception const& ex) {
+    dugout->err = strdup (ex.what());
+}
+
+extern "C" bool is_dht_bootstrap_alert (lt::alert const* alert) {
+    return alert->type() == lt::dht_bootstrap_alert::alert_type;
+}
+
+/*
     for (;;) {
-        std::vector<lt::alert*> alerts;
-        dugout->session->pop_alerts (&alerts);
-        for (lt::alert* a : alerts) {
-            if (a->type() == lt::dht_bootstrap_alert::alert_type) {
-                auto* dba = static_cast<lt::dht_bootstrap_alert*> (a);
-                std::cout << "dht_init:" << __LINE__ << "] dht_bootstrap_alert: " << dba->message() << std::endl;
-                goto bootstrapped;
-            }
-        }
 
         std::this_thread::sleep_for (std::chrono::milliseconds (100));
     }
-    bootstrapped:
 
     std::array<char, 32> seed;
     std::random_device rd;
@@ -137,6 +139,4 @@ extern "C" void dht_bootstrap (dugout_t* dugout) try {
             }
         }
     }
-} catch (std::exception const& ex) {
-    dugout->err = strdup (ex.what());
-}
+    */

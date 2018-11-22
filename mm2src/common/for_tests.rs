@@ -1,21 +1,13 @@
 //! Helpers used in the unit and integration tests.
 
 use chrono::Local;
-
 use duct::Handle;
-
 use futures::Future;
-
 use gstuff::{now_float, slurp, ISATTY};
-
 use hyper::{Request, StatusCode, HeaderMap};
-
 use serde_json::{self as json, Value as Json};
-
 use term;
-
 use rand::{thread_rng, Rng};
-
 use std::collections::HashSet;
 use std::env;
 use std::fs;
@@ -28,6 +20,7 @@ use std::thread::{sleep};
 use std::time::Duration;
 
 use super::slurp_req;
+use super::log::LogState;
 
 /// Automatically kill a wrapped process.
 pub struct RaiiKill {handle: Handle, running: bool}
@@ -236,5 +229,25 @@ impl Drop for MarketMakerIt {
         if let Ok (mut mm_ips) = MM_IPS.lock() {
             mm_ips.remove (&self.ip);
         } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
+    }
+}
+
+/// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
+pub fn wait_for_log (log: &LogState, timeout_sec: f64, pred: &Fn (&str) -> bool) -> Result<(), String> {
+    let start = now_float();
+    let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
+    let mut buf = String::with_capacity (128);
+    let mut found = false;
+    loop {
+        log.with_tail (&mut |tail| {
+            for en in &*tail {
+                if en.format (&mut buf) .is_ok() {
+                    if pred (&buf) {found = true; break}
+                }
+            }
+        });
+        if found {return Ok(())}
+        if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
+        sleep (Duration::from_millis (ms));
     }
 }

@@ -146,7 +146,7 @@ impl bits256 {
     /// Returns true if the hash is not zero.  
     /// Port of `#define bits256_nonz`.
     pub fn nonz (&self) -> bool {
-        unsafe {self.ulongs[0] != 0 && self.ulongs[1] != 0 && self.ulongs[2] != 0 && self.ulongs[3] != 0}
+        unsafe {self.ulongs[0] != 0 || self.ulongs[1] != 0 || self.ulongs[2] != 0 || self.ulongs[3] != 0}
     }
 }
 

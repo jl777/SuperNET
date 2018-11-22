@@ -22,7 +22,8 @@ cargo test --package etomicrs
     }
     stage('Test Trade') {
       steps {
-        sh '''cargo test -- --ignored'''
+        // --nocapture here allows us to examine the trade logs even when the trade was succsessful.
+        sh '''cargo test test_trade -- --ignored --nocapture'''
       }
     }
   }
