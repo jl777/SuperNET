@@ -15,11 +15,11 @@ pub fn test_dht() {
 
     let mut alice_key: bits256 = unsafe {zeroed()};
     unsafe {alice_key.bytes[0] = 1}
-    unwrap! (::initialize (&alice, 9999, alice_key, 111, 0));
+    unwrap! (::initialize (&alice, 9999, alice_key, 2111, 0));
 
     let mut bob_key: bits256 = unsafe {zeroed()};
     unsafe {bob_key.bytes[0] = 2}
-    unwrap! (::initialize (&bob, 9999, bob_key, 111, 0));
+    unwrap! (::initialize (&bob, 9999, bob_key, 2112, 0));
 
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
