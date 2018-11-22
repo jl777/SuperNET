@@ -7,6 +7,7 @@ extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
 extern crate lazy_static;
+extern crate libc;
 extern crate serde;
 //extern crate serde_derive;
 #[macro_use]
@@ -19,12 +20,49 @@ extern crate unwrap;
 pub mod tests;
 
 use common::bits256;
+use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use fxhash::FxHashMap;
+use libc::{c_char, c_void};
 use serde::Serialize;
+use std::ffi::CStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+
+// NB: C++ structures and functions are defined in "dht.cc".
+
+#[repr(C)]
+struct dugout_t {
+    err: *const c_char,  // strdup of a C++ exception `what`.
+    sett: *mut c_void,  // `lt::settings_pack*` (from C++ `new`).
+    session: *mut c_void,  // `lt::session*` (from C++ `new`).
+}
+impl dugout_t {
+    fn has_err (&self) -> Option<&str> {
+        if !self.err.is_null() {
+            let what = if let Ok (msg) = unsafe {CStr::from_ptr (self.err)} .to_str() {msg} else {"Non-unicode `what`"};
+            Some (what)
+        } else {
+            None
+        }
+    }
+}
+impl Drop for dugout_t {
+    fn drop (&mut self) {
+        let err = unsafe {delete_dugout (self)};
+        if !err.is_null() {
+            let what = unwrap! (unsafe {CStr::from_ptr (err)} .to_str());
+            log! ("delete_dugout error: " (what));
+            unsafe {libc::free (err as *mut c_void);}
+        }
+    }
+}
+
+extern "C" {
+    fn dht_init() -> dugout_t;
+    fn delete_dugout (dugout: *mut dugout_t) -> *const c_char;
+}
 
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
@@ -49,6 +87,19 @@ impl PeersContext {
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
 /// allowing it to initialize and then stop at its own pace.
 fn dht_thread (ctx: MmArc) {
+    let mut bootstrap_status = ctx.log.status_handle();
+    let status_tags: &[&TagParam] = &[&"dht-boot"];
+    bootstrap_status.status (status_tags, "DHT initializing ...");
+
+    let dugout = unsafe {dht_init()};
+    if let Some (err) = dugout.has_err() {
+        bootstrap_status.status (status_tags, &fomat! ("DHT initialization error: " (err)));
+        return
+    }
+
+    //bootstrap_status.status (status_tags, "DHT bootstrapping ...");
+    //bootstrap_status.status (status_tags, "DHT discovering peers (N) ...");
+
     loop {
         if ctx.is_stopping() {break}
         thread::sleep (Duration::from_secs (1));
@@ -64,8 +115,9 @@ fn dht_thread (ctx: MmArc) {
 ///                      We're not limited to this port though and might try other ports as well.
 /// * `session_id` - Identifies our incarnation, allowing other peers to know if they're talking with the same instance.
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16, session_id: u32) -> Result<(), String> {
-    let mut bootstrap_status = ctx.log.status_handle();
-    bootstrap_status.status (&[&"dht-boot"], "DHT initializing ...");
+    // NB: From the `fn test_trade` logs it looks like the `session_id` isn't shared with the peers currently.
+    log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port) " session " (session_id));
+    if !our_public_key.nonz() {return ERR! ("No public key")}
 
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     *try_s! (pctx.dht_thread.lock()) =
@@ -88,15 +140,8 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
         })
     });
 
-    // NB: From the `fn test_trade` logs it looks like the `session_id` isn't shared with the peers currently.
-    log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port) " session " (session_id));
-    if !our_public_key.nonz() {return ERR! ("No public key")}
-
     *try_s! (common::for_c::PEERS_SEND_COMPAT.lock()) = Some (peers_send_compat);
     *try_s! (common::for_c::PEERS_RECV_COMPAT.lock()) = Some (peers_recv_compact);
-
-    bootstrap_status.status (&[&"dht", &"boot"], "DHT bootstrapping ...");
-    bootstrap_status.status (&[&"dht", &"boot"], "DHT discovering peers (N) ...");
 
     Ok(())
 }

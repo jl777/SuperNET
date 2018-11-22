@@ -818,6 +818,8 @@ fn libtorrent() {
                 .define("_WIN32_WINNT", "0x0600")
                 // cf. https://stackoverflow.com/questions/4573536/ehsc-vc-eha-synchronous-vs-asynchronous-exception-handling
                 .flag("/EHsc")
+                // https://stackoverflow.com/questions/7582394/strdup-or-strdup
+                .flag("-D_CRT_NONSTDC_NO_DEPRECATE")
                 .compile("dht");
         }
         println!("cargo:rustc-link-lib=static=dht");

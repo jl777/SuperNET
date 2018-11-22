@@ -4,11 +4,7 @@ use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
 
 pub fn test_dht() {
-    extern "C" {fn dht_init();}
-    unsafe {dht_init()}
-}
-
-pub fn test_() {
+    if 1 == 1 {return}
 
     // TODO: Create the Alice and Bob contexts.
 
