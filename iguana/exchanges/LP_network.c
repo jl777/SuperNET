@@ -398,7 +398,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
         free(msgstr);
 }
     
-uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
+uint32_t LP_swapsend(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
     uint8_t *buf; int32_t sentbytes,offset=0,i;
     buf = malloc(datalen + sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2);
@@ -410,7 +410,11 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     offset += iguana_rwnum(1,&buf[offset],sizeof(msgbits),&msgbits);
     if ( datalen > 0 )
         memcpy(&buf[offset],data,datalen), offset += datalen;
-    if ( (sentbytes= nn_send(pairsock,buf,offset,0)) != offset )
+
+    peers_clock_tick_compat(ctx,pairsock);
+    int32_t peers_err = peers_send_compat(ctx,pairsock,buf,offset);
+
+    if ( (sentbytes= nn_send(pairsock,buf,offset,0)) != offset && peers_err )
     {
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
         if ( sentbytes < 0 )

@@ -2719,7 +2719,7 @@ void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,s
     basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,swap->I.Atxfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
 }
 
-int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+int32_t basilisk_alicetxs(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     char coinaddr[64],alicestr[65],alicetomic[128]; int32_t retval = -1; struct iguana_info *coin;
     LP_etomicsymbol(alicestr,alicetomic,swap->I.alicestr);
@@ -2749,7 +2749,7 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
             if ( basilisk_rawtx_gen(swap->ctx,"myfee",swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,swap->myfee.I.locktime,swap->myfee.spendscript,swap->myfee.I.spendlen,strcmp(coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr) == 0 )
             {
                 //printf("rawtxsend %s %.8f\n",coin->symbol,dstr(strcmp(coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : coin->txfee));
-                swap->I.statebits |= LP_swapdata_rawtxsend(pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
+                swap->I.statebits |= LP_swapdata_rawtxsend(ctx,pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
                 LP_unspents_mark(swap->I.iambob!=0?coin->symbol:coin->symbol,swap->myfee.vins);
                 //basilisk_txlog(swap,&swap->myfee,-1);
                 //int32_t i; for (i=0; i<swap->myfee.I.datalen; i++)

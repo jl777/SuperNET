@@ -481,7 +481,7 @@ int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int3
     peers_clock_tick_compat(ctx,pairsock);
     while ( time(NULL) < expiration )
     {
-        if ( (datalen = peers_recv_compat(ctx,pairsock,&data)) > 0 )
+        if ( (datalen = peers_recv_compat(ctx,pairsock,(uint8_t**) &data)) > 0 )
         {
             retval = (*verify)(swap,data,datalen);
             swap->received = (uint32_t)time(NULL);
@@ -527,7 +527,12 @@ int32_t swap_nn_send(uint32_t ctx,int32_t sock,uint8_t *data,int32_t datalen,uin
         pfd.fd = sock;
         pfd.events = NN_POLLOUT;
         if ( nn_poll(&pfd,1,1) > 0 )
-            return(nn_send(sock,data,datalen,flags));
+        {
+            int32_t rc = nn_send(sock,data,datalen,flags);
+            // If `peers` is okay then there's a chance that the message will be delivered, so return the optimistic.
+            if (!peers_err) return(datalen);
+            return(rc);
+        }
         usleep(1000);
     }
 
@@ -720,7 +725,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     return(retval);
 }
 
-uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend)
+uint32_t LP_swapdata_rawtxsend(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend)
 {
     uint8_t sendbuf[32768]; int32_t sendlen,retval = -1;
     if ( LP_swapdata_rawtx(swap,data,maxlen,rawtx) != 0 )
@@ -782,7 +787,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 if ( suppress_swapsend == 0 )
                 {
-                    retval = LP_swapsend(pairsock,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs);
+                    retval = LP_swapsend(ctx,pairsock,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs);
                     if ( LP_waitmempool(rawtx->symbol,rawtx->I.destaddr,rawtx->I.signedtxid,0,LP_SWAPSTEP_TIMEOUT*10) < 0 )
                     {
                         char str[65]; printf("failed to find %s %s %s in the mempool?\n",rawtx->name,rawtx->I.destaddr,bits256_str(str,rawtx->I.actualtxid));
@@ -911,7 +916,7 @@ void LP_bobloop(uint32_t ctx, struct basilisk_swap *_swap)
             }
             if ( err == 0 )
             {
-                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
+                if ( LP_swapdata_rawtxsend(ctx,swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
                 {
                     err = -2005, printf("error sending bobdeposit\n");
                 }
@@ -949,7 +954,7 @@ void LP_bobloop(uint32_t ctx, struct basilisk_swap *_swap)
                         sleep(10);
                     }
                     LP_swap_critical = (uint32_t)time(NULL);
-                    if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 ) {
+                    if ( LP_swapdata_rawtxsend(ctx,swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 ) {
                         err = -2008, printf("error sending bobpayment\n");
                     }
                     //if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_alicespend) < 0 )
@@ -1009,13 +1014,13 @@ void LP_aliceloop(uint32_t ctx, struct basilisk_swap *_swap)
             err = -1001, printf("error LP_sendwait choosei\n");
         else if ( LP_sendwait(ctx,"mostprivs",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
             err = -1002, printf("error LP_sendwait mostprivs\n");
-        else if ( basilisk_alicetxs(swap->N.pair,swap,data,maxlen) != 0 )
+        else if ( basilisk_alicetxs(ctx,swap->N.pair,swap,data,maxlen) != 0 )
             err = -1003, printf("basilisk_alicetxs error\n");
         else
         {
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
-            if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
+            if ( LP_swapdata_rawtxsend(ctx,swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 err = -1004, printf("error sending alicefee\n");
             else if ( LP_waitfor(ctx,swap->N.pair,swap,bobwaittimeout,LP_verify_bobdeposit) < 0 )
                 err = -1005, printf("error waiting for bobdeposit\n");
@@ -1030,7 +1035,7 @@ void LP_aliceloop(uint32_t ctx, struct basilisk_swap *_swap)
                     char str[65];printf("%d wait for bobdeposit %s numconfs.%d %s %s\n",n,swap->bobdeposit.I.destaddr,m,bobstr,bits256_str(str,swap->bobdeposit.I.signedtxid));
                     sleep(10);
                 }
-                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
+                if ( LP_swapdata_rawtxsend(ctx,swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
                     err = -1006, printf("error sending alicepayment\n");
                 else
                 {
