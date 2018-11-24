@@ -19,7 +19,7 @@ extern crate unwrap;
 #[doc(hidden)]
 pub mod tests;
 
-use common::bits256;
+use common::{bits256, for_c};
 use common::log::{StatusHandle, TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
 use fxhash::FxHashMap;
@@ -75,10 +75,29 @@ extern "C" {
     fn as_listen_failed_alert (alert: *const Alert) -> *const c_char;
 }
 
+/// In order to emulate the synchronous exchange of messages with a peer on top of an asynchronous and optional delivery
+/// (optional - because the message might come through a different channel, via the MM1 nanomsg for example)
+/// we need a clock counter incremeted with each interaction.
+/// 
+/// That is, Alice sends message 1 and Bob tries to get message 1 through the DHT,
+/// then Bob sends a message 2 reply and Alice tries to get it through the DHT,
+/// then Alice sends a third message and Bob attempts to fetch it from DHT.
+/// The numbers `1`, `2` and `3` in this example represent the order of the sequential communication between two peers.
+/// We might say that these numbers *clock* the communication, that is, by telling Bob that we've *past* waiting for message 1
+/// (having obtained it by other means perhaps) and are now waiting for message 2, etc.
+type Clock = u32;
+
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     dht_thread: Mutex<Option<thread::JoinHandle<()>>>,
-    sock2peer: Mutex<FxHashMap<i32, bits256>>
+    /// A map from a nanomsg socket (created in C code) and the `LP_mypub25519` peer ID.  
+    /// Also tracked here is the order of sequential communication on that socket - the Clock.
+    /// 
+    /// It is not yet clear whether we'll retain the nanomsg compatibility RPC layer,
+    /// but even if we happen to facktor it away in the future, the socket abstraction might still be useful here
+    /// because it represent a separate thread of sequential communication,
+    /// allowing us to have multiple channels of communication between two peers.
+    sock2peer: Mutex<FxHashMap<i32, (bits256, Clock)>>
 }
 
 impl PeersContext {
@@ -206,8 +225,9 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
         })
     });
 
-    *try_s! (common::for_c::PEERS_SEND_COMPAT.lock()) = Some (peers_send_compat);
-    *try_s! (common::for_c::PEERS_RECV_COMPAT.lock()) = Some (peers_recv_compact);
+    *try_s! (for_c::PEERS_CLOCK_TICK_COMPAT.lock()) = Some (peers_clock_tick_compat);
+    *try_s! (for_c::PEERS_SEND_COMPAT.lock()) = Some (peers_send_compat);
+    *try_s! (for_c::PEERS_RECV_COMPAT.lock()) = Some (peers_recv_compat);
 
     Ok(())
 }
@@ -234,21 +254,66 @@ pub fn send<T: Serialize> (_ctx: &MmArc, _to: bits256, _payload: &T) -> Result<(
     ERR! ("TBD")
 }
 
-/// Associate a nanomsg socket with a p2p `LP_mypub25519` identifier of the peer.
+/// Associate a nanomsg socket with a p2p `LP_mypub25519` identifier of the peer.  
+/// Also resets the clock counter to zero, initiating a new session with that peer.
 pub fn bind (ctx: &MmArc, sock: i32, peer: bits256) -> Result<(), String> {
     log! ("bind] sock " (sock) " = peer " (peer));
     let pctx = try_s! (PeersContext::from_ctx (ctx));
     let mut sock2peer = try_s! (pctx.sock2peer.lock());
-    sock2peer.insert (sock, peer);
+    sock2peer.insert (sock, (peer, 0 as Clock));
     Ok(())
 }
 
-/// TBD
+/// Advances the clock counter, switching the communication with the peer to the next message.
+/// 
+/// The counter should be advanced before sending a new message or receiving one,
+/// in order to maintain the communication sequence, discriminating one message from another.
+/// 
+/// For example:  
+/// Clock 1: Alice sends "Hi!". Bob waits for "Hi!".  
+/// Clock 2: Bob answers with "Hi yourself!". Alice waits for "Hi yourself!".
+/// 
+/// Affects `fn send`, `fn peers_send_compat` and `fn peers_recv_compat`.
+/// 
+/// The counter is reset to zero in `fn bind`.
 /// 
 /// * `ctx` - `MmCtx` handler.
-/// * `sock` - 
-/// * `` - 
-/// * `` - 
+/// * `sock` - The nanomsg socket that `fn bind` has previously associated with a peer ID.
+fn peers_clock_tick_compat (ctx: u32, sock: i32) {
+    if let Err (err) = (move || -> Result<(), String> {
+        let ctx = try_s! (MmArc::from_ffi_handle (ctx));
+        let pctx = try_s! (PeersContext::from_ctx (&ctx));
+        let mut sock2peer = try_s! (pctx.sock2peer.lock());
+        use std::collections::hash_map::Entry;
+        match sock2peer.entry (sock) {
+            Entry::Vacant (_) => {
+                ERR! ("Unknown sock: {}", sock)
+            },
+            Entry::Occupied (mut oe) => {
+                oe.get_mut().1 += 1;
+                Ok(())
+            }
+        }
+    })() {log! ("peers_clock_tick_compat] error: " (err))}
+}
+
+/// Start sending `data` to the peer.
+/// 
+/// Returns (almost) immediately, scheduling a transfer of the provided payload to the peer identified by `sock`.
+/// 
+/// The transfer itself might take some time,
+/// given that we might be waiting for the DHT bootstrap to finish
+/// and then for the data to be routed to the corresponding DHT nodes.
+/// 
+/// NB: The clock counter must be incremented with `fn peers_clock_tick_compat` before sending a new message,
+/// in order to discern one message from another.
+/// 
+/// * `ctx` - `MmCtx` handler.
+/// * `sock` - The nanomsg socket that `fn bind` has previously associated with a peer ID.
+/// * `data` - Binary payload, usually generated by the `datagen` functions in "LP_swap.c".
+///            (We plan to replace it with Rust `Serialize` structures in future,
+///            in order to waste less space and to make the swap communication more transparent and debug-friendly).
+/// * `datalen` - The length of the payload in `data`.
 /// 
 /// Returns 0 if successfull, negative number if not.
 fn peers_send_compat (ctx: u32, sock: i32, _data: *const u8, datalen: i32) -> i32 {
@@ -257,26 +322,37 @@ fn peers_send_compat (ctx: u32, sock: i32, _data: *const u8, datalen: i32) -> i3
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
         let sock2peer = try_s! (pctx.sock2peer.lock());
         let peer = sock2peer.get (&sock);
-        log! ("peers_send_compat] sock: " (sock) "; datalen: " (datalen) "; peer " if let Some (p) = peer {(p)} else {'-'});
+        log! ("peers_send_compat] sock: " (sock) "; datalen: " (datalen)
+            if let Some (t) = peer {"; peer " (t.0) "; clock " (t.1)});
         ERR! ("TBD")
     })() {log! ("peers_send_compat] error: " (err)); -1} else {0}
 }
 
-/// TBD
+/// See if we've got some data from the peer.
 /// 
 /// * `ctx` - `MmCtx` handler.
-/// * `sock` - 
+/// * `sock` - The nanomsg socket that `fn bind` has previously associated with a peer ID.
+/// 
+/// The function is non-blocking.
+/// The caller should invoke it repeatedly until the message has arrived
+/// (here or on another RPC channel, such as the MM1 nanomsg).
+/// 
+/// The function doesn't advance the clock counter (the sequential number of the message that we are trying to get).
+/// Consequently, if we call `peers_recv_compat` without advancing the clock counter
+/// then the function will simply return the same message over and over.
+/// In order to switch to the *next* message the clock counter should be incremented with `fn peers_clock_tick_compat`.
 /// 
 /// Returns the length of the `data` buffer allocated with `malloc`,
-/// or `0` if no data was received,
+/// or `0` if no data was received (if the message has not arrived yet),
 /// or a negative number if there was an error.
-fn peers_recv_compact (ctx: u32, sock: i32, _data: *mut *mut u8) -> i32 {
+fn peers_recv_compat (ctx: u32, sock: i32, _data: *mut *mut u8) -> i32 {
     match (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
         let sock2peer = try_s! (pctx.sock2peer.lock());
         let peer = sock2peer.get (&sock);
-        log! ("peers_recv_compact] sock: " (sock) "; peer " if let Some (p) = peer {(p)} else {'-'});
+        log! ("peers_recv_compact] sock: " (sock)
+            if let Some (t) = peer {"; peer " (t.0) "; clock " (t.1)});
         ERR! ("TBD")
     })() {
         Ok (l) => l,

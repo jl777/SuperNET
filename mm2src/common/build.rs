@@ -546,7 +546,7 @@ fn hget(url: &str, to: PathBuf) {
                     if now_float() - last_status_update > 3. {
                         last_status_update = now_float();
                         epintln!(
-                            {"hget] Fetched {:.1} KiB", received as f64 / 1024.}
+                            {"hget] Fetched {:.0} KiB", received as f64 / 1024.}
                             if let Some(len) = len {{" out of {:.0}", len as f64 / 1024.}}
                             " …"
                         );

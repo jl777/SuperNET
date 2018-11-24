@@ -3,6 +3,7 @@ use std::sync::Mutex;
 use std::ffi::CStr;
 
 lazy_static! {
+    pub static ref PEERS_CLOCK_TICK_COMPAT: Mutex<Option<fn (u32, i32)>> = Mutex::new (None);
     pub static ref PEERS_SEND_COMPAT: Mutex<Option<fn (u32, i32, *const u8, i32) -> i32>> = Mutex::new (None);
     pub static ref PEERS_RECV_COMPAT: Mutex<Option<fn (u32, i32, *mut *mut u8) -> i32>> = Mutex::new (None);
 }
@@ -25,17 +26,23 @@ pub extern fn log_stacktrace (desc: *const c_char) {
     log! ({"Stacktrace. {}\n{}", desc, trace});
 }
 
+/// cf. `peers::peers_clock_tick_compat`.
+#[no_mangle]
+pub extern fn peers_clock_tick_compat (ctx: u32, sock: i32) {
+    let fun = unwrap! (unwrap! (PEERS_CLOCK_TICK_COMPAT.lock()) .ok_or ("!PEERS_CLOCK_TICK_COMPAT"));
+    fun (ctx, sock)
+}
 
 /// cf. `peers::peers_send_compat`.
 #[no_mangle]
-pub extern fn peers_send_compat (_ctx: u32, sock: i32, _data: *const u8, datalen: i32) -> i32 {
+pub extern fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32 {
     let fun = unwrap! (unwrap! (PEERS_SEND_COMPAT.lock()) .ok_or ("!PEERS_SEND_COMPAT"));
-    fun (_ctx, sock, _data, datalen)
+    fun (ctx, sock, data, datalen)
 }
 
 /// cf. `peers::peers_recv_compact`.
 #[no_mangle]
-pub extern fn peers_recv_compact (_ctx: u32, sock: i32, _data: *mut *mut u8) -> i32 {
+pub extern fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
     let fun = unwrap! (unwrap! (PEERS_RECV_COMPAT.lock()) .ok_or ("!PEERS_RECV_COMPAT"));
-    fun (_ctx, sock, _data)
+    fun (ctx, sock, data)
 }

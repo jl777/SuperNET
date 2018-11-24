@@ -7,12 +7,13 @@
 
 # TODO: https://docs.docker.com/develop/develop-images/multistage-build/
 
+# NB: The version here was picked to match the one tested in our CI. The latest Travis has (as of 2018-11) is Xenial.
 FROM ubuntu:xenial
 
 RUN \
     apt-get update &&\
-    apt-get install -y git libcurl4-openssl-dev build-essential wget pax libleveldb-dev &&\
-    # https://rust-lang-nursery.github.io/rust-bindgen/requirements.html#debian-based-linuxes
+    apt-get install -y git libcurl4-openssl-dev build-essential libssl-dev wget &&\
+    # https://github.com/rust-lang/rust-bindgen/blob/master/book/src/requirements.md#debian-based-linuxes
     apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9 &&\
     # openssl-sys requirements, cf. https://crates.io/crates/openssl-sys
     apt-get install -y pkg-config libssl-dev &&\
@@ -22,8 +23,7 @@ RUN \
 
 #Cmake 3.12.0 supports multi-platform -j option, it allows to use all cores for concurrent build to speed up it
 RUN wget https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh && \
-    chmod +x cmake-3.12.0-Linux-x86_64.sh && \
-    ./cmake-3.12.0-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr && \
+    sh cmake-3.12.0-Linux-x86_64.sh --skip-license --exclude-subdir --prefix=/usr/local && \
     rm -rf cmake-3.12.0-Linux-x86_64.sh
 
 RUN \

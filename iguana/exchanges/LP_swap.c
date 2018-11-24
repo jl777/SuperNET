@@ -478,9 +478,10 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
 int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen))
 {
     struct nn_pollfd pfd; void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
+    peers_clock_tick_compat(ctx,pairsock);
     while ( time(NULL) < expiration )
     {
-        if ( (datalen = peers_recv_compact(ctx,pairsock,&data)) > 0 )
+        if ( (datalen = peers_recv_compat(ctx,pairsock,&data)) > 0 )
         {
             retval = (*verify)(swap,data,datalen);
             swap->received = (uint32_t)time(NULL);
@@ -492,7 +493,7 @@ int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int3
         pfd.fd = pairsock;
         pfd.events = NN_POLLIN;
 
-        // Tis currently large in order not to pollute the log with the `peers_recv_compact` messages much.
+        // Tis currently large in order not to pollute the log with the `peers_recv_compat` messages much.
         int wait_ms = 1234;
 
         if ( nn_poll(&pfd,1,wait_ms) > 0 )
@@ -517,6 +518,7 @@ int32_t swap_nn_send(uint32_t ctx,int32_t sock,uint8_t *data,int32_t datalen,uin
 {
     struct nn_pollfd pfd; int32_t i;
 
+    peers_clock_tick_compat(ctx,sock);
     int32_t peers_err = peers_send_compat(ctx,sock,data,datalen);
 
     for (i=0; i<timeout*1000; i++)
