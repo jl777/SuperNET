@@ -635,7 +635,12 @@ fn trade_base_rel(base: &str, rel: &str) {
 ///     cargo test trade -- --nocapture --ignored
 #[test]
 #[ignore]
-fn test_trade() {
+fn trade_pizza_eth() {
     trade_base_rel("PIZZA", "ETH");
+}
+
+#[test]
+#[ignore]
+fn trade_eth_pizza() {
     trade_base_rel("ETH", "PIZZA");
 }
