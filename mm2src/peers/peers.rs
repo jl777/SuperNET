@@ -6,6 +6,7 @@ extern crate futures;
 extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
+#[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate serde;
@@ -19,7 +20,7 @@ extern crate unwrap;
 #[doc(hidden)]
 pub mod tests;
 
-use common::{bits256, for_c};
+use common::{bits256, for_c, stack_trace, stack_trace_frame};
 use common::log::{StatusHandle, TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
 use fxhash::FxHashMap;
@@ -297,6 +298,11 @@ fn peers_clock_tick_compat (ctx: u32, sock: i32) {
     })() {log! ("peers_clock_tick_compat] error: " (err))}
 }
 
+lazy_static! {
+    /// Allows us to skip logging the trace when it hasn't changed from the last time.
+    static ref PREVIOUS_TRACE: Mutex<String> = Mutex::new (String::new());
+}
+
 /// Start sending `data` to the peer.
 /// 
 /// Returns (almost) immediately, scheduling a transfer of the provided payload to the peer identified by `sock`.
@@ -317,15 +323,32 @@ fn peers_clock_tick_compat (ctx: u32, sock: i32) {
 /// 
 /// Returns 0 if successfull, negative number if not.
 fn peers_send_compat (ctx: u32, sock: i32, _data: *const u8, datalen: i32) -> i32 {
-    if let Err (err) = (move || -> Result<(), String> {
+    let ret = (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
         let sock2peer = try_s! (pctx.sock2peer.lock());
-        let peer = sock2peer.get (&sock);
-        log! ("peers_send_compat] sock: " (sock) "; datalen: " (datalen)
-            if let Some (t) = peer {"; peer " (t.0) "; clock " (t.1)});
-        ERR! ("TBD")
-    })() {log! ("peers_send_compat] error: " (err)); -1} else {0}
+        if let Some ((peer, clock)) = sock2peer.get (&sock) {
+            let mut trace = String::with_capacity (4096);
+            stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+            let mut prev = try_s! (PREVIOUS_TRACE.lock());
+
+            let pk = fomat! ((peer));
+            log! (
+                "peers_send_compat] sock: " (sock) "; datalen: " (datalen) "; peer " (&pk[0..3]) "; clock " (clock)
+                if trace != *prev {'\n' (trace)}
+            );
+
+            *prev = trace;
+
+            // TODO
+
+            Ok (-1)
+        } else {ERR! ("Unknown sock: {}", sock)}
+    })();
+    match ret {
+        Ok (ret) => ret,
+        Err (err) => {log! ("peers_send_compat] error: " (err)); -1}
+    }
 }
 
 /// See if we've got some data from the peer.
@@ -350,10 +373,23 @@ fn peers_recv_compat (ctx: u32, sock: i32, _data: *mut *mut u8) -> i32 {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
         let sock2peer = try_s! (pctx.sock2peer.lock());
-        let peer = sock2peer.get (&sock);
-        log! ("peers_recv_compact] sock: " (sock)
-            if let Some (t) = peer {"; peer " (t.0) "; clock " (t.1)});
-        ERR! ("TBD")
+        if let Some ((peer, clock)) = sock2peer.get (&sock) {
+            let mut trace = String::with_capacity (4096);
+            stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+            let mut prev = try_s! (PREVIOUS_TRACE.lock());
+
+            let pk = fomat! ((peer));
+            log! (
+                "peers_recv_compact] sock: " (sock) "; peer " (&pk[0..3]) "; clock " (clock)
+                if trace != *prev {'\n' (trace)}
+            );
+
+            *prev = trace;
+
+            // TODO
+
+            Ok (-1)
+        } else {ERR! ("Unknown sock: {}", sock)}
     })() {
         Ok (l) => l,
         Err (err) => {log! ("peers_recv_compact] error: " (err)); -1}
