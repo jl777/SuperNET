@@ -875,7 +875,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
             {
                 if ( nn_connect(pullsock,connectaddr) < 0 )
                 {
-                    printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
+                    printf("connect to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
                 else

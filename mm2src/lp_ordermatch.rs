@@ -24,6 +24,7 @@ use gstuff::now_ms;
 use fxhash::{FxHashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
 use lp_network::lp_queue_command;
+use peers;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
 use std::collections::hash_map::Entry;

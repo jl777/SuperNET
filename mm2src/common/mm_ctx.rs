@@ -59,6 +59,9 @@ pub struct MmCtx {
     pub peers_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
+    // TODO: The `rpc_ip_port` is a part of the `conf`, we should refactor away the unnecessary constructor parameter
+    //       in order to keep the `MmCtx` constructor lean and in order to spread the `rpc_ip_port` logic less,
+    //       moving it closer to where it's actually used instead (encapsulating in rpc mod).
     pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
         let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {

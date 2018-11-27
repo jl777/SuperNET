@@ -23,7 +23,7 @@ use super::slurp_req;
 use super::log::LogState;
 
 /// Automatically kill a wrapped process.
-pub struct RaiiKill {handle: Handle, running: bool}
+pub struct RaiiKill {pub handle: Handle, running: bool}
 impl RaiiKill {
     pub fn from_handle (handle: Handle) -> RaiiKill {
         RaiiKill {handle, running: true}

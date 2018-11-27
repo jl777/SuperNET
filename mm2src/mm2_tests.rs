@@ -66,7 +66,7 @@ fn enable_native(mm: &MarketMakerIt, coin: &str) -> String {
         "method": "enable",
         "coin": coin,
     })));
-    assert_eq! (native.0, StatusCode::OK);
+    assert_eq! (native.0, StatusCode::OK, "'enable' failed: {}", native.1);
     native.1
 }
 
@@ -507,6 +507,8 @@ fn trade_base_rel(base: &str, rel: &str) {
         json! ({
             "gui": "nogui",
             "netid": 9999,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
             "passphrase": bob_passphrase,
             "coins": coins,
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
@@ -521,6 +523,8 @@ fn trade_base_rel(base: &str, rel: &str) {
         json! ({
             "gui": "nogui",
             "netid": 9999,
+            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
+            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
             "coins": coins,
             "seednode": fomat!((mm_bob.ip)),

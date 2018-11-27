@@ -162,8 +162,9 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
             // NB: Looks like libtorrent automatically tries the next port number when it can't bind on the `preferred_port`.
             let endpoint_cs = unsafe {as_listen_succeeded_alert (alert)};
             if !endpoint_cs.is_null() {
-                let endpoint = unwrap! (unsafe {CStr::from_ptr (endpoint_cs)} .to_str());
-                log! ("Listening on " (endpoint));
+                let _endpoint = unwrap! (unsafe {CStr::from_ptr (endpoint_cs)} .to_str());
+                // TODO: Listen on "myipaddr" if present.
+                //log! ("Listening on " (endpoint));
                 unsafe {libc::free (endpoint_cs as *mut c_void)}
                 return
             }

@@ -11,7 +11,7 @@ pub fn test_dht() {
 
     let bob = MmCtx::new (json! ({}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
 
-    // TODO: Initialize the DHT on both, using different preferred ports.
+    // Initialize the DHT on both, using different preferred ports.
 
     let mut alice_key: bits256 = unsafe {zeroed()};
     unsafe {alice_key.bytes[0] = 1}
@@ -26,8 +26,7 @@ pub fn test_dht() {
 
     // TODO: Send a message to Bob.
 
-    //let bob_id: bits256 = unsafe {zeroed()};  // XXX
-    //unwrap! (::send (&alice, bob_id, &"qwe"));
+    unwrap! (::send (&alice, bob_key, &"test"));
 
     // TODO: Get a message from Alice.
 
