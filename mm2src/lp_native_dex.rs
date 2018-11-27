@@ -1060,7 +1060,7 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
     lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid);
 
     // Add ourselves into the list of known peers.
-    try_s! (peers::initialize (ctx, netid, lp::G.LP_mypub25519, pubport, lp::G.LP_sessionid));
+    try_s! (peers::initialize (ctx, netid, lp::G.LP_mypub25519, pubport + 1, lp::G.LP_sessionid));
     let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
     mypeer = lp::LP_addpeer (mypeer, pubsock, myipaddr_c.as_ptr() as *mut c_char, myport, pullport, pubport, 1, lp::G.LP_sessionid, netid);
     lp::LP_mypeer = mypeer;
