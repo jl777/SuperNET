@@ -26,7 +26,7 @@ pub fn test_dht() {
 
     // TODO: Send a message to Bob.
 
-    unwrap! (::send (&alice, bob_key, &"test"));
+    //unwrap! (::send (&alice, bob_key, &"test"));
 
     // TODO: Get a message from Alice.
 
