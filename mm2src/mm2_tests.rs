@@ -509,6 +509,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "netid": 9999,
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
             "passphrase": bob_passphrase,
             "coins": coins,
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",

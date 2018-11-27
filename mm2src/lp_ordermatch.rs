@@ -432,7 +432,8 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             return -1;
         }
         pair = lp::LP_nanobind(ctx.btc_ctx() as *mut c_void, pair_str.as_mut_ptr());
-        log! ("LP_nanobind was called; pair: " (pair) "; pair_str: " (CStr::from_ptr (pair_str.as_ptr()) .to_str().unwrap()));
+        log! ("LP_nanobind produced sock " (pair) ", pair_str " (CStr::from_ptr (pair_str.as_ptr()) .to_str().unwrap())
+              " (canbind " [ctx.conf["canbind"]] " LP_fixed_pairport " (lp::LP_fixed_pairport));
         unwrap! (peers::bind (ctx, pair, (*qp).desthash));
         if pair >= 0 {
             (*swap).N.pair = pair;
