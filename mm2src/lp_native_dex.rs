@@ -1042,6 +1042,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 }
 */
 
+// TODO: Use MM2-nightly seed nodes.
+//       MM1 nodes no longer compatible due to the UTXO reforms in particular.
+//       We might also diverge in how we handlg the p2p communication in the future.
+
 /// Aka `default_LPnodes`. Initial nodes of the peer-to-peer network.
 const P2P_SEED_NODES: [&'static str; 5] = [
     "5.9.253.195",
@@ -1074,10 +1078,11 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
 
     let seeds: Vec<(IP, IsLp)> = if let Some (seednode) = seednode {
         vec! [(seednode.into(), true)]
-    } else if netid > 0 && netid < 9 {
-        vec! [(format! ("5.9.253.{}", 195 + netid) .into(), true)]
     } else if netid == 0 {
         P2P_SEED_NODES.iter().map (|ip| (Cow::Borrowed (&ip[..]), false)) .collect()
+    //} else if netid == 9999 {
+        // TODO: Use hardcoded seed nodes for netid 9999
+        //       in order to test the NAT traversal in exactly the same way the normal users would do it.
     } else {  // Default netid is 0. If we're using a non-default netid then we should skip adding the hardcoded seed nodes.
         Vec::new()
     };
