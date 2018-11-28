@@ -21,6 +21,7 @@
 
 #![allow(non_camel_case_types)]
 
+extern crate coins;
 #[macro_use]
 extern crate common;
 extern crate crc;

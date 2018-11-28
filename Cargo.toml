@@ -27,6 +27,7 @@ etomic = ["etomicrs"]
 nop = []
 
 [dependencies]
+coins = { path = "mm2src/coins" }
 common = { path = "mm2src/common" }
 crc = "1.8"
 # We want version "0.4" but subcrates of it are currently lagging behind when pulled from crates.io (todo: switch back to "0.4" later).
