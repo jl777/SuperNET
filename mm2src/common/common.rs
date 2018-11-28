@@ -238,11 +238,11 @@ pub fn str_to_malloc (s: &str) -> *mut c_char {
 }
 
 /// Helps sharing a byte slice with C code by allocating a zero-terminated string with the C standard library allocator.
-pub fn slice_to_malloc (bytes: &[u8]) -> *mut c_void {unsafe {
+pub fn slice_to_malloc (bytes: &[u8]) -> *mut u8 {unsafe {
     let buf = malloc (bytes.len() + 1) as *mut u8;
     copy (bytes.as_ptr(), buf, bytes.len());
     *buf.offset (bytes.len() as isize) = 0;
-    buf as *mut c_void
+    buf
 }}
 
 /// Converts *mut c_char to Rust String

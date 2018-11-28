@@ -1,11 +1,10 @@
-#include <chrono>
+#include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <iostream>
-#include <random>
 #include <sstream>
 #include <stdexcept>
-#include <thread>
 #include <vector>
 #include <string.h>  // strdup
 #include "libtorrent/alert_types.hpp"
@@ -107,63 +106,39 @@ extern "C" char const* as_listen_failed_alert (lt::alert const* alert) {
     return nullptr;
 }
 
-/*
-    for (;;) {
-
-        std::this_thread::sleep_for (std::chrono::milliseconds (100));
-    }
+extern "C" void dht_put (dugout_t* dugout,
+                         uint8_t const* key, int32_t keylen,
+                         uint8_t const* salt_c, int32_t saltlen,
+                         void (*callback) (void*, uint64_t, uint8_t*, int32_t, uint8_t**, int32_t*, int64_t*), void* arg, uint64_t arg2) {
+    assert (key != nullptr);
+    assert (keylen == 32);
+    assert (salt_c != nullptr);
+    assert (callback != nullptr);
 
     std::array<char, 32> seed;
-    std::random_device rd;
-    std::default_random_engine rng (rd());
-    std::uniform_int_distribution<std::default_random_engine::result_type> dist
-        ((std::default_random_engine::result_type) CHAR_MIN, (std::default_random_engine::result_type) CHAR_MAX);
-    for (char& ch : seed) ch = (char) dist (rng);
+    std::copy (key, key + keylen, seed.begin());
+
 	lt::dht::public_key pk;
     lt::dht::secret_key sk;
     std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
 
-    for (int i = 0; i < 55; ++i) {
-        dugout->session->post_dht_stats();
+    std::string salt ((char const*) salt_c, saltlen);
 
-        if (i < 9) {
-            std::stringstream salt; salt << i;
-            std::string salt_copy = salt.str();
-            dugout->session->dht_put_item (
-                pk.bytes,
-                [salt_copy, pk, sk] (lt::entry& en, std::array<char, 64>& sig, std::int64_t& seq, std::string const&) {
-                    en = "foobar";
-                    std::vector<char> buf;
-                    lt::bencode (std::back_inserter (buf), "foobar");
-                    lt::dht::signature sign;
-                    ++seq;
-                    sign = lt::dht::sign_mutable_item (buf, salt_copy, lt::dht::sequence_number (seq), pk, sk);
-                    sig = sign.bytes;
-                },
-                salt.str());
-        }
+    dugout->session->dht_put_item (
+        pk.bytes,
+        [salt, pk, sk, callback, arg, arg2] (lt::entry& en, std::array<char, 64>& sig, std::int64_t& seq, std::string const&) {
+            std::vector<char> have;
+            lt::bencode (std::back_inserter (have), en);
 
-        std::this_thread::sleep_for (std::chrono::seconds (1));
+            uint8_t* benload; int32_t benlen;
+            callback (arg, arg2, (uint8_t*) have.data(), have.size(), &benload, &benlen, &seq);
 
-        if ((i > 9 && i < 19) || (i > 19 && i < 29)) {
-            std::stringstream salt; salt << (i > 19 ? i - 20 : i - 10);
-            dugout->session->dht_get_item (pk.bytes, salt.str());
-        }
+            en = lt::bdecode (benload, benload + benlen);
+            lt::span<char> benspan ((char*) benload, (std::size_t) benlen);
 
-        // https://www.libtorrent.org/reference-Alerts.html
-        std::vector<lt::alert*> alerts;
-        dugout->session->pop_alerts (&alerts);
-        for (lt::alert* a : alerts) {
-            if (a->type() == lt::dht_stats_alert::alert_type) {
-                auto* dsa = static_cast<lt::dht_stats_alert*> (a);
-                std::cout << "dht_init:" << __LINE__ << "] dht_stats_alert: " << dsa->message() << std::endl;
-            } else if (a->type() == lt::dht_put_alert::alert_type) {
-                auto* dpa = static_cast<lt::dht_put_alert*> (a);
-                std::cout << "dht_init:" << __LINE__ << "] dht_put_alert: " << dpa->message() << std::endl;
-            } else if (a->type() == lt::dht_mutable_item_alert::alert_type) {
-                auto* dmi = static_cast<lt::dht_mutable_item_alert*> (a);
-                std::cout << "dht_init:" << __LINE__ << "] dht_mutable_item_alert: " << dmi->message() << "; val: " << dmi->item.to_string() << std::endl;
-            }
-        }
-    }
-    */
+            lt::dht::signature sign;
+            sign = lt::dht::sign_mutable_item (benspan, salt, lt::dht::sequence_number (seq), pk, sk);
+            sig = sign.bytes;
+        },
+        salt);
+}

@@ -482,9 +482,9 @@ fn reply_to_peer (cmd: QueuedCommand, mut reply: Vec<u8>) -> Result<(), String> 
         // See also commits ce09bcd and 62f3cba: looks like we need the wired string to be zero-terminated.
         reply.push (0);
 
-        let _size = unsafe {nn::nn_send(
+        let _size = unsafe {nn::nn_send (
             cmd.response_sock,
-            slice_to_malloc (&reply),  // Officially it should be `nn_allocmsg` but looks like `malloc` will do.
+            slice_to_malloc (&reply) as *mut c_void,  // Officially it should be `nn_allocmsg` but looks like `malloc` will do.
             reply.len() as usize,
             0,
         )};

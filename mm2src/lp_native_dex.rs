@@ -1044,7 +1044,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 
 // TODO: Use MM2-nightly seed nodes.
 //       MM1 nodes no longer compatible due to the UTXO reforms in particular.
-//       We might also diverge in how we handlg the p2p communication in the future.
+//       We might also diverge in how we handle the p2p communication in the future.
 
 /// Aka `default_LPnodes`. Initial nodes of the peer-to-peer network.
 const P2P_SEED_NODES: [&'static str; 5] = [

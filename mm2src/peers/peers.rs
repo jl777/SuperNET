@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate common;
+extern crate crossbeam;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
@@ -10,6 +11,7 @@ extern crate gstuff;
 extern crate lazy_static;
 extern crate libc;
 extern crate serde;
+//#[macro_use]
 //extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
@@ -20,13 +22,18 @@ extern crate unwrap;
 #[doc(hidden)]
 pub mod tests;
 
-use common::{bits256, for_c, stack_trace, stack_trace_frame};
+use common::{bits256, for_c, slice_to_malloc, stack_trace, stack_trace_frame};
 use common::log::{StatusHandle, TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
+use crossbeam::channel;
 use fxhash::FxHashMap;
+use gstuff::now_ms;
 use libc::{c_char, c_void};
 use serde::Serialize;
 use std::ffi::{CStr, CString};
+use std::mem::zeroed;
+//use std::ptr::{null, null_mut};
+use std::slice::from_raw_parts;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -88,6 +95,19 @@ extern "C" {
 /// (having obtained it by other means perhaps) and are now waiting for message 2, etc.
 type Clock = u32;
 
+/// A command delivered to the `dht_thread` via the `PeersContext::cmd_tx`.
+enum LtCommand {
+    Put {
+        // The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
+        // The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
+        key: [u8; 32],
+        // Identifies the value without affecting its DHT location. Can be empty.
+        salt: Vec<u8>,
+        // NB: Executed multiple times (for different DHT nodes).
+        put_handler: Box<Fn (&[u8]) -> Result<Vec<u8>, String> + 'static + Send + Sync>
+    }
+}
+
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     dht_thread: Mutex<Option<thread::JoinHandle<()>>>,
@@ -98,19 +118,36 @@ pub struct PeersContext {
     /// but even if we happen to facktor it away in the future, the socket abstraction might still be useful here
     /// because it represent a separate thread of sequential communication,
     /// allowing us to have multiple channels of communication between two peers.
-    sock2peer: Mutex<FxHashMap<i32, (bits256, Clock)>>
+    sock2peer: Mutex<FxHashMap<i32, (bits256, Clock)>>,
+    cmd_tx: channel::Sender<LtCommand>,
+    /// Should only be used by the `dht_thread`.
+    cmd_rx: channel::Receiver<LtCommand>
 }
 
 impl PeersContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     pub fn from_ctx (ctx: &MmArc) -> Result<Arc<PeersContext>, String> {
         Ok (try_s! (from_ctx (&ctx.peers_ctx, move || {
+            let (cmd_tx, cmd_rx) = channel::unbounded::<LtCommand>();
             Ok (PeersContext {
                 dht_thread: Mutex::new (None),
-                sock2peer: Mutex::new (FxHashMap::default())
+                sock2peer: Mutex::new (FxHashMap::default()),
+                cmd_tx,
+                cmd_rx
             })
         })))
     }
+}
+
+/// Data passed through the C code and into the callback during the put operation.
+struct PutShuttle {put_handler: Box<Fn (&[u8]) -> Result<Vec<u8>, String> + 'static + Send + Sync>}
+
+lazy_static! {
+    /// A buffer of the `PutShuttle` structures which are shared with the `callback` executed from the libtorrent and "dht.cc" code.
+    /// We don't know when libtorrent will stop using the `put_handler`.
+    /// Probably after the corresponding put alert, but we aren't catching one yet.
+    /// So we have to keep the shuttles around for a while.
+    static ref PUT_SHUTTLES: Mutex<FxHashMap<usize, (u64, Arc<PutShuttle>)>> = Mutex::new (FxHashMap::default());
 }
 
 /// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
@@ -139,6 +176,8 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
         bootstrap_status.status (status_tags, &fomat! ("DHT bootstrap error: " (err)));
         return
     }
+
+    let pctx = unwrap! (PeersContext::from_ctx (&ctx));
 
     struct CbCtx<'a> {
         bootstrap_status: Option<StatusHandle<'a>>
@@ -176,6 +215,15 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                 return
             }
 
+            /*
+            } else if (a->type() == lt::dht_put_alert::alert_type) {
+                auto* dpa = static_cast<lt::dht_put_alert*> (a);
+                std::cout << "dht_init:" << __LINE__ << "] dht_put_alert: " << dpa->message() << std::endl;
+            } else if (a->type() == lt::dht_mutable_item_alert::alert_type) {
+                auto* dmi = static_cast<lt::dht_mutable_item_alert*> (a);
+                std::cout << "dht_init:" << __LINE__ << "] dht_mutable_item_alert: " << dmi->message() << "; val: " << dmi->item.to_string() << std::endl;
+            */
+
             if LOG_UNHANDLED_ALERTS {
                 let cs = unsafe {alert_message (alert)};
                 if let Ok (alert_message) = unsafe {CStr::from_ptr (cs)} .to_str() {log! ("libtorrent alert: " (alert_message))}
@@ -190,7 +238,72 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
         }
 
         if ctx.is_stopping() {break}
-        thread::sleep (Duration::from_millis (50));
+
+        match pctx.cmd_rx.recv_timeout (Duration::from_millis (50)) {
+            Ok (LtCommand::Put {key, salt, put_handler}) => {
+                log! ("dht_thread] Got a Put command.");
+
+                let mut shuttle = Arc::new (PutShuttle {put_handler});
+                let mut shuttles = unwrap! (PUT_SHUTTLES.lock());
+                let now = now_ms();
+                shuttles.retain (|_, (created, _)| now - *created < 600 * 1000);
+                let shuttle_ptr = (&*shuttle) as *const PutShuttle as *const c_void;
+                shuttles.insert (shuttle_ptr as usize, (now, shuttle));
+
+                // * `arg` - A pointer passed to the `callback` via the `dht_put`.
+                //           Usually points to a `Rust` struct, allowing the callback to communicate with the rest of the program.
+                // * `arg2` - An integer passed to the `callback` via the `dht_put`.
+                //            Might be used to verify the `arg`, for example.
+                // * `have` - Bencoded value that was already present under the `key`.
+                // * `havelen` - The length of `have` in bytes.
+                // * `benload` - Bencoded value that should be saved under the `key`.
+                //               In order to pass the value the callback must allocate the memory from `libc` (the C code will later `free` it).
+                // * `benlen` - The length of `benload` in bytes.
+                // * `seq` - The current version of the value (fetched together with `have`). We must increment it.
+                //           DHT nodes will not accept a new value if our version is smaller than theirs.
+                extern fn callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i32, benload: *mut *mut u8, benlen: *mut i32, seq: *mut i64) {
+                    assert! (!arg.is_null());
+                    assert! (!have.is_null());
+                    assert! (!benload.is_null());
+                    assert! (!benlen.is_null());
+                    assert! (!seq.is_null());
+                    log! ("peers_send_compat] callback] " [=arg] ' ' [=have] ' ' [=havelen] ' ' [=benload] ' ' [=benlen] " seq " (unsafe {*seq}));
+                    let shuttles = unwrap! (PUT_SHUTTLES.lock());
+                    let shuttle = match shuttles.get (&(arg as usize)) {
+                        Some ((created, shuttle)) if *created == arg2 => shuttle,
+                        _ => panic! ("No such shuttle: {:?}", arg)
+                    };
+                    let have = unsafe {from_raw_parts (have, havelen as usize)};
+                    match (shuttle.put_handler) (have) {
+                        Ok (new_load) => unsafe {
+                            *benload = slice_to_malloc (&new_load);
+                            *benlen = new_load.len() as i32;
+                            *seq += 1
+                        },
+                        Err (err) => unsafe {
+                            log! ("put_handler error: " (err));
+                            // Keeping the previous value is probably the least invasive in that it doesn't affect the value parsers.
+                            *benload = slice_to_malloc (have);
+                            *benlen = have.len() as i32
+                        }
+                    }
+                }
+                // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
+                //           The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
+                // * `keylen` - The length of the `key` in bytes. Must be 32 bytes, no more no less.
+                // * `salt` - Identifies the value without affecting its DHT location.
+                // * `saltlen` - The length of the `salt` in bytes. 0 if not used.
+                // * `callback` - Invoked from inside the libtorrent code, after the latter obtains the previous (existing) value from the DHT.
+                // * `arg` - A pointer passed to the `callback`.
+                extern "C" {fn dht_put (dugout: *mut dugout_t,
+                                        key: *const u8, keylen: i32,
+                                        salt: *const u8, saltlen: i32,
+                                        callback: extern fn (*mut c_void, u64, *const u8, i32, *mut *mut u8, *mut i32, *mut i64), arg: *const c_void, arg2: u64);}
+                unsafe {dht_put (&mut dugout, key.as_ptr(), key.len() as i32, salt.as_ptr(), salt.len() as i32, callback, shuttle_ptr, now)}
+            },
+            Err (channel::RecvTimeoutError::Timeout) => {},
+            Err (channel::RecvTimeoutError::Disconnected) => break
+        };
     }
 }
 
@@ -296,7 +409,7 @@ fn peers_clock_tick_compat (ctx: u32, sock: i32) {
                 Ok(())
             }
         }
-    })() {log! ("peers_clock_tick_compat] error: " (err))}
+    })() {log! ("peers_clock_tick_compat error: " (err))}
 }
 
 lazy_static! {
@@ -323,7 +436,10 @@ lazy_static! {
 /// * `datalen` - The length of the payload in `data`.
 /// 
 /// Returns 0 if successfull, negative number if not.
-fn peers_send_compat (ctx: u32, sock: i32, _data: *const u8, datalen: i32) -> i32 {
+fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32 {
+    assert! (sock > 0);
+    assert! (!data.is_null());
+    assert! (datalen > 0);
     let ret = (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
@@ -341,14 +457,38 @@ fn peers_send_compat (ctx: u32, sock: i32, _data: *const u8, datalen: i32) -> i3
 
             *prev = trace;
 
-            // TODO
+            // TODO: Consider storing several keys for reliability.
+            //       Maybe after a certain delay.
+            //       Might need a feedback mechanism, repeating the `put`s and expanding the number of keys used if there is no answer from the other side.
 
-            Ok (-1)
+            // TODO: Use the `peer` to generate the key.
+            let mut key: [u8; 32] = unsafe {zeroed()};
+            key[0] = 1;
+            // TODO: Use the `sock` and the `clock` to generate the salt.
+            let salt = b"qwe";
+            let salt = Vec::from (&salt[..]);
+
+            let mut data: Vec<u8> = unsafe {from_raw_parts (data, datalen as usize)} .into();
+            // TODO: Workaround the length limit (1000).
+            // TODO: Use a String instead of Vec, somehow, for a less sparce bencoding?
+            if data.len() > 99 {unsafe {data.set_len (99)}}
+            let benload = try_s! (serde_bencode::ser::to_bytes (&data));
+
+            try_s! (pctx.cmd_tx.send (LtCommand::Put {
+                key,
+                salt,
+                put_handler: Box::new (move |benhave: &[u8]| -> Result<Vec<u8>, String> {
+                    log! ("put_handler] existing value is " (benhave.len()) " bytes; replacing it with " (benload.len()) " bytes.");
+                    Ok (benload.clone())
+                })
+            }));
+
+            Ok (0)
         } else {ERR! ("Unknown sock: {}", sock)}
     })();
     match ret {
         Ok (ret) => ret,
-        Err (err) => {log! ("peers_send_compat] error: " (err)); -1}
+        Err (err) => {log! ("peers_send_compat error: " (err)); -1}
     }
 }
 
@@ -393,6 +533,6 @@ fn peers_recv_compat (ctx: u32, sock: i32, _data: *mut *mut u8) -> i32 {
         } else {ERR! ("Unknown sock: {}", sock)}
     })() {
         Ok (l) => l,
-        Err (err) => {log! ("peers_recv_compact] error: " (err)); -1}
+        Err (err) => {log! ("peers_recv_compact error: " (err)); -1}
     }
 }
