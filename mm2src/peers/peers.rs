@@ -11,8 +11,8 @@ extern crate gstuff;
 extern crate lazy_static;
 extern crate libc;
 extern crate serde;
-//#[macro_use]
-//extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 extern crate serde_bencode;
@@ -365,7 +365,31 @@ pub fn investigate_peer (_ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<
 /// 
 /// * `to` - Recipient of the message (`LP_mypub25519` of the receiving MM2 instance).
 /// * `payload` - Contents of the message.
-pub fn send<T: Serialize> (_ctx: &MmArc, _to: bits256, _payload: &T) -> Result<(), String> {
+pub fn send<T: Serialize> (_ctx: &MmArc, _to: bits256, payload: &T) -> Result<(), String> {
+    // TODO: `send` should return a custom `Future`, finishing when we get the corresponding alert.
+    //       We might even get some interesting statistics as the result:
+    //       the number of nodes where the value was stored,
+    //       the number of nodes currently unreachable,
+    //       IP addresses of the storage nodes.
+    //       The `Future` COULD be custom in order to provide the progress and completion status in a non-blocking way.
+
+    // TODO: Serialization happens inside this method,
+    //       that is, we don't know the actual size of the bencoded payload outside of it,
+    //       and so the spilling of the value into the extra items, to workaround the 1000 bytes limit,
+    //       should happen there automatically.
+    //       Most likely we'll need to wrap the payload, adding a versioned struct around it.
+
+    #[derive(Serialize)]
+    struct Wrap<'a, T: Serialize> {
+        p: &'a T  // Field names should be small, though it might be even better if we could use a tuple.
+    }
+    let _wrap = Wrap {
+        p: payload
+    };
+
+    // By wrapping payload in a tuple we can avoid the cost of the field names.
+    let _tuple = serde_bencode::ser::to_bytes (&(123u8, payload));
+
     ERR! ("TBD")
 }
 
@@ -509,7 +533,7 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
 /// Returns the length of the `data` buffer allocated with `malloc`,
 /// or `0` if no data was received (if the message has not arrived yet),
 /// or a negative number if there was an error.
-fn peers_recv_compat (ctx: u32, sock: i32, _data: *mut *mut u8) -> i32 {
+fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
     match (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
