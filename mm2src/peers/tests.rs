@@ -36,9 +36,11 @@ pub fn test_dht() {
     ::peers_clock_tick_compat (alice_ctx, 1);
     ::peers_send_compat (alice_ctx, 1, b"foobar".as_ptr(), 6);
 
-    // TODO: Get a message from Alice.
+    println! ("Sleeping...");
+    thread::sleep (Duration::from_secs (20));
+    println! ("Starting a GET...");
 
-    return;
+    // TODO: Get that message from Alice.
 
     unwrap! (::bind (&bob, 1, alice_key));
     let bob_ctx = unwrap! (bob.ffi_handle());
@@ -50,9 +52,9 @@ pub fn test_dht() {
         if rc < 0 {panic! ("peers_recv_compat error: {}", rc)}
         if rc > 0 {
             let payload = unsafe {from_raw_parts (data, rc as usize)};
-            assert_eq! (payload, b"foobar");
+            if payload == b"foobar" {break}
         }
-        if now_float() - started_at > 120.0 {panic! ("Out of time waiting for DHT payload")}
-        thread::sleep (Duration::from_millis (20));
+        if now_float() - started_at > 20.0 {panic! ("Out of time waiting for DHT payload")}
+        thread::sleep (Duration::from_secs (2));
     }
 }

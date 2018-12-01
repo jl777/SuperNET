@@ -78,7 +78,9 @@ extern "C" void dht_alerts (dugout_t* dugout, void (*cb) (void*, lt::alert*), vo
 }
 
 extern "C" char const* alert_message (lt::alert const* alert) {
-    return strdup (alert->message().c_str());
+    std::ostringstream ss;
+    ss << alert->type() << " (" << alert->what() << ") " << alert->message();
+    return strdup (ss.str().c_str());
 }
 
 extern "C" bool is_dht_bootstrap_alert (lt::alert const* alert) {
@@ -106,6 +108,35 @@ extern "C" char const* as_listen_failed_alert (lt::alert const* alert) {
     return nullptr;
 }
 
+extern "C" int32_t as_dht_mutable_item_alert (
+    lt::alert const* alert,
+    uint8_t* pkbuf, int32_t pkbuflen,
+    int8_t* saltbuf, int32_t saltbuflen,
+    uint8_t* buf, int32_t buflen,
+    int64_t* seq, bool* auth
+) {
+    if (alert->type() != lt::dht_mutable_item_alert::alert_type) return 0;
+    auto mia = static_cast<lt::dht_mutable_item_alert const*> (alert);
+
+    *seq = mia->seq;
+    *auth = mia->authoritative;
+
+    // NB: This is not the `seed` but rather the public key generated from it with `ed25519_create_keypair`.
+    assert (pkbuflen == 32);
+    assert (pkbuflen == mia->key.size());
+    std::copy (mia->key.begin(), mia->key.end(), pkbuf);
+
+    if (mia->salt.size() + 1 > saltbuflen) return -1;
+    std::copy (mia->salt.begin(), mia->salt.end(), saltbuf);
+    saltbuf[mia->salt.size()] = 0;
+
+    std::vector<char> v;
+    lt::bencode (std::back_inserter (v), mia->item);
+    if (v.size() > buflen) return -2;
+    std::copy (v.begin(), v.end(), buf);
+    return (int32_t) v.size();
+}
+
 extern "C" void dht_put (dugout_t* dugout,
                          uint8_t const* key, int32_t keylen,
                          uint8_t const* salt_c, int32_t saltlen,
@@ -131,14 +162,53 @@ extern "C" void dht_put (dugout_t* dugout,
             lt::bencode (std::back_inserter (have), en);
 
             uint8_t* benload; int32_t benlen;
-            callback (arg, arg2, (uint8_t*) have.data(), have.size(), &benload, &benlen, &seq);
+            callback (arg, arg2, (uint8_t*) have.data(), (int32_t) have.size(), &benload, &benlen, &seq);
 
-            en = lt::bdecode (benload, benload + benlen);
+            // NB: It's important to use a new `lt::entry` instance here, `en = lt::bdecode` appends.
+            lt::entry new_entry = lt::bdecode (benload, benload + benlen);
             lt::span<char> benspan ((char*) benload, (std::size_t) benlen);
+            en = new_entry;
 
             lt::dht::signature sign;
             sign = lt::dht::sign_mutable_item (benspan, salt, lt::dht::sequence_number (seq), pk, sk);
             sig = sign.bytes;
         },
         salt);
+}
+
+// TODO: Return the public key from the `dht_get` instead.
+extern "C" void dht_seed_to_public_key (
+    uint8_t const* key, int32_t keylen,
+    uint8_t* pkbuf, int32_t pkbuflen
+) {
+    assert (keylen == 32);
+    assert (pkbuflen == 32);
+
+    std::array<char, 32> seed;
+    std::copy (key, key + keylen, seed.begin());
+
+	lt::dht::public_key pk;
+    lt::dht::secret_key sk;
+    std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
+
+    assert (pk.bytes.size() == 32);
+    std::copy (pk.bytes.begin(), pk.bytes.end(), pkbuf);
+}
+
+extern "C" void dht_get (dugout_t* dugout,
+                         uint8_t const* key, int32_t keylen,
+                         uint8_t const* salt_c, int32_t saltlen) {
+    assert (keylen == 32);
+    assert (salt_c != nullptr);
+
+    std::array<char, 32> seed;
+    std::copy (key, key + keylen, seed.begin());
+
+	lt::dht::public_key pk;
+    lt::dht::secret_key sk;
+    std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
+
+    std::string salt ((char const*) salt_c, saltlen);
+
+    dugout->session->dht_get_item (pk.bytes, salt);
 }
