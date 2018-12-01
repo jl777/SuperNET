@@ -19,6 +19,8 @@ extern crate serde_json;
 extern crate serde_bencode;
 #[macro_use]
 extern crate unwrap;
+// cf. https://github.com/facebook/zstd/blob/dev/lib/zstd.h
+extern crate zstd_safe;
 
 #[doc(hidden)]
 pub mod tests;
@@ -604,6 +606,18 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
     assert! (sock > 0);
     assert! (!data.is_null());
     assert! (datalen > 0);
+
+    {   // Measure compression impact and feasibility.
+        let data = unsafe {from_raw_parts (data, datalen as usize)};
+        let mut buf: [u8; 264400] = unsafe {uninitialized()};
+        let rc = zstd_safe::compress (&mut buf, data, 22);
+        if zstd_safe::is_error (rc) != 0 {
+            log! ("peers_send_compat] !compress")
+        } else {
+            log! ("peers_send_compat] Compression from " (datalen) " to " (rc));
+        }
+    }
+
     let ret = (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
@@ -664,6 +678,7 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
 /// or `0` if no data was received (if the message has not arrived yet),
 /// or a negative number if there was an error.
 fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
+    return -1;
     match (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));

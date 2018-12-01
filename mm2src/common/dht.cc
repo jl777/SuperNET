@@ -164,7 +164,8 @@ extern "C" void dht_put (dugout_t* dugout,
             uint8_t* benload; int32_t benlen;
             callback (arg, arg2, (uint8_t*) have.data(), (int32_t) have.size(), &benload, &benlen, &seq);
 
-            // NB: It's important to use a new `lt::entry` instance here, `en = lt::bdecode` appends.
+            // NB: It might be important to use a new `lt::entry` instance here, `en = lt::bdecode` appends.
+            //     (TODO: Should double-check it, I suspect the duplication/appending might happen on some DHT nodes instead).
             lt::entry new_entry = lt::bdecode (benload, benload + benlen);
             lt::span<char> benspan ((char*) benload, (std::size_t) benlen);
             en = new_entry;
