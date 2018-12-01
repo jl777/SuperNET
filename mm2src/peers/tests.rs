@@ -44,8 +44,6 @@ pub fn test_dht() {
 
     // Get that message from Alice.
 
-    thread::sleep (Duration::from_secs (22));
-
     unwrap! (::bind (&bob, 1, alice_key));
     let bob_ctx = unwrap! (bob.ffi_handle());
     ::peers_clock_tick_compat (bob_ctx, 1);
@@ -58,7 +56,7 @@ pub fn test_dht() {
             let payload = unsafe {from_raw_parts (data, rc as usize)};
             if payload == &message[..] {break}
         }
-        if now_float() - started_at > 33.0 {panic! ("Out of time waiting for DHT payload")}
-        thread::sleep (Duration::from_secs (2));
+        if now_float() - started_at > 66.0 {panic! ("Out of time waiting for DHT payload")}
+        thread::sleep (Duration::from_millis (200))
     }
 }

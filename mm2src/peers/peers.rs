@@ -108,7 +108,7 @@ enum LtCommand {
     Put {
         // The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
         // The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
-        key: [u8; 32],
+        seed: [u8; 32],
         // Identifies the value without affecting its DHT location (need to double-check this). Can be empty.
         // NB: If the `data` is large then `dht_thread` will append something to `salt` for every extra DHT pair.
         salt: Vec<u8>,
@@ -116,7 +116,7 @@ enum LtCommand {
     },
     // Starts a new get operation, unless it is already in progress.
     Get {
-        key: [u8; 32],
+        seed: [u8; 32],
         salt: Vec<u8>
     }
 }
@@ -335,7 +335,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
         if ctx.is_stopping() {break}
 
         match pctx.cmd_rx.recv_timeout (Duration::from_millis (50)) {
-            Ok (LtCommand::Put {key, salt, data}) => {
+            Ok (LtCommand::Put {seed, salt, data}) => {
                 log! ("dht_thread] Got a Put command.");
 
                 let mut shuttle = Arc::new (PutShuttle {
@@ -405,15 +405,14 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                                         key: *const u8, keylen: i32,
                                         salt: *const u8, saltlen: i32,
                                         callback: extern fn (*mut c_void, u64, *const u8, i32, *mut *mut u8, *mut i32, *mut i64), arg: *const c_void, arg2: u64);}
-                unsafe {dht_put (&mut dugout, key.as_ptr(), key.len() as i32, salt.as_ptr(), salt.len() as i32, callback, shuttle_ptr, now)}
+                unsafe {dht_put (&mut dugout, seed.as_ptr(), seed.len() as i32, salt.as_ptr(), salt.len() as i32, callback, shuttle_ptr, now)}
             },
-            Ok (LtCommand::Get {key, salt}) => {
+            Ok (LtCommand::Get {seed, salt}) => {
                 let now = now_float();
-                let mut gets_entry = gets.entry ((key, salt));
+                let mut gets_entry = gets.entry ((seed, salt));
                 // If there was a recent get issued to libtorrent then simply skip this reminder, assuming that libtorrent still works on the get.
                 match gets_entry {
-                    Entry::Occupied (ref oe) if now - oe.get().started.max (oe.get().restarted) < 30.0 => {
-                        log! ("dht_thread] Get is already in progress.");
+                    Entry::Occupied (ref oe) if now - oe.get().started.max (oe.get().restarted) < 4. => {
                         continue
                     },
                     _ => {
@@ -430,13 +429,6 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                     Entry::Occupied (mut oe) => oe.get_mut().restarted = now,
                     Entry::Vacant (ve) => {ve.insert (GetsEntry {started: now, restarted: 0.});}
                 }
-
-                // TODO: Run the test and get the log of the get-related alerts, along with their types.
-
-                // TODO: Handle the get-related alerts.
-
-                // TODO: If we've obtained the *original* seed-salt entry,
-                //       then check the bencoded payload for extra information about the binary length of the value.
             },
             Err (channel::RecvTimeoutError::Timeout) => {},
             Err (channel::RecvTimeoutError::Disconnected) => break
@@ -629,13 +621,13 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
 
             *prev = trace;
 
-            // TODO: Consider storing several keys for reliability.
+            // TODO: Consider storing several seeds for reliability.
             //       Maybe after a certain delay.
-            //       Might need a feedback mechanism, repeating the `put`s and expanding the number of keys used if there is no answer from the other side.
+            //       Might need a feedback mechanism, repeating the `put`s and expanding the number of seeds used if there is no answer from the other side.
 
-            // TODO: Use the `peer` to generate the key.
-            let mut key: [u8; 32] = unsafe {zeroed()};
-            key[0] = 1;
+            // TODO: Use the `peer` to generate the seed.
+            let mut seed: [u8; 32] = unsafe {zeroed()};
+            seed[0] = 1;
             // TODO: Use the `sock` and the `clock` to generate the salt.
             let salt = b"qwe";
             let salt = Vec::from (&salt[..]);
@@ -643,7 +635,7 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
             let mut data: Vec<u8> = unsafe {from_raw_parts (data, datalen as usize)} .into();
 
             // Tell `dht_thread` to save the data.
-            try_s! (pctx.cmd_tx.send (LtCommand::Put {key, salt, data}));
+            try_s! (pctx.cmd_tx.send (LtCommand::Put {seed, salt, data}));
 
             Ok (0)
         } else {ERR! ("Unknown sock: {}", sock)}
@@ -692,23 +684,28 @@ fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
             // TODO, send a command to the dht_thread and let it deal with fetching the data at a proper pace
             //       but first we need to check if the data has arrived
 
-            // TODO: Use the `peer` to generate the key.
-            let mut key: [u8; 32] = unsafe {zeroed()};
-            key[0] = 1;
+            // TODO: Use the `peer` to generate the seed.
+            let mut seed: [u8; 32] = unsafe {zeroed()};
+            seed[0] = 1;
             // TODO: Use the `sock` and the `clock` to generate the salt.
             let salt = b"qwe";
             let salt = Vec::from (&salt[..]);
 
             // TODO: Return the public key from the `dht_get` instead,
-            //       and cache it along the `dht_thread::gets`.
+            //       and cache it along the `dht_thread::gets`,
+            //       allowing us to obtain the value by `seed`.
             let mut pk: [u8; 32] = unsafe {zeroed()};
-            unsafe {dht_seed_to_public_key (key.as_ptr(), key.len() as i32, pk.as_mut_ptr(), pk.len() as i32)};
+            unsafe {dht_seed_to_public_key (seed.as_ptr(), seed.len() as i32, pk.as_mut_ptr(), pk.len() as i32)};
 
-            let pk_and_salt = (pk, salt);
+            // Ask the `dht_thread` to fetch the data.
+            // Note that we should do that even if the `PeersContext::gets` already has a value,
+            // because that value might be invalid or outdated.
+            // We should keep re-fetching the value until the user stops calling `peers_recv_compat`.
+            try_s! (pctx.cmd_tx.send (LtCommand::Get {seed, salt: salt.clone()}));
 
             {   // Check if the data has arrived.
                 let gets = try_s! (pctx.gets.lock());
-                if let Some ((_lm, _seq, preliminary, authoritative)) = gets.get (&pk_and_salt) {
+                if let Some ((_lm, _seq, preliminary, authoritative)) = gets.get (&(pk, salt)) {
                     if let Some (authoritative) = authoritative {
                         unsafe {*data = slice_to_malloc (&authoritative)}
                         return Ok (authoritative.len() as i32)
@@ -719,9 +716,6 @@ fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
                 }
             }
 
-            // Remind the `dht_thread` to fetch the data.
-            let (_, salt) = pk_and_salt;
-            try_s! (pctx.cmd_tx.send (LtCommand::Get {key, salt}));
             Ok (0)
         } else {ERR! ("Unknown sock: {}", sock)}
     })() {
