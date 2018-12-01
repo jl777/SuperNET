@@ -7,6 +7,7 @@ use chrono::{Local, TimeZone, Utc};
 use chrono::format::DelayedFormat;
 use chrono::format::strftime::StrftimeItems;
 use gstuff::now_ms;
+use libc::{c_char, c_int};
 use regex::Regex;
 use serde_json::{Value as Json};
 use std::collections::VecDeque;
@@ -37,7 +38,7 @@ lazy_static! {
 
 #[doc(hidden)]
 pub fn chunk2log (mut chunk: String) {
-    extern {fn printf(_: *const ::libc::c_char, ...) -> ::libc::c_int;}
+    extern {fn printf(_: *const c_char, ...) -> c_int;}
 
     // The C and the Rust standard outputs overlap on Windows,
     // so we use the C `printf` in order to avoid that.
@@ -53,10 +54,8 @@ pub fn chunk2log (mut chunk: String) {
     } else {
         chunk.push ('\n');
         chunk.push ('\0');
-        // NB: Using `printf` simultaneously from multiple threads will crash on Windows.
-        // This lock here helps some, but we might still race with the unguarded C code.
         if let Ok (_lock) = PRINTF_LOCK.lock() {
-            unsafe {printf (chunk.as_ptr() as *const ::libc::c_char);}
+            unsafe {printf (b"%s\0".as_ptr() as *const c_char, chunk.as_ptr() as *const c_char);}
         }
     }
 }

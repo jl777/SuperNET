@@ -133,7 +133,7 @@ fn generate_bindings() {
             "EthTxReceipt",
             "EthTxData",
         ]
-            .iter(),
+        .iter(),
         empty(),
     );
 
@@ -267,7 +267,7 @@ fn generate_bindings() {
             "LP_bobloop",
             "LP_instantdex_txids",
         ]
-            .iter(),
+        .iter(),
         // types
         [
             "_bits256",
@@ -277,7 +277,7 @@ fn generate_bindings() {
             "electrum_info",
             "LP_trade",
         ]
-            .iter(),
+        .iter(),
         [
             // defines
             "LP_eth_node_url",
@@ -327,7 +327,7 @@ fn generate_bindings() {
             "LP_Alicereserved",
             "dstr",
         ]
-            .iter(),
+        .iter(),
     );
 
     bindgen(
@@ -340,7 +340,7 @@ fn generate_bindings() {
             "OS_compatible_path",
             "calc_ipbits",
         ]
-            .iter(),
+        .iter(),
         empty(), // types
         empty(), // defines
     );
@@ -359,7 +359,7 @@ fn generate_bindings() {
             "nn_socket",
             "nn_strerror",
         ]
-            .iter(),
+        .iter(),
         empty(),
         ["AF_SP", "NN_PAIR", "NN_PUB", "NN_SOL_SOCKET", "NN_SNDTIMEO"].iter(),
     );
@@ -628,33 +628,34 @@ fn build_libtorrent() {
 
         // NB: Building against OpenSSL imposes additional restrictions on the server configuration,
         // e.g. certain versions of GCC, Boost, libtorrent and OpenSSL will not compile due to the various C++ compatibility issues.
-        cmake_opt_out(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL", "LibGcrypt"]);
+        cmake_opt_out(
+            &rasterbar.join("CMakeLists.txt"),
+            &["Iconv", "OpenSSL", "LibGcrypt"],
+        );
     }
 
     let build = rasterbar.join("build");
     let _ = fs::create_dir(&build);
 
     // https://github.com/arvidn/libtorrent/blob/master/docs/building.rst#building-with-cmake
-    unwrap!(
-        ecmd!(
-            "cmake",
-            "-DCMAKE_BUILD_TYPE=Release",
-            "-DCMAKE_CXX_STANDARD=11",
-            "-DBUILD_SHARED_LIBS=off",
-            "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true", // Adds "-fPIC".
-            "-Di2p=off",
-            if cfg!(target_os = "macos") {
-                "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
-            } else {
-                ""
-            },
-            ".."
-        )
-        .dir(&build)
-        .stdout_to_stderr()
-        .unchecked()
-        .run()
-    ); // NB: Returns an error despite working.
+    unwrap!(ecmd!(
+        "cmake",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_STANDARD=11",
+        "-DBUILD_SHARED_LIBS=off",
+        "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true", // Adds "-fPIC".
+        "-Di2p=off",
+        if cfg!(target_os = "macos") {
+            "-DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p"
+        } else {
+            ""
+        },
+        ".."
+    )
+    .dir(&build)
+    .stdout_to_stderr()
+    .unchecked()
+    .run()); // NB: Returns an error despite working.
     assert!(
         build.join("Makefile").exists(),
         "Can't cmake: Makefile wasn't generated"
@@ -693,12 +694,14 @@ fn libtorrent() {
         let _ = fs::create_dir(&mmd);
 
         let boost = mmd.join("boost_1_68_0");
-        if boost.exists() {  // Cache maintenance.
-            let _ = fs::remove_file (mmd.join ("boost_1_68_0.zip"));
-            let _ = fs::remove_dir_all (boost.join ("doc"));  // 80 MiB.
-            let _ = fs::remove_dir_all (boost.join ("libs"));  // 358 MiB, documentation and examples.
-            let _ = fs::remove_dir_all (boost.join ("more"));
-        } else {  // [Download and] unpack Boost.
+        if boost.exists() {
+            // Cache maintenance.
+            let _ = fs::remove_file(mmd.join("boost_1_68_0.zip"));
+            let _ = fs::remove_dir_all(boost.join("doc")); // 80 MiB.
+            let _ = fs::remove_dir_all(boost.join("libs")); // 358 MiB, documentation and examples.
+            let _ = fs::remove_dir_all(boost.join("more"));
+        } else {
+            // [Download and] unpack Boost.
             if !mmd.join("boost_1_68_0.zip").exists() {
                 hget(
                     "https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip",
@@ -724,45 +727,43 @@ fn libtorrent() {
 
         let b2 = boost.join("b2.exe");
         if !b2.exists() {
-            unwrap!(
-                ecmd!("cmd", "/c", "bootstrap.bat")
-                    .dir(&boost)
-                    .stdout_to_stderr()
-                    .run()
-            );
+            unwrap!(ecmd!("cmd", "/c", "bootstrap.bat")
+                .dir(&boost)
+                .stdout_to_stderr()
+                .run());
             assert!(b2.exists());
         }
 
         let boost_system = boost.join("stage/lib/libboost_system-vc141-mt-x64-1_68.lib");
         if !boost_system.exists() {
-            unwrap!(
-                ecmd!(
-                    // For some weird reason this particular executable won't start without the "cmd /c"
-                    // even though some other executables (copied into the same folder) are working NP.
-                    "cmd",
-                    "/c",
-                    "b2.exe",
-                    "release",
-                    "toolset=msvc-14.1",
-                    "address-model=64",
-                    "link=static",
-                    "stage",
-                    "--with-date_time",
-                    "--with-system"
-                )
-                .dir(&boost)
-                .stdout_to_stderr()
-                .unchecked()
-                .run()
-            );
+            unwrap!(ecmd!(
+                // For some weird reason this particular executable won't start without the "cmd /c"
+                // even though some other executables (copied into the same folder) are working NP.
+                "cmd",
+                "/c",
+                "b2.exe",
+                "release",
+                "toolset=msvc-14.1",
+                "address-model=64",
+                "link=static",
+                "stage",
+                "--with-date_time",
+                "--with-system"
+            )
+            .dir(&boost)
+            .stdout_to_stderr()
+            .unchecked()
+            .run());
             assert!(boost_system.exists());
         }
 
         let rasterbar = mmd.join("libtorrent-rasterbar-1.2.0-rc");
-        if rasterbar.exists() {  // Cache maintenance.
-            let _ = fs::remove_file (mmd.join ("libtorrent-rasterbar-1.2.0-rc.tar.gz"));
-            let _ = fs::remove_dir_all (rasterbar.join ("docs"));
-        } else {  // [Download and] unpack.
+        if rasterbar.exists() {
+            // Cache maintenance.
+            let _ = fs::remove_file(mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz"));
+            let _ = fs::remove_dir_all(rasterbar.join("docs"));
+        } else {
+            // [Download and] unpack.
             if !mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz").exists() {
                 hget (
                     "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
@@ -784,7 +785,10 @@ fn libtorrent() {
             assert!(rasterbar.exists());
             let _ = fs::remove_file(mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz"));
 
-            cmake_opt_out(&rasterbar.join("CMakeLists.txt"), &["Iconv", "OpenSSL", "LibGcrypt"]);
+            cmake_opt_out(
+                &rasterbar.join("CMakeLists.txt"),
+                &["Iconv", "OpenSSL", "LibGcrypt"],
+            );
         }
 
         let lt = rasterbar.join(
@@ -860,11 +864,9 @@ fn libtorrent() {
         println!("cargo:rustc-link-lib=static=torrent-rasterbar");
         println!(
             "cargo:rustc-link-search=native={}",
-            unwrap!(
-                root()
-                    .join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build")
-                    .to_str()
-            )
+            unwrap!(root()
+                .join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build")
+                .to_str())
         );
         println!("cargo:rustc-link-lib=c++");
         println!("cargo:rustc-link-lib=boost_system-mt");
@@ -898,11 +900,9 @@ fn libtorrent() {
         println!("cargo:rustc-link-lib=static=torrent-rasterbar");
         println!(
             "cargo:rustc-link-search=native={}",
-            unwrap!(
-                root()
-                    .join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build")
-                    .to_str()
-            )
+            unwrap!(root()
+                .join("marketmaker_depends/libtorrent-rasterbar-1.2.0-rc/build")
+                .to_str())
         );
 
         let lm_dht = unwrap!(last_modified_sec(&"dht.cc"), "Can't stat dht.cc");

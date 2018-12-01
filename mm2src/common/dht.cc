@@ -123,16 +123,16 @@ extern "C" int32_t as_dht_mutable_item_alert (
 
     // NB: This is not the `seed` but rather the public key generated from it with `ed25519_create_keypair`.
     assert (pkbuflen == 32);
-    assert (pkbuflen == mia->key.size());
+    assert (pkbuflen == (int32_t) mia->key.size());
     std::copy (mia->key.begin(), mia->key.end(), pkbuf);
 
-    if (mia->salt.size() + 1 > saltbuflen) return -1;
+    if ((int32_t) mia->salt.size() + 1 > saltbuflen) return -1;
     std::copy (mia->salt.begin(), mia->salt.end(), saltbuf);
     saltbuf[mia->salt.size()] = 0;
 
     std::vector<char> v;
     lt::bencode (std::back_inserter (v), mia->item);
-    if (v.size() > buflen) return -2;
+    if ((int32_t) v.size() > buflen) return -2;
     std::copy (v.begin(), v.end(), buf);
     return (int32_t) v.size();
 }
@@ -164,11 +164,8 @@ extern "C" void dht_put (dugout_t* dugout,
             uint8_t* benload; int32_t benlen;
             callback (arg, arg2, (uint8_t*) have.data(), (int32_t) have.size(), &benload, &benlen, &seq);
 
-            // NB: It might be important to use a new `lt::entry` instance here, `en = lt::bdecode` appends.
-            //     (TODO: Should double-check it, I suspect the duplication/appending might happen on some DHT nodes instead).
-            lt::entry new_entry = lt::bdecode (benload, benload + benlen);
+            en = lt::bdecode (benload, benload + benlen);
             lt::span<char> benspan ((char*) benload, (std::size_t) benlen);
-            en = new_entry;
 
             lt::dht::signature sign;
             sign = lt::dht::sign_mutable_item (benspan, salt, lt::dht::sequence_number (seq), pk, sk);

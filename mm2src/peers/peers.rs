@@ -17,10 +17,15 @@ extern crate serde;
 #[macro_use]
 extern crate serde_json;
 extern crate serde_bencode;
+extern crate serde_bytes;
 #[macro_use]
 extern crate unwrap;
-// cf. https://github.com/facebook/zstd/blob/dev/lib/zstd.h
-extern crate zstd_safe;
+// As of now the large payloads are not compressable,
+// 01 13:30:15, peers:617] peers_send_compat] Compression from 16046 to 16056
+// 01 13:30:16, peers:617] peers_send_compat] Compression from 32084 to 32094
+// but we're going to refactor these payloads in the future,
+// and there might be different other payloads as we go through the port.
+extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 
 #[doc(hidden)]
 pub mod tests;
@@ -33,6 +38,7 @@ use fxhash::FxHashMap;
 use gstuff::{now_float, now_ms};
 use libc::{c_char, c_void};
 use serde::Serialize;
+use serde_bytes::{Bytes, ByteBuf};
 use std::ffi::{CStr, CString};
 use std::mem::{uninitialized, zeroed};
 //use std::ptr::{null, null_mut};
@@ -91,6 +97,14 @@ extern "C" {
         buf: *mut u8, buflen: i32,
         seq: *mut i64, auth: *mut bool) -> i32;
     fn dht_seed_to_public_key (key: *const u8, keylen: i32, pkbuf: *mut u8, pkbuflen: i32);
+}
+
+/// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
+/// by replacing all the non-printable bytes with the `blank` character.
+fn binprint (bin: &[u8], blank: u8) -> String {
+    let mut bin: Vec<u8> = bin.into();
+    for ch in bin.iter_mut() {if *ch < 0x20 || *ch >= 0x7F {*ch = blank}}
+    unsafe {String::from_utf8_unchecked (bin)}
 }
 
 /// In order to emulate the synchronous exchange of messages with a peer on top of an asynchronous and optional delivery
@@ -235,21 +249,21 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                 buf.as_mut_ptr(), buf.len() as i32,
                 &mut seq, &mut auth)};
             if rc > 0 {
-                log! ("got a dht_mutable_item_alert! " [=rc] ' ' [=seq] ' ' [=auth]);
                 let bencoded = &buf[0 .. rc as usize];
-                let raw = unsafe {::std::str::from_utf8_unchecked (bencoded)};
-                log! ("RAW: " (raw));
+                log! (
+                    "got a dht_mutable_item_alert! " [=rc] ' ' [=seq] ' ' [=auth]
+                    "\n  " (binprint (bencoded, b'.'))
+                );
 
-                let payload: Vec<u8> = if bencoded == b"0:" {Vec::new()} else {
+                let payload: ByteBuf = if bencoded == b"0:" {ByteBuf::new()} else {
                     match serde_bencode::de::from_bytes (bencoded) {
                         Ok (payload) => payload,
                         Err (err) => {log! ("dht_thread] Can not decode the received payload: " (err)); return}
                     }
                 };
+                let payload = payload.to_vec();
 
                 let salt = unsafe {CStr::from_ptr (saltbuf.as_ptr())} .to_bytes();
-                log! ([=keybuf]);
-                log! ([=salt]);
 
                 // Return the obtained value via `PeersContext::gets`.
                 // TODO: Remove the old entries from the `PeersContext::gets` eventually.
@@ -342,12 +356,13 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
 
                 let mut shuttle = Arc::new (PutShuttle {
                     put_handler: Box::new (move |have: &[u8]| -> Result<Vec<u8>, String> {
+                        let data = Bytes::new (&data);
                         let benload = try_s! (serde_bencode::ser::to_bytes (&data));
-                        log! ("put_handler] existing bencoded value is " (have.len()) " bytes; replacing it with " (benload.len()) " bytes.");
-                        log! ("from "
-                            (unsafe {::std::str::from_utf8_unchecked (&have)})
-                            " to "
-                            (unsafe {::std::str::from_utf8_unchecked (&benload)}));
+                        log! (
+                            "put_handler] existing bencoded value is " (have.len()) " bytes; replacing it with " (benload.len()) " bytes."
+                            "\n  from " (binprint (have, b'.'))
+                            "\n  to   " (binprint (&benload, b'.'))
+                        );
                         Ok (benload)
                     })
                 });
@@ -606,18 +621,6 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
     assert! (sock > 0);
     assert! (!data.is_null());
     assert! (datalen > 0);
-
-    {   // Measure compression impact and feasibility.
-        let data = unsafe {from_raw_parts (data, datalen as usize)};
-        let mut buf: [u8; 264400] = unsafe {uninitialized()};
-        let rc = zstd_safe::compress (&mut buf, data, 22);
-        if zstd_safe::is_error (rc) != 0 {
-            log! ("peers_send_compat] !compress")
-        } else {
-            log! ("peers_send_compat] Compression from " (datalen) " to " (rc));
-        }
-    }
-
     let ret = (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
@@ -678,7 +681,7 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
 /// or `0` if no data was received (if the message has not arrived yet),
 /// or a negative number if there was an error.
 fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
-    return -1;
+    if option_env! ("TEST_RECV") != Some ("true") {return -1}
     match (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));
@@ -689,10 +692,10 @@ fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
             let mut prev = try_s! (PREVIOUS_TRACE.lock());
 
             let pk = fomat! ((peer));
-            log! (
+            if option_env! ("TEST_RECV") != Some ("true") {log! (
                 "peers_recv_compact] sock: " (sock) "; peer " (&pk[0..3]) "; clock " (clock)
                 if trace != *prev {'\n' (trace)}
-            );
+            )}
 
             *prev = trace;
 

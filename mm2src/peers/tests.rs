@@ -2,6 +2,7 @@ use common::bits256;
 use common::for_tests::wait_for_log;
 use common::mm_ctx::MmCtx;
 use gstuff::now_float;
+use libc::{self, c_void};
 use rand::{self, Rng};
 use std::mem::{uninitialized, zeroed};
 use std::net::{Ipv4Addr, SocketAddr};
@@ -34,8 +35,9 @@ pub fn test_dht() {
 
     // Send a message to Bob.
 
-    let mut message: [u8; 128] = unsafe {uninitialized()};
-    rng.fill (&mut message);
+    // NB: 996 bytes (1000 bytes with the "996:" bencode prefix) is the absolute maximum we can store in one item.
+    let mut message: [u8; 996] = unsafe {uninitialized()};
+    rng.fill (&mut message [..]);
 
     unwrap! (::bind (&alice, 1, bob_key));
     let alice_ctx = unwrap! (alice.ffi_handle());
@@ -53,7 +55,8 @@ pub fn test_dht() {
         let rc = ::peers_recv_compat (bob_ctx, 1, &mut data);
         if rc < 0 {panic! ("peers_recv_compat error: {}", rc)}
         if rc > 0 {
-            let payload = unsafe {from_raw_parts (data, rc as usize)};
+            let payload: Vec<u8> = unsafe {from_raw_parts (data, rc as usize)} .into();
+            unsafe {libc::free (data as *mut c_void)}
             if payload == &message[..] {break}
         }
         if now_float() - started_at > 66.0 {panic! ("Out of time waiting for DHT payload")}
