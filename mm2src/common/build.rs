@@ -692,11 +692,13 @@ fn libtorrent() {
         let mmd = root().join("marketmaker_depends");
         let _ = fs::create_dir(&mmd);
 
-        // TODO: Consider removing the unnecessary folders: doc (80 MiB), libs (358 MiB)
-        //       in order to lighten the marketmaker_depends cache a bit.
-
         let boost = mmd.join("boost_1_68_0");
-        if !boost.exists() {
+        if boost.exists() {  // Cache maintenance.
+            let _ = fs::remove_file (mmd.join ("boost_1_68_0.zip"));
+            let _ = fs::remove_dir_all (boost.join ("doc"));  // 80 MiB.
+            let _ = fs::remove_dir_all (boost.join ("libs"));  // 358 MiB, documentation and examples.
+            let _ = fs::remove_dir_all (boost.join ("more"));
+        } else {  // [Download and] unpack Boost.
             if !mmd.join("boost_1_68_0.zip").exists() {
                 hget(
                     "https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.zip",
@@ -757,7 +759,10 @@ fn libtorrent() {
         }
 
         let rasterbar = mmd.join("libtorrent-rasterbar-1.2.0-rc");
-        if !rasterbar.exists() {
+        if rasterbar.exists() {  // Cache maintenance.
+            let _ = fs::remove_file (mmd.join ("libtorrent-rasterbar-1.2.0-rc.tar.gz"));
+            let _ = fs::remove_dir_all (rasterbar.join ("docs"));
+        } else {  // [Download and] unpack.
             if !mmd.join("libtorrent-rasterbar-1.2.0-rc.tar.gz").exists() {
                 hget (
                     "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_0_RC/libtorrent-rasterbar-1.2.0-rc.tar.gz",
