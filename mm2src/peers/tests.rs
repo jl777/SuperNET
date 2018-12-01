@@ -2,7 +2,8 @@ use common::bits256;
 use common::for_tests::wait_for_log;
 use common::mm_ctx::MmCtx;
 use gstuff::now_float;
-use std::mem::zeroed;
+use rand::{self, Rng};
+use std::mem::{uninitialized, zeroed};
 use std::net::{Ipv4Addr, SocketAddr};
 use std::ptr::null_mut;
 use std::slice::from_raw_parts;
@@ -16,14 +17,16 @@ pub fn test_dht() {
 
     let bob = MmCtx::new (json! ({}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
 
+    let mut rng = rand::thread_rng();
+
     // Initialize the DHT on both, using different preferred ports.
 
     let mut alice_key: bits256 = unsafe {zeroed()};
-    unsafe {alice_key.bytes[0] = 1}
+    unsafe {rng.fill (&mut alice_key.bytes[..])}
     unwrap! (::initialize (&alice, 9999, alice_key, 2111, 0));
 
     let mut bob_key: bits256 = unsafe {zeroed()};
-    unsafe {bob_key.bytes[0] = 2}
+    unsafe {rng.fill (&mut bob_key.bytes[..])}
     unwrap! (::initialize (&bob, 9999, bob_key, 2112, 0));
 
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
@@ -31,16 +34,17 @@ pub fn test_dht() {
 
     // Send a message to Bob.
 
+    let mut message: [u8; 128] = unsafe {uninitialized()};
+    rng.fill (&mut message);
+
     unwrap! (::bind (&alice, 1, bob_key));
     let alice_ctx = unwrap! (alice.ffi_handle());
     ::peers_clock_tick_compat (alice_ctx, 1);
-    ::peers_send_compat (alice_ctx, 1, b"foobar".as_ptr(), 6);
+    ::peers_send_compat (alice_ctx, 1, message.as_ptr(), message.len() as i32);
 
-    println! ("Sleeping...");
-    thread::sleep (Duration::from_secs (20));
-    println! ("Starting a GET...");
+    // Get that message from Alice.
 
-    // TODO: Get that message from Alice.
+    thread::sleep (Duration::from_secs (22));
 
     unwrap! (::bind (&bob, 1, alice_key));
     let bob_ctx = unwrap! (bob.ffi_handle());
@@ -52,9 +56,9 @@ pub fn test_dht() {
         if rc < 0 {panic! ("peers_recv_compat error: {}", rc)}
         if rc > 0 {
             let payload = unsafe {from_raw_parts (data, rc as usize)};
-            if payload == b"foobar" {break}
+            if payload == &message[..] {break}
         }
-        if now_float() - started_at > 20.0 {panic! ("Out of time waiting for DHT payload")}
+        if now_float() - started_at > 33.0 {panic! ("Out of time waiting for DHT payload")}
         thread::sleep (Duration::from_secs (2));
     }
 }

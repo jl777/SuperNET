@@ -10,6 +10,7 @@ extern crate gstuff;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+extern crate rand;
 extern crate serde;
 //#[macro_use]
 //extern crate serde_derive;
@@ -233,12 +234,15 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                 &mut seq, &mut auth)};
             if rc > 0 {
                 log! ("got a dht_mutable_item_alert! " [=rc] ' ' [=seq] ' ' [=auth]);
-                let raw = unsafe {::std::str::from_utf8_unchecked (&buf[0 .. rc as usize])};
+                let bencoded = &buf[0 .. rc as usize];
+                let raw = unsafe {::std::str::from_utf8_unchecked (bencoded)};
                 log! ("RAW: " (raw));
 
-                let payload: Vec<u8> = match serde_bencode::de::from_bytes (&buf[0 .. rc as usize]) {
-                    Ok (payload) => payload,
-                    Err (err) => {log! ("dht_thread] Can not decode the received payload: " (err)); return}
+                let payload: Vec<u8> = if bencoded == b"0:" {Vec::new()} else {
+                    match serde_bencode::de::from_bytes (bencoded) {
+                        Ok (payload) => payload,
+                        Err (err) => {log! ("dht_thread] Can not decode the received payload: " (err)); return}
+                    }
                 };
 
                 let salt = unsafe {CStr::from_ptr (saltbuf.as_ptr())} .to_bytes();
@@ -336,9 +340,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
 
                 let mut shuttle = Arc::new (PutShuttle {
                     put_handler: Box::new (move |have: &[u8]| -> Result<Vec<u8>, String> {
-                        log! ("put_handler] " [=data]);
                         let benload = try_s! (serde_bencode::ser::to_bytes (&data));
-                        log! ("put_handler] benload: " (unsafe {::std::str::from_utf8_unchecked (&benload)}));
                         log! ("put_handler] existing bencoded value is " (have.len()) " bytes; replacing it with " (benload.len()) " bytes.");
                         log! ("from "
                             (unsafe {::std::str::from_utf8_unchecked (&have)})
