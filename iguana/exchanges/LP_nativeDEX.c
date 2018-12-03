@@ -1119,7 +1119,7 @@ void queue_loop(void *ctx)
             sleep(1);
             continue;
         }
-        LP_millistats_update(&queue_loop_stats);
+        //LP_millistats_update(&queue_loop_stats);
         n = nonz = flag = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {

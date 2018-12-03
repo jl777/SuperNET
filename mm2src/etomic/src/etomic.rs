@@ -624,7 +624,7 @@ impl EthClient {
                 if y.to == Some(self.bob_contract) {
                     if y.input.0.as_slice()[0..4] == eth_function.short_signature() {
                         let decoded = eth_function.decode_input(&y.input.0).unwrap();
-                        println!("Decoded: {:?}", decoded);
+                        log!({"Decoded: {:?}", decoded});
                         decoded[0] == Token::FixedBytes(tx_id.clone())
                     } else {
                         false
@@ -721,7 +721,7 @@ pub extern "C" fn approve_erc20(input: ApproveErc20Input, eth_client: *mut EthCl
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error ERC20 approve: {}", e);
+                log!({"Error ERC20 approve: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -748,7 +748,7 @@ pub extern "C" fn alice_sends_eth_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Alice ETH payment: {}", e);
+                log!({"Error sending Alice ETH payment: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -803,7 +803,7 @@ pub extern "C" fn alice_sends_erc20_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Alice ERC20 payment: {}", e);
+                log!({"Error sending Alice ERC20 payment: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -872,7 +872,7 @@ pub extern "C" fn alice_reclaims_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Alice reclaim: {}", e);
+                log!({"Error sending Alice reclaim: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -904,7 +904,7 @@ pub extern "C" fn bob_spends_alice_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob spend: {}", e);
+                log!({"Error sending Bob spend: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -934,7 +934,7 @@ pub extern "C" fn bob_sends_eth_deposit(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob ETH deposit: {}", e);
+                log!({"Error sending Bob ETH deposit: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -997,7 +997,7 @@ pub extern "C" fn bob_sends_erc20_deposit(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob ERC20 deposit: {}", e);
+                log!({"Error sending Bob ERC20 deposit: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1066,7 +1066,7 @@ pub extern "C" fn bob_refunds_deposit(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob deposit refund: {}", e);
+                log!({"Error sending Bob deposit refund: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1098,7 +1098,7 @@ pub extern "C" fn alice_claims_bob_deposit(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Alice deposit claim: {}", e);
+                log!({"Error sending Alice deposit claim: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1127,7 +1127,7 @@ pub extern "C" fn bob_sends_eth_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob ETH payment: {}", e);
+                log!({"Error sending Bob ETH payment: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1187,7 +1187,7 @@ pub extern "C" fn bob_sends_erc20_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob ERC20 payment: {}", e);
+                log!({"Error sending Bob ERC20 payment: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1254,7 +1254,7 @@ pub extern "C" fn bob_reclaims_bob_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob payment reclaim: {}", e);
+                log!({"Error sending Bob payment reclaim: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1285,7 +1285,7 @@ pub extern "C" fn alice_spends_bob_payment(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Error sending Bob payment spend by Alice: {}", e);
+                log!({"Error sending Bob payment spend by Alice: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1519,7 +1519,7 @@ pub extern "C" fn send_eth(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Got error trying so send the transaction: {}", e);
+                log!({"Got error trying so send the transaction: {}", e});
                 std::ptr::null_mut()
             }
         }
@@ -1623,7 +1623,7 @@ pub extern "C" fn send_erc20(
                 str_to_malloc(&res)
             },
             Err(e) => {
-                println!("Got error trying so send the ERC20: {}", e);
+                log!({"Got error trying so send the ERC20: {}", e});
                 std::ptr::null_mut()
             }
         }

@@ -209,10 +209,10 @@ pub extern "C" fn get_eth_tx_receipt(
                             "Could not unwrap ETH tx receipt status"
                         ).as_u64();
                     },
-                    None => println!("Tx receipt of {:?} is None", tx_id)
+                    None => log!({"Tx receipt of {:?} is None", tx_id})
                 }
             },
-            Err(e) => println!("Got error trying to get tx receipt: {:?} {}", tx_id, e)
+            Err(e) => log!({"Got error trying to get tx receipt: {:?} {}", tx_id, e})
         }
     }
     result
@@ -246,10 +246,10 @@ pub extern "C" fn get_eth_tx_data(
                         libc::strcpy(result.to.as_mut_ptr(), CString::new(to_str).unwrap().as_ptr());
                         libc::strcpy(result.input.as_mut_ptr(), CString::new(input_str).unwrap().as_ptr());
                     },
-                    None => println!("Tx data of {:?} is None", tx_id)
+                    None => log!({"Tx data of {:?} is None", tx_id})
                 }
             },
-            Err(e) => println!("Got error trying to get tx data: {:?} {}", tx_id, e)
+            Err(e) => log!({"Got error trying to get tx data: {:?} {}", tx_id, e})
         }
     }
     result
@@ -268,7 +268,7 @@ pub extern "C" fn get_gas_price_from_station(
         // to get stuck unconfirmed
         Ok(data) => (data.average as u64) / 10 + 1,
         Err(e) => {
-            println!("Got error fetching gas price from station: {:?}", e);
+            log!({"Got error fetching gas price from station: {:?}", e});
             match default_on_err {
                 1 => 10,
                 _ => 0
@@ -284,7 +284,7 @@ pub extern "C" fn get_etomic_from_faucet(etomic_addr: *const c_char) -> u8 {
             etomic_address: CStr::from_ptr(etomic_addr).to_string_lossy().into_owned()
         };
         let json = serde_json::to_string(&request).unwrap();
-        println!("Etomic faucet request: {:?}", json);
+        log!({"Etomic faucet request: {:?}", json});
         let post = post_json::<EtomicFaucetResponse>(
             "http://195.201.116.176:8000/getEtomic",
             json
@@ -292,15 +292,15 @@ pub extern "C" fn get_etomic_from_faucet(etomic_addr: *const c_char) -> u8 {
         match post {
             Ok(result) => {
                 if result.error.is_some() {
-                    println!("Got error from Etomic faucet: {:?}", result.error.unwrap());
+                    log!({"Got error from Etomic faucet: {:?}", result.error.unwrap()});
                     0
                 } else {
-                    println!("Got result from Etomic faucet: {:?}", result.result.unwrap());
+                    log!({"Got result from Etomic faucet: {:?}", result.result.unwrap()});
                     1
                 }
             },
             Err(e) => {
-                println!("Etomic faucet request failed: {:?}", e);
+                log!({"Etomic faucet request failed: {:?}", e});
                 0
             }
         }

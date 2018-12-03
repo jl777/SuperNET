@@ -87,7 +87,7 @@ impl MmCtx {
             let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
             for listener in stop_listeners.iter_mut() {
                 if let Err (err) = listener() {
-                    eprintln! ("MmCtx::stop] Listener error: {}", err)
+                    log! ({"MmCtx::stop] Listener error: {}", err})
                 }
             }
         }
@@ -105,7 +105,7 @@ impl MmCtx {
         let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
         if self.stop.load (Ordering::Relaxed) {
             if let Err (err) = cb() {
-                eprintln! ("MmCtx::on_stop] Listener error: {}", err)
+                log! ({"MmCtx::on_stop] Listener error: {}", err})
             }
         } else {
             stop_listeners.push (cb)

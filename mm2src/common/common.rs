@@ -23,9 +23,11 @@ extern crate gstuff;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+extern crate hex;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate rand;
+extern crate regex;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -50,9 +52,11 @@ macro_rules! safecopy {
     }}
 }
 
+#[macro_use]
+pub mod log;
+
 pub mod for_tests;
 pub mod iguana_utils;
-pub mod log;
 pub mod lp_privkey;
 pub mod mm_ctx;
 pub mod ser;
@@ -61,10 +65,11 @@ use futures::{future, Future};
 use futures::sync::oneshot::{self, Receiver};
 use futures::task::Task;
 use gstuff::{any_to_str, now_float};
+use hex::FromHex;
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
 use hyper::rt::Stream;
 use libc::{c_char, c_void, malloc, free};
-use serde_json::{self as json};
+use serde_json::{self as json, Value as Json};
 use std::fmt;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
@@ -121,6 +126,43 @@ impl fmt::Display for bits256 {
         let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
         f.write_str (hex)
     }
+}
+
+impl std::cmp::PartialEq for bits256 {
+    /// Should be preferred to `bits256_cmp`.
+    fn eq (&self, other: &bits256) -> bool {
+        unsafe {
+            self.ulongs[0] == other.ulongs[0] &&
+            self.ulongs[1] == other.ulongs[1] &&
+            self.ulongs[2] == other.ulongs[2] &&
+            self.ulongs[3] == other.ulongs[3]
+        }
+    }
+}
+impl std::cmp::Eq for bits256 {}
+
+impl bits256 {
+    /// Returns true if the hash is not zero.  
+    /// Port of `#define bits256_nonz`.
+    pub fn nonz (&self) -> bool {
+        unsafe {self.ulongs[0] != 0 && self.ulongs[1] != 0 && self.ulongs[2] != 0 && self.ulongs[3] != 0}
+    }
+}
+
+/// Decodes a HEX string into a 32-bytes array.  
+/// But only if the HEX string is 64 characters long, returning a zeroed array otherwise.  
+/// (Use `fn nonz` to check if the array is zeroed).  
+/// A port of cJSON.c/jbits256.
+pub fn jbits256 (json: &Json) -> Result<bits256, String> {
+    let mut hash: bits256 = unsafe {zeroed()};
+    if let Some (hex) = json.as_str() {
+        if hex.len() == 64 {
+            //try_s! (::common::iguana_utils::decode_hex (unsafe {&mut hash.bytes[..]}, hex.as_bytes()));
+            let bytes: [u8; 32] = try_s! (FromHex::from_hex (hex));
+            unsafe {hash.bytes.copy_from_slice (&bytes)}
+        }
+    }
+    Ok (hash)
 }
 
 /// [functional]
@@ -190,11 +232,16 @@ unsafe impl Send for CJSON {}
 /// The difference from `CString` is that the memory is then *owned* by the C code instead of being temporarily borrowed,
 /// that is it doesn't need to be recycled in Rust.
 /// Plus we don't check the slice for zeroes, most of our code doesn't need that extra check.
-pub fn str_to_malloc (s: &str) -> *mut c_char {unsafe {
-    let buf = malloc (s.len() + 1) as *mut u8;
-    copy (s.as_ptr(), buf, s.len());
-    *buf.offset (s.len() as isize) = 0;
-    buf as *mut c_char
+pub fn str_to_malloc (s: &str) -> *mut c_char {
+    slice_to_malloc (s.as_bytes()) as *mut c_char
+}
+
+/// Helps sharing a byte slice with C code by allocating a zero-terminated string with the C standard library allocator.
+pub fn slice_to_malloc (bytes: &[u8]) -> *mut c_void {unsafe {
+    let buf = malloc (bytes.len() + 1) as *mut u8;
+    copy (bytes.as_ptr(), buf, bytes.len());
+    *buf.offset (bytes.len() as isize) = 0;
+    buf as *mut c_void
 }}
 
 /// Converts *mut c_char to Rust String
@@ -252,18 +299,30 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
 
     // Skip common and less than informative frames.
 
-    if name.starts_with ("backtrace::") {return}
-    if name.starts_with ("core::") {return}
-    if name.starts_with ("alloc::") {return}
-    if name.starts_with ("panic_unwind::") {return}
-    if name.starts_with ("std::") {return}
     if name == "mm2::crash_reports::rust_seh_handler" {return}
     if name == "veh_exception_filter" {return}
     if name == "common::stack_trace" {return}
     if name == "common::log_stacktrace" {return}
     if name == "__scrt_common_main_seh" {return}  // Super-main on Windows.
+
+    if filename == "boxed.rs" {return}
+    if filename == "panic.rs" {return}
+
+    // Alphanumerically sorted on first letter.
+    if name.starts_with ("alloc::") {return}
+    if name.starts_with ("backtrace::") {return}
     if name.starts_with ("common::stack_trace") {return}
+    if name.starts_with ("futures::") {return}
+    if name.starts_with ("hyper::") {return}
     if name.starts_with ("mm2::crash_reports::signal_handler") {return}
+    if name.starts_with ("panic_unwind::") {return}
+    if name.starts_with ("std::") {return}
+    if name.starts_with ("scoped_tls::") {return}
+    if name.starts_with ("tokio::") {return}
+    if name.starts_with ("tokio_core::") {return}
+    if name.starts_with ("tokio_reactor::") {return}
+    if name.starts_with ("tokio_executor::") {return}
+    if name.starts_with ("tokio_timer::") {return}
 
     let _ = writeln! (buf, "  {}:{}] {}", filename, lineno, name);
 }
@@ -294,14 +353,14 @@ pub extern fn log_stacktrace (desc: *const c_char) {
         match unsafe {CStr::from_ptr (desc)} .to_str() {
             Ok (s) => s,
             Err (err) => {
-                eprintln! ("log_stacktrace] Bad trace description: {}", err);
+                log! ({"log_stacktrace] Bad trace description: {}", err});
                 ""
             }
         }
     };
     let mut trace = String::with_capacity (4096);
     stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
-    println! ("Stacktrace. {}\n{}", desc, trace);
+    log! ({"Stacktrace. {}\n{}", desc, trace});
 }
 
 fn start_core_thread() -> Remote {
@@ -312,7 +371,7 @@ fn start_core_thread() -> Remote {
             unwrap! (tx.send (core.remote()), "Can't send Remote.");
             loop {core.turn (None)}
         })) {
-            eprintln! ("CORE panic! {:?}", any_to_str (&*err));
+            log! ({"CORE panic! {:?}", any_to_str (&*err)});
             abort()
         }
     }), "!spawn");
@@ -482,7 +541,7 @@ pub fn err_to_rpc_json_string(err: &str) -> String {
 pub fn rpc_err_response(status: u16, msg: &str) -> HyRes {
     // TODO: Like in most other places, we should check for a thread-local access to the proper log here.
     // Might be a good idea to use emoji too, like "🤒" or "🤐" or "😕".
-    eprintln! ("RPC error response: {}", msg);
+    log! ({"RPC error response: {}", msg});
 
     rpc_response(status, err_to_rpc_json_string(msg))
 }
@@ -575,7 +634,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             let listeners = self.listeners.clone();
             let f = f.then (move |result| -> Result<(), ()> {
                 let mut shelf = match shelf_tx.lock() {Ok (l) => l, Err (err) => {
-                    eprintln! ("RefreshedExternalResource::tick] Can't lock the shelf: {}", err);
+                    log! ({"RefreshedExternalResource::tick] Can't lock the shelf: {}", err});
                     return Err(())
                 }};
                 let shelf_time = match *shelf {Some (ref r) => r.time, None => 0.};
@@ -587,7 +646,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
                     drop (shelf);  // Don't hold the lock unnecessarily.
                     {
                         let mut listeners = match listeners.lock() {Ok (l) => l, Err (err) => {
-                            eprintln! ("RefreshedExternalResource::tick] Can't lock the listeners: {}", err);
+                            log! ({"RefreshedExternalResource::tick] Can't lock the listeners: {}", err});
                             return Err(())
                         }};
                         for task in listeners.drain (..) {task.notify()}

@@ -36,8 +36,9 @@ use futures::{Future};
 use gstuff::{now_ms, slurp};
 use hyper::header::{HeaderValue};
 use libc::{self, c_char, c_void};
-use network::{lp_command_q_loop, lp_queue_command};
-use ordermatch::{lp_trade_command, lp_trades_loop};
+use lp_network::{lp_command_q_loop, lp_queue_command};
+use lp_ordermatch::{lp_trade_command, lp_trades_loop};
+use peers;
 use portfolio::prices_loop;
 use rand::random;
 use serde_json::{Value as Json};
@@ -54,7 +55,7 @@ use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, sleep};
 use std::time::Duration;
-use super::rpc;
+use super::rpc::{self, SINGLE_THREADED_C_LOCK};
 
 /*
 #include <stdio.h>
@@ -223,6 +224,13 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_messages.c"
 #include "LP_commands.c"
 */
+
+/// Process a previously queued command that wasn't handled by the RPC `dispatcher`.  
+/// NB: It might be preferable to port more commands into the RPC `dispatcher`, rather than `lp_command_process`, because:  
+/// 1) It allows us to more easily test such commands through the local HTTP endpoint;  
+/// 2) It allows the command handler to run asynchronously and use more time wihtout slowing down the queue loop;  
+/// 3) By being present in the `dispatcher` table the commands are easier to find and to be accounted for;  
+/// 4) No need for `unsafe`, `CJSON` and `*mut c_char` there.
 pub unsafe fn lp_command_process(
     ctx: MmArc,
     pub_sock: i32,
@@ -234,6 +242,7 @@ pub unsafe fn lp_command_process(
     if !json["result"].is_null() || !json["error"].is_null() {
         null_mut()
     } else {
+        let _lock = SINGLE_THREADED_C_LOCK.lock();
         let mut trade_command = -1;
         if stats_json_only == 0 {
             trade_command = lp_trade_command(ctx.clone(), json, &c_json);
@@ -1051,6 +1060,7 @@ pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_p
     lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid);
 
     // Add ourselves into the list of known peers.
+    try_s! (peers::initialize (netid, lp::G.LP_mypub25519, pubport, lp::G.LP_sessionid));
     let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
     mypeer = lp::LP_addpeer (mypeer, pubsock, myipaddr_c.as_ptr() as *mut c_char, myport, pullport, pubport, 1, lp::G.LP_sessionid, netid);
     lp::LP_mypeer = mypeer;
@@ -1072,8 +1082,9 @@ pub unsafe fn lp_initpeers (ctx: &MmCtx, pubsock: i32, mut mypeer: *mut lp::LP_p
         Vec::new()
     };
 
-    for (seed, is_lp) in seeds {
-        let ip = try_s! (CString::new (&seed[..]));
+    for (seed_ip, is_lp) in seeds {
+        try_s! (peers::investigate_peer (&seed_ip, pubport));
+        let ip = try_s! (CString::new (&seed_ip[..]));
         lp::LP_addpeer (mypeer, pubsock, ip.as_ptr() as *mut c_char, myport, pullport, pubport, if is_lp {1} else {0}, lp::G.LP_sessionid, netid);
     }
     Ok(())
@@ -1483,28 +1494,28 @@ fn ensure_writable (dir_path: &Path) -> bool {
     let mut fp = match fs::File::create (&fname) {
         Ok (fp) => fp,
         Err (_) => {
-            eprintln! ("FATAL ERROR cant create {:?}", fname);
+            log! ({"FATAL ERROR cant create {:?}", fname});
             return false
         }
     };
     if fp.write_all (&r) .is_err() {
-        eprintln! ("FATAL ERROR writing {:?}", fname);
+        log! ({"FATAL ERROR writing {:?}", fname});
         return false
     }
     drop (fp);
     let mut fp = match fs::File::open (&fname) {
         Ok (fp) => fp,
         Err (_) => {
-            eprintln! ("FATAL ERROR cant open {:?}", fname);
+            log! ({"FATAL ERROR cant open {:?}", fname});
             return false
         }
     };
     if fp.read_to_end (&mut check).is_err() || check.len() != r.len() {
-        eprintln! ("FATAL ERROR reading {:?}", fname);
+        log! ({"FATAL ERROR reading {:?}", fname});
         return false
     }
     if check != r {
-        eprintln! ("FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check);
+        log! ({"FATAL ERROR error comparing {:?} {:?} vs {:?}", fname, r, check});
         return false
     }
     true
@@ -1549,10 +1560,6 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
     };
     let seednode = seednode.as_ref().map (|s| &s[..]);
 
-    lp::LP_closepeers();
-    try_s! (lp_initpeers (ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port, netid, seednode));
-
-    lp::G.initializing = 1;
     let gui: Cow<str> = match gui {
         Some (g) => g.into(),
         None => match try_s! (CStr::from_ptr (lp::G.gui.as_ptr()) .to_str()) {
@@ -1589,6 +1596,10 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
     try_s! (safecopy! (lp::G.LP_myrmd160str, "{}", hex::encode (lp::G.LP_myrmd160)));
     lp::G.LP_sessionid = (now_ms() / 1000) as u32;
     try_s! (safecopy! (lp::G.gui, "{}", gui));
+
+    lp::LP_closepeers();
+    try_s! (lp_initpeers (ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port, netid, seednode));
+
     lp::LP_tradebot_pauseall();
     lp::LP_portfolio_reset();
     lp::LP_priceinfos_clear();
@@ -1601,13 +1612,14 @@ pub unsafe fn lp_passphrase_init (ctx: &MmCtx, passphrase: Option<&str>, gui: Op
 }
 
 pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON) -> Result<(), String> {
-    unsafe {lp::bitcoind_RPC_inittime = 1};
+    unsafe {lp::G.initializing = 1}  // Tells some of the spawned threads to wait till the `lp_passphrase_init` is done.
+    unsafe {lp::bitcoind_RPC_inittime = 1}
     BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
     if lp::LP_MAXPRICEINFOS > 255 {
         return ERR! ("LP_MAXPRICEINFOS {} wont fit in a u8, need to increase the width of the baseind and relind for struct LP_pubkey_quote", lp::LP_MAXPRICEINFOS)
     }
     unsafe {lp::LP_showwif = if conf["wif"] == 1 {1} else {0}};
-    println! ("showwif.{} version: {} {}", unsafe {lp::LP_showwif}, MM_VERSION, crc32::checksum_ieee (MM_VERSION.as_bytes()));
+    log! ({"showwif.{} version: {} {}", unsafe {lp::LP_showwif}, MM_VERSION, crc32::checksum_ieee (MM_VERSION.as_bytes())});
     unsafe {libc::srand (random())};  // Seed the C RNG, we might need it as long as we're using C code.
     if conf["gui"] == 1 {
         // Replace "cli\0" with "gui\0".
@@ -1697,29 +1709,29 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         let mut ip_providers_it = ip_providers.iter();
         loop {
             let (url, extactor) = match ip_providers_it.next() {Some (t) => t, None => return ERR! ("Can't fetch the real IP")};
-            println! ("lp_init] Trying to fetch the real IP from '{}' ...", url);
+            log! ({"lp_init] Trying to fetch the real IP from '{}' ...", url});
             let (status, _headers, ip) = match slurp_url (url) .wait() {
                 Ok (t) => t,
                 Err (err) => {
-                    println! ("lp_init] Failed to fetch IP from '{}': {}", url, err);
+                    log! ({"lp_init] Failed to fetch IP from '{}': {}", url, err});
                     continue
                 }
             };
             if !status.is_success() {
-                println! ("lp_init] Failed to fetch IP from '{}': status {:?}", url, status);
+                log! ({"lp_init] Failed to fetch IP from '{}': status {:?}", url, status});
                 continue
             }
             let ip = match from_utf8 (&ip) {
                 Ok (ip) => ip,
                 Err (err) => {
-                    println! ("lp_init] Failed to fetch IP from '{}', not UTF-8: {}", url, err);
+                    log! ({"lp_init] Failed to fetch IP from '{}', not UTF-8: {}", url, err});
                     continue
                 }
             };
             match extactor (ip) {
                 Ok (ip) => break ip,
                 Err (err) => {
-                    println! ("lp_init] Failed to parse IP '{}' fetched from '{}': {}", ip, url, err);
+                    log! ({"lp_init] Failed to parse IP '{}' fetched from '{}': {}", ip, url, err});
                     continue
                 }
             }
@@ -1755,15 +1767,15 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
                 let mut timeout: i32 = 100;
                 unsafe {nn_setsockopt (lp::LP_mypubsock, NN_SOL_SOCKET as i32, NN_SNDTIMEO as i32, &mut timeout as *mut i32 as *mut c_void, size_of::<i32>())};
             } else {
-                println! ("error binding to ({}).{}", bindaddr, unsafe {lp::LP_mypubsock});
+                log! ({"error binding to ({}).{}", bindaddr, unsafe {lp::LP_mypubsock}});
                 if unsafe {lp::LP_mypubsock} >= 0 {
                     unsafe {nn_close (lp::LP_mypubsock); lp::LP_mypubsock = -1}
                 }
             }
         } else {
-            println! ("error getting pubsock {}", unsafe {lp::LP_mypubsock});
+            log! ({"error getting pubsock {}", unsafe {lp::LP_mypubsock}});
         }
-        println! (">>>>>>>>> myipaddr.({}) pubsock.{}", bindaddr, unsafe {lp::LP_mypubsock});
+        log! ({">>>>>>>>> myipaddr.({}) pubsock.{}", bindaddr, unsafe {lp::LP_mypubsock}});
         let mut mypullport = mypullport;
         let mut pushaddr: [c_char; 256] = unsafe {zeroed()};
         let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));
@@ -1786,10 +1798,6 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     unsafe {lp::RPC_port = myport}
     unsafe {lp::G.waiting = 1}
     try_s! (unsafe {safecopy! (lp::LP_myipaddr, "{}", myipaddr)});
-    try_s! (unsafe {lp_initpeers (
-        &ctx, lp::LP_mypubsock, lp::LP_mypeer, &myipaddr, lp::RPC_port,
-        ctx.conf["netid"].as_u64().unwrap_or (0) as u16,
-        ctx.conf["seednode"].as_str())});
 
     if let Some (ethnode) = ctx.conf["ethnode"].as_str() {
         try_s! (unsafe {safecopy! (lp::LP_eth_node_url, "{}", ethnode)})

@@ -28,7 +28,7 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::{c_char, c_void};
-use network::lp_queue_command;
+use lp_network::lp_queue_command;
 use portfolio::lp_autoprice;
 use portfolio::prices::lp_fundvalue;
 use serde_json::{self as json, Value as Json};
@@ -42,6 +42,8 @@ use hex;
 
 mod commands;
 use self::commands::*;
+
+mod lp_signatures;
 
 lazy_static! {
     /// Shared HTTP server.
@@ -166,41 +168,44 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
     }
 }
 
-/// The dispatcher, with full control over the HTTP result and the way we run the `Future` producing it.
-fn dispatcher (req: Json, remote_addr: SocketAddr, ctx: MmArc) -> HyRes {
-    lazy_static! {static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());}
+lazy_static! {
+    /// Emulating the single-threaded execution for the older C code.
+    pub static ref SINGLE_THREADED_C_LOCK: Mutex<()> = Mutex::new(());
+}
 
-    let method = req["method"].as_str().map (|s| s.to_string());
-    let method = match method {Some (ref s) => Some (&s[..]), None => None};
-    if !remote_addr.ip().is_loopback() && !PUBLIC_METHODS.contains(&method) {
-        return rpc_err_response(400, "Selected method can be called from localhost only!")
-    }
-    try_h!(auth(&req));
-    macro_rules! c_json {() => {try_h! (CJSON::from_str (&req.to_string()))}}
-    match method {  // Sorted alphanumerically (on the first latter) for readability.
-        Some ("autoprice") => lp_autoprice (ctx, req),
-        Some ("buy") => buy(&req),
-        Some ("eth_gas_price") => eth_gas_price(),
-        Some ("fundvalue") => lp_fundvalue (ctx, req, false),
-        Some ("help") => help(),
-        Some ("inventory") => inventory (ctx, req),
-        Some ("mpnet") => mpnet (&req),
-        //Some ("notify") => lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
-        Some ("passphrase") => passphrase (ctx, req),
-        Some ("sell") => sell (&req),
-        Some ("stop") => stop (ctx),
-        Some ("version") => version(),
-        None => rpc_err_response (400, "Method is not set!"),
-        _ => {  // Evoke the old C code.
-            let c_json = c_json!();
-            let cpu_pool_fut = CPUPOOL.spawn_fn(move || {
-                // Emulates the single-threaded execution of the old C code.
-                let _lock = SINGLE_THREADED_C_LOCK.lock();
-                rpc_process_json (ctx, remote_addr, req, c_json)
-            });
-            Box::new (cpu_pool_fut)
-        }
-    }
+/// Result of `fn dispatcher`.
+pub enum DispatcherRes {
+    /// `fn dispatcher` has found a Rust handler for the RPC "method".
+    Match (HyRes),
+    /// No handler found by `fn dispatcher`. Returning the `Json` request in order for it to be handled elsewhere.
+    NoMatch (Json)
+}
+
+/// The dispatcher, with full control over the HTTP result and the way we run the `Future` producing it.
+/// 
+/// Invoked both directly from the HTTP endpoint handler below and in a delayed fashion from `lp_command_q_loop`.
+/// 
+/// Returns `None` if the requested "method" wasn't found among the ported RPC methods and has to be handled elsewhere.
+pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> DispatcherRes {
+    let method = match req["method"].clone() {
+        Json::String (method) => method,
+        _ => return DispatcherRes::NoMatch (req)
+    };
+    DispatcherRes::Match (match &method[..] {  // Sorted alphanumerically (on the first latter) for readability.
+        "autoprice" => lp_autoprice (ctx, req),
+        "buy" => buy(&req),
+        "eth_gas_price" => eth_gas_price(),
+        "fundvalue" => lp_fundvalue (ctx, req, false),
+        "help" => help(),
+        "inventory" => inventory (ctx, req),
+        "mpnet" => mpnet (&req),
+        "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
+        "passphrase" => passphrase (ctx, req),
+        "sell" => sell (&req),
+        "stop" => stop (ctx),
+        "version" => version(),
+        _ => return DispatcherRes::NoMatch (req)
+    })
 }
 
 impl Service for RpcService {
@@ -223,7 +228,28 @@ impl Service for RpcService {
         let f = body_f.then (move |req| -> HyRes {
             let req = try_h! (req);
             let req: Json = try_h! (json::from_slice (&req));
-            dispatcher (req, remote_addr, ctx)
+
+            {
+                let method = req["method"].as_str();
+                if !remote_addr.ip().is_loopback() && !PUBLIC_METHODS.contains (&method) {
+                    return rpc_err_response (400, "Selected method can be called from localhost only!")
+                }
+            }
+            try_h! (auth (&req));
+
+            match dispatcher (req, Some (remote_addr), ctx.clone()) {
+                DispatcherRes::Match (handler) => handler,
+                DispatcherRes::NoMatch (req) => {
+                    // Evoke the older C dispatcher (stats_JSON), RPC methods we haven't ported yet are handled there.
+                    let c_json = try_h! (CJSON::from_str (&req.to_string()));
+                    let cpu_pool_fut = CPUPOOL.spawn_fn(move || {
+                        // Emulates the single-threaded execution of the old C code.
+                        let _lock = SINGLE_THREADED_C_LOCK.lock();
+                        rpc_process_json (ctx, remote_addr, req, c_json)
+                    });
+                    Box::new (cpu_pool_fut)
+                }
+            }
         });
 
         Box::new (f.map( |mut res| {
@@ -253,7 +279,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
             let remote_addr = match socket.peer_addr() {
                 Ok (addr) => addr,
                 Err (err) => {
-                    eprintln! ("spawn_rpc] No peer_addr: {}", err);
+                    log! ({"spawn_rpc] No peer_addr: {}", err});
                     return Ok(())
                 }
             };
@@ -267,11 +293,11 @@ pub extern fn spawn_rpc(ctx_h: u32) {
                     },
                 )
                 .map(|_| ())
-                .map_err (|err| eprintln! ("spawn_rpc] HTTP error: {}", err))
+                .map_err (|err| log! ({"spawn_rpc] HTTP error: {}", err}))
             );
             Ok(())
         })
-        .map_err (|err| eprintln! ("spawn_rpc] accept error: {}", err));
+        .map_err (|err| log! ({"spawn_rpc] accept error: {}", err}));
 
     // Finish the server `Future` when `shutdown_rx` fires.
 
@@ -280,7 +306,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
     let mut shutdown_tx = Some (shutdown_tx);
     ctx.on_stop (Box::new (move || {
         if let Some (shutdown_tx) = shutdown_tx.take() {
-            println! ("rpc] on_stop, firing shutdown_tx!");
+            log! ("rpc] on_stop, firing shutdown_tx!");
             if let Err (_) = shutdown_tx.send(()) {ERR! ("shutdown_tx already closed")} else {Ok(())}
         } else {ERR! ("on_stop callback called twice!")}
     }));
