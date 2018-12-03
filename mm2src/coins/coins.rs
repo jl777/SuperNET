@@ -33,6 +33,8 @@ extern crate gstuff;
 extern crate hex;
 extern crate hyper;
 extern crate keys;
+#[macro_use]
+extern crate lazy_static;
 extern crate primitives;
 extern crate rpc as bitcoin_rpc;
 extern crate script;
@@ -73,9 +75,21 @@ pub mod utxo;
 pub mod eth;
 
 pub trait Transaction: Downcast + Debug {
+    fn to_raw_bytes(&self) -> Vec<u8>;
 
+    fn box_clone(&self) -> Box<Transaction>;
 }
 impl_downcast!(Transaction);
+
+/// We need to clone the Box<Transaction> instance, it's the workaround to implement it
+/// https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
+/// We can't just do "pub trait Transaction: Clone" due to Rust object safety rules:
+/// https://github.com/rust-lang/rfcs/blob/master/text/0255-object-safety.md
+impl Clone for Box<Transaction> {
+    fn clone(&self) -> Box<Transaction> {
+        self.box_clone()
+    }
+}
 
 pub type BoxedTx = Box<dyn Transaction>;
 pub type BoxedTxFut = Box<dyn Future<Item=BoxedTx, Error=String>>;
@@ -83,74 +97,74 @@ pub type BoxedTxFut = Box<dyn Future<Item=BoxedTx, Error=String>>;
 /// Common functions that every coin must implement to be exchanged on MM
 /// Amounts are f64, it's responsibility of particular implementation to convert it to
 /// integer amount depending on decimals.
-pub trait ExchangeableCoin {
-    fn send_alice_fee(&self, fee_addr: Vec<u8>, amount: f64) -> BoxedTxFut;
+pub trait ExchangeableCoin: Downcast + Debug {
+    fn send_alice_fee(&self, fee_addr: &[u8], amount: f64) -> BoxedTxFut;
 
-    fn send_alice_payment(&self, pub_am: Vec<u8>, pub_bn: Vec<u8>, amount: f64) -> BoxedTxFut;
+    fn send_alice_payment(&self, pub_am: &[u8], pub_bn: &[u8], amount: f64) -> BoxedTxFut;
 
     fn send_bob_deposit(
         &self,
         time_lock: u32,
-        priv_bn_hash: Vec<u8>,
-        priv_am_hash: Vec<u8>,
-        pub_b0: Vec<u8>,
-        pub_a0: Vec<u8>,
+        priv_bn_hash: &[u8],
+        priv_am_hash: &[u8],
+        pub_b0: &[u8],
+        pub_a0: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_bob_payment(
         &self,
         time_lock: u32,
-        priv_am_hash: Vec<u8>,
-        pub_b1: Vec<u8>,
-        pub_a0: Vec<u8>,
+        priv_am_hash: &[u8],
+        pub_b1: &[u8],
+        pub_a0: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_bob_spends_alice_payment(
         &self,
         a_payment_tx: BoxedTx,
-        a_priv_m: Vec<u8>,
-        b_priv_n: Vec<u8>,
+        a_priv_m: &[u8],
+        b_priv_n: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_alice_reclaims_payment(
         &self,
         a_payment_tx: BoxedTx,
-        a_priv_m: Vec<u8>,
-        b_priv_n: Vec<u8>,
+        a_priv_m: &[u8],
+        b_priv_n: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_bob_reclaims_payment(
         &self,
         b_payment_tx: BoxedTx,
-        b_priv_1: Vec<u8>,
+        b_priv_1: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_alice_spends_bob_payment(
         &self,
         b_payment_tx: BoxedTx,
-        a_priv_m: Vec<u8>,
-        a_priv_0: Vec<u8>,
+        a_priv_m: &[u8],
+        a_priv_0: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_bob_refunds_deposit(
         &self,
         b_deposit_tx: BoxedTx,
-        b_priv_n: Vec<u8>,
-        b_priv_0: Vec<u8>,
+        b_priv_n: &[u8],
+        b_priv_0: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
     fn send_alice_claims_deposit(
         &self,
         b_deposit_tx: BoxedTx,
-        a_priv_m: Vec<u8>,
-        a_priv_0: Vec<u8>,
+        a_priv_m: &[u8],
+        a_priv_0: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
@@ -159,7 +173,10 @@ pub trait ExchangeableCoin {
     fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut;
 
     fn wait_for_confirmations(&self, tx: BoxedTx) -> Box<dyn Future<Item=(), Error=String>>;
+
+    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String>;
 }
+impl_downcast!(ExchangeableCoin);
 
 struct Coins {
     coins: Vec<Box<dyn ExchangeableCoin>>

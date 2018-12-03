@@ -242,7 +242,6 @@ fn generate_bindings() {
             "LP_importaddress",
             "LP_otheraddress",
             "LP_swapsfp_update",
-            "LP_aliceloop",
             "LP_reserved_msg",
             "LP_unavailableset",
             "LP_trades_pricevalidate",
@@ -253,8 +252,32 @@ fn generate_bindings() {
             "LP_getheight",
             "LP_reservation_check",
             "LP_nanobind",
-            "LP_bobloop",
             "LP_instantdex_txids",
+            "LP_etomicsymbol",
+            "LP_calc_waittimeout",
+            "LP_sendwait",
+            "LP_pubkeys_verify",
+            "LP_pubkeys_data",
+            "LP_choosei_verify",
+            "LP_choosei_data",
+            "LP_mostprivs_verify",
+            "LP_mostprivs_data",
+            "basilisk_alicetxs",
+            "LP_swapdata_rawtxsend",
+            "LP_numconfirms",
+            "LP_waitfor",
+            "LP_verify_bobdeposit",
+            "LP_verify_bobpayment",
+            "LP_pendswap_add",
+            "basilisk_swap_finished",
+            "LP_waitsend",
+            "basilisk_bobscripts_set",
+            "basilisk_bobdeposit_refund",
+            "LP_verify_otherfee",
+            "LP_verify_alicepayment",
+            "basilisk_bobpayment_reclaim",
+            "LP_swaprecv",
+            "basilisk_dontforget",
         ]
             .iter(),
         // types
@@ -315,6 +338,10 @@ fn generate_bindings() {
             "LP_CONNECTED",
             "LP_Alicereserved",
             "dstr",
+            "LP_SWAPSTEP_TIMEOUT",
+            "LP_swap_critical",
+            "LP_swap_endcritical",
+            "INSTANTDEX_PUBKEY",
         ]
             .iter(),
     );
@@ -350,7 +377,7 @@ fn generate_bindings() {
         ]
             .iter(),
         empty(),
-        ["AF_SP", "NN_PAIR", "NN_PUB", "NN_SOL_SOCKET", "NN_SNDTIMEO"].iter(),
+        ["AF_SP", "NN_PAIR", "NN_PUB", "NN_SOL_SOCKET", "NN_SNDTIMEO", "NN_MSG",].iter(),
     );
 }
 

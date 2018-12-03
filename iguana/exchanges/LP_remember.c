@@ -247,10 +247,6 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
         basilisk_dontforget(swap,&swap->bobrefund,0,triggertxid);
         basilisk_dontforget(swap,&swap->aliceclaim,0,swap->bobrefund.I.actualtxid);
     }
-    else if ( rawtx == &swap->alicepayment )
-    {
-        basilisk_dontforget(swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
-    }
     else if ( rawtx == &swap->bobspend )
     {
         basilisk_dontforget(swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);

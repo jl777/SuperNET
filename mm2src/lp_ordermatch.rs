@@ -24,6 +24,7 @@ use gstuff::now_ms;
 use fxhash::{FxHashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
 use lp_network::lp_queue_command;
+use lp_swap::{lp_alice_loop, lp_bob_loop};
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
 use std::collections::hash_map::Entry;
@@ -443,7 +444,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             (*swap).N.pair = pair;
             let b_swap = BasiliskSwap(swap);
             let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn(move ||
-                lp::LP_bobloop(b_swap.0)
+                lp_bob_loop(b_swap.0)
             );
             match loop_thread {
                 Ok(_h) => {
@@ -690,7 +691,7 @@ char *LP_cancel_order(char *uuidstr)
     return(clonestr("{\"error\":\"uuid not cancellable\"}"));
 }
 */
-struct BasiliskSwap(pub *mut lp::basilisk_swap);
+pub struct BasiliskSwap(pub *mut lp::basilisk_swap);
 unsafe impl Send for BasiliskSwap {}
 
 unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { // alice
@@ -765,9 +766,10 @@ unsafe fn lp_connected_alice(qp: *mut lp::LP_quoteinfo, pairstr: *mut c_char) { 
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"started\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
             let b_swap = BasiliskSwap(swap);
-            let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn(move ||
-                    lp::LP_aliceloop(b_swap.0)
-            );
+            let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn(move || {
+                log!("Before alice loop");
+                lp_alice_loop(b_swap.0);
+            });
             match alice_loop_thread {
                 Ok(_h) => {
                     let retjson = CJSON(lp::LP_quotejson(qp));
