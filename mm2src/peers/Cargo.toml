@@ -9,7 +9,9 @@ path = "peers.rs"
 doctest = false
 
 [dependencies]
+byteorder = "1.2"
 common = { path = "../common" }
+crc = "1.8"
 crossbeam = "0.5"
 fomat-macros = "0.2"
 futures = "0.1"

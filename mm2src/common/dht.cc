@@ -32,7 +32,7 @@ extern "C" char const* delete_dugout (dugout_t* dugout) try {
     return strdup (ex.what());
 }
 
-extern "C" dugout_t dht_init (char const* listen_interfaces) {
+extern "C" dugout_t dht_init (char const* listen_interfaces, bool read_only) {
     dugout_t dugout = {};
 
     try {
@@ -53,7 +53,8 @@ extern "C" dugout_t dht_init (char const* listen_interfaces) {
 
         lt::dht::dht_settings dsett;
         dsett.item_lifetime = 600;
-        dsett.upload_rate_limit = 64000;
+        dsett.upload_rate_limit = 128 * 1024;
+        dsett.read_only = read_only;
         session->set_dht_settings (dsett);
     } catch (std::exception const& ex) {
         dugout.err = strdup (ex.what());
@@ -69,10 +70,10 @@ extern "C" void enable_dht (dugout_t* dugout) try {
     dugout->err = strdup (ex.what());
 }
 
-extern "C" void dht_alerts (dugout_t* dugout, void (*cb) (void*, lt::alert*), void* cbctx) try {
+extern "C" void dht_alerts (dugout_t* dugout, void (*cb) (dugout_t*, void*, lt::alert*), void* cbctx) try {
     std::vector<lt::alert*> alerts;
     dugout->session->pop_alerts (&alerts);
-    for (lt::alert* a : alerts) cb (cbctx, a);
+    for (lt::alert* a : alerts) cb (dugout, cbctx, a);
 } catch (std::exception const& ex) {
     dugout->err = strdup (ex.what());
 }
@@ -174,12 +175,12 @@ extern "C" void dht_put (dugout_t* dugout,
         salt);
 }
 
-// TODO: Return the public key from the `dht_get` instead.
-extern "C" void dht_seed_to_public_key (
-    uint8_t const* key, int32_t keylen,
-    uint8_t* pkbuf, int32_t pkbuflen
-) {
+extern "C" void dht_get (dugout_t* dugout,
+                         uint8_t const* key, int32_t keylen,
+                         uint8_t const* salt_c, int32_t saltlen,
+                         uint8_t* pkbuf, int32_t pkbuflen) {
     assert (keylen == 32);
+    assert (salt_c != nullptr);
     assert (pkbuflen == 32);
 
     std::array<char, 32> seed;
@@ -187,24 +188,15 @@ extern "C" void dht_seed_to_public_key (
 
 	lt::dht::public_key pk;
     lt::dht::secret_key sk;
-    std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
 
-    assert (pk.bytes.size() == 32);
-    std::copy (pk.bytes.begin(), pk.bytes.end(), pkbuf);
-}
-
-extern "C" void dht_get (dugout_t* dugout,
-                         uint8_t const* key, int32_t keylen,
-                         uint8_t const* salt_c, int32_t saltlen) {
-    assert (keylen == 32);
-    assert (salt_c != nullptr);
-
-    std::array<char, 32> seed;
-    std::copy (key, key + keylen, seed.begin());
-
-	lt::dht::public_key pk;
-    lt::dht::secret_key sk;
-    std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
+    if (std::all_of (pkbuf, pkbuf + pkbuflen, [](uint8_t v) {return v == 0;})) {  // If `pkbuf` is zero.
+        std::tie (pk, sk) = lt::dht::ed25519_create_keypair (seed);
+        assert (pk.bytes.size() == 32);
+        std::copy (pk.bytes.begin(), pk.bytes.end(), pkbuf);
+    } else {  // Reuse the public key from `pkbuf`.
+        assert (pk.bytes.size() == 32);
+        std::copy (pkbuf, pkbuf + pkbuflen, pk.bytes.begin());
+    }
 
     std::string salt ((char const*) salt_c, saltlen);
 

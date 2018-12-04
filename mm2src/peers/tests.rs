@@ -4,7 +4,7 @@ use common::mm_ctx::MmCtx;
 use gstuff::now_float;
 use libc::{self, c_void};
 use rand::{self, Rng};
-use std::mem::{uninitialized, zeroed};
+use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::ptr::null_mut;
 use std::slice::from_raw_parts;
@@ -33,33 +33,36 @@ pub fn test_dht() {
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
 
-    // Send a message to Bob.
+    // TODO: In order to store a large payload and not become [temporarily] banned we need to use different seeds for different chunks.
+    //       This is complicated by the fact that we need to cache the public keys corresponding to the seeds (`GetsEntry::pk`).
+    // let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
+    for message_len in [1, 987, 32 * 1024].iter() {
+        // Send a message to Bob.
 
-    // NB: 996 bytes (1000 bytes with the "996:" bencode prefix) is the absolute maximum we can store in one item.
-    let mut message: [u8; 996] = unsafe {uninitialized()};
-    rng.fill (&mut message [..]);
+        let message: Vec<u8> = (0..*message_len).map (|_| rng.gen()) .collect();
 
-    unwrap! (::bind (&alice, 1, bob_key));
-    let alice_ctx = unwrap! (alice.ffi_handle());
-    ::peers_clock_tick_compat (alice_ctx, 1);
-    ::peers_send_compat (alice_ctx, 1, message.as_ptr(), message.len() as i32);
+        unwrap! (::bind (&alice, 1, bob_key));
+        let alice_ctx = unwrap! (alice.ffi_handle());
+        ::peers_clock_tick_compat (alice_ctx, 1);
+        ::peers_send_compat (alice_ctx, 1, message.as_ptr(), message.len() as i32);
 
-    // Get that message from Alice.
+        // Get that message from Alice.
 
-    unwrap! (::bind (&bob, 1, alice_key));
-    let bob_ctx = unwrap! (bob.ffi_handle());
-    ::peers_clock_tick_compat (bob_ctx, 1);
-    let started_at = now_float();
-    loop {
-        let mut data: *mut u8 = null_mut();
-        let rc = ::peers_recv_compat (bob_ctx, 1, &mut data);
-        if rc < 0 {panic! ("peers_recv_compat error: {}", rc)}
-        if rc > 0 {
-            let payload: Vec<u8> = unsafe {from_raw_parts (data, rc as usize)} .into();
-            unsafe {libc::free (data as *mut c_void)}
-            if payload == &message[..] {break}
+        unwrap! (::bind (&bob, 1, alice_key));
+        let bob_ctx = unwrap! (bob.ffi_handle());
+        ::peers_clock_tick_compat (bob_ctx, 1);
+        let started_at = now_float();
+        loop {
+            let mut data: *mut u8 = null_mut();
+            let rc = ::peers_recv_compat (bob_ctx, 1, &mut data);
+            if rc < 0 {panic! ("peers_recv_compat error: {}", rc)}
+            if rc > 0 {
+                let payload: Vec<u8> = unsafe {from_raw_parts (data, rc as usize)} .into();
+                unsafe {libc::free (data as *mut c_void)}
+                if payload == &message[..] {break}
+            }
+            if now_float() - started_at > (33 + message.len() / 992) as f64 {panic! ("Out of time waiting for DHT payload")}
+            thread::sleep (Duration::from_millis (200))
         }
-        if now_float() - started_at > 66.0 {panic! ("Out of time waiting for DHT payload")}
-        thread::sleep (Duration::from_millis (200))
     }
 }

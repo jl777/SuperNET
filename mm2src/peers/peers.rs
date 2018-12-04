@@ -1,5 +1,7 @@
+extern crate byteorder;
 #[macro_use]
 extern crate common;
+extern crate crc;
 extern crate crossbeam;
 #[macro_use]
 extern crate fomat_macros;
@@ -30,9 +32,11 @@ extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 #[doc(hidden)]
 pub mod tests;
 
+use byteorder::{LittleEndian, WriteBytesExt};
 use common::{bits256, for_c, slice_to_malloc, stack_trace, stack_trace_frame};
 use common::log::{StatusHandle, TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
+use crc::crc32;
 use crossbeam::channel;
 use fxhash::FxHashMap;
 use gstuff::{now_float, now_ms};
@@ -41,8 +45,6 @@ use serde::Serialize;
 use serde_bytes::{Bytes, ByteBuf};
 use std::ffi::{CStr, CString};
 use std::mem::{uninitialized, zeroed};
-//use std::ptr::{null, null_mut};
-use std::ptr::read_volatile;
 use std::slice::from_raw_parts;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -84,9 +86,9 @@ enum Alert {}
 
 extern "C" {
     fn delete_dugout (dugout: *mut dugout_t) -> *const c_char;
-    fn dht_init (listen_interfaces: *const c_char) -> dugout_t;
+    fn dht_init (listen_interfaces: *const c_char, read_only: bool) -> dugout_t;
     fn enable_dht (dugout: *mut dugout_t);
-    fn dht_alerts (dugout: *mut dugout_t, cb: extern fn (cbctx: *mut c_void, alert: *mut Alert), cbctx: *mut c_void);
+    fn dht_alerts (dugout: *mut dugout_t, cb: extern fn (dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert), cbctx: *mut c_void);
     fn alert_message (alert: *const Alert) -> *const c_char;
     fn is_dht_bootstrap_alert (alert: *const Alert) -> bool;
     fn as_listen_succeeded_alert (alert: *const Alert) -> *const c_char;
@@ -96,11 +98,45 @@ extern "C" {
         saltbuf: *mut i8, saltbuflen: i32,
         buf: *mut u8, buflen: i32,
         seq: *mut i64, auth: *mut bool) -> i32;
-    fn dht_seed_to_public_key (key: *const u8, keylen: i32, pkbuf: *mut u8, pkbuflen: i32);
+    // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
+    //           The public key of that pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
+    // * `keylen` - The length of the `key` in bytes. Must be 32 bytes, no more no less.
+    // * `salt` - Identifies the value without affecting its DHT location (TODO: check).
+    // * `saltlen` - The length of the `salt` in bytes. 0 if not used.
+    // * `callback` - Invoked from inside the libtorrent code, after the latter obtains the previous (existing) value from the DHT.
+    // * `arg` - A pointer passed to the `callback`.
+    // 
+    // Callback arguments are:
+    // 
+    // * `arg` - A pointer passed to the `callback` via the `dht_put`.
+    //           Usually points to a `Rust` struct, allowing the callback to communicate with the rest of the program.
+    // * `arg2` - An integer passed to the `callback` via the `dht_put`.
+    //            Might be used to verify the `arg`, for example.
+    // * `have` - Bencoded value that was already present under the `key`.
+    // * `havelen` - The length of `have` in bytes.
+    // * `benload` - Bencoded value that should be saved under the `key`.
+    //               In order to pass the value the callback must allocate the memory from `libc` (the C code will later `free` it).
+    // * `benlen` - The length of `benload` in bytes.
+    // * `seq` - The current version of the value (fetched together with `have`). We must increment it.
+    //           DHT nodes will not accept a new value if our version is smaller than theirs.
+    fn dht_put (dugout: *mut dugout_t,
+                key: *const u8, keylen: i32,
+                salt: *const u8, saltlen: i32,
+                callback: extern fn (*mut c_void, u64, *const u8, i32, *mut *mut u8, *mut i32, *mut i64), arg: *const c_void, arg2: u64);
+    // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
+    //           The public key of that pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
+    // * `salt` - Identifies the value without affecting its DHT location (TODO: check).
+    // * `pkbuf` - The public key derived from the `key` seed.
+    //             If not zero, it is reused, skipping the `ed25519_create_keypair`.
+    //             If zero, receives the generated public key.
+    //             This public key identifies the entries obtained via the `dht_mutable_item_alert` (because DHT storage nodes don't know our seed).
+    // * `pkbuflen` - Must be 32 bytes. Passed explicitly in order for us to check it.
+    fn dht_get (dugout: *mut dugout_t, key: *const u8, keylen: i32, salt: *const u8, saltlen: i32, pkbuf: *mut u8, pkbuflen: i32);
 }
 
 /// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
 /// by replacing all the non-printable bytes with the `blank` character.
+#[allow(unused)]
 fn binprint (bin: &[u8], blank: u8) -> String {
     let mut bin: Vec<u8> = bin.into();
     for ch in bin.iter_mut() {if *ch < 0x20 || *ch >= 0x7F {*ch = blank}}
@@ -125,8 +161,10 @@ enum LtCommand {
         // The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
         // The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
         seed: [u8; 32],
-        // Identifies the value without affecting its DHT location (need to double-check this). Can be empty.
-        // NB: If the `data` is large then `dht_thread` will append something to `salt` for every extra DHT pair.
+        // Identifies the value without affecting its DHT location (need to double-check this). Can be empty.  
+        // Should not be too large (BEP 44 mentions error code 207 "salt too big").  
+        // Must not contain zero bytes (we're passing it as a zero-terminated string sometimes).  
+        // NB: If the `data` is large then `dht_thread` will append chunk number to `salt` for every extra DHT chunk.
         salt: Vec<u8>,
         data: Vec<u8>
     },
@@ -151,8 +189,9 @@ pub struct PeersContext {
     cmd_tx: channel::Sender<LtCommand>,
     /// Should only be used by the `dht_thread`.
     cmd_rx: channel::Receiver<LtCommand>,
-    /// pk, salt -> last-modified, seq, preliminary value, authoritative value
-    gets: Mutex<FxHashMap<([u8; 32], Vec<u8>), (f64, i64, Option<Vec<u8>>, Option<Vec<u8>>)>>
+    // TODO: Remove the outdated `recently_fetched` entries after a while.
+    /// seed, salt -> last-modified, value
+    recently_fetched: Mutex<FxHashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>
 }
 
 impl PeersContext {
@@ -165,7 +204,7 @@ impl PeersContext {
                 sock2peer: Mutex::new (FxHashMap::default()),
                 cmd_tx,
                 cmd_rx,
-                gets: Mutex::new (FxHashMap::default())
+                recently_fetched: Mutex::new (FxHashMap::default())
             })
         })))
     }
@@ -185,17 +224,225 @@ lazy_static! {
     static ref PUT_SHUTTLES: Mutex<FxHashMap<usize, (u64, Arc<PutShuttle>)>> = Mutex::new (FxHashMap::default());
 }
 
+/// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.
+fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: &mut dugout_t) {
+    // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
+    // chunk 2 {{piece of data} crc32}
+    // chunk 3 {{piece of data} crc32}
+
+    // Prepend the number of chunks into the `data`,
+    // allowing the receiving side to get the number of chunks from the first one.
+    // We can store at most 992 bytes in a chunk (BEP44 1000 bytes limit - 4 bytes bencode overhead - 4 bytes checksum).
+
+    // We're using `(1..)` ranges and as of today they seem to overflow on `254u8`. For example, this overflows:
+    // println! ("{:?}", (1u8..) .zip (0..254) .collect::<Vec<_>>());
+    let max_chunks = 253;
+
+    let number_of_chunks = (data.len() + 1) / 992 + if (data.len() + 1) % 992 != 0 {1} else {0};
+    let number_of_chunks = if number_of_chunks > max_chunks {
+        log! ("split_and_put] Error, payload (" (data.len()) " bytes) is too large for `peers`.");
+        return
+    } else {
+        number_of_chunks as u8
+    };
+    data.insert (0, number_of_chunks);
+
+    // Split the `data` into chunks.
+
+    let mut chunks: Vec<Vec<u8>> = data.chunks (992) .map (|slice| slice.into()) .collect();
+    assert_eq! (chunks.len(), number_of_chunks as usize);
+
+    // Calculate the CRC for every chunk.
+    // We should be able to check the chunks independently on the receiving side (that is, no CRC streaming between the chunks)
+    // in order for the receiving side to swiftly retry getting the chunk if there's a CRC mismatch.
+
+    for (idx, mut chunk) in (0..) .zip (chunks.iter_mut()) {
+        use crc32::{update, IEEE_TABLE};
+        let mut crc = update (idx, &IEEE_TABLE, &chunk);
+        crc = update (crc, &IEEE_TABLE, &seed[..]);
+        crc = update (crc, &IEEE_TABLE, &salt);
+        unwrap! (chunk.write_u32::<LittleEndian> (crc));
+        assert! (chunk.len() <= 996);
+    }
+
+    // Submit the chunks to libtorrent, appending the chunk number (1-based) to salt.
+
+    extern fn callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i32, benload: *mut *mut u8, benlen: *mut i32, seq: *mut i64) {
+        assert! (!arg.is_null());
+        assert! (!have.is_null());
+        assert! (!benload.is_null());
+        assert! (!benlen.is_null());
+        assert! (!seq.is_null());
+        //log! ("peers_send_compat] callback] " [=arg] ' ' [=have] ' ' [=havelen] ' ' [=benload] ' ' [=benlen] " seq " (unsafe {*seq}));
+        let shuttles = unwrap! (PUT_SHUTTLES.lock());
+        let shuttle = match shuttles.get (&(arg as usize)) {
+            Some ((created, shuttle)) if *created == arg2 => shuttle,
+            _ => panic! ("No such shuttle: {:?}", arg)
+        };
+        let have = unsafe {from_raw_parts (have, havelen as usize)};
+        match (shuttle.put_handler) (have) {
+            Ok (new_load) => unsafe {
+                *benload = slice_to_malloc (&new_load);
+                *benlen = new_load.len() as i32;
+                *seq += 1
+            },
+            Err (err) => unsafe {
+                log! ("put_handler error: " (err));
+                // Keeping the previous value is probably the least invasive in that it doesn't affect the value parsers.
+                *benload = slice_to_malloc (have);
+                *benlen = have.len() as i32
+            }
+        }
+    }
+
+    // TODO: Maybe a more efficient cleanup.
+    let now = now_ms();
+    unwrap! (PUT_SHUTTLES.lock()) .retain (|_, (created, _)| now - *created < 600 * 1000);
+
+    let salt_base_len = salt.len();
+
+    for (idx, chunk) in (1..) .zip (chunks) {
+        salt.truncate (salt_base_len);
+        salt.push (idx);  // Should not be zero. A zero in the salt might be lost along the way (`CStr::from_ptr`).
+
+        let shuttle = Arc::new (PutShuttle {
+            put_handler: Box::new (move |have: &[u8]| -> Result<Vec<u8>, String> {
+                let chunk = Bytes::new (&chunk);
+                let benload = try_s! (serde_bencode::ser::to_bytes (&chunk));
+                log! (
+                    "put_handler] existing bencoded is " (have.len()) " bytes, replacing with " (benload.len()) " bytes"
+                    //"\n  from " (binprint (have, b'.'))
+                    //"\n  to   " (binprint (&benload, b'.'))
+                );
+                Ok (benload)
+            })
+        });
+        let mut shuttles = unwrap! (PUT_SHUTTLES.lock());
+        let shuttle_ptr = (&*shuttle) as *const PutShuttle as *const c_void;
+        shuttles.insert (shuttle_ptr as usize, (now, shuttle));
+
+        //log! ("dht_put " [=seed] ", " [=salt]);
+        unsafe {dht_put (dugout, seed.as_ptr(), seed.len() as i32, salt.as_ptr(), salt.len() as i32, callback, shuttle_ptr, now)}
+    }
+}
+
+/// Big values are split into chunks in order to conform to the BEP 44 size limit.
+/// This structure keeps information about a fetched chunk.
+#[derive(Debug)]
+struct ChunkGetsEntry {
+    /// The time when we last issued a `dht_get` for the chunk.
+    restarted: f64,
+    /// Checksum-verified chunk data obtained from libtorrent.
+    payload: Option<Vec<u8>>
+}
+
+/// Tracks the get operations currently in progress in libtorrent.
+#[derive(Debug)]
+struct GetsEntry {
+    /// The public key derived from `seed` and used ad the value's location withing the DHT. (TODO: Confirm that salt is not the part of location).
+    pk: [u8; 32],
+    reassembled_at: Option<f64>,
+    number_of_chunks: Option<u8>,
+    chunks: Vec<ChunkGetsEntry>
+}
+
+type Gets = FxHashMap<([u8; 32], Vec<u8>), GetsEntry>;
+
+/// Responsible for reassembling all the DHT pieces stored for a potentially large value.
+/// Invoked whenever we see continued interest for the value
+/// (note that the fetching should be dropped if the interest vanishes)
+/// or when after one of the fetched pieces arrives.
+fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
+    use std::collections::hash_map::Entry;
+
+    let mut gets = match gets.entry ((seed, salt)) {
+        Entry::Vacant (ve) => {
+            // Fetch the first chunk.
+            // Having it we'll know the number of chunks necessary to reassemble the entire value.
+            let mut chunk_salt = ve.key().1.clone();
+            chunk_salt.push (1);  // Identifies the first chunk.
+            let mut pk: [u8; 32] = unsafe {zeroed()};
+            unsafe {dht_get (dugout, seed.as_ptr(), seed.len() as i32, chunk_salt.as_ptr(), chunk_salt.len() as i32, pk.as_mut_ptr(), pk.len() as i32)}
+            ve.insert (GetsEntry {
+                pk,
+                reassembled_at: None,
+                number_of_chunks: None,
+                chunks: vec! [ChunkGetsEntry {restarted: now_float(), payload: None}]
+            });
+            return
+        },
+        Entry::Occupied (oe) => oe
+    };
+
+    // See if the first chunk has arrived and the number of chunks with it.
+
+    let now = now_float();
+    if let Some (number_of_chunks) = gets.get().number_of_chunks {
+        let chunks = &mut gets.get_mut().chunks;
+        while chunks.len() < number_of_chunks as usize {
+            chunks.push (ChunkGetsEntry {restarted: now, payload: None})
+        }
+    }
+    let number_of_chunks = gets.get().chunks.len();
+
+    // Go over the chunks and see if it's time to maybe retry fetching some of them.
+
+    let salt = gets.key().1.clone();
+    let mut pk = gets.get().pk;
+    for (idx, chunk) in (1..) .zip (gets.get_mut().chunks.iter_mut()) {
+        // Note that DHT nodes will ban us if we ask for too much too soon.
+        let grace_period = 4f64 .max (number_of_chunks as f64 / 2.0);
+        if chunk.payload.is_none() && now - chunk.restarted > grace_period {
+            let mut chunk_salt = salt.clone();
+            chunk_salt.push (idx);  // Identifies the chunk.
+            unsafe {dht_get (dugout,
+                seed.as_ptr(), seed.len() as i32,
+                chunk_salt.as_ptr(), chunk_salt.len() as i32,
+                pk.as_mut_ptr(), pk.len() as i32)}
+            chunk.restarted = now
+        }
+    }
+
+    // Reassemble the value.
+
+    if gets.get().reassembled_at.is_none() {
+        let missing_chunks = gets.get().chunks.iter().any (|chunk| chunk.payload.is_none());
+        if missing_chunks {return}
+        let mut buf = Vec::with_capacity (gets.get().chunks.len() * 992);
+        for chunk in &gets.get().chunks {for &byte in unwrap! (chunk.payload.as_ref()) {buf.push (byte)}}
+        //log! ("reassembled " (binprint (&buf, b'.')));
+        gets.get_mut().reassembled_at = Some (now);
+
+        let mut fetched = match pctx.recently_fetched.lock() {
+            Ok (gets) => gets,
+            Err (err) => {log! ("get_pieces_scheduler] Can't lock the `PeersContext::recently_fetched`: " (err)); return}
+        };
+        match fetched.entry ((seed, gets.key().1.clone())) {
+            Entry::Vacant (ve) => {ve.insert ((now_float(), buf));},
+            Entry::Occupied (oe) => *oe.into_mut() = (now_float(), buf)
+        }
+        return
+    }
+
+    // Remove the `gets` entry.
+    // This allows, in particular, the user to *refetch* the value.
+    // We still wait a second though, otherwise `peers_recv_compat` would start a refetch
+    // immediately after returning a value and before the user had a chance to check it.
+
+    let reassembled_at = unwrap! (gets.get().reassembled_at);
+    if now_float() - reassembled_at > 1. {gets.remove_entry();}
+}
+
 /// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
 /// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
 /// allowing it to initialize and then stop at its own pace.
-fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port: u16) {
-    use std::collections::hash_map::Entry;
-
+fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port: u16, read_only: bool) {
     let listen_interfaces = fomat! ("0.0.0.0:" (preferred_port) ",[::]:" (preferred_port));
-    log! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
+    // TODO: Use the configured IP.
+    //log! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
     let listen_interfaces = unwrap! (CString::new (listen_interfaces));
-    let mut dugout = unsafe {dht_init (listen_interfaces.as_ptr())};
+    let mut dugout = unsafe {dht_init (listen_interfaces.as_ptr(), read_only)};
     if let Some (err) = dugout.has_err() {
         // TODO: User-friendly log message (`LogState::log`).
         log! ("dht_init error: " (err));
@@ -205,32 +452,28 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
     // Skip DHT bootstrapping if we're already stopping. But give libtorrent a bit of time first, just in case.
     if ctx.is_stopping() {thread::sleep (Duration::from_millis (200)); return}
 
-    let mut bootstrap_status = ctx.log.status_handle();
     let status_tags: &[&TagParam] = &[&"dht-boot"];
-    bootstrap_status.status (status_tags, "DHT bootstrap ...");
+    let mut bootstrap_status = ctx.log.status (status_tags, "DHT bootstrap ...");
     unsafe {enable_dht (&mut dugout)};
     if let Some (err) = dugout.has_err() {
         bootstrap_status.status (status_tags, &fomat! ("DHT bootstrap error: " (err)));
         return
     }
+    let mut bootstrap_status = Some (bootstrap_status);
 
     let pctx = unwrap! (PeersContext::from_ctx (&ctx));
 
-    struct CbCtx<'a> {
-        bootstrap_status: Option<StatusHandle<'a>>,
-        pctx: Arc<PeersContext>
+    struct CbCtx<'a, 'b, 'c, 'd> {
+        bootstrap_status: &'a mut Option<StatusHandle<'b>>,
+        gets: &'c mut Gets,
+        pctx: &'d PeersContext
     }
-    let mut cbctx = CbCtx {
-        bootstrap_status: Some (bootstrap_status),
-        pctx: pctx.clone()
-    };
 
-    // Track the get operations currently in progress in libtorrent.
-    struct GetsEntry {started: f64, restarted: f64}
-    let mut gets: FxHashMap<([u8; 32], Vec<u8>), GetsEntry> = FxHashMap::default();
+    // TODO: Remove the outdated `gets` entries after a while.
+    let mut gets = Gets::default();
 
     loop {
-        extern fn cb (cbctx: *mut c_void, alert: *mut Alert) {
+        extern fn cb (dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
             let cbctx = cbctx as *mut CbCtx;
             let cbctx: &mut CbCtx = unsafe {&mut *cbctx};
 
@@ -252,7 +495,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                 let bencoded = &buf[0 .. rc as usize];
                 log! (
                     "got a dht_mutable_item_alert! " [=rc] ' ' [=seq] ' ' [=auth]
-                    "\n  " (binprint (bencoded, b'.'))
+                    //"\n  " (binprint (bencoded, b'.'))
                 );
 
                 let payload: ByteBuf = if bencoded == b"0:" {ByteBuf::new()} else {
@@ -261,46 +504,43 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                         Err (err) => {log! ("dht_thread] Can not decode the received payload: " (err)); return}
                     }
                 };
-                let payload = payload.to_vec();
+                let mut payload = payload.to_vec();
 
-                let salt = unsafe {CStr::from_ptr (saltbuf.as_ptr())} .to_bytes();
+                let chunk_salt = unsafe {CStr::from_ptr (saltbuf.as_ptr())} .to_bytes();
+                let salt: Vec<u8> = (&chunk_salt[0 .. chunk_salt.len() - 1]) .into();  // Without the chunk number suffix.
+                let chunk = chunk_salt[chunk_salt.len() - 1] as usize;  // 1-based.
 
-                // Return the obtained value via `PeersContext::gets`.
-                // TODO: Remove the old entries from the `PeersContext::gets` eventually.
-                {
-                    let mut gets = match cbctx.pctx.gets.lock() {
-                        Ok (gets) => gets,
-                        Err (err) => {log! ("dht_thread] Can't lock the `PeersContext::gets`: " (err)); return}
+                let seed = {
+                    let (seed, gets) = match cbctx.gets.iter_mut().find (|en| (en.0).1 == salt && en.1.pk == keybuf) {
+                        Some (gets_entry) => ((gets_entry.0).0, gets_entry.1),
+                        None => return
                     };
-                    match gets.entry ((keybuf, salt.into())) {
-                        Entry::Vacant (ve) => {
-                            if unsafe {read_volatile (&auth)} {
-                                ve.insert ((now_float(), unsafe {read_volatile (&seq)}, None, Some (payload)));
-                            } else {
-                                ve.insert ((now_float(), unsafe {read_volatile (&seq)}, Some (payload), None));
-                            }
-                        },
-                        Entry::Occupied (mut oe) => {
-                            oe.get_mut().0 = now_float();
-                            oe.get_mut().1 = unsafe {read_volatile (&seq)};
-                            if unsafe {read_volatile (&auth)} {
-                                oe.get_mut().3 = Some (payload)
-                            } else {
-                                oe.get_mut().2 = Some (payload)
-                            }
-                        }
+                    if chunk > gets.chunks.len() {
+                        log! ("dht_thread] Error, `dht_mutable_item_alert` without a corresponding chunk entry " (chunk) " in `gets`"
+                            " (there are " (gets.chunks.len()) " entries in `gets`");
+                        return
                     }
-                }
 
-                // TODO: Remove the entry from the local `gets`.
+                    // TODO: Check the checksum.
+
+                    if payload.len() > (if chunk == 1 {5} else {4}) {
+                        if chunk == 1 {gets.number_of_chunks = Some (payload.remove (0))}
+                        for _ in 0..4 {payload.pop();}  // Checksum.
+                        //log! ("chunk " (chunk) " cleaned " (binprint (&payload, b'.')));
+                        gets.chunks[chunk-1].payload = Some (payload)
+                    }
+
+                    seed
+                };
+
+                // See if we can now reassemble the value.
+                get_pieces_scheduler (seed, salt, unsafe {&mut *dugout}, cbctx.gets, cbctx.pctx)
             } else if rc < 0 {
                 log! ("as_dht_mutable_item_alert error: " (rc));
             }
 
             if unsafe {is_dht_bootstrap_alert (alert)} {
-                if let Some (status) = cbctx.bootstrap_status.take() {
-                    status.append (" Done.")
-                }
+                if let Some (status) = cbctx.bootstrap_status.take() {status.append (" Done.")}
                 return
             }
 
@@ -323,15 +563,6 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                 return
             }
 
-            /*
-            } else if (a->type() == lt::dht_put_alert::alert_type) {
-                auto* dpa = static_cast<lt::dht_put_alert*> (a);
-                std::cout << "dht_init:" << __LINE__ << "] dht_put_alert: " << dpa->message() << std::endl;
-            } else if (a->type() == lt::dht_mutable_item_alert::alert_type) {
-                auto* dmi = static_cast<lt::dht_mutable_item_alert*> (a);
-                std::cout << "dht_init:" << __LINE__ << "] dht_mutable_item_alert: " << dmi->message() << "; val: " << dmi->item.to_string() << std::endl;
-            */
-
             if LOG_UNHANDLED_ALERTS == Some ("true") {
                 // TODO: Use `buf`.
                 let cs = unsafe {alert_message (alert)};
@@ -341,7 +572,15 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                 unsafe {libc::free (cs as *mut c_void)}
             }
         }
-        unsafe {dht_alerts (&mut dugout, cb, &mut cbctx as *mut CbCtx as *mut c_void)};
+        // Invoke the `cb` on the libtorrent alerts.
+        {
+            let mut cbctx = CbCtx {
+                bootstrap_status: &mut bootstrap_status,
+                gets: &mut gets,
+                pctx: &*pctx
+            };
+            unsafe {dht_alerts (&mut dugout, cb, &mut cbctx as *mut CbCtx as *mut c_void)};
+        }
         if let Some (err) = dugout.has_err() {
             // TODO: User-friendly log message (`LogState::log`).
             log! ("dht_alerts error: " (err));
@@ -351,102 +590,8 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
         if ctx.is_stopping() {break}
 
         match pctx.cmd_rx.recv_timeout (Duration::from_millis (50)) {
-            Ok (LtCommand::Put {seed, salt, data}) => {
-                log! ("dht_thread] Got a Put command.");
-
-                let mut shuttle = Arc::new (PutShuttle {
-                    put_handler: Box::new (move |have: &[u8]| -> Result<Vec<u8>, String> {
-                        let data = Bytes::new (&data);
-                        let benload = try_s! (serde_bencode::ser::to_bytes (&data));
-                        log! (
-                            "put_handler] existing bencoded value is " (have.len()) " bytes; replacing it with " (benload.len()) " bytes."
-                            "\n  from " (binprint (have, b'.'))
-                            "\n  to   " (binprint (&benload, b'.'))
-                        );
-                        Ok (benload)
-                    })
-                });
-                let mut shuttles = unwrap! (PUT_SHUTTLES.lock());
-                let now = now_ms();
-                // TODO: Maybe a more efficient cleanup.
-                shuttles.retain (|_, (created, _)| now - *created < 600 * 1000);
-                let shuttle_ptr = (&*shuttle) as *const PutShuttle as *const c_void;
-                shuttles.insert (shuttle_ptr as usize, (now, shuttle));
-
-                // * `arg` - A pointer passed to the `callback` via the `dht_put`.
-                //           Usually points to a `Rust` struct, allowing the callback to communicate with the rest of the program.
-                // * `arg2` - An integer passed to the `callback` via the `dht_put`.
-                //            Might be used to verify the `arg`, for example.
-                // * `have` - Bencoded value that was already present under the `key`.
-                // * `havelen` - The length of `have` in bytes.
-                // * `benload` - Bencoded value that should be saved under the `key`.
-                //               In order to pass the value the callback must allocate the memory from `libc` (the C code will later `free` it).
-                // * `benlen` - The length of `benload` in bytes.
-                // * `seq` - The current version of the value (fetched together with `have`). We must increment it.
-                //           DHT nodes will not accept a new value if our version is smaller than theirs.
-                extern fn callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i32, benload: *mut *mut u8, benlen: *mut i32, seq: *mut i64) {
-                    assert! (!arg.is_null());
-                    assert! (!have.is_null());
-                    assert! (!benload.is_null());
-                    assert! (!benlen.is_null());
-                    assert! (!seq.is_null());
-                    log! ("peers_send_compat] callback] " [=arg] ' ' [=have] ' ' [=havelen] ' ' [=benload] ' ' [=benlen] " seq " (unsafe {*seq}));
-                    let shuttles = unwrap! (PUT_SHUTTLES.lock());
-                    let shuttle = match shuttles.get (&(arg as usize)) {
-                        Some ((created, shuttle)) if *created == arg2 => shuttle,
-                        _ => panic! ("No such shuttle: {:?}", arg)
-                    };
-                    let have = unsafe {from_raw_parts (have, havelen as usize)};
-                    match (shuttle.put_handler) (have) {
-                        Ok (new_load) => unsafe {
-                            *benload = slice_to_malloc (&new_load);
-                            *benlen = new_load.len() as i32;
-                            *seq += 1
-                        },
-                        Err (err) => unsafe {
-                            log! ("put_handler error: " (err));
-                            // Keeping the previous value is probably the least invasive in that it doesn't affect the value parsers.
-                            *benload = slice_to_malloc (have);
-                            *benlen = have.len() as i32
-                        }
-                    }
-                }
-                // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
-                //           The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
-                // * `keylen` - The length of the `key` in bytes. Must be 32 bytes, no more no less.
-                // * `salt` - Identifies the value without affecting its DHT location.
-                // * `saltlen` - The length of the `salt` in bytes. 0 if not used.
-                // * `callback` - Invoked from inside the libtorrent code, after the latter obtains the previous (existing) value from the DHT.
-                // * `arg` - A pointer passed to the `callback`.
-                extern "C" {fn dht_put (dugout: *mut dugout_t,
-                                        key: *const u8, keylen: i32,
-                                        salt: *const u8, saltlen: i32,
-                                        callback: extern fn (*mut c_void, u64, *const u8, i32, *mut *mut u8, *mut i32, *mut i64), arg: *const c_void, arg2: u64);}
-                unsafe {dht_put (&mut dugout, seed.as_ptr(), seed.len() as i32, salt.as_ptr(), salt.len() as i32, callback, shuttle_ptr, now)}
-            },
-            Ok (LtCommand::Get {seed, salt}) => {
-                let now = now_float();
-                let mut gets_entry = gets.entry ((seed, salt));
-                // If there was a recent get issued to libtorrent then simply skip this reminder, assuming that libtorrent still works on the get.
-                match gets_entry {
-                    Entry::Occupied (ref oe) if now - oe.get().started.max (oe.get().restarted) < 4. => {
-                        continue
-                    },
-                    _ => {
-                        log! ("dht_thread] Issuing a `dht_get`.");
-                    }
-                };
-
-                extern "C" {fn dht_get (dugout: *mut dugout_t, key: *const u8, keylen: i32, salt: *const u8, saltlen: i32);}
-                unsafe {dht_get (&mut dugout,
-                                 gets_entry.key().0.as_ptr(), gets_entry.key().0.len() as i32,
-                                 gets_entry.key().1.as_ptr(), gets_entry.key().1.len() as i32)}
-
-                match gets_entry {
-                    Entry::Occupied (mut oe) => oe.get_mut().restarted = now,
-                    Entry::Vacant (ve) => {ve.insert (GetsEntry {started: now, restarted: 0.});}
-                }
-            },
+            Ok (LtCommand::Put {seed, salt, data}) => split_and_put (seed, salt, data, &mut dugout),
+            Ok (LtCommand::Get {seed, salt}) => get_pieces_scheduler (seed, salt, &mut dugout, &mut gets, &*pctx),
             Err (channel::RecvTimeoutError::Timeout) => {},
             Err (channel::RecvTimeoutError::Disconnected) => break
         };
@@ -465,11 +610,17 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
     log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port));
     if !our_public_key.nonz() {return ERR! ("No public key")}
 
+    // TODO: Set it to `true` for smaller tests and to `false` for real-life deployments.
+    // Maybe take the saved DHT state into account: tests always have a fresh directory,
+    // whereas the real-life MM2 deployments are often restarted in an existing directory.
+    // For small non-DHT tests we don't need to register ourselves.
+    let read_only = true;  // Whether to register in the DHT network.
+
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     *try_s! (pctx.dht_thread.lock()) =
         Some (try_s! (thread::Builder::new().name ("dht".into()) .spawn ({
             let ctx = ctx.clone();
-            move || dht_thread (ctx, netid, our_public_key, preferred_port)
+            move || dht_thread (ctx, netid, our_public_key, preferred_port, read_only)
         })));
     ctx.on_stop ({
         let ctx = ctx.clone();
@@ -642,10 +793,11 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
             //       Maybe after a certain delay.
             //       Might need a feedback mechanism, repeating the `put`s and expanding the number of seeds used if there is no answer from the other side.
 
-            // TODO: Use the `peer` to generate the seed.
+            // TODO: Use the `peer.bytes` as the seed.
             let mut seed: [u8; 32] = unsafe {zeroed()};
-            seed[0] = 1;
-            // TODO: Use the `sock` and the `clock` to generate the salt.
+            seed[0] = 5;
+            // TODO: Use our own public key and the `clock` to generate the salt.
+            // NB: There should be no zero bytes in the salt (due to `CStr::from_ptr` and the possibility of a similar problem abroad).
             let salt = b"qwe";
             let salt = Vec::from (&salt[..]);
 
@@ -699,38 +851,24 @@ fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
 
             *prev = trace;
 
-            // TODO, send a command to the dht_thread and let it deal with fetching the data at a proper pace
-            //       but first we need to check if the data has arrived
-
-            // TODO: Use the `peer` to generate the seed.
+            // TODO: Use our public key as the seed.
             let mut seed: [u8; 32] = unsafe {zeroed()};
-            seed[0] = 1;
-            // TODO: Use the `sock` and the `clock` to generate the salt.
+            seed[0] = 5;
+            // TODO: Use the peer's public key and the `clock` to generate the salt.
             let salt = b"qwe";
             let salt = Vec::from (&salt[..]);
 
-            // TODO: Return the public key from the `dht_get` instead,
-            //       and cache it along the `dht_thread::gets`,
-            //       allowing us to obtain the value by `seed`.
-            let mut pk: [u8; 32] = unsafe {zeroed()};
-            unsafe {dht_seed_to_public_key (seed.as_ptr(), seed.len() as i32, pk.as_mut_ptr(), pk.len() as i32)};
-
             // Ask the `dht_thread` to fetch the data.
-            // Note that we should do that even if the `PeersContext::gets` already has a value,
+            // Note that we should do that even if the `PeersContext::recently_fetched` already has a value,
             // because that value might be invalid or outdated.
             // We should keep re-fetching the value until the user stops calling `peers_recv_compat`.
             try_s! (pctx.cmd_tx.send (LtCommand::Get {seed, salt: salt.clone()}));
 
             {   // Check if the data has arrived.
-                let gets = try_s! (pctx.gets.lock());
-                if let Some ((_lm, _seq, preliminary, authoritative)) = gets.get (&(pk, salt)) {
-                    if let Some (authoritative) = authoritative {
-                        unsafe {*data = slice_to_malloc (&authoritative)}
-                        return Ok (authoritative.len() as i32)
-                    } else if let Some (preliminary) = preliminary {
-                        unsafe {*data = slice_to_malloc (&preliminary)}
-                        return Ok (preliminary.len() as i32)
-                    }
+                let fetched = try_s! (pctx.recently_fetched.lock());
+                if let Some ((_lm, value)) = fetched.get (&(seed, salt)) {
+                    unsafe {*data = slice_to_malloc (&value)}
+                    return Ok (value.len() as i32)
                 }
             }
 
