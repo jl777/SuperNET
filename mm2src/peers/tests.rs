@@ -33,11 +33,8 @@ pub fn test_dht() {
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
 
-    // TODO: In order to store a large payload and not become [temporarily] banned we need to use different seeds for different chunks.
-    //       This is complicated by the fact that we need to cache the public keys corresponding to the seeds (`GetsEntry::pk`).
-    //       P.S. Might be simpler and nicer to globally rate-limit the seed reads by the number of seed reads and writes.
-    //let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
-    let tested_lengths = [1, 987, 32 * 1024, 96 * 1024];
+    let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
+    let tested_lengths = [1, 987, 32 * 1024, 96 * 1024, max_length];
     for message_len in tested_lengths.iter() {
         // Send a message to Bob.
 

@@ -234,7 +234,19 @@ fn with_ratelim<F> (seed: [u8; 32], cb: F) where F: FnOnce (&mut f64, &mut f32) 
     } else {log! ("Can't lock RATELIM")}
 }
 
-/// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.
+/// Burn away ~10 ops per second.
+fn ratelim_maintenance (seed: [u8; 32]) -> f32 {
+    let mut limops = 0f32;
+    with_ratelim (seed, |lm, ops| {
+        *ops = 0f32 .max (*ops - (now_float() - *lm) as f32 * 10.);
+        limops = *ops;
+        *lm = now_float();
+    });
+    limops
+}
+
+/// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
+/// NB: If the `data` is large then we block to rate-limit.
 fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: &mut dugout_t) {
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
@@ -311,9 +323,10 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
 
     let salt_base_len = salt.len();
 
-    with_ratelim (seed, |_lm, ops| *ops += chunks.len() as f32);
-
     for (idx, chunk) in (1..) .zip (chunks) {
+        // For large payloads switch rate-limiting on, in order to avoid data loss.
+        if idx > 10 && ratelim_maintenance (seed) > 10. {thread::sleep (Duration::from_millis (90))}
+
         salt.truncate (salt_base_len);
         salt.push (idx);  // Should not be zero. A zero in the salt might be lost along the way (`CStr::from_ptr`).
 
@@ -334,7 +347,7 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
         let shuttle_ptr = (&*shuttle) as *const PutShuttle as *const c_void;
         shuttles.insert (shuttle_ptr as usize, (now, shuttle));
 
-        //log! ("dht_put " [=seed] ", " [=salt]);
+        with_ratelim (seed, |_lm, ops| *ops += 1.);
         unsafe {dht_put (dugout, seed.as_ptr(), seed.len() as i32, salt.as_ptr(), salt.len() as i32, callback, shuttle_ptr, now)}
     }
 }
@@ -370,13 +383,7 @@ type Gets = FxHashMap<([u8; 32], Vec<u8>), GetsEntry>;
 fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
     use std::collections::hash_map::Entry;
 
-    let mut limops = 0f32;
-    with_ratelim (seed, |lm, ops| {
-        // Burn away ~10 ops per second.
-        *ops = 0f32 .max (*ops - (now_float() - *lm) as f32 * 10.);
-        limops = *ops;
-        *lm = now_float();
-    });
+    let mut limops = ratelim_maintenance (seed);
     if limops > 10. {return}  // Seed nodes are too busy. Skip adding more traffic for now. We'll proceed when the user invokes us later.
 
     let mut gets = match gets.entry ((seed, salt)) {
@@ -538,11 +545,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                         Some (gets_entry) => ((gets_entry.0).0, gets_entry.1),
                         None => return
                     };
-                    if chunk > gets.chunks.len() {
-                        log! ("dht_thread] Error, `dht_mutable_item_alert` without a corresponding chunk entry " (chunk) " in `gets`"
-                            " (there are " (gets.chunks.len()) " entries in `gets`)");
-                        return
-                    }
+                    if chunk > gets.chunks.len() {return}
 
                     // TODO: Check the checksum.
 
@@ -554,9 +557,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                         if chunk.payload.is_none() || seq_auth > chunk.seq_auth {
                             chunk.seq_auth = seq_auth;
                             chunk.payload = Some (payload);
-                            if number_of_chunks.is_some() {
-                                log! ("setting " [=number_of_chunks]);
-                                gets.number_of_chunks = number_of_chunks}
+                            if number_of_chunks.is_some() {gets.number_of_chunks = number_of_chunks}
                         }
                     }
 
