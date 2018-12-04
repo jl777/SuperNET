@@ -35,8 +35,9 @@ pub fn test_dht() {
 
     // TODO: In order to store a large payload and not become [temporarily] banned we need to use different seeds for different chunks.
     //       This is complicated by the fact that we need to cache the public keys corresponding to the seeds (`GetsEntry::pk`).
-    // let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
-    for message_len in [1, 987, 32 * 1024].iter() {
+    //       P.S. Might be simpler and nicer to globally rate-limit the seed reads by the number of seed reads and writes.
+    //let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
+    for message_len in [1, 987, 32 * 1024, 96 * 1024].iter() {
         // Send a message to Bob.
 
         let message: Vec<u8> = (0..*message_len).map (|_| rng.gen()) .collect();
