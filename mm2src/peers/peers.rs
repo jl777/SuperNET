@@ -41,10 +41,10 @@ use crossbeam::channel;
 use fxhash::FxHashMap;
 use gstuff::{now_float, now_ms};
 use libc::{c_char, c_void};
-use serde::Serialize;
 use serde_bytes::{Bytes, ByteBuf};
 use std::ffi::{CStr, CString};
 use std::mem::{uninitialized, zeroed};
+use std::ptr::read_volatile;
 use std::slice::from_raw_parts;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -345,6 +345,8 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
 struct ChunkGetsEntry {
     /// The time when we last issued a `dht_get` for the chunk.
     restarted: f64,
+    /// Version, seq * 2 + auth.
+    seq_auth: u64,
     /// Checksum-verified chunk data obtained from libtorrent.
     payload: Option<Vec<u8>>
 }
@@ -389,7 +391,7 @@ fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, dugout: &mut dugout_t, g
                 pk,
                 reassembled_at: None,
                 number_of_chunks: None,
-                chunks: vec! [ChunkGetsEntry {restarted: now_float(), payload: None}]
+                chunks: vec! [ChunkGetsEntry {restarted: now_float(), seq_auth: 0, payload: None}]
             });
             return
         },
@@ -400,12 +402,13 @@ fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, dugout: &mut dugout_t, g
 
     let now = now_float();
     if let Some (number_of_chunks) = gets.get().number_of_chunks {
+        let number_of_chunks = number_of_chunks as usize;
         let chunks = &mut gets.get_mut().chunks;
-        while chunks.len() < number_of_chunks as usize {
-            chunks.push (ChunkGetsEntry {restarted: now, payload: None})
+        while chunks.len() < number_of_chunks {
+            chunks.push (ChunkGetsEntry {restarted: now, seq_auth: 0, payload: None})
         }
         // We'll never reassemble the right value while having extra chunks.
-        chunks.truncate (number_of_chunks as usize);
+        chunks.truncate (number_of_chunks)
     }
 
     // Go over the chunks and see if it's time to maybe retry fetching some of them.
@@ -427,24 +430,21 @@ fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, dugout: &mut dugout_t, g
     }
 
     // Reassemble the value.
+    // We're doing it every time because the version of a chunk payload (and the number of chunks) might have been changed since the last time.
 
-    if gets.get().reassembled_at.is_none() {
-        let missing_chunks = gets.get().chunks.iter().any (|chunk| chunk.payload.is_none());
-        if missing_chunks {return}
-        let mut buf = Vec::with_capacity (gets.get().chunks.len() * 992);
-        for chunk in &gets.get().chunks {for &byte in unwrap! (chunk.payload.as_ref()) {buf.push (byte)}}
-        //log! ("reassembled " (binprint (&buf, b'.')));
-        gets.get_mut().reassembled_at = Some (now);
+    let missing_chunks = gets.get().chunks.iter().any (|chunk| chunk.payload.is_none());
+    if missing_chunks {return}
+    let mut buf = Vec::with_capacity (gets.get().chunks.len() * 992);
+    for chunk in &gets.get().chunks {for &byte in unwrap! (chunk.payload.as_ref()) {buf.push (byte)}}
+    if gets.get_mut().reassembled_at.is_none() {gets.get_mut().reassembled_at = Some (now)}
 
-        let mut fetched = match pctx.recently_fetched.lock() {
-            Ok (gets) => gets,
-            Err (err) => {log! ("get_pieces_scheduler] Can't lock the `PeersContext::recently_fetched`: " (err)); return}
-        };
-        match fetched.entry ((seed, gets.key().1.clone())) {
-            Entry::Vacant (ve) => {ve.insert ((now_float(), buf));},
-            Entry::Occupied (oe) => *oe.into_mut() = (now_float(), buf)
-        }
-        return
+    let mut fetched = match pctx.recently_fetched.lock() {
+        Ok (gets) => gets,
+        Err (err) => {log! ("get_pieces_scheduler] Can't lock the `PeersContext::recently_fetched`: " (err)); return}
+    };
+    match fetched.entry ((seed, gets.key().1.clone())) {
+        Entry::Vacant (ve) => {ve.insert ((now_float(), buf));},
+        Entry::Occupied (oe) => *oe.into_mut() = (now_float(), buf)
     }
 
     // Remove the `gets` entry.
@@ -540,17 +540,24 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                     };
                     if chunk > gets.chunks.len() {
                         log! ("dht_thread] Error, `dht_mutable_item_alert` without a corresponding chunk entry " (chunk) " in `gets`"
-                            " (there are " (gets.chunks.len()) " entries in `gets`");
+                            " (there are " (gets.chunks.len()) " entries in `gets`)");
                         return
                     }
 
                     // TODO: Check the checksum.
 
                     if payload.len() > (if chunk == 1 {5} else {4}) {
-                        if chunk == 1 {gets.number_of_chunks = Some (payload.remove (0))}
+                        let number_of_chunks = if chunk == 1 {Some (payload.remove (0))} else {None};
                         for _ in 0..4 {payload.pop();}  // Checksum.
-                        //log! ("chunk " (chunk) " cleaned " (binprint (&payload, b'.')));
-                        gets.chunks[chunk-1].payload = Some (payload)
+                        let seq_auth = unsafe {read_volatile (&seq) as u64 * 2 + if read_volatile (&auth) {1} else {0}};
+                        let chunk = &mut gets.chunks[chunk-1];
+                        if chunk.payload.is_none() || seq_auth > chunk.seq_auth {
+                            chunk.seq_auth = seq_auth;
+                            chunk.payload = Some (payload);
+                            if number_of_chunks.is_some() {
+                                log! ("setting " [=number_of_chunks]);
+                                gets.number_of_chunks = number_of_chunks}
+                        }
                     }
 
                     seed
@@ -685,41 +692,12 @@ pub fn investigate_peer (_ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<
 /// 
 /// * `to` - Recipient of the message (`LP_mypub25519` of the receiving MM2 instance).
 /// * `payload` - Contents of the message.
-pub fn send<T: Serialize> (_ctx: &MmArc, _to: bits256, payload: &T) -> Result<(), String> {
-    // TODO: `send` should return a custom `Future`, finishing when we get the corresponding alert.
+pub fn send (_ctx: &MmArc, _to: bits256, _payload: Vec<u8>) -> Result<(), String> {
+    // TODO: `send` should return a `Future`, finishing when we get the corresponding alert.
     //       We might even get some interesting statistics as the result:
     //       the number of nodes where the value was stored,
     //       the number of nodes currently unreachable,
     //       IP addresses of the storage nodes.
-    //       The `Future` COULD be custom in order to provide the progress and completion status in a non-blocking way.
-    //       Or maybe a better abstraction here is a `Stream` of status updates?
-    //       Or on multiple levels, it might be a callback API sharing the status of an operation
-    //       and then a sometimes convenient `Future` interface on top of it.
-
-    // TODO: Serialization happens inside this method,
-    //       that is, we don't know the actual size of the bencoded payload outside of it,
-    //       and so the spilling of the value into the extra items, to workaround the 1000 bytes limit,
-    //       should happen there automatically.
-    //       Most likely we'll need to wrap the payload, adding a versioned struct around it.
-    //       ⇒ It might be better to stick to the binary encoding of the value,
-    //       rather than treating it as a sub-`Serialize` in the same structure,
-    //       because we don't know the `Deserialize` of that structure beforehand.
-    //       That is, the bits of data we use to reassemble a big chunk, et cetera,
-    //       are a part of the layer that is being used before the user tries to access the payload
-    //       and provides us a means to decode it.
-
-/*
-    #[derive(Serialize)]
-    struct Wrap<'a, T: Serialize> {
-        p: &'a T  // Field names should be small, though it might be even better if we could use a tuple.
-    }
-    let _wrap = Wrap {
-        p: payload
-    };
-*/
-
-    // By wrapping payload in a tuple we can avoid the cost of the field names.
-    let _tuple = serde_bencode::ser::to_bytes (&(123u8, payload));
 
     ERR! ("TBD")
 }
