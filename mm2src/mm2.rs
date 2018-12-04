@@ -21,6 +21,7 @@
 
 #![allow(non_camel_case_types)]
 
+extern crate coins;
 #[macro_use]
 extern crate common;
 extern crate crc;
@@ -86,15 +87,17 @@ use std::time::Duration;
 use std::str;
 
 pub mod crash_reports;
+use crash_reports::init_crash_reports;
+
 mod lp_native_dex;
 use lp_native_dex::{lp_init};
 
-pub mod rpc;
-pub mod lp_ordermatch;
 pub mod lp_network;
 pub use lp_network::lp_queue_command;
 
-use crash_reports::init_crash_reports;
+pub mod lp_ordermatch;
+pub mod lp_swap;
+pub mod rpc;
 
 #[cfg(test)]
 mod mm2_tests;

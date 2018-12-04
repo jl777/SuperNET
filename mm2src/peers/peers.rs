@@ -835,6 +835,7 @@ fn peers_send_compat (ctx: u32, sock: i32, data: *const u8, datalen: i32) -> i32
 /// or `0` if no data was received (if the message has not arrived yet),
 /// or a negative number if there was an error.
 fn peers_recv_compat (ctx: u32, sock: i32, data: *mut *mut u8) -> i32 {
+    return -1;
     match (move || -> Result<i32, String> {
         let ctx = try_s! (MmArc::from_ffi_handle (ctx));
         let pctx = try_s! (PeersContext::from_ctx (&ctx));

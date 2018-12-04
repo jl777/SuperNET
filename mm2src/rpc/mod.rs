@@ -319,12 +319,8 @@ pub extern fn spawn_rpc(ctx_h: u32) {
     }));
 
     CORE.spawn(move |_| {
-        ctx.log.rawln (
-            format!(">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{} <<<<<<<<<",
-                    ctx.rpc_ip_port.ip(),
-                    ctx.rpc_ip_port.port(),
-                    gstuff::now_ms() / 1000
-        ));
+        log!(">>>>>>>>>> DEX stats " (ctx.rpc_ip_port.ip())":"(ctx.rpc_ip_port.port()) " \
+                DEX stats API enabled at unixtime." (gstuff::now_ms() / 1000) " <<<<<<<<<");
         server
     });
 }

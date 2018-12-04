@@ -596,7 +596,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     unwrap! (mm_alice.stop());
 }
 
-/// Integration test for PIZZA/ETH and ETH/PIZZA trade
+/// Integration test for PIZZA/BEER and BEER/PIZZA trade
 /// This test is ignored because as of now it requires additional environment setup:
 /// PIZZA and ETOMIC daemons must be running and fully synced for swaps to be successful
 /// The trades can't be executed concurrently now for 2 reasons:
@@ -649,4 +649,16 @@ fn trade_pizza_eth() {
 #[ignore]
 fn trade_eth_pizza() {
     trade_base_rel("ETH", "PIZZA");
+}
+
+#[test]
+#[ignore]
+fn trade_pizza_beer() {
+    trade_base_rel("PIZZA", "BEER");
+}
+
+#[test]
+#[ignore]
+fn trade_beer_pizza() {
+    trade_base_rel("BEER", "PIZZA");
 }

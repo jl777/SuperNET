@@ -18,71 +18,170 @@
 //  marketmaker
 //
 
-struct UtxoCoinInfo {
-    /// https://en.bitcoin.it/wiki/List_of_address_prefixes
-    /// https://github.com/jl777/coins/blob/master/coins
-    pub_type: u8,
-    p2sh_type: u8,
-    wif_type: u8,
-    wif_t_addr: u8,
-    t_addr: u8,
-    /// True if coins uses Proof of Stake consensus algo
-    /// Proof of Work is expected by default
-    /// https://en.bitcoin.it/wiki/Proof_of_Stake
-    /// https://en.bitcoin.it/wiki/Proof_of_work
-    is_pos: bool,
-    /// Special field for Zcash and it's forks
-    /// Defines if Overwinter network upgrade was activated
-    /// https://z.cash/upgrade/overwinter/
-    overwintered: bool,
-    /// The tx version used to detect the transaction ser/de/signing algo
-    /// For now it's mostly used for Zcash and forks because they changed the algo in
-    /// Overwinter and then Sapling upgrades
-    /// https://github.com/zcash/zips/blob/master/zip-0243.rst
-    tx_version: u32,
-    /// If true - use Segwit protocol
-    /// https://en.bitcoin.it/wiki/Segregated_Witness
-    segwit: bool,
-    /// Default decimals amount is 8 (BTC and almost all other UTXO coins)
-    /// But there are forks which have different decimals:
-    /// Peercoin has 6
-    /// Emercoin has 6
-    /// Bitcoin Diamond has 7
-    decimals: u8,
-    /// Is coin protected by Komodo dPoW?
-    /// https://komodoplatform.com/security-delayed-proof-of-work-dpow/
-    notarized: bool
+extern crate base64;
+extern crate bitcrypto;
+extern crate byteorder;
+extern crate chain;
+#[macro_use]
+extern crate common;
+#[macro_use]
+extern crate downcast_rs;
+#[macro_use]
+extern crate futures;
+#[macro_use]
+extern crate gstuff;
+extern crate hex;
+extern crate hyper;
+extern crate keys;
+#[macro_use]
+extern crate lazy_static;
+extern crate primitives;
+extern crate rpc as bitcoin_rpc;
+extern crate script;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+extern crate serialization;
+extern crate sha2;
+extern crate tokio_timer;
+#[macro_use]
+extern crate unwrap;
+
+use downcast_rs::Downcast;
+use futures::{Future};
+use std::any::Any;
+use std::fmt::Debug;
+
+macro_rules! downcast_fus {
+    ($e: expr) => {
+        match $e.downcast() {
+            Ok (ok) => ok,
+            Err (_) => return Box::new (futures::future::err (ERRL! ("Couldn't downcast")))
+        }
+    }
 }
 
-/// Only ETH and ERC20 tokens are supported currently
-/// It's planned to support another ERC token standards
-enum EthTokenType {
-    /// The Ethereum itself or it's forks: ETC and others
-    Base,
-    /// ERC20 token: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
-    /// The string param defines to what base coin the token belongs (ETH, ETC or another fork)
-    Erc20(String)
+macro_rules! downcast_s {
+    ($e: expr) => {
+        match $e.downcast() {
+            Ok (ok) => ok,
+            Err (_) => return ERR!("Couldn't downcast")
+        }
+    }
 }
 
-struct EthCoinInfo {
-    /// Default ETH decimals is 18 but tokens can have any number (even zero or > 18)
-    decimals: u8,
-    token_type: EthTokenType,
-    /// The address of Smart contract representing Alice side. Raw bytes form
-    alice_contract_address: Vec<u8>,
-    /// The address of Smart contract representing Bob side. Raw bytes form
-    bob_contract_address: Vec<u8>,
+pub mod utxo;
+pub mod eth;
+
+pub trait Transaction: Downcast + Debug {
+    fn to_raw_bytes(&self) -> Vec<u8>;
+
+    fn box_clone(&self) -> Box<Transaction>;
+}
+impl_downcast!(Transaction);
+
+/// We need to clone the Box<Transaction> instance, it's the workaround to implement it
+/// https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
+/// We can't just do "pub trait Transaction: Clone" due to Rust object safety rules:
+/// https://github.com/rust-lang/rfcs/blob/master/text/0255-object-safety.md
+impl Clone for Box<Transaction> {
+    fn clone(&self) -> Box<Transaction> {
+        self.box_clone()
+    }
 }
 
-enum CoinProtocol {
-    Utxo(UtxoCoinInfo),
-    Eth(EthCoinInfo),
+pub type BoxedTx = Box<dyn Transaction>;
+pub type BoxedTxFut = Box<dyn Future<Item=BoxedTx, Error=String>>;
+
+/// Common functions that every coin must implement to be exchanged on MM
+/// Amounts are f64, it's responsibility of particular implementation to convert it to
+/// integer amount depending on decimals.
+pub trait ExchangeableCoin: Downcast + Debug {
+    fn send_alice_fee(&self, fee_addr: &[u8], amount: f64) -> BoxedTxFut;
+
+    fn send_alice_payment(&self, pub_am: &[u8], pub_bn: &[u8], amount: f64) -> BoxedTxFut;
+
+    fn send_bob_deposit(
+        &self,
+        time_lock: u32,
+        priv_bn_hash: &[u8],
+        priv_am_hash: &[u8],
+        pub_b0: &[u8],
+        pub_a0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_bob_payment(
+        &self,
+        time_lock: u32,
+        priv_am_hash: &[u8],
+        pub_b1: &[u8],
+        pub_a0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_bob_spends_alice_payment(
+        &self,
+        a_payment_tx: BoxedTx,
+        a_priv_m: &[u8],
+        b_priv_n: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_alice_reclaims_payment(
+        &self,
+        a_payment_tx: BoxedTx,
+        a_priv_m: &[u8],
+        b_priv_n: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_bob_reclaims_payment(
+        &self,
+        b_payment_tx: BoxedTx,
+        b_priv_1: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_alice_spends_bob_payment(
+        &self,
+        b_payment_tx: BoxedTx,
+        a_priv_m: &[u8],
+        a_priv_0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_bob_refunds_deposit(
+        &self,
+        b_deposit_tx: BoxedTx,
+        b_priv_n: &[u8],
+        b_priv_0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_alice_claims_deposit(
+        &self,
+        b_deposit_tx: BoxedTx,
+        a_priv_m: &[u8],
+        a_priv_0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn get_balance(&self) -> f64;
+
+    fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut;
+
+    fn wait_for_confirmations(&self, tx: BoxedTx) -> Box<dyn Future<Item=(), Error=String>>;
+
+    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String>;
+}
+impl_downcast!(ExchangeableCoin);
+
+struct Coins {
+    coins: Vec<Box<dyn ExchangeableCoin>>
 }
 
-struct Coin {
-    protocol: CoinProtocol,
-    symbol: String,
-}
 /*
 char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 
@@ -629,5 +728,46 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
         bitcoin_addr2rmd160(srccoin,src->taddr,&addrtype,rmd160,coinaddr);
         bitcoin_address(destcoin,otheraddr,dest->taddr,dest->pubtype,rmd160,20);
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
+}
+*/
+/*
+#[cfg(test)]
+mod coins_test {
+    use super::*;
+    #[test]
+    fn test_list_unspent() {
+        let client = UtxoRpcClient {
+            uri: "http://127.0.0.1:10271".to_owned(),
+            auth: fomat!("Basic " (base64_encode("user481805103:pass97a61c8d048bcf468c6c39a314970e557f57afd1d8a5edee917fb29bafb3a43371", URL_SAFE))),
+        };
+        let unspents = client.list_unspent(0, 999999, vec!["RBs52D7pVq7txo6SCz1Tuyw2WrPmdqU3qw".to_owned()]);
+        let unspents = unspents.wait().unwrap();
+        log!("Unspents " [unspents]);
+    }
+
+    #[test]
+    fn test_get_block_count() {
+        let client = UtxoRpcClient {
+            uri: "http://127.0.0.1:10271".to_owned(),
+            auth: fomat!("Basic " (base64_encode("user481805103:pass97a61c8d048bcf468c6c39a314970e557f57afd1d8a5edee917fb29bafb3a43371", URL_SAFE))),
+        };
+        let block_count = client.validate_address("RBs52D7pVq7txo6SCz1Tuyw2WrPmdqU3qw".to_owned()).wait().unwrap();
+        log!("Block count " [block_count]);
+    }
+
+    #[test]
+    fn test_import_address() {
+        let client = UtxoRpcClient {
+            uri: "http://127.0.0.1:10271".to_owned(),
+            auth: fomat!("Basic " (base64_encode("user481805103:pass97a61c8d048bcf468c6c39a314970e557f57afd1d8a5edee917fb29bafb3a43371", URL_SAFE))),
+        };
+        let import_addr = client.import_address(
+            "bMjWGCinft5qEvsuf9Wg1fgz1CjpXBXbTB".to_owned(),
+            "bMjWGCinft5qEvsuf9Wg1fgz1CjpXBXbTB".to_owned(),
+            true
+        );
+        let import_addr = import_addr.wait().unwrap();
+        log!("Block count " [import_addr]);
+    }
 }
 */

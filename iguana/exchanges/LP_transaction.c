@@ -2742,7 +2742,7 @@ int32_t basilisk_alicetxs(uint32_t ctx,int32_t pairsock,struct basilisk_swap *sw
             //LP_importaddress(coin->symbol,swap->alicepayment.I.destaddr);
             //basilisk_txlog(swap,&swap->alicepayment,-1);
         }
-        if ( swap->myfee.I.datalen == 0 )
+        /*if ( swap->myfee.I.datalen == 0 )
         {
             //printf("%s generate fee %.8f from.%s\n",coin->symbol,dstr(strcmp(coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : coin->txfee),coin->smartaddr);
             bitcoin_address(coin->symbol,coinaddr,coin->taddr,coin->pubtype,swap->changermd160,20);
@@ -2762,7 +2762,7 @@ int32_t basilisk_alicetxs(uint32_t ctx,int32_t pairsock,struct basilisk_swap *sw
                 printf("error creating myfee\n");
                 return(-2);
             }
-        }
+        }*/
         if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 && swap->myfee.I.datalen != 0 && swap->myfee.I.spendlen > 0 )
         {
             //printf("fee sent\n");
