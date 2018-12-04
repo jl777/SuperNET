@@ -37,7 +37,8 @@ pub fn test_dht() {
     //       This is complicated by the fact that we need to cache the public keys corresponding to the seeds (`GetsEntry::pk`).
     //       P.S. Might be simpler and nicer to globally rate-limit the seed reads by the number of seed reads and writes.
     //let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
-    for message_len in [1, 987, 32 * 1024, 96 * 1024].iter() {
+    let tested_lengths = [1, 987, 32 * 1024, 96 * 1024];
+    for message_len in tested_lengths.iter() {
         // Send a message to Bob.
 
         let message: Vec<u8> = (0..*message_len).map (|_| rng.gen()) .collect();
@@ -62,7 +63,9 @@ pub fn test_dht() {
                 unsafe {libc::free (data as *mut c_void)}
                 if payload == &message[..] {break}
             }
-            if now_float() - started_at > (33 + message.len() / 992) as f64 {panic! ("Out of time waiting for DHT payload")}
+            if now_float() - started_at > (33 + unwrap! (tested_lengths.iter().max()) / 992 * 2) as f64 {
+                panic! ("Out of time waiting for DHT payload")
+            }
             thread::sleep (Duration::from_millis (200))
         }
     }

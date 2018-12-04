@@ -404,6 +404,8 @@ fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, dugout: &mut dugout_t, g
         while chunks.len() < number_of_chunks as usize {
             chunks.push (ChunkGetsEntry {restarted: now, payload: None})
         }
+        // We'll never reassemble the right value while having extra chunks.
+        chunks.truncate (number_of_chunks as usize);
     }
 
     // Go over the chunks and see if it's time to maybe retry fetching some of them.
