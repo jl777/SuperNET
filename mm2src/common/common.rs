@@ -329,7 +329,12 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
 }
 
 /// Generates a string with the current stack trace.
-///
+/// 
+/// To get a simple stack trace:
+/// 
+///     let mut trace = String::with_capacity (4096);
+///     stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+/// 
 /// * `format` - Generates the string representation of a frame.
 /// * `output` - Function used to print the stack trace.
 ///              Printing immediately, without buffering, should make the tracing somewhat more reliable.

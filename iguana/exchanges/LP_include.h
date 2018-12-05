@@ -27,9 +27,6 @@
 // cf. "for_c.rs"
 
 void log_stacktrace (const char const* desc);
-void peers_clock_tick_compat (uint32_t ctx,int32_t pairsock);
-int32_t peers_send_compat (uint32_t ctx, int32_t sock, const uint8_t const* data, int32_t datalen);
-int32_t peers_recv_compat (uint32_t ctx, int32_t sock, uint8_t** data);
 
 // ---
 

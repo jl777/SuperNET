@@ -414,7 +414,6 @@ fn test_notify() {
 #[test]
 fn test_status() {common::log::tests::test_status()}
 
-#[ignore]
 #[test]
 fn test_dht() {peers::tests::test_dht()}
 

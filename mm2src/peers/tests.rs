@@ -1,15 +1,10 @@
 use common::bits256;
 use common::for_tests::wait_for_log;
 use common::mm_ctx::MmCtx;
-use gstuff::now_float;
-use libc::{self, c_void};
+use futures::Future;
 use rand::{self, Rng};
 use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
-use std::ptr::null_mut;
-use std::slice::from_raw_parts;
-use std::thread;
-use std::time::Duration;
 
 pub fn test_dht() {
     // Create the Alice and Bob contexts.
@@ -40,30 +35,16 @@ pub fn test_dht() {
 
         let message: Vec<u8> = (0..*message_len).map (|_| rng.gen()) .collect();
 
-        unwrap! (::bind (&alice, 1, bob_key));
-        let alice_ctx = unwrap! (alice.ffi_handle());
-        ::peers_clock_tick_compat (alice_ctx, 1);
-        ::peers_send_compat (alice_ctx, 1, message.as_ptr(), message.len() as i32);
+        println! ("Sending {} bytes …", message.len());
+        let _sending_f = ::send (&alice, bob_key, b"test_dht", message.clone());
 
         // Get that message from Alice.
 
-        unwrap! (::bind (&bob, 1, alice_key));
-        let bob_ctx = unwrap! (bob.ffi_handle());
-        ::peers_clock_tick_compat (bob_ctx, 1);
-        let started_at = now_float();
-        loop {
-            let mut data: *mut u8 = null_mut();
-            let rc = ::peers_recv_compat (bob_ctx, 1, &mut data);
-            if rc < 0 {panic! ("peers_recv_compat error: {}", rc)}
-            if rc > 0 {
-                let payload: Vec<u8> = unsafe {from_raw_parts (data, rc as usize)} .into();
-                unsafe {libc::free (data as *mut c_void)}
-                if payload == &message[..] {break}
-            }
-            if now_float() - started_at > (33 + unwrap! (tested_lengths.iter().max()) / 992 * 2) as f64 {
-                panic! ("Out of time waiting for DHT payload")
-            }
-            thread::sleep (Duration::from_millis (200))
-        }
+        let receiving_f = ::recv (&bob, b"test_dht", Box::new ({
+            let message = message.clone();
+            move |payload| *payload == message
+        }));
+        let received = unwrap! (receiving_f.wait());
+        assert_eq! (received, message);
     }
 }

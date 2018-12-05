@@ -478,23 +478,23 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
 int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen))
 {
     struct nn_pollfd pfd; void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
-    peers_clock_tick_compat(ctx,pairsock);
+    log_stacktrace("LP_waitfor");
+    //peers_clock_tick_compat(ctx,pairsock);
     while ( time(NULL) < expiration )
     {
-        if ( (datalen = peers_recv_compat(ctx,pairsock,(uint8_t**) &data)) > 0 )
-        {
-            retval = (*verify)(swap,data,datalen);
-            swap->received = (uint32_t)time(NULL);
-            free(data);
-            return(retval);
-        }
+        //if ( (datalen = peers_recv_compat(ctx,pairsock,(uint8_t**) &data)) > 0 )
+        //{
+        //    retval = (*verify)(swap,data,datalen);
+        //    swap->received = (uint32_t)time(NULL);
+        //    free(data);
+        //    return(retval);
+        //}
 
         memset(&pfd,0,sizeof(pfd));
         pfd.fd = pairsock;
         pfd.events = NN_POLLIN;
 
-        // Tis currently large in order not to pollute the log with the `peers_recv_compat` messages much.
-        int wait_ms = 1234;
+        int wait_ms = 123;
 
         if ( nn_poll(&pfd,1,wait_ms) > 0 )
         {
@@ -542,8 +542,9 @@ int32_t swap_nn_send(uint32_t ctx,int32_t sock,uint8_t *data,int32_t datalen,uin
 {
     struct nn_pollfd pfd; int32_t i;
 
-    peers_clock_tick_compat(ctx,sock);
-    int32_t peers_err = peers_send_compat(ctx,sock,data,datalen);
+    log_stacktrace("swap_nn_send");
+    //peers_clock_tick_compat(ctx,sock);
+    //int32_t peers_err = peers_send_compat(ctx,sock,data,datalen);
 
     for (i=0; i<timeout*1000; i++)
     {
@@ -552,15 +553,10 @@ int32_t swap_nn_send(uint32_t ctx,int32_t sock,uint8_t *data,int32_t datalen,uin
         pfd.events = NN_POLLOUT;
         if ( nn_poll(&pfd,1,1) > 0 )
         {
-            int32_t rc = nn_send(sock,data,datalen,flags);
-            // If `peers` is okay then there's a chance that the message will be delivered, so return the optimistic.
-            if (!peers_err) return(datalen);
-            return(rc);
+            return(nn_send(sock,data,datalen,flags));
         }
         usleep(1000);
     }
-
-    if (!peers_err) return(datalen);  // We shared the data via the `peers` crate.
 
     return(-1);
 }
