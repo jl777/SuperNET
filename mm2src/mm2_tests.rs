@@ -290,7 +290,9 @@ fn chdir (dir: &Path) {
 }
 
 #[cfg(not(windows))]
-fn chdir (_dir: &Path) {panic! ("chdir not implemented")}
+fn chdir (dir: &Path) {
+    unwrap! (nix::unistd::chdir (dir))
+}
 
 /// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.
 fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {

@@ -38,7 +38,7 @@ hex = "0.3.2"
 hyper = "0.12"
 lazy_static = "1.2"
 libc = "0.2"
-nix = "0.11.0"
+nix = "0.12"
 peers = { path = "mm2src/peers" }
 portfolio = { path = "mm2src/portfolio" }
 rand = "0.5"

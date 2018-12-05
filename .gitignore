@@ -286,3 +286,4 @@ iguana/exchanges/manychains
 
 # Private IDE configuration
 /mm2src/peers/.vscode/tasks.json
+/.vscode/tasks.json
