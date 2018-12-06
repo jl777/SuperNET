@@ -141,6 +141,10 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define SIGHASH_FORKID 0x40
 #define ZKSNARK_PROOF_SIZE 296
+#define GROTH_PROOF_SIZE 192
+#define SAPLING_AUTH_SIG_SIZE 64
+#define ENC_CIPHER_SIZE 580
+#define OUT_CIPHER_SIZE 80
 #define ZCASH_SOLUTION_ELEMENTS 1344
 
 #define LP_REQUEST 0
@@ -165,13 +169,17 @@ struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_scrip
 
 struct iguana_msgtx
 {
-    uint32_t version,tx_in,tx_out,lock_time;
+    uint32_t version,version_group_id,tx_in,tx_out,lock_time,expiry_height;
     struct iguana_msgvin *vins;
     struct iguana_msgvout *vouts;
+    struct sapling_spend_description *shielded_spends;
+    struct sapling_output_description *shielded_outputs;
     bits256 txid;
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
-    uint8_t *serialized;
+    uint8_t *serialized,shielded_spend_num,shielded_output_num,numjoinsplits;
+    uint64_t value_balance;
+    uint8_t binding_sig[64];
 };
 
 struct iguana_msgjoinsplit
@@ -181,6 +189,16 @@ struct iguana_msgjoinsplit
     bits256 randomseed,vmacs[2];
     uint8_t zkproof[ZKSNARK_PROOF_SIZE];
     uint8_t ciphertexts[2][601];
+};
+
+struct sapling_spend_description {
+    bits256 cv,anchor,nullifier,rk;
+    uint8_t zkproof[GROTH_PROOF_SIZE],spend_auth_sig[SAPLING_AUTH_SIG_SIZE];
+};
+
+struct sapling_output_description {
+    bits256 cv,cm,ephemeral_key;
+    uint8_t zkproof[GROTH_PROOF_SIZE],enc_ciphertext[ENC_CIPHER_SIZE],out_ciphertext[OUT_CIPHER_SIZE];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -321,7 +339,7 @@ struct iguana_info
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
 };
 
-struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };
+struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t height; uint32_t vout:30,suppress:1,pad:1; };
 
 struct LP_utxostats { uint32_t sessionid,lasttime,errors,swappending,spentflag,lastspentcheck,bestflag; };
 

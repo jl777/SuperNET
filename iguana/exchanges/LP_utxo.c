@@ -357,7 +357,7 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
 
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
 {
-    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t i,n = 0;
+    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout,*sobj; int32_t i,n = 0;
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
     //portable_mutex_lock(&LP_utxomutex);
@@ -370,6 +370,12 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
+                    //printf("check sobj.hex %s\n",jprint(txout,0));
+                    if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && jstr(sobj,"hex") != 0 && strlen(jstr(sobj,"hex")) == 35*2 )
+                    {
+                        up->U.suppress = 1;
+                        //printf("suppress %s\n",jprint(sobj,0));
+                    }
                     if ( LP_value_extract(txout,0,up->U.txid) == 0 )
                     {
 //char str[65]; printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
@@ -464,7 +470,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
         ap = LP_addressfind(coin,coinaddr);
     else ap = LP_address(coin,coinaddr);
-    //printf("%s add addr.%s ht.%d ap.%p\n",coin->symbol,coinaddr,height,ap);
+    //printf("skipflag.%d %s add addr.%s ht.%d ap.%p\n",skipsearchcoin->symbol,coinaddr,height,ap);
     if ( ap != 0 )
     {
         flag = 0;
@@ -500,7 +506,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
                 {
                     if ( (hexstr= jstr(sobj,"hex")) != 0 )
                     {
-                        if ( strlen(hexstr) != 25*2 )
+                        if ( strlen(hexstr) != 25*2 && strlen(hexstr) != 35*2 )
                         {
                             //printf("skip non-standard utxo.(%s)\n",hexstr);
                             free_json(txobj);

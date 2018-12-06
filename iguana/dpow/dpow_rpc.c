@@ -17,7 +17,7 @@
 
 uint64_t dpow_utxosize(char *symbol)
 {
-    if ( strcmp(symbol,"GAME") == 0 )
+    if ( strcmp(symbol,"GAME") == 0 || strcmp(symbol,"EMC2") == 0)
         return(100000);
     else return(10000);
 }
@@ -236,7 +236,7 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     }
     else
     {
-        
+
     }
     if ( bits256_nonz(blockhash) != 0 )
     {
@@ -283,12 +283,12 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
 {
     struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson; int32_t kmdheight=0,hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
-    if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || src_or_dest != 0 )
+    if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || strcmp(bp->srccoin->symbol,"EMC2") != 0 || src_or_dest != 0 )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-        if ( strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        if ( src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -301,7 +301,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;
-                    printf("add MoMoMdata.(%s)\n",hexstr);
+                    //printf("add MoMoMdata.(%s)\n",hexstr);
                     decode_hex(&hex[n],hexlen,hexstr), n += hexlen;
                 }
                 free_json(retjson);
@@ -370,6 +370,39 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
     return(blockhash);
 }
 
+int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+{
+    char buf[128],*retstr;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"false, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
+        {
+            //printf("RESULT.(%s)\n",retstr);
+            free(retstr);
+            return(1);
+        } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
+}
+
+int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+{
+    char buf[128],*retstr;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"true, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
+        {
+            //printf("RESULT.(%s)\n",retstr);
+            free(retstr);
+            return(1);
+        } //else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
+}
+  
+
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
 {
     char buf[128],str[65],*retstr=0; cJSON *json = 0;
@@ -399,7 +432,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 
 int32_t dpow_is015(char *symbol)
 {
-    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 ) //strcmp("BTC",symbol) == 0 || 
+    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 || strcmp("EMC2",symbol) == 0 ) //strcmp("BTC",symbol) == 0 ||
         return(1);
     else return(0);
 }
@@ -614,6 +647,9 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
             free_json(retjson);
         }
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+	
+	/*if (coin->sapling != 0)
+		printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);*/
         free(paramstr);
         usleep(10000);
         return(retstr);
@@ -1254,7 +1290,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                     printf(" opret[%c] fiatoshis %.8f vs check %.8f\n",script[0],dstr(fiatoshis),dstr(checktoshis));
                     if ( seed == 0 || fiatoshis < checktoshis )
                     {
-                        
+
                     }*/
                 }
             }
@@ -1424,4 +1460,3 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     //printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
 }
-
