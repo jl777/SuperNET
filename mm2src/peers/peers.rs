@@ -150,18 +150,6 @@ fn binprint (bin: &[u8], blank: u8) -> String {
     unsafe {String::from_utf8_unchecked (bin)}
 }
 
-/// In order to emulate the synchronous exchange of messages with a peer on top of an asynchronous and optional delivery
-/// (optional - because the message might come through a different channel, via the MM1 nanomsg for example)
-/// we need a clock counter incremeted with each interaction.
-/// 
-/// That is, Alice sends message 1 and Bob tries to get message 1 through the DHT,
-/// then Bob sends a message 2 reply and Alice tries to get it through the DHT,
-/// then Alice sends a third message and Bob attempts to fetch it from DHT.
-/// The numbers `1`, `2` and `3` in this example represent the order of the sequential communication between two peers.
-/// We might say that these numbers *clock* the communication, that is, by telling Bob that we've *past* waiting for message 1
-/// (having obtained it by other means perhaps) and are now waiting for message 2, etc.
-type Clock = u32;
-
 /// A command delivered to the `dht_thread` via the `PeersContext::cmd_tx`.
 enum LtCommand {
     Put {
@@ -197,14 +185,6 @@ enum LtCommand {
 pub struct PeersContext {
     our_public_key: Mutex<bits256>,
     dht_thread: Mutex<Option<thread::JoinHandle<()>>>,
-    /// A map from a nanomsg socket (created in C code) and the `LP_mypub25519` peer ID.  
-    /// Also tracked here is the order of sequential communication on that socket - the Clock.
-    /// 
-    /// It is not yet clear whether we'll retain the nanomsg compatibility RPC layer,
-    /// but even if we happen to facktor it away in the future, the socket abstraction might still be useful here
-    /// because it represent a separate thread of sequential communication,
-    /// allowing us to have multiple channels of communication between two peers.
-    sock2peer: Mutex<FxHashMap<i32, (bits256, Clock)>>,
     cmd_tx: channel::Sender<LtCommand>,
     /// Should only be used by the `dht_thread`.
     cmd_rx: channel::Receiver<LtCommand>,
@@ -221,7 +201,6 @@ impl PeersContext {
             Ok (PeersContext {
                 our_public_key: Mutex::new (unsafe {zeroed()}),
                 dht_thread: Mutex::new (None),
-                sock2peer: Mutex::new (FxHashMap::default()),
                 cmd_tx,
                 cmd_rx,
                 recently_fetched: Mutex::new (FxHashMap::default())
@@ -704,35 +683,7 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
 /// * `preferred_port` - The preferred port of the peer.
 pub fn investigate_peer (_ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<(), String> {
     log! ("investigate_peer] ip " (ip) " preferred port " (preferred_port));
-    Ok(())
-}
-
-/// Leave a message for the peer.
-/// 
-/// The message might be sent across a number of different delivery methods.
-/// As of now we're going to send it via the Bittorrent DHT.
-/// 
-/// Delivery is not guaranteed (to check delivery we should manually get a reply from the peer).
-/// 
-/// * `to` - Recipient of the message (`LP_mypub25519` of the receiving MM2 instance).
-/// * `payload` - Contents of the message.
-pub fn send_delme (_ctx: &MmArc, _to: bits256, _payload: Vec<u8>) -> Result<(), String> {
-    // TODO: `send` should return a `Future`, finishing when we get the corresponding alert.
-    //       We might even get some interesting statistics as the result:
-    //       the number of nodes where the value was stored,
-    //       the number of nodes currently unreachable,
-    //       IP addresses of the storage nodes.
-
-    ERR! ("TBD")
-}
-
-/// Associate a nanomsg socket with a p2p `LP_mypub25519` identifier of the peer.  
-/// Also resets the clock counter to zero, initiating a new session with that peer.
-pub fn bind (ctx: &MmArc, sock: i32, peer: bits256) -> Result<(), String> {
-    log! ("bind] sock " (sock) " = peer " (peer));
-    let pctx = try_s! (PeersContext::from_ctx (ctx));
-    let mut sock2peer = try_s! (pctx.sock2peer.lock());
-    sock2peer.insert (sock, (peer, 0 as Clock));
+    // TODO: Add the peer to the DHT.
     Ok(())
 }
 
@@ -793,7 +744,7 @@ struct RecvFuture {
     pctx: Arc<PeersContext>,
     seed: [u8; 32],
     salt: Vec<u8>,
-    validator: Box<Fn(&Vec<u8>)->bool + Send>,
+    validator: Box<Fn(&[u8])->bool + Send>,
     frid: Option<u64>
 }
 impl Future for RecvFuture {
@@ -845,7 +796,7 @@ impl Drop for RecvFuture {
 /// Returned `Future` represents our effort to receive the transmission.
 /// As of now doesn't need a reactor.
 /// Should be `drop`ped soon as we no longer need the transmission.
-pub fn recv (ctx: &MmArc, subject: &[u8], validator: Box<Fn(&Vec<u8>)->bool + Send>) -> Box<Future<Item=Vec<u8>, Error=String> + Send> {
+pub fn recv (ctx: &MmArc, subject: &[u8], validator: Box<Fn(&[u8])->bool + Send>) -> Box<Future<Item=Vec<u8>, Error=String> + Send> {
     let pctx = try_fus! (PeersContext::from_ctx (&ctx));
 
     let seed: [u8; 32] = {
@@ -856,9 +807,6 @@ pub fn recv (ctx: &MmArc, subject: &[u8], validator: Box<Fn(&Vec<u8>)->bool + Se
     // TODO: Make `salt` a checksum of the subject, in order to limit the `salt` length and allow for any characters in the `subject`.
     // NB: There should be no zero bytes in the salt (due to `CStr::from_ptr` and the possibility of a similar problem abroad).
     let salt = Vec::from (subject);
-
-    // TODO: Link the Future with the `gets` entry in the `dht_thread`,
-    // allowing it to directly receive and validate the updates and to remove the `gets` entry when dropped.
 
     Box::new (RecvFuture {pctx, seed, salt, validator, frid: None})
 }

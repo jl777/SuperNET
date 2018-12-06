@@ -434,15 +434,17 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
         }
         pair = lp::LP_nanobind(ctx.btc_ctx() as *mut c_void, pair_str.as_mut_ptr());
         log! ("LP_nanobind produced sock " (pair) ", pair_str " (CStr::from_ptr (pair_str.as_ptr()) .to_str().unwrap())
-              " (canbind " [ctx.conf["canbind"]] " LP_fixed_pairport " (lp::LP_fixed_pairport));
-        unwrap! (peers::bind (ctx, pair, (*qp).desthash));
+              " (canbind " [ctx.conf["canbind"]] " LP_fixed_pairport " (lp::LP_fixed_pairport) ")"
+              " Alice is " ((*qp).desthash));
         if pair >= 0 {
             (*swap).N.pair = pair;
             let b_swap = BasiliskSwap(swap);
-            let ctx_ffi_handle = unwrap!(ctx.ffi_handle());
-            let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn(move ||
-                lp_bob_loop(ctx_ffi_handle,b_swap.0)
-            );
+            let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn({
+                let ctx = ctx.clone();
+                let alice = (*qp).desthash;
+                let session = String::from (unwrap! (CStr::from_ptr (pair_str.as_ptr()) .to_str()));
+                move || lp_bob_loop (ctx, b_swap.0, alice, session)
+            });
             match loop_thread {
                 Ok(_h) => {
                     let req_json = lp::LP_quotejson(qp);
@@ -747,7 +749,6 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
         }
         let pairsock = nn::nn_socket(nn::AF_SP as i32, nn::NN_PAIR as i32);
         let ctx = unwrap! (MmArc::from_ffi_handle (ctx_ffi_handle));
-        unwrap! (peers::bind (&ctx, pairsock, (*qp).srchash));
         if pairstr.is_null() || *pairstr == 0 || pairsock < 0 {
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error8\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4005.0, (*qp).uuidstr.as_mut_ptr());
@@ -766,10 +767,11 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"started\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
             let b_swap = BasiliskSwap(swap);
-            let ctx_ffi_handle = unwrap!(ctx.ffi_handle());
-            let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn(move || {
-                log!("Before alice loop");
-                lp_alice_loop(ctx_ffi_handle,b_swap.0);
+            let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn({
+                let ctx = ctx.clone();
+                let bob = (*qp).srchash;
+                let session = String::from (unwrap! (CStr::from_ptr (pairstr) .to_str()));
+                move || lp_alice_loop (ctx, b_swap.0, bob, session)
             });
             match alice_loop_thread {
                 Ok(_h) => {

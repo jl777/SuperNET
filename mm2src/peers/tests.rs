@@ -28,8 +28,11 @@ pub fn test_dht() {
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
 
-    let max_length = 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */;
-    let tested_lengths = [1, 987, 32 * 1024, 96 * 1024, max_length];
+    let tested_lengths: &[usize] = if option_env! ("TEST_MAX_LENGTH") == Some ("true") {
+        &[992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */]
+    } else {
+        &[16 * 1024, 1]
+    };
     for message_len in tested_lengths.iter() {
         // Send a message to Bob.
 
@@ -42,7 +45,7 @@ pub fn test_dht() {
 
         let receiving_f = ::recv (&bob, b"test_dht", Box::new ({
             let message = message.clone();
-            move |payload| *payload == message
+            move |payload| payload == &message[..]
         }));
         let received = unwrap! (receiving_f.wait());
         assert_eq! (received, message);
