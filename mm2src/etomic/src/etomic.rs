@@ -1783,7 +1783,7 @@ pub extern fn je_malloc_usable_size(_ptr: *const c_void) -> usize {
 pub mod test {
     use std::ffi::CString;
     use libc::{self, c_char};
-    use etomic::*;
+    use super::*;
 
     fn eth_client_for_test() -> *mut EthClient {
         EthClient::new_test()
