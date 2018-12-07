@@ -22,15 +22,16 @@ use common::{bits256, free_c_ptr};
 use common::nn;
 use common::mm_ctx::MmArc;
 use crc::crc32;
-use etomic::{get_eth_balance, EthClient};
 use futures::Future;
 use gstuff::now_ms;
 use libc::memcpy;
-use lp;
-use lp_ordermatch::BasiliskSwap;
 use libc::{c_char, c_void};
 use std::thread::sleep;
 use std::time::Duration;
+
+use crate::etomic::{get_eth_balance, EthClient};
+use crate::lp;
+use crate::lp_ordermatch::BasiliskSwap;
 
 // included from basilisk.c
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271

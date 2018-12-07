@@ -1,13 +1,13 @@
-extern crate regex;
-extern crate dirs;
 use common;
 use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 use common::log::dashboard_path;
+use dirs;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use libc::c_char;
 use peers;
+use regex;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::env::{self, var};
@@ -477,7 +477,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
 
     fn from_env_file (env: Vec<u8>) -> (Option<String>, Option<String>) {
-        use mm2_tests::regex::bytes::Regex;
+        use self::regex::bytes::Regex;
         let (mut passphrase, mut userpass) = (None, None);
         for cap in unwrap! (Regex::new (r"(?m)^(PASSPHRASE|USERPASS)=(\w[\w ]+)$")) .captures_iter (&env) {
             match cap.get (1) {

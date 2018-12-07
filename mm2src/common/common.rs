@@ -90,7 +90,7 @@ use hyper_rustls::HttpsConnector;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
-pub use lp::{_bits256 as bits256};
+pub use self::lp::{_bits256 as bits256};
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod os {include! ("c_headers/OS_portable.rs");}

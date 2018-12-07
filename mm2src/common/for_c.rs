@@ -18,6 +18,6 @@ pub extern fn log_stacktrace (desc: *const c_char) {
         }
     };
     let mut trace = String::with_capacity (4096);
-    ::stack_trace (&mut ::stack_trace_frame, &mut |l| trace.push_str (l));
+    super::stack_trace (&mut super::stack_trace_frame, &mut |l| trace.push_str (l));
     log! ({"Stacktrace. {}\n{}", desc, trace});
 }

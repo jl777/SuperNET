@@ -19,11 +19,11 @@ pub fn test_dht() {
 
     let mut alice_key: bits256 = unsafe {zeroed()};
     unsafe {rng.fill (&mut alice_key.bytes[..])}
-    unwrap! (::initialize (&alice, 9999, alice_key, 2111, 0));
+    unwrap! (super::initialize (&alice, 9999, alice_key, 2111, 0));
 
     let mut bob_key: bits256 = unsafe {zeroed()};
     unsafe {rng.fill (&mut bob_key.bytes[..])}
-    unwrap! (::initialize (&bob, 9999, bob_key, 2112, 0));
+    unwrap! (super::initialize (&bob, 9999, bob_key, 2112, 0));
 
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
@@ -39,11 +39,11 @@ pub fn test_dht() {
         let message: Vec<u8> = (0..*message_len).map (|_| rng.gen()) .collect();
 
         println! ("Sending {} bytes …", message.len());
-        let _sending_f = ::send (&alice, bob_key, b"test_dht", message.clone());
+        let _sending_f = super::send (&alice, bob_key, b"test_dht", message.clone());
 
         // Get that message from Alice.
 
-        let receiving_f = ::recv (&bob, b"test_dht", Box::new ({
+        let receiving_f = super::recv (&bob, b"test_dht", Box::new ({
             let message = message.clone();
             move |payload| payload == &message[..]
         }));

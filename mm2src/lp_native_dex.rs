@@ -36,8 +36,6 @@ use futures::{Future};
 use gstuff::{now_ms, slurp};
 use hex;
 use libc::{self, c_char, c_void};
-use lp_network::{lp_command_q_loop, lp_queue_command};
-use lp_ordermatch::{lp_trade_command, lp_trades_loop};
 use peers;
 use portfolio::prices_loop;
 use rand::random;
@@ -55,7 +53,10 @@ use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, sleep};
 use std::time::Duration;
-use super::rpc::{self, SINGLE_THREADED_C_LOCK};
+
+use crate::lp_network::{lp_command_q_loop, lp_queue_command};
+use crate::lp_ordermatch::{lp_trade_command, lp_trades_loop};
+use crate::rpc::{self, SINGLE_THREADED_C_LOCK};
 
 /*
 #include <stdio.h>

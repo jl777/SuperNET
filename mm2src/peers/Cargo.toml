@@ -2,6 +2,7 @@
 # AG: I wanted the "p2p" name for this crate but it was taken by https://crates.io/crates/p2p which we might even end up using.
 name = "peers"
 version = "0.1.0"
+edition = "2018"
 
 [lib]
 name = "peers"

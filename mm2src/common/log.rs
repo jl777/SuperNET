@@ -14,7 +14,8 @@ use std::collections::VecDeque;
 use std::default::Default;
 use std::env;
 use std::fs;
-use std::fmt::{self, Write as WriteFmt};
+use std::fmt;
+use std::fmt::Write as WriteFmt;
 use std::io::{Seek, SeekFrom, Write};
 use std::mem::swap;
 use std::path::{Path, PathBuf};
@@ -180,8 +181,6 @@ impl Default for LogEntry {
 
 impl LogEntry {
     pub fn format (&self, buf: &mut String) -> Result<(), fmt::Error> {
-        use fmt::Write;
-
         let time = Local.timestamp_millis (self.time as i64);
 
         wite! (buf,
@@ -522,7 +521,7 @@ impl LogState {
     }
 
     fn chunk2log (&self, chunk: String) {
-        ::log::chunk2log (chunk)
+        self::chunk2log (chunk)
         /*
         match self.log_file {
             Some (ref f) => match f.lock() {

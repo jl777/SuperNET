@@ -277,8 +277,8 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
     // We should be able to check the chunks independently on the receiving side (that is, no CRC streaming between the chunks)
     // in order for the receiving side to swiftly retry getting the chunk if there's a CRC mismatch.
 
-    for (idx, mut chunk) in (0..) .zip (chunks.iter_mut()) {
-        use crc32::{update, IEEE_TABLE};
+    for (idx, chunk) in (0..) .zip (chunks.iter_mut()) {
+        use self::crc32::{update, IEEE_TABLE};
         let mut crc = update (idx, &IEEE_TABLE, &chunk);
         crc = update (crc, &IEEE_TABLE, &seed[..]);
         crc = update (crc, &IEEE_TABLE, &salt);

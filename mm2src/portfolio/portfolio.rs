@@ -39,6 +39,7 @@ extern crate unwrap;
 extern crate url;
 
 pub mod prices;
+use self::prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 
 use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
@@ -51,7 +52,6 @@ use futures::task::Task;
 use gstuff::{now_ms, now_float};
 use hyper::{StatusCode, HeaderMap};
 use libc::{c_char, c_void};
-use prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
 use std::collections::hash_map::Entry;
 use std::ffi::{CStr, CString};
@@ -962,7 +962,7 @@ struct AutopriceReq {
 
 /// Handles the "autoprice" RPC call.
 pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
-    use lp::LP_priceinfo;
+    use self::lp::LP_priceinfo;
     use std::ffi::CString;
 
     let req: AutopriceReq = try_h! (json::from_value (req));

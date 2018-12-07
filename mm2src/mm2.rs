@@ -87,13 +87,13 @@ use std::time::Duration;
 use std::str;
 
 pub mod crash_reports;
-use crash_reports::init_crash_reports;
+use self::crash_reports::init_crash_reports;
 
 mod lp_native_dex;
-use lp_native_dex::{lp_init};
+use self::lp_native_dex::{lp_init};
 
 pub mod lp_network;
-pub use lp_network::lp_queue_command;
+pub use self::lp_network::lp_queue_command;
 
 pub mod lp_ordermatch;
 pub mod lp_swap;

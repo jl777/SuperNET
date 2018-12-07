@@ -23,8 +23,6 @@ use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use fxhash::{FxHashMap};
 use gstuff::now_ms;
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
-use lp_network::lp_queue_command;
-use lp_swap::{lp_alice_loop, lp_bob_loop};
 use peers;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
@@ -34,6 +32,9 @@ use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread;
+
+use crate::lp_network::lp_queue_command;
+use crate::lp_swap::{lp_alice_loop, lp_bob_loop};
 
 #[link="c"]
 extern {

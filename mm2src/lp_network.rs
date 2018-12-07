@@ -23,13 +23,14 @@ use common::mm_ctx::MmArc;
 use crossbeam::channel;
 use futures::{future, Future, Stream};
 use libc::{c_char, c_void, strlen};
-use lp_native_dex::lp_command_process;
-use rpc::{dispatcher, DispatcherRes};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::ptr::null_mut;
 use std::time::Duration;
+
+use crate::lp_native_dex::lp_command_process;
+use crate::rpc::{dispatcher, DispatcherRes};
 
 /*
 struct psock

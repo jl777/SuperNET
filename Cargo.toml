@@ -1,6 +1,7 @@
 [package]
 name = "mm2"
 version = "0.1.0"
+edition = "2018"
 
 # Waiting for https://doc.rust-lang.org/beta/cargo/reference/unstable.html#default-run to become stable.
 #default-run = "mm2"
