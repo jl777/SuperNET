@@ -591,9 +591,6 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
 		bitcoin_address(changeaddr, coin->chain->pubtype, myinfo->persistent_pubkey33, 33);
 
     txfee = (coin->txfee + duplicates*coin->txfee/10);
-    if (strcmp(coin->symbol, "GAME") == 0 || strcmp(coin->symbol, "EMC2") == 0)
-        printf("%s txfee %.8f\n", coin->symbol, dstr(txfee));
-    
 	uint32_t txversion = 1; // txversion = 1 for non-overwintered and non-sapling coins
 	if (coin->sapling != 0)
 		txversion = 4;
