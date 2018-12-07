@@ -33,11 +33,11 @@ extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 #[doc(hidden)]
 pub mod tests;
 
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use common::{bits256, slice_to_malloc};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
-use crc::crc32;
+use crc::crc32::{update, IEEE_TABLE};
 use crossbeam::channel;
 use futures::{future, stream, Async, Future, Poll, Stream};
 use futures::task::Task;
@@ -277,8 +277,7 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
     // We should be able to check the chunks independently on the receiving side (that is, no CRC streaming between the chunks)
     // in order for the receiving side to swiftly retry getting the chunk if there's a CRC mismatch.
 
-    for (idx, chunk) in (0..) .zip (chunks.iter_mut()) {
-        use self::crc32::{update, IEEE_TABLE};
+    for (idx, chunk) in (1..) .zip (chunks.iter_mut()) {
         let mut crc = update (idx, &IEEE_TABLE, &chunk);
         crc = update (crc, &IEEE_TABLE, &seed[..]);
         crc = update (crc, &IEEE_TABLE, &salt);
@@ -474,7 +473,7 @@ const BOOTSTRAP_STATUS: &[&TagParam] = &[&"dht-boot"];
 /// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
 /// allowing it to initialize and then stop at its own pace.
-fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port: u16, read_only: bool) {
+fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool) {
     let listen_interfaces = fomat! ("0.0.0.0:" (preferred_port) ",[::]:" (preferred_port));
     // TODO: Use the configured IP.
     //log! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
@@ -500,8 +499,8 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
 
     struct CbCtx<'a, 'c> {
         gets: &'a mut Gets,
-        //pctx: &'b PeersContext,
-        ctx: &'c MmArc
+        ctx: &'c MmArc,
+        our_public_key: bits256
     }
 
     // TODO: Remove the outdated `gets` entries after a while.
@@ -529,9 +528,10 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
             if rc > 0 {
                 let bencoded = &buf[0 .. rc as usize];
                 let chunk_salt = unsafe {CStr::from_ptr (saltbuf.as_ptr())} .to_bytes();
-                let chunk = chunk_salt[chunk_salt.len() - 1] as usize;  // 1-based.
+                let idx = chunk_salt[chunk_salt.len() - 1] as usize;  // 1-based.
+                if idx == 0 {return}  // `idx` can't be 0, ergo the received payload is garbage.
                 // log! (
-                //     "chunk " (chunk) ", dht_mutable_item_alert, " [=rc] ' ' [=seq] ' ' [=auth]
+                //     "chunk " (idx) ", dht_mutable_item_alert, " [=rc] ' ' [=seq] ' ' [=auth]
                 //     //"\n  " (binprint (bencoded, b'.'))
                 // );
 
@@ -549,20 +549,24 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
                     Some (gets_entry) => ((gets_entry.0).0, gets_entry.1),
                     None => return
                 };
-                if chunk > gets.chunks.len() {return}
+                if idx > gets.chunks.len() {return}
 
-                // TODO: Check the checksum.
+                // Reject the chunk if the is a checksum mismatch.
+                if payload.len() < 5 {return}  // A chunk without a checksum and at least a single byte of payload is gibberish.
+                let incoming_checksum = match (&payload[payload.len() - 4 ..]) .read_u32::<LittleEndian>() {Ok (c) => c, Err (_err) => return};
+                for _ in 0..4 {payload.pop();}  // Drain the checksum.
+                let mut crc = update (idx as u32, &IEEE_TABLE, &payload);
+                crc = update (crc, &IEEE_TABLE, unsafe {&cbctx.our_public_key.bytes[..]});
+                crc = update (crc, &IEEE_TABLE, &salt);
+                if incoming_checksum != crc {return}
 
-                if payload.len() > (if chunk == 1 {5} else {4}) {
-                    let number_of_chunks = if chunk == 1 {Some (payload.remove (0))} else {None};
-                    for _ in 0..4 {payload.pop();}  // Checksum.
-                    let seq_auth = unsafe {read_volatile (&seq) as u64 * 2 + if read_volatile (&auth) {1} else {0}};
-                    let chunk = &mut gets.chunks[chunk-1];
-                    if chunk.payload.is_none() || seq_auth > chunk.seq_auth {
-                        chunk.seq_auth = seq_auth;
-                        chunk.payload = Some (payload);
-                        if number_of_chunks.is_some() {gets.number_of_chunks = number_of_chunks}
-                    }
+                let number_of_chunks = if idx == 1 {Some (payload.remove (0))} else {None};
+                let seq_auth = unsafe {read_volatile (&seq) as u64 * 2 + if read_volatile (&auth) {1} else {0}};
+                let chunk = &mut gets.chunks[idx-1];
+                if chunk.payload.is_none() || seq_auth > chunk.seq_auth {
+                    chunk.seq_auth = seq_auth;
+                    chunk.payload = Some (payload);
+                    if number_of_chunks.is_some() {gets.number_of_chunks = number_of_chunks}
                 }
             } else if rc < 0 {
                 log! ("as_dht_mutable_item_alert error: " (rc));
@@ -605,8 +609,8 @@ fn dht_thread (ctx: MmArc, _netid: u16, _our_public_key: bits256, preferred_port
         {
             let mut cbctx = CbCtx {
                 gets: &mut gets,
-                //pctx: &*pctx,
-                ctx: &ctx
+                ctx: &ctx,
+                our_public_key
             };
             unsafe {dht_alerts (&mut dugout, cb, &mut cbctx as *mut CbCtx as *mut c_void)};
         }
