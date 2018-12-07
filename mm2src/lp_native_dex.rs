@@ -1056,6 +1056,11 @@ const P2P_SEED_NODES: [&'static str; 5] = [
     "45.32.19.196"
 ];
 
+/// Default seed nodes for netid 9999 that is used for MM2 testing
+const P2P_SEED_NODES_9999: [&'static str; 1] = [
+    "195.201.116.176",
+];
+
 /// Setup the peer-to-peer network.
 #[allow(unused_variables)]  // delme
 pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_peerinfo, myipaddr: &IpAddr, myport: u16,
@@ -1079,12 +1084,13 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
 
     let seeds: Vec<(IP, IsLp)> = if let Some (seednode) = seednode {
         vec! [(seednode.into(), true)]
-    } else if netid == 0 {
+    } else if netid > 0 && netid < 9 {
+        vec! [(format! ("5.9.253.{}", 195 + netid) .into(), true)]
+    } else if netid == 0 { // Default production netid is 0.
         P2P_SEED_NODES.iter().map (|ip| (Cow::Borrowed (&ip[..]), false)) .collect()
-    //} else if netid == 9999 {
-        // TODO: Use hardcoded seed nodes for netid 9999
-        //       in order to test the NAT traversal in exactly the same way the normal users would do it.
-    } else {  // Default netid is 0. If we're using a non-default netid then we should skip adding the hardcoded seed nodes.
+    } else if netid == 9999 { // MM2 testing netid is 999
+        P2P_SEED_NODES_9999.iter().map (|ip| (Cow::Borrowed (&ip[..]), false)) .collect()
+    } else { // If we're using a non-default netid then we should skip adding the hardcoded seed nodes.
         Vec::new()
     };
 
