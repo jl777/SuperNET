@@ -6,9 +6,9 @@ extern crate crossbeam;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
-extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
+extern crate hashbrown;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
@@ -28,7 +28,7 @@ extern crate unwrap;
 // 01 13:30:16, peers:617] peers_send_compat] Compression from 32084 to 32094
 // but we're going to refactor these payloads in the future,
 // and there might be different other payloads as we go through the port.
-extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
+//extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 
 #[doc(hidden)]
 pub mod tests;
@@ -41,13 +41,12 @@ use crc::crc32::{update, IEEE_TABLE};
 use crossbeam::channel;
 use futures::{future, stream, Async, Future, Poll, Stream};
 use futures::task::Task;
-use fxhash::FxHashMap;
 use gstuff::{now_float, now_ms};
+use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry};
 use itertools::Itertools;
 use libc::{c_char, c_void};
 use rand::{thread_rng, Rng};
 use serde_bytes::{Bytes, ByteBuf};
-use std::collections::hash_map::{Entry, OccupiedEntry};
 use std::cmp::Ordering;
 use std::ffi::{CStr, CString};
 use std::mem::{uninitialized, zeroed};
@@ -190,7 +189,7 @@ pub struct PeersContext {
     cmd_rx: channel::Receiver<LtCommand>,
     // TODO: Remove the outdated `recently_fetched` entries after a while.
     /// seed, salt -> last-modified, value
-    recently_fetched: Mutex<FxHashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>
+    recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>
 }
 
 impl PeersContext {
@@ -203,7 +202,7 @@ impl PeersContext {
                 dht_thread: Mutex::new (None),
                 cmd_tx,
                 cmd_rx,
-                recently_fetched: Mutex::new (FxHashMap::default())
+                recently_fetched: Mutex::new (HashMap::default())
             })
         })))
     }
@@ -220,9 +219,9 @@ lazy_static! {
     /// We don't know when libtorrent will stop using the `put_handler`.
     /// Probably after the corresponding put alert, but we aren't catching one yet.
     /// So we have to keep the shuttles around for a while.
-    static ref PUT_SHUTTLES: Mutex<FxHashMap<usize, (u64, Arc<PutShuttle>)>> = Mutex::new (FxHashMap::default());
+    static ref PUT_SHUTTLES: Mutex<HashMap<usize, (u64, Arc<PutShuttle>)>> = Mutex::new (HashMap::default());
     /// seed -> lm, ops
-    static ref RATELIM: Mutex<FxHashMap<[u8; 32], (f64, f32)>> = Mutex::new (FxHashMap::default());
+    static ref RATELIM: Mutex<HashMap<[u8; 32], (f64, f32)>> = Mutex::new (HashMap::default());
 }
 
 fn with_ratelim<F> (seed: [u8; 32], cb: F) where F: FnOnce (&mut f64, &mut f32) {
@@ -373,7 +372,7 @@ struct GetsEntry {
     task: Task
 }
 
-type Gets = FxHashMap<([u8; 32], Vec<u8>, u64), GetsEntry>;
+type Gets = HashMap<([u8; 32], Vec<u8>, u64), GetsEntry>;
 
 /// Responsible for reassembling all the DHT pieces stored for a potentially large value.
 /// Invoked whenever we see continued interest for the value
@@ -403,7 +402,7 @@ fn get_pieces_scheduler (seed: [u8; 32], salt: Vec<u8>, frid: u64, task: Task, d
     get_pieces_scheduler_en (dugout, gets, pctx)
 }
 
-fn get_pieces_scheduler_en (dugout: &mut dugout_t, mut gets: OccupiedEntry<([u8; 32], Vec<u8>, u64), GetsEntry>, pctx: &PeersContext) {
+fn get_pieces_scheduler_en (dugout: &mut dugout_t, mut gets: OccupiedEntry<([u8; 32], Vec<u8>, u64), GetsEntry, DefaultHashBuilder>, pctx: &PeersContext) {
     // See if the first chunk has arrived and the number of chunks with it.
 
     let now = now_float();
@@ -551,7 +550,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 };
                 if idx > gets.chunks.len() {return}
 
-                // Reject the chunk if the is a checksum mismatch.
+                // Reject the chunk if there is a checksum mismatch.
                 if payload.len() < 5 {return}  // A chunk without a checksum and at least a single byte of payload is gibberish.
                 let incoming_checksum = match (&payload[payload.len() - 4 ..]) .read_u32::<LittleEndian>() {Ok (c) => c, Err (_err) => return};
                 for _ in 0..4 {payload.pop();}  // Drain the checksum.

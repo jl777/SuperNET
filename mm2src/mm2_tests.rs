@@ -194,9 +194,12 @@ fn test_fundvalue() {
     assert_eq! (fundvalue["holdings"][2]["coin"].as_str(), Some ("- bogus coin -"));
     assert_eq! (fundvalue["holdings"][2]["error"].as_str(), Some ("no price source"));
 
+    let two_of_three = unwrap! (regex::Regex::new (
+        r"\[portfolio fundvalue ext-prices\] Waiting for prices \([\w, -]+\) ... 2 out of 3 obtained"
+    ));
     unwrap! (mm.wait_for_log (1., &|log|
         log.contains ("lp_fundvalue] LP_KMDvalue of 'KMD' is 12300000000") &&
-        log.contains ("[portfolio fundvalue ext-prices] Waiting for prices (litecoin,- bogus coin -,komodo) ... 2 out of 3 obtained")
+        two_of_three.is_match (log)
     ));
 }
 

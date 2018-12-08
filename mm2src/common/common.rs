@@ -17,13 +17,13 @@ extern crate duct;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
-extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate hex;
+extern crate hashbrown;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate rand;

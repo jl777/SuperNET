@@ -20,13 +20,12 @@
 //
 use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
-use fxhash::{FxHashMap};
 use gstuff::now_ms;
+use hashbrown::hash_map::{Entry, HashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
 use peers;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
-use std::collections::hash_map::Entry;
 use std::ffi::{CString, CStr};
 use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
@@ -49,7 +48,7 @@ struct BobCompetition {
 }
 
 struct OrdermatchContext {
-    pub lp_trades: Mutex<FxHashMap<u64, lp::LP_trade>>,
+    pub lp_trades: Mutex<HashMap<u64, lp::LP_trade>>,
     lp_trades_queue: Mutex<VecDeque<lp::LP_trade>>,
     bob_competitions: Mutex<[BobCompetition; 512]>,
 }
@@ -59,7 +58,7 @@ impl OrdermatchContext {
     fn from_ctx (ctx: &MmArc) -> Result<Arc<OrdermatchContext>, String> {
         Ok (try_s! (from_ctx (&ctx.ordermatch_ctx, move || {
             Ok (OrdermatchContext {
-                lp_trades: Mutex::new (FxHashMap::default()),
+                lp_trades: Mutex::new (HashMap::default()),
                 lp_trades_queue: Mutex::new (VecDeque::new()),
                 bob_competitions: Mutex::new ([BobCompetition::default(); 512]),
             })

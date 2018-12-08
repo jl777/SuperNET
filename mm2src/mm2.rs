@@ -35,9 +35,9 @@ extern crate etomicrs;
 extern crate fomat_macros;
 extern crate futures;
 extern crate futures_cpupool;
-extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
+extern crate hashbrown;
 extern crate hex;
 extern crate hyper;
 #[allow(unused_imports)]
