@@ -50,6 +50,7 @@ use serde_bytes::{Bytes, ByteBuf};
 use std::cmp::Ordering;
 use std::ffi::{CStr, CString};
 use std::mem::{uninitialized, zeroed};
+use std::net::IpAddr;
 use std::ptr::read_volatile;
 use std::slice::from_raw_parts;
 use std::sync::{Arc, Mutex};
@@ -473,7 +474,18 @@ const BOOTSTRAP_STATUS: &[&TagParam] = &[&"dht-boot"];
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
 /// allowing it to initialize and then stop at its own pace.
 fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool) {
-    let listen_interfaces = fomat! ("0.0.0.0:" (preferred_port) ",[::]:" (preferred_port));
+    let myipaddr = ctx.conf["myipaddr"].as_str();
+    let listen_interfaces = (|| {
+        if let Some (myipaddr) = myipaddr {
+            let ip: IpAddr = unwrap! (myipaddr.parse());
+            if ip.is_loopback() || ip.is_multicast() {  // TODO: if ip.is_global()
+                log! ("Warning, myipaddr '" (myipaddr) "' does not appear globally routable, not using it for DHT");
+            } else {
+                return fomat! ((myipaddr) ":" (preferred_port))
+            }
+        }
+        fomat! ("0.0.0.0:" (preferred_port) ",[::]:" (preferred_port))
+    })();
     // TODO: Use the configured IP.
     //log! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
     let listen_interfaces = unwrap! (CString::new (listen_interfaces));
@@ -483,7 +495,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         log! ("dht_init error: " (err));
         return
     }
-       
+
     // Skip DHT bootstrapping if we're already stopping. But give libtorrent a bit of time first, just in case.
     if ctx.is_stopping() {thread::sleep (Duration::from_millis (200)); return}
 

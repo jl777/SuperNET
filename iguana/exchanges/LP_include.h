@@ -692,6 +692,11 @@ extern int32_t LP_canbind;
 
 /// Initialized from the "canbind" configuration knob.
 extern uint16_t LP_fixed_pairport;
+/// This is either the IP address configured by the user
+/// or the automatically discovered outer IP address (which makes it pretty much useless for binding).
+/// Recommendation is to avoid using this value,
+/// because the address to bind to and the outer IP address are different things.
+/// Bind on the `conf["myipaddr"]` instead, and if it is not specified then on a generic address (0.0.0.0 for IPv4).
 extern char LP_myipaddr[64];
 extern int32_t LP_mypubsock;
 /// Defaults to -1.
