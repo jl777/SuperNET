@@ -31,7 +31,7 @@ extern crate unwrap;
 //extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 
 #[doc(hidden)]
-pub mod tests;
+pub mod peers_tests;
 
 use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use common::{bits256, slice_to_malloc};
