@@ -23,8 +23,8 @@ use common::mm_ctx::{MmArc, MmWeak};
 use common::log::TagParam;
 use futures::{self, Future, Async, Poll};
 use futures::task::{self};
-use fxhash::{FxHashMap, FxHashSet};
 use gstuff::now_float;
+use hashbrown::{HashMap, HashSet};
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
 use libc::{c_char};
@@ -1267,13 +1267,13 @@ impl CoinId {
 /// Prices we've fetched from an external pricing provider (CoinMarketCap, CoinGecko).
 /// Note that there is a delay between updating `Coins` and getting new `ExternalPrices`.
 #[derive(Clone, Debug)]
-pub struct ExternalPrices {pub prices: FxHashMap<CoinId, f64>, pub at: f64}
+pub struct ExternalPrices {pub prices: HashMap<CoinId, f64>, pub at: f64}
 
 /// Coins discovered so far. Shared with the external resource future, in order not to create new futures for every new coin.
 #[derive(Debug)]
 pub struct Coins {
     /// A map from the coin id to the last time we've see it used. The latter allows us to eventually clean the map.
-    pub ids: Mutex<FxHashMap<CoinId, f64>>
+    pub ids: Mutex<HashMap<CoinId, f64>>
 }
 
 /// Load coin prices from CoinGecko or, if `cmc_key` is given, from CoinMarketCap.
@@ -1350,7 +1350,7 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
                     }
                 };
                 //log! ({"lp_btcprice] Parsed reply: {:?}", reply});
-                let mut prices: FxHashMap<CoinId, f64> = FxHashMap::default();
+                let mut prices: HashMap<CoinId, f64> = HashMap::default();
                 for cg in reply {
                     let coin_id = try_s! (CoinId::from_provider (coins_conf, &provider, cg.id));
                     prices.insert (coin_id, cg.current_price);
@@ -1457,7 +1457,7 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
 
     // Find all the coins that needs their price to be fetched from an external resource.
 
-    let mut ext_price_coins = FxHashSet::default();
+    let mut ext_price_coins = HashSet::default();
     let mut holdings_res: Vec<FundvalueHoldingRes> = Vec::new();
     let mut second_pass_holdings: Vec<FundvalueHoldingReq> = Vec::new();
 
@@ -1497,7 +1497,7 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
         provider: PricingProvider,
         ctx: MmArc,
         portfolio_ctx: Arc<PortfolioContext>,
-        ext_price_coins: FxHashSet<CoinId>,
+        ext_price_coins: HashSet<CoinId>,
         first_register: Option<f64>,
         immediate: bool
     }

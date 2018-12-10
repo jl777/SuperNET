@@ -25,7 +25,6 @@ use common::{ post_json, fetch_json };
 use common::mm_ctx::MmArc;
 use common::log::StatusHandle;
 use common::etomiclib::*;
-use etomic::EthClient;
 use std::ffi::{ CStr, CString };
 use ethereum_types::{ U256, H256 };
 use hex;
@@ -43,6 +42,8 @@ use web3::types::{
 use web3::helpers::CallResult;
 use std::time::Duration;
 use web3::transports::{ Http };
+
+use crate::etomic::EthClient;
 
 #[derive(Deserialize, Debug)]
 struct GasStationData {

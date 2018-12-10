@@ -1,13 +1,13 @@
-extern crate regex;
-extern crate dirs;
 use common;
 use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
 use common::log::dashboard_path;
+use dirs;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use libc::c_char;
 use peers;
+use regex;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::env::{self, var};
@@ -194,9 +194,12 @@ fn test_fundvalue() {
     assert_eq! (fundvalue["holdings"][2]["coin"].as_str(), Some ("- bogus coin -"));
     assert_eq! (fundvalue["holdings"][2]["error"].as_str(), Some ("no price source"));
 
+    let two_of_three = unwrap! (regex::Regex::new (
+        r"\[portfolio fundvalue ext-prices\] Waiting for prices \([\w, -]+\) ... 2 out of 3 obtained"
+    ));
     unwrap! (mm.wait_for_log (1., &|log|
         log.contains ("lp_fundvalue] LP_KMDvalue of 'KMD' is 12300000000") &&
-        log.contains ("[portfolio fundvalue ext-prices] Waiting for prices (litecoin,- bogus coin -,komodo) ... 2 out of 3 obtained")
+        two_of_three.is_match (log)
     ));
 }
 
@@ -290,7 +293,9 @@ fn chdir (dir: &Path) {
 }
 
 #[cfg(not(windows))]
-fn chdir (_dir: &Path) {panic! ("chdir not implemented")}
+fn chdir (dir: &Path) {
+    unwrap! (nix::unistd::chdir (dir))
+}
 
 /// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.
 fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
@@ -412,7 +417,6 @@ fn test_notify() {
 #[test]
 fn test_status() {common::log::tests::test_status()}
 
-#[ignore]
 #[test]
 fn test_dht() {peers::tests::test_dht()}
 
@@ -476,7 +480,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
 
     fn from_env_file (env: Vec<u8>) -> (Option<String>, Option<String>) {
-        use mm2_tests::regex::bytes::Regex;
+        use self::regex::bytes::Regex;
         let (mut passphrase, mut userpass) = (None, None);
         for cap in unwrap! (Regex::new (r"(?m)^(PASSPHRASE|USERPASS)=(\w[\w ]+)$")) .captures_iter (&env) {
             match cap.get (1) {

@@ -1,4 +1,4 @@
-use fxhash::FxHashMap;
+use hashbrown::hash_map::{Entry, HashMap};
 use libc::{c_void};
 use rand::random;
 use serde_json::{Value as Json};
@@ -154,14 +154,12 @@ unsafe impl Sync for MmWeak {}
 lazy_static! {
     /// A map from a unique context ID to the corresponding MM context, facilitating context access across the FFI boundaries.  
     /// NB: The entries are not removed in order to keep the FFI handlers unique.
-    pub static ref MM_CTX_FFI: Mutex<FxHashMap<u32, MmWeak>> = Mutex::new (FxHashMap::default());
+    pub static ref MM_CTX_FFI: Mutex<HashMap<u32, MmWeak>> = Mutex::new (HashMap::default());
 }
 
 impl MmArc {
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.
     pub fn ffi_handle (&self) -> Result<u32, String> {
-        use std::collections::hash_map::Entry;
-
         let mut mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
         let have = self.ffi_handle.load (Ordering::Relaxed) as u32;
         if have != 0 {return Ok (have)}

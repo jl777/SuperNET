@@ -17,13 +17,13 @@ extern crate duct;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
-extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate hex;
+extern crate hashbrown;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate rand;
@@ -90,7 +90,7 @@ use hyper_rustls::HttpsConnector;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
-pub use lp::{_bits256 as bits256};
+pub use self::lp::{_bits256 as bits256};
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod os {include! ("c_headers/OS_portable.rs");}
@@ -329,7 +329,12 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
 }
 
 /// Generates a string with the current stack trace.
-///
+/// 
+/// To get a simple stack trace:
+/// 
+///     let mut trace = String::with_capacity (4096);
+///     stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+/// 
 /// * `format` - Generates the string representation of a frame.
 /// * `output` - Function used to print the stack trace.
 ///              Printing immediately, without buffering, should make the tracing somewhat more reliable.

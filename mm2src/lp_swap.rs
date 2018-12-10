@@ -19,15 +19,24 @@
 //
 use coins::{BoxedTx, BoxedTxFut, ExchangeableCoin};
 use coins::utxo::{ExtendedUtxoTx, coin_from_iguana_info};
+use common::{bits256, free_c_ptr};
 use common::{dstr};
 use common::mm_ctx::MmArc;
 use common::nn;
 use etomic::{get_eth_balance, EthClient};
 use futures::{Async, Future, Poll};
+use common::mm_ctx::MmArc;
+use crc::crc32;
+use futures::Future;
 use gstuff::now_ms;
+use libc::memcpy;
 use lp;
 use lp_ordermatch::BasiliskSwap;
 use libc::{c_char, c_void};
+
+use crate::etomic::{get_eth_balance, EthClient};
+use crate::lp;
+use crate::lp_ordermatch::BasiliskSwap;
 
 // included from basilisk.c
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
@@ -923,6 +932,108 @@ impl Future for SellerSwap {
                         return Err((-2001, ERRL!("error waitsend choosei")));
                     }
 
+struct Swap (*mut lp::basilisk_swap);
+// We need to share the `swap` with `validator` callbacks running on the `peers` loop.
+// TODO: Replace `Swap` with a truly thread-safe Rust version of the struct.
+unsafe impl Send for Swap {}
+
+pub unsafe fn lp_bob_loop(ctx: MmArc, swap: *mut lp::basilisk_swap, alice: bits256, session: String) {
+    let mut err = 0;
+    log!("start swap iambob\n");
+    lp::G.LP_pendingswaps += 1;
+    let mut bobstr: [c_char; 65] = [0; 65];
+    let mut alicestr: [c_char; 65] = [0; 65];
+    lp::LP_etomicsymbol(bobstr.as_mut_ptr(),(*swap).I.bobtomic.as_mut_ptr(),(*swap).I.bobstr.as_mut_ptr());
+    lp::LP_etomicsymbol(alicestr.as_mut_ptr(),(*swap).I.alicetomic.as_mut_ptr(),(*swap).I.alicestr.as_mut_ptr());
+    let maxlen = 2 * 1024 * 1024;
+    let mut data: Vec<u8> = vec![0; 2 * 1024 * 1024];
+    let expiration = (now_ms() / 1000) as u32 + lp::LP_SWAPSTEP_TIMEOUT;
+    let bobwaittimeout = lp::LP_calc_waittimeout(bobstr.as_mut_ptr());
+    let alicewaittimeout = lp::LP_calc_waittimeout(alicestr.as_mut_ptr());
+    /*
+    if ((*swap).I.bobtomic[0] != 0 || (*swap).I.alicetomic[0] != 0) {
+        int error = 0;
+        uint64_t eth_balance = get_eth_balance((*swap).I.etomicsrc, &error, LP_eth_client);
+        if (eth_balance < 500000) {
+            err = -5000, printf("Bob ETH balance too low, aborting swap!\n");
+        }
+    }
+    */
+    let ctxf = unwrap! (ctx.ffi_handle());
+    if !swap.is_null() && err == 0 {
+        // if lp::LP_waitsend(ctxf,b"pubkeys\x00".as_ptr() as *mut c_char,120,(*swap).N.pair,swap,data.as_mut_ptr(),maxlen,Some(lp::LP_pubkeys_verify),Some(lp::LP_pubkeys_data)) < 0 {
+        //     err = -2000;
+        //     log!("error waitsend pubkeys");
+        // }
+
+        // Temporarily more verbose than `LP_waitsend` in order to get the hang of it.
+        let recv_subject = fomat! ("pubkeys@" (session));
+        log! ("Waiting for '" (recv_subject) "' …");
+        let payload = unwrap! (peers::recv (&ctx, recv_subject.as_bytes(), Box::new ({
+            let swap = Swap (swap);
+            move |payload: &[u8]| -> bool {
+                let crc = crc32::checksum_ieee (payload);
+                log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
+                let mut payload: Vec<u8> = payload.into();
+                let rc = lp::LP_pubkeys_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
+                log! ("`LP_pubkeys_verify` finished with " [=rc]);
+                rc == 0
+            }
+        })) .wait());
+        log! ("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+        let send_subject = fomat! ("pubkeys-reply@" (session));
+        let datalen = lp::LP_pubkeys_data (swap, data.as_mut_ptr(), maxlen);
+        if datalen <= 0 {panic! ("!LP_pubkeys_data")}
+        let crc = crc32::checksum_ieee (&data[.. datalen as usize]);
+        log! ("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
+        let sending_f = peers::send (&ctx, alice, send_subject.as_bytes(), (&data[.. datalen as usize]).into());
+
+        if lp::LP_waitsend(ctxf,b"choosei\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*swap).N.pair,swap,data.as_mut_ptr(),maxlen,Some(lp::LP_choosei_verify),Some(lp::LP_choosei_data)) < 0 {
+            err = -2001;
+            log!("error waitsend choosei");
+        } else if lp::LP_waitsend(ctxf,b"mostprivs\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*swap).N.pair,swap,data.as_mut_ptr(),maxlen,Some(lp::LP_mostprivs_verify),Some(lp::LP_mostprivs_data)) < 0 {
+            err = -2002;
+            log!("error waitsend mostprivs");
+        } else if lp::basilisk_bobscripts_set(swap,1,1) < 0 {
+            err = -2003;
+            log!("error bobscripts deposit");
+        } else {
+            (*swap).bobrefund.utxovout = 0;
+            (*swap).bobrefund.utxotxid = (*swap).bobdeposit.I.signedtxid;
+            lp::basilisk_bobdeposit_refund(swap,(*swap).I.putduration as i32);
+            //printf("depositlen.%d\n",(*swap).bobdeposit.I.datalen);
+            //LP_swapsfp_update(&(*swap).I.req);
+            lp::LP_swap_critical = (now_ms() / 1000) as u32;
+            lp::LP_unavailableset((*swap).bobdeposit.utxotxid,(*swap).bobdeposit.utxovout,(now_ms() / 1000) as u32 + 60,(*swap).I.otherhash);
+            let coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
+            let alice_coin = coin_from_iguana_info(coin_ptr).unwrap();
+            let mut buf: [u8; 1000] = [0; 1000];
+            let data_len = lp::LP_swaprecv((*swap).N.pair,buf.as_mut_ptr(),swap,600);
+            let a_fee = alice_coin.tx_from_raw_bytes(&buf[0..data_len as usize]).unwrap();
+            log!("Got Afee " [a_fee]);
+            /*
+            if lp::LP_waitfor((*swap).N.pair,swap,bobwaittimeout,Some(lp::LP_verify_otherfee)) < 0 {
+                err = -2004;
+                log!("error waiting for alicefee");
+            }
+            */
+            if err == 0 {
+                if lp::LP_swapdata_rawtxsend(ctxf,(*swap).N.pair,swap,0x200,data.as_mut_ptr(),maxlen,&mut (*swap).bobdeposit,0x100,0) == 0 {
+                    err = -2005;
+                    log!("error sending bobdeposit");
+                }
+            }
+            lp::LP_unavailableset((*swap).bobpayment.utxotxid,(*swap).bobpayment.utxovout,(now_ms() / 1000) as u32 + 60,(*swap).I.otherhash);
+            let m = (*swap).I.bobconfirms;
+            let mut n = 0;
+            while  n < m {
+                n = lp::LP_numconfirms(bobstr.as_mut_ptr(), (*swap).bobdeposit.I.destaddr.as_mut_ptr(), (*swap).bobdeposit.I.signedtxid, 0, 1);
+                lp::LP_swap_critical = (now_ms() / 1000) as u32;
+                lp::LP_unavailableset((*swap).bobpayment.utxotxid, (*swap).bobpayment.utxovout,(now_ms() / 1000) as u32 + 60, (*swap).I.otherhash);
+                log!((n)" wait for bobdeposit %s numconfs."(m));
+                sleep(Duration::from_secs(10));
+            }
+
                     if lp::LP_waitsend(ctx_h,b"mostprivs\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*self.swap).N.pair,self.swap,self.buffer.as_mut_ptr(),self.buffer_len as i32,Some(lp::LP_mostprivs_verify),Some(lp::LP_mostprivs_data)) < 0 {
                         return Err((-2002, ERRL!("error waitsend mostprivs")));
                     }
@@ -1041,6 +1152,34 @@ impl BuyerSwap {
             buyer_payment: None,
             seller_payment: None
         })
+            if err == 0 {
+                lp::LP_swap_critical = (now_ms() / 1000) as u32;
+                if lp::basilisk_bobscripts_set(swap,0,1) < 0 {
+                    err = -2007;
+                    log!("error bobscripts payment");
+                } else {
+                    let m = (*swap).I.aliceconfirms;
+                    lp::LP_unavailableset((*swap).bobpayment.utxotxid,(*swap).bobpayment.utxovout,(now_ms() / 1000) as u32 + 60,(*swap).I.otherhash);
+                    lp::LP_swap_critical = (now_ms() / 1000) as u32;
+                    if lp::LP_swapdata_rawtxsend(ctxf,(*swap).N.pair,swap,0x8000,data.as_mut_ptr(),maxlen,&mut (*swap).bobpayment,0x4000,0) == 0 {
+                        err = -2008;
+                        log!("error sending bobpayment");
+                    }
+                    //if ( LP_waitfor((*swap).N.pair,swap,10,LP_verify_alicespend) < 0 )
+                    //    printf("error waiting for alicespend\n");
+                    //(*swap).sentflag = 1;
+                    (*swap).bobreclaim.utxovout = 0;
+                    (*swap).bobreclaim.utxotxid = (*swap).bobpayment.I.signedtxid;
+                    lp::basilisk_bobpayment_reclaim(swap,(*swap).I.callduration as i32);
+                    if (*swap).N.pair >= 0 {
+                        nn::nn_close((*swap).N.pair);
+                        (*swap).N.pair = -1;
+                    }
+                }
+            }
+        }
+    } else {
+        log!("swap timed out");
     }
 }
 
@@ -1048,6 +1187,19 @@ impl Future for BuyerSwap {
     type Item = ();
     /// Error code and string description
     type Error = (i32, String);
+pub unsafe fn lp_alice_loop(ctx: MmArc, swap: *mut lp::basilisk_swap, bob: bits256, session: String) {
+    log! ("lp_alice_loop");
+    lp::LP_alicequery_clear();
+    lp::G.LP_pendingswaps += 1;
+    let mut bobstr: [c_char; 65] = [0; 65];
+    let mut alicestr: [c_char; 65] = [0; 65];
+    lp::LP_etomicsymbol(bobstr.as_mut_ptr(),(*swap).I.bobtomic.as_mut_ptr(),(*swap).I.bobstr.as_mut_ptr());
+    lp::LP_etomicsymbol(alicestr.as_mut_ptr(),(*swap).I.alicetomic.as_mut_ptr(),(*swap).I.alicestr.as_mut_ptr());
+    let maxlen = 2 * 1024 * 1024;
+    let mut data: Vec<u8> = vec![0; 2 * 1024 * 1024];
+    let expiration = (now_ms() / 1000) as u32 + lp::LP_SWAPSTEP_TIMEOUT;
+    let bobwaittimeout = lp::LP_calc_waittimeout(bobstr.as_mut_ptr());
+    let alicewaittimeout = lp::LP_calc_waittimeout(alicestr.as_mut_ptr());
 
     /// Swap contains a lot of blocking synchronous call for now.
     /// Avoid running this future on shared CORE.
@@ -1149,6 +1301,88 @@ impl Future for BuyerSwap {
                                     &(*self.swap).I.myprivs[0].bytes,
                                     dstr((*self.swap).I.alicesatoshis)
                                 );
+    let mut err = 0;
+    /*
+    if (*swap).I.bobtomic[0] != 0 || (*swap).I.alicetomic[0] != 0 {
+        let mut error = 0;
+        let eth_balance = get_eth_balance((*swap).I.etomicdest.as_mut_ptr(), &mut error, LP_eth_client);
+        if eth_balance < 500000 {
+            err = -5001;
+            log!("Alice ETH balance too low, aborting swap!\n");
+        }
+    }
+    */
+    let ctxf = unwrap! (ctx.ffi_handle());
+    if !swap.is_null() && err == 0 {
+        log!("start swap iamalice pair "((*swap).N.pair));
+
+        // if lp::LP_sendwait(ctxf,b"pubkeys\x00".as_ptr() as *mut c_char, 120, (*swap).N.pair, swap, data.as_mut_ptr(), maxlen, Some(lp::LP_pubkeys_verify), Some(lp::LP_pubkeys_data)) < 0 {
+        //     err = -1000;
+        //     log!("error LP_sendwait pubkeys");
+        // }
+
+        // So the code is going to be more verbose than with the `LP_sendwait` for now,
+        // in order to keep things clear while we explore the new communication format.
+        // In the future we might repack it back into one-liners with something similar to `LP_sendwait`, if needs be.
+        // TODO: See if we can reduce the number of public keys and the size of this payload.
+        let datalen = lp::LP_pubkeys_data (swap, data.as_mut_ptr(), maxlen);
+        if datalen <= 0 {panic! ("!LP_pubkeys_data")}
+        let send_subject = fomat! ("pubkeys@" (session));
+        let sending_f = peers::send (&ctx, bob, send_subject.as_bytes(), (&data[.. datalen as usize]).into());
+        let recv_subject = fomat! ("pubkeys-reply@" (session));
+        let crc = crc32::checksum_ieee (&data[.. datalen as usize]);
+        log! ("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+        let payload = unwrap! (peers::recv (&ctx, recv_subject.as_bytes(), Box::new ({
+            let swap = Swap (swap);
+            move |payload: &[u8]| -> bool {
+                let crc = crc32::checksum_ieee (payload);
+                log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
+                let mut payload: Vec<u8> = payload.into();
+                let rc = lp::LP_pubkeys_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
+                log! ("`LP_pubkeys_verify` finished with " [=rc]);
+                rc == 0
+            }
+        })) .wait());
+        drop (sending_f);
+        log! ("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+
+        if lp::LP_sendwait(ctxf,b"choosei\x00".as_ptr() as *mut c_char, lp::LP_SWAPSTEP_TIMEOUT as i32, (*swap).N.pair, swap, data.as_mut_ptr(), maxlen, Some(lp::LP_choosei_verify), Some(lp::LP_choosei_data)) < 0 {
+            err = -1001;
+            log!("error LP_sendwait choosei");
+        } else if lp::LP_sendwait(ctxf,b"mostprivs\x00".as_ptr() as *mut c_char, lp::LP_SWAPSTEP_TIMEOUT as i32, (*swap).N.pair, swap, data.as_mut_ptr(), maxlen, Some(lp::LP_mostprivs_verify), Some(lp::LP_mostprivs_data)) < 0 {
+            err = -1002;
+            log!("error LP_sendwait mostprivs");
+        } else {
+            let coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
+            let coin = coin_from_iguana_info(coin_ptr).unwrap();
+            //LP_swapsfp_update(&(*swap).I.req);
+            lp::LP_swap_critical = (now_ms() / 1000) as u32;
+            let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
+            let fee_tx = coin.send_alice_fee(&fee_addr_pub_key, 0.01).wait().unwrap();
+            let mut msg = fee_tx.to_raw_bytes();
+            nn::nn_send((*swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+            if lp::LP_waitfor(ctxf,(*swap).N.pair, swap, bobwaittimeout, Some(lp::LP_verify_bobdeposit)) < 0 {
+                err = -1005;
+                log!("error waiting for bobdeposit");
+            } else {
+                // Artem P:
+                // TODO basilisk_swap struct contains compressed ECDSA pubkeys but these are kept
+                // in 32 bytes size structs for some reason while 33 bytes are required.
+                // The 0x02 and 0x03 prefixes are hardcoded in lp::basilisk_alicescript.
+                // Consider storing the full pubkey as it's not clear why it's done this way.
+                let mut pub_am_prefixed: Vec<u8> = vec![2];
+                let mut pub_bn_prefixed: Vec<u8> = vec![3];
+                pub_am_prefixed.extend_from_slice(&(*swap).I.pubAm.bytes);
+                pub_bn_prefixed.extend_from_slice(&(*swap).I.pubBn.bytes);
+
+                let a_payment_tx = coin.send_alice_payment(
+                    &pub_am_prefixed,
+                    &pub_bn_prefixed,
+                    0.01
+                ).wait().unwrap();
+                println!("Apayment tx {:?}", a_payment_tx);
+                let mut msg = a_payment_tx.to_raw_bytes();
+                nn::nn_send((*swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
 
                                 BuyerSwapState::RefundBuyerPayment(refund_fut)
                             }
@@ -1162,6 +1396,31 @@ impl Future for BuyerSwap {
                             );
                             BuyerSwapState::RefundBuyerPayment(refund_fut)
                         }
+                let mut m = (*swap).I.bobconfirms;
+                let mut n = 0;
+                while n < m {
+                    n = lp::LP_numconfirms(bobstr.as_mut_ptr(), (*swap).bobdeposit.I.destaddr.as_mut_ptr(), (*swap).bobdeposit.I.signedtxid, 0, 1);
+                    lp::LP_swap_critical = (now_ms() / 1000) as u32;
+                    log!((n) " wait for bobdeposit numconfs." (m));
+                    sleep(Duration::from_secs(10));
+                }
+                //(*swap).sentflag = 1;
+                lp::LP_swap_critical = (now_ms() / 1000) as u32;
+                if lp::LP_waitfor(ctxf,(*swap).N.pair, swap, bobwaittimeout, Some(lp::LP_verify_bobpayment)) < 0 {
+                    err = -1007;
+                    log!("error waiting for bobpayment");
+                } else {
+                    lp::LP_swap_endcritical = (now_ms() / 1000) as u32;
+                    n = 0;
+                    while n < (*swap).I.bobconfirms {
+                        n = lp::LP_numconfirms(bobstr.as_mut_ptr(), (*swap).bobpayment.I.destaddr.as_mut_ptr(), (*swap).bobpayment.I.signedtxid, 0, 1);
+                        log!((n) " wait for bobpayment numconfs." ((*swap).I.bobconfirms));
+                        sleep(Duration::from_secs(10));
+                    }
+                    log!((n)" waited for bobpayment numconfs." ((*swap).I.bobconfirms));
+                    if (*swap).N.pair >= 0 {
+                        nn::nn_close((*swap).N.pair);
+                        (*swap).N.pair = -1;
                     }
                 },
                 BuyerSwapState::SpendSellerPayment(ref mut future) => {
@@ -1184,7 +1443,7 @@ bits256 instantdex_derivekeypair(void *ctx,bits256 *newprivp,uint8_t pubkey[33],
     bits256 sharedsecret;
     sharedsecret = curve25519_shared(privkey,orderhash);
     vcalc_sha256cat(newprivp->bytes,orderhash.bytes,sizeof(orderhash),sharedsecret.bytes,sizeof(sharedsecret));
-    return(bitcoin_pubkey33(ctx,pubkey,*newprivp));
+    return(bitcoin_pubkey33(ctxf,pubkey,*newprivp));
 }
 
 bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)

@@ -21,20 +21,20 @@
 use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use futures::Future;
-use fxhash::{FxHashMap};
 use gstuff::now_ms;
+use hashbrown::hash_map::{Entry, HashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
-use lp_network::lp_queue_command;
-use lp_swap::{BuyerSwap, SellerSwap};
 use peers;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
-use std::collections::hash_map::Entry;
 use std::ffi::{CString, CStr};
 use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread;
+
+use crate::lp_network::lp_queue_command;
+use crate::lp_swap::{BuyerSwap, SellerSwap};
 
 #[link="c"]
 extern {
@@ -49,7 +49,7 @@ struct BobCompetition {
 }
 
 struct OrdermatchContext {
-    pub lp_trades: Mutex<FxHashMap<u64, lp::LP_trade>>,
+    pub lp_trades: Mutex<HashMap<u64, lp::LP_trade>>,
     lp_trades_queue: Mutex<VecDeque<lp::LP_trade>>,
     bob_competitions: Mutex<[BobCompetition; 512]>,
 }
@@ -59,7 +59,7 @@ impl OrdermatchContext {
     fn from_ctx (ctx: &MmArc) -> Result<Arc<OrdermatchContext>, String> {
         Ok (try_s! (from_ctx (&ctx.ordermatch_ctx, move || {
             Ok (OrdermatchContext {
-                lp_trades: Mutex::new (FxHashMap::default()),
+                lp_trades: Mutex::new (HashMap::default()),
                 lp_trades_queue: Mutex::new (VecDeque::new()),
                 bob_competitions: Mutex::new ([BobCompetition::default(); 512]),
             })
@@ -435,8 +435,8 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
         }
         pair = lp::LP_nanobind(ctx.btc_ctx() as *mut c_void, pair_str.as_mut_ptr());
         log! ("LP_nanobind produced sock " (pair) ", pair_str " (CStr::from_ptr (pair_str.as_ptr()) .to_str().unwrap())
-              " (canbind " [ctx.conf["canbind"]] " LP_fixed_pairport " (lp::LP_fixed_pairport));
-        unwrap! (peers::bind (ctx, pair, (*qp).desthash));
+              " (canbind " [ctx.conf["canbind"]] " LP_fixed_pairport " (lp::LP_fixed_pairport) ")"
+              " Alice is " ((*qp).desthash));
         if pair >= 0 {
             (*swap).N.pair = pair;
             let b_swap = BasiliskSwap(swap);
@@ -445,6 +445,12 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                 log!("Seller loop");
                 let seller_swap = SellerSwap::new(b_swap.0, ctx_arc).unwrap();
                 seller_swap.wait().unwrap();
+            });
+            let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn({
+                let ctx = ctx.clone();
+                let alice = (*qp).desthash;
+                let session = String::from (unwrap! (CStr::from_ptr (pair_str.as_ptr()) .to_str()));
+                move || lp_bob_loop (ctx, b_swap.0, alice, session)
             });
             match loop_thread {
                 Ok(_h) => {
@@ -750,7 +756,6 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
         }
         let pairsock = nn::nn_socket(nn::AF_SP as i32, nn::NN_PAIR as i32);
         let ctx = unwrap! (MmArc::from_ffi_handle (ctx_ffi_handle));
-        unwrap! (peers::bind (&ctx, pairsock, (*qp).srchash));
         if pairstr.is_null() || *pairstr == 0 || pairsock < 0 {
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error8\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4005.0, (*qp).uuidstr.as_mut_ptr());
@@ -774,6 +779,11 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
                 log!("Buyer loop");
                 let buyer_swap = BuyerSwap::new(b_swap.0, ctx_arc).unwrap();
                 buyer_swap.wait().unwrap();
+            let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn({
+                let ctx = ctx.clone();
+                let bob = (*qp).srchash;
+                let session = String::from (unwrap! (CStr::from_ptr (pairstr) .to_str()));
+                move || lp_alice_loop (ctx, b_swap.0, bob, session)
             });
             match alice_loop_thread {
                 Ok(_h) => {

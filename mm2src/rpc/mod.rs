@@ -28,7 +28,6 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::{c_char, c_void};
-use lp_network::lp_queue_command;
 use portfolio::lp_autoprice;
 use portfolio::prices::lp_fundvalue;
 use serde_json::{self as json, Value as Json};
@@ -36,9 +35,11 @@ use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
 use std::ptr::null_mut;
 use std::sync::Mutex;
-use super::CJSON;
 use tokio_core::net::TcpListener;
 use hex;
+
+use crate::lp_network::lp_queue_command;
+use crate::CJSON;
 
 mod commands;
 use self::commands::*;

@@ -19,16 +19,17 @@
 //
 use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
 use common::mm_ctx::MmArc;
-use etomiccurl::get_gas_price_from_station;
 use gstuff::now_ms;
 use hex;
 use libc::{c_void, free};
-use lp_native_dex::lp_passphrase_init;
-use lp_ordermatch::{AutoBuyInput, lp_auto_buy};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr};
 use std::mem::zeroed;
 use std::ptr::null_mut;
+
+use crate::etomiccurl::get_gas_price_from_station;
+use crate::lp_native_dex::lp_passphrase_init;
+use crate::lp_ordermatch::{AutoBuyInput, lp_auto_buy};
 
 /*
 char *LP_numutxos()

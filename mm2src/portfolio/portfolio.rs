@@ -23,9 +23,9 @@ extern crate common;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
-extern crate fxhash;
 #[macro_use]
 extern crate gstuff;
+extern crate hashbrown;
 extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
@@ -39,21 +39,21 @@ extern crate unwrap;
 extern crate url;
 
 pub mod prices;
+use self::prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 
 use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::log::TagParam;
 use common::ser::de_none_if_empty;
-use fxhash::{FxHashMap, FxHashSet};
 use futures::{Future, Stream};
 use futures::task::Task;
 use gstuff::{now_ms, now_float};
+use hashbrown::HashSet;
+use hashbrown::hash_map::{Entry, HashMap};
 use hyper::{StatusCode, HeaderMap};
 use libc::{c_char, c_void};
-use prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 use serde_json::{self as json, Value as Json};
-use std::collections::hash_map::Entry;
 use std::ffi::{CStr, CString};
 use std::iter::once;
 use std::mem::{zeroed};
@@ -66,14 +66,14 @@ use std::thread::sleep;
 struct PortfolioContext {
     // NB: We're using the MM configuration ("coins"), therefore every MM must have its own set of price resources.
     //     That's why we keep the price resources in the `PortfolioContext` and not in a singleton.
-    price_resources: Mutex<FxHashMap<(PricingProvider, PriceUnit), (Arc<Coins>, RefreshedExternalResource<ExternalPrices>)>>
+    price_resources: Mutex<HashMap<(PricingProvider, PriceUnit), (Arc<Coins>, RefreshedExternalResource<ExternalPrices>)>>
 }
 impl PortfolioContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx (ctx: &MmArc) -> Result<Arc<PortfolioContext>, String> {
         Ok (try_s! (from_ctx (&ctx.portfolio_ctx, move || {
             Ok (PortfolioContext {
-                price_resources: Mutex::new (FxHashMap::default())
+                price_resources: Mutex::new (HashMap::default())
             })
         })))
     }
@@ -536,7 +536,7 @@ int32_t LP_autoref_clear(char *base,char *rel)
 }
 */
 
-type InterestingCoins = FxHashMap<(PricingProvider, PriceUnit), (FxHashSet<CoinId>, Vec<Task>)>;
+type InterestingCoins = HashMap<(PricingProvider, PriceUnit), (HashSet<CoinId>, Vec<Task>)>;
 
 /// Adds the given coins into the list of coin prices to fetch. And triggers the price fetch.
 fn register_interest_in_coin_prices (ctx: &MmArc, pctx: &PortfolioContext, coins: InterestingCoins) -> Result<(), String> {
@@ -682,7 +682,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     // As of now the price we need might be in Bitcoins or United States Dollars (when using the "usdpeg" parameter).
     // The price provider might also be different, depending on "refrel=coinmarketcap" and "cmc_key".
     let coin_price_interest = {
-        let mut set = FxHashSet::default();
+        let mut set = HashSet::new();
 
         for i in 0 .. (num_lp_autorefs as usize) {
             let refrel = try_s! (unsafe {CStr::from_ptr (lp::LP_autorefs[i].refrel.as_ptr())} .to_str());
@@ -700,7 +700,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
     };
 
     // Group the coins by (provider, unit) in order to have all the coins ready for the provider instance creation.
-    let mut coins: InterestingCoins = FxHashMap::default();
+    let mut coins: InterestingCoins = HashMap::default();
     for (provider, unit, coin) in coin_price_interest {
         match coins.entry ((provider.clone(), unit)) {
             Entry::Vacant (ve) => {ve.insert ((once (coin) .collect(), Vec::new()));},
@@ -962,7 +962,7 @@ struct AutopriceReq {
 
 /// Handles the "autoprice" RPC call.
 pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
-    use lp::LP_priceinfo;
+    use self::lp::LP_priceinfo;
     use std::ffi::CString;
 
     let req: AutopriceReq = try_h! (json::from_value (req));

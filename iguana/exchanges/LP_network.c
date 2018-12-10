@@ -411,10 +411,11 @@ uint32_t LP_swapsend(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,ui
     if ( datalen > 0 )
         memcpy(&buf[offset],data,datalen), offset += datalen;
 
-    peers_clock_tick_compat(ctx,pairsock);
-    int32_t peers_err = peers_send_compat(ctx,pairsock,buf,offset);
+    log_stacktrace("LP_swapsend");
+    //peers_clock_tick_compat(ctx,pairsock);
+    //int32_t peers_err = peers_send_compat(ctx,pairsock,buf,offset);
 
-    if ( (sentbytes= nn_send(pairsock,buf,offset,0)) != offset && peers_err )
+    if ( (sentbytes= nn_send(pairsock,buf,offset,0)) != offset )
     {
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
         if ( sentbytes < 0 )
