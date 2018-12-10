@@ -17,18 +17,17 @@
 //  lp_swap.rs
 //  marketmaker
 //
+use coins::{BoxedTx, BoxedTxFut, ExchangeableCoin};
 use coins::utxo::{ExtendedUtxoTx, coin_from_iguana_info};
-use common::free_c_ptr;
+use common::{dstr};
+use common::mm_ctx::MmArc;
 use common::nn;
 use etomic::{get_eth_balance, EthClient};
-use futures::Future;
+use futures::{Async, Future, Poll};
 use gstuff::now_ms;
-use libc::memcpy;
 use lp;
 use lp_ordermatch::BasiliskSwap;
 use libc::{c_char, c_void};
-use std::thread::sleep;
-use std::time::Duration;
 
 // included from basilisk.c
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
@@ -858,249 +857,327 @@ int32_t LP_calc_waittimeout(char *symbol)
     return(waittimeout);
 }
 */
-pub unsafe fn lp_bob_loop(ctx: u32, swap: *mut lp::basilisk_swap) {
-    let mut err = 0;
-    log!("start swap iambob\n");
-    lp::G.LP_pendingswaps += 1;
-    let mut bobstr: [c_char; 65] = [0; 65];
-    let mut alicestr: [c_char; 65] = [0; 65];
-    lp::LP_etomicsymbol(bobstr.as_mut_ptr(),(*swap).I.bobtomic.as_mut_ptr(),(*swap).I.bobstr.as_mut_ptr());
-    lp::LP_etomicsymbol(alicestr.as_mut_ptr(),(*swap).I.alicetomic.as_mut_ptr(),(*swap).I.alicestr.as_mut_ptr());
-    let maxlen = 2 * 1024 * 1024;
-    let mut data: Vec<u8> = vec![0; 2 * 1024 * 1024];
-    let expiration = (now_ms() / 1000) as u32 + lp::LP_SWAPSTEP_TIMEOUT;
-    let bobwaittimeout = lp::LP_calc_waittimeout(bobstr.as_mut_ptr());
-    let alicewaittimeout = lp::LP_calc_waittimeout(alicestr.as_mut_ptr());
-    /*
-    if ((*swap).I.bobtomic[0] != 0 || (*swap).I.alicetomic[0] != 0) {
-        int error = 0;
-        uint64_t eth_balance = get_eth_balance((*swap).I.etomicsrc, &error, LP_eth_client);
-        if (eth_balance < 500000) {
-            err = -5000, printf("Bob ETH balance too low, aborting swap!\n");
-        }
-    }
-    */
-    if !swap.is_null() && err == 0 {
-        if lp::LP_waitsend(ctx,b"pubkeys\x00".as_ptr() as *mut c_char,120,(*swap).N.pair,swap,data.as_mut_ptr(),maxlen,Some(lp::LP_pubkeys_verify),Some(lp::LP_pubkeys_data)) < 0 {
-            err = -2000;
-            log!("error waitsend pubkeys");
-        } else if lp::LP_waitsend(ctx,b"choosei\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*swap).N.pair,swap,data.as_mut_ptr(),maxlen,Some(lp::LP_choosei_verify),Some(lp::LP_choosei_data)) < 0 {
-            err = -2001;
-            log!("error waitsend choosei");
-        } else if lp::LP_waitsend(ctx,b"mostprivs\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*swap).N.pair,swap,data.as_mut_ptr(),maxlen,Some(lp::LP_mostprivs_verify),Some(lp::LP_mostprivs_data)) < 0 {
-            err = -2002;
-            log!("error waitsend mostprivs");
-        } else if lp::basilisk_bobscripts_set(swap,1,1) < 0 {
-            err = -2003;
-            log!("error bobscripts deposit");
-        } else {
-            (*swap).bobrefund.utxovout = 0;
-            (*swap).bobrefund.utxotxid = (*swap).bobdeposit.I.signedtxid;
-            lp::basilisk_bobdeposit_refund(swap,(*swap).I.putduration as i32);
-            //printf("depositlen.%d\n",(*swap).bobdeposit.I.datalen);
-            //LP_swapsfp_update(&(*swap).I.req);
-            lp::LP_swap_critical = (now_ms() / 1000) as u32;
-            lp::LP_unavailableset((*swap).bobdeposit.utxotxid,(*swap).bobdeposit.utxovout,(now_ms() / 1000) as u32 + 60,(*swap).I.otherhash);
-            let coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
-            let alice_coin = coin_from_iguana_info(coin_ptr).unwrap();
-            let mut buf: [u8; 1000] = [0; 1000];
-            let data_len = lp::LP_swaprecv((*swap).N.pair,buf.as_mut_ptr(),swap,600);
-            let a_fee = alice_coin.tx_from_raw_bytes(&buf[0..data_len as usize]).unwrap();
-            log!("Got Afee " [a_fee]);
-            /*
-            if lp::LP_waitfor((*swap).N.pair,swap,bobwaittimeout,Some(lp::LP_verify_otherfee)) < 0 {
-                err = -2004;
-                log!("error waiting for alicefee");
-            }
-            */
-            if err == 0 {
-                if lp::LP_swapdata_rawtxsend(ctx,(*swap).N.pair,swap,0x200,data.as_mut_ptr(),maxlen,&mut (*swap).bobdeposit,0x100,0) == 0 {
-                    err = -2005;
-                    log!("error sending bobdeposit");
-                }
-            }
-            lp::LP_unavailableset((*swap).bobpayment.utxotxid,(*swap).bobpayment.utxovout,(now_ms() / 1000) as u32 + 60,(*swap).I.otherhash);
-            let m = (*swap).I.bobconfirms;
-            let mut n = 0;
-            while  n < m {
-                n = lp::LP_numconfirms(bobstr.as_mut_ptr(), (*swap).bobdeposit.I.destaddr.as_mut_ptr(), (*swap).bobdeposit.I.signedtxid, 0, 1);
-                lp::LP_swap_critical = (now_ms() / 1000) as u32;
-                lp::LP_unavailableset((*swap).bobpayment.utxotxid, (*swap).bobpayment.utxovout,(now_ms() / 1000) as u32 + 60, (*swap).I.otherhash);
-                log!((n)" wait for bobdeposit %s numconfs."(m));
-                sleep(Duration::from_secs(10));
-            }
-
-            let mut buf: [u8; 1000] = [0; 1000];
-            let data_len = lp::LP_swaprecv((*swap).N.pair,buf.as_mut_ptr(),swap,600);
-            let a_payment = alice_coin.tx_from_raw_bytes(&buf[0..data_len as usize]).unwrap();
-            log!("Got aPayment tx " [a_payment]);
-            unwrap!(alice_coin.wait_for_confirmations(a_payment.clone()).wait());
-            let a_payment: Box<ExtendedUtxoTx> = unwrap!(a_payment.downcast());
-            let tx_bytes = a_payment.transaction_bytes();
-
-            // It's enough to save tx raw bytes and redeem len to spend the tx later
-            (*swap).alicepayment.I.datalen = tx_bytes.len() as i32;
-            memcpy((*swap).alicepayment.txbytes.as_mut_ptr() as *mut c_void, tx_bytes.as_ptr() as *const c_void, tx_bytes.len());
-
-            (*swap).alicepayment.I.redeemlen = a_payment.redeem_script.len() as i32;
-            memcpy((*swap).alicepayment.redeemscript.as_mut_ptr() as *mut c_void, a_payment.redeem_script.as_ptr() as *const c_void, a_payment.redeem_script.len());
-
-            // Save the alice payment data so JSON file
-            lp::basilisk_dontforget(swap,&mut (*swap).alicepayment,0,(*swap).bobdeposit.I.actualtxid);
-
-            if err == 0 {
-                lp::LP_swap_critical = (now_ms() / 1000) as u32;
-                if lp::basilisk_bobscripts_set(swap,0,1) < 0 {
-                    err = -2007;
-                    log!("error bobscripts payment");
-                } else {
-                    let m = (*swap).I.aliceconfirms;
-                    lp::LP_unavailableset((*swap).bobpayment.utxotxid,(*swap).bobpayment.utxovout,(now_ms() / 1000) as u32 + 60,(*swap).I.otherhash);
-                    lp::LP_swap_critical = (now_ms() / 1000) as u32;
-                    if lp::LP_swapdata_rawtxsend(ctx,(*swap).N.pair,swap,0x8000,data.as_mut_ptr(),maxlen,&mut (*swap).bobpayment,0x4000,0) == 0 {
-                        err = -2008;
-                        log!("error sending bobpayment");
-                    }
-                    //if ( LP_waitfor((*swap).N.pair,swap,10,LP_verify_alicespend) < 0 )
-                    //    printf("error waiting for alicespend\n");
-                    //(*swap).sentflag = 1;
-                    (*swap).bobreclaim.utxovout = 0;
-                    (*swap).bobreclaim.utxotxid = (*swap).bobpayment.I.signedtxid;
-                    lp::basilisk_bobpayment_reclaim(swap,(*swap).I.callduration as i32);
-                    if (*swap).N.pair >= 0 {
-                        nn::nn_close((*swap).N.pair);
-                        (*swap).N.pair = -1;
-                    }
-                }
-            }
-        }
-    } else {
-        log!("swap timed out");
-    }
-    lp::LP_swap_critical = (now_ms() / 1000) as u32;
-    if err < 0 {
-        lp::LP_failedmsg((*swap).I.req.requestid, (*swap).I.req.quoteid, err as f64, (*swap).uuidstr.as_mut_ptr());
-    }
-    if (*swap).I.aliceconfirms > 0 {
-        sleep(Duration::from_secs(13));
-    }
-    lp::LP_pendswap_add((*swap).I.expiration,(*swap).I.req.requestid,(*swap).I.req.quoteid);
-    //(*swap).I.finished = LP_swapwait((*swap).I.expiration,(*swap).I.req.requestid,(*swap).I.req.quoteid,LP_atomic_locktime((*swap).I.bobstr,(*swap).I.alicestr)*3,(*swap).I.aliceconfirms == 0 ? 3 : 30);
-    lp::basilisk_swap_finished(swap);
-    free_c_ptr(swap as *mut c_void);
-    lp::G.LP_pendingswaps -= 1;
+enum SellerSwapState {
+    PubkeyExchange,
+    WaitBuyerFeeData,
+    SendSellerPayment(BoxedTxFut),
+    WaitBuyerPaymentData,
+    WaitBuyerPaymentConfirmation(Box<dyn Future<Item=(), Error=String>>),
+    SpendBuyerPayment(BoxedTxFut),
+    RefundSellerPayment(BoxedTxFut),
 }
 
-pub unsafe fn lp_alice_loop(ctx: u32,swap: *mut lp::basilisk_swap) {
-    lp::LP_alicequery_clear();
-    lp::G.LP_pendingswaps += 1;
-    let mut bobstr: [c_char; 65] = [0; 65];
-    let mut alicestr: [c_char; 65] = [0; 65];
-    lp::LP_etomicsymbol(bobstr.as_mut_ptr(),(*swap).I.bobtomic.as_mut_ptr(),(*swap).I.bobstr.as_mut_ptr());
-    lp::LP_etomicsymbol(alicestr.as_mut_ptr(),(*swap).I.alicetomic.as_mut_ptr(),(*swap).I.alicestr.as_mut_ptr());
-    let maxlen = 2 * 1024 * 1024;
-    let mut data: Vec<u8> = vec![0; 2 * 1024 * 1024];
-    let expiration = (now_ms() / 1000) as u32 + lp::LP_SWAPSTEP_TIMEOUT;
-    let bobwaittimeout = lp::LP_calc_waittimeout(bobstr.as_mut_ptr());
-    let alicewaittimeout = lp::LP_calc_waittimeout(alicestr.as_mut_ptr());
-
-    let mut err = 0;
-    /*
-    if (*swap).I.bobtomic[0] != 0 || (*swap).I.alicetomic[0] != 0 {
-        let mut error = 0;
-        let eth_balance = get_eth_balance((*swap).I.etomicdest.as_mut_ptr(), &mut error, LP_eth_client);
-        if eth_balance < 500000 {
-            err = -5001;
-            log!("Alice ETH balance too low, aborting swap!\n");
-        }
-    }
-    */
-    if !swap.is_null() && err == 0 {
-        log!("start swap iamalice pair "((*swap).N.pair));
-        if lp::LP_sendwait(ctx,b"pubkeys\x00".as_ptr() as *mut c_char, 120, (*swap).N.pair, swap, data.as_mut_ptr(), maxlen, Some(lp::LP_pubkeys_verify), Some(lp::LP_pubkeys_data)) < 0 {
-            err = -1000;
-            log!("error LP_sendwait pubkeys");
-        } else if lp::LP_sendwait(ctx,b"choosei\x00".as_ptr() as *mut c_char, lp::LP_SWAPSTEP_TIMEOUT as i32, (*swap).N.pair, swap, data.as_mut_ptr(), maxlen, Some(lp::LP_choosei_verify), Some(lp::LP_choosei_data)) < 0 {
-            err = -1001;
-            log!("error LP_sendwait choosei");
-        } else if lp::LP_sendwait(ctx,b"mostprivs\x00".as_ptr() as *mut c_char, lp::LP_SWAPSTEP_TIMEOUT as i32, (*swap).N.pair, swap, data.as_mut_ptr(), maxlen, Some(lp::LP_mostprivs_verify), Some(lp::LP_mostprivs_data)) < 0 {
-            err = -1002;
-            log!("error LP_sendwait mostprivs");
-        } else {
-            let coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
-            let coin = coin_from_iguana_info(coin_ptr).unwrap();
-            //LP_swapsfp_update(&(*swap).I.req);
-            lp::LP_swap_critical = (now_ms() / 1000) as u32;
-            let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
-            let fee_tx = coin.send_alice_fee(&fee_addr_pub_key, 0.01).wait().unwrap();
-            let mut msg = fee_tx.to_raw_bytes();
-            nn::nn_send((*swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
-            if lp::LP_waitfor(ctx,(*swap).N.pair, swap, bobwaittimeout, Some(lp::LP_verify_bobdeposit)) < 0 {
-                err = -1005;
-                log!("error waiting for bobdeposit");
-            } else {
-                // Artem P:
-                // TODO basilisk_swap struct contains compressed ECDSA pubkeys but these are kept
-                // in 32 bytes size structs for some reason while 33 bytes are required.
-                // The 0x02 and 0x03 prefixes are hardcoded in lp::basilisk_alicescript.
-                // Consider storing the full pubkey as it's not clear why it's done this way.
-                let mut pub_am_prefixed: Vec<u8> = vec![2];
-                let mut pub_bn_prefixed: Vec<u8> = vec![3];
-                pub_am_prefixed.extend_from_slice(&(*swap).I.pubAm.bytes);
-                pub_bn_prefixed.extend_from_slice(&(*swap).I.pubBn.bytes);
-
-                let a_payment_tx = coin.send_alice_payment(
-                    &pub_am_prefixed,
-                    &pub_bn_prefixed,
-                    0.01
-                ).wait().unwrap();
-                println!("Apayment tx {:?}", a_payment_tx);
-                let mut msg = a_payment_tx.to_raw_bytes();
-                nn::nn_send((*swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
-
-                let mut m = (*swap).I.bobconfirms;
-                let mut n = 0;
-                while n < m {
-                    n = lp::LP_numconfirms(bobstr.as_mut_ptr(), (*swap).bobdeposit.I.destaddr.as_mut_ptr(), (*swap).bobdeposit.I.signedtxid, 0, 1);
-                    lp::LP_swap_critical = (now_ms() / 1000) as u32;
-                    log!((n) " wait for bobdeposit numconfs." (m));
-                    sleep(Duration::from_secs(10));
-                }
-                //(*swap).sentflag = 1;
-                lp::LP_swap_critical = (now_ms() / 1000) as u32;
-                if lp::LP_waitfor(ctx,(*swap).N.pair, swap, bobwaittimeout, Some(lp::LP_verify_bobpayment)) < 0 {
-                    err = -1007;
-                    log!("error waiting for bobpayment");
-                } else {
-                    lp::LP_swap_endcritical = (now_ms() / 1000) as u32;
-                    n = 0;
-                    while n < (*swap).I.bobconfirms {
-                        n = lp::LP_numconfirms(bobstr.as_mut_ptr(), (*swap).bobpayment.I.destaddr.as_mut_ptr(), (*swap).bobpayment.I.signedtxid, 0, 1);
-                        log!((n) " wait for bobpayment numconfs." ((*swap).I.bobconfirms));
-                        sleep(Duration::from_secs(10));
-                    }
-                    log!((n)" waited for bobpayment numconfs." ((*swap).I.bobconfirms));
-                    if (*swap).N.pair >= 0 {
-                        nn::nn_close((*swap).N.pair);
-                        (*swap).N.pair = -1;
-                    }
-                }
-            }
-        }
-    }
-    lp::LP_swap_endcritical = (now_ms() / 1000) as u32;
-    if err < 0 {
-        lp::LP_failedmsg((*swap).I.req.requestid, (*swap).I.req.quoteid, err as f64, (*swap).uuidstr.as_mut_ptr());
-    }
-    if (*swap).I.bobconfirms > 0 {
-        sleep(Duration::from_secs(13));
-    }
-    lp::LP_pendswap_add((*swap).I.expiration,(*swap).I.req.requestid,(*swap).I.req.quoteid);
-    //(*swap).I.finished = LP_swapwait((*swap).I.expiration,(*swap).I.req.requestid,(*swap).I.req.quoteid,LP_atomic_locktime((*swap).I.bobstr,(*swap).I.alicestr)*3,(*swap).I.aliceconfirms == 0 ? 3 : 30);
-    lp::basilisk_swap_finished(swap);
-    free_c_ptr(swap as *mut c_void);
-    lp::G.LP_pendingswaps -= 1;
+pub struct SellerSwap {
+    swap: *mut lp::basilisk_swap,
+    state: SellerSwapState,
+    ctx: MmArc,
+    buffer: Vec<u8>,
+    buffer_len: u64,
+    buyer_coin: Box<dyn ExchangeableCoin>,
+    seller_coin: Box<dyn ExchangeableCoin>,
+    buyer_payment: Option<BoxedTx>,
+    seller_payment: Option<BoxedTx>,
 }
+
+impl SellerSwap {
+    pub unsafe fn new(swap: *mut lp::basilisk_swap, ctx: MmArc) -> Result<SellerSwap, String> {
+        let alice_coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
+        let alice_coin = try_s!(coin_from_iguana_info(alice_coin_ptr));
+        let bob_coin_ptr = lp::LP_coinfind((*swap).I.bobstr.as_mut_ptr());
+        let bob_coin = try_s!(coin_from_iguana_info(bob_coin_ptr));
+
+        Ok(SellerSwap {
+            swap,
+            state: SellerSwapState::PubkeyExchange,
+            ctx,
+            buffer_len: 2 * 1024 * 1024,
+            buffer: vec![0; 2* 1024 * 1024],
+            buyer_coin: alice_coin,
+            seller_coin: bob_coin,
+            buyer_payment: None,
+            seller_payment: None
+        })
+    }
+}
+
+impl Future for SellerSwap {
+    type Item = ();
+    /// Error code and string description
+    type Error = (i32, String);
+
+    /// Swap contains a lot of blocking synchronous call for now.
+    /// Avoid running this future on shared CORE.
+    fn poll(&mut self) -> Poll<(), (i32, String)> {
+        loop {
+            let next_state = match self.state {
+                SellerSwapState::PubkeyExchange => unsafe {
+                    let ctx_h = match self.ctx.ffi_handle() {
+                        Ok(h) => h,
+                        Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
+                    };
+                    if lp::LP_waitsend(ctx_h,b"pubkeys\x00".as_ptr() as *mut c_char,120,(*self.swap).N.pair,self.swap,self.buffer.as_mut_ptr(),self.buffer_len as i32,Some(lp::LP_pubkeys_verify),Some(lp::LP_pubkeys_data)) < 0 {
+                        return Err((-2000, ERRL!("error waitsend pubkeys")));
+                    }
+
+                    if lp::LP_waitsend(ctx_h,b"choosei\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*self.swap).N.pair,self.swap,self.buffer.as_mut_ptr(),self.buffer_len as i32,Some(lp::LP_choosei_verify),Some(lp::LP_choosei_data)) < 0 {
+                        return Err((-2001, ERRL!("error waitsend choosei")));
+                    }
+
+                    if lp::LP_waitsend(ctx_h,b"mostprivs\x00".as_ptr() as *mut c_char,lp::LP_SWAPSTEP_TIMEOUT as i32,(*self.swap).N.pair,self.swap,self.buffer.as_mut_ptr(),self.buffer_len as i32,Some(lp::LP_mostprivs_verify),Some(lp::LP_mostprivs_data)) < 0 {
+                        return Err((-2002, ERRL!("error waitsend mostprivs")));
+                    }
+
+                    SellerSwapState::WaitBuyerFeeData
+                },
+                SellerSwapState::WaitBuyerFeeData => unsafe {
+                    let data_len = lp::LP_swaprecv((*self.swap).N.pair, self.buffer.as_mut_ptr(), self.swap, 600);
+                    let buyer_fee = match self.buyer_coin.tx_from_raw_bytes(&self.buffer[0..data_len as usize]) {
+                        Ok(tx) => tx,
+                        Err(e) => return Err((-1, ERRL!("{}", e))),
+                    };
+
+                    let payment_amount = dstr((*self.swap).I.bobsatoshis);
+
+                    let payment_fut = self.seller_coin.send_seller_payment(
+                        (now_ms() / 1000) as u32 + 2000,
+                        &(*self.swap).I.pubA0,
+                        &(*self.swap).I.pubB0,
+                        &(*self.swap).I.secretBn,
+                        payment_amount,
+                    );
+                    SellerSwapState::SendSellerPayment(payment_fut)
+                },
+                SellerSwapState::SendSellerPayment(ref mut payment_fut) => unsafe {
+                    let transaction = try_ready!(
+                        payment_fut.poll().map_err(|e| (-2006, ERRL!("Error sending seller payment {}", e)))
+                    );
+
+                    let mut msg = transaction.to_raw_bytes();
+                    nn::nn_send((*self.swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                    self.seller_payment = Some(transaction.clone());
+
+                    SellerSwapState::WaitBuyerPaymentData
+                },
+                SellerSwapState::WaitBuyerPaymentData => unsafe {
+                    let data_len = lp::LP_swaprecv((*self.swap).N.pair, self.buffer.as_mut_ptr(), self.swap, 600);
+                    let buyer_payment = match self.buyer_coin.tx_from_raw_bytes(&self.buffer[0..data_len as usize]) {
+                        Ok(tx) => tx,
+                        Err(e) => return Err((-1, ERRL!("{}", e))),
+                    };
+
+                    self.buyer_payment = Some(buyer_payment.clone());
+
+                    let wait_fut = self.buyer_coin.wait_for_confirmations(
+                        buyer_payment,
+                        (*self.swap).I.aliceconfirms
+                    );
+                    SellerSwapState::WaitBuyerPaymentConfirmation(wait_fut)
+                },
+                SellerSwapState::WaitBuyerPaymentConfirmation(ref mut wait_fut) => unsafe {
+                    try_ready!(
+                        wait_fut.poll().map_err(|e| (-1005, ERRL!("Error wait buyer payment confirmation {}", e)))
+                    );
+
+                    let spend_fut = self.buyer_coin.send_seller_spends_buyer_payment(
+                        self.buyer_payment.clone().unwrap(),
+                        &(*self.swap).I.myprivs[0].bytes,
+                        &(*self.swap).I.privBn.bytes,
+                        dstr((*self.swap).I.alicesatoshis)
+                    );
+
+                    SellerSwapState::SpendBuyerPayment(spend_fut)
+                },
+                SellerSwapState::SpendBuyerPayment(ref mut future) => {
+                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
+                    return Ok(Async::Ready(()));
+                },
+                SellerSwapState::RefundSellerPayment(ref mut future) => {
+                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
+                    return Ok(Async::Ready(()));
+                },
+            };
+        }
+    }
+}
+
+enum BuyerSwapState {
+    PubkeyExchange,
+    SendBuyerFee(BoxedTxFut),
+    WaitSellerPaymentData,
+    WaitSellerPaymentConfirmation(Box<dyn Future<Item=(), Error=String>>),
+    SendBuyerPayment(BoxedTxFut),
+    WaitBuyerPaymentSpent(BoxedTxFut),
+    SpendSellerPayment(BoxedTxFut),
+    RefundBuyerPayment(BoxedTxFut),
+}
+
+pub struct BuyerSwap {
+    swap: *mut lp::basilisk_swap,
+    state: BuyerSwapState,
+    ctx: MmArc,
+    buffer: Vec<u8>,
+    buffer_len: u64,
+    buyer_coin: Box<dyn ExchangeableCoin>,
+    seller_coin: Box<dyn ExchangeableCoin>,
+    buyer_payment: Option<BoxedTx>,
+    seller_payment: Option<BoxedTx>,
+}
+
+impl BuyerSwap {
+    pub unsafe fn new(swap: *mut lp::basilisk_swap, ctx: MmArc) -> Result<BuyerSwap, String> {
+        let alice_coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
+        let alice_coin = try_s!(coin_from_iguana_info(alice_coin_ptr));
+        let bob_coin_ptr = lp::LP_coinfind((*swap).I.bobstr.as_mut_ptr());
+        let bob_coin = try_s!(coin_from_iguana_info(bob_coin_ptr));
+
+        Ok(BuyerSwap {
+            swap,
+            state: BuyerSwapState::PubkeyExchange,
+            ctx,
+            buffer_len: 2 * 1024 * 1024,
+            buffer: vec![0; 2* 1024 * 1024],
+            buyer_coin: alice_coin,
+            seller_coin: bob_coin,
+            buyer_payment: None,
+            seller_payment: None
+        })
+    }
+}
+
+impl Future for BuyerSwap {
+    type Item = ();
+    /// Error code and string description
+    type Error = (i32, String);
+
+    /// Swap contains a lot of blocking synchronous call for now.
+    /// Avoid running this future on shared CORE.
+    fn poll(&mut self) -> Poll<(), (i32, String)> {
+        loop {
+            let next_state = match self.state {
+                BuyerSwapState::PubkeyExchange => unsafe {
+                    let ctx_h = match self.ctx.ffi_handle() {
+                        Ok(h) => h,
+                        Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
+                    };
+                    if lp::LP_sendwait(ctx_h,b"pubkeys\x00".as_ptr() as *mut c_char, 120, (*self.swap).N.pair, self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32, Some(lp::LP_pubkeys_verify), Some(lp::LP_pubkeys_data)) < 0 {
+                        return Err((-1000, ERRL!("error LP_sendwait pubkeys")));
+                    }
+
+                    if lp::LP_sendwait(ctx_h, b"choosei\x00".as_ptr() as *mut c_char, lp::LP_SWAPSTEP_TIMEOUT as i32, (*self.swap).N.pair, self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32, Some(lp::LP_choosei_verify), Some(lp::LP_choosei_data)) < 0 {
+                        return Err((-1001, ERRL!("error LP_sendwait choosei")));
+                    }
+
+                    if lp::LP_sendwait(ctx_h,b"mostprivs\x00".as_ptr() as *mut c_char, lp::LP_SWAPSTEP_TIMEOUT as i32, (*self.swap).N.pair, self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32, Some(lp::LP_mostprivs_verify), Some(lp::LP_mostprivs_data)) < 0 {
+                        return Err((-1002, ERRL!("error LP_sendwait mostprivs")));
+                    }
+
+                    let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
+                    let payment_amount = dstr((*self.swap).I.alicesatoshis);
+                    let fee_amount = payment_amount / 777.0;
+                    let fee_tx = self.buyer_coin.send_buyer_fee(&fee_addr_pub_key, fee_amount);
+
+                    BuyerSwapState::SendBuyerFee(fee_tx)
+                },
+                BuyerSwapState::SendBuyerFee(ref mut fee_tx_fut) => unsafe {
+                    let transaction = try_ready!(
+                        fee_tx_fut.poll().map_err(|e| (-1004, ERRL!("Error sending buyer fee {}", e)))
+                    );
+
+                    let mut msg = transaction.to_raw_bytes();
+                    nn::nn_send((*self.swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+
+                    BuyerSwapState::WaitSellerPaymentData
+                },
+                BuyerSwapState::WaitSellerPaymentData => unsafe {
+                    let data_len = lp::LP_swaprecv((*self.swap).N.pair, self.buffer.as_mut_ptr(), self.swap, 600);
+                    let seller_payment = match self.seller_coin.tx_from_raw_bytes(&self.buffer[0..data_len as usize]) {
+                        Ok(tx) => tx,
+                        Err(e) => return Err((-1, ERRL!("{}", e))),
+                    };
+                    self.seller_payment = Some(seller_payment.clone());
+                    let wait_fut = self.seller_coin.wait_for_confirmations(
+                        seller_payment,
+                        (*self.swap).I.bobconfirms
+                    );
+                    BuyerSwapState::WaitSellerPaymentConfirmation(wait_fut)
+                },
+                BuyerSwapState::WaitSellerPaymentConfirmation(ref mut wait_fut) => unsafe {
+                    try_ready!(
+                        wait_fut.poll().map_err(|e| (-1005, ERRL!("Error waiting for seller payment confirmation {}", e)))
+                    );
+
+                    let payment_amount = dstr((*self.swap).I.alicesatoshis);
+
+                    let payment_fut = self.buyer_coin.send_buyer_payment(
+                        (now_ms() / 1000) as u32 + 1000,
+                        &(*self.swap).I.pubA0,
+                        &(*self.swap).I.pubB0,
+                        &(*self.swap).I.secretBn,
+                        payment_amount,
+                    );
+
+                    BuyerSwapState::SendBuyerPayment(payment_fut)
+                },
+                BuyerSwapState::SendBuyerPayment(ref mut payment_fut) => unsafe {
+                    let transaction = try_ready!(
+                        payment_fut.poll().map_err(|e| (-1006, ERRL!("Error sending buyer payment {}", e)))
+                    );
+
+                    let mut msg = transaction.to_raw_bytes();
+                    nn::nn_send((*self.swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                    self.buyer_payment = Some(transaction.clone());
+
+                    let wait_spend_fut = self.buyer_coin.wait_for_tx_spend(transaction.clone(), now_ms() / 1000 + 1000);
+                    BuyerSwapState::WaitBuyerPaymentSpent(wait_spend_fut)
+                },
+                BuyerSwapState::WaitBuyerPaymentSpent(ref mut wait_fut) => unsafe {
+                    match wait_fut.poll() {
+                        Ok(Async::Ready(transaction)) => {
+                            let secret = transaction.extract_secret();
+                            if secret.is_ok() {
+                                let spend_fut = self.seller_coin.send_buyer_spends_seller_payment(
+                                    self.seller_payment.clone().unwrap(),
+                                    &(*self.swap).I.myprivs[0].bytes,
+                                    &secret.unwrap(),
+                                    dstr((*self.swap).I.alicesatoshis)
+                                );
+
+                                BuyerSwapState::SpendSellerPayment(spend_fut)
+                            } else {
+                                let refund_fut = self.buyer_coin.send_buyer_refunds_payment(
+                                    self.buyer_payment.clone().unwrap(),
+                                    &(*self.swap).I.myprivs[0].bytes,
+                                    dstr((*self.swap).I.alicesatoshis)
+                                );
+
+                                BuyerSwapState::RefundBuyerPayment(refund_fut)
+                            }
+                        },
+                        Ok(Async::NotReady) => return Ok(Async::NotReady),
+                        Err(_e) => {
+                            let refund_fut = self.buyer_coin.send_buyer_refunds_payment(
+                                self.buyer_payment.clone().unwrap(),
+                                &(*self.swap).I.myprivs[0].bytes,
+                                dstr((*self.swap).I.alicesatoshis)
+                            );
+                            BuyerSwapState::RefundBuyerPayment(refund_fut)
+                        }
+                    }
+                },
+                BuyerSwapState::SpendSellerPayment(ref mut future) => {
+                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
+                    return Ok(Async::Ready(()));
+                },
+                BuyerSwapState::RefundBuyerPayment(ref mut future) => {
+                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
+                    return Ok(Async::Ready(()));
+                },
+            };
+            self.state = next_state;
+        }
+    }
+}
+
 /*
 bits256 instantdex_derivekeypair(void *ctx,bits256 *newprivp,uint8_t pubkey[33],bits256 privkey,bits256 orderhash)
 {

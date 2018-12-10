@@ -273,7 +273,6 @@ fn generate_bindings() {
             "LP_choosei_data",
             "LP_mostprivs_verify",
             "LP_mostprivs_data",
-            "basilisk_alicetxs",
             "LP_swapdata_rawtxsend",
             "LP_numconfirms",
             "LP_waitfor",
@@ -284,8 +283,6 @@ fn generate_bindings() {
             "LP_waitsend",
             "basilisk_bobscripts_set",
             "basilisk_bobdeposit_refund",
-            "LP_verify_otherfee",
-            "LP_verify_alicepayment",
             "basilisk_bobpayment_reclaim",
             "LP_swaprecv",
             "basilisk_dontforget",
@@ -299,6 +296,7 @@ fn generate_bindings() {
             "LP_utxoinfo",
             "electrum_info",
             "LP_trade",
+            "LP_swap_remember",
         ]
         .iter(),
         [
@@ -353,6 +351,10 @@ fn generate_bindings() {
             "LP_swap_critical",
             "LP_swap_endcritical",
             "INSTANTDEX_PUBKEY",
+            "BASILISK_BOBDEPOSIT",
+            "BASILISK_ALICEPAYMENT",
+            "BASILISK_BOBREFUND",
+            "BASILISK_BOBSPEND",
         ]
         .iter(),
     );

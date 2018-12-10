@@ -20,11 +20,12 @@
 //
 use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
+use futures::Future;
 use fxhash::{FxHashMap};
 use gstuff::now_ms;
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
 use lp_network::lp_queue_command;
-use lp_swap::{lp_alice_loop, lp_bob_loop};
+use lp_swap::{BuyerSwap, SellerSwap};
 use peers;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
@@ -439,10 +440,12 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
         if pair >= 0 {
             (*swap).N.pair = pair;
             let b_swap = BasiliskSwap(swap);
-            let ctx_ffi_handle = unwrap!(ctx.ffi_handle());
-            let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn(move ||
-                lp_bob_loop(ctx_ffi_handle,b_swap.0)
-            );
+            let ctx_arc = ctx.clone();
+            let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn(move || {
+                log!("Seller loop");
+                let seller_swap = SellerSwap::new(b_swap.0, ctx_arc).unwrap();
+                seller_swap.wait().unwrap();
+            });
             match loop_thread {
                 Ok(_h) => {
                     let req_json = lp::LP_quotejson(qp);
@@ -766,10 +769,11 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"started\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
             let b_swap = BasiliskSwap(swap);
-            let ctx_ffi_handle = unwrap!(ctx.ffi_handle());
+            let ctx_arc = ctx.clone();
             let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn(move || {
-                log!("Before alice loop");
-                lp_alice_loop(ctx_ffi_handle,b_swap.0);
+                log!("Buyer loop");
+                let buyer_swap = BuyerSwap::new(b_swap.0, ctx_arc).unwrap();
+                buyer_swap.wait().unwrap();
             });
             match alice_loop_thread {
                 Ok(_h) => {
