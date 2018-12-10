@@ -68,7 +68,10 @@ use futures::task::Task;
 use gstuff::{any_to_str, now_float};
 use hex::FromHex;
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
+use hyper::client::HttpConnector;
+use hyper::header::{ HeaderValue, CONTENT_TYPE };
 use hyper::rt::Stream;
+use hyper_rustls::HttpsConnector;
 use libc::{c_char, c_void, malloc, free};
 use serde_json::{self as json, Value as Json};
 use std::fmt;
@@ -85,8 +88,6 @@ use std::thread;
 use std::str;
 use tokio_core::reactor::Remote;
 
-use hyper::header::{ HeaderValue, CONTENT_TYPE };
-use hyper_rustls::HttpsConnector;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
@@ -414,17 +415,21 @@ pub fn init() {
     black_box (&*trace_name_buf());
 }
 
+lazy_static! {
+    /// Shared Hyper client.
+    pub static ref HYPER: Client<HttpsConnector<HttpConnector>> = {
+        let dns_threads = 2;
+        let https = HttpsConnector::new (dns_threads);
+        let client = Client::builder().executor (CORE.clone()) .build (https);
+        client
+    };
+}
+
 type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> + Send + 'static>;
 
 /// Executes a Hyper request, returning the response status, headers and body.
 pub fn slurp_req (request: Request<Body>) -> SlurpFut {
-    // We're doing only a single request with the `Client`,
-    // so likely a single or sequential DNS access, probably don't need to spawn more than a single DNS thread.
-    let dns_threads = 1;
-
-    let https = HttpsConnector::new (dns_threads);
-    let client = Client::builder().executor (CORE.clone()) .build (https);
-    let request_f = client.request (request);
+    let request_f = HYPER.request (request);
     let response_f = request_f.then (move |res| -> SlurpFut {
         let res = try_fus! (res);
         let status = res.status();
@@ -452,7 +457,7 @@ fn test_slurp_req() {
 
 /// Fetch URL by HTTPS and parse JSON response
 pub fn fetch_json<T>(url: &str) -> Box<Future<Item=T, Error=String>>
-    where T: serde::de::DeserializeOwned + Send + 'static {
+where T: serde::de::DeserializeOwned + Send + 'static {
     Box::new(slurp_url(url).and_then(|result| {
         // try to parse as json with serde_json
         let result = try_s!(serde_json::from_slice(&result.2));
@@ -463,7 +468,7 @@ pub fn fetch_json<T>(url: &str) -> Box<Future<Item=T, Error=String>>
 
 /// Send POST JSON HTTPS request and parse response
 pub fn post_json<T>(url: &str, json: String) -> Box<Future<Item=T, Error=String>>
-    where T: serde::de::DeserializeOwned + Send + 'static {
+where T: serde::de::DeserializeOwned + Send + 'static {
     let request = try_fus!(Request::builder()
         .method("POST")
         .uri(url)
