@@ -27,6 +27,8 @@ extern crate common;
 #[macro_use]
 extern crate downcast_rs;
 #[macro_use]
+extern crate fomat_macros;
+#[macro_use]
 extern crate futures;
 #[macro_use]
 extern crate gstuff;

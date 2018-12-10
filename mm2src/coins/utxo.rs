@@ -139,7 +139,7 @@ impl Transaction for ExtendedUtxoTx {
     }
 
     fn extract_secret(&self) -> Result<Vec<u8>, String> {
-        let script: Script = self.transaction.outputs[0].script_pubkey.clone().into();
+        let script: Script = self.transaction.inputs[0].script_sig.clone().into();
         for (i, instr) in script.iter().enumerate() {
             let instruction = instr.unwrap();
             if i == 1 {
@@ -830,15 +830,25 @@ impl ExchangeableCoin for UtxoCoinArc {
 
     fn wait_for_tx_spend(&self, transaction: BoxedTx, wait_until: u64) -> BoxedTxFut {
         let tx: Box<ExtendedUtxoTx> = downcast_fus!(transaction);
-        Box::new(WaitForTxSpend::new(
-            self.clone(),
-            tx.transaction.hash().reversed().into(),
-            0,
-            10,
-            now_ms() / 1000 + 1000,
-            10,
-            131400,
-        ))
+        let arc = self.clone();
+        Box::new(
+            self.wait_for_confirmations(tx.clone(), 1).and_then(move |_| {
+                arc.rpc_client.get_raw_transaction(
+                    tx.transaction.hash().reversed().into(),
+                    1
+                ).and_then(move |rpc_transaction| {
+                    WaitForTxSpend::new(
+                        arc,
+                        tx.transaction.hash().reversed().into(),
+                        0,
+                        1,
+                        now_ms() / 1000 + 1000,
+                        10,
+                        rpc_transaction.height,
+                    )
+                })
+            })
+        )
     }
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String> {
@@ -1060,6 +1070,7 @@ impl<'a> WaitForTxSpend<'a> {
         max_retries: u8,
         current_height: u64,
     ) -> Self {
+        log!("Start waiting for tx spend " [txid] " height: " (current_height));
         let fut = coin.rpc_client.get_block(current_height.to_string(), true);
         WaitForTxSpend {
             coin,
@@ -1134,157 +1145,16 @@ impl<'a> Future for WaitForTxSpend<'a> {
     }
 }
 
-pub fn coin_from_json() -> Result<Box<ExchangeableCoin>, String> {
-    /*    if json["etomic"].is_string() {
-        Ok(Box::new(EthCoin {
-            decimals: 18,
-            alice_contract_address: vec![],
-            bob_contract_address: vec![],
-            token_type: EthTokenType::Base
-        }))
-    } else {*/
-    let key_pair = key_pair_from_seed("spice describe gravity federal blast come thank unfair canal monkey style afraid".as_bytes());
-    let my_address = Address {
-        network: Network::Komodo,
-        hash: key_pair.public().address_hash(),
-        kind: Type::P2PKH
-    };
-    let coin = UtxoCoin {
-        decimals: 8,
-        rpc_client: UtxoRpcClient {
-            uri: "http://127.0.0.1:10271".to_owned(),
-            auth: format!("Basic {}", base64_encode("user481805103:pass97a61c8d048bcf468c6c39a314970e557f57afd1d8a5edee917fb29bafb3a43371", URL_SAFE)),
-        },
-        key_pair,
-        is_pos: false,
-        notarized: false,
-        overwintered: false,
-        p2sh_type: 0,
-        pub_type: 0,
-        rpc_password: "".to_owned(),
-        rpc_port: 0,
-        rpc_user: "".to_owned(),
-        segwit: false,
-        t_addr: 0,
-        wif_t_addr: 0,
-        wif_type: 0,
-        tx_version: 1,
-        utxo_mutex: Mutex::new(()),
-        my_address,
+#[test]
+fn test_extract_secret() {
+    let bytes = hex::decode("0100000001de7aa8d29524906b2b54ee2e0281f3607f75662cbc9080df81d1047b78e21dbc00000000d7473044022079b6c50820040b1fbbe9251ced32ab334d33830f6f8d0bf0a40c7f1336b67d5b0220142ccf723ddabb34e542ed65c395abc1fbf5b6c3e730396f15d25c49b668a1a401209da937e5609680cb30bff4a7661364ca1d1851c2506fa80c443f00a3d3bf7365004c6b6304f62b0e5cb175210270e75970bb20029b3879ec76c4acd320a8d0589e003636264d01a7d566504bfbac6782012088a9142fb610d856c19fd57f2d0cffe8dff689074b3d8a882103f368228456c940ac113e53dad5c104cf209f2f102a409207269383b6ab9b03deac68ffffffff01d0dc9800000000001976a9146d9d2b554d768232320587df75c4338ecc8bf37d88ac40280e5c").unwrap();
+    let tx: UtxoTransaction = deserialize(bytes.as_slice()).unwrap();
+    let extended = ExtendedUtxoTx {
+        transaction: tx,
+        redeem_script: vec![].into()
     };
 
-    Ok(Box::new(UtxoCoinArc(Arc::new(coin))))
-    //}
-}
-
-#[test]
-fn test_send_buyer_fee() {
-    let coin = coin_from_json().unwrap();
-    let tx = coin.send_buyer_fee(
-        &hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap(),
-        0.1
-    ).wait().unwrap();
-    // println!("{:?}", tx);
-}
-
-#[test]
-fn test_send_and_refund_buyer_payment() {
-    let coin = coin_from_json().unwrap();
-    let priv_bn = unwrap!(random_compressed_key_pair());
-    let priv_b0 = unwrap!(random_compressed_key_pair());
-    let priv_a0 = unwrap!(random_compressed_key_pair());
-    let tx = coin.send_buyer_payment(
-        (now_ms() / 1000) as u32,
-        &priv_a0.public().to_vec(),
-        &priv_b0.public().to_vec(),
-        &dhash160(&*priv_bn.private().secret).to_vec(),
-        0.001
-    ).wait().unwrap();
-
-    let refund_tx = coin.send_buyer_refunds_payment(
-        tx,
-        &priv_a0.private().secret.to_vec(),
-        0.0999
-    ).wait().unwrap();
-}
-
-#[test]
-fn test_send_and_spend_buyer_payment() {
-    let coin = coin_from_json().unwrap();
-    let priv_bn = unwrap!(random_compressed_key_pair());
-    let priv_b0 = unwrap!(random_compressed_key_pair());
-    let priv_a0 = unwrap!(random_compressed_key_pair());
-    let tx = coin.send_buyer_payment(
-        (now_ms() / 1000) as u32,
-        &priv_a0.public().to_vec(),
-        &priv_b0.public().to_vec(),
-        &dhash160(&*priv_bn.private().secret).to_vec(),
-        0.001
-    ).wait().unwrap();
-
-    let refund_tx = coin.send_seller_spends_buyer_payment(
-        tx,
-        &priv_b0.private().secret.to_vec(),
-        &priv_bn.private().secret.to_vec(),
-        0.0999
-    ).wait().unwrap();
-}
-
-#[test]
-fn test_send_and_refund_seller_payment() {
-    let coin = coin_from_json().unwrap();
-    let priv_bn = unwrap!(random_compressed_key_pair());
-    let priv_b0 = unwrap!(random_compressed_key_pair());
-    let priv_a0 = unwrap!(random_compressed_key_pair());
-    let tx = coin.send_seller_payment(
-        (now_ms() / 1000) as u32,
-        &priv_a0.public().to_vec(),
-        &priv_b0.public().to_vec(),
-        &dhash160(&*priv_bn.private().secret).to_vec(),
-        0.001
-    ).wait().unwrap();
-
-    let refund_tx = coin.send_seller_refunds_payment(
-        tx,
-        &priv_b0.private().secret.to_vec(),
-        0.0999
-    ).wait().unwrap();
-}
-
-#[test]
-fn test_send_and_spend_seller_payment() {
-    let coin = coin_from_json().unwrap();
-    let priv_bn = unwrap!(random_compressed_key_pair());
-    let priv_b0 = unwrap!(random_compressed_key_pair());
-    let priv_a0 = unwrap!(random_compressed_key_pair());
-    let tx = coin.send_seller_payment(
-        (now_ms() / 1000) as u32,
-        &priv_a0.public().to_vec(),
-        &priv_b0.public().to_vec(),
-        &dhash160(&*priv_bn.private().secret).to_vec(),
-        0.001
-    ).wait().unwrap();
-
-    let refund_tx = coin.send_buyer_spends_seller_payment(
-        tx,
-        &priv_a0.private().secret.to_vec(),
-        &priv_bn.private().secret.to_vec(),
-        0.0999
-    ).wait().unwrap();
-}
-
-#[test]
-fn test_wait_for_tx_spend() {
-    let coin = coin_from_json().unwrap();
-    let coin: Box<UtxoCoinArc> = coin.downcast().unwrap();
-    let tx = coin.rpc_client.get_raw_transaction(H256Json::from("1dcf6dfe3672740a0d23c977f8b84bebfdc43b8f797ca050f477b92d1493201a"), 1);
-    let tx = tx.wait().unwrap();
-
-    let extended_utxo_tx = Box::new(ExtendedUtxoTx {
-        transaction: unwrap!(deserialize((*tx.hex).as_slice())),
-        redeem_script: Bytes::from("82ef1f3bc853c46a40ef1ffeebc5bbe60336bce08c2aed2ceee91bed27eaade1"),
-    });
-
-    let spent = coin.wait_for_tx_spend(extended_utxo_tx, now_ms() / 1000 + 1000).wait().unwrap();
-    println!("Spent found {:?}", spent);
+    let secret = extended.extract_secret().unwrap();
+    let expected_secret = hex::decode("9da937e5609680cb30bff4a7661364ca1d1851c2506fa80c443f00a3d3bf7365").unwrap();
+    assert_eq!(expected_secret, secret);
 }

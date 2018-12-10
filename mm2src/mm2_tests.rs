@@ -585,16 +585,12 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
 
     // ensure the swap started
-    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("start swap iamalice")));
-    unwrap! (mm_bob.wait_for_log (20., &|log| log.contains ("start swap iambob")));
+    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("Start buyer swap")));
+    unwrap! (mm_bob.wait_for_log (20., &|log| log.contains ("Start seller swap")));
 
     // wait for swap to complete on both sides
-    unwrap! (mm_alice.wait_for_log (600., &|log| log.contains ("SWAP completed")));
-    unwrap! (mm_bob.wait_for_log (600., &|log| log.contains ("SWAP completed")));
-
-    // check that swap ended successfully
-    unwrap! (mm_alice.wait_for_log (5., &|log| log.contains (r#""result":"success","status":"finished""#)));
-    unwrap! (mm_bob.wait_for_log (5., &|log| log.contains (r#""result":"success","status":"finished""#)));
+    unwrap! (mm_alice.wait_for_log (600., &|log| log.contains ("Swap finished successfully")));
+    unwrap! (mm_bob.wait_for_log (600., &|log| log.contains ("Swap finished successfully")));
 
     unwrap! (mm_bob.stop());
     unwrap! (mm_alice.stop());
