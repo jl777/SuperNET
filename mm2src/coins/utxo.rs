@@ -20,13 +20,14 @@
 //
 
 use base64::{encode_config as base64_encode, URL_SAFE};
-use bitcoin_rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction};
+use bitcoin_rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
 use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
 use common::{slurp_req, dstr};
 use common::log::{LogState, StatusHandle};
+use common::lp;
 use futures::{Async, Future, Poll, Stream};
 use gstuff::now_ms;
 use hex::FromHex;
@@ -35,7 +36,7 @@ use hyper::header::{AUTHORIZATION};
 use keys::{KeyPair, Network, Private, Public, Address, Secret, Type};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
-use common::lp;
+use libc::{memcpy, c_void};
 use primitives::hash::H256;
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
@@ -135,6 +136,19 @@ impl Transaction for ExtendedUtxoTx {
 
     fn box_clone(&self) -> Box<Transaction> {
         Box::new((*self).clone())
+    }
+
+    fn extract_secret(&self) -> Result<Vec<u8>, String> {
+        let script: Script = self.transaction.inputs[0].script_sig.clone().into();
+        for (i, instr) in script.iter().enumerate() {
+            let instruction = instr.unwrap();
+            if i == 1 {
+                if instruction.opcode == Opcode::OP_PUSHBYTES_32 {
+                    return Ok(instruction.data.unwrap().to_vec());
+                }
+            }
+        }
+        ERR!("Couldn't extract secret")
     }
 }
 
@@ -262,6 +276,10 @@ impl UtxoRpcClient {
     /// https://bitcoin.org/en/developer-reference#getrawtransaction
     /// It expects that verbose param is always 1 to get deserialized transaction
     rpc_func!(pub fn get_raw_transaction(&self, txid: H256Json, verbose: u32) -> RpcRes<RpcTransaction>);
+
+    /// https://bitcoin.org/en/developer-reference#getblock
+    /// It expects that verbose param is always true to get verbose block
+    rpc_func!(pub fn get_block(&self, height: String, verbose: bool) -> RpcRes<VerboseBlockClient>);
 }
 
 #[derive(Debug)]
@@ -403,12 +421,11 @@ fn f64_to_sat(amount: f64, decimals: u8) -> u64 {
     (amount * 10u64.pow(decimals as u32) as f64) as u64
 }
 
-fn bob_deposit_script(
+fn payment_script(
     time_lock: u32,
-    priv_bn_hash: &[u8],
-    priv_am_hash: &[u8],
-    pub_b0: &Public,
-    pub_a0: &Public
+    secret_hash: &[u8],
+    pub_0: &Public,
+    pub_1: &Public
 ) -> Result<Script, String> {
     let builder = Builder::default();
     let mut wtr = vec![];
@@ -418,63 +435,16 @@ fn bob_deposit_script(
         .push_bytes(&wtr)
         .push_opcode(Opcode::OP_CHECKLOCKTIMEVERIFY)
         .push_opcode(Opcode::OP_DROP)
-        .push_opcode(Opcode::OP_SIZE)
-        .push_bytes(&[32])
-        .push_opcode(Opcode::OP_EQUALVERIFY)
-        .push_opcode(Opcode::OP_HASH160)
-        .push_bytes(priv_am_hash)
-        .push_opcode(Opcode::OP_EQUALVERIFY)
-        .push_bytes(pub_a0)
+        .push_bytes(pub_0)
         .push_opcode(Opcode::OP_CHECKSIG)
         .push_opcode(Opcode::OP_ELSE)
         .push_opcode(Opcode::OP_SIZE)
         .push_bytes(&[32])
         .push_opcode(Opcode::OP_EQUALVERIFY)
         .push_opcode(Opcode::OP_HASH160)
-        .push_bytes(priv_bn_hash)
+        .push_bytes(secret_hash)
         .push_opcode(Opcode::OP_EQUALVERIFY)
-        .push_bytes(pub_b0)
-        .push_opcode(Opcode::OP_CHECKSIG)
-        .push_opcode(Opcode::OP_ENDIF)
-        .into_script())
-}
-
-/// Creates p2sh 2 of 2 multisig script
-fn p2sh_2_of_2_multisig_script(pub_am: &Public, pub_bn: &Public) -> Script {
-    let builder = Builder::default();
-    builder
-        .push_opcode(Opcode::OP_2)
-        .push_data(pub_am)
-        .push_data(pub_bn)
-        .push_opcode(Opcode::OP_2)
-        .push_opcode(Opcode::OP_CHECKMULTISIG)
-        .into_script()
-}
-
-fn bob_payment_script(
-    time_lock: u32,
-    priv_am_hash: &[u8],
-    pub_b1: &Public,
-    pub_a0: &Public
-) -> Result<Script, String> {
-    let builder = Builder::default();
-    let mut wtr = vec![];
-    try_s!(wtr.write_u32::<LittleEndian>(time_lock));
-    Ok(builder
-        .push_opcode(Opcode::OP_IF)
-        .push_bytes(&wtr)
-        .push_opcode(Opcode::OP_CHECKLOCKTIMEVERIFY)
-        .push_opcode(Opcode::OP_DROP)
-        .push_bytes(pub_b1)
-        .push_opcode(Opcode::OP_CHECKSIG)
-        .push_opcode(Opcode::OP_ELSE)
-        .push_opcode(Opcode::OP_SIZE)
-        .push_bytes(&[32])
-        .push_opcode(Opcode::OP_EQUALVERIFY)
-        .push_opcode(Opcode::OP_HASH160)
-        .push_bytes(&priv_am_hash)
-        .push_opcode(Opcode::OP_EQUALVERIFY)
-        .push_bytes(pub_a0)
+        .push_bytes(pub_1)
         .push_opcode(Opcode::OP_CHECKSIG)
         .push_opcode(Opcode::OP_ENDIF)
         .into_script())
@@ -500,39 +470,6 @@ fn script_sig_with_pub(message: &H256, key_pair: &KeyPair) -> Result<Bytes, Stri
         .push_data(&sig_script)
         .push_data(&key_pair.public().to_vec())
         .into_bytes())
-}
-
-/// Creates signed input spending p2sh 2of2 multisig output
-fn p2sh_2_of_2_multisig_spend(
-    signer: &TransactionInputSigner,
-    input_index: usize,
-    key_pair0: &KeyPair,
-    key_pair1: &KeyPair,
-    redeem_script: Script
-) -> Result<TransactionInput, String> {
-    let script = p2sh_2_of_2_multisig_script(&key_pair0.public(), &key_pair1.public());
-    if script != redeem_script {
-        return ERR!("Resulting 2of2 script {} doesn't match expected redeem script {}", script, redeem_script);
-    }
-    let sighash = signer.signature_hash(input_index, 0, &script, SignatureVersion::Base, 1);
-
-    let sig0 = try_s!(script_sig(&sighash, &key_pair0));
-    let sig1 = try_s!(script_sig(&sighash, &key_pair1));
-
-    let builder = Builder::default();
-    let spend_script = builder
-        .push_opcode(Opcode::OP_0)
-        .push_bytes(&sig0)
-        .push_bytes(&sig1)
-        .push_bytes(&script.to_vec())
-        .into_bytes();
-
-    Ok(TransactionInput {
-        script_sig: spend_script,
-        sequence: signer.inputs[input_index].sequence,
-        script_witness: vec![],
-        previous_output: signer.inputs[input_index].previous_output.clone()
-    })
 }
 
 /// Creates signed input spending p2pkh output
@@ -617,35 +554,6 @@ fn p2sh_spending_tx(
     })
 }
 
-fn p2sh_2_of_2_spending_tx(
-    prev_transaction: ExtendedUtxoTx,
-    outputs: Vec<TransactionOutput>,
-    key_pair0: &KeyPair,
-    key_pair1: &KeyPair,
-) -> Result<UtxoTransaction, String> {
-    let unsigned = TransactionInputSigner {
-        lock_time: 0,
-        version: 1,
-        inputs: vec![UnsignedTransactionInput {
-            sequence: SEQUENCE_FINAL,
-            previous_output: OutPoint {
-                hash: prev_transaction.transaction.hash(),
-                index: 0,
-            }
-        }],
-        outputs: outputs.clone(),
-    };
-    let signed_input = try_s!(
-        p2sh_2_of_2_multisig_spend(&unsigned, 0, key_pair0, key_pair1, prev_transaction.redeem_script.into())
-    );
-    Ok(UtxoTransaction {
-        version: 1,
-        lock_time: 0,
-        inputs: vec![signed_input],
-        outputs,
-    })
-}
-
 fn address_from_raw_pubkey(pub_key: &[u8]) -> Result<Address, String> {
     Ok(Address {
         kind: Type::P2PKH,
@@ -718,7 +626,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8]) -> Result<KeyPair, String> {
 }
 
 impl ExchangeableCoin for UtxoCoinArc {
-    fn send_alice_fee(&self, fee_pub_key: &[u8], amount: f64) -> BoxedTxFut {
+    fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> BoxedTxFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key));
         let output = TransactionOutput {
             value: f64_to_sat(amount, self.decimals),
@@ -727,17 +635,20 @@ impl ExchangeableCoin for UtxoCoinArc {
         self.send_outputs_from_my_address(vec![output], vec![].into())
     }
 
-    fn send_alice_payment(&self, pub_am: &[u8], pub_bn: &[u8], amount: f64) -> BoxedTxFut {
-        /*
-        let mut pub_am_prefixed: Vec<u8> = vec![2];
-        let mut pub_bn_prefixed: Vec<u8> = vec![3];
-        pub_am_prefixed.extend_from_slice(pub_am);
-        pub_bn_prefixed.extend_from_slice(pub_bn);
-        */
-        let redeem_script = p2sh_2_of_2_multisig_script(
-            &try_fus!(Public::from_slice(pub_am)),
-            &try_fus!(Public::from_slice(pub_bn)),
-        );
+    fn send_buyer_payment(
+        &self,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        priv_bn_hash: &[u8],
+        amount: f64,
+    ) -> BoxedTxFut {
+        let redeem_script = try_fus!(payment_script(
+            time_lock,
+            priv_bn_hash,
+            &try_fus!(Public::from_slice(pub_a0)),
+            &try_fus!(Public::from_slice(pub_b0)),
+        ));
         let output = TransactionOutput {
             value: f64_to_sat(amount, self.decimals),
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
@@ -745,19 +656,17 @@ impl ExchangeableCoin for UtxoCoinArc {
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
     }
 
-    fn send_bob_deposit(
+    fn send_seller_payment(
         &self,
         time_lock: u32,
-        priv_bn_hash: &[u8],
-        priv_am_hash: &[u8],
-        pub_b0: &[u8],
         pub_a0: &[u8],
-        amount: f64
+        pub_b0: &[u8],
+        priv_bn_hash: &[u8],
+        amount: f64,
     ) -> BoxedTxFut {
-        let redeem_script = try_fus!(bob_deposit_script(
+        let redeem_script = try_fus!(payment_script(
             time_lock,
             priv_bn_hash,
-            priv_am_hash,
             &try_fus!(Public::from_slice(pub_b0)),
             &try_fus!(Public::from_slice(pub_a0)),
         ));
@@ -768,115 +677,21 @@ impl ExchangeableCoin for UtxoCoinArc {
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
     }
 
-    fn send_bob_payment(
+    fn send_seller_spends_buyer_payment(
         &self,
-        time_lock: u32,
-        priv_am_hash: &[u8],
-        pub_b1: &[u8],
-        pub_a0: &[u8],
-        amount: f64
-    ) -> BoxedTxFut {
-        let redeem_script = try_fus!(bob_payment_script(
-            time_lock,
-            priv_am_hash,
-            &try_fus!(Public::from_slice(pub_b1)),
-            &try_fus!(Public::from_slice(pub_a0)),
-        ));
-        let output = TransactionOutput {
-            value: f64_to_sat(amount, self.decimals),
-            script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
-        };
-        self.send_outputs_from_my_address(vec![output], redeem_script.into())
-    }
-
-    fn send_bob_spends_alice_payment(
-        &self,
-        a_payment_tx: BoxedTx,
-        a_priv_m: &[u8],
+        buyer_payment_tx: BoxedTx,
+        b_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
     ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(a_payment_tx);
-        let key_pair0 = try_fus!(compressed_key_pair_from_bytes(a_priv_m));
-        let key_pair1 = try_fus!(compressed_key_pair_from_bytes(b_priv_n));
-        let output = TransactionOutput {
-            value: prev_tx.transaction.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
-        let transaction = try_fus!(
-            p2sh_2_of_2_spending_tx(*prev_tx, vec![output], &key_pair0, &key_pair1)
-        );
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
-            transaction,
-            redeem_script: vec![].into()
-        }))
-    }
-
-    fn send_alice_reclaims_payment(
-        &self,
-        a_payment_tx: BoxedTx,
-        a_priv_m: &[u8],
-        b_priv_n: &[u8],
-        amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(a_payment_tx);
-        let key_pair0 = try_fus!(compressed_key_pair_from_bytes(a_priv_m));
-        let key_pair1 = try_fus!(compressed_key_pair_from_bytes(b_priv_n));
-        let output = TransactionOutput {
-            value: prev_tx.transaction.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
-        let transaction = try_fus!(
-            p2sh_2_of_2_spending_tx(*prev_tx, vec![output], &key_pair0, &key_pair1)
-        );
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
-            transaction,
-            redeem_script: vec![].into()
-        }))
-    }
-
-    fn send_bob_reclaims_payment(
-        &self,
-        b_payment_tx: BoxedTx,
-        b_priv_1: &[u8],
-        amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(b_payment_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_1));
-        let output = TransactionOutput {
-            value: prev_tx.transaction.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
-        let script_data = Builder::default().push_opcode(Opcode::OP_1).into_script();
-        let transaction = try_fus!(p2sh_spending_tx(
-            *prev_tx,
-            vec![output],
-            script_data,
-            &key_pair,
-            (now_ms() / 1000) as u32,
-            SEQUENCE_FINAL - 1
-        ));
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
-            transaction,
-            redeem_script: vec![].into()
-        }))
-    }
-
-    fn send_alice_spends_bob_payment(
-        &self,
-        b_payment_tx: BoxedTx,
-        a_priv_m: &[u8],
-        a_priv_0: &[u8],
-        amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(b_payment_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0));
+        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(buyer_payment_tx);
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
         };
         let script_data = Builder::default()
-            .push_data(&a_priv_m)
+            .push_data(b_priv_n)
             .push_opcode(Opcode::OP_0)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
@@ -893,23 +708,23 @@ impl ExchangeableCoin for UtxoCoinArc {
         }))
     }
 
-    fn send_bob_refunds_deposit(
+    fn send_buyer_spends_seller_payment(
         &self,
-        b_deposit_tx: BoxedTx,
+        seller_payment_tx: BoxedTx,
+        a_priv_0: &[u8],
         b_priv_n: &[u8],
-        b_priv_0: &[u8],
         amount: f64
     ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(b_deposit_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0));
+        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(seller_payment_tx);
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
         };
         let script_data = Builder::default()
-                            .push_data(&b_priv_n)
-                            .push_opcode(Opcode::OP_0)
-                            .into_script();
+            .push_data(b_priv_n)
+            .push_opcode(Opcode::OP_0)
+            .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
             *prev_tx,
             vec![output],
@@ -924,21 +739,19 @@ impl ExchangeableCoin for UtxoCoinArc {
         }))
     }
 
-    fn send_alice_claims_deposit(
+    fn send_buyer_refunds_payment(
         &self,
-        b_deposit_tx: BoxedTx,
-        a_priv_m: &[u8],
+        buyer_payment_tx: BoxedTx,
         a_priv_0: &[u8],
         amount: f64
     ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(b_deposit_tx);
+        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(buyer_payment_tx);
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
         };
         let script_data = Builder::default()
-            .push_data(&a_priv_m)
             .push_opcode(Opcode::OP_1)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
@@ -955,9 +768,36 @@ impl ExchangeableCoin for UtxoCoinArc {
         }))
     }
 
-    fn get_balance(&self) -> f64 {
-        0.
+    fn send_seller_refunds_payment(
+        &self,
+        seller_payment_tx: BoxedTx,
+        b_priv_0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut {
+        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(seller_payment_tx);
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0));
+        let output = TransactionOutput {
+            value: prev_tx.transaction.outputs[0].value - 1000,
+            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
+        };
+        let script_data = Builder::default()
+            .push_opcode(Opcode::OP_1)
+            .into_script();
+        let transaction = try_fus!(p2sh_spending_tx(
+            *prev_tx,
+            vec![output],
+            script_data,
+            &key_pair,
+            (now_ms() / 1000) as u32,
+            SEQUENCE_FINAL - 1
+        ));
+        self.send_raw_tx(Box::new(ExtendedUtxoTx {
+            transaction,
+            redeem_script: vec![].into()
+        }))
     }
+
+    fn get_balance(&self) -> f64 { unimplemented!() }
 
     fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut {
         let tx: Box<ExtendedUtxoTx> = downcast_fus!(tx);
@@ -972,16 +812,43 @@ impl ExchangeableCoin for UtxoCoinArc {
         )
     }
 
-    fn wait_for_confirmations(&self, tx: BoxedTx) -> Box<dyn Future<Item=(), Error=String>> {
+    fn wait_for_confirmations(
+        &self,
+        tx: BoxedTx,
+        confirmations: i32,
+    ) -> Box<dyn Future<Item=(), Error=String>> {
         let tx: Box<ExtendedUtxoTx> = downcast_fus!(tx);
         Box::new(WaitForUtxoTxConfirmations::new(
             self.clone(),
             tx.transaction.hash().reversed().into(),
             10,
             now_ms() / 1000 + 1000,
-            1,
+            confirmations,
             10
         ))
+    }
+
+    fn wait_for_tx_spend(&self, transaction: BoxedTx, wait_until: u64) -> BoxedTxFut {
+        let tx: Box<ExtendedUtxoTx> = downcast_fus!(transaction);
+        let arc = self.clone();
+        Box::new(
+            self.wait_for_confirmations(tx.clone(), 1).and_then(move |_| {
+                arc.rpc_client.get_raw_transaction(
+                    tx.transaction.hash().reversed().into(),
+                    1
+                ).and_then(move |rpc_transaction| {
+                    WaitForTxSpend::new(
+                        arc,
+                        tx.transaction.hash().reversed().into(),
+                        0,
+                        1,
+                        now_ms() / 1000 + 1000,
+                        10,
+                        rpc_transaction.height,
+                    )
+                })
+            })
+        )
     }
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String> {
@@ -1072,6 +939,11 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<Box<Exchangea
     Ok(Box::new(UtxoCoinArc(Arc::new(coin))))
 }
 
+/// Temporary in memory LogState instance, consider replacing with LogState instance from MmCtx
+lazy_static!(
+    pub static ref MEMORY_LOG: LogState = LogState::in_memory();
+);
+
 enum WaitForConfirmationState {
     WaitingForInterval,
     CheckingConfirmations(RpcRes<RpcTransaction>),
@@ -1083,16 +955,11 @@ struct WaitForUtxoTxConfirmations<'a> {
     interval: Interval,
     wait_until: u64,
     status: StatusHandle<'a>,
-    confirmations: u32,
+    confirmations: i32,
     retries: u8,
     max_retries: u8,
     state: WaitForConfirmationState
 }
-
-/// Temporary in memory LogState instance, consider replacing with LogState instance from MmCtx
-lazy_static!(
-    pub static ref MEMORY_LOG: LogState = LogState::in_memory();
-);
 
 impl<'a> WaitForUtxoTxConfirmations<'a> {
     pub fn new(
@@ -1100,7 +967,7 @@ impl<'a> WaitForUtxoTxConfirmations<'a> {
         txid: H256Json,
         poll_interval: u64,
         wait_until: u64,
-        confirmations: u32,
+        confirmations: i32,
         max_retries: u8,
     ) -> Self {
         WaitForUtxoTxConfirmations {
@@ -1143,7 +1010,7 @@ impl<'a> Future for WaitForUtxoTxConfirmations<'a> {
                     let tx = future.poll();
                     match tx {
                         Ok(Async::Ready(transaction)) => {
-                            if transaction.confirmations >= self.confirmations {
+                            if transaction.confirmations as i32 >= self.confirmations {
                                 self.status.append("Reached required confirmations");
                                 return Ok(Async::Ready(()))
                             } else {
@@ -1174,55 +1041,120 @@ impl<'a> Future for WaitForUtxoTxConfirmations<'a> {
     }
 }
 
-#[test]
-fn test_alice_payment_script() {
-    let expected_script_bytes : Bytes = "522102a80462ede85bddee6b3f6c92fe9380b1b1c2f85ab4dbbb100e8a204c7ce74740210388be77e8919562fee28b4e3d6150c39e3cf6c5b39da043aaa977d7dc432858e252ae".into();
+enum WaitForTxSpendState {
+    WaitForInterval,
+    GetBlockCount(RpcRes<u64>),
+    GetBlock(RpcRes<VerboseBlockClient>),
+}
 
-    let pub_am = Public::from_slice(&<[u8; 33]>::from_hex("02a80462ede85bddee6b3f6c92fe9380b1b1c2f85ab4dbbb100e8a204c7ce74740").unwrap()).unwrap();
-    let pub_bn = Public::from_slice(&<[u8; 33]>::from_hex("0388be77e8919562fee28b4e3d6150c39e3cf6c5b39da043aaa977d7dc432858e2").unwrap()).unwrap();
+struct WaitForTxSpend<'a> {
+    coin: UtxoCoinArc,
+    txid: H256Json,
+    vout: u32,
+    interval: Interval,
+    wait_until: u64,
+    status: StatusHandle<'a>,
+    retries: u8,
+    max_retries: u8,
+    state: WaitForTxSpendState,
+    current_height: u64,
+}
 
-    let script = p2sh_2_of_2_multisig_script(&pub_am, &pub_bn);
+impl<'a> WaitForTxSpend<'a> {
+    pub fn new(
+        coin: UtxoCoinArc,
+        txid: H256Json,
+        vout: u32,
+        poll_interval: u64,
+        wait_until: u64,
+        max_retries: u8,
+        current_height: u64,
+    ) -> Self {
+        log!("Start waiting for tx spend " [txid] " height: " (current_height));
+        let fut = coin.rpc_client.get_block(current_height.to_string(), true);
+        WaitForTxSpend {
+            coin,
+            status: MEMORY_LOG.status(&[&"transaction", &(format!("{:?}:{}", txid, vout), "waiting")], "Waiting for tx spend..."),
+            txid,
+            vout,
+            interval: Timer::default().interval(Duration::from_secs(poll_interval)),
+            wait_until,
+            retries: 0,
+            max_retries,
+            state: WaitForTxSpendState::GetBlock(fut),
+            current_height
+        }
+    }
+}
 
-    assert_eq!(expected_script_bytes, script.to_bytes());
+impl<'a> Future for WaitForTxSpend<'a> {
+    type Item = BoxedTx;
+    type Error = String;
+
+    fn poll(&mut self) -> Poll<BoxedTx, String> {
+        loop {
+            let next_state = match self.state {
+                WaitForTxSpendState::WaitForInterval => {
+                    if now_ms() / 1000 > self.wait_until {
+                        return ERR!("Waited too long until {}, aborted", self.wait_until);
+                    }
+                    let _ready = try_ready!(
+                        self.interval
+                            .poll()
+                            .map_err(|e| {
+                                ERRL!("{}", e)
+                            })
+                    );
+                    WaitForTxSpendState::GetBlockCount(
+                        self.coin.rpc_client.get_block_count()
+                    )
+                },
+                WaitForTxSpendState::GetBlockCount(ref mut future) => {
+                    let height = try_ready!(future.poll());
+                    if self.current_height < height {
+                        self.current_height += 1;
+                        let get_block_fut = self.coin.rpc_client.get_block(self.current_height.to_string(), true);
+                        WaitForTxSpendState::GetBlock(get_block_fut)
+                    } else {
+                        WaitForTxSpendState::WaitForInterval
+                    }
+                },
+                WaitForTxSpendState::GetBlock(ref mut future) => {
+                    let block = try_ready!(future.poll());
+                    for tx in block.tx.iter() {
+                        // TODO replace it with poll() per every Future later
+                        let transaction = match self.coin.rpc_client.get_raw_transaction(tx.clone(), 1).wait() {
+                            Ok(tx) => tx,
+                            Err(_e) => continue
+                        };
+                        for input in transaction.vin.iter() {
+                            if input.txid == self.txid && input.vout == self.vout {
+                                let result = Box::new(ExtendedUtxoTx {
+                                    transaction: try_s!(deserialize(transaction.hex.as_slice()).map_err(|e| format!("{:?}", e))),
+                                    redeem_script: vec![].into()
+                                });
+                                return Ok(Async::Ready(result))
+                            }
+                        }
+                    }
+                    WaitForTxSpendState::WaitForInterval
+                },
+            };
+            self.state = next_state;
+        }
+    }
 }
 
 #[test]
-fn test_bob_deposit_script() {
-    // bob deposit BEER tx: http://beer.komodochainz.info/tx/641cca6dd5806c1f8375fd5ddc24d8b9d1e8575ec73e43bb606cfa723d0fc7c8
-    // bob deposit refund BEER tx: http://beer.komodochainz.info/tx/d254f9e1765273b3368222410ffd6754bf937b98b9894be5c9a8297d0ae64a9b
-    let script_bytes : Bytes = "6304bb85f55ab17582012088a914d33356c6165e61f1f302a0a39a1b248842efb579882102e3b4015ba6b9c00fe87bd513b27f7857c8f95ec2e5c94bf6586d5d9e1415192fac6782012088a91459772344029b42e8bbd104dedc3bcebef12e46b088210372246d34f81a8e0ec8a11bf3ea81835bf8d33ef5e5059b8d64d075408d1d4554ac68".into();
+fn test_extract_secret() {
+    let bytes = hex::decode("0100000001de7aa8d29524906b2b54ee2e0281f3607f75662cbc9080df81d1047b78e21dbc00000000d7473044022079b6c50820040b1fbbe9251ced32ab334d33830f6f8d0bf0a40c7f1336b67d5b0220142ccf723ddabb34e542ed65c395abc1fbf5b6c3e730396f15d25c49b668a1a401209da937e5609680cb30bff4a7661364ca1d1851c2506fa80c443f00a3d3bf7365004c6b6304f62b0e5cb175210270e75970bb20029b3879ec76c4acd320a8d0589e003636264d01a7d566504bfbac6782012088a9142fb610d856c19fd57f2d0cffe8dff689074b3d8a882103f368228456c940ac113e53dad5c104cf209f2f102a409207269383b6ab9b03deac68ffffffff01d0dc9800000000001976a9146d9d2b554d768232320587df75c4338ecc8bf37d88ac40280e5c").unwrap();
+    let tx: UtxoTransaction = deserialize(bytes.as_slice()).unwrap();
+    let extended = ExtendedUtxoTx {
+        transaction: tx,
+        redeem_script: vec![].into()
+    };
 
-    let time_lock : u32 = 1526039995;
-
-    let pub_b0 = Public::from_slice(&<[u8; 33]>::from_hex("0372246d34f81a8e0ec8a11bf3ea81835bf8d33ef5e5059b8d64d075408d1d4554").unwrap()).unwrap();
-    let pub_a0 = Public::from_slice(&<[u8; 33]>::from_hex("02e3b4015ba6b9c00fe87bd513b27f7857c8f95ec2e5c94bf6586d5d9e1415192f").unwrap()).unwrap();
-    let script = bob_deposit_script(
-        time_lock,
-        &hex::decode("59772344029b42e8bbd104dedc3bcebef12e46b0").unwrap(),
-        &hex::decode("d33356c6165e61f1f302a0a39a1b248842efb579").unwrap(),
-        &pub_b0,
-        &pub_a0
-    );
-
-    assert_eq!(script_bytes, script.unwrap().to_bytes());
-}
-
-#[test]
-fn test_bob_payment_script() {
-    // bob payment BEER tx: http://beer.komodochainz.info/tx/5f046313978dde48da124ca221cd320034b8ff8c71ceb0ae522d539b3f6d26b0
-    // bob payment spent by Alice tx: http://beer.komodochainz.info/tx/2858c96be0025c459915e7023928a581795666f9eaf7943b72aa3babf6172867
-    let script_bytes : Bytes = "6304d980f95ab17521031ab497fd772682c4afe1b6aa2438f4bc6f087f5edf57529370d5032340dca07cac6782012088a914fe945eff4cb6f839d247817b556ef083ce852960882102577fda0fc89e681b87bd692355eeaad69b4a5ba96bbec12f967ca4118a49af92ac68".into();
-
-    let time_lock : u32 = 1526300889;
-
-    let pub_b1 = Public::from_slice(&<[u8; 33]>::from_hex("031ab497fd772682c4afe1b6aa2438f4bc6f087f5edf57529370d5032340dca07c").unwrap()).unwrap();
-    let pub_a0 = Public::from_slice(&<[u8; 33]>::from_hex("02577fda0fc89e681b87bd692355eeaad69b4a5ba96bbec12f967ca4118a49af92").unwrap()).unwrap();
-    let script = bob_payment_script(
-        time_lock,
-        &hex::decode("fe945eff4cb6f839d247817b556ef083ce852960").unwrap(),
-        &pub_b1,
-        &pub_a0
-    );
-
-    assert_eq!(script_bytes, script.unwrap().to_bytes());
+    let secret = extended.extract_secret().unwrap();
+    let expected_secret = hex::decode("9da937e5609680cb30bff4a7661364ca1d1851c2506fa80c443f00a3d3bf7365").unwrap();
+    assert_eq!(expected_secret, secret);
 }

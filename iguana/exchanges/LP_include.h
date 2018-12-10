@@ -255,11 +255,12 @@ struct basilisk_swapinfo
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
     int64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee,alicerealsat,bobrealsat;
     
-    bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
+    bits256 myprivs[2],mypubs[2],otherpubs[2],privAm,privBn;
     uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate,pad2;
     uint8_t secretAm[20],secretBn[20];
     uint8_t secretAm256[32],secretBn256[32];
+    uint8_t pubA0[33],pubA1[33],pubAm[33],pubB0[33],pubB1[33],pubBn[33];
     uint8_t userdata_aliceclaim[256],userdata_aliceclaimlen;
     uint8_t userdata_alicereclaim[256],userdata_alicereclaimlen;
     uint8_t userdata_alicespend[256],userdata_alicespendlen;
@@ -284,12 +285,13 @@ static char *txnames[] = { "myfee", "otherfee", "bobdeposit", "alicepayment", "b
 
 struct LP_swap_remember
 {
-    bits256 pubA0,pubB0,pubB1,privAm,privBn,paymentspent,Apaymentspent,depositspent,myprivs[2],txids[sizeof(txnames)/sizeof(*txnames)];
+    bits256 privAm,privBn,paymentspent,Apaymentspent,depositspent,myprivs[2],txids[sizeof(txnames)/sizeof(*txnames)];
     uint64_t Atxfee,Btxfee,srcamount,destamount,aliceid,alicerealsat,bobrealsat;
     int64_t values[sizeof(txnames)/sizeof(*txnames)];
     uint32_t finishtime,tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
+    uint8_t pubA0[33],pubB0[33],pubB1[33];
     char uuidstr[65],Agui[65],Bgui[65],gui[65],src[65],dest[65],bobtomic[128],alicetomic[128],etomicsrc[65],etomicdest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)];
     char eth_tx_ids[sizeof(txnames)/sizeof(*txnames)][75];
     int64_t eth_values[sizeof(txnames)/sizeof(*txnames)];
@@ -811,7 +813,6 @@ double LP_trades_bobprice(double *bidp,double *askp,struct LP_quoteinfo *qp);
 int32_t LP_RTmetrics_blacklisted(bits256 pubkey);
 int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey);
 int32_t LP_nanobind(void *ctx,char *pairstr);
-void LP_bobloop(uint32_t ctx, struct basilisk_swap *_swap);
 cJSON *LP_instantdex_txids(int32_t appendonly,char *coinaddr);
 int32_t LP_etomicsymbol(char *activesymbol,char *etomic,char *symbol);
 int32_t LP_calc_waittimeout(char *symbol);
@@ -824,7 +825,6 @@ int32_t LP_choosei_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
 int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen);
 int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
 int32_t LP_mostprivs_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen);
-int32_t basilisk_alicetxs(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen);
 int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen));
 int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
 int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
@@ -832,9 +832,9 @@ void basilisk_swap_finished(struct basilisk_swap *swap);
 int32_t LP_waitsend(uint32_t ctx,char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen));
 int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay);
-int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
-int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay);
 int32_t LP_swaprecv(int32_t pairsock,uint8_t *data, struct basilisk_swap *swap,int32_t timeout);
 void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid);
+void rswap_bob_spends_a_payment(struct LP_swap_remember *rswap);
+void rswap_bob_refunds_deposit(struct LP_swap_remember *rswap);
 #endif

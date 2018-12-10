@@ -176,7 +176,7 @@ extern uint8_t get_erc20_decimals(char *token_address, void *eth_client);
 // returns satoshis, not wei!
 extern uint64_t get_erc20_allowance(char *owner, char *spender, char *token_address, uint8_t set_decimals, void *eth_client);
 
-void uint8arrayToHex(char *dest, uint8_t *input, int len);
+char *uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
 extern uint64_t wei_to_satoshi(char *wei);
 

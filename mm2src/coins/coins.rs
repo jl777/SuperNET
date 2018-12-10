@@ -27,12 +27,15 @@ extern crate common;
 #[macro_use]
 extern crate downcast_rs;
 #[macro_use]
+extern crate fomat_macros;
+#[macro_use]
 extern crate futures;
 #[macro_use]
 extern crate gstuff;
 extern crate hex;
 extern crate hyper;
 extern crate keys;
+extern crate libc;
 #[macro_use]
 extern crate lazy_static;
 extern crate primitives;
@@ -78,6 +81,8 @@ pub trait Transaction: Downcast + Debug {
     fn to_raw_bytes(&self) -> Vec<u8>;
 
     fn box_clone(&self) -> Box<Transaction>;
+
+    fn extract_secret(&self) -> Result<Vec<u8>, String>;
 }
 impl_downcast!(Transaction);
 
@@ -98,73 +103,53 @@ pub type BoxedTxFut = Box<dyn Future<Item=BoxedTx, Error=String>>;
 /// Amounts are f64, it's responsibility of particular implementation to convert it to
 /// integer amount depending on decimals.
 pub trait ExchangeableCoin: Downcast + Debug {
-    fn send_alice_fee(&self, fee_addr: &[u8], amount: f64) -> BoxedTxFut;
+    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> BoxedTxFut;
 
-    fn send_alice_payment(&self, pub_am: &[u8], pub_bn: &[u8], amount: f64) -> BoxedTxFut;
-
-    fn send_bob_deposit(
+    fn send_buyer_payment(
         &self,
         time_lock: u32,
-        priv_bn_hash: &[u8],
-        priv_am_hash: &[u8],
+        pub_a0: &[u8],
         pub_b0: &[u8],
-        pub_a0: &[u8],
-        amount: f64
+        priv_bn_hash: &[u8],
+        amount: f64,
     ) -> BoxedTxFut;
 
-    fn send_bob_payment(
+    fn send_seller_payment(
         &self,
         time_lock: u32,
-        priv_am_hash: &[u8],
-        pub_b1: &[u8],
         pub_a0: &[u8],
+        pub_b0: &[u8],
+        priv_bn_hash: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
-    fn send_bob_spends_alice_payment(
+    fn send_seller_spends_buyer_payment(
         &self,
-        a_payment_tx: BoxedTx,
-        a_priv_m: &[u8],
-        b_priv_n: &[u8],
-        amount: f64
-    ) -> BoxedTxFut;
-
-    fn send_alice_reclaims_payment(
-        &self,
-        a_payment_tx: BoxedTx,
-        a_priv_m: &[u8],
-        b_priv_n: &[u8],
-        amount: f64
-    ) -> BoxedTxFut;
-
-    fn send_bob_reclaims_payment(
-        &self,
-        b_payment_tx: BoxedTx,
-        b_priv_1: &[u8],
-        amount: f64
-    ) -> BoxedTxFut;
-
-    fn send_alice_spends_bob_payment(
-        &self,
-        b_payment_tx: BoxedTx,
-        a_priv_m: &[u8],
-        a_priv_0: &[u8],
-        amount: f64
-    ) -> BoxedTxFut;
-
-    fn send_bob_refunds_deposit(
-        &self,
-        b_deposit_tx: BoxedTx,
-        b_priv_n: &[u8],
+        buyer_payment_tx: BoxedTx,
         b_priv_0: &[u8],
+        b_priv_n: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
-    fn send_alice_claims_deposit(
+    fn send_buyer_spends_seller_payment(
         &self,
-        b_deposit_tx: BoxedTx,
-        a_priv_m: &[u8],
+        seller_payment_tx: BoxedTx,
         a_priv_0: &[u8],
+        b_priv_n: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_buyer_refunds_payment(
+        &self,
+        buyer_payment_tx: BoxedTx,
+        a_priv_0: &[u8],
+        amount: f64
+    ) -> BoxedTxFut;
+
+    fn send_seller_refunds_payment(
+        &self,
+        seller_payment_tx: BoxedTx,
+        b_priv_0: &[u8],
         amount: f64
     ) -> BoxedTxFut;
 
@@ -172,7 +157,13 @@ pub trait ExchangeableCoin: Downcast + Debug {
 
     fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut;
 
-    fn wait_for_confirmations(&self, tx: BoxedTx) -> Box<dyn Future<Item=(), Error=String>>;
+    fn wait_for_confirmations(
+        &self,
+        tx: BoxedTx,
+        confirmations: i32,
+    ) -> Box<dyn Future<Item=(), Error=String>>;
+
+    fn wait_for_tx_spend(&self, transaction: BoxedTx, wait_until: u64) -> BoxedTxFut;
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String>;
 }

@@ -701,7 +701,7 @@ uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *er
 }
 
 
-void uint8arrayToHex(char *dest, uint8_t *input, int len)
+char *uint8arrayToHex(char *dest, uint8_t *input, int len)
 {
     strcpy(dest, "0x");
     for (int i = 0; i < len; i++)
@@ -709,6 +709,7 @@ void uint8arrayToHex(char *dest, uint8_t *input, int len)
         sprintf(dest + (i + 1) * 2, "%02x", input[i]);
     }
     dest[(len + 1) * 2] = '\0';
+    return dest;
 }
 
 void satoshisToWei(char *dest, uint64_t input)

@@ -20,6 +20,7 @@
 //
 use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
+use futures::Future;
 use gstuff::now_ms;
 use hashbrown::hash_map::{Entry, HashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
@@ -33,7 +34,7 @@ use std::time::Duration;
 use std::thread;
 
 use crate::lp_network::lp_queue_command;
-use crate::lp_swap::{lp_alice_loop, lp_bob_loop};
+use crate::lp_swap::{BuyerSwap, SellerSwap};
 
 #[link="c"]
 extern {
@@ -443,7 +444,15 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                 let ctx = ctx.clone();
                 let alice = (*qp).desthash;
                 let session = String::from (unwrap! (CStr::from_ptr (pair_str.as_ptr()) .to_str()));
-                move || lp_bob_loop (ctx, b_swap.0, alice, session)
+                log!("Seller loop");
+                move || {
+                    let seller_swap = SellerSwap::new(b_swap.0, ctx, alice, session).unwrap();
+                    log!("Start seller swap");
+                    match seller_swap.wait() {
+                        Ok(_) => log!("Swap finished successfully"),
+                        Err(e) => log!("Swap finished with error " [e])
+                    };
+                }
             });
             match loop_thread {
                 Ok(_h) => {
@@ -767,11 +776,19 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"started\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
             let b_swap = BasiliskSwap(swap);
+            let ctx_arc = ctx.clone();
             let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn({
                 let ctx = ctx.clone();
                 let bob = (*qp).srchash;
                 let session = String::from (unwrap! (CStr::from_ptr (pairstr) .to_str()));
-                move || lp_alice_loop (ctx, b_swap.0, bob, session)
+                move || {
+                    let buyer_swap = BuyerSwap::new(b_swap.0, ctx_arc, bob, session).unwrap();
+                    log!("Start buyer swap");
+                    match buyer_swap.wait() {
+                        Ok(_) => log!("Swap finished successfully"),
+                        Err(e) => log!("Swap finished with error " [e])
+                    };
+                }
             });
             match alice_loop_thread {
                 Ok(_h) => {

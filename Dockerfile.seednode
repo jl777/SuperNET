@@ -1,8 +1,6 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 USER root
-RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls libcurl4-openssl-dev gdb dnsutils iproute2
-RUN curl -O http://mirrors.edge.kernel.org/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4.1_amd64.deb
-RUN dpkg -i libssl1.1_1.1.0g-2ubuntu4.1_amd64.deb
+RUN apt-get update && apt-get install -y rinetd curl libcurl3-gnutls libcurl4-openssl-dev gdb dnsutils iproute2 libboost-dev libboost-system-dev
 
 RUN useradd -u 111 jenkins
 USER jenkins
