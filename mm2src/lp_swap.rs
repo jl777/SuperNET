@@ -19,99 +19,40 @@
 //
 use coins::{BoxedTx, ExchangeableCoin};
 use coins::utxo::{coin_from_iguana_info};
-use common::{bits256, dstr, nn};
+use common::{bits256, dstr};
 use common::mm_ctx::MmArc;
 use crc::crc32;
 use futures::{Future};
 use gstuff::now_ms;
-use libc::{c_void};
 
 use crate::lp;
 
-// included from basilisk.c
-/* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
- https://bitcointalk.org/index.php?topic=1364951
- Tier Nolan's approach is followed with the following changes:
- a) instead of cutting 1000 keypairs, only INSTANTDEX_DECKSIZE are a
- b) instead of sending the entire 256 bits, it is truncated to 64 bits. With odds of collision being so low, it is dwarfed by the ~0.1% insurance factor.
- c) D is set to ~100x the insurance rate of 1/777 12.87% + BTC amount
- d) insurance is added to Bob's payment, which is after the deposit and bailin
- e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
- */
-
-/*
- both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
- 
- 
- Bob deposit:
- OP_IF
- <now + LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
- OP_ELSE
- OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
- OP_ENDIF
- 
- Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
-
- Bob paytx:
- OP_IF
- <now + LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
- OP_ELSE
- OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
- OP_ENDIF
- 
- Naming convention are pubAi are alice's pubkeys (seems only pubA0 and not pubA1)
- pubBi are Bob's pubkeys
- 
- privN is Bob's privkey from the cut and choose deck as selected by Alice
- privM is Alice's counterpart
- pubN and pubM are the corresponding pubkeys for these chosen privkeys
- 
- Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
- 
- Based on https://gist.github.com/markblundeberg/7a932c98179de2190049f5823907c016 and to enable bob to spend alicepayment when alice does a claim for bob deposit, the scripts are changed to the following:
- 
- Bob deposit:
- OP_IF
- OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
- OP_ELSE
- OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
- OP_ENDIF
- 
- Bob paytx:
- OP_IF
- <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
- OP_ELSE
- OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
- OP_ENDIF
-
- */
-
-/*
- Bob sends bobdeposit and waits for alicepayment to confirm before sending bobpayment
- Alice waits for bobdeposit to confirm and sends alicepayment
- 
- Alice spends bobpayment immediately divulging privAm
- Bob spends alicepayment immediately after getting privAm and divulges privBn
- 
- Bob will spend bobdeposit after end of trade or INSTANTDEX_LOCKTIME, divulging privBn
- Alice spends alicepayment as soon as privBn is seen
- 
- Bob will spend bobpayment after INSTANTDEX_LOCKTIME
- Alice spends bobdeposit in 2*INSTANTDEX_LOCKTIME
- */
-
-//Bobdeposit includes a covered put option for alicecoin, duration INSTANTDEX_LOCKTIME
-//alicepayment includes a covered call option for alicecoin, duration (2*INSTANTDEX_LOCKTIME - elapsed)
-
-
-/* in case of following states, some funds remain unclaimable, but all identified cases are due to one or both sides not spending when they were the only eligible party:
- 
- Bob failed to claim deposit during exclusive period and since alice put in the claim, the alicepayment is unspendable. if alice is nice, she can send privAm to Bob.
- Apaymentspent.(0000000000000000000000000000000000000000000000000000000000000000) alice.0 bob.0
- paymentspent.(f91da4e001360b95276448e7b01904d9ee4d15862c5af7f5c7a918df26030315) alice.0 bob.1
- depositspent.(f34e04ad74e290f63f3d0bccb7d0d50abfa54eea58de38816fdc596a19767add) alice.1 bob.0
- 
- */
+/// At the end of 2018 most UTXO coins have BIP65 (https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki).
+/// The previous swap protocol discussions took place at 2015-2016 when there were just a few
+/// projects that implemented CLTV opcode support:
+/// https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
+/// https://bitcointalk.org/index.php?topic=1364951
+/// So the Tier Nolan approach is a bit outdated, the main purpose was to allow swapping of a coin
+/// that doesn't have CLTV at least as Alice side (as APayment is 2of2 multisig).
+/// Nowadays the protocol can be simplified to the following (UTXO coins, BTC and forks):
+///
+/// 1. AFee: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
+///
+/// 2. BPayment:
+/// OP_IF
+/// <now + LOCKTIME*2> OP_CLTV OP_DROP <bob_pubB0> OP_CHECKSIG
+/// OP_ELSE
+/// OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+/// OP_ENDIF
+///
+/// 3. APayment:
+/// OP_IF
+/// <now + LOCKTIME> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+/// OP_ELSE
+/// OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+/// OP_ENDIF
+///
+///
 
 /*
 #define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
@@ -994,9 +935,20 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 AtomicSwapState::WaitBuyerFee
             },
-            AtomicSwapState::WaitBuyerFee => unsafe {
-                let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
-                let _buyer_fee = match swap.buyer_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]) {
+            AtomicSwapState::WaitBuyerFee => {
+                let recv_subject = fomat!("buyer-fee@" (swap.session));
+                log!("Waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        move |payload: &[u8]| -> bool {
+                            let crc = crc32::checksum_ieee (payload);
+                            log! ("Received buyer fee payload of " (payload.len()) " bytes (crc " (crc) ")");
+                            true
+                        }
+                    })) .wait());
+
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+
+                let _buyer_fee = match swap.buyer_coin.tx_from_raw_bytes(&payload) {
                     Ok(tx) => tx,
                     Err(e) => return Err((-1, ERRL!("{}", e))),
                 };
@@ -1016,15 +968,29 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 let transaction = payment_fut.wait().map_err(|e| (-2006, ERRL!("Error sending seller payment {}", e)))?;
 
-                let mut msg = transaction.to_raw_bytes();
-                nn::nn_send((*swap.basilisk_swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                let msg = transaction.to_raw_bytes();
+                let send_subject = fomat!("seller-payment@" (swap.session));
+                let crc = crc32::checksum_ieee(&msg);
+                log!("Seller payment: sending '" (send_subject) "' of " (msg.len()) " bytes (crc " (crc) ") …");
+                peers::send(&swap.ctx, swap.buyer, send_subject.as_bytes(), msg);
                 swap.seller_payment = Some(transaction.clone());
 
                 AtomicSwapState::WaitBuyerPayment
             },
             AtomicSwapState::WaitBuyerPayment => unsafe {
-                let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
-                let buyer_payment = match swap.buyer_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]) {
+                let recv_subject = fomat!("buyer-payment@" (swap.session));
+                log!("Waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        move |payload: &[u8]| -> bool {
+                            let crc = crc32::checksum_ieee (payload);
+                            log! ("Received buyer payment payload of " (payload.len()) " bytes (crc " (crc) ")");
+                            true
+                        }
+                    })) .wait());
+
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+
+                let buyer_payment = match swap.buyer_coin.tx_from_raw_bytes(&payload) {
                     Ok(tx) => tx,
                     Err(e) => return Err((-1, ERRL!("{}", e))),
                 };
@@ -1141,14 +1107,27 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let fee_tx = swap.buyer_coin.send_buyer_fee(&fee_addr_pub_key, fee_amount).wait();
                 let transaction = fee_tx.map_err(|e| (-1004, ERRL!("Error sending buyer fee {}", e)))?;
 
-                let mut msg = transaction.to_raw_bytes();
-                nn::nn_send((*swap.basilisk_swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                let msg = transaction.to_raw_bytes();
+                let send_subject = fomat!("buyer-fee@" (swap.session));
+                let crc = crc32::checksum_ieee(&msg);
+                log!("Sending '" (send_subject) "' of " (msg.len()) " bytes (crc " (crc) ")");
+                peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), msg);
 
                 AtomicSwapState::WaitSellerPayment
             },
             AtomicSwapState::WaitSellerPayment => unsafe {
-                let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
-                let seller_payment = swap.seller_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]).map_err(|e| (-1, ERRL!("{}", e)))?;
+                let recv_subject = fomat!("seller-payment@" (swap.session));
+                log!("Waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        move |payload: &[u8]| -> bool {
+                            let crc = crc32::checksum_ieee (payload);
+                            log! ("Received seller payment payload of " (payload.len()) " bytes (crc " (crc) ")");
+                            true
+                        }
+                    })) .wait());
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+
+                let seller_payment = swap.seller_coin.tx_from_raw_bytes(&payload).map_err(|e| (-1, ERRL!("{}", e)))?;
                 swap.seller_payment = Some(seller_payment.clone());
 
                 swap.seller_coin.wait_for_confirmations(
@@ -1171,8 +1150,12 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 let transaction = payment_fut.wait().map_err(|e| (-1006, ERRL!("Error sending buyer payment {}", e)))?;
 
-                let mut msg = transaction.to_raw_bytes();
-                nn::nn_send((*swap.basilisk_swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                let msg = transaction.to_raw_bytes();
+
+                let send_subject = fomat!("buyer-payment@" (swap.session));
+                let crc = crc32::checksum_ieee(&msg);
+                log!("Sending '" (send_subject) "' of " (msg.len()) " bytes (crc " (crc) ")");
+                peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), msg);
                 swap.buyer_payment = Some(transaction.clone());
 
                 AtomicSwapState::WaitBuyerPaymentSpent

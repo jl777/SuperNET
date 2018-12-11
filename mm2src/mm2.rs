@@ -33,7 +33,6 @@ extern crate duct;
 extern crate etomicrs;
 #[macro_use]
 extern crate fomat_macros;
-#[macro_use]
 extern crate futures;
 extern crate futures_cpupool;
 #[macro_use]

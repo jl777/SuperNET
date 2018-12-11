@@ -479,69 +479,6 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
     return(errs);
 }
 
-int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen))
-{
-    struct nn_pollfd pfd; void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
-    log_stacktrace("LP_waitfor");
-    //peers_clock_tick_compat(ctx,pairsock);
-    while ( time(NULL) < expiration )
-    {
-        //if ( (datalen = peers_recv_compat(ctx,pairsock,(uint8_t**) &data)) > 0 )
-        //{
-        //    retval = (*verify)(swap,data,datalen);
-        //    swap->received = (uint32_t)time(NULL);
-        //    free(data);
-        //    return(retval);
-        //}
-
-        memset(&pfd,0,sizeof(pfd));
-        pfd.fd = pairsock;
-        pfd.events = NN_POLLIN;
-
-        int wait_ms = 123;
-
-        if ( nn_poll(&pfd,1,wait_ms) > 0 )
-        {
-            //printf("start wait\n");
-            if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
-            {
-                //printf("wait for got.%d\n",datalen);
-                retval = (*verify)(swap,data,datalen);
-                swap->received = (uint32_t)time(NULL);
-                nn_freemsg(data);
-                //printf("retval.%d\n",retval);
-                return(retval);
-            } // else printf("error nn_recv\n");
-        }
-    }
-    printf("waitfor timedout aliceid.%llu requestid.%u quoteid.%u\n",(long long)swap->aliceid,swap->I.req.requestid,swap->I.req.quoteid);
-    return(retval);
-}
-
-int32_t LP_swaprecv(int32_t pairsock,uint8_t *data, struct basilisk_swap *swap,int32_t timeout)
-{
-    struct nn_pollfd pfd; uint8_t *_data; int32_t datalen = 0,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
-    log_stacktrace("LP_swaprecv");
-    while ( time(NULL) < expiration ) {
-        memset(&pfd,0,sizeof(pfd));
-        pfd.fd = pairsock;
-        pfd.events = NN_POLLIN;
-        if ( nn_poll(&pfd,1,1) > 0 )
-        {
-            //printf("start wait\n");
-            if ( (datalen= nn_recv(pairsock,&_data,NN_MSG,0)) >= 0 )
-            {
-                memcpy(data, _data, (size_t)datalen);
-                nn_freemsg(_data);
-                //printf("retval.%d\n",retval);
-                return(datalen);
-            } // else printf("error nn_recv\n");
-        }
-    }
-    printf("waitfor timedout aliceid.%llu requestid.%u quoteid.%u\n",(long long)swap->aliceid,swap->I.req.requestid,swap->I.req.quoteid);
-    return(datalen);
-}
-
 int32_t swap_nn_send(uint32_t ctx,int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags,int32_t timeout)
 {
     struct nn_pollfd pfd; int32_t i;
@@ -563,45 +500,6 @@ int32_t swap_nn_send(uint32_t ctx,int32_t sock,uint8_t *data,int32_t datalen,uin
     }
 
     return(-1);
-}
-
-int32_t LP_waitsend(uint32_t ctx,char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
-{
-    int32_t datalen,sendlen,retval = -1;
-    //printf("waitsend.%s timeout.%d\n",statename,timeout);
-    if ( LP_waitfor(ctx,pairsock,swap,timeout,verify) == 0 )
-    {
-        //printf("waited for %s\n",statename);
-        if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
-        {
-            if ( (sendlen= swap_nn_send(ctx,pairsock,data,datalen,0,timeout)) == datalen )
-            {
-                //printf("sent.%d after waitfor.%s\n",sendlen,statename);
-                retval = 0;
-            } else printf("send %s error\n",statename);
-        } else printf("%s datagen no data\n",statename);
-    } else printf("didnt get valid data after %d\n",timeout);
-    return(retval);
-}
-
-int32_t LP_sendwait(uint32_t ctx,char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
-{
-    int32_t datalen,sendlen,retval = -1;
-    //printf("sendwait.%s\n",statename);
-    if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
-    {
-        //printf("generated %d for %s, timeout.%d\n",datalen,statename,timeout);
-        if ( (sendlen= swap_nn_send(ctx,pairsock,data,datalen,0,timeout)) == datalen )
-        {
-            //printf("sendwait.%s sent %d\n",statename,sendlen);
-            if ( LP_waitfor(ctx,pairsock,swap,timeout,verify) == 0 )
-            {
-                //printf("waited! sendwait.%s sent %d\n",statename,sendlen);
-                retval = 0;
-            } else printf("didnt get %s\n",statename);
-        } else printf("send %s error\n",statename);
-    } else printf("no datagen for %s\n",statename);
-    return(retval);
 }
 
 void LP_swapsfp_update(uint32_t requestid,uint32_t quoteid)
@@ -747,89 +645,6 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         free_json(txobj);
     }
     return(retval);
-}
-
-uint32_t LP_swapdata_rawtxsend(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend)
-{
-    uint8_t sendbuf[32768]; int32_t sendlen,retval = -1;
-    if ( LP_swapdata_rawtx(swap,data,maxlen,rawtx) != 0 )
-    {
-        if ( bits256_nonz(rawtx->I.signedtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
-        {
-            basilisk_dontforget_update(swap,rawtx);
-            rawtx->I.actualtxid = LP_broadcast_tx(rawtx->name,rawtx->symbol,rawtx->txbytes,rawtx->I.datalen);
-            if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
-            {
-                char str[65],str2[65];
-                printf("%s rawtxsend.[%d] %s vs %s\n",rawtx->name,rawtx->I.datalen,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
-                if ( bits256_nonz(rawtx->I.signedtxid) != 0 )
-                    rawtx->I.actualtxid = rawtx->I.signedtxid;
-                else rawtx->I.signedtxid = rawtx->I.actualtxid;
-            }
-            if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
-            {
-#ifndef NOTETOMIC
-                if ( swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0 )
-                {
-                    char *ethTxId = sendEthTx(swap, rawtx);
-                    if (ethTxId != NULL) {
-                        strcpy(rawtx->I.ethTxid, ethTxId);
-                        free(ethTxId);
-                    } else {
-                        printf("Error sending ETH tx\n");
-                        return(-1);
-                    }
-                }
-#endif
-                sendlen = 0;
-                sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
-                sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
-                sendbuf[sendlen++] = rawtx->I.redeemlen;
-                if ( rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66  )
-                {
-                    uint8_t ethTxidBytes[32];
-                    // ETH txid always starts with 0x
-                    decode_hex(ethTxidBytes, 32, rawtx->I.ethTxid + 2);
-                    memcpy(&sendbuf[sendlen], ethTxidBytes, 32);
-                }
-                else
-                {
-                    // fill with zero bytes to always have fixed message size
-                    memset(&sendbuf[sendlen], 0, 32);
-                }
-                sendlen += 32;
-                //int32_t z; for (z=0; z<rawtx->I.datalen; z++) printf("%02x",rawtx->txbytes[z]); printf(" >>>>>>> send.%d %s\n",rawtx->I.datalen,rawtx->name);
-                //printf("datalen.%d redeemlen.%d\n",rawtx->I.datalen,rawtx->I.redeemlen);
-                memcpy(&sendbuf[sendlen],rawtx->txbytes,rawtx->I.datalen), sendlen += rawtx->I.datalen;
-                if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
-                {
-                    memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->I.redeemlen);
-                    sendlen += rawtx->I.redeemlen;
-                }
-
-                basilisk_dontforget_update(swap,rawtx);
-                //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
-                if ( suppress_swapsend == 0 )
-                {
-                    retval = LP_swapsend(ctx,pairsock,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs);
-                    if ( LP_waitmempool(rawtx->symbol,rawtx->I.destaddr,rawtx->I.signedtxid,0,LP_SWAPSTEP_TIMEOUT*10) < 0 )
-                    {
-                        char str[65]; printf("failed to find %s %s %s in the mempool?\n",rawtx->name,rawtx->I.destaddr,bits256_str(str,rawtx->I.actualtxid));
-                        retval = -1;
-                    }
-                    return(retval);
-                }
-                else
-                {
-                    printf("suppress swapsend %x\n",msgbits);
-                    return(0);
-                }
-            }
-        }
-        return(nextbits);
-    } //else if ( swap->I.iambob == 0 )
-        printf("error from basilisk_swapdata_rawtx.%s %p len.%d\n",rawtx->name,rawtx->txbytes,rawtx->I.datalen);
-    return(0);
 }
 
 uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t sleeptime)

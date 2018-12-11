@@ -816,7 +816,6 @@ int32_t LP_nanobind(void *ctx,char *pairstr);
 cJSON *LP_instantdex_txids(int32_t appendonly,char *coinaddr);
 int32_t LP_etomicsymbol(char *activesymbol,char *etomic,char *symbol);
 int32_t LP_calc_waittimeout(char *symbol);
-int32_t LP_sendwait(uint32_t ctx,char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen));
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
 int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen);
 extern uint32_t LP_swap_critical;
@@ -825,16 +824,9 @@ int32_t LP_choosei_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
 int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen);
 int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
 int32_t LP_mostprivs_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen);
-int32_t LP_waitfor(uint32_t ctx,int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen));
-int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
-int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen);
 void basilisk_swap_finished(struct basilisk_swap *swap);
-int32_t LP_waitsend(uint32_t ctx,char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen));
 int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay);
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay);
-int32_t LP_swaprecv(int32_t pairsock,uint8_t *data, struct basilisk_swap *swap,int32_t timeout);
 void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid);
-void rswap_bob_spends_a_payment(struct LP_swap_remember *rswap);
-void rswap_bob_refunds_deposit(struct LP_swap_remember *rswap);
 #endif
