@@ -20,7 +20,6 @@
 //
 use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
-use futures::Future;
 use gstuff::now_ms;
 use hashbrown::hash_map::{Entry, HashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
@@ -404,7 +403,6 @@ unsafe fn lp_base_satoshis(
 }
 
 unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char, qp: *mut lp::LP_quoteinfo) -> i32 {
-    let ctx_ffi_handle = unwrap!(ctx.ffi_handle());
     let dex_selector = 0;
     let mut pair: i32 = -1;
     let mut retval: i32 = -1;
@@ -776,13 +774,12 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"started\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             printf(b"alice pairstr.(%s) pairsock.%d\n\x00".as_ptr() as *const c_char, pairstr, pairsock);
             let b_swap = BasiliskSwap(swap);
-            let ctx_arc = ctx.clone();
             let alice_loop_thread = thread::Builder::new().name("alice_loop".into()).spawn({
                 let ctx = ctx.clone();
                 let bob = (*qp).srchash;
                 let session = String::from (unwrap! (CStr::from_ptr (pairstr) .to_str()));
                 move || {
-                    let mut buyer_swap = AtomicSwap::new(b_swap.0, ctx_arc, lp::bits256::default(), bob, session).unwrap();
+                    let mut buyer_swap = AtomicSwap::new(b_swap.0, ctx, lp::bits256::default(), bob, session).unwrap();
                     log!("Start buyer swap");
                     match buyer_swap_loop(&mut buyer_swap) {
                         Ok(_) => log!("Swap finished successfully"),

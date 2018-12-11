@@ -17,20 +17,16 @@
 //  lp_swap.rs
 //  marketmaker
 //
-use coins::{BoxedTx, BoxedTxFut, ExchangeableCoin};
-use coins::utxo::{ExtendedUtxoTx, coin_from_iguana_info};
-use common::{bits256, free_c_ptr};
-use common::{dstr};
+use coins::{BoxedTx, ExchangeableCoin};
+use coins::utxo::{coin_from_iguana_info};
+use common::{bits256, dstr, nn};
 use common::mm_ctx::MmArc;
-use common::nn;
 use crc::crc32;
-use futures::{Async, Future, Poll};
+use futures::{Future};
 use gstuff::now_ms;
-use libc::{c_char, c_void, memcpy};
+use libc::{c_void};
 
-use crate::etomic::{get_eth_balance, EthClient};
 use crate::lp;
-use crate::lp_ordermatch::BasiliskSwap;
 
 // included from basilisk.c
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
@@ -932,10 +928,6 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     loop {
         let next_state = match swap.state {
             AtomicSwapState::PubkeyExchange => unsafe {
-                let ctx_h = match swap.ctx.ffi_handle() {
-                    Ok(h) => h,
-                    Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
-                };
                 let recv_subject = fomat!("pubkeys@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -1004,7 +996,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             },
             AtomicSwapState::WaitBuyerFee => unsafe {
                 let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
-                let buyer_fee = match swap.buyer_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]) {
+                let _buyer_fee = match swap.buyer_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]) {
                     Ok(tx) => tx,
                     Err(e) => return Err((-1, ERRL!("{}", e))),
                 };
@@ -1056,7 +1048,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     &reversed_secret,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
-                let transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                let _transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
                 return Ok(());
             },
             AtomicSwapState::RefundSellerPayment => {
@@ -1073,10 +1065,6 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     loop {
         let next_state = match swap.state {
             AtomicSwapState::PubkeyExchange => unsafe {
-                let ctx_h = match swap.ctx.ffi_handle() {
-                    Ok(h) => h,
-                    Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
-                };
                 // So the code is going to be more verbose than with the `LP_sendwait` for now,
                 // in order to keep things clear while we explore the new communication format.
                 // In the future we might repack it back into one-liners with something similar to `LP_sendwait`, if needs be.
@@ -1215,7 +1203,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     &swap.secret,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
-                let transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                let _transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
                 return Ok(());
             },
             AtomicSwapState::RefundBuyerPayment => unsafe {
@@ -1225,7 +1213,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
 
-                let transaction = refund_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                let _transaction = refund_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
                 return Ok(());
             },
             _ => unimplemented!(),
