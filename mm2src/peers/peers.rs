@@ -3,6 +3,7 @@ extern crate byteorder;
 extern crate common;
 extern crate crc;
 extern crate crossbeam;
+extern crate dirs;
 #[macro_use]
 extern crate fomat_macros;
 extern crate futures;
@@ -31,27 +32,31 @@ extern crate unwrap;
 //extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 
 #[doc(hidden)]
-pub mod tests;
+pub mod peers_tests;
 
 use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
-use common::{bits256, slice_to_malloc};
+use common::{bits256, slice_to_malloc, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
 use crossbeam::channel;
 use futures::{future, stream, Async, Future, Poll, Stream};
 use futures::task::Task;
-use gstuff::{now_float, now_ms};
+use gstuff::{now_float, now_ms, slurp};
 use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry};
 use itertools::Itertools;
 use libc::{c_char, c_void};
 use rand::{thread_rng, Rng};
 use serde_bytes::{Bytes, ByteBuf};
 use std::cmp::Ordering;
+use std::env::temp_dir;
+use std::fs;
 use std::ffi::{CStr, CString};
+use std::io::Write;
 use std::mem::{uninitialized, zeroed};
 use std::net::IpAddr;
-use std::ptr::read_volatile;
+use std::path::Path;
+use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -64,16 +69,17 @@ const LOG_UNHANDLED_ALERTS: Option<&'static str> = option_env! ("LOG_UNHANDLED_A
 
 #[repr(C)]
 struct dugout_t {
-    err: *const c_char,  // strdup of a C++ exception `what`.
-    sett: *mut c_void,  // `lt::settings_pack*` (from C++ `new`).
     session: *mut c_void,  // `lt::session*` (from C++ `new`).
+    err: *const c_char  // `strdup` of a C++ exception `what`.
 }
 impl dugout_t {
-    fn has_err (&self) -> Option<&str> {
-        if !self.err.is_null() {
-            let what = if let Ok (msg) = unsafe {CStr::from_ptr (self.err)} .to_str() {msg} else {"Non-unicode `what`"};
+    fn take_err (&mut self) -> Option<String> {
+        if !self.err.is_null() {unsafe {
+            let what = (if let Ok (msg) = CStr::from_ptr (self.err) .to_str() {msg} else {"Non-unicode `what`"}) .to_owned();
+            libc::free (self.err as *mut c_void);
+            self.err = null();
             Some (what)
-        } else {
+        }} else {
             None
         }
     }
@@ -94,7 +100,9 @@ enum Alert {}
 extern "C" {
     fn delete_dugout (dugout: *mut dugout_t) -> *const c_char;
     fn dht_init (listen_interfaces: *const c_char, read_only: bool) -> dugout_t;
+    fn dht_load_state (dugout: *mut dugout_t, dht_state: *const u8, dht_state_len: i32);
     fn enable_dht (dugout: *mut dugout_t);
+    fn dht_save_state (dugout: *mut dugout_t, buflen: *mut i32) -> *mut u8;
     fn dht_alerts (dugout: *mut dugout_t, cb: extern fn (dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert), cbctx: *mut c_void);
     fn alert_message (alert: *const Alert) -> *const c_char;
     fn is_dht_bootstrap_alert (alert: *const Alert) -> bool;
@@ -486,14 +494,41 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         }
         fomat! ("0.0.0.0:" (preferred_port) ",[::]:" (preferred_port))
     })();
-    // TODO: Use the configured IP.
+    // TODO: Log the *actual* binding IP and port (when we get it from an alert). The actual port might be bumped up if the `preferred_port` binding fails.
     //log! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
     let listen_interfaces = unwrap! (CString::new (listen_interfaces));
     let mut dugout = unsafe {dht_init (listen_interfaces.as_ptr(), read_only)};
-    if let Some (err) = dugout.has_err() {
+    if let Some (err) = dugout.take_err() {
         // TODO: User-friendly log message (`LogState::log`).
         log! ("dht_init error: " (err));
         return
+    }
+
+    let dht_state_path = loop {
+        // Trying to save into the user's home directory first in order to reuse the DHT state across different MM instances.
+        if let Some (home) = dirs::home_dir() {
+            let mm2 = home.join (".mm2");
+            let _ = fs::create_dir (&mm2);
+            if mm2.is_dir() {
+                break mm2.join ("lt-dht")
+            }
+        }
+        if let Some (db) = ctx.conf["dbdir"].as_str() {
+            let db = Path::new (db);
+            if db.is_dir() {
+                break db.join ("lt-dht")
+            }
+        }
+        break Path::new ("DB/lt-dht") .to_owned()
+    };
+
+    let dht_state = slurp (&dht_state_path);
+    if !dht_state.is_empty() {
+        // Note: Successful state reuse is reflected with a "DHT node: bootstrapping with 371 nodes" alert.
+        // Whereas without the state it's "DHT node: bootstrapping with 0 nodes".
+        unsafe {dht_load_state (&mut dugout, dht_state.as_ptr(), dht_state.len() as i32)};
+        // TODO: User-friendly log message (`LogState::log`).
+        if let Some (err) = dugout.take_err() {log! ("dht_load_state (" [dht_state_path] ") error: " (err))}
     }
 
     // Skip DHT bootstrapping if we're already stopping. But give libtorrent a bit of time first, just in case.
@@ -501,26 +536,30 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 
     ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap ...") .detach();
     unsafe {enable_dht (&mut dugout)};
-    if let Some (err) = dugout.has_err() {
+    if let Some (err) = dugout.take_err() {
         ctx.log.status (BOOTSTRAP_STATUS, &fomat! ("DHT bootstrap error: " (err)));
         return
     }
 
     let pctx = unwrap! (PeersContext::from_ctx (&ctx));
 
-    struct CbCtx<'a, 'c> {
+    struct CbCtx<'a, 'b, 'c> {
         gets: &'a mut Gets,
-        ctx: &'c MmArc,
-        our_public_key: bits256
+        ctx: &'b MmArc,
+        our_public_key: bits256,
+        bootstrapped: &'c mut f64
     }
+
+    let mut bootstrapped = 0.;
+    let mut last_state_save = 0.;
 
     // TODO: Remove the outdated `gets` entries after a while.
     let mut gets = Gets::default();
 
     loop {
-        extern fn cb (_dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
-            let cbctx = cbctx as *mut CbCtx;
-            let cbctx: &mut CbCtx = unsafe {&mut *cbctx};
+        extern fn cb (dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
+            let _dugout: &mut dugout_t = unsafe {&mut *dugout};
+            let cbctx: &mut CbCtx = unsafe {&mut *(cbctx as *mut CbCtx)};
 
             // We don't want to hit the 1000 bytes limit
             // (in BEP 44 it's optional, but I guess a lot of implementations enforce it by default),
@@ -585,6 +624,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 
             if unsafe {is_dht_bootstrap_alert (alert)} {
                 cbctx.ctx.log.claim_status (BOOTSTRAP_STATUS) .map (|status| status.append (" Done."));
+                *cbctx.bootstrapped = now_float();
                 return
             }
 
@@ -621,11 +661,12 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             let mut cbctx = CbCtx {
                 gets: &mut gets,
                 ctx: &ctx,
-                our_public_key
+                our_public_key,
+                bootstrapped: &mut bootstrapped
             };
             unsafe {dht_alerts (&mut dugout, cb, &mut cbctx as *mut CbCtx as *mut c_void)};
         }
-        if let Some (err) = dugout.has_err() {
+        if let Some (err) = dugout.take_err() {
             // TODO: User-friendly log message (`LogState::log`).
             log! ("dht_alerts error: " (err));
             return
@@ -646,6 +687,32 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             let entry = match gets.entry (key) {Entry::Vacant (_) => panic!(), Entry::Occupied (oe) => oe};
             get_pieces_scheduler_en (&mut dugout, entry, &*pctx)
         }
+
+        let now = now_float();
+        let after_boot_sec = 20.;  // In order not to loose some potentially good but not yet checked nodes from a previous state.
+        if bootstrapped != 0. && now - bootstrapped > after_boot_sec && now - last_state_save > 600. {
+            // TODO, should: Only save the DHT state if we see some recent DHT traffic (via the counters).
+            last_state_save = now;
+            let mut buflen = 0i32;
+            let buf = unsafe {dht_save_state (&mut dugout, &mut buflen)};
+            if let Some (err) = dugout.take_err() {
+                log! ("dht_save_state error: " (err))
+            } else if buf == null_mut() || buflen <= 0 {
+                log! ("empty result from dht_save_state");
+            } else {
+                let tmp_path = temp_dir().join (fomat! ("lt-dht-" (thread_rng().gen::<u64>()) ".tmp"));
+                let tmp_path = RaiiRm (Path::new (&tmp_path));
+                let buf = unsafe {from_raw_parts (buf, buflen as usize)};
+                match fs::File::create (&tmp_path) {
+                    Err (err) => log! ("Error creating " [tmp_path] ": " (err)),
+                    Ok (mut file) => match file.write_all (buf) {
+                        Err (err) => log! ("Error writing to " [tmp_path] ": " (err)),
+                        Ok (()) => {
+                            drop (file);  // Close before renaming, just in case.
+                            match fs::rename (&tmp_path, &dht_state_path) {
+                                Err (err) => log! ("Error renaming " [tmp_path] " to " [dht_state_path] ": " (err)),
+                                Ok (()) => log! ("DHT state saved to " [dht_state_path])
+        }   }   }   }   }   }
     }
 }
 
@@ -658,6 +725,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 /// * `session_id` - Identifies our incarnation, allowing other peers to know if they're talking with the same instance.
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16, _session_id: u32) -> Result<(), String> {
     // NB: From the `fn test_trade` logs it looks like the `session_id` isn't shared with the peers currently.
+    //     In "lp_ordermatch.rs" we're [temporarily] using `pair_str` as the session identifier and manually embedding it in the `subject`.
     log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port));
     if !our_public_key.nonz() {return ERR! ("No public key")}
 
