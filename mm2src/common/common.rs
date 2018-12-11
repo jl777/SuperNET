@@ -75,10 +75,12 @@ use hyper_rustls::HttpsConnector;
 use libc::{c_char, c_void, malloc, free};
 use serde_json::{self as json, Value as Json};
 use std::fmt;
+use std::fs;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
+use std::path::Path;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::process::abort;
 use std::ptr::{null_mut, read_volatile};
@@ -274,6 +276,20 @@ pub fn black_box<T> (v: T) -> T {
     let ret = unsafe {read_volatile (&v)};
     forget (v);
     ret
+}
+
+/// Attempts to remove the `Path` on `drop`.
+#[derive(Debug)]
+pub struct RaiiRm<'a> (pub &'a Path);
+impl<'a> AsRef<Path> for RaiiRm<'a> {
+    fn as_ref (&self) -> &Path {
+        self.0
+    }
+}
+impl<'a> Drop for RaiiRm<'a> {
+    fn drop (&mut self) {
+        let _ = fs::remove_file (self);
+    }
 }
 
 /// Using a static buffer in order to minimize the chance of heap and stack allocations in the signal handler.

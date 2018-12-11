@@ -10,22 +10,20 @@
 #include "libtorrent/alert_types.hpp"
 #include "libtorrent/bencode.hpp"
 #include "libtorrent/entry.hpp"
+#include "libtorrent/kademlia/dht_state.hpp"
 #include "libtorrent/kademlia/ed25519.hpp"
 #include "libtorrent/kademlia/item.hpp"
 #include "libtorrent/session.hpp"
 
 /// A common context shared between the functions and tracked on the Rust side.
 struct dugout_struct_t {
-    char const* err;
-    /// cf. https://www.libtorrent.org/reference-Settings.html
-    lt::settings_pack* sett;
     lt::session* session;
+    char const* err;
 };
 typedef struct dugout_struct_t dugout_t;
 
 extern "C" char const* delete_dugout (dugout_t* dugout) try {
     if (dugout->session) {delete dugout->session; dugout->session = nullptr;}
-    if (dugout->sett) {delete dugout->sett; dugout->sett = nullptr;}
     if (dugout->err) {free ((void*) dugout->err); dugout->err = nullptr;}
     return nullptr;
 } catch (std::exception const& ex) {
@@ -36,12 +34,13 @@ extern "C" dugout_t dht_init (char const* listen_interfaces, bool read_only) {
     dugout_t dugout = {};
 
     try {
-        lt::settings_pack* sett = dugout.sett = new lt::settings_pack;
-        sett->set_bool (lt::settings_pack::enable_dht, false);
-        sett->set_int (lt::settings_pack::alert_mask, 0x7fffffff);
-        sett->set_str (lt::settings_pack::listen_interfaces, listen_interfaces);
+        // cf. https://www.libtorrent.org/reference-Settings.html
+        lt::settings_pack sett;
+        sett.set_bool (lt::settings_pack::enable_dht, false);
+        sett.set_int (lt::settings_pack::alert_mask, 0x7fffffff);
+        sett.set_str (lt::settings_pack::listen_interfaces, listen_interfaces);
 
-        sett->set_str (lt::settings_pack::dht_bootstrap_nodes,
+        sett.set_str (lt::settings_pack::dht_bootstrap_nodes,
             // https://stackoverflow.com/a/32797766/257568
             "router.utorrent.com:6881"
             ",router.bittorrent.com:6881"
@@ -49,7 +48,7 @@ extern "C" dugout_t dht_init (char const* listen_interfaces, bool read_only) {
             ",router.bitcomet.com:6881"
             ",dht.aelitis.com:6881");
 
-        lt::session* session = dugout.session = new lt::session (*sett);
+        lt::session* session = dugout.session = new lt::session (sett);
 
         lt::dht::dht_settings dsett;
         dsett.item_lifetime = 600;
@@ -62,10 +61,50 @@ extern "C" dugout_t dht_init (char const* listen_interfaces, bool read_only) {
     return dugout;
 }
 
+extern "C" void dht_load_state (dugout_t* dugout, char const* dht_state, int32_t dht_state_len) try {
+    if (!dugout->session) throw std::runtime_error ("Not initialized");
+    lt::bdecode_node en;
+    lt::error_code ec;
+    int rc = lt::bdecode (dht_state, dht_state + dht_state_len, en, ec);
+    if (rc) {
+        std::ostringstream ss;
+        ss << "Can't bdecode the DHT state: " << ec.message();
+        throw std::runtime_error (ss.str());
+    }
+    dugout->session->load_state (en, lt::session::save_dht_state);
+} catch (std::exception const& ex) {
+    dugout->err = strdup (ex.what());
+}
+
 extern "C" void enable_dht (dugout_t* dugout) try {
-    if (!dugout->sett || !dugout->session) throw std::runtime_error ("Not initialized");
-	dugout->sett->set_bool (lt::settings_pack::enable_dht, true);
-	dugout->session->apply_settings (*dugout->sett);
+    if (!dugout->session) throw std::runtime_error ("Not initialized");
+    lt::settings_pack spack = dugout->session->get_settings();
+    spack.set_bool (lt::settings_pack::enable_dht, true);
+	dugout->session->apply_settings (spack);
+} catch (std::exception const& ex) {
+    dugout->err = strdup (ex.what());
+}
+
+extern "C" char* dht_save_state (dugout_t* dugout, int32_t* buflen) try {
+    if (!dugout->session) throw std::runtime_error ("Not initialized");
+    if (!dugout->session->is_dht_running()) throw std::runtime_error ("DHT is off");
+
+	lt::entry en;
+    dugout->session->save_state (en, lt::session::save_dht_state);
+
+    std::vector<char> buf;
+    lt::bencode (std::back_inserter (buf), en);
+
+    char* cbuf = (char*) malloc (buf.size() + 1);
+    if (cbuf == nullptr) {
+        std::ostringstream ss;
+        ss << "Error allocating " << (buf.size() + 1) << " bytes with malloc";
+        throw std::runtime_error (ss.str());
+    }
+    std::copy (buf.begin(), buf.end(), cbuf);
+    cbuf[buf.size()] = 0;
+    *buflen = (int32_t) buf.size();
+    return cbuf;
 } catch (std::exception const& ex) {
     dugout->err = strdup (ex.what());
 }
