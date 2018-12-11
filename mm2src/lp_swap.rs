@@ -1,3 +1,40 @@
+//! Atomic swap loops and states
+//! 
+//! # A note on the terminology used
+//! 
+//! Alice = Buyer = Liquidity receiver  
+//! ("*The process of an atomic swap begins with the person who makes the initial request — this is the liquidity receiver*" - Komodo Whitepaper).
+//! 
+//! Bob = Seller = Liquidity provider  
+//! ("*On the other side of the atomic swap, we have the liquidity provider — we call this person, Bob*" - Komodo Whitepaper).
+//! 
+//! # Algorithm updates
+//! 
+//! At the end of 2018 most UTXO coins have BIP65 (https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki).
+//! The previous swap protocol discussions took place at 2015-2016 when there were just a few
+//! projects that implemented CLTV opcode support:
+//! https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
+//! https://bitcointalk.org/index.php?topic=1364951
+//! So the Tier Nolan approach is a bit outdated, the main purpose was to allow swapping of a coin
+//! that doesn't have CLTV at least as Alice side (as APayment is 2of2 multisig).
+//! Nowadays the protocol can be simplified to the following (UTXO coins, BTC and forks):
+//! 
+//! 1. AFee: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
+//! 
+//! 2. BPayment:
+//! OP_IF
+//! <now + LOCKTIME*2> OP_CLTV OP_DROP <bob_pubB0> OP_CHECKSIG
+//! OP_ELSE
+//! OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+//! OP_ENDIF
+//! 
+//! 3. APayment:
+//! OP_IF
+//! <now + LOCKTIME> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+//! OP_ELSE
+//! OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+//! OP_ENDIF
+//! 
 
 /******************************************************************************
  * Copyright © 2014-2018 The SuperNET Developers.                             *
@@ -20,39 +57,13 @@
 use coins::{BoxedTx, ExchangeableCoin};
 use coins::utxo::{coin_from_iguana_info};
 use common::{bits256, dstr};
+use common::log::TagParam;
 use common::mm_ctx::MmArc;
 use crc::crc32;
 use futures::{Future};
 use gstuff::now_ms;
 
 use crate::lp;
-
-/// At the end of 2018 most UTXO coins have BIP65 (https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki).
-/// The previous swap protocol discussions took place at 2015-2016 when there were just a few
-/// projects that implemented CLTV opcode support:
-/// https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
-/// https://bitcointalk.org/index.php?topic=1364951
-/// So the Tier Nolan approach is a bit outdated, the main purpose was to allow swapping of a coin
-/// that doesn't have CLTV at least as Alice side (as APayment is 2of2 multisig).
-/// Nowadays the protocol can be simplified to the following (UTXO coins, BTC and forks):
-///
-/// 1. AFee: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
-///
-/// 2. BPayment:
-/// OP_IF
-/// <now + LOCKTIME*2> OP_CLTV OP_DROP <bob_pubB0> OP_CHECKSIG
-/// OP_ELSE
-/// OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
-/// OP_ENDIF
-///
-/// 3. APayment:
-/// OP_IF
-/// <now + LOCKTIME> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
-/// OP_ELSE
-/// OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
-/// OP_ENDIF
-///
-///
 
 /*
 #define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
@@ -869,6 +880,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     loop {
         let next_state = match swap.state {
             AtomicSwapState::PubkeyExchange => unsafe {
+                // TODO timeout 120
                 let recv_subject = fomat!("pubkeys@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -890,6 +902,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
                 peers::send(&swap.ctx, swap.buyer, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
 
+                // TODO timeout LP_SWAPSTEP_TIMEOUT (30)
                 let recv_subject = fomat!("choosei@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -912,6 +925,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
                 peers::send(&swap.ctx, swap.buyer, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
 
+                // TODO timeout LP_SWAPSTEP_TIMEOUT
                 let recv_subject = fomat!("mostprivs@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -936,6 +950,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 AtomicSwapState::WaitBuyerFee
             },
             AtomicSwapState::WaitBuyerFee => {
+                // TODO timeout 600
                 let recv_subject = fomat!("buyer-fee@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -978,6 +993,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 AtomicSwapState::WaitBuyerPayment
             },
             AtomicSwapState::WaitBuyerPayment => unsafe {
+                // TODO timeout 600
                 let recv_subject = fomat!("buyer-payment@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -1027,7 +1043,10 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     }
 }
 
+const SWAP_STATUS: &[&TagParam] = &[&"swap"];
+
 pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
+    let mut status = swap.ctx.log.status_handle();
     loop {
         let next_state = match swap.state {
             AtomicSwapState::PubkeyExchange => unsafe {
@@ -1042,6 +1061,8 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let recv_subject = fomat!("pubkeys-reply@" (swap.session));
                 let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
                 log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+                status.status (SWAP_STATUS, "Waiting for seller public keys…");
+                // TODO timeout 120
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
                         let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
@@ -1063,6 +1084,8 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let recv_subject = fomat!("choosei-reply@" (swap.session));
                 let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
                 log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+                status.status (SWAP_STATUS, "Waiting for the seller to confirm the key choice…");
+                // TODO timeout LP_SWAPSTEP_TIMEOUT (30)
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
                         let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
@@ -1084,6 +1107,9 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let recv_subject = fomat!("mostprivs-reply@" (swap.session));
                 let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
                 log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+                // TODO: Human-readable.
+                status.status (SWAP_STATUS, "Waiting for \"mostpriv\" reply…");
+                // TODO timeout LP_SWAPSTEP_TIMEOUT (30)
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
                         let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
@@ -1116,8 +1142,10 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 AtomicSwapState::WaitSellerPayment
             },
             AtomicSwapState::WaitSellerPayment => unsafe {
+                // TODO timeout 600
                 let recv_subject = fomat!("seller-payment@" (swap.session));
                 log!("Waiting for '" (recv_subject) "' …");
+                status.status (SWAP_STATUS, "Waiting for the seller payment…");
                 let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
@@ -1130,6 +1158,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let seller_payment = swap.seller_coin.tx_from_raw_bytes(&payload).map_err(|e| (-1, ERRL!("{}", e)))?;
                 swap.seller_payment = Some(seller_payment.clone());
 
+                status.status (SWAP_STATUS, "Waiting for the confirmation of the seller payment…");
                 swap.seller_coin.wait_for_confirmations(
                     seller_payment,
                     (*swap.basilisk_swap).I.bobconfirms
@@ -1148,6 +1177,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     payment_amount,
                 );
 
+                // TODO: Update the `status`, what are we waiting for.
                 let transaction = payment_fut.wait().map_err(|e| (-1006, ERRL!("Error sending buyer payment {}", e)))?;
 
                 let msg = transaction.to_raw_bytes();
@@ -1161,6 +1191,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 AtomicSwapState::WaitBuyerPaymentSpent
             },
             AtomicSwapState::WaitBuyerPaymentSpent => {
+                // TODO: Update the `status`, what are we waiting for.
                 let wait_spend_fut = swap.buyer_coin.wait_for_tx_spend(swap.buyer_payment.clone().unwrap(), now_ms() / 1000 + 1000);
 
                 match wait_spend_fut.wait() {
@@ -1180,6 +1211,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 }
             },
             AtomicSwapState::SpendSellerPayment => unsafe {
+                // TODO: Update the `status`, what are we waiting for.
                 let spend_fut = swap.seller_coin.send_buyer_spends_seller_payment(
                     swap.seller_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
@@ -1190,6 +1222,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 return Ok(());
             },
             AtomicSwapState::RefundBuyerPayment => unsafe {
+                // TODO: Update the `status`, what are we waiting for.
                 let refund_fut = swap.buyer_coin.send_buyer_refunds_payment(
                     swap.buyer_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,

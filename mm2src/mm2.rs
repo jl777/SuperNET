@@ -174,12 +174,13 @@ fn help() {
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
         // I'm not quite sure what the "client mode" is, should be clarified as soon as we learn it.
         // Does it turn Electrum-only mode on?
-        // Does it turn us into the Alice?
+        // Does it turn us into the Alice (Buyer)?
         // Prevents us from fully joining the peer-to-peer network (by affecting `LP_canbind`)?
         // Anything else?
         // In MM2 we want to make the peers equal, allowing everyone to swap with everyone,
         // the client-server model doesn't make a lot of sense then.
         // cf. `IAMLP`, `MmCtx::am_client`.
+        // ⇒ See also the "Order Matching with Full-Relay and Non-Relay Nodes" chapter in the Komodo Whitepaper.
         "  client         ..  '1' to use the client mode.\n"
         // We don't currently want to change the RPC API,
         // so the "refrel=coinmarketcap" designator will be using the CoinGecko behind the scenes,

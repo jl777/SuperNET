@@ -340,7 +340,6 @@ fn generate_bindings() {
             "LP_CONNECTED",
             "LP_Alicereserved",
             "dstr",
-            "LP_SWAPSTEP_TIMEOUT",
             "LP_swap_critical",
             "LP_swap_endcritical",
             "INSTANTDEX_PUBKEY",

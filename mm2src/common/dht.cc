@@ -80,7 +80,7 @@ extern "C" void enable_dht (dugout_t* dugout) try {
     if (!dugout->session) throw std::runtime_error ("Not initialized");
     lt::settings_pack spack = dugout->session->get_settings();
     spack.set_bool (lt::settings_pack::enable_dht, true);
-	dugout->session->apply_settings (spack);
+    dugout->session->apply_settings (spack);
 } catch (std::exception const& ex) {
     dugout->err = strdup (ex.what());
 }
@@ -89,7 +89,7 @@ extern "C" char* dht_save_state (dugout_t* dugout, int32_t* buflen) try {
     if (!dugout->session) throw std::runtime_error ("Not initialized");
     if (!dugout->session->is_dht_running()) throw std::runtime_error ("DHT is off");
 
-	lt::entry en;
+    lt::entry en;
     dugout->session->save_state (en, lt::session::save_dht_state);
 
     std::vector<char> buf;
