@@ -432,11 +432,19 @@ pub fn init() {
 }
 
 lazy_static! {
-    /// Shared Hyper client.
+    /// NB: With a shared client there is a possibility that keep-alive connections will be reused.
     pub static ref HYPER: Client<HttpsConnector<HttpConnector>> = {
         let dns_threads = 2;
         let https = HttpsConnector::new (dns_threads);
-        let client = Client::builder().executor (CORE.clone()) .build (https);
+        let client = Client::builder()
+            .executor (CORE.clone())
+            // Hyper had a lot of Keep-Alive bugs over the years and I suspect
+            // that with the shared client we might be getting errno 10054
+            // due to a closed Keep-Alive connection mismanagement.
+            // Performance of Keep-Alive in the Hyper client is questionable as well,
+            // should measure it on a case-by-case basis when we need it.
+            .keep_alive (false)
+            .build (https);
         client
     };
 }

@@ -202,7 +202,7 @@ impl MarketMakerIt {
             sleep (Duration::from_millis (ms));
         }
     }
-    /// Invokes the locally running MM and returns it's reply.
+    /// Invokes the locally running MM and returns its reply.
     pub fn rpc (&self, payload: Json) -> Result<(StatusCode, String, HeaderMap), String> {
         let payload = try_s! (json::to_string (&payload));
         let uri = format! ("http://{}:7783", self.ip);
