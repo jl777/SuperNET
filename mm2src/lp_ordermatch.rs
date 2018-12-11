@@ -34,7 +34,7 @@ use std::time::Duration;
 use std::thread;
 
 use crate::lp_network::lp_queue_command;
-use crate::lp_swap::{BuyerSwap, SellerSwap};
+use crate::lp_swap::{AtomicSwap, buyer_swap_loop, seller_swap_loop};
 
 #[link="c"]
 extern {
@@ -446,9 +446,9 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                 let session = String::from (unwrap! (CStr::from_ptr (pair_str.as_ptr()) .to_str()));
                 log!("Seller loop");
                 move || {
-                    let seller_swap = SellerSwap::new(b_swap.0, ctx, alice, session).unwrap();
+                    let mut seller_swap = AtomicSwap::new(b_swap.0, ctx, alice, lp::bits256::default(), session).unwrap();
                     log!("Start seller swap");
-                    match seller_swap.wait() {
+                    match seller_swap_loop(&mut seller_swap) {
                         Ok(_) => log!("Swap finished successfully"),
                         Err(e) => log!("Swap finished with error " [e])
                     };
@@ -782,9 +782,9 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
                 let bob = (*qp).srchash;
                 let session = String::from (unwrap! (CStr::from_ptr (pairstr) .to_str()));
                 move || {
-                    let buyer_swap = BuyerSwap::new(b_swap.0, ctx_arc, bob, session).unwrap();
+                    let mut buyer_swap = AtomicSwap::new(b_swap.0, ctx_arc, lp::bits256::default(), bob, session).unwrap();
                     log!("Start buyer swap");
-                    match buyer_swap.wait() {
+                    match buyer_swap_loop(&mut buyer_swap) {
                         Ok(_) => log!("Swap finished successfully"),
                         Err(e) => log!("Swap finished with error " [e])
                     };

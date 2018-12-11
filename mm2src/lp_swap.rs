@@ -865,20 +865,26 @@ struct Swap (*mut lp::basilisk_swap);
 // TODO: Replace `Swap` with a truly thread-safe Rust version of the struct.
 unsafe impl Send for Swap {}
 
-enum SellerSwapState {
+/// Contains all available states of Atomic swap of both sides (seller and buyer)
+enum AtomicSwapState {
     PubkeyExchange,
-    WaitBuyerFeeData,
-    SendSellerPayment(BoxedTxFut),
-    WaitBuyerPaymentData,
-    WaitBuyerPaymentConfirmation(Box<dyn Future<Item=(), Error=String>>),
-    SpendBuyerPayment(BoxedTxFut),
-    RefundSellerPayment(BoxedTxFut),
+    SendBuyerFee,
+    WaitBuyerFee,
+    SendSellerPayment,
+    WaitSellerPayment,
+    SendBuyerPayment,
+    WaitBuyerPayment,
+    SpendBuyerPayment,
+    WaitBuyerPaymentSpent,
+    SpendSellerPayment,
+    RefundBuyerPayment,
+    RefundSellerPayment,
 }
 
-pub struct SellerSwap {
-    swap: *mut lp::basilisk_swap,
-    state: SellerSwapState,
+pub struct AtomicSwap {
+    basilisk_swap: *mut lp::basilisk_swap,
     ctx: MmArc,
+    state: AtomicSwapState,
     buffer: Vec<u8>,
     buffer_len: u64,
     buyer_coin: Box<dyn ExchangeableCoin>,
@@ -886,56 +892,54 @@ pub struct SellerSwap {
     buyer_payment: Option<BoxedTx>,
     seller_payment: Option<BoxedTx>,
     buyer: bits256,
+    seller: bits256,
     session: String,
+    secret: Vec<u8>,
 }
 
-impl SellerSwap {
+impl AtomicSwap {
     pub unsafe fn new(
-        swap: *mut lp::basilisk_swap,
+        basilisk_swap: *mut lp::basilisk_swap,
         ctx: MmArc,
         buyer: bits256,
-        session: String,
-    ) -> Result<SellerSwap, String> {
-        let alice_coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
+        seller: bits256,
+        session: String
+    ) -> Result<AtomicSwap, String> {
+        let alice_coin_ptr = lp::LP_coinfind((*basilisk_swap).I.alicestr.as_mut_ptr());
         let alice_coin = try_s!(coin_from_iguana_info(alice_coin_ptr));
-        let bob_coin_ptr = lp::LP_coinfind((*swap).I.bobstr.as_mut_ptr());
+        let bob_coin_ptr = lp::LP_coinfind((*basilisk_swap).I.bobstr.as_mut_ptr());
         let bob_coin = try_s!(coin_from_iguana_info(bob_coin_ptr));
 
-        Ok(SellerSwap {
-            swap,
-            state: SellerSwapState::PubkeyExchange,
+        Ok(AtomicSwap {
+            basilisk_swap,
             ctx,
+            state: AtomicSwapState::PubkeyExchange,
             buffer_len: 2 * 1024 * 1024,
-            buffer: vec![0; 2* 1024 * 1024],
+            buffer: vec![0; 2 * 1024 * 1024],
             buyer_coin: alice_coin,
             seller_coin: bob_coin,
             buyer_payment: None,
             seller_payment: None,
             buyer,
+            seller,
             session,
+            secret: vec![]
         })
     }
 }
 
-impl Future for SellerSwap {
-    type Item = ();
-    /// Error code and string description
-    type Error = (i32, String);
-
-    /// Swap contains a lot of blocking synchronous call for now.
-    /// Avoid running this future on shared CORE.
-    fn poll(&mut self) -> Poll<(), (i32, String)> {
-        loop {
-            let next_state = match self.state {
-                SellerSwapState::PubkeyExchange => unsafe {
-                    let ctx_h = match self.ctx.ffi_handle() {
-                        Ok(h) => h,
-                        Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
-                    };
-                    let recv_subject = fomat!("pubkeys@" (self.session));
-                    log!("Waiting for '" (recv_subject) "' …");
-                    let payload = unwrap!(peers::recv (&self.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (self.swap);
+pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
+    loop {
+        let next_state = match swap.state {
+            AtomicSwapState::PubkeyExchange => unsafe {
+                let ctx_h = match swap.ctx.ffi_handle() {
+                    Ok(h) => h,
+                    Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
+                };
+                let recv_subject = fomat!("pubkeys@" (swap.session));
+                log!("Waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
                             log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
@@ -945,18 +949,18 @@ impl Future for SellerSwap {
                             rc == 0
                         }
                     })) .wait());
-                    log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
-                    let send_subject = fomat!("pubkeys-reply@" (self.session));
-                    let datalen = lp::LP_pubkeys_data(self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32);
-                    if datalen <= 0 { panic!("!LP_pubkeys_data") }
-                    let crc = crc32::checksum_ieee(&self.buffer[..datalen as usize]);
-                    log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
-                    peers::send(&self.ctx, self.buyer, send_subject.as_bytes(), (&self.buffer[..datalen as usize]).into());
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                let send_subject = fomat!("pubkeys-reply@" (swap.session));
+                let datalen = lp::LP_pubkeys_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if datalen <= 0 { panic!("!LP_pubkeys_data") }
+                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
+                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
+                peers::send(&swap.ctx, swap.buyer, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
 
-                    let recv_subject = fomat!("choosei@" (self.session));
-                    log!("Waiting for '" (recv_subject) "' …");
-                    let payload = unwrap!(peers::recv (&self.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (self.swap);
+                let recv_subject = fomat!("choosei@" (swap.session));
+                log!("Waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
                             log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_choosei_verify` …");
@@ -967,18 +971,18 @@ impl Future for SellerSwap {
                         }
                     })) .wait());
 
-                    log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
-                    let send_subject = fomat!("choosei-reply@" (self.session));
-                    let datalen = lp::LP_choosei_data(self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32);
-                    if datalen <= 0 { panic!("!LP_choosei_data") }
-                    let crc = crc32::checksum_ieee(&self.buffer[..datalen as usize]);
-                    log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
-                    peers::send(&self.ctx, self.buyer, send_subject.as_bytes(), (&self.buffer[..datalen as usize]).into());
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                let send_subject = fomat!("choosei-reply@" (swap.session));
+                let datalen = lp::LP_choosei_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if datalen <= 0 { panic!("!LP_choosei_data") }
+                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
+                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
+                peers::send(&swap.ctx, swap.buyer, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
 
-                    let recv_subject = fomat!("mostprivs@" (self.session));
-                    log!("Waiting for '" (recv_subject) "' …");
-                    let payload = unwrap!(peers::recv (&self.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (self.swap);
+                let recv_subject = fomat!("mostprivs@" (swap.session));
+                log!("Waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
                             log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `lp::LP_mostprivs_verify` …");
@@ -988,171 +992,104 @@ impl Future for SellerSwap {
                             rc == 0
                         }
                     })) .wait());
-                    log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
-                    let send_subject = fomat!("mostprivs-reply@" (self.session));
-                    let datalen = lp::LP_mostprivs_data(self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32);
-                    if datalen <= 0 { panic!("!lp::LP_mostprivs_data") }
-                    let crc = crc32::checksum_ieee(&self.buffer[..datalen as usize]);
-                    log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
-                    peers::send(&self.ctx, self.buyer, send_subject.as_bytes(), (&self.buffer[..datalen as usize]).into());
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                let send_subject = fomat!("mostprivs-reply@" (swap.session));
+                let datalen = lp::LP_mostprivs_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if datalen <= 0 { panic!("!lp::LP_mostprivs_data") }
+                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
+                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") …");
+                peers::send(&swap.ctx, swap.buyer, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
 
-                    SellerSwapState::WaitBuyerFeeData
-                },
-                SellerSwapState::WaitBuyerFeeData => unsafe {
-                    let data_len = lp::LP_swaprecv((*self.swap).N.pair, self.buffer.as_mut_ptr(), self.swap, 600);
-                    let buyer_fee = match self.buyer_coin.tx_from_raw_bytes(&self.buffer[0..data_len as usize]) {
-                        Ok(tx) => tx,
-                        Err(e) => return Err((-1, ERRL!("{}", e))),
-                    };
+                AtomicSwapState::WaitBuyerFee
+            },
+            AtomicSwapState::WaitBuyerFee => unsafe {
+                let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
+                let buyer_fee = match swap.buyer_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]) {
+                    Ok(tx) => tx,
+                    Err(e) => return Err((-1, ERRL!("{}", e))),
+                };
 
-                    let payment_amount = dstr((*self.swap).I.bobsatoshis);
+                AtomicSwapState::SendSellerPayment
+            },
+            AtomicSwapState::SendSellerPayment => unsafe {
+                let payment_amount = dstr((*swap.basilisk_swap).I.bobsatoshis);
 
-                    let payment_fut = self.seller_coin.send_seller_payment(
-                        (now_ms() / 1000) as u32 + 2000,
-                        &(*self.swap).I.pubA0,
-                        &(*self.swap).I.pubB0,
-                        &(*self.swap).I.secretBn,
-                        payment_amount,
-                    );
-                    SellerSwapState::SendSellerPayment(payment_fut)
-                },
-                SellerSwapState::SendSellerPayment(ref mut payment_fut) => unsafe {
-                    let transaction = try_ready!(
-                        payment_fut.poll().map_err(|e| (-2006, ERRL!("Error sending seller payment {}", e)))
-                    );
+                let payment_fut = swap.seller_coin.send_seller_payment(
+                    (now_ms() / 1000) as u32 + 2000,
+                    &(*swap.basilisk_swap).I.pubA0,
+                    &(*swap.basilisk_swap).I.pubB0,
+                    &(*swap.basilisk_swap).I.secretBn,
+                    payment_amount,
+                );
 
-                    let mut msg = transaction.to_raw_bytes();
-                    nn::nn_send((*self.swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
-                    self.seller_payment = Some(transaction.clone());
+                let transaction = payment_fut.wait().map_err(|e| (-2006, ERRL!("Error sending seller payment {}", e)))?;
 
-                    SellerSwapState::WaitBuyerPaymentData
-                },
-                SellerSwapState::WaitBuyerPaymentData => unsafe {
-                    let data_len = lp::LP_swaprecv((*self.swap).N.pair, self.buffer.as_mut_ptr(), self.swap, 600);
-                    let buyer_payment = match self.buyer_coin.tx_from_raw_bytes(&self.buffer[0..data_len as usize]) {
-                        Ok(tx) => tx,
-                        Err(e) => return Err((-1, ERRL!("{}", e))),
-                    };
+                let mut msg = transaction.to_raw_bytes();
+                nn::nn_send((*swap.basilisk_swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                swap.seller_payment = Some(transaction.clone());
 
-                    self.buyer_payment = Some(buyer_payment.clone());
+                AtomicSwapState::WaitBuyerPayment
+            },
+            AtomicSwapState::WaitBuyerPayment => unsafe {
+                let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
+                let buyer_payment = match swap.buyer_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]) {
+                    Ok(tx) => tx,
+                    Err(e) => return Err((-1, ERRL!("{}", e))),
+                };
 
-                    let wait_fut = self.buyer_coin.wait_for_confirmations(
-                        buyer_payment,
-                        (*self.swap).I.aliceconfirms
-                    );
-                    SellerSwapState::WaitBuyerPaymentConfirmation(wait_fut)
-                },
-                SellerSwapState::WaitBuyerPaymentConfirmation(ref mut wait_fut) => unsafe {
-                    try_ready!(
-                        wait_fut.poll().map_err(|e| (-1005, ERRL!("Error wait buyer payment confirmation {}", e)))
-                    );
+                swap.buyer_payment = Some(buyer_payment.clone());
 
-                    let mut reversed_secret = (*self.swap).I.privBn.bytes.to_vec();
-                    reversed_secret.reverse();
-                    let spend_fut = self.buyer_coin.send_seller_spends_buyer_payment(
-                        self.buyer_payment.clone().unwrap(),
-                        &(*self.swap).I.myprivs[0].bytes,
-                        &reversed_secret,
-                        dstr((*self.swap).I.alicesatoshis)
-                    );
+                let wait_fut = swap.buyer_coin.wait_for_confirmations(
+                    buyer_payment,
+                    (*swap.basilisk_swap).I.aliceconfirms
+                );
 
-                    SellerSwapState::SpendBuyerPayment(spend_fut)
-                },
-                SellerSwapState::SpendBuyerPayment(ref mut future) => {
-                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
-                    return Ok(Async::Ready(()));
-                },
-                SellerSwapState::RefundSellerPayment(ref mut future) => {
-                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
-                    return Ok(Async::Ready(()));
-                },
-            };
-            self.state = next_state;
-        }
+                wait_fut.wait().map_err(|e| (-1005, ERRL!("Error wait buyer payment confirmation {}", e)))?;
+                AtomicSwapState::SpendBuyerPayment
+            },
+            AtomicSwapState::SpendBuyerPayment => unsafe {
+                let mut reversed_secret = (*swap.basilisk_swap).I.privBn.bytes.to_vec();
+                reversed_secret.reverse();
+                let spend_fut = swap.buyer_coin.send_seller_spends_buyer_payment(
+                    swap.buyer_payment.clone().unwrap(),
+                    &(*swap.basilisk_swap).I.myprivs[0].bytes,
+                    &reversed_secret,
+                    dstr((*swap.basilisk_swap).I.alicesatoshis)
+                );
+                let transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                return Ok(());
+            },
+            AtomicSwapState::RefundSellerPayment => {
+                // TODO cover this case
+                return Ok(());
+            },
+            _ => unimplemented!(),
+        };
+        swap.state = next_state;
     }
 }
 
-enum BuyerSwapState {
-    PubkeyExchange,
-    SendBuyerFee(BoxedTxFut),
-    WaitSellerPaymentData,
-    WaitSellerPaymentConfirmation(Box<dyn Future<Item=(), Error=String>>),
-    SendBuyerPayment(BoxedTxFut),
-    WaitBuyerPaymentSpent(BoxedTxFut),
-    SpendSellerPayment(BoxedTxFut),
-    RefundBuyerPayment(BoxedTxFut),
-}
-
-pub struct BuyerSwap {
-    swap: *mut lp::basilisk_swap,
-    state: BuyerSwapState,
-    ctx: MmArc,
-    buffer: Vec<u8>,
-    buffer_len: u64,
-    buyer_coin: Box<dyn ExchangeableCoin>,
-    seller_coin: Box<dyn ExchangeableCoin>,
-    buyer_payment: Option<BoxedTx>,
-    seller_payment: Option<BoxedTx>,
-    seller: bits256,
-    session: String,
-}
-
-impl BuyerSwap {
-    pub unsafe fn new(
-        swap: *mut lp::basilisk_swap,
-        ctx: MmArc,
-        seller: bits256,
-        session: String
-    ) -> Result<BuyerSwap, String> {
-        let alice_coin_ptr = lp::LP_coinfind((*swap).I.alicestr.as_mut_ptr());
-        let alice_coin = try_s!(coin_from_iguana_info(alice_coin_ptr));
-        let bob_coin_ptr = lp::LP_coinfind((*swap).I.bobstr.as_mut_ptr());
-        let bob_coin = try_s!(coin_from_iguana_info(bob_coin_ptr));
-
-        Ok(BuyerSwap {
-            swap,
-            state: BuyerSwapState::PubkeyExchange,
-            ctx,
-            buffer_len: 2 * 1024 * 1024,
-            buffer: vec![0; 2 * 1024 * 1024],
-            buyer_coin: alice_coin,
-            seller_coin: bob_coin,
-            buyer_payment: None,
-            seller_payment: None,
-            seller,
-            session
-        })
-    }
-}
-
-impl Future for BuyerSwap {
-    type Item = ();
-    /// Error code and string description
-    type Error = (i32, String);
-
-    /// Swap contains a lot of blocking synchronous call for now.
-    /// Avoid running this future on shared CORE.
-    fn poll(&mut self) -> Poll<(), (i32, String)> {
-        loop {
-            let next_state = match self.state {
-                BuyerSwapState::PubkeyExchange => unsafe {
-                    let ctx_h = match self.ctx.ffi_handle() {
-                        Ok(h) => h,
-                        Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
-                    };
-                    // So the code is going to be more verbose than with the `LP_sendwait` for now,
-                    // in order to keep things clear while we explore the new communication format.
-                    // In the future we might repack it back into one-liners with something similar to `LP_sendwait`, if needs be.
-                    // TODO: See if we can reduce the number of public keys and the size of this payload.
-                    let datalen = lp::LP_pubkeys_data(self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32);
-                    if datalen <= 0 { panic!("!LP_pubkeys_data") }
-                    let send_subject = fomat!("pubkeys@" (self.session));
-                    let sending_f = peers::send(&self.ctx, self.seller, send_subject.as_bytes(), (&self.buffer[..datalen as usize]).into());
-                    let recv_subject = fomat!("pubkeys-reply@" (self.session));
-                    let crc = crc32::checksum_ieee(&self.buffer[..datalen as usize]);
-                    log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
-                    let payload = unwrap!(peers::recv (&self.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (self.swap);
+pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
+    loop {
+        let next_state = match swap.state {
+            AtomicSwapState::PubkeyExchange => unsafe {
+                let ctx_h = match swap.ctx.ffi_handle() {
+                    Ok(h) => h,
+                    Err(e) => return Err((-999, ERRL!("Couldn't get ctx handle")))
+                };
+                // So the code is going to be more verbose than with the `LP_sendwait` for now,
+                // in order to keep things clear while we explore the new communication format.
+                // In the future we might repack it back into one-liners with something similar to `LP_sendwait`, if needs be.
+                // TODO: See if we can reduce the number of public keys and the size of this payload.
+                let datalen = lp::LP_pubkeys_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if datalen <= 0 { panic!("!LP_pubkeys_data") }
+                let send_subject = fomat!("pubkeys@" (swap.session));
+                let sending_f = peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
+                let recv_subject = fomat!("pubkeys-reply@" (swap.session));
+                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
+                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
                             log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
@@ -1162,18 +1099,18 @@ impl Future for BuyerSwap {
                             rc == 0
                         }
                     })) .wait());
-                    drop(sending_f);
-                    log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                drop(sending_f);
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
 
-                    let datalen = lp::LP_choosei_data(self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32);
-                    if datalen <= 0 { panic!("!lp::LP_choosei_data") }
-                    let send_subject = fomat!("choosei@" (self.session));
-                    let sending_f = peers::send(&self.ctx, self.seller, send_subject.as_bytes(), (&self.buffer[..datalen as usize]).into());
-                    let recv_subject = fomat!("choosei-reply@" (self.session));
-                    let crc = crc32::checksum_ieee(&self.buffer[..datalen as usize]);
-                    log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
-                    let payload = unwrap!(peers::recv (&self.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (self.swap);
+                let datalen = lp::LP_choosei_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if datalen <= 0 { panic!("!lp::LP_choosei_data") }
+                let send_subject = fomat!("choosei@" (swap.session));
+                let sending_f = peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
+                let recv_subject = fomat!("choosei-reply@" (swap.session));
+                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
+                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
                             log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `lp::LP_choosei_verify` …");
@@ -1183,18 +1120,18 @@ impl Future for BuyerSwap {
                             rc == 0
                         }
                     })) .wait());
-                    drop(sending_f);
-                    log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                drop(sending_f);
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
 
-                    let datalen = lp::LP_mostprivs_data(self.swap, self.buffer.as_mut_ptr(), self.buffer_len as i32);
-                    if datalen <= 0 { panic!("!lp::LP_mostprivs_data") }
-                    let send_subject = fomat!("mostprivs@" (self.session));
-                    let sending_f = peers::send(&self.ctx, self.seller, send_subject.as_bytes(), (&self.buffer[..datalen as usize]).into());
-                    let recv_subject = fomat!("mostprivs-reply@" (self.session));
-                    let crc = crc32::checksum_ieee(&self.buffer[..datalen as usize]);
-                    log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
-                    let payload = unwrap!(peers::recv (&self.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (self.swap);
+                let datalen = lp::LP_mostprivs_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if datalen <= 0 { panic!("!lp::LP_mostprivs_data") }
+                let send_subject = fomat!("mostprivs@" (swap.session));
+                let sending_f = peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
+                let recv_subject = fomat!("mostprivs-reply@" (swap.session));
+                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
+                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
+                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                        let swap = Swap (swap.basilisk_swap);
                         move |payload: &[u8]| -> bool {
                             let crc = crc32::checksum_ieee (payload);
                             log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `lp::LP_mostprivs_verify` …");
@@ -1204,112 +1141,96 @@ impl Future for BuyerSwap {
                             rc == 0
                         }
                     })) .wait());
-                    drop(sending_f);
-                    log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                drop(sending_f);
+                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
 
-                    let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
-                    let payment_amount = dstr((*self.swap).I.alicesatoshis);
-                    let fee_amount = payment_amount / 777.0;
-                    let fee_tx = self.buyer_coin.send_buyer_fee(&fee_addr_pub_key, fee_amount);
+                AtomicSwapState::SendBuyerFee
+            },
+            AtomicSwapState::SendBuyerFee => unsafe {
+                let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
+                let payment_amount = dstr((*swap.basilisk_swap).I.alicesatoshis);
+                let fee_amount = payment_amount / 777.0;
+                let fee_tx = swap.buyer_coin.send_buyer_fee(&fee_addr_pub_key, fee_amount).wait();
+                let transaction = fee_tx.map_err(|e| (-1004, ERRL!("Error sending buyer fee {}", e)))?;
 
-                    BuyerSwapState::SendBuyerFee(fee_tx)
-                },
-                BuyerSwapState::SendBuyerFee(ref mut fee_tx_fut) => unsafe {
-                    let transaction = try_ready!(
-                        fee_tx_fut.poll().map_err(|e| (-1004, ERRL!("Error sending buyer fee {}", e)))
-                    );
+                let mut msg = transaction.to_raw_bytes();
+                nn::nn_send((*swap.basilisk_swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
 
-                    let mut msg = transaction.to_raw_bytes();
-                    nn::nn_send((*self.swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                AtomicSwapState::WaitSellerPayment
+            },
+            AtomicSwapState::WaitSellerPayment => unsafe {
+                let data_len = lp::LP_swaprecv((*swap.basilisk_swap).N.pair, swap.buffer.as_mut_ptr(), swap.basilisk_swap, 600);
+                let seller_payment = swap.seller_coin.tx_from_raw_bytes(&swap.buffer[0..data_len as usize]).map_err(|e| (-1, ERRL!("{}", e)))?;
+                swap.seller_payment = Some(seller_payment.clone());
 
-                    BuyerSwapState::WaitSellerPaymentData
-                },
-                BuyerSwapState::WaitSellerPaymentData => unsafe {
-                    let data_len = lp::LP_swaprecv((*self.swap).N.pair, self.buffer.as_mut_ptr(), self.swap, 600);
-                    let seller_payment = match self.seller_coin.tx_from_raw_bytes(&self.buffer[0..data_len as usize]) {
-                        Ok(tx) => tx,
-                        Err(e) => return Err((-1, ERRL!("{}", e))),
-                    };
-                    self.seller_payment = Some(seller_payment.clone());
-                    let wait_fut = self.seller_coin.wait_for_confirmations(
-                        seller_payment,
-                        (*self.swap).I.bobconfirms
-                    );
-                    BuyerSwapState::WaitSellerPaymentConfirmation(wait_fut)
-                },
-                BuyerSwapState::WaitSellerPaymentConfirmation(ref mut wait_fut) => unsafe {
-                    try_ready!(
-                        wait_fut.poll().map_err(|e| (-1005, ERRL!("Error waiting for seller payment confirmation {}", e)))
-                    );
+                swap.seller_coin.wait_for_confirmations(
+                    seller_payment,
+                    (*swap.basilisk_swap).I.bobconfirms
+                ).wait().map_err(|e| (-1005, ERRL!("Error waiting for seller payment confirmation {}", e)))?;
 
-                    let payment_amount = dstr((*self.swap).I.alicesatoshis);
+                AtomicSwapState::SendBuyerPayment
+            },
+            AtomicSwapState::SendBuyerPayment => unsafe {
+                let payment_amount = dstr((*swap.basilisk_swap).I.alicesatoshis);
 
-                    let payment_fut = self.buyer_coin.send_buyer_payment(
-                        (now_ms() / 1000) as u32 + 1000,
-                        &(*self.swap).I.pubA0,
-                        &(*self.swap).I.pubB0,
-                        &(*self.swap).I.secretBn,
-                        payment_amount,
-                    );
+                let payment_fut = swap.buyer_coin.send_buyer_payment(
+                    (now_ms() / 1000) as u32 + 1000,
+                    &(*swap.basilisk_swap).I.pubA0,
+                    &(*swap.basilisk_swap).I.pubB0,
+                    &(*swap.basilisk_swap).I.secretBn,
+                    payment_amount,
+                );
 
-                    BuyerSwapState::SendBuyerPayment(payment_fut)
-                },
-                BuyerSwapState::SendBuyerPayment(ref mut payment_fut) => unsafe {
-                    let transaction = try_ready!(
-                        payment_fut.poll().map_err(|e| (-1006, ERRL!("Error sending buyer payment {}", e)))
-                    );
+                let transaction = payment_fut.wait().map_err(|e| (-1006, ERRL!("Error sending buyer payment {}", e)))?;
 
-                    let mut msg = transaction.to_raw_bytes();
-                    nn::nn_send((*self.swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
-                    self.buyer_payment = Some(transaction.clone());
+                let mut msg = transaction.to_raw_bytes();
+                nn::nn_send((*swap.basilisk_swap).N.pair, msg.as_mut_ptr() as *mut c_void, msg.len(), 0);
+                swap.buyer_payment = Some(transaction.clone());
 
-                    let wait_spend_fut = self.buyer_coin.wait_for_tx_spend(transaction.clone(), now_ms() / 1000 + 1000);
-                    BuyerSwapState::WaitBuyerPaymentSpent(wait_spend_fut)
-                },
-                BuyerSwapState::WaitBuyerPaymentSpent(ref mut wait_fut) => unsafe {
-                    match wait_fut.poll() {
-                        Ok(Async::Ready(transaction)) => {
-                            let secret = transaction.extract_secret();
-                            if secret.is_ok() {
-                                let spend_fut = self.seller_coin.send_buyer_spends_seller_payment(
-                                    self.seller_payment.clone().unwrap(),
-                                    &(*self.swap).I.myprivs[0].bytes,
-                                    &secret.unwrap(),
-                                    dstr((*self.swap).I.alicesatoshis)
-                                );
+                AtomicSwapState::WaitBuyerPaymentSpent
+            },
+            AtomicSwapState::WaitBuyerPaymentSpent => {
+                let wait_spend_fut = swap.buyer_coin.wait_for_tx_spend(swap.buyer_payment.clone().unwrap(), now_ms() / 1000 + 1000);
 
-                                BuyerSwapState::SpendSellerPayment(spend_fut)
-                            } else {
-                                let refund_fut = self.buyer_coin.send_buyer_refunds_payment(
-                                    self.buyer_payment.clone().unwrap(),
-                                    &(*self.swap).I.myprivs[0].bytes,
-                                    dstr((*self.swap).I.alicesatoshis)
-                                );
-                                BuyerSwapState::RefundBuyerPayment(refund_fut)
-                            }
-                        },
-                        Ok(Async::NotReady) => return Ok(Async::NotReady),
-                        Err(_e) => {
-                            let refund_fut = self.buyer_coin.send_buyer_refunds_payment(
-                                self.buyer_payment.clone().unwrap(),
-                                &(*self.swap).I.myprivs[0].bytes,
-                                dstr((*self.swap).I.alicesatoshis)
-                            );
-                            BuyerSwapState::RefundBuyerPayment(refund_fut)
+                match wait_spend_fut.wait() {
+                    Ok(transaction) => {
+                        let secret = transaction.extract_secret();
+                        if let Ok(bytes) = secret {
+                            swap.secret = bytes;
+                            AtomicSwapState::SpendSellerPayment
+                        } else {
+                            AtomicSwapState::RefundBuyerPayment
                         }
+                    },
+                    Err(e) => {
+                        log!("Error waiting for buyer payment spend " (e));
+                        AtomicSwapState::RefundBuyerPayment
                     }
-                },
-                BuyerSwapState::SpendSellerPayment(ref mut future) => {
-                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
-                    return Ok(Async::Ready(()));
-                },
-                BuyerSwapState::RefundBuyerPayment(ref mut future) => {
-                    let transaction = try_ready!(future.poll().map_err(|e| (-1, ERRL!("{}", e))));
-                    return Ok(Async::Ready(()));
-                },
-            };
-            self.state = next_state;
-        }
+                }
+            },
+            AtomicSwapState::SpendSellerPayment => unsafe {
+                let spend_fut = swap.seller_coin.send_buyer_spends_seller_payment(
+                    swap.seller_payment.clone().unwrap(),
+                    &(*swap.basilisk_swap).I.myprivs[0].bytes,
+                    &swap.secret,
+                    dstr((*swap.basilisk_swap).I.alicesatoshis)
+                );
+                let transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                return Ok(());
+            },
+            AtomicSwapState::RefundBuyerPayment => unsafe {
+                let refund_fut = swap.buyer_coin.send_buyer_refunds_payment(
+                    swap.buyer_payment.clone().unwrap(),
+                    &(*swap.basilisk_swap).I.myprivs[0].bytes,
+                    dstr((*swap.basilisk_swap).I.alicesatoshis)
+                );
+
+                let transaction = refund_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                return Ok(());
+            },
+            _ => unimplemented!(),
+        };
+        swap.state = next_state;
     }
 }
 
