@@ -2,10 +2,10 @@
 //! 
 //! # A note on the terminology used
 //! 
-//! Alice = Buyer = Liquidity receiver  
+//! Alice = Buyer = Liquidity receiver = Taker  
 //! ("*The process of an atomic swap begins with the person who makes the initial request — this is the liquidity receiver*" - Komodo Whitepaper).
 //! 
-//! Bob = Seller = Liquidity provider  
+//! Bob = Seller = Liquidity provider = Market maker  
 //! ("*On the other side of the atomic swap, we have the liquidity provider — we call this person, Bob*" - Komodo Whitepaper).
 //! 
 //! # Algorithm updates
@@ -62,8 +62,16 @@ use common::mm_ctx::MmArc;
 use crc::crc32;
 use futures::{Future};
 use gstuff::now_ms;
+use std::time::Duration;
+use tokio_timer::Timeout;
 
 use crate::lp;
+
+/// Includes the grace time we add to the "normal" timeouts
+/// in order to give different and/or heavy communication channels a chance.
+const BASIC_COMM_TIMEOUT: u64 = 90;
+
+const SWAP_STATUS: &[&TagParam] = &[&"swap"];
 
 /*
 #define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
@@ -1043,8 +1051,6 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     }
 }
 
-const SWAP_STATUS: &[&TagParam] = &[&"swap"];
-
 pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     let mut status = swap.ctx.log.status_handle();
     loop {
@@ -1063,17 +1069,25 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
                 status.status (SWAP_STATUS, "Waiting for seller public keys…");
                 // TODO timeout 120
-                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (swap.basilisk_swap);
-                        move |payload: &[u8]| -> bool {
-                            let crc = crc32::checksum_ieee (payload);
-                            log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
-                            let mut payload: Vec<u8> = payload.into();
-                            let rc = lp::LP_pubkeys_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
-                            log! ("`LP_pubkeys_verify` finished with " [=rc]);
-                            rc == 0
-                        }
-                    })) .wait());
+                let recv_f = peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                    let swap = Swap (swap.basilisk_swap);
+                    move |payload: &[u8]| -> bool {
+                        let crc = crc32::checksum_ieee (payload);
+                        log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
+                        let mut payload: Vec<u8> = payload.into();
+                        let rc = lp::LP_pubkeys_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
+                        log! ("`LP_pubkeys_verify` finished with " [=rc]);
+                        rc == 0
+                    }
+                }));
+                let recv_f = Timeout::new (recv_f, Duration::from_secs (BASIC_COMM_TIMEOUT + 90));
+                let payload = match recv_f.wait() {
+                    Ok (p) => p,
+                    Err (err) => {
+                        status.append (&fomat! (" Error: " (err)));
+                        return Err ((-1, "".into()))  // TODO: What should we return here?
+                    }
+                };
                 drop(sending_f);
                 log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
 

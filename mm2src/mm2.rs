@@ -54,10 +54,11 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate tokio_core;
+extern crate tokio_timer;
 #[macro_use]
 extern crate unwrap;
 extern crate winapi;
-extern crate tokio_core;
 
 use common::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
 use common::lp::{_bits256 as bits256};
