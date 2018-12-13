@@ -62,10 +62,10 @@ pub mod lp_privkey;
 pub mod mm_ctx;
 pub mod ser;
 
-use futures::{future, Future};
+use futures::{future, Async, Future, Poll};
 use futures::sync::oneshot::{self, Receiver};
 use futures::task::Task;
-use gstuff::{any_to_str, now_float};
+use gstuff::{any_to_str, duration_to_float, now_float};
 use hex::FromHex;
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
 use hyper::client::HttpConnector;
@@ -87,6 +87,8 @@ use std::ptr::{null_mut, read_volatile};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
+use std::thread::JoinHandle;
+use std::time::Duration;
 use std::str;
 use tokio_core::reactor::Remote;
 
@@ -423,6 +425,52 @@ E: fmt::Display + Send + 'static {
         Ok (r)
     })
 }
+
+/// Finishes with the "timeout" error if the underlying future isn't ready withing the given timeframe.
+/// 
+/// NB: Tokio timers (in `tokio::timer`) only seem to work under the Tokio reactor,
+/// which is unfortunate as we want the different futures executed on the different reactors
+/// depending on how much they're I/O-bound, CPU-bound or blocking.
+/// Unlike the Tokio timers this `Timeout` implementation works with any reactor.
+/// Another option to consider is https://github.com/alexcrichton/futures-timer.
+pub struct Timeout<R> {
+    fut: Box<Future<Item=R, Error=String>>,
+    deadline: f64,
+    monitor: Option<JoinHandle<()>>
+}
+impl<R> Future for Timeout<R> {
+    type Item = R;
+    type Error = String;
+    fn poll (&mut self) -> Poll<R, String> {
+        match self.fut.poll() {
+            Err (err) => Err (err),
+            Ok (Async::Ready (r)) => Ok (Async::Ready (r)),
+            Ok (Async::NotReady) => {
+                if now_float() >= self.deadline {
+                    Err ("timeout".into())
+                } else {
+                    // Start waking up this future until it has a chance to timeout.
+                    // For now it's just a basic separate thread. Will probably optimize later.
+                    if self.monitor.is_none() {
+                        let task = futures::task::current();
+                        let deadline = self.deadline;
+                        self.monitor = Some (unwrap! (std::thread::Builder::new().name ("timeout monitor".into()) .spawn (move || {
+                            loop {
+                                std::thread::sleep (Duration::from_secs (1));
+                                task.notify();
+                                if now_float() > deadline + 2. {break}
+                            }
+                        })));
+                    }
+                    Ok (Async::NotReady)
+}   }   }   }   }
+impl<R> Timeout<R> {
+    pub fn new (fut: Box<Future<Item=R, Error=String>>, timeout: Duration) -> Timeout<R> {
+        Timeout {
+            fut: fut,
+            deadline: now_float() + duration_to_float (timeout),
+            monitor: None
+}   }   }
 
 /// Initialize the crate.
 pub fn init() {

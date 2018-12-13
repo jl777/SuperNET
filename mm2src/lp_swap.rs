@@ -56,14 +56,13 @@
 //
 use coins::{BoxedTx, ExchangeableCoin};
 use coins::utxo::{coin_from_iguana_info};
-use common::{bits256, dstr};
+use common::{bits256, dstr, Timeout};
 use common::log::TagParam;
 use common::mm_ctx::MmArc;
 use crc::crc32;
-use futures::{Future};
+use futures::{Future, Stream};
 use gstuff::now_ms;
 use std::time::Duration;
-use tokio_timer::Timeout;
 
 use crate::lp;
 
@@ -72,6 +71,49 @@ use crate::lp;
 const BASIC_COMM_TIMEOUT: u64 = 90;
 
 const SWAP_STATUS: &[&TagParam] = &[&"swap"];
+
+fn send (ctx: &MmArc, to: bits256, subject: String, payload: Vec<u8>) -> Box<(dyn Stream<Item=(), Error=String> + 'static)> {
+    let crc = crc32::checksum_ieee (&payload);  // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
+    log!("Sending '" (subject) "' (" (payload.len()) " bytes, crc " (crc) ")");
+    peers::send (ctx, to, subject.as_bytes(), payload)
+}
+
+macro_rules! recv_ {
+    ($swap: expr, $status: expr, $subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
+        let recv_subject = fomat! (($subj) '@' ($swap.session));
+        $status.status (SWAP_STATUS, &fomat! ("Waiting for " ($desc) "…"));
+        let validator = Box::new ($validator) as Box<Fn(&[u8]) -> Result<bool, String> + Send>;
+        let recv_f = peers::recv (&$swap.ctx, recv_subject.as_bytes(), Box::new ({
+            // NB: `peers::recv` is generic and not responsible for handling errors.
+            //     Here, on the other hand, we should know enough to log the errors.
+            //     Also through the macros the logging statements will carry informative line numbers on them.
+            move |payload: &[u8]| -> bool {
+                match validator (payload) {
+                    Ok (true) => true,
+                    Ok (false) => {
+                        log! ("Payload '" ($subj) "' (" (payload.len()) " bytes, crc " (crc32::checksum_ieee (payload)) ") was invalid, retrying…");
+                        false
+                    },
+                    Err (err) => {
+                        log! ("Error validating payload '" ($subj) "' (" (payload.len()) " bytes, crc " (crc32::checksum_ieee (payload)) "): " (err) ". Retrying…");
+                        false
+                    }
+                }
+            }
+        }));
+        let recv_f = Timeout::new (recv_f, Duration::from_secs (BASIC_COMM_TIMEOUT + $timeout_sec));
+        let payload = match recv_f.wait() {
+            Ok (p) => p,
+            Err (err) => {
+                $status.append (&fomat! (" Error: " (err)));
+                // cf. https://github.com/artemii235/SuperNET/blob/99217fe947dab67c304a9490a3ae6b57ad587110/iguana/exchanges/LP_swap.c#L985
+                return Err (($ec, fomat! ("Error getting '" (recv_subject) "': " (err))))
+            }
+        };
+        $status.append (" Done.");
+        payload
+    }};
+}
 
 /*
 #define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
@@ -1053,43 +1095,34 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
 pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     let mut status = swap.ctx.log.status_handle();
+    macro_rules! send {
+        ($subj: expr, $slice: expr) => {
+            send (&swap.ctx, swap.seller, fomat!(($subj) '@' (swap.session)), $slice.into())
+        };
+    }
+    macro_rules! recv {
+        ($subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
+            recv_! (swap, status, $subj, $desc, $timeout_sec, $ec, $validator)
+        };
+        /// Use this form if there's a sending future to terminate upon receiving the answer.
+        ($sending_f: ident, $subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
+            let payload = recv_! (swap, status, $subj, $desc, $timeout_sec, $ec, $validator);
+            drop ($sending_f);
+            payload
+        }};
+    }
+
     loop {
         let next_state = match swap.state {
             AtomicSwapState::PubkeyExchange => unsafe {
-                // So the code is going to be more verbose than with the `LP_sendwait` for now,
-                // in order to keep things clear while we explore the new communication format.
-                // In the future we might repack it back into one-liners with something similar to `LP_sendwait`, if needs be.
-                // TODO: See if we can reduce the number of public keys and the size of this payload.
                 let datalen = lp::LP_pubkeys_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
                 if datalen <= 0 { panic!("!LP_pubkeys_data") }
-                let send_subject = fomat!("pubkeys@" (swap.session));
-                let sending_f = peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
-                let recv_subject = fomat!("pubkeys-reply@" (swap.session));
-                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
-                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
-                status.status (SWAP_STATUS, "Waiting for seller public keys…");
-                // TODO timeout 120
-                let recv_f = peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
+                let sending_f = send! ("pubkeys", &swap.buffer[..datalen as usize]);
+
+                let _ = recv! (sending_f, "pubkeys-reply", "seller public keys", 90, -1000, {
                     let swap = Swap (swap.basilisk_swap);
-                    move |payload: &[u8]| -> bool {
-                        let crc = crc32::checksum_ieee (payload);
-                        log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `LP_pubkeys_verify` …");
-                        let mut payload: Vec<u8> = payload.into();
-                        let rc = lp::LP_pubkeys_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
-                        log! ("`LP_pubkeys_verify` finished with " [=rc]);
-                        rc == 0
-                    }
-                }));
-                let recv_f = Timeout::new (recv_f, Duration::from_secs (BASIC_COMM_TIMEOUT + 90));
-                let payload = match recv_f.wait() {
-                    Ok (p) => p,
-                    Err (err) => {
-                        status.append (&fomat! (" Error: " (err)));
-                        return Err ((-1, "".into()))  // TODO: What should we return here?
-                    }
-                };
-                drop(sending_f);
-                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                    move |payload: &[u8]| Ok (lp::LP_pubkeys_verify (swap.0, payload.as_ptr() as *mut u8, payload.len() as i32) == 0)
+                });
 
                 let datalen = lp::LP_choosei_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
                 if datalen <= 0 { panic!("!lp::LP_choosei_data") }
