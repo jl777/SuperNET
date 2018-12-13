@@ -540,6 +540,8 @@ struct iguana_info *LP_coincreate(cJSON *item)
         {
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);
+            if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 )
+                coin->txversion = 4;
         } else coin = LP_coinadd(&cdata);
     } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
         printf("SKIP %s, missing rpcport field in coins array\n",symbol);
