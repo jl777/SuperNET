@@ -36,6 +36,9 @@
 //! OP_ENDIF
 //! 
 
+// TODO: Rename Buyer to Taker everywhere (to avoid the ambiguity and reduce the cognitive load of using different termins in the code).
+// TODO: Rename Seller to Maker everywhere.
+
 /******************************************************************************
  * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
@@ -81,19 +84,15 @@ fn send (ctx: &MmArc, to: bits256, subject: String, payload: Vec<u8>) -> Box<(dy
 macro_rules! recv_ {
     ($swap: expr, $status: expr, $subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
         let recv_subject = fomat! (($subj) '@' ($swap.session));
-        $status.status (SWAP_STATUS, &fomat! ("Waiting for " ($desc) "…"));
-        let validator = Box::new ($validator) as Box<Fn(&[u8]) -> Result<bool, String> + Send>;
+        $status.status (SWAP_STATUS, &fomat! ("Waiting " ($desc) "…"));
+        let validator = Box::new ($validator) as Box<Fn(&[u8]) -> Result<(), String> + Send>;
         let recv_f = peers::recv (&$swap.ctx, recv_subject.as_bytes(), Box::new ({
             // NB: `peers::recv` is generic and not responsible for handling errors.
             //     Here, on the other hand, we should know enough to log the errors.
             //     Also through the macros the logging statements will carry informative line numbers on them.
             move |payload: &[u8]| -> bool {
                 match validator (payload) {
-                    Ok (true) => true,
-                    Ok (false) => {
-                        log! ("Payload '" ($subj) "' (" (payload.len()) " bytes, crc " (crc32::checksum_ieee (payload)) ") was invalid, retrying…");
-                        false
-                    },
+                    Ok (()) => true,
                     Err (err) => {
                         log! ("Error validating payload '" ($subj) "' (" (payload.len()) " bytes, crc " (crc32::checksum_ieee (payload)) "): " (err) ". Retrying…");
                         false
@@ -863,17 +862,21 @@ struct Swap (*mut lp::basilisk_swap);
 // TODO: Replace `Swap` with a truly thread-safe Rust version of the struct.
 unsafe impl Send for Swap {}
 
+// AG: AFAIK, the explicit `AtomicSwapState` is an artefact of trying to make the Taker and Maker threads asynchronous.
+// It does *not* reflect, IMHO, the entirety of the Taker and Maker states (there are more `wait` and more `status` updates than there are states).
+// It'll likely be easier to weave the state *implicitly* by using the system threads or, if we want to be asynchronous, async / await.
+
 /// Contains all available states of Atomic swap of both sides (seller and buyer)
 enum AtomicSwapState {
     PubkeyExchange,
     SendBuyerFee,
     WaitBuyerFee,
     SendSellerPayment,
-    WaitSellerPayment,
+    WaitSellerPayment {sending_f: Box<Stream<Item=(), Error=String>>},
     SendBuyerPayment,
     WaitBuyerPayment,
     SpendBuyerPayment,
-    WaitBuyerPaymentSpent,
+    WaitBuyerPaymentSpent {sending_f: Box<Stream<Item=(), Error=String>>},
     SpendSellerPayment,
     RefundBuyerPayment,
     RefundSellerPayment,
@@ -882,7 +885,7 @@ enum AtomicSwapState {
 pub struct AtomicSwap {
     basilisk_swap: *mut lp::basilisk_swap,
     ctx: MmArc,
-    state: AtomicSwapState,
+    state: Option<AtomicSwapState>,
     buffer: Vec<u8>,
     buffer_len: u64,
     buyer_coin: Box<dyn ExchangeableCoin>,
@@ -911,7 +914,7 @@ impl AtomicSwap {
         Ok(AtomicSwap {
             basilisk_swap,
             ctx,
-            state: AtomicSwapState::PubkeyExchange,
+            state: Some (AtomicSwapState::PubkeyExchange),
             buffer_len: 2 * 1024 * 1024,
             buffer: vec![0; 2 * 1024 * 1024],
             buyer_coin: alice_coin,
@@ -928,7 +931,7 @@ impl AtomicSwap {
 
 pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     loop {
-        let next_state = match swap.state {
+        let next_state = match unwrap! (swap.state.take()) {
             AtomicSwapState::PubkeyExchange => unsafe {
                 // TODO timeout 120
                 let recv_subject = fomat!("pubkeys@" (swap.session));
@@ -1089,7 +1092,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             },
             _ => unimplemented!(),
         };
-        swap.state = next_state;
+        swap.state = Some (next_state);
     }
 }
 
@@ -1104,72 +1107,62 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         ($subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
             recv_! (swap, status, $subj, $desc, $timeout_sec, $ec, $validator)
         };
-        /// Use this form if there's a sending future to terminate upon receiving the answer.
+        // Use this form if there's a sending future to terminate upon receiving the answer.
         ($sending_f: ident, $subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
             let payload = recv_! (swap, status, $subj, $desc, $timeout_sec, $ec, $validator);
             drop ($sending_f);
             payload
         }};
     }
+    // NB: If we want to replace the `err!` with `?` then we should move the `status` ownership to the call site.
+    //     (Which IMHO would break the status code flow and encapsulation a little).
+    macro_rules! err {
+        ($ec: expr, $($msg: tt)+) => {{
+            let mut msg = fomat! (' ' $($msg)+);
+            status.append (&msg);
+            msg.remove (0);
+            return Err (($ec, msg))
+        }};
+    }
 
     loop {
-        let next_state = match swap.state {
+        let next_state = match unwrap! (swap.state.take()) {
             AtomicSwapState::PubkeyExchange => unsafe {
-                let datalen = lp::LP_pubkeys_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
-                if datalen <= 0 { panic!("!LP_pubkeys_data") }
-                let sending_f = send! ("pubkeys", &swap.buffer[..datalen as usize]);
+                let rc = lp::LP_pubkeys_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if rc <= 0 {err! (-1000, "LP_pubkeys_data <= 0: " (rc))}
+                let sending_f = send! ("pubkeys", &swap.buffer[.. rc as usize]);
 
-                let _ = recv! (sending_f, "pubkeys-reply", "seller public keys", 90, -1000, {
+                let _ = recv! (sending_f, "pubkeys-reply", "for seller public keys", 90, -1000, {
                     let swap = Swap (swap.basilisk_swap);
-                    move |payload: &[u8]| Ok (lp::LP_pubkeys_verify (swap.0, payload.as_ptr() as *mut u8, payload.len() as i32) == 0)
+                    move |payload: &[u8]|
+                        if lp::LP_pubkeys_verify (swap.0, payload.as_ptr() as *mut u8, payload.len() as i32) == 0 {Ok(())}
+                        else {ERR! ("!LP_pubkeys_verify")}
                 });
 
-                let datalen = lp::LP_choosei_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
-                if datalen <= 0 { panic!("!lp::LP_choosei_data") }
-                let send_subject = fomat!("choosei@" (swap.session));
-                let sending_f = peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
-                let recv_subject = fomat!("choosei-reply@" (swap.session));
-                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
-                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
-                status.status (SWAP_STATUS, "Waiting for the seller to confirm the key choice…");
-                // TODO timeout LP_SWAPSTEP_TIMEOUT (30)
-                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (swap.basilisk_swap);
-                        move |payload: &[u8]| -> bool {
-                            let crc = crc32::checksum_ieee (payload);
-                            log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `lp::LP_choosei_verify` …");
-                            let mut payload: Vec<u8> = payload.into();
-                            let rc = lp::LP_choosei_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
-                            log! ("`lp::LP_choosei_verify` finished with " [=rc]);
-                            rc == 0
-                        }
-                    })) .wait());
-                drop(sending_f);
-                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                let rc = lp::LP_choosei_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if rc <= 0 {err! (-1000, "LP_choosei_data <= 0: " (rc))}
+                let sending_f = send! ("choosei", &swap.buffer[.. rc as usize]);
 
-                let datalen = lp::LP_mostprivs_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
-                if datalen <= 0 { panic!("!lp::LP_mostprivs_data") }
-                let send_subject = fomat!("mostprivs@" (swap.session));
-                let sending_f = peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), (&swap.buffer[..datalen as usize]).into());
-                let recv_subject = fomat!("mostprivs-reply@" (swap.session));
-                let crc = crc32::checksum_ieee(&swap.buffer[..datalen as usize]);
-                log!("Sending '" (send_subject) "' of " (datalen) " bytes (crc " (crc) ") and waiting for '" (recv_subject) "' …");
-                // TODO: Human-readable.
-                status.status (SWAP_STATUS, "Waiting for \"mostpriv\" reply…");
-                // TODO timeout LP_SWAPSTEP_TIMEOUT (30)
-                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
-                        let swap = Swap (swap.basilisk_swap);
-                        move |payload: &[u8]| -> bool {
-                            let crc = crc32::checksum_ieee (payload);
-                            log! ("Verifying the received payload of " (payload.len()) " bytes (crc " (crc) ") with `lp::LP_mostprivs_verify` …");
-                            let mut payload: Vec<u8> = payload.into();
-                            let rc = lp::LP_mostprivs_verify (swap.0, payload.as_mut_ptr(), payload.len() as i32);
-                            log! ("`lp::LP_mostprivs_verify` finished with " [=rc]);
-                            rc == 0
-                        }
-                    })) .wait());
-                drop(sending_f);
-                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
+                // NB: As of now `LP_choosei_verify` has side-effects and doesn't fit the `validator` very well.
+                //     cf. https://discordapp.com/channels/@me/472006550194618379/521651286861414410
+                //     (Preferred refactoring here might be to separate choosei parsing and verification from updating the swap,
+                //      performing the parsing and verification in the `validator`).
+                let payload = recv! (sending_f, "choosei-reply", "for the seller to confirm the key choice", 30, -1001, {|_: &[u8]| Ok(())});
+                let rc = lp::LP_choosei_verify (swap.basilisk_swap, payload.as_ptr() as *mut u8, payload.len() as i32);
+                if rc != 0 {err! (-1001, "LP_choosei_verify != 0: " (rc))}
+
+                let rc = lp::LP_mostprivs_data(swap.basilisk_swap, swap.buffer.as_mut_ptr(), swap.buffer_len as i32);
+                if rc <= 0 {err! (-1002, "LP_mostprivs_data <= 0: " (rc))}
+                let sending_f = send! ("mostprivs", &swap.buffer[.. rc as usize]);
+
+                // TODO: Replace "mostpriv" with a human-readable label of what it is we're waiting for.
+                let _ = recv! (sending_f, "mostprivs-reply", "for \"mostpriv\" reply", 30, -1002, {
+                    let swap = Swap (swap.basilisk_swap);
+                    move |payload: &[u8]| {
+                        if lp::LP_mostprivs_verify (swap.0, payload.as_ptr() as *mut u8, payload.len() as i32) == 0 {Ok(())}
+                        else {ERR! ("LP_mostprivs_verify != 0: {}", rc)}
+                    }
+                });
 
                 AtomicSwapState::SendBuyerFee
             },
@@ -1180,36 +1173,22 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let fee_tx = swap.buyer_coin.send_buyer_fee(&fee_addr_pub_key, fee_amount).wait();
                 let transaction = fee_tx.map_err(|e| (-1004, ERRL!("Error sending buyer fee {}", e)))?;
 
-                let msg = transaction.to_raw_bytes();
-                let send_subject = fomat!("buyer-fee@" (swap.session));
-                let crc = crc32::checksum_ieee(&msg);
-                log!("Sending '" (send_subject) "' of " (msg.len()) " bytes (crc " (crc) ")");
-                peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), msg);
+                let sending_f = send! ("buyer-fee", transaction.to_raw_bytes());
 
-                AtomicSwapState::WaitSellerPayment
+                AtomicSwapState::WaitSellerPayment {sending_f}
             },
-            AtomicSwapState::WaitSellerPayment => unsafe {
-                // TODO timeout 600
-                let recv_subject = fomat!("seller-payment@" (swap.session));
-                log!("Waiting for '" (recv_subject) "' …");
-                status.status (SWAP_STATUS, "Waiting for the seller payment…");
-                let payload = unwrap!(peers::recv (&swap.ctx, recv_subject.as_bytes(), Box::new ({
-                        move |payload: &[u8]| -> bool {
-                            let crc = crc32::checksum_ieee (payload);
-                            log! ("Received seller payment payload of " (payload.len()) " bytes (crc " (crc) ")");
-                            true
-                        }
-                    })) .wait());
-                log!("Successfully received '" (recv_subject) "' of " (payload.len()) " bytes …");
-
-                let seller_payment = swap.seller_coin.tx_from_raw_bytes(&payload).map_err(|e| (-1, ERRL!("{}", e)))?;
+            AtomicSwapState::WaitSellerPayment {sending_f} => unsafe {
+                let payload = recv! (sending_f, "seller-payment", "for Maker deposit", 600, -1005, {|_: &[u8]| Ok (())});
+                let seller_payment = match swap.seller_coin.tx_from_raw_bytes (&payload) {
+                    Ok (p) => p,
+                    Err (err) => err! (-1005, "Error parsing the 'seller-payment': " (err))
+                };
                 swap.seller_payment = Some(seller_payment.clone());
 
-                status.status (SWAP_STATUS, "Waiting for the confirmation of the seller payment…");
-                swap.seller_coin.wait_for_confirmations(
-                    seller_payment,
-                    (*swap.basilisk_swap).I.bobconfirms
-                ).wait().map_err(|e| (-1005, ERRL!("Error waiting for seller payment confirmation {}", e)))?;
+                status.status (SWAP_STATUS, "Waiting for the confirmation of the Maker payment…");
+                if let Err (err) = swap.seller_coin.wait_for_confirmations (seller_payment, (*swap.basilisk_swap).I.bobconfirms) .wait() {
+                    err! (-1005, "!seller_coin.wait_for_confirmations: " (err))
+                }
 
                 AtomicSwapState::SendBuyerPayment
             },
@@ -1224,24 +1203,25 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     payment_amount,
                 );
 
-                // TODO: Update the `status`, what are we waiting for.
-                let transaction = payment_fut.wait().map_err(|e| (-1006, ERRL!("Error sending buyer payment {}", e)))?;
+                status.status (SWAP_STATUS, "Sending the Taker fee…");
+                let transaction = match payment_fut.wait() {
+                    Ok (t) => t,
+                    Err (err) => err! (-1006, "!send_buyer_payment: " (err))
+                };
 
                 let msg = transaction.to_raw_bytes();
 
-                let send_subject = fomat!("buyer-payment@" (swap.session));
-                let crc = crc32::checksum_ieee(&msg);
-                log!("Sending '" (send_subject) "' of " (msg.len()) " bytes (crc " (crc) ")");
-                peers::send(&swap.ctx, swap.seller, send_subject.as_bytes(), msg);
-                swap.buyer_payment = Some(transaction.clone());
+                let sending_f = send! ("buyer-payment", msg);
 
-                AtomicSwapState::WaitBuyerPaymentSpent
+                AtomicSwapState::WaitBuyerPaymentSpent {sending_f}
             },
-            AtomicSwapState::WaitBuyerPaymentSpent => {
-                // TODO: Update the `status`, what are we waiting for.
+            AtomicSwapState::WaitBuyerPaymentSpent {sending_f} => {
+                status.status (SWAP_STATUS, "Waiting for buyer payment spend…");
                 let wait_spend_fut = swap.buyer_coin.wait_for_tx_spend(swap.buyer_payment.clone().unwrap(), now_ms() / 1000 + 1000);
+                let got = wait_spend_fut.wait();
+                drop (sending_f);
 
-                match wait_spend_fut.wait() {
+                match got {
                     Ok(transaction) => {
                         let secret = transaction.extract_secret();
                         if let Ok(bytes) = secret {
@@ -1251,37 +1231,44 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                             AtomicSwapState::RefundBuyerPayment
                         }
                     },
-                    Err(e) => {
-                        log!("Error waiting for buyer payment spend " (e));
+                    Err(err) => {
+                        status.append (&fomat! (" Error: " (err)));
                         AtomicSwapState::RefundBuyerPayment
                     }
                 }
             },
             AtomicSwapState::SpendSellerPayment => unsafe {
-                // TODO: Update the `status`, what are we waiting for.
+                // TODO: A human-readable label for send_buyer_spends_seller_payment.
+                status.status (SWAP_STATUS, "send_buyer_spends_seller_payment…");
                 let spend_fut = swap.seller_coin.send_buyer_spends_seller_payment(
                     swap.seller_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
                     &swap.secret,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
-                let _transaction = spend_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                let _transaction = match spend_fut.wait() {
+                    Ok (t) => t,
+                    Err (err) => err! (-1, "Error: " (err))
+                };
                 return Ok(());
             },
             AtomicSwapState::RefundBuyerPayment => unsafe {
-                // TODO: Update the `status`, what are we waiting for.
+                status.status (SWAP_STATUS, "Refunding the Taker payment…");
                 let refund_fut = swap.buyer_coin.send_buyer_refunds_payment(
                     swap.buyer_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
 
-                let _transaction = refund_fut.wait().map_err(|e| (-1, ERRL!("{}", e)))?;
+                let _transaction = match refund_fut.wait() {
+                    Ok (t) => t,
+                    Err (err) => err! (-1, "Error: " (err))
+                };
                 return Ok(());
             },
             _ => unimplemented!(),
         };
-        swap.state = next_state;
+        swap.state = Some (next_state);
     }
 }
 

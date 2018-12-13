@@ -107,6 +107,7 @@ extern "C" char* dht_save_state (dugout_t* dugout, int32_t* buflen) try {
     return cbuf;
 } catch (std::exception const& ex) {
     dugout->err = strdup (ex.what());
+    return nullptr;
 }
 
 extern "C" void dht_alerts (dugout_t* dugout, void (*cb) (dugout_t*, void*, lt::alert*), void* cbctx) try {
