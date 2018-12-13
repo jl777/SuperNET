@@ -14,7 +14,7 @@ pipeline {
         // We have to point CMake back at g++-5 for now.
         sh '''
 export CC=gcc-5 CXX=g++-5
-cargo build -vv --color never 2>&1 | grep --line-buffered -v '     Running `rustc --crate-name ' | grep --line-buffered -v '       Fresh'
+cargo build -vv --color never 2>&1 | grep --line-buffered -v '     Running `rustc --' | grep --line-buffered -v '       Fresh'
 cargo test
 cargo test --package etomicrs
 '''
