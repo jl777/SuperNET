@@ -489,6 +489,11 @@ lazy_static! {
             // Hyper had a lot of Keep-Alive bugs over the years and I suspect
             // that with the shared client we might be getting errno 10054
             // due to a closed Keep-Alive connection mismanagement.
+            // (To solve this problem Hyper should proactively close the Keep-Alive
+            // connections after a configurable amount of time has passed since
+            // their creation, thus saving us from trying to use the connections
+            // closed on the other side. I wonder if we can implement this strategy
+            // ourselves with a custom connector or something).
             // Performance of Keep-Alive in the Hyper client is questionable as well,
             // should measure it on a case-by-case basis when we need it.
             .keep_alive (false)
