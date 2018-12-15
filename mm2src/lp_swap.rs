@@ -862,9 +862,20 @@ struct Swap (*mut lp::basilisk_swap);
 // TODO: Replace `Swap` with a truly thread-safe Rust version of the struct.
 unsafe impl Send for Swap {}
 
-// AG: AFAIK, the explicit `AtomicSwapState` is an artefact of trying to make the Taker and Maker threads asynchronous.
-// It does *not* reflect, IMHO, the entirety of the Taker and Maker states (there are more `wait` and more `status` updates than there are states).
-// It'll likely be easier to weave the state *implicitly* by using the system threads or, if we want to be asynchronous, async / await.
+// AG: The explicit state here constitutes an early and experimental design aimed towards
+// serializable and resumable SWAP. The `AtomicSwapState` is essentially a list of `goto` labels,
+// allowing us to jump anywhere in the SWAP loops.
+// Given that the SWAP is the centerpiece of this software
+// and improving the quality of the code here might reap us some noticeable benefits,
+// we should probably take another go at designing this, as discussed in
+// https://github.com/artemii235/SuperNET/commit/d66ab944bfd8c5e8fb17f1d36ac303797156b88e#r31674919
+// In particular,
+// 1) I'd like the design to emerge from a realistic save-resume scenario(s),
+// that is, where the saves and resumes actually happen, at least from under a unit test;
+// 2) I'd like the transitions to be implemented as pure functions,
+// cf. https://github.com/artemii235/SuperNET/tree/mm2-dice/mm2src#purely-functional-core
+// 3) Preferably untangling them from the portions of the shared state that are not relevant to them,
+// that is, avoiding the "big ball of mud" and "object orgy" antipatterns of a single shared state structure.
 
 /// Contains all available states of Atomic swap of both sides (seller and buyer)
 enum AtomicSwapState {
