@@ -22,6 +22,20 @@ uint64_t dpow_utxosize(char *symbol)
     else return(10000);
 }
 
+int32_t dpow_smallopreturn(char *symbol)
+{
+    if ( strcmp(symbol,"GAME") == 0 || strcmp(symbol,"EMC2") == 0 || strcmp(symbol,"HUSH") == 0 )
+        return(1);
+    else return(0);
+}
+
+int32_t dpow_is015(char *symbol)
+{
+    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 || strcmp("EMC2",symbol) == 0 ) //strcmp("BTC",symbol) == 0 ||
+        return(1);
+    else return(0);
+}
+
 char *bitcoind_getinfo(char *symbol,char *serverport,char *userpass,char *getinfostr)
 {
     char buf[1],*retstr; cJSON *retjson;
@@ -279,19 +293,16 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,ui
     return(retjson);
 }
 
-int is_STAKED(const char *chain_name);
-
 int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp)
 {
     struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson; int32_t kmdheight=0,hexlen=0,n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
-    if ( strcmp(bp->srccoin->symbol,"GAME") != 0 || strcmp(bp->srccoin->symbol,"EMC2") != 0 || src_or_dest != 0 )
+    if ( dpow_smallopreturn(bp->srccoin->symbol) == 0 || src_or_dest != 0 )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-//( )
-        if ( ( is_STAKED(bp->srccoin->symbol) != 0 ) && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        if ( dpow_CCid(myinfo,bp->srccoin) != 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -398,13 +409,6 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         free(retstr);
     }
     return(json);
-}
-
-int32_t dpow_is015(char *symbol)
-{
-    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 || strcmp("EMC2",symbol) == 0 ) //strcmp("BTC",symbol) == 0 ||
-        return(1);
-    else return(0);
 }
 
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
@@ -649,6 +653,9 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
             free_json(retjson);
         }
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+
+	/*if (coin->sapling != 0)
+		printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);*/
         free(paramstr);
         usleep(1000);
         return(retstr);
