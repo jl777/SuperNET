@@ -9,18 +9,18 @@ use serde_json::{self as json, Value as Json};
 use term;
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
-use std::env;
+use std::env::{self, var};
 use std::fs;
-use std::io::{Write};
+use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::{Path, PathBuf};
-use std::str::{from_utf8};
+use std::str::from_utf8;
 use std::sync::Mutex;
-use std::thread::{sleep};
+use std::thread::sleep;
 use std::time::Duration;
 
 use super::slurp_req;
-use super::log::LogState;
+use super::log::{dashboard_path, LogState};
 
 /// Automatically kill a wrapped process.
 pub struct RaiiKill {pub handle: Handle, running: bool}
@@ -82,6 +82,8 @@ lazy_static! {
     static ref MM_IPS: Mutex<HashSet<IpAddr>> = Mutex::new (HashSet::new());
 }
 
+pub type LocalStart = fn (PathBuf, PathBuf, Json);
+
 /// An instance of a MarketMaker process started by and for an integration test.  
 /// Given that [in CI] the tests are executed before the build, the binary of that process is the tests binary.
 pub struct MarketMakerIt {
@@ -103,7 +105,7 @@ impl MarketMakerIt {
     ///            Unique local IP address is injected as "myipaddr" unless this field is already present.
     /// * `userpass` - RPC API key. We should probably extract it automatically from the MM log.
     /// * `local` - Function to start the MarketMaker in a local thread, instead of spawning a process.
-    pub fn start (mut conf: Json, userpass: String, local: Option<fn (folder: PathBuf, log_path: PathBuf, conf: Json)>)
+    pub fn start (mut conf: Json, userpass: String, local: Option<LocalStart>)
     -> Result<MarketMakerIt, String> {
         let executable = try_s! (env::args().next().ok_or ("No program name"));
         let executable = try_s! (Path::new (&executable) .canonicalize());
@@ -250,4 +252,44 @@ pub fn wait_for_log (log: &LogState, timeout_sec: f64, pred: &Fn (&str) -> bool)
         if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
         sleep (Duration::from_millis (ms));
     }
+}
+
+/// Create RAII variables to the effect of dumping the log and the status dashboard at the end of the scope.
+pub fn mm_dump (log_path: &Path) -> (RaiiDump, RaiiDump) {(
+    RaiiDump {log_path: log_path.to_path_buf()},
+    RaiiDump {log_path: unwrap! (dashboard_path (log_path))}
+)}
+
+/// A typical MM instance.
+pub fn mm_spat (local_start: LocalStart) -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
+    let passphrase = "SPATsRps3dhEtXwtnpRCKF";
+    let mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "client": 1,
+            "passphrase": passphrase,
+            "rpccors": "http://localhost:4000",
+            "coins": [
+                {"coin": "BEER","asset": "BEER", "rpcport": 8923},
+                {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
+            ]
+        }),
+        "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start), _ => None}
+    ));
+    let (dump_log, dump_dashboard) = mm_dump (&mm.log_path);
+    (passphrase, mm, dump_log, dump_dashboard)
+}
+
+/// Asks MM to enable the given currency in electrum mode
+/// fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/.
+pub fn enable_electrum (mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32) {
+    let electrum = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "electrum",
+        "coin": coin,
+        "ipaddr": ipaddr,
+        "port": port
+    })));
+    assert_eq! (electrum.0, StatusCode::OK);
 }

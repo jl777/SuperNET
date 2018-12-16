@@ -18,28 +18,19 @@
 //  marketmaker
 //
 
-#[macro_use]
-extern crate common;
-#[macro_use]
-extern crate fomat_macros;
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-extern crate hashbrown;
-extern crate hyper;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate unwrap;
-extern crate url;
+#[macro_use] extern crate common;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate unwrap;
 
 pub mod prices;
 use self::prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
+
+#[doc(hidden)]
+pub mod portfolio_tests;
 
 use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, RefreshedExternalResource, CJSON, SMALLVAL};

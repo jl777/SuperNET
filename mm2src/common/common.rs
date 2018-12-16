@@ -10,33 +10,13 @@
 //!                     |
 //!                   binary
 
-extern crate backtrace;
-extern crate chrono;
-#[macro_use]
-extern crate duct;
-#[macro_use]
-extern crate fomat_macros;
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate hex;
-extern crate hashbrown;
-extern crate hyper;
-extern crate hyper_rustls;
-extern crate rand;
-extern crate regex;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-extern crate term;
-extern crate tokio_core;
-#[macro_use]
-extern crate unwrap;
+#[macro_use] extern crate duct;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate unwrap;
 
 /// Fills a C character array with a zero-terminated C string,
 /// returning an error if the string is too large.

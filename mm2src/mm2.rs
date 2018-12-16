@@ -21,44 +21,15 @@
 
 #![allow(non_camel_case_types)]
 
-extern crate coins;
-#[macro_use]
-extern crate common;
-extern crate crc;
-extern crate crossbeam;
+#[macro_use] extern crate common;
 #[allow(unused_imports)]
-#[macro_use]
-extern crate duct;
-#[cfg(feature = "etomic")]
-extern crate etomicrs;
-#[macro_use]
-extern crate fomat_macros;
-extern crate futures;
-extern crate futures_cpupool;
-#[macro_use]
-extern crate gstuff;
-extern crate hashbrown;
-extern crate hex;
-extern crate hyper;
-#[allow(unused_imports)]
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate nix;
-extern crate peers;
-extern crate portfolio;
-extern crate rand;
-extern crate serde;
-#[allow(unused_imports)]
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-extern crate tokio_core;
-extern crate tokio_timer;
-#[macro_use]
-extern crate unwrap;
-extern crate winapi;
+#[macro_use] extern crate duct;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate unwrap;
 
 use common::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
 use common::lp::{_bits256 as bits256};
