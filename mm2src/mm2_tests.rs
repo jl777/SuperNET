@@ -504,7 +504,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     let coins = json!([
         {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},
         {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"confpath":unwrap!(pizza_cfp.to_str())},
-        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str())},
+        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str()),"txversion":4},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
     ]);
 
@@ -560,7 +560,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     // wait until Alice recognize Bob node by importing it's pubkey
     unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
 
-    // issue sell request on Bob side by setting PIZZA/ETH price
+    // issue sell request on Bob side by setting base/rel price
     log!("Issue bob sell request");
     let rc = unwrap! (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
@@ -571,7 +571,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     })));
     assert! (rc.0.is_success(), "!setprice: {}", rc.1);
 
-    // issue PIZZA/ETH buy request from Alice side
+    // issue base/rel buy request from Alice side
     thread::sleep(Duration::from_secs(2));
     log!("Issue alice buy request");
     let rc = unwrap! (mm_alice.rpc (json! ({
@@ -661,4 +661,16 @@ fn trade_pizza_beer() {
 #[ignore]
 fn trade_beer_pizza() {
     trade_base_rel("BEER", "PIZZA");
+}
+
+#[test]
+#[ignore]
+fn trade_pizza_etomic() {
+    trade_base_rel("PIZZA", "ETOMIC");
+}
+
+#[test]
+#[ignore]
+fn trade_etomic_pizza() {
+    trade_base_rel("ETOMIC", "PIZZA");
 }

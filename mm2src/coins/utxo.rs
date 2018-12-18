@@ -25,25 +25,22 @@ use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
-use common::{slurp_req, dstr};
+use common::{slurp_req};
 use common::log::{LogState, StatusHandle};
 use common::lp;
 use futures::{Async, Future, Poll, Stream};
 use gstuff::now_ms;
-use hex::FromHex;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::{AUTHORIZATION};
-use keys::{KeyPair, Network, Private, Public, Address, Secret, Type};
+use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
-use libc::{memcpy, c_void};
-use primitives::hash::H256;
+use primitives::hash::{H256, H512};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
 use serde::de::DeserializeOwned;
 use serde_json::{self as json, Value as Json};
 use sha2::{Sha256, Digest};
-use std::any::Any;
 use std::cmp::Ordering;
 use std::convert::AsMut;
 use std::ffi::CStr;
@@ -104,18 +101,6 @@ pub struct ExtendedUtxoTx {
 }
 
 impl ExtendedUtxoTx {
-    fn new() -> Self {
-        ExtendedUtxoTx {
-            transaction: UtxoTransaction {
-                version: 1,
-                lock_time: 0,
-                inputs: vec![],
-                outputs: vec![]
-            },
-            redeem_script: vec![].into(),
-        }
-    }
-
     pub fn transaction_bytes(&self) -> Bytes {
         serialize(&self.transaction)
     }
@@ -183,6 +168,7 @@ fn json_rpc_v1_request<T: DeserializeOwned + Send + 'static>(
     request: UtxoRpcRequest
 ) -> RpcRes<T> {
     let request_body = try_fus!(json::to_string(&request));
+
     let http_request = try_fus!(
         Request::builder()
                 .method("POST")
@@ -277,6 +263,13 @@ impl UtxoRpcClient {
     /// It expects that verbose param is always 1 to get deserialized transaction
     rpc_func!(pub fn get_raw_transaction(&self, txid: H256Json, verbose: u32) -> RpcRes<RpcTransaction>);
 
+    pub fn output_amount(&self, txid: H256Json, index: usize) -> Result<u64, String> {
+        let tx: UtxoTransaction = try_s!(deserialize(
+            try_s!(self.get_raw_transaction(txid, 1).wait()).hex.as_slice()).map_err(|e| ERRL!("{:?}", e))
+        );
+        Ok(tx.outputs[index].value)
+    }
+
     /// https://bitcoin.org/en/developer-reference#getblock
     /// It expects that verbose param is always true to get verbose block
     rpc_func!(pub fn get_block(&self, height: String, verbose: bool) -> RpcRes<VerboseBlockClient>);
@@ -286,11 +279,11 @@ impl UtxoRpcClient {
 pub struct UtxoCoin {
     /// https://en.bitcoin.it/wiki/List_of_address_prefixes
     /// https://github.com/jl777/coins/blob/master/coins
-    pub_type: u8,
-    p2sh_type: u8,
-    wif_type: u8,
-    wif_t_addr: u8,
-    t_addr: u8,
+    pub_addr_prefix: u8,
+    p2sh_addr_prefix: u8,
+    wif_prefix: u8,
+    pub_t_addr_prefix: u8,
+    p2sh_t_addr_prefix: u8,
     /// True if coins uses Proof of Stake consensus algo
     /// Proof of Work is expected by default
     /// https://en.bitcoin.it/wiki/Proof_of_Stake
@@ -304,7 +297,7 @@ pub struct UtxoCoin {
     /// For now it's mostly used for Zcash and forks because they changed the algo in
     /// Overwinter and then Sapling upgrades
     /// https://github.com/zcash/zips/blob/master/zip-0243.rst
-    tx_version: u32,
+    tx_version: i32,
     /// If true - use Segwit protocol
     /// https://en.bitcoin.it/wiki/Segregated_Witness
     segwit: bool,
@@ -360,6 +353,7 @@ fn generate_transaction(
     mut outputs: Vec<TransactionOutput>,
     lock_time: u32,
     version: i32,
+    overwintered: bool,
     tx_fee: u64,
     decimals: u8,
     change_script_pubkey: Bytes,
@@ -391,7 +385,8 @@ fn generate_transaction(
                 hash: utxo.txid.reversed().into(),
                 index: utxo.vout,
             },
-            sequence: SEQUENCE_FINAL
+            sequence: SEQUENCE_FINAL,
+            amount: f64_to_sat(utxo.amount, decimals),
         });
         if value_to_spend >= target_value { break; }
     }
@@ -409,11 +404,25 @@ fn generate_transaction(
         });
     }
 
+    let mut version_group_id = 0;
+    if version == 3 {
+        version_group_id = 0x03c48270;
+    } else if version == 4 {
+        version_group_id = 0x892f2085;
+    }
+
     Ok(TransactionInputSigner {
         inputs,
         outputs,
         lock_time,
-        version
+        version,
+        overwintered,
+        expiry_height: 0,
+        join_splits: vec![],
+        shielded_spends: vec![],
+        shielded_outputs: vec![],
+        value_balance: 0,
+        version_group_id,
     })
 }
 
@@ -483,6 +492,7 @@ fn p2pkh_spend(
     if script != *prev_script {
         return ERR!("p2pkh script {} built from input key pair doesn't match expected prev script {}", script, prev_script);
     }
+
     let sighash = signer.signature_hash(input_index, 0, &script, SignatureVersion::Base, 1);
 
     let script_sig = try_s!(script_sig_with_pub(&sighash, key_pair));
@@ -528,37 +538,64 @@ fn p2sh_spending_tx(
     outputs: Vec<TransactionOutput>,
     script_data: Script,
     key_pair: &KeyPair,
+    version: i32,
+    overwintered: bool,
     lock_time: u32,
     sequence: u32,
 ) -> Result<UtxoTransaction, String> {
+    let mut version_group_id = 0;
+    if version == 3 {
+        version_group_id = 0x03c48270;
+    } else if version == 4 {
+        version_group_id = 0x892f2085;
+    }
+
     let unsigned = TransactionInputSigner {
         lock_time,
-        version: 1,
+        version,
+        overwintered,
         inputs: vec![UnsignedTransactionInput {
             sequence,
             previous_output: OutPoint {
                 hash: prev_transaction.transaction.hash(),
                 index: 0,
-            }
+            },
+            amount: prev_transaction.transaction.outputs[0].value,
         }],
         outputs: outputs.clone(),
+        expiry_height: 0,
+        join_splits: vec![],
+        shielded_spends: vec![],
+        shielded_outputs: vec![],
+        value_balance: 0,
+        version_group_id,
     };
     let signed_input = try_s!(
         p2sh_spend(&unsigned, 0, key_pair, script_data, prev_transaction.redeem_script.into())
     );
     Ok(UtxoTransaction {
         version: unsigned.version,
+        overwintered: unsigned.overwintered,
         lock_time: unsigned.lock_time,
         inputs: vec![signed_input],
         outputs,
+        expiry_height: unsigned.expiry_height,
+        join_splits: vec![],
+        shielded_spends: vec![],
+        shielded_outputs: vec![],
+        value_balance: 0,
+        version_group_id: unsigned.version_group_id,
+        binding_sig: H512::default(),
+        join_split_sig: H512::default(),
+        join_split_pubkey: H256::default(),
     })
 }
 
-fn address_from_raw_pubkey(pub_key: &[u8]) -> Result<Address, String> {
+fn address_from_raw_pubkey(pub_key: &[u8], prefix: u8, t_addr_prefix: u8) -> Result<Address, String> {
     Ok(Address {
-        kind: Type::P2PKH,
+        t_addr_prefix,
+        prefix,
         hash: try_s!(Public::from_slice(pub_key)).address_hash(),
-        network: Network::Komodo
     })
 }
 
@@ -577,7 +614,17 @@ fn sign_tx(
         inputs: signed_inputs,
         outputs: unsigned.outputs.clone(),
         version: unsigned.version,
-        lock_time: unsigned.lock_time
+        overwintered: unsigned.overwintered,
+        lock_time: unsigned.lock_time,
+        expiry_height: unsigned.expiry_height,
+        join_splits: vec![],
+        shielded_spends: vec![],
+        shielded_outputs: vec![],
+        value_balance: 0,
+        version_group_id: unsigned.version_group_id,
+        binding_sig: H512::default(),
+        join_split_sig: H512::default(),
+        join_split_pubkey: H256::default(),
     })
 }
 
@@ -593,15 +640,22 @@ impl UtxoCoinArc {
         let unspent_fut = self.rpc_client.list_unspent_ordered(0, 999999, vec![self.my_address.to_string()]);
         Box::new(unspent_fut.then(move |unspents| -> BoxedTxFut {
             let unspents = try_fus!(unspents);
-            let unsigned = try_fus!(generate_transaction(
+            let mut unsigned = try_fus!(generate_transaction(
                 unspents,
                 outputs,
                 0,
-                1,
+                arc.tx_version,
+                arc.overwintered,
                 1000,
                 arc.decimals,
                 change_script_pubkey.clone()
             ));
+            for input in unsigned.inputs.iter_mut() {
+                (*input).amount = try_fus!(arc.rpc_client.output_amount(
+                    H256Json::from(input.previous_output.hash.reversed()), input.previous_output.index as usize
+                ));
+            }
+
             let signed = try_fus!(sign_tx(unsigned, &arc.key_pair, change_script_pubkey.into()));
             let tx = Box::new(ExtendedUtxoTx {
                 transaction: signed,
@@ -612,13 +666,13 @@ impl UtxoCoinArc {
     }
 }
 
-fn compressed_key_pair_from_bytes(raw: &[u8]) -> Result<KeyPair, String> {
+fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, String> {
     if raw.len() != 32 {
         return ERR!("Invalid raw priv key len {}", raw.len());
     }
 
     let private = Private {
-        network: Network::Komodo,
+        prefix,
         compressed: true,
         secret: Secret::from(raw)
     };
@@ -627,7 +681,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8]) -> Result<KeyPair, String> {
 
 impl ExchangeableCoin for UtxoCoinArc {
     fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> BoxedTxFut {
-        let address = try_fus!(address_from_raw_pubkey(fee_pub_key));
+        let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
             value: f64_to_sat(amount, self.decimals),
             script_pubkey: Builder::build_p2pkh(&address.hash).to_bytes()
@@ -685,7 +739,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         amount: f64
     ) -> BoxedTxFut {
         let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(buyer_payment_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0));
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -699,6 +753,8 @@ impl ExchangeableCoin for UtxoCoinArc {
             vec![output],
             script_data,
             &key_pair,
+            self.tx_version,
+            self.overwintered,
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL
         ));
@@ -716,7 +772,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         amount: f64
     ) -> BoxedTxFut {
         let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(seller_payment_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0));
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -730,6 +786,8 @@ impl ExchangeableCoin for UtxoCoinArc {
             vec![output],
             script_data,
             &key_pair,
+            self.tx_version,
+            self.overwintered,
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL
         ));
@@ -746,7 +804,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         amount: f64
     ) -> BoxedTxFut {
         let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(buyer_payment_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0));
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -759,6 +817,8 @@ impl ExchangeableCoin for UtxoCoinArc {
             vec![output],
             script_data,
             &key_pair,
+            self.tx_version,
+            self.overwintered,
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL - 1
         ));
@@ -775,7 +835,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         amount: f64
     ) -> BoxedTxFut {
         let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(seller_payment_tx);
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0));
+        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -788,6 +848,8 @@ impl ExchangeableCoin for UtxoCoinArc {
             vec![output],
             script_data,
             &key_pair,
+            self.tx_version,
+            self.overwintered,
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL - 1
         ));
@@ -871,17 +933,17 @@ impl ExchangeableCoin for UtxoCoinArc {
     }
 }
 
-fn random_compressed_key_pair() -> Result<KeyPair, String> {
-    let random_key = try_s!(Random::new(Network::Komodo).generate());
+fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
+    let random_key = try_s!(Random::new(prefix).generate());
 
     Ok(try_s!(KeyPair::from_private(Private {
-        network: Network::Komodo,
+        prefix,
         secret: random_key.private().secret.clone(),
         compressed: true,
     })))
 }
 
-fn key_pair_from_seed(seed: &[u8]) -> KeyPair {
+fn key_pair_from_seed(seed: &[u8], prefix: u8) -> KeyPair {
     let mut hasher = Sha256::new();
     hasher.input(seed);
     let mut hash = hasher.result();
@@ -889,7 +951,7 @@ fn key_pair_from_seed(seed: &[u8]) -> KeyPair {
     hash[31] &= 127;
     hash[31] |= 64;
     let private = Private {
-        network: Network::Komodo,
+        prefix,
         secret: H256::from(hash.as_slice()),
         compressed: true,
     };
@@ -902,17 +964,22 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<Box<Exchangea
     let auth_str = unsafe { try_s!(CStr::from_ptr(info.userpass.as_ptr()).to_str()) };
     let uri = unsafe { try_s!(CStr::from_ptr(info.serverport.as_ptr()).to_str()) };
     let private = Private {
-        network: Network::Komodo,
+        prefix: info.wiftype,
         secret: H256::from(unsafe { lp::G.LP_privkey.bytes }),
         compressed: true,
     };
 
     let key_pair = try_s!(KeyPair::from_private(private));
     let my_address = Address {
-        network: Network::Komodo,
+        prefix: info.pubtype,
+        t_addr_prefix: info.taddr,
         hash: key_pair.public().address_hash(),
-        kind: Type::P2PKH
     };
+
+    // At least for now only ZEC and forks rely on tx version so we can use it to detect overwintered
+    // TODO Consider refactoring, overwintered flag should be explicitly set in coins config
+    let overwintered = info.txversion >= 3;
+
     let coin = UtxoCoin {
         decimals: 8,
         rpc_client: UtxoRpcClient {
@@ -922,17 +989,17 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<Box<Exchangea
         key_pair,
         is_pos: false,
         notarized: false,
-        overwintered: false,
-        p2sh_type: 0,
-        pub_type: 0,
+        overwintered,
+        pub_addr_prefix: info.pubtype,
+        p2sh_addr_prefix: info.p2shtype,
+        pub_t_addr_prefix: info.taddr,
+        p2sh_t_addr_prefix: info.taddr,
         rpc_password: "".to_owned(),
         rpc_port: 0,
         rpc_user: "".to_owned(),
         segwit: false,
-        t_addr: 0,
-        wif_t_addr: 0,
-        wif_type: 0,
-        tx_version: 1,
+        wif_prefix: info.wiftype,
+        tx_version: info.txversion,
         utxo_mutex: Mutex::new(()),
         my_address: my_address.clone(),
     };

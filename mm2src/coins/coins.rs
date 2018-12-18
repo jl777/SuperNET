@@ -53,7 +53,6 @@ extern crate unwrap;
 
 use downcast_rs::Downcast;
 use futures::{Future};
-use std::any::Any;
 use std::fmt::Debug;
 
 macro_rules! downcast_fus {

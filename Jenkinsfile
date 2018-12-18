@@ -23,8 +23,8 @@ cargo test --package etomicrs
     stage('Test Trade') {
       steps {
         // --nocapture here allows us to examine the trade logs even when the trade was successful.
-        sh '''cargo test trade_pizza_beer -- --ignored --nocapture'''
-        sh '''cargo test trade_beer_pizza -- --ignored --nocapture'''
+        sh '''cargo test trade_pizza_etomic -- --ignored --nocapture'''
+        sh '''cargo test trade_etomic_pizza -- --ignored --nocapture'''
       }
     }
   }
