@@ -1,6 +1,5 @@
-use common;
-use common::for_tests::{MarketMakerIt, RaiiDump, RaiiKill};
-use common::log::dashboard_path;
+use common::identity;
+use common::for_tests::{mm_dump, mm_spat, LocalStart, MarketMakerIt, RaiiKill};
 use dirs;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
@@ -17,46 +16,6 @@ use std::path::{Path, PathBuf};
 use std::str::{from_utf8_unchecked};
 use std::thread::{self, sleep};
 use std::time::Duration;
-
-/// Create RAII variables to the effect of dumping the log and the status dashboard at the end of the scope.
-pub fn mm_dump (log_path: &Path) -> (RaiiDump, RaiiDump) {(
-    RaiiDump {log_path: log_path.to_path_buf()},
-    RaiiDump {log_path: unwrap! (dashboard_path (log_path))}
-)}
-
-/// A typical MM instance.
-fn mm_spat() -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
-    let passphrase = "SPATsRps3dhEtXwtnpRCKF";
-    let mm = unwrap! (MarketMakerIt::start (
-        json! ({
-            "gui": "nogui",
-            "client": 1,
-            "passphrase": passphrase,
-            "rpccors": "http://localhost:4000",
-            "coins": [
-                {"coin": "BEER","asset": "BEER", "rpcport": 8923},
-                {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
-            ]
-        }),
-        "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start()), _ => None}
-    ));
-    let (dump_log, dump_dashboard) = mm_dump (&mm.log_path);
-    (passphrase, mm, dump_log, dump_dashboard)
-}
-
-/// Asks MM to enable the given currency in electrum mode
-/// fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/.
-fn enable_electrum(mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32) {
-    let electrum = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "electrum",
-        "coin": coin,
-        "ipaddr": ipaddr,
-        "port": port
-    })));
-    assert_eq! (electrum.0, StatusCode::OK);
-}
 
 /// Asks MM to enable the given currency in native mode.  
 /// Returns the RPC reply containing the corresponding wallet address.
@@ -81,133 +40,20 @@ fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, String)> {
     replies
 }
 
-/// Integration test for the "autoprice" mode.
-/// Starts MM in background and files a buy request with it, in the "autoprice" mode,
-/// then checks the logs to see that the price fetching code works.
 #[test]
-fn test_autoprice() {
-    // One of the ways we want to test the MarketMaker in the integration tests is by reading the logs.
-    // Just like the end users, we learn of what's MarketMaker doing from the logs,
-    // the information in the logs is actually a part of the user-visible functionality,
-    // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
-    // and to make an informed decision about whether the MarketMaker is performing correctly.
-
-    let (passphrase, mm, _dump_log, _dump_dashboard) = mm_spat();
-    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
-
-    enable_electrum(&mm, "BEER", "electrum1.cipig.net", 10022);
-    enable_electrum(&mm, "PIZZA", "electrum1.cipig.net", 10024);
-
-    // Looks like we don't need enabling the coin to base the price on it.
-    // let electrum_dash = unwrap! (mm.rpc (json! ({
-    //     "userpass": mm.userpass,
-    //     "method": "electrum",
-    //     "coin": "DASH",
-    //     "ipaddr": "electrum1.cipig.net",
-    //     "port": 10061
-    // })));
-    // assert_eq! (electrum_dash.0, StatusCode::OK);
-
-    let address = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "calcaddress",
-        "passphrase": passphrase
-    })));
-    assert_eq! (address.0, StatusCode::OK);
-    let address: Json = unwrap! (json::from_str (&address.1));
-    log! ({"test_autoprice] coinaddr: {}.", unwrap! (address["coinaddr"].as_str(), "!coinaddr")});
-
-    // Trigger the autoprice.
-
-    let autoprice = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "autoprice",
-        "base": "PIZZA",
-        "rel": "BEER",
-        "margin": 0.5,
-        // We're basing the price of our order on the price of DASH, triggering the extra price fetch in `lp_autoprice_iter`.
-        "refbase": "dash",
-        "refrel": "coinmarketcap"
-    })));
-    assert_eq! (autoprice.0, StatusCode::OK, "autoprice reply: {:?}", autoprice);
-
-    // TODO: Turn into a proper (human-readable, tagged) log entry?
-    unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_autoprice] 0 Using ref dash/coinmarketcap for PIZZA/BEER factor None")));
-
-    unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
-    unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
-    unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
-    unwrap! (mm.wait_for_log (9., &|log| {
-        log.contains ("[portfolio ext-price ref-num=0] Discovered the Bitcoin price of dash is 0.") ||
-        log.contains ("[portfolio ext-price ref-num=0] Waiting for the CoinGecko Bitcoin price of dash ... Done")
-    }));
-
-    // Checking the autopricing logs here TDD-helps us with the porting effort.
-    //
-    // The logging format is in flux until we start exporting the logs to websocket using them from HyperDEX.
-    // And the stdout format can be changed even after that.
-
-    unwrap! (mm.stop());
-
-    // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
-    unwrap! (mm.wait_for_log (9., &|log| log.contains ("rpc] on_stop, firing shutdown_tx!")));
-    unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!") || log.contains ("--- LogState] Remaining status entries. ---")));
-}
+fn test_autoprice_coingecko() {portfolio::portfolio_tests::test_autoprice_coingecko (local_start())}
 
 #[test]
-fn test_fundvalue() {
-    let (_, mm, _dump_log, _dump_dashboard) = mm_spat();
-    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+fn test_autoprice_coinmarketcap() {portfolio::portfolio_tests::test_autoprice_coinmarketcap (local_start())}
 
-    let fundvalue = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "fundvalue",
-        "address": "RFf5mf3AoixXzmNLAmgs2L5eWGveSo6X7q",  // We have some BEER and PIZZA here.
-        "holdings": [
-            // Triggers the `LP_KMDvalue` code path and touches the `KMDholdings`.
-            {"coin": "KMD", "balance": 123},
-            // Triggers the `LP_CMCbtcprice` code path.
-            {"coin": "litecoin", "balance": 123},
-            // No such coin, should trigger the "no price source" part in the response.
-            {"coin": "- bogus coin -", "balance": 123}
-        ]
-    })));
-    assert! (fundvalue.0.is_success(), "{:?}", fundvalue);
-    let fundvalue: Json = unwrap! (json::from_str (&fundvalue.1));
-    log! ({"fundvalue response: {}", unwrap! (json::to_string_pretty (&fundvalue))});
-
-    // NB: Ideally we'd have `LP_balances` find the BEER and PIZZA balances we have on the "address",
-    // but as of now I don't see a simple way to trigger the "importaddress" and "rescan" that seems necessary for that.
-
-    assert! (!fundvalue["KMD_BTC"].is_null());
-    assert_eq! (fundvalue["KMDholdings"].as_f64(), Some (123.));
-    assert! (!fundvalue["btc2kmd"].is_null());
-    assert! (!fundvalue["btcsum"].is_null());
-    assert! (!fundvalue["fundvalue"].is_null());
-
-    assert_eq! (fundvalue["holdings"][0]["coin"].as_str(), Some ("KMD"));
-    assert_eq! (fundvalue["holdings"][0]["KMD"].as_f64(), Some (123.));
-
-    assert_eq! (fundvalue["holdings"][1]["coin"].as_str(), Some ("litecoin"));
-    assert_eq! (fundvalue["holdings"][1]["balance"].as_f64(), Some (123.));
-
-    assert_eq! (fundvalue["holdings"][2]["coin"].as_str(), Some ("- bogus coin -"));
-    assert_eq! (fundvalue["holdings"][2]["error"].as_str(), Some ("no price source"));
-
-    let two_of_three = unwrap! (regex::Regex::new (
-        r"\[portfolio fundvalue ext-prices\] Waiting for prices \([\w, -]+\) ... 2 out of 3 obtained"
-    ));
-    unwrap! (mm.wait_for_log (1., &|log|
-        log.contains ("lp_fundvalue] LP_KMDvalue of 'KMD' is 12300000000") &&
-        two_of_three.is_match (log)
-    ));
-}
+#[test]
+fn test_fundvalue() {portfolio::portfolio_tests::test_fundvalue (local_start())}
 
 /// Integration test for RPC server.
 /// Check that MM doesn't crash in case of invalid RPC requests
 #[test]
 fn test_rpc() {
-    let (_, mm, _dump_log, _dump_dashboard) = mm_spat();
+    let (_, mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let no_method = unwrap! (mm.rpc (json! ({
@@ -297,7 +143,8 @@ fn chdir (dir: &Path) {
     unwrap! (nix::unistd::chdir (dir))
 }
 
-/// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.
+/// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.  
+/// NB: Accessing `lp_main` this function have to reside in the mm2 binary crate. We pass a pointer to it to subcrates.
 fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
     unwrap! (thread::Builder::new().name ("MM".into()) .spawn (move || {
         if conf["log"].is_null() {
@@ -317,7 +164,7 @@ fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
     }));
 }
 
-fn local_start() -> fn (PathBuf, PathBuf, Json) {local_start_impl}
+fn local_start() -> LocalStart {local_start_impl}
 
 /// Integration test for the "mm2 events" mode.
 /// Starts MM in background and verifies that "mm2 events" produces a non-empty feed of events.
@@ -392,7 +239,7 @@ fn test_events() {
 /// Invokes the RPC "notify" method, adding a node to the peer-to-peer ring.
 #[test]
 fn test_notify() {
-    let (_passphrase, mm, _dump_log, _dump_dashboard) = mm_spat();
+    let (_passphrase, mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let notify = unwrap! (mm.rpc (json! ({
@@ -409,11 +256,6 @@ fn test_notify() {
     unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_notify_recv] hailed by peer: 45.32.19.196")));
 }
 
-// Running subcrate unit tests is often suboptimal because we have to build
-// a separate test binary and link all the C libraries there,
-// which slows us both when we run the tests and when we maintain them.
-// So instead of running the `common` unit tests from a separate binary I'm simply proxying them here.
-// Let's see how this approach will fare (PDIA: positive practices scale through diffusion).
 #[test]
 fn test_status() {common::log::tests::test_status()}
 

@@ -18,28 +18,19 @@
 //  marketmaker
 //
 
-#[macro_use]
-extern crate common;
-#[macro_use]
-extern crate fomat_macros;
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-extern crate hashbrown;
-extern crate hyper;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate unwrap;
-extern crate url;
+#[macro_use] extern crate common;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate unwrap;
 
 pub mod prices;
 use self::prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
+
+#[doc(hidden)]
+pub mod portfolio_tests;
 
 use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
@@ -818,21 +809,21 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                                     // We want to log, for both the users and the tests (test_autoprice), that the external price has been fetched,
                                     // but we don't want to do this on every iteration of the loop.
                                     if !ctx.log.tail_any (status_tags) {  // Experimental use of API.
-                                        ctx.log.log ("💹", status_tags, &format! ("Discovered the {:?} price of {} is {}.", unit, refbase, price))
+                                        ctx.log.log ("💹", status_tags, &format! ("Discovered the {} {:?} price of {} is {}.", provider, unit, refbase, price))
                                     }
                                 }
                                 Ok (Some (*price))
                             } else {
-                                ctx.log.status (status_tags, &format! ("Waiting for the {:?} {:?} price of {} ...", provider, unit, refbase)) .detach();
+                                ctx.log.status (status_tags, &format! ("Waiting for the {} {:?} price of {} ...", provider, unit, refbase)) .detach();
                                 Ok (None)
                             }
                         },
                         Some (Err (err)) => {
-                            ctx.log.status (status_tags, &format! ("Waiting for the {:?} {:?} price of {} ... Error: {}", provider, unit, refbase, err)) .detach();
+                            ctx.log.status (status_tags, &format! ("Waiting for the {} {:?} price of {} ... Error: {}", provider, unit, refbase, err)) .detach();
                             Ok (None)
                         },
                         None => {
-                            ctx.log.status (status_tags, &format! ("Waiting for the {:?} {:?} price of {} ...", provider, unit, refbase)) .detach();
+                            ctx.log.status (status_tags, &format! ("Waiting for the {} {:?} price of {} ...", provider, unit, refbase)) .detach();
                             Ok (None)
                         }
                     }
@@ -1046,8 +1037,8 @@ pub fn lp_autoprice (_ctx: MmArc, req: Json) -> HyRes {
     try_h! (safecopy! (autoref.refrel, "{}", refrel));
     try_h! (safecopy! (autoref.base, "{}", req.base));
     try_h! (safecopy! (autoref.rel, "{}", req.rel));
-    log! ({"lp_autoprice] {} Using ref {}/{} for {}/{} factor {:?}, offset {:?}, margin {:?}/{:?} fixed {:?}",
-        unsafe {lp::num_LP_autorefs}, refbase, refrel, req.base, req.rel, req.factor, req.offset, req.buymargin, req.sellmargin, req.fixed});
+    log! ("lp_autoprice] " (unsafe {lp::num_LP_autorefs}) " Using ref " (refbase) "/" (refrel) " for " (req.base) "/" (req.rel)
+          " factor " [req.factor] ", offset " [req.offset] ", margin " [req.buymargin] "/" [req.sellmargin] " fixed " [req.fixed]);
     unsafe {lp::num_LP_autorefs += 1}
     return rpc_response (200, r#"{"result": "success", "status": "created"}"#);
 }

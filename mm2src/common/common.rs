@@ -10,33 +10,13 @@
 //!                     |
 //!                   binary
 
-extern crate backtrace;
-extern crate chrono;
-#[macro_use]
-extern crate duct;
-#[macro_use]
-extern crate fomat_macros;
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate hex;
-extern crate hashbrown;
-extern crate hyper;
-extern crate hyper_rustls;
-extern crate rand;
-extern crate regex;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-extern crate term;
-extern crate tokio_core;
-#[macro_use]
-extern crate unwrap;
+#[macro_use] extern crate duct;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate unwrap;
 
 /// Fills a C character array with a zero-terminated C string,
 /// returning an error if the string is too large.
@@ -62,10 +42,10 @@ pub mod lp_privkey;
 pub mod mm_ctx;
 pub mod ser;
 
-use futures::{future, Future};
+use futures::{future, Async, Future, Poll};
 use futures::sync::oneshot::{self, Receiver};
 use futures::task::Task;
-use gstuff::{any_to_str, now_float};
+use gstuff::{any_to_str, duration_to_float, now_float};
 use hex::FromHex;
 use hyper::{Body, Client, Request, Response, StatusCode, HeaderMap};
 use hyper::client::HttpConnector;
@@ -87,9 +67,10 @@ use std::ptr::{null_mut, read_volatile};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
+use std::thread::JoinHandle;
+use std::time::Duration;
 use std::str;
 use tokio_core::reactor::Remote;
-
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
@@ -278,6 +259,10 @@ pub fn black_box<T> (v: T) -> T {
     ret
 }
 
+// https://doc.rust-lang.org/nightly/std/convert/fn.identity.html  
+// Waiting for https://github.com/rust-lang/rust/issues/53500.
+pub const fn identity<T> (v: T) -> T {v}
+
 /// Attempts to remove the `Path` on `drop`.
 #[derive(Debug)]
 pub struct RaiiRm<'a> (pub &'a Path);
@@ -424,6 +409,52 @@ E: fmt::Display + Send + 'static {
     })
 }
 
+/// Finishes with the "timeout" error if the underlying future isn't ready withing the given timeframe.
+/// 
+/// NB: Tokio timers (in `tokio::timer`) only seem to work under the Tokio reactor,
+/// which is unfortunate as we want the different futures executed on the different reactors
+/// depending on how much they're I/O-bound, CPU-bound or blocking.
+/// Unlike the Tokio timers this `Timeout` implementation works with any reactor.
+/// Another option to consider is https://github.com/alexcrichton/futures-timer.
+pub struct Timeout<R> {
+    fut: Box<Future<Item=R, Error=String>>,
+    deadline: f64,
+    monitor: Option<JoinHandle<()>>
+}
+impl<R> Future for Timeout<R> {
+    type Item = R;
+    type Error = String;
+    fn poll (&mut self) -> Poll<R, String> {
+        match self.fut.poll() {
+            Err (err) => Err (err),
+            Ok (Async::Ready (r)) => Ok (Async::Ready (r)),
+            Ok (Async::NotReady) => {
+                if now_float() >= self.deadline {
+                    Err ("timeout".into())
+                } else {
+                    // Start waking up this future until it has a chance to timeout.
+                    // For now it's just a basic separate thread. Will probably optimize later.
+                    if self.monitor.is_none() {
+                        let task = futures::task::current();
+                        let deadline = self.deadline;
+                        self.monitor = Some (unwrap! (std::thread::Builder::new().name ("timeout monitor".into()) .spawn (move || {
+                            loop {
+                                std::thread::sleep (Duration::from_secs (1));
+                                task.notify();
+                                if now_float() > deadline + 2. {break}
+                            }
+                        })));
+                    }
+                    Ok (Async::NotReady)
+}   }   }   }   }
+impl<R> Timeout<R> {
+    pub fn new (fut: Box<Future<Item=R, Error=String>>, timeout: Duration) -> Timeout<R> {
+        Timeout {
+            fut: fut,
+            deadline: now_float() + duration_to_float (timeout),
+            monitor: None
+}   }   }
+
 /// Initialize the crate.
 pub fn init() {
     // Pre-allocate the stack trace buffer in order to avoid allocating it from a signal handler.
@@ -441,6 +472,11 @@ lazy_static! {
             // Hyper had a lot of Keep-Alive bugs over the years and I suspect
             // that with the shared client we might be getting errno 10054
             // due to a closed Keep-Alive connection mismanagement.
+            // (To solve this problem Hyper should proactively close the Keep-Alive
+            // connections after a configurable amount of time has passed since
+            // their creation, thus saving us from trying to use the connections
+            // closed on the other side. I wonder if we can implement this strategy
+            // ourselves with a custom connector or something).
             // Performance of Keep-Alive in the Hyper client is questionable as well,
             // should measure it on a case-by-case basis when we need it.
             .keep_alive (false)

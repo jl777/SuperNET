@@ -208,6 +208,9 @@ pub struct StatusHandle<'a> {
 
 impl<'a> StatusHandle<'a> {
     /// Creates the status or rewrites it.
+    /// 
+    /// The `tags` can be changed as well:
+    /// with `StatusHandle` the status line is directly identified by the handle and doesn't use the tags to lookup the status line.
     pub fn status<'b> (&mut self, tags: &[&TagParam], line: &str) {
         let mut stack_status = Status {
             tags: tags.iter().map (|t| Tag {key: t.key(), val: t.val()}) .collect(),

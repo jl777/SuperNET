@@ -31,6 +31,7 @@ use libc::{c_char};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::iter::once;
 use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
@@ -1236,8 +1237,20 @@ pub enum PriceUnit {Bitcoin, UsDollar}
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum PricingProvider {CoinGecko, CoinMarketCap (String)}
 
+impl fmt::Display for PricingProvider {
+    fn fmt (&self, ft: &mut fmt::Formatter) -> fmt::Result {
+        let label = match *self {
+            PricingProvider::CoinGecko => "CoinGecko",
+            PricingProvider::CoinMarketCap (_) => "CoinMarketCap"
+        };
+        ft.write_str (label)
+    }
+}
+
 /// Things like "komodo", "bitcoin-cash" or "litecoin" are kept there.  
-/// The value is the one we're getting from the RPC API in "refbase".
+/// The value is the one we're getting from the RPC API in "refbase".  
+/// According to the examples in https://docs.komodoplatform.com/barterDEX/barterDEX-API.html the "refbase"
+/// might be a lowercased coin name or it's ticker symbol (dash/DASH, litecoin/LTC, komodo/KMD).
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct CoinId (pub String);
 impl CoinId {
@@ -1247,8 +1260,15 @@ impl CoinId {
             PricingProvider::CoinMarketCap (_) => {
                 let mut it = coins.iter();
                 loop {
-                    let coin_conf = match it.next() {Some (v) => v, None => break ERR! ("CoinId] Unknown coin: {}", self.0)};
+                    // Example of the command-line configuration we might be getting:
                     // https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L12
+                    // Note how it currently lacks the "name" field.
+                    // We need this "name" field added into the "coins" configuration in order to be able to convert between the coin names and their ticker symbols.
+                    let coin_conf = match it.next() {
+                        Some (v) => v,
+                        // Found no match in the `coins`.
+                        None => break ERR! ("CoinId] Unknown coin: {} (Check the 'name' and 'coin' fields in the 'coins' configuration)", self.0)
+                    };
                     let name = match coin_conf["name"].as_str() {Some (n) => n, None => continue};
                     let ticker_symbol = match coin_conf["coin"].as_str() {Some (n) => n, None => continue};
                     if name == self.0 || name.to_lowercase() == self.0  {break Ok (Cow::Owned (ticker_symbol.into()))}
@@ -1256,11 +1276,25 @@ impl CoinId {
             }
         }
     }
-    pub fn from_provider (coins: &[Json], provider: &PricingProvider, label: &str) -> Result<CoinId, String> {
-        match provider {
-            PricingProvider::CoinGecko => Ok (CoinId (label.into())),
-            PricingProvider::CoinMarketCap (_) => ERR! ("TBD")
+    pub fn from_gecko (_coins: &[Json], label: &str) -> Result<CoinId, String> {
+        Ok (CoinId (label.into()))
+    }
+    /// CoinMarketCap gives us both the ticker symbol and the CoinGecko-compatible "slug" in its reply.  
+    /// The code in `lp_autoprice_iter` presently uses the coin names ("komodo", "bitcoin-cash", "litecoin") so we prefer to get these.  
+    /// Given a bit of ambiguity coming with the unregulated ticker symbols and names we're trying to match with the `coins` first.
+    pub fn from_cmc (coins: &[Json], ticker_symbol: &str, slug: &str) -> Result<CoinId, String> {
+        for coin_conf in coins {
+            let name = coin_conf["name"].as_str();
+            if name == Some (slug) {
+                // Exact match over the coin name.
+                return Ok (CoinId (slug.into()))
+            }
+            if coin_conf["coin"].as_str() == Some (ticker_symbol) && name.is_some() {
+                // Converting the CMC ticker symbol into our coin name.
+                return Ok (CoinId (unwrap! (name) .into()))
+            }
         }
+        return Ok (CoinId (slug.into()))
     }
 }
 
@@ -1276,6 +1310,50 @@ pub struct Coins {
     pub ids: Mutex<HashMap<CoinId, f64>>
 }
 
+mod cmc_reply {
+    use hashbrown::HashMap;
+
+    pub type PriceUnit = String;
+    pub type TickerSymbol = String;
+
+    #[derive(Deserialize, Debug)]
+    pub struct Status {
+        /// Seems to match the HTTP status code.
+        pub error_code: i32,
+        pub error_message: Option<String>,
+        pub elapsed: i32
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub struct Quote {
+        pub price: f64
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub struct Currency {
+        /// The lowercased name, like the one we're using with CoinGecko.
+        pub slug: String,
+        pub quote: HashMap<PriceUnit, Quote>
+    }
+
+    /// https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesHistorical
+    #[derive(Deserialize, Debug)]
+    pub struct MarketQuotes {
+        pub status: Status,
+        #[serde(default)]  // NB: "default" helps if we're getting an error reply without the "data" field.
+        pub data: HashMap<TickerSymbol, Currency>
+    }
+}
+
+mod gecko_reply {
+    #[derive(Deserialize, Debug)]
+    pub struct CoinGecko<'a> {
+        pub id: &'a str,
+        pub symbol: &'a str,
+        pub current_price: f64
+    }
+}
+
 /// Load coin prices from CoinGecko or, if `cmc_key` is given, from CoinMarketCap.
 /// 
 /// NB: We're using the MM command-line configuration ("coins") to convert between the coin names and the ticker symbols,
@@ -1289,12 +1367,15 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
         try_fus! (coin_ids.keys().map (|c| c.for_provider (coins_conf, provider) .map (|s| s.into_owned())) .collect())
     };
 
+    let cmc_price_unit: cmc_reply::PriceUnit = match unit {PriceUnit::Bitcoin => "BTC", PriceUnit::UsDollar => "USD"} .into();
+    let gecko_price_unit = match unit {PriceUnit::Bitcoin => "btc", PriceUnit::UsDollar => "usd"};
+
     let (request, curl_example) = match provider {
         PricingProvider::CoinMarketCap (ref cmc_key) => {
             let url = fomat! (
                 "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
                 for coin in coin_labels {(coin)} separated {','}
-                "&convert=" (match unit {PriceUnit::Bitcoin => "BTC", PriceUnit::UsDollar => "USD"})
+                "&convert=" (cmc_price_unit)
             );
             ( try_fus! (Request::builder().uri (&url) .header ("X-CMC_PRO_API_KEY", &cmc_key[..]) .body (Body::empty())),
             format! ("curl --header \"X-CMC_PRO_API_KEY: {}\" \"{}\"", cmc_key, url) )
@@ -1302,7 +1383,7 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
         PricingProvider::CoinGecko => {
             let mut params = url::form_urlencoded::Serializer::new (String::new());
             params.append_pair ("ids", &fomat! (for coin in coin_labels {(coin)} separated {','}));
-            params.append_pair ("vs_currency", match unit {PriceUnit::Bitcoin => "btc", PriceUnit::UsDollar => "usd"});
+            params.append_pair ("vs_currency", gecko_price_unit);
             let url = fomat! ("https://api.coingecko.com/api/v3/coins/markets?" (params.finish()));
             ( try_fus! (Request::builder().uri (&url) .body (Body::empty())),
             format! ("curl \"{}\"", url) )
@@ -1312,22 +1393,21 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
 
     let f = slurp_req (request);
 
-    #[derive(Deserialize, Debug)]
-    struct CoinMarketCap {
-        // TODO
-    }
-
-    #[derive(Deserialize, Debug)]
-    struct CoinGecko<'a> {
-        id: &'a str,
-        symbol: &'a str,
-        current_price: f64
-    }
-
     let provider = provider.clone();
     let f = f.then (move |r| -> Result<ExternalPrices, String> {
         let (status_code, headers, body) = try_s! (r);
-        if status_code != StatusCode::OK {return ERR! ("status_code {:?}", status_code)}
+        if status_code != StatusCode::OK {
+            // See if we have an error message to show.
+            match provider {
+                PricingProvider::CoinMarketCap (_) => {
+                    if let Ok (reply) = json::from_slice::<cmc_reply::MarketQuotes> (&body) {
+                        if let Some (message) = reply.status.error_message {
+                            return ERR! ("CMC error: {:?}, {}", status_code, message)
+                }   }   }
+                _ => ()
+            };
+            return ERR! ("status_code {:?}", status_code)
+        }
         let ct = match headers.get (CONTENT_TYPE) {Some (ct) => ct, None => return ERR! ("No Content-Type")};
         let ct = try_s! (ct.to_str());
         if !ct.starts_with ("application/json") {return ERR! ("Content-Type not JSON: {}", ct)}
@@ -1335,29 +1415,35 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
         let ctx = try_s! (MmArc::from_weak (&ctx_weak) .ok_or ("Context expired"));
         let coins_conf = try_s! (ctx.conf["coins"].as_array().ok_or ("No 'coins' array in configuration"));
 
+        let mut prices: HashMap<CoinId, f64> = HashMap::new();
         match provider {
             PricingProvider::CoinMarketCap (_) => {
-                let reply: Vec<CoinMarketCap> = try_s! (json::from_slice (&body));
-                log! ({"lp_btcprice] Parsed reply: {:?}", reply});
-                ERR! ("TBD")
-            },
+                let market_quotes: cmc_reply::MarketQuotes = match json::from_slice (&body) {
+                    Ok (q) => q,
+                    Err (err) => {
+                        log! ("lp_btcprice] Error parsing the CoinMarketCap reply: " (err) "\n" (String::from_utf8_lossy (&body)));
+                        return ERR! ("Error parsing the CoinMarketCap reply: {}", err)
+                }   };
+                for (ticker_symbol, currency) in market_quotes.data {
+                    let coin_id = try_s! (CoinId::from_cmc (coins_conf, &ticker_symbol, &currency.slug));
+                    if let Some (quote) = currency.quote.get (&cmc_price_unit) {
+                        prices.insert (coin_id, quote.price);
+                    } else {
+                        log! ("lp_btcprice] CMC quote for " (ticker_symbol) " lacks the " (cmc_price_unit) " price unit\n" (String::from_utf8_lossy (&body)));
+                        return ERR! ("CMC quote for {} lacks the {} price unit", ticker_symbol, cmc_price_unit)
+            }   }   },
             PricingProvider::CoinGecko => {
-                let reply: Vec<CoinGecko> = match json::from_slice (&body) {
+                let reply: Vec<gecko_reply::CoinGecko> = match json::from_slice (&body) {
                     Ok (r) => r,
                     Err (err) => {
-                        log! ({"lp_btcprice] Bad CoinGecko response ({}): {}", err, String::from_utf8_lossy (&body)});
+                        log! ("lp_btcprice] Can't parse the CoinGecko response: " (err) "\n" (String::from_utf8_lossy (&body)));
                         return ERR! ("Can't parse the CoinGecko response: {}", err)
-                    }
-                };
-                //log! ({"lp_btcprice] Parsed reply: {:?}", reply});
-                let mut prices: HashMap<CoinId, f64> = HashMap::default();
+                }   };
                 for cg in reply {
-                    let coin_id = try_s! (CoinId::from_provider (coins_conf, &provider, cg.id));
+                    let coin_id = try_s! (CoinId::from_gecko (coins_conf, cg.id));
                     prices.insert (coin_id, cg.current_price);
-                }
-                Ok (ExternalPrices {prices, at: now_float()})
-            }
-        }
+        }   }   }
+        Ok (ExternalPrices {prices, at: now_float()})
     });
 
     Box::new (f)
