@@ -949,7 +949,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
     macro_rules! send {
         ($subj: expr, $slice: expr) => {
-            send (&swap.ctx, swap.seller, fomat!(($subj) '@' (swap.session)), $slice.into())
+            send (&swap.ctx, swap.buyer, fomat!(($subj) '@' (swap.session)), $slice.into())
         };
     }
     macro_rules! recv {
@@ -1217,6 +1217,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let msg = transaction.to_raw_bytes();
 
                 let sending_f = send!("buyer-payment", msg);
+                swap.buyer_payment = Some(transaction.clone());
 
                 AtomicSwapState::WaitBuyerPaymentSpent {sending_f}
             },
