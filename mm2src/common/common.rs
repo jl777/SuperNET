@@ -72,7 +72,6 @@ use std::time::Duration;
 use std::str;
 use tokio_core::reactor::Remote;
 
-
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
 pub use self::lp::{_bits256 as bits256};
@@ -259,6 +258,10 @@ pub fn black_box<T> (v: T) -> T {
     forget (v);
     ret
 }
+
+// https://doc.rust-lang.org/nightly/std/convert/fn.identity.html  
+// Waiting for https://github.com/rust-lang/rust/issues/53500.
+pub const fn identity<T> (v: T) -> T {v}
 
 /// Attempts to remove the `Path` on `drop`.
 #[derive(Debug)]

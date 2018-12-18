@@ -261,10 +261,10 @@ pub fn mm_dump (log_path: &Path) -> (RaiiDump, RaiiDump) {(
 )}
 
 /// A typical MM instance.
-pub fn mm_spat (local_start: LocalStart) -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
+pub fn mm_spat (local_start: LocalStart, conf_mod: &Fn(Json)->Json) -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
     let passphrase = "SPATsRps3dhEtXwtnpRCKF";
     let mm = unwrap! (MarketMakerIt::start (
-        json! ({
+        conf_mod (json! ({
             "gui": "nogui",
             "client": 1,
             "passphrase": passphrase,
@@ -273,7 +273,7 @@ pub fn mm_spat (local_start: LocalStart) -> (&'static str, MarketMakerIt, RaiiDu
                 {"coin": "BEER","asset": "BEER", "rpcport": 8923},
                 {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
             ]
-        }),
+        })),
         "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start), _ => None}
     ));

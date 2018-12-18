@@ -15,7 +15,7 @@ common = { path = "../common" }
 fomat-macros = "0.2"
 futures = "0.1"
 gstuff = "0.5"
-hashbrown = "0.1"
+hashbrown = {version = "0.1", features = ["serde"]}
 hyper = "0.12"
 hyper-rustls = "0.15"
 lazy_static = "1.2"

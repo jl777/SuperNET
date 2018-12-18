@@ -154,12 +154,15 @@ fn help() {
         // cf. `IAMLP`, `MmCtx::am_client`.
         // ⇒ See also the "Order Matching with Full-Relay and Non-Relay Nodes" chapter in the Komodo Whitepaper.
         "  client         ..  '1' to use the client mode.\n"
-        // We don't currently want to change the RPC API,
-        // so the "refrel=coinmarketcap" designator will be using the CoinGecko behind the scenes,
-        // that is, unless the "cmc_key" is given.
+        // We don't want to break the existing RPC API,
+        // so the "refrel=coinmarketcap" designator will act as autoselect,
+        // using the CoinGecko behind the scenes unless the "cmc_key" is given.
         // In the future, when MM2 is more widely used and thus we're working more tighly with the GUIs (BarterDEX, HyperDEX, dICO),
-        // we might add the "refrel=coingecko" RPC option.
-        "  cmc_key        ..  CoinMarketCap Professional API key. Switches from CoinGecko to CoinMarketCap.\n"
+        // we might add the "refrel=cmc" and "refrel=coingecko" RPC options.
+        "  cmc_key        ..  CoinMarketCap Professional API Key. Switches from CoinGecko to CoinMarketCap.\n"
+        "                     The Key can be obtained from 'https://pro.coinmarketcap.com/account'.\n"
+        "                     NB: The 'coins' command-line configuration must have the lowercased coin names in the 'name' field,\n"
+      r#"                     {"coins": [{"name": "dash", "coin": "DASH", ...}, ...], ...}."# "\n"
         // cf. https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L12
         "  coins          ..  Information about the currencies: their ticker symbols, names, ports, addresses, etc.\n"
         "                     If not present on the command line then we try the (stringified) coins.json and exchanges/coins.json.\n"

@@ -1,4 +1,4 @@
-use common;
+use common::identity;
 use common::for_tests::{mm_dump, mm_spat, LocalStart, MarketMakerIt, RaiiKill};
 use dirs;
 use gstuff::{now_float, slurp};
@@ -41,7 +41,10 @@ fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, String)> {
 }
 
 #[test]
-fn test_autoprice() {portfolio::portfolio_tests::test_autoprice (local_start())}
+fn test_autoprice_coingecko() {portfolio::portfolio_tests::test_autoprice_coingecko (local_start())}
+
+#[test]
+fn test_autoprice_coinmarketcap() {portfolio::portfolio_tests::test_autoprice_coinmarketcap (local_start())}
 
 #[test]
 fn test_fundvalue() {portfolio::portfolio_tests::test_fundvalue (local_start())}
@@ -50,7 +53,7 @@ fn test_fundvalue() {portfolio::portfolio_tests::test_fundvalue (local_start())}
 /// Check that MM doesn't crash in case of invalid RPC requests
 #[test]
 fn test_rpc() {
-    let (_, mm, _dump_log, _dump_dashboard) = mm_spat (local_start());
+    let (_, mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let no_method = unwrap! (mm.rpc (json! ({
@@ -236,7 +239,7 @@ fn test_events() {
 /// Invokes the RPC "notify" method, adding a node to the peer-to-peer ring.
 #[test]
 fn test_notify() {
-    let (_passphrase, mm, _dump_log, _dump_dashboard) = mm_spat (local_start());
+    let (_passphrase, mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let notify = unwrap! (mm.rpc (json! ({
