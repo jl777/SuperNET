@@ -1318,7 +1318,7 @@ mod cmc_reply {
 
     #[derive(Deserialize, Debug)]
     pub struct Status {
-        // Seems to match the HTTP status code.
+        /// Seems to match the HTTP status code.
         pub error_code: i32,
         pub error_message: Option<String>,
         pub elapsed: i32
@@ -1336,7 +1336,7 @@ mod cmc_reply {
         pub quote: HashMap<PriceUnit, Quote>
     }
 
-    // https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesHistorical
+    /// https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesHistorical
     #[derive(Deserialize, Debug)]
     pub struct MarketQuotes {
         pub status: Status,
@@ -1397,7 +1397,7 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
     let f = f.then (move |r| -> Result<ExternalPrices, String> {
         let (status_code, headers, body) = try_s! (r);
         if status_code != StatusCode::OK {
-            // See if have an error message to show.
+            // See if we have an error message to show.
             match provider {
                 PricingProvider::CoinMarketCap (_) => {
                     if let Ok (reply) = json::from_slice::<cmc_reply::MarketQuotes> (&body) {
@@ -1418,7 +1418,6 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
         let mut prices: HashMap<CoinId, f64> = HashMap::new();
         match provider {
             PricingProvider::CoinMarketCap (_) => {
-                log! ("Trying to parse the CMC reply:\n" (unsafe {std::str::from_utf8_unchecked (&body)}));
                 let market_quotes: cmc_reply::MarketQuotes = match json::from_slice (&body) {
                     Ok (q) => q,
                     Err (err) => {
@@ -1426,9 +1425,7 @@ pub fn lp_btcprice (ctx_weak: MmWeak, provider: &PricingProvider, unit: PriceUni
                         return ERR! ("Error parsing the CoinMarketCap reply: {}", err)
                 }   };
                 for (ticker_symbol, currency) in market_quotes.data {
-                    log! ([=ticker_symbol] ", " [=currency]);
                     let coin_id = try_s! (CoinId::from_cmc (coins_conf, &ticker_symbol, &currency.slug));
-                    log! ([=coin_id]);
                     if let Some (quote) = currency.quote.get (&cmc_price_unit) {
                         prices.insert (coin_id, quote.price);
                     } else {
