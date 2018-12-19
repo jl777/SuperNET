@@ -216,11 +216,11 @@ macro_rules! rpc_func {
 /// Other coins have additional methods or miss some of these
 /// This description will be updated with more info
 #[derive(Clone, Debug)]
-struct UtxoRpcClient {
+pub struct UtxoRpcClient {
     /// The uri to send requests to
-    uri: String,
+    pub uri: String,
     /// Value of Authorization header, e.g. "Basic base64(user:password)"
-    auth: String,
+    pub auth: String,
 }
 
 impl UtxoRpcClient {
