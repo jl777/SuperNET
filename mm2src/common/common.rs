@@ -416,6 +416,7 @@ E: fmt::Display + Send + 'static {
 /// depending on how much they're I/O-bound, CPU-bound or blocking.
 /// Unlike the Tokio timers this `Timeout` implementation works with any reactor.
 /// Another option to consider is https://github.com/alexcrichton/futures-timer.
+/// P.S. The older `0.1` version of the `tokio::timer` might work NP, it works in other parts of our code.
 pub struct Timeout<R> {
     fut: Box<Future<Item=R, Error=String>>,
     deadline: f64,
