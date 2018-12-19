@@ -5,7 +5,7 @@ edition = "2018"
 
 [lib]
 name = "coins"
-path = "coins.rs"
+path = "lp_coins.rs"
 doctest = false
 
 [dependencies]
