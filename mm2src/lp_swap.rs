@@ -1175,8 +1175,12 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
                 let payment_amount = dstr((*swap.basilisk_swap).I.alicesatoshis);
                 let fee_amount = payment_amount / 777.0;
+                status.status(SWAP_STATUS, "Sending Taker fee…");
                 let fee_tx = swap.buyer_coin.send_buyer_fee(&fee_addr_pub_key, fee_amount).wait();
-                let transaction = fee_tx.map_err(|e|(-1004, ERRL!("Error sending buyer fee {}", e)))?;
+                let transaction = match fee_tx {
+                    Ok (t) => t,
+                    Err (err) => err!(-1004, "!send_buyer_fee: " (err))
+                };
 
                 let sending_f = send!("buyer-fee", transaction.to_raw_bytes());
 
