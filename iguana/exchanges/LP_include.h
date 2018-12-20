@@ -105,6 +105,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
+/// Used to initialize `iguana_info::txfee` for all the currencies except "BTC".
 #define LP_MIN_TXFEE 1000
 #define LP_MINVOL 100
 #define LP_MINCLIENTVOL 1000
@@ -124,6 +125,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_KMD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
+/// Used for "KMD" with `LP_importaddress`.
 #define BOTS_BONDADDRESS "RNdqHx26GWy9bk8MtmH1UiXjQcXE4RKK2P"
 #define BOTS_BONDPUBKEY33 "03e641d22e1ff5a7d45c8880537e0b0a114d7b9fee2c18a6b4a8a80b6285292990"
 #define LP_WEEKMULTBAD (7 * 24 * 2600)
@@ -628,12 +630,16 @@ struct LP_priceinfo
     double factors[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 
+struct LP_priceinfo *LP_priceinfoadd(char *symbol);
+
 // Gradual port temporaries.
 
 cJSON *LP_NXT_redeems();
 void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,uint32_t mm_ctx_id);
 void unbuffered_output_support(const char* log_path);
-void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins);
+void LP_dPoW_request(struct iguana_info *coin);
+// The `item` here is an entry from the "coins" command-line configuration.
+struct iguana_info *LP_coincreate(cJSON *item);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);

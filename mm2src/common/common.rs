@@ -411,12 +411,13 @@ E: fmt::Display + Send + 'static {
 
 /// Finishes with the "timeout" error if the underlying future isn't ready withing the given timeframe.
 /// 
-/// NB: Tokio timers (in `tokio::timer`) only seem to work under the Tokio reactor,
+/// NB: Tokio timers (in `tokio::timer`) only seem to work under the Tokio runtime,
 /// which is unfortunate as we want the different futures executed on the different reactors
 /// depending on how much they're I/O-bound, CPU-bound or blocking.
 /// Unlike the Tokio timers this `Timeout` implementation works with any reactor.
 /// Another option to consider is https://github.com/alexcrichton/futures-timer.
 /// P.S. The older `0.1` version of the `tokio::timer` might work NP, it works in other parts of our code.
+///      The new version, on the other hand, requires the Tokio runtime (https://tokio.rs/blog/2018-03-timers/).
 pub struct Timeout<R> {
     fut: Box<Future<Item=R, Error=String>>,
     deadline: f64,

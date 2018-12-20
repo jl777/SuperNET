@@ -31,8 +31,9 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate unwrap;
 
-use common::{bitcoin_ctx, bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
+use common::{bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
 use common::lp::{_bits256 as bits256};
+use common::mm_ctx::MmCtx;
 
 // Re-export preserves the functions that are temporarily accessed from C during the gradual port.
 #[cfg(feature = "etomic")]
@@ -50,6 +51,7 @@ use std::env;
 use std::ffi::{CStr, CString, OsString};
 use std::io::{self, Write};
 use std::mem::{zeroed};
+use std::net::{SocketAddr, Ipv4Addr};
 use std::process::exit;
 use std::ptr::{null};
 use std::str::from_utf8_unchecked;
@@ -318,13 +320,13 @@ fn vanity (substring: &str) {
     let mut wifstr: [c_char; 128] = unsafe {zeroed()};
     let mut privkey: bits256 = unsafe {zeroed()};
     unsafe {lp::LP_mutex_init()};
-    let ctx = unsafe {bitcoin_ctx()};
-    unsafe {lp::LP_initcoins (ctx as *mut c_void, -1, unwrap! (CJSON::from_str ("[]")) .0)};
+    let ctx = MmCtx::new (json! ({}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
+    unwrap! (coins::lp_initcoins (&ctx));
     let timestamp = now_ms() / 1000;
     log! ({"start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp});
     for i in 0..1000000000 {
         privkey.bytes = random();
-        unsafe {bitcoin_priv2pub (ctx, "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
+        unsafe {bitcoin_priv2pub (ctx.btc_ctx(), "KMD\0".as_ptr(), pubkey33.as_mut_ptr(), coinaddr.as_mut_ptr(), privkey, 0, 60)};
         let coinaddr = unsafe {from_utf8_unchecked (from_raw_parts (coinaddr.as_ptr(), 34))};
         if &coinaddr[1 .. substring.len()] == &substring[0 .. substring.len() - 1] {  // Print on near match.
             unsafe {bitcoin_priv2wif ("KMD\0".as_ptr(), 0, wifstr.as_mut_ptr(), privkey, 188)};

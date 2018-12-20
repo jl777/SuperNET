@@ -87,7 +87,11 @@ impl EthClient {
         let web3 = Web3::new(transport);
         let key_pair = unwrap!(KeyPair::from_secret_slice(&secret),
             "Could not init ETH client key pair! Check the secret");
+        // TODO: Looks like sometimes this hangs, should add a timeout handling here instead of the trace logging.
+        // TODO: Track the wait using a corresponding dashboard status.
+        log! ("parity_next_nonce...");
         let current_nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
+        log! ("parity_next_nonce finished");
         let alice_abi = unwrap!(Contract::load(ALICE_ABI.as_bytes()), "Could not load ALICE_ABI, is it valid?");
         let bob_abi = unwrap!(Contract::load(BOB_ABI.as_bytes()), "Could not load BOB_ABI, is it valid?");
         let erc20_abi = unwrap!(Contract::load(ERC20_ABI.as_bytes()), "Could not load ERC20_ABI, is it valid?");

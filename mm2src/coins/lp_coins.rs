@@ -18,41 +18,23 @@
 //  marketmaker
 //
 
-extern crate base64;
-extern crate bitcrypto;
-extern crate byteorder;
-extern crate chain;
-#[macro_use]
-extern crate common;
-#[macro_use]
-extern crate downcast_rs;
-#[macro_use]
-extern crate fomat_macros;
-#[macro_use]
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-extern crate hex;
-extern crate hyper;
-extern crate keys;
-extern crate libc;
-#[macro_use]
-extern crate lazy_static;
-extern crate primitives;
-extern crate rpc as bitcoin_rpc;
-extern crate script;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-extern crate serialization;
-extern crate sha2;
-extern crate tokio_timer;
-#[macro_use]
-extern crate unwrap;
+#[macro_use] extern crate common;
+#[macro_use] extern crate downcast_rs;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate futures;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate unwrap;
 
+use common::lp;
+use common::mm_ctx::MmArc;
 use downcast_rs::Downcast;
 use futures::{Future};
+use gstuff::now_ms;
+use libc::c_char;
+use serde_json::{self as json};
+use std::ffi::{CStr, CString};
 use std::fmt::Debug;
 
 macro_rules! downcast_fus {
@@ -722,3 +704,80 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
 }
 */
+
+pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
+    // The function lived in the "LP_nativeDEX.c" originally, but I suspect that we can have it encapsulated in the `coins` proper.
+
+    // A special case for default coins?
+    // TODO: Can we refactor the default and the configured coins into a single loop?
+    for &ticker in ["BTC", "KMD"].iter() {
+        // Indirectly adds the coin into `LP_coins`.
+        let c_ticker = try_s! (CString::new (ticker));
+        let c_ticker = c_ticker.as_ptr() as *mut c_char;
+        let c_coin = unsafe {lp::LP_coinfind (c_ticker)};
+        if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
+        let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
+        let _price_info = unsafe {lp::LP_priceinfoadd (c_ticker)};
+        assert_eq! (unsafe {lp::LP_coinfind (c_ticker)}, c_coin);
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+
+        let mut notarized = 0;
+        if unsafe {lp::LP_getheight (&mut notarized, coin)} <= 0 {
+            coin.inactive = (now_ms() / 1000) as u32
+        } else {
+            unsafe {lp::LP_unspents_load (coin.symbol.as_mut_ptr(), coin.smartaddr.as_mut_ptr())};
+            if ticker == "KMD" {
+                unsafe {lp::LP_importaddress (b"KMD\0".as_ptr() as *mut c_char, lp::BOTS_BONDADDRESS.as_ptr() as *mut c_char)};
+                unsafe {lp::LP_dPoW_request (c_coin)};
+            }
+        }
+
+        if coin.txfee == 0 && ticker != "BTC" {
+            coin.txfee = lp::LP_MIN_TXFEE as u64
+        }
+    }
+
+    for coins_en in ctx.conf["coins"].as_array().map (|v| v.iter()) .unwrap_or (Vec::new().iter()) {
+        let ticker = match coins_en["coin"].as_str() {
+            Some (ticker) => ticker,
+            None => {log! ("lp_initcoins] Skipping a coin entry lacking the ticker symbol field 'coin': " [coins_en]); continue}
+        };
+        let c_ticker = try_s! (CString::new (ticker));
+        let c_ticker = c_ticker.as_ptr() as *mut c_char;
+        let c_coin = unsafe {
+            let item = try_s! (json::to_string (coins_en));
+            let item = try_s! (common::CJSON::from_str (&item));
+            lp::LP_coincreate (item.0);  // Returns nullptr.
+            lp::LP_coinfind (c_ticker)
+        };
+        if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
+        let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+
+        unsafe {lp::LP_priceinfoadd (c_ticker)};
+        assert_eq! (unsafe {lp::LP_coinfind (c_ticker)}, c_coin);
+
+        if !coins_en["etomic"].is_null() {
+            let etomic = match coins_en["etomic"].as_str() {Some (s) => s, None => return ERR! ("Field 'etomic' is not a string")};
+            try_s! (safecopy! (coin.etomic, "{}", etomic));
+        } else {
+            let mut notarized = 0;
+            if unsafe {lp::LP_getheight (&mut notarized, coin)} <= 0 {
+                coin.inactive = (now_ms() / 1000) as u32
+            } else {
+                unsafe {lp::LP_unspents_load (coin.symbol.as_mut_ptr(), coin.smartaddr.as_mut_ptr())};
+            }
+
+            if coin.txfee == 0 && ticker != "BTC" {
+                coin.txfee = lp::LP_MIN_TXFEE as u64
+            }
+        }
+    }
+
+    // List the coins we've initialized.
+    let mut coins = Vec::new();
+    try_s! (unsafe {common::coins_iter (lp::LP_coins, &mut |coin| {coins.push (CStr::from_ptr ((*coin).symbol.as_ptr())); Ok(())})});
+    log! ("lp_initcoins] Finished with: " for coin in coins {(unwrap! (coin.to_str()))} separated {", "} '.');
+
+    Ok(())
+}
