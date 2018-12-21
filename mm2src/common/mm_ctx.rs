@@ -57,6 +57,8 @@ pub struct MmCtx {
     pub ordermatch_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
     /// The context belonging to the `peers` crate: `PeersContext`.
     pub peers_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
+    /// The context belonging to the `coins` crate: `CoinsContext`.
+    pub coins_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
     // TODO: The `rpc_ip_port` is a part of the `conf`, we should refactor away the unnecessary constructor parameter
@@ -76,6 +78,7 @@ impl MmCtx {
             portfolio_ctx: Mutex::new (None),
             ordermatch_ctx: Mutex::new (None),
             peers_ctx: Mutex::new (None),
+            coins_ctx: Mutex::new (None),
         }))
     }
 

@@ -48,8 +48,9 @@ use std::mem::transmute;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use super::{Transaction, ExchangeableCoin, BoxedTx, BoxedTxFut};
 use tokio_timer::{Interval, Timer};
+
+use super::{ExchangeableCoin, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
 /// https://stackoverflow.com/a/37682288/8707622
@@ -117,10 +118,6 @@ impl Transaction for ExtendedUtxoTx {
         resulting_bytes.extend_from_slice(&redeem_len_bytes);
         resulting_bytes.extend_from_slice(&self.redeem_script);
         resulting_bytes
-    }
-
-    fn box_clone(&self) -> Box<Transaction> {
-        Box::new((*self).clone())
     }
 
     fn extract_secret(&self) -> Result<Vec<u8>, String> {
@@ -634,11 +631,11 @@ impl Deref for UtxoCoinArc {type Target = UtxoCoin; fn deref (&self) -> &UtxoCoi
 impl Clone for UtxoCoinArc {fn clone (&self) -> UtxoCoinArc {UtxoCoinArc (self.0.clone())}}
 
 impl UtxoCoinArc {
-    fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> BoxedTxFut {
+    fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> TransactionFut {
         let change_script_pubkey = Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes();
         let arc = self.clone();
         let unspent_fut = self.rpc_client.list_unspent_ordered(0, 999999, vec![self.my_address.to_string()]);
-        Box::new(unspent_fut.then(move |unspents| -> BoxedTxFut {
+        Box::new(unspent_fut.then(move |unspents| -> TransactionFut {
             let unspents = try_fus!(unspents);
             let mut unsigned = try_fus!(generate_transaction(
                 unspents,
@@ -657,11 +654,11 @@ impl UtxoCoinArc {
             }
 
             let signed = try_fus!(sign_tx(unsigned, &arc.key_pair, change_script_pubkey.into()));
-            let tx = Box::new(ExtendedUtxoTx {
+            let tx = ExtendedUtxoTx {
                 transaction: signed,
                 redeem_script
-            });
-            arc.send_raw_tx(tx)
+            };
+            arc.send_raw_tx(tx.into())
         }))
     }
 }
@@ -680,7 +677,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, Str
 }
 
 impl ExchangeableCoin for UtxoCoinArc {
-    fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> BoxedTxFut {
+    fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
             value: f64_to_sat(amount, self.decimals),
@@ -696,7 +693,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
-    ) -> BoxedTxFut {
+    ) -> TransactionFut {
         let redeem_script = try_fus!(payment_script(
             time_lock,
             priv_bn_hash,
@@ -717,7 +714,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
-    ) -> BoxedTxFut {
+    ) -> TransactionFut {
         let redeem_script = try_fus!(payment_script(
             time_lock,
             priv_bn_hash,
@@ -733,12 +730,12 @@ impl ExchangeableCoin for UtxoCoinArc {
 
     fn send_seller_spends_buyer_payment(
         &self,
-        buyer_payment_tx: BoxedTx,
+        buyer_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(buyer_payment_tx);
+    ) -> TransactionFut {
+        let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
@@ -749,7 +746,7 @@ impl ExchangeableCoin for UtxoCoinArc {
             .push_opcode(Opcode::OP_0)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
-            *prev_tx,
+            prev_tx,
             vec![output],
             script_data,
             &key_pair,
@@ -758,20 +755,20 @@ impl ExchangeableCoin for UtxoCoinArc {
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL
         ));
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
+        self.send_raw_tx(ExtendedUtxoTx {
             transaction,
             redeem_script: vec![].into()
-        }))
+        }.into())
     }
 
     fn send_buyer_spends_seller_payment(
         &self,
-        seller_payment_tx: BoxedTx,
+        seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(seller_payment_tx);
+    ) -> TransactionFut {
+        let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
@@ -782,7 +779,7 @@ impl ExchangeableCoin for UtxoCoinArc {
             .push_opcode(Opcode::OP_0)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
-            *prev_tx,
+            prev_tx,
             vec![output],
             script_data,
             &key_pair,
@@ -791,19 +788,19 @@ impl ExchangeableCoin for UtxoCoinArc {
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL
         ));
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
+        self.send_raw_tx(ExtendedUtxoTx {
             transaction,
             redeem_script: vec![].into()
-        }))
+        }.into())
     }
 
     fn send_buyer_refunds_payment(
         &self,
-        buyer_payment_tx: BoxedTx,
+        buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(buyer_payment_tx);
+    ) -> TransactionFut {
+        let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
@@ -813,7 +810,7 @@ impl ExchangeableCoin for UtxoCoinArc {
             .push_opcode(Opcode::OP_1)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
-            *prev_tx,
+            prev_tx,
             vec![output],
             script_data,
             &key_pair,
@@ -822,19 +819,19 @@ impl ExchangeableCoin for UtxoCoinArc {
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL - 1
         ));
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
+        self.send_raw_tx(ExtendedUtxoTx {
             transaction,
             redeem_script: vec![].into()
-        }))
+        }.into())
     }
 
     fn send_seller_refunds_payment(
         &self,
-        seller_payment_tx: BoxedTx,
+        seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         amount: f64
-    ) -> BoxedTxFut {
-        let prev_tx: Box<ExtendedUtxoTx> = downcast_fus!(seller_payment_tx);
+    ) -> TransactionFut {
+        let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
@@ -844,7 +841,7 @@ impl ExchangeableCoin for UtxoCoinArc {
             .push_opcode(Opcode::OP_1)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
-            *prev_tx,
+            prev_tx,
             vec![output],
             script_data,
             &key_pair,
@@ -853,33 +850,33 @@ impl ExchangeableCoin for UtxoCoinArc {
             (now_ms() / 1000) as u32,
             SEQUENCE_FINAL - 1
         ));
-        self.send_raw_tx(Box::new(ExtendedUtxoTx {
+        self.send_raw_tx(ExtendedUtxoTx {
             transaction,
             redeem_script: vec![].into()
-        }))
+        }.into())
     }
 
     fn get_balance(&self) -> f64 { unimplemented!() }
 
-    fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut {
-        let tx: Box<ExtendedUtxoTx> = downcast_fus!(tx);
+    fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut {
+        let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         println!("Raw tx {:?}", tx.transaction);
         println!("Hash {}", tx.transaction.hash().reversed());
         let send_fut = self.rpc_client.send_raw_transaction(BytesJson::from(serialize(&tx.transaction)));
         Box::new(
-            send_fut.then(move |res| -> Result<BoxedTx, String> {
+            send_fut.then(move |res| -> Result<TransactionEnum, String> {
                 let res = try_s!(res);
-                Ok(tx)
+                Ok(tx.into())
             })
         )
     }
 
     fn wait_for_confirmations(
         &self,
-        tx: BoxedTx,
+        tx: TransactionEnum,
         confirmations: i32,
     ) -> Box<dyn Future<Item=(), Error=String>> {
-        let tx: Box<ExtendedUtxoTx> = downcast_fus!(tx);
+        let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         Box::new(WaitForUtxoTxConfirmations::new(
             self.clone(),
             tx.transaction.hash().reversed().into(),
@@ -890,11 +887,11 @@ impl ExchangeableCoin for UtxoCoinArc {
         ))
     }
 
-    fn wait_for_tx_spend(&self, transaction: BoxedTx, wait_until: u64) -> BoxedTxFut {
-        let tx: Box<ExtendedUtxoTx> = downcast_fus!(transaction);
+    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut {
+        let tx = match transaction {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let arc = self.clone();
         Box::new(
-            self.wait_for_confirmations(tx.clone(), 1).and_then(move |_| {
+            self.wait_for_confirmations(tx.clone().into(), 1).and_then(move |_| {
                 arc.rpc_client.get_raw_transaction(
                     tx.transaction.hash().reversed().into(),
                     1
@@ -913,7 +910,7 @@ impl ExchangeableCoin for UtxoCoinArc {
         )
     }
 
-    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String> {
+    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
         // should be at least 8 bytes length in case tx and redeem length is zero
         if bytes.len() < 8 {
             return ERR!("Input bytes slice len is too small");
@@ -926,10 +923,10 @@ impl ExchangeableCoin for UtxoCoinArc {
         let redeem_len: u32 = unsafe { transmute(clone_into_array::<[u8; 4], u8>(&bytes[read..read + 4])) };
         read += 4 as usize;
         let redeem_script = Bytes::from(&bytes[read..read + redeem_len as usize]);
-        Ok(Box::new(ExtendedUtxoTx {
+        Ok(ExtendedUtxoTx {
             transaction,
             redeem_script,
-        }))
+        }.into())
     }
 }
 
@@ -1155,10 +1152,10 @@ impl<'a> WaitForTxSpend<'a> {
 }
 
 impl<'a> Future for WaitForTxSpend<'a> {
-    type Item = BoxedTx;
+    type Item = TransactionEnum;
     type Error = String;
 
-    fn poll(&mut self) -> Poll<BoxedTx, String> {
+    fn poll(&mut self) -> Poll<TransactionEnum, String> {
         loop {
             let next_state = match self.state {
                 WaitForTxSpendState::WaitForInterval => {
@@ -1196,11 +1193,11 @@ impl<'a> Future for WaitForTxSpend<'a> {
                         };
                         for input in transaction.vin.iter() {
                             if input.txid == self.txid && input.vout == self.vout {
-                                let result = Box::new(ExtendedUtxoTx {
+                                let result = ExtendedUtxoTx {
                                     transaction: try_s!(deserialize(transaction.hex.as_slice()).map_err(|e| format!("{:?}", e))),
                                     redeem_script: vec![].into()
-                                });
-                                return Ok(Async::Ready(result))
+                                };
+                                return Ok(Async::Ready(result.into()))
                             }
                         }
                     }

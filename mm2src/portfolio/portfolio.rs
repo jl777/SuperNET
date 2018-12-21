@@ -64,7 +64,7 @@ impl PortfolioContext {
     fn from_ctx (ctx: &MmArc) -> Result<Arc<PortfolioContext>, String> {
         Ok (try_s! (from_ctx (&ctx.portfolio_ctx, move || {
             Ok (PortfolioContext {
-                price_resources: Mutex::new (HashMap::default())
+                price_resources: Mutex::new (HashMap::new())
             })
         })))
     }

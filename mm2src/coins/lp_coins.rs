@@ -19,7 +19,7 @@
 //
 
 #[macro_use] extern crate common;
-#[macro_use] extern crate downcast_rs;
+//#[macro_use] extern crate enum_dispatch;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate futures;
 #[macro_use] extern crate gstuff;
@@ -28,65 +28,69 @@
 #[macro_use] extern crate unwrap;
 
 use common::lp;
-use common::mm_ctx::MmArc;
-use downcast_rs::Downcast;
+use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::now_ms;
+use hashbrown::HashMap;
 use libc::c_char;
 use serde_json::{self as json};
 use std::ffi::{CStr, CString};
 use std::fmt::Debug;
-
-macro_rules! downcast_fus {
-    ($e: expr) => {
-        match $e.downcast() {
-            Ok (ok) => ok,
-            Err (_) => return Box::new (futures::future::err (ERRL! ("Couldn't downcast")))
-        }
-    }
-}
-
-macro_rules! downcast_s {
-    ($e: expr) => {
-        match $e.downcast() {
-            Ok (ok) => ok,
-            Err (_) => return ERR!("Couldn't downcast")
-        }
-    }
-}
+use std::sync::{Arc, Mutex};
 
 #[doc(hidden)]
 pub mod coins_tests;
 pub mod eth;
 pub mod utxo;
+use self::utxo::ExtendedUtxoTx;
 
-pub trait Transaction: Downcast + Debug {
+//#[enum_dispatch(TransactionEnum)]
+pub trait Transaction {
     fn to_raw_bytes(&self) -> Vec<u8>;
-
-    fn box_clone(&self) -> Box<Transaction>;
-
     fn extract_secret(&self) -> Result<Vec<u8>, String>;
 }
-impl_downcast!(Transaction);
 
-/// We need to clone the Box<Transaction> instance, it's the workaround to implement it
-/// https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
-/// We can't just do "pub trait Transaction: Clone" due to Rust object safety rules:
-/// https://github.com/rust-lang/rfcs/blob/master/text/0255-object-safety.md
-impl Clone for Box<Transaction> {
-    fn clone(&self) -> Box<Transaction> {
-        self.box_clone()
+//#[enum_dispatch]
+#[derive(Clone)]
+pub enum TransactionEnum {
+    //ExtendedUtxoTx
+    ExtendedUtxoTx (ExtendedUtxoTx)
+}
+
+// --- generated on Rust Nightly with enum_dispatch ---
+
+// To get the trait implementations generated on Nightly:
+// cargo rustc --package coins -- -Zunstable-options --pretty=expanded > expanded.txt
+
+impl ::std::convert::From<ExtendedUtxoTx> for TransactionEnum {
+    fn from(v: ExtendedUtxoTx) -> TransactionEnum {
+        TransactionEnum::ExtendedUtxoTx(v)
+    }
+}
+impl Transaction for TransactionEnum {
+    #[inline]
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        match self {
+            TransactionEnum::ExtendedUtxoTx(inner) => inner.to_raw_bytes(),
+        }
+    }
+    #[inline]
+    fn extract_secret(&self) -> Result<Vec<u8>, String> {
+        match self {
+            TransactionEnum::ExtendedUtxoTx(inner) => inner.extract_secret(),
+        }
     }
 }
 
-pub type BoxedTx = Box<dyn Transaction>;
-pub type BoxedTxFut = Box<dyn Future<Item=BoxedTx, Error=String>>;
+// --- end of enum_dispatch generated shims ---
+
+pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
 /// Common functions that every coin must implement to be exchanged on MM
 /// Amounts are f64, it's responsibility of particular implementation to convert it to
 /// integer amount depending on decimals.
-pub trait ExchangeableCoin: Downcast + Debug {
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> BoxedTxFut;
+pub trait ExchangeableCoin: Debug {
+    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_buyer_payment(
         &self,
@@ -95,7 +99,7 @@ pub trait ExchangeableCoin: Downcast + Debug {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_seller_payment(
         &self,
@@ -104,56 +108,82 @@ pub trait ExchangeableCoin: Downcast + Debug {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_seller_spends_buyer_payment(
         &self,
-        buyer_payment_tx: BoxedTx,
+        buyer_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_buyer_spends_seller_payment(
         &self,
-        seller_payment_tx: BoxedTx,
+        seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_buyer_refunds_payment(
         &self,
-        buyer_payment_tx: BoxedTx,
+        buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_seller_refunds_payment(
         &self,
-        seller_payment_tx: BoxedTx,
+        seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn get_balance(&self) -> f64;
 
-    fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut;
+    fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut;
 
     fn wait_for_confirmations(
         &self,
-        tx: BoxedTx,
+        tx: TransactionEnum,
         confirmations: i32,
     ) -> Box<dyn Future<Item=(), Error=String>>;
 
-    fn wait_for_tx_spend(&self, transaction: BoxedTx, wait_until: u64) -> BoxedTxFut;
+    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut;
 
-    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String>;
+    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }
-impl_downcast!(ExchangeableCoin);
 
-struct Coins {
-    coins: Vec<Box<dyn ExchangeableCoin>>
+// TODO: What to keep in the `CoinsContext::coins`?
+// Option 1) A boxed Arc version of `ExchangeableCoin`.
+// This adds the extra indirection which I think is unnecessary here.
+// The indirection *hides* the actual data and implementation, not just from the compiler but also from the developers:
+// we no longer see from the type what might be there, working with coins needs more cross-referencing and/or guesswork,
+// developer's confidence (which, and I agree with Kent Beck here, is important) drops with along with transparency.
+// Option 2) Enum implementing `ExchangeableCoin` and generated with `enum_dispatch`.
+// Requires Rust Nightly, but the extra transparency worth it.
+// Option 3) A separate structure that keeps the basic coin information without being an actionable trait.
+// Allows us to port the coin configuration code independently from the OOO `ExchangeableCoin` trait.
+// Option 4) Composition over inheritance. Store `ExchangeableCoin` as a separate field in `Coin`.
+// Similar to (3), but somewhat integrated with `ExchangeableCoin`.
+
+pub trait Coin: ExchangeableCoin + Send + Sync {}
+
+struct CoinsContext {
+    /// A map from a currencty ticker symbol to the corresponding coin.  
+    /// Similar to `LP_coins`.
+    coins: Mutex<HashMap<String, Arc<Coin>>>
+}
+impl CoinsContext {
+    /// Obtains a reference to this crate context, creating it if necessary.
+    fn from_ctx (ctx: &MmArc) -> Result<Arc<CoinsContext>, String> {
+        Ok (try_s! (from_ctx (&ctx.coins_ctx, move || {
+            Ok (CoinsContext {
+                coins: Mutex::new (HashMap::new())
+            })
+        })))
+    }
 }
 
 /*
@@ -717,7 +747,9 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
         let c_coin = unsafe {lp::LP_coinfind (c_ticker)};
         if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
         let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
         let _price_info = unsafe {lp::LP_priceinfoadd (c_ticker)};
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
         assert_eq! (unsafe {lp::LP_coinfind (c_ticker)}, c_coin);
         assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
 
