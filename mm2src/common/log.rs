@@ -37,6 +37,17 @@ lazy_static! {
     static ref PRINTF_LOCK: Mutex<()> = Mutex::new(());
 }
 
+#[cfg(windows)]
+fn flush_stdout() {
+    // I don't see the `stdout` in the Windows version of the `libc` crate, but `_flushall` comes to the rescue.
+    // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/flushall?view=vs-2017
+    extern "C" {fn _flushall() -> c_int;}
+    unsafe {_flushall()};
+}
+
+#[cfg(not(windows))]
+fn flush_stdout() {}
+
 #[doc(hidden)]
 pub fn chunk2log (mut chunk: String) {
     extern {fn printf(_: *const c_char, ...) -> c_int;}
@@ -55,9 +66,14 @@ pub fn chunk2log (mut chunk: String) {
     } else {
         chunk.push ('\n');
         chunk.push ('\0');
-        if let Ok (_lock) = PRINTF_LOCK.lock() {
-            unsafe {printf (b"%s\0".as_ptr() as *const c_char, chunk.as_ptr() as *const c_char);}
-        }
+        if let Ok (_lock) = PRINTF_LOCK.lock() {unsafe {
+            printf (b"%s\0".as_ptr() as *const c_char, chunk.as_ptr() as *const c_char);
+            // Stdout buffering would sometimes mess with the tests.
+            // Particularly when running under the VSCode debugger on Windows, as the buffer size is bumped up then.
+            // But also with normal runs sometimes, when examining the end of the log.
+            // Explicitly flushing the stdout helps.
+            flush_stdout();
+        }}
     }
 }
 
@@ -561,7 +577,7 @@ impl Drop for LogState {
             dashboard.clone()
         };
         if dashboard_copy.len() > 0 {
-            log! ("--- LogState] Remaining status entries. ---");
+            log! ("--- LogState] Bye! Remaining status entries. ---");
             for status in &*dashboard_copy {self.finished (status)}
         } else {
             log! ("LogState] Bye!");

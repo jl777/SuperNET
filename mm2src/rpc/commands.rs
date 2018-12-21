@@ -17,8 +17,10 @@
 //  rpc_commands.rs
 //  marketmaker
 //
-use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
+use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, CORE, MM_VERSION};
 use common::mm_ctx::MmArc;
+use futures::Future;
+use futures_timer::Delay;
 use gstuff::now_ms;
 use hex;
 use libc::{c_void, free};
@@ -26,6 +28,7 @@ use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr};
 use std::mem::zeroed;
 use std::ptr::null_mut;
+use std::time::Duration;
 
 use crate::etomiccurl::get_gas_price_from_station;
 use crate::lp_native_dex::lp_passphrase_init;
@@ -382,8 +385,16 @@ pub fn mpnet(json: &Json) -> HyRes {
         }
 */*/
 pub fn stop (ctx: MmArc) -> HyRes {
-    unsafe {lp::LP_STOP_RECEIVED = 1};
-    ctx.stop();
+    // Should delay the shutdown a bit in order not to trip the "stop" RPC call in unit tests.
+    // Stopping immediately leads to the "stop" RPC call failing with the "errno 10054" sometimes.
+    let pause_f = Delay::new (Duration::from_millis (50));
+    let stop_f = pause_f.then (move |r| -> Result<(), ()> {
+        if let Err (err) = r {log! ("stop] Warning, there was a Delay error: " (err))}
+        unsafe {lp::LP_STOP_RECEIVED = 1};
+        ctx.stop();
+        Ok(())
+    });
+    CORE.spawn (move |_| stop_f);
     rpc_response (200, r#"{"result": "success"}"#)
 }
 /*

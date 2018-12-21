@@ -191,7 +191,8 @@ impl MarketMakerIt {
     }
     pub fn log_as_utf8 (&self) -> Result<String, String> {
         let mm_log = slurp (&self.log_path);
-        Ok (unsafe {String::from_utf8_unchecked (mm_log)})
+        let mm_log = unsafe {String::from_utf8_unchecked (mm_log)};
+        Ok (mm_log)
     }
     /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
     pub fn wait_for_log (&self, timeout_sec: f64, pred: &Fn (&str) -> bool) -> Result<(), String> {
@@ -221,7 +222,17 @@ impl MarketMakerIt {
     }
     /// Send the "stop" request to the locally running MM.
     pub fn stop (&self) -> Result<(), String> {
-        let (status, body, _headers) = try_s! (self.rpc (json! ({"userpass": self.userpass, "method": "stop"})));
+        let (status, body, _headers) = match self.rpc (json! ({"userpass": self.userpass, "method": "stop"})) {
+            Ok (t) => t,
+            Err (err) => {
+                // Downgrade the known errors into log warnings,
+                // in order not to spam the unit test logs with confusing panics, obscuring the real issue.
+                if err.contains ("An existing connection was forcibly closed by the remote host") {
+                    log! ("stop] MM already down? " (err));
+                    return Ok(())
+                } else {
+                    return ERR! ("{}", err)
+        }   }   };
         if status != StatusCode::OK {return ERR! ("MM didn't accept a stop. body: {}", body)}
         Ok(())
     }
@@ -270,8 +281,8 @@ pub fn mm_spat (local_start: LocalStart, conf_mod: &Fn(Json)->Json) -> (&'static
             "passphrase": passphrase,
             "rpccors": "http://localhost:4000",
             "coins": [
-                {"coin": "BEER","asset": "BEER", "rpcport": 8923},
-                {"coin": "PIZZA","asset": "PIZZA", "rpcport": 11116}
+                {"coin": "BEER", "asset": "BEER", "rpcport": 8923},
+                {"coin": "PIZZA", "asset": "PIZZA", "rpcport": 11116}
             ]
         })),
         "aa503e7d7426ba8ce7f6627e066b04bf06004a41fd281e70690b3dbc6e066f69".into(),

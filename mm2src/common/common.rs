@@ -418,6 +418,7 @@ E: fmt::Display + Send + 'static {
 /// Another option to consider is https://github.com/alexcrichton/futures-timer.
 /// P.S. The older `0.1` version of the `tokio::timer` might work NP, it works in other parts of our code.
 ///      The new version, on the other hand, requires the Tokio runtime (https://tokio.rs/blog/2018-03-timers/).
+/// TODO: Use futures-timer instead.
 pub struct Timeout<R> {
     fut: Box<Future<Item=R, Error=String>>,
     deadline: f64,
@@ -493,6 +494,8 @@ type SlurpFut = Box<Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=String> 
 pub fn slurp_req (request: Request<Body>) -> SlurpFut {
     let request_f = HYPER.request (request);
     let response_f = request_f.then (move |res| -> SlurpFut {
+        // Can fail with:
+        // "an IO error occurred: An existing connection was forcibly closed by the remote host. (os error 10054)" (on Windows)
         let res = try_fus! (res);
         let status = res.status();
         let headers = res.headers().clone();

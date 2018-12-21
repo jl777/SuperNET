@@ -711,9 +711,9 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     // A special case for default coins?
     // TODO: Can we refactor the default and the configured coins into a single loop?
     for &ticker in ["BTC", "KMD"].iter() {
-        // Indirectly adds the coin into `LP_coins`.
         let c_ticker = try_s! (CString::new (ticker));
         let c_ticker = c_ticker.as_ptr() as *mut c_char;
+        // Indirectly adds the coin into `LP_coins`.
         let c_coin = unsafe {lp::LP_coinfind (c_ticker)};
         if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
         let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
@@ -750,7 +750,13 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
             lp::LP_coincreate (item.0);  // Returns nullptr.
             lp::LP_coinfind (c_ticker)
         };
-        if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
+        if c_coin.is_null() {
+            // NB: Not fatal for now, because slim configurations like {"coin": "LTC", "name": "litecoin"}
+            // don't have enough information for the `LP_coins` entry but can still be useful
+            // for ticker<->name conversions (cf. `fn test_autoprice_coinmarketcap`).
+            log! ("Error creating the `LP_coins` entry for " (ticker));
+            continue
+        }
         let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
         assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
 
