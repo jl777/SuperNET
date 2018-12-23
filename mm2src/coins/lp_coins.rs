@@ -19,7 +19,6 @@
 //
 
 #[macro_use] extern crate common;
-#[macro_use] extern crate enum_dispatch;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate futures;
 #[macro_use] extern crate gstuff;
@@ -35,6 +34,7 @@ use hashbrown::HashMap;
 use libc::c_char;
 use serde_json::{self as json};
 use std::ffi::{CStr, CString};
+use std::ops::Deref;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 
@@ -42,19 +42,30 @@ use std::sync::{Arc, Mutex};
 pub mod coins_tests;
 pub mod eth;
 pub mod utxo;
-use self::utxo::{ExtendedUtxoTx, UtxoCoinArc};
+use self::utxo::{ExtendedUtxoTx, UtxoCoin};
 
-#[enum_dispatch(TransactionEnum)]
-pub trait Transaction {
+pub trait Transaction: Debug + 'static {
     fn to_raw_bytes(&self) -> Vec<u8>;
     fn extract_secret(&self) -> Result<Vec<u8>, String>;
 }
 
-#[enum_dispatch]
 #[derive(Clone)]
 pub enum TransactionEnum {
-    ExtendedUtxoTx
+    ExtendedUtxoTx (ExtendedUtxoTx)
 }
+
+impl From<ExtendedUtxoTx> for TransactionEnum {
+    fn from (t: ExtendedUtxoTx) -> TransactionEnum {
+        TransactionEnum::ExtendedUtxoTx (t)
+}   }
+
+// NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
+impl Deref for TransactionEnum {
+    type Target = Transaction;
+    fn deref (&self) -> &dyn Transaction {
+        match self {
+            &TransactionEnum::ExtendedUtxoTx (ref t) => t
+}   }   }
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
@@ -63,8 +74,7 @@ pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 /// integer amount depending on decimals.
 /// 
 /// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and automatic garbage collection.
-#[enum_dispatch(MmCoinEnum)]
-pub trait MmCoin: Debug {
+pub trait MmCoin: Debug + 'static {
     fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_buyer_payment(
@@ -130,11 +140,23 @@ pub trait MmCoin: Debug {
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }
 
-#[enum_dispatch]
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {
-    UtxoCoinArc
+    UtxoCoin (UtxoCoin)
 }
+
+impl From<UtxoCoin> for MmCoinEnum {
+    fn from (c: UtxoCoin) -> MmCoinEnum {
+        MmCoinEnum::UtxoCoin (c)
+}   }
+
+// NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
+impl Deref for MmCoinEnum {
+    type Target = MmCoin;
+    fn deref (&self) -> &dyn MmCoin {
+        match self {
+            &MmCoinEnum::UtxoCoin (ref c) => c
+}   }   }
 
 struct CoinsContext {
     /// A map from a currencty ticker symbol to the corresponding coin.  

@@ -626,10 +626,10 @@ fn sign_tx(
 }
 
 #[derive(Clone, Debug)]
-pub struct UtxoCoinArc(Arc<UtxoCoinImpl>);
-impl Deref for UtxoCoinArc {type Target = UtxoCoinImpl; fn deref (&self) -> &UtxoCoinImpl {&*self.0}}
+pub struct UtxoCoin(Arc<UtxoCoinImpl>);
+impl Deref for UtxoCoin {type Target = UtxoCoinImpl; fn deref (&self) -> &UtxoCoinImpl {&*self.0}}
 
-impl UtxoCoinArc {
+impl UtxoCoin {
     fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> TransactionFut {
         let change_script_pubkey = Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes();
         let arc = self.clone();
@@ -675,7 +675,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, Str
     Ok(try_s!(KeyPair::from_private(private)))
 }
 
-impl MmCoin for UtxoCoinArc {
+impl MmCoin for UtxoCoin {
     fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
@@ -999,7 +999,7 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, S
         utxo_mutex: Mutex::new(()),
         my_address: my_address.clone(),
     };
-    Ok(UtxoCoinArc(Arc::new(coin)).into())
+    Ok(UtxoCoin(Arc::new(coin)).into())
 }
 
 /// Temporary in memory LogState instance, consider replacing with LogState instance from MmCtx
@@ -1013,7 +1013,7 @@ enum WaitForConfirmationState {
 }
 
 struct WaitForUtxoTxConfirmations<'a> {
-    coin: UtxoCoinArc,
+    coin: UtxoCoin,
     txid: H256Json,
     interval: Interval,
     wait_until: u64,
@@ -1026,7 +1026,7 @@ struct WaitForUtxoTxConfirmations<'a> {
 
 impl<'a> WaitForUtxoTxConfirmations<'a> {
     pub fn new(
-        coin: UtxoCoinArc,
+        coin: UtxoCoin,
         txid: H256Json,
         poll_interval: u64,
         wait_until: u64,
@@ -1111,7 +1111,7 @@ enum WaitForTxSpendState {
 }
 
 struct WaitForTxSpend<'a> {
-    coin: UtxoCoinArc,
+    coin: UtxoCoin,
     txid: H256Json,
     vout: u32,
     interval: Interval,
@@ -1125,7 +1125,7 @@ struct WaitForTxSpend<'a> {
 
 impl<'a> WaitForTxSpend<'a> {
     pub fn new(
-        coin: UtxoCoinArc,
+        coin: UtxoCoin,
         txid: H256Json,
         vout: u32,
         poll_interval: u64,
