@@ -195,7 +195,7 @@ impl MarketMakerIt {
         Ok (mm_log)
     }
     /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
-    pub fn wait_for_log (&self, timeout_sec: f64, pred: &Fn (&str) -> bool) -> Result<(), String> {
+    pub fn wait_for_log (&self, timeout_sec: f64, pred: &dyn Fn (&str) -> bool) -> Result<(), String> {
         let start = now_float();
         let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
         loop {
@@ -246,7 +246,7 @@ impl Drop for MarketMakerIt {
 }
 
 /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
-pub fn wait_for_log (log: &LogState, timeout_sec: f64, pred: &Fn (&str) -> bool) -> Result<(), String> {
+pub fn wait_for_log (log: &LogState, timeout_sec: f64, pred: &dyn Fn (&str) -> bool) -> Result<(), String> {
     let start = now_float();
     let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
     let mut buf = String::with_capacity (128);
@@ -272,7 +272,7 @@ pub fn mm_dump (log_path: &Path) -> (RaiiDump, RaiiDump) {(
 )}
 
 /// A typical MM instance.
-pub fn mm_spat (local_start: LocalStart, conf_mod: &Fn(Json)->Json) -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
+pub fn mm_spat (local_start: LocalStart, conf_mod: &dyn Fn(Json)->Json) -> (&'static str, MarketMakerIt, RaiiDump, RaiiDump) {
     let passphrase = "SPATsRps3dhEtXwtnpRCKF";
     let mm = unwrap! (MarketMakerIt::start (
         conf_mod (json! ({

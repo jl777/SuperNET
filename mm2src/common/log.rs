@@ -437,12 +437,12 @@ impl LogState {
     }
 
     /// Read-only access to the status dashboard.
-    pub fn with_dashboard (&self, cb: &mut FnMut (&[Arc<Mutex<Status>>])) {
+    pub fn with_dashboard (&self, cb: &mut dyn FnMut (&[Arc<Mutex<Status>>])) {
         let dashboard = unwrap! (self.dashboard.lock(), "Can't lock the dashboard");
         cb (&dashboard[..])
     }
 
-    pub fn with_tail (&self, cb: &mut FnMut (&VecDeque<LogEntry>)) {
+    pub fn with_tail (&self, cb: &mut dyn FnMut (&VecDeque<LogEntry>)) {
         let tail = unwrap! (self.tail.lock(), "Can't lock the tail");
         cb (&*tail)
     }

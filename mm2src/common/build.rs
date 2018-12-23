@@ -591,7 +591,7 @@ fn hget(url: &str, to: PathBuf) {
 }
 
 /// Loads the `path`, runs `update` on it and saves back the result if it differs.
-fn in_place(path: &AsRef<Path>, update: &mut FnMut(Vec<u8>) -> Vec<u8>) {
+fn in_place(path: &AsRef<Path>, update: &mut dyn FnMut(Vec<u8>) -> Vec<u8>) {
     let path: &Path = path.as_ref();
     if !path.is_file() {
         return;

@@ -160,7 +160,7 @@ pub fn bitcoin_address (coin: &str, addrtype: u8, rmd160: [u8; 20usize]) -> Resu
 
 /// Port of `HASH_ITER` over `iguana_info`.  
 /// [functional]
-pub unsafe fn coins_iter (mut coins: *mut lp::iguana_info, cb: &mut FnMut (*mut lp::iguana_info) -> Result<(), String>) -> Result<(), String> {
+pub unsafe fn coins_iter (mut coins: *mut lp::iguana_info, cb: &mut dyn FnMut (*mut lp::iguana_info) -> Result<(), String>) -> Result<(), String> {
     if coins.is_null() {return Ok(())}
     let mut tmp = (*coins).hh.next as *mut lp::iguana_info;
 
@@ -340,7 +340,7 @@ pub fn stack_trace_frame (buf: &mut Write, symbol: &backtrace::Symbol) {
 /// * `format` - Generates the string representation of a frame.
 /// * `output` - Function used to print the stack trace.
 ///              Printing immediately, without buffering, should make the tracing somewhat more reliable.
-pub fn stack_trace (format: &mut FnMut (&mut Write, &backtrace::Symbol), output: &mut FnMut (&str)) {
+pub fn stack_trace (format: &mut dyn FnMut (&mut Write, &backtrace::Symbol), output: &mut dyn FnMut (&str)) {
     backtrace::trace (|frame| {
         backtrace::resolve (frame.ip(), |symbol| {
             let mut trace_buf = trace_buf();
