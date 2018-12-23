@@ -42,7 +42,7 @@ use std::sync::{Arc, Mutex};
 pub mod coins_tests;
 pub mod eth;
 pub mod utxo;
-use self::utxo::ExtendedUtxoTx;
+use self::utxo::{ExtendedUtxoTx, UtxoCoinArc};
 
 #[enum_dispatch(TransactionEnum)]
 pub trait Transaction {
@@ -61,7 +61,10 @@ pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 /// Common functions that every coin must implement to be exchanged on MM
 /// Amounts are f64, it's responsibility of particular implementation to convert it to
 /// integer amount depending on decimals.
-pub trait ExchangeableCoin: Debug {
+/// 
+/// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and automatic garbage collection.
+#[enum_dispatch(MmCoinEnum)]
+pub trait MmCoin: Debug {
     fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_buyer_payment(
@@ -127,25 +130,16 @@ pub trait ExchangeableCoin: Debug {
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }
 
-// TODO: What to keep in the `CoinsContext::coins`?
-// Option 1) A boxed Arc version of `ExchangeableCoin`.
-// This adds the extra indirection which I think is unnecessary here.
-// The indirection *hides* the actual data and implementation, not just from the compiler but also from the developers:
-// we no longer see from the type what might be there, working with coins needs more cross-referencing and/or guesswork,
-// developer's confidence (which, and I agree with Kent Beck here, is important) drops with along with transparency.
-// Option 2) Enum implementing `ExchangeableCoin` and generated with `enum_dispatch`.
-// Requires Rust Nightly, but the extra transparency worth it.
-// Option 3) A separate structure that keeps the basic coin information without being an actionable trait.
-// Allows us to port the coin configuration code independently from the OOO `ExchangeableCoin` trait.
-// Option 4) Composition over inheritance. Store `ExchangeableCoin` as a separate field in `Coin`.
-// Similar to (3), but somewhat integrated with `ExchangeableCoin`.
-
-pub trait Coin: ExchangeableCoin + Send + Sync {}
+#[enum_dispatch]
+#[derive(Clone, Debug)]
+pub enum MmCoinEnum {
+    UtxoCoinArc
+}
 
 struct CoinsContext {
     /// A map from a currencty ticker symbol to the corresponding coin.  
     /// Similar to `LP_coins`.
-    coins: Mutex<HashMap<String, Arc<Coin>>>
+    coins: Mutex<HashMap<String, MmCoinEnum>>
 }
 impl CoinsContext {
     /// Obtains a reference to this crate context, creating it if necessary.
@@ -517,8 +511,28 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     strcpy(coin->estimatefeestr,"estimatefee");
     return(coin);
 }
+*/
 
-void *curl_easy_init();
+/// Adds a new currency into the list of currencies configured.
+/// 
+/// Returns an error if the currency already exists. Initializing the same currency twice is a bad habit
+/// (might lead to misleading and confusing information during debugging and maintenance, see DRY)
+/// and should be fixed on the call site.
+fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
+    use hashbrown::hash_map::RawEntryMut;
+
+    let cctx = try_s! (CoinsContext::from_ctx (ctx));
+    let mut coins = try_s! (cctx.coins.lock());
+    let ve = match coins.raw_entry_mut().from_key (ticker) {
+        RawEntryMut::Occupied (_oe) => return ERR! ("Coin {} already initialized", ticker),
+        RawEntryMut::Vacant (ve) => ve
+    };
+
+    if 1 == 2 {ve.insert (ticker.into(), unsafe {std::mem::zeroed()});}
+    ERR! ("TBD")
+}
+
+/*
 uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath,uint8_t decimals)
 {
     static void *ctx;
@@ -713,6 +727,13 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     // A special case for default coins?
     // TODO: Can we refactor the default and the configured coins into a single loop?
     for &ticker in ["BTC", "KMD"].iter() {
+        if let Err (err) = lp_coininit (ctx, ticker) {
+            // Non-fatal while we're still porting `lp_coininit`.
+            // Not sure about making it fatal later. We might have coins in configuration that we can't init,
+            // but we might still be able to use the MarketMaker without them.
+            log! ("lp_coininit error: " (err));
+        }
+
         let c_ticker = try_s! (CString::new (ticker));
         let c_ticker = c_ticker.as_ptr() as *mut c_char;
         // Indirectly adds the coin into `LP_coins`.
@@ -746,6 +767,13 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
             Some (ticker) => ticker,
             None => {log! ("lp_initcoins] Skipping a coin entry lacking the ticker symbol field 'coin': " [coins_en]); continue}
         };
+        if let Err (err) = lp_coininit (ctx, ticker) {
+            // Non-fatal while we're still porting `lp_coininit`.
+            // Not sure about making it fatal later. We might have coins in configuration that we can't init,
+            // but we might still be able to use the MarketMaker without them.
+            log! ("lp_coininit error: " (err));
+        }
+
         let c_ticker = try_s! (CString::new (ticker));
         let c_ticker = c_ticker.as_ptr() as *mut c_char;
         let c_coin = unsafe {

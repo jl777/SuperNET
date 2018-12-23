@@ -19,7 +19,7 @@ enum_dispatch = "0.1"
 fomat-macros = "0.2"
 futures = "0.1"
 gstuff = "0.5"
-hashbrown = {version = "0.1", features = ["serde"]}
+hashbrown = {git = "https://github.com/Amanieu/hashbrown", branch = "raw_entry", features = ["serde", "nightly"]}
 hex = "0.3.2"
 hyper = "0.12"
 keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }

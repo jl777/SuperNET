@@ -304,7 +304,7 @@ dependencies = [
  "fomat-macros 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "gstuff 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashbrown 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hashbrown 0.1.6 (git+https://github.com/Amanieu/hashbrown?branch=raw_entry)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "keys 0.1.0 (git+https://github.com/artemii235/parity-bitcoin.git)",
@@ -335,7 +335,7 @@ dependencies = [
  "futures 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "gstuff 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashbrown 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hashbrown 0.1.6 (git+https://github.com/Amanieu/hashbrown?branch=raw_entry)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-rustls 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -826,8 +826,8 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.1.6"
+source = "git+https://github.com/Amanieu/hashbrown?branch=raw_entry#6a8e2335a034eba4cb6b38ea2ae26ce29d26e74d"
 dependencies = [
  "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "scopeguard 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1217,7 +1217,7 @@ dependencies = [
  "futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-timer 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gstuff 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashbrown 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hashbrown 0.1.6 (git+https://github.com/Amanieu/hashbrown?branch=raw_entry)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1443,7 +1443,7 @@ dependencies = [
  "fomat-macros 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "gstuff 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashbrown 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hashbrown 0.1.6 (git+https://github.com/Amanieu/hashbrown?branch=raw_entry)",
  "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.44 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1475,7 +1475,7 @@ dependencies = [
  "fomat-macros 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "gstuff 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashbrown 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hashbrown 0.1.6 (git+https://github.com/Amanieu/hashbrown?branch=raw_entry)",
  "hyper 0.12.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-rustls 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2700,7 +2700,7 @@ dependencies = [
 "checksum glob 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
 "checksum gstuff 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1b825508aea221246d79d0d92bab8925e48b7f1d3f8b72e0a5509d93764023e3"
 "checksum h2 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "a27e7ed946e8335bdf9a191bc1b9b14a03ba822d013d2f58437f4fabcbd7fc2c"
-"checksum hashbrown 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "64b7d419d0622ae02fe5da6b9a5e1964b610a65bb37923b976aeebb6dbb8f86e"
+"checksum hashbrown 0.1.6 (git+https://github.com/Amanieu/hashbrown?branch=raw_entry)" = "<none>"
 "checksum heapsize 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "556cd479866cf85c3f671209c85e8a6990211c916d1002c2fcb2e9b7cf60bc36"
 "checksum heapsize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1679e6ea370dee694f91f1dc469bf94cf8f52051d147aec3e1f9497c6fc22461"
 "checksum hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"

@@ -50,7 +50,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
-use super::{ExchangeableCoin, Transaction, TransactionEnum, TransactionFut};
+use super::{MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
 /// https://stackoverflow.com/a/37682288/8707622
@@ -273,7 +273,7 @@ impl UtxoRpcClient {
 }
 
 #[derive(Debug)]
-pub struct UtxoCoin {
+pub struct UtxoCoinImpl {  // pImpl idiom.
     /// https://en.bitcoin.it/wiki/List_of_address_prefixes
     /// https://github.com/jl777/coins/blob/master/coins
     pub_addr_prefix: u8,
@@ -625,10 +625,9 @@ fn sign_tx(
     })
 }
 
-#[derive(Debug)]
-pub struct UtxoCoinArc(Arc<UtxoCoin>);
-impl Deref for UtxoCoinArc {type Target = UtxoCoin; fn deref (&self) -> &UtxoCoin {&*self.0}}
-impl Clone for UtxoCoinArc {fn clone (&self) -> UtxoCoinArc {UtxoCoinArc (self.0.clone())}}
+#[derive(Clone, Debug)]
+pub struct UtxoCoinArc(Arc<UtxoCoinImpl>);
+impl Deref for UtxoCoinArc {type Target = UtxoCoinImpl; fn deref (&self) -> &UtxoCoinImpl {&*self.0}}
 
 impl UtxoCoinArc {
     fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> TransactionFut {
@@ -676,7 +675,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, Str
     Ok(try_s!(KeyPair::from_private(private)))
 }
 
-impl ExchangeableCoin for UtxoCoinArc {
+impl MmCoin for UtxoCoinArc {
     fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
@@ -956,7 +955,7 @@ fn key_pair_from_seed(seed: &[u8], prefix: u8) -> KeyPair {
     KeyPair::from_private(private).unwrap()
 }
 
-pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<Box<ExchangeableCoin>, String> {
+pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, String> {
     let info = unsafe { *info };
     let auth_str = unsafe { try_s!(CStr::from_ptr(info.userpass.as_ptr()).to_str()) };
     let uri = unsafe { try_s!(CStr::from_ptr(info.serverport.as_ptr()).to_str()) };
@@ -977,7 +976,7 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<Box<Exchangea
     // TODO Consider refactoring, overwintered flag should be explicitly set in coins config
     let overwintered = info.txversion >= 3;
 
-    let coin = UtxoCoin {
+    let coin = UtxoCoinImpl {
         decimals: 8,
         rpc_client: UtxoRpcClient {
             uri: format!("http://{}", uri),
@@ -1000,7 +999,7 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<Box<Exchangea
         utxo_mutex: Mutex::new(()),
         my_address: my_address.clone(),
     };
-    Ok(Box::new(UtxoCoinArc(Arc::new(coin))))
+    Ok(UtxoCoinArc(Arc::new(coin)).into())
 }
 
 /// Temporary in memory LogState instance, consider replacing with LogState instance from MmCtx

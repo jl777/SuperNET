@@ -23,7 +23,6 @@ use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use gstuff::now_ms;
 use hashbrown::hash_map::{Entry, HashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
-use peers;
 use serde_json::{Value as Json};
 use std::collections::{VecDeque};
 use std::ffi::{CString, CStr};
