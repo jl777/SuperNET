@@ -19,7 +19,7 @@
 //
 
 #[macro_use] extern crate common;
-//#[macro_use] extern crate enum_dispatch;
+#[macro_use] extern crate enum_dispatch;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate futures;
 #[macro_use] extern crate gstuff;
@@ -44,45 +44,17 @@ pub mod eth;
 pub mod utxo;
 use self::utxo::ExtendedUtxoTx;
 
-//#[enum_dispatch(TransactionEnum)]
+#[enum_dispatch(TransactionEnum)]
 pub trait Transaction {
     fn to_raw_bytes(&self) -> Vec<u8>;
     fn extract_secret(&self) -> Result<Vec<u8>, String>;
 }
 
-//#[enum_dispatch]
+#[enum_dispatch]
 #[derive(Clone)]
 pub enum TransactionEnum {
-    //ExtendedUtxoTx
-    ExtendedUtxoTx (ExtendedUtxoTx)
+    ExtendedUtxoTx
 }
-
-// --- generated on Rust Nightly with enum_dispatch ---
-
-// To get the trait implementations generated on Nightly:
-// cargo rustc --package coins -- -Zunstable-options --pretty=expanded > expanded.txt
-
-impl ::std::convert::From<ExtendedUtxoTx> for TransactionEnum {
-    fn from(v: ExtendedUtxoTx) -> TransactionEnum {
-        TransactionEnum::ExtendedUtxoTx(v)
-    }
-}
-impl Transaction for TransactionEnum {
-    #[inline]
-    fn to_raw_bytes(&self) -> Vec<u8> {
-        match self {
-            TransactionEnum::ExtendedUtxoTx(inner) => inner.to_raw_bytes(),
-        }
-    }
-    #[inline]
-    fn extract_secret(&self) -> Result<Vec<u8>, String> {
-        match self {
-            TransactionEnum::ExtendedUtxoTx(inner) => inner.extract_secret(),
-        }
-    }
-}
-
-// --- end of enum_dispatch generated shims ---
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 

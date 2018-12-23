@@ -4,7 +4,8 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        sh '''rustup install stable'''
+        sh '''rustup install nightly'''
+        sh '''rustup default nightly'''
       }
     }
     stage('Build') {
