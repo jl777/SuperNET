@@ -69,12 +69,9 @@ impl Deref for TransactionEnum {
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
-/// Common functions that every coin must implement to be exchanged on MM
-/// Amounts are f64, it's responsibility of particular implementation to convert it to
-/// integer amount depending on decimals.
-/// 
-/// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and automatic garbage collection.
-pub trait MmCoin: Debug + 'static {
+/// Operations that coins have independenty from the MarketMaker.
+/// That is, things implemented by the coin wallets or public coin services.
+pub trait MarketCoinOps: Debug + 'static {
     fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_buyer_payment(
@@ -139,6 +136,13 @@ pub trait MmCoin: Debug + 'static {
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }
+
+/// Common functions that every coin must implement to be exchanged on MM
+/// Amounts are f64, it's responsibility of particular implementation to convert it to
+/// integer amount depending on decimals.
+/// 
+/// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and automatic garbage collection.
+pub trait MmCoin: MarketCoinOps {}
 
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {

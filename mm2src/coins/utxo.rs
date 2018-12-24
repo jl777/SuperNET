@@ -50,7 +50,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
-use super::{MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
+use super::{MarketCoinOps, MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
 /// https://stackoverflow.com/a/37682288/8707622
@@ -675,7 +675,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, Str
     Ok(try_s!(KeyPair::from_private(private)))
 }
 
-impl MmCoin for UtxoCoin {
+impl MarketCoinOps for UtxoCoin {
     fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
@@ -928,6 +928,8 @@ impl MmCoin for UtxoCoin {
         }.into())
     }
 }
+
+impl MmCoin for UtxoCoin {}
 
 fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
     let random_key = try_s!(Random::new(prefix).generate());
