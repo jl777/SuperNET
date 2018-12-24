@@ -408,6 +408,25 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
     let mut pair_str: [c_char; 512] = [0; 512];
     let mut other_addr: [c_char; 64] = [0; 64];
     (*qp).quotetime = (now_ms() / 1000) as u32;
+
+    let srccoin = CStr::from_ptr((*qp).srccoin.as_ptr()).to_string_lossy();  // TODO: Later replace with a checked `to_str`.
+    log!("lp_connect_start_bob] srccoin is " (srccoin));
+    let coin = coins::lp_coinfind(ctx, &srccoin);
+    log!("lp_connect_start_bob] lp_coinfind returned " [coin]);
+    if let Ok(Some(coin)) = coin {
+        // TODO (refactoring angle): As discussed, the private key is already there in the `coin`, we shouldn't have to invoke `LP_privkey` to obtain it,
+        // plus there's no need to explicitly pass the private key through the context here,
+        // rather, the private key should be obtained and used in a refactored version of `LP_swapinit`.
+        // TODO: Non-panicking error handling.
+        let c_symbol = unwrap!(CString::new(&srccoin[..]));  // Ticker symbol.
+        let c_address = unwrap!(CString::new(&coin.address()[..]));
+        // TODO: We should refactor away the taddr in the future.
+        //       In Komodo forks it's always 0.
+        let taddr = 0;
+        let priv_key = lp::LP_privkey(c_symbol.as_ptr() as *mut c_char, c_address.as_ptr() as *mut c_char, taddr);
+        log!("lp_connect_start_bob] priv_key: " (priv_key));
+    }
+
     let coin = lp::LP_coinfind((*qp).srccoin.as_mut_ptr());
     if coin == null_mut() {
         printf(b"cant find coin.%s\n\x00".as_ptr() as *const c_char, (*qp).srccoin);

@@ -57,7 +57,7 @@
 //  lp_swap.rs
 //  marketmaker
 //
-use coins::{MmCoin, MmCoinEnum, Transaction, TransactionEnum};
+use coins::{MmCoinEnum, TransactionEnum};
 use coins::utxo::{coin_from_iguana_info};
 use common::{bits256, dstr, Timeout};
 use common::log::TagParam;

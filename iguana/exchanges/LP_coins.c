@@ -349,32 +349,12 @@ char *LP_getcoin(char *symbol)
     return(jprint(retjson,1));
 }
 
-struct iguana_info *LP_coinsearch(char *symbol)
+/// Non-moving add.
+void LP_coinadd_(struct iguana_info *coin)
 {
-    struct iguana_info *coin = 0;
-    if ( symbol != 0 && symbol[0] != 0 )
-    {
-        portable_mutex_lock(&LP_coinmutex);
-        HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
-        portable_mutex_unlock(&LP_coinmutex);
-    }
-    return(coin);
-}
-
-struct iguana_info *LP_coinadd(struct iguana_info *cdata)
-{
-    struct iguana_info *coin = calloc(1,sizeof(*coin));
-    *coin = *cdata;
-    portable_mutex_init(&coin->txmutex);
-    portable_mutex_init(&coin->addrmutex);
-    portable_mutex_init(&coin->addressutxo_mutex);
     portable_mutex_lock(&LP_coinmutex);
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
     portable_mutex_unlock(&LP_coinmutex);
-    strcpy(coin->validateaddress,"validateaddress");
-    strcpy(coin->getinfostr,"getinfo");
-    strcpy(coin->estimatefeestr,"estimatefee");
-    return(coin);
 }
 
 void *curl_easy_init();
@@ -493,7 +473,11 @@ struct iguana_info *LP_coinfind(char *symbol)
     if ( port == 0 )
         isinactive = 1;
     else isinactive = 0;
-    if ( (coin= LP_coinadd(&cdata)) != 0 )
+
+    struct iguana_info *pinned = calloc(1,sizeof(struct iguana_info));
+    *pinned = cdata;
+
+    if ( (coin= LP_coinadd(pinned)) != 0 )
     {
         coin->inactive = isinactive * (uint32_t)time(NULL);
         /*if ( strcmp(symbol,"KMD") == 0 )
@@ -512,7 +496,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 
 struct iguana_info *LP_coincreate(cJSON *item)
 {
-    struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
+    struct iguana_info *coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
     if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
         isPoS = jint(item,"isPoS");
@@ -533,11 +517,9 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = symbol;
 
         uint8_t decimals = juint(item,"decimals");
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,jint(item,"txversion")) < 0 )
-        {
-            coin = LP_coinadd(&cdata);
-            coin->inactive = (uint32_t)time(NULL);
-        } else coin = LP_coinadd(&cdata);
+        coin = LP_coinfind(symbol);
+        coin->inactive = (uint32_t)time(NULL);
+        //TODO//if ( LP_coininit(&cdata,,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,jint(item,"txversion")) < 0 )
     } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
         printf("SKIP %s, missing rpcport field in coins array\n",symbol);
     if ( coin != 0 && item != 0 )

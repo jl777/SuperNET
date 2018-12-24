@@ -527,7 +527,10 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin);
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg);
+void LP_coinadd_(struct iguana_info *cdata);
 struct iguana_info *LP_coinfind(char *symbol);
+/// Returns the "BTC" and "KMD" ports defined in `portstrs`. 0 for other currencies.
+uint16_t LP_rpcport(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height);
@@ -640,6 +643,8 @@ void unbuffered_output_support(const char* log_path);
 void LP_dPoW_request(struct iguana_info *coin);
 // The `item` here is an entry from the "coins" command-line configuration.
 struct iguana_info *LP_coincreate(cJSON *item);
+/// Helps `lp_coininit` to initialize things that we can't readily initialize from Rust.
+void LP_coin_curl_init(struct iguana_info* coin);
 void LP_mutex_init();
 void LP_tradebots_timeslice(void *ctx);
 struct LP_priceinfo *LP_priceinfofind(char *symbol);
@@ -659,6 +664,7 @@ char *unstringify(char *str);
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub);
 void vcalc_sha256(char hashstr[(256 >> 3) * 2 + 1],uint8_t hash[256 >> 3],uint8_t *src,int32_t len);
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif);
+bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr);
 void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
 void LP_priceinfos_clear();

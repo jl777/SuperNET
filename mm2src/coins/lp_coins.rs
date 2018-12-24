@@ -26,14 +26,16 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate unwrap;
 
-use common::lp;
+use common::{bitcoin_ctx, bits256, lp};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::now_ms;
-use hashbrown::HashMap;
-use libc::c_char;
+use hashbrown::hash_map::{HashMap, RawEntryMut};
+use libc::{c_char, c_void};
 use serde_json::{self as json};
+use std::borrow::Cow;
 use std::ffi::{CStr, CString};
+use std::mem::zeroed;
 use std::ops::Deref;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
@@ -42,7 +44,7 @@ use std::sync::{Arc, Mutex};
 pub mod coins_tests;
 pub mod eth;
 pub mod utxo;
-use self::utxo::{ExtendedUtxoTx, UtxoCoin};
+use self::utxo::{coin_from_iguana_info, ExtendedUtxoTx, UtxoCoin};
 
 pub trait Transaction: Debug + 'static {
     fn to_raw_bytes(&self) -> Vec<u8>;
@@ -72,6 +74,8 @@ pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 /// Operations that coins have independenty from the MarketMaker.
 /// That is, things implemented by the coin wallets or public coin services.
 pub trait MarketCoinOps: Debug + 'static {
+    fn address(&self) -> Cow<str>;
+
     fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_buyer_payment(
@@ -141,8 +145,14 @@ pub trait MarketCoinOps: Debug + 'static {
 /// Amounts are f64, it's responsibility of particular implementation to convert it to
 /// integer amount depending on decimals.
 /// 
-/// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and automatic garbage collection.
-pub trait MmCoin: MarketCoinOps {}
+/// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and garbage collection.
+pub trait MmCoin: MarketCoinOps {
+    // `MmCoin` is an extension fulcrum for something that doesn't fit the `MarketCoinOps`. Practical examples:
+    // name (might be required for some APIs, CoinMarketCap for instance);
+    // enabled (a piece of MM-specific configuration);
+    // coin statistics that we might want to share with UI;
+    // state serialization, to get full rewind and debugging information about the coins participating in a SWAP operation.
+}
 
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {
@@ -544,9 +554,10 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 /// Returns an error if the currency already exists. Initializing the same currency twice is a bad habit
 /// (might lead to misleading and confusing information during debugging and maintenance, see DRY)
 /// and should be fixed on the call site.
+/// 
+/// NB: As of now only a part of coin information has been ported to `MmCoinEnum`, as much as necessary to fix the SWAP in #233.
+///     We plan to port the rest of it later.
 fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
-    use hashbrown::hash_map::RawEntryMut;
-
     let cctx = try_s! (CoinsContext::from_ctx (ctx));
     let mut coins = try_s! (cctx.coins.lock());
     let ve = match coins.raw_entry_mut().from_key (ticker) {
@@ -554,8 +565,65 @@ fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
         RawEntryMut::Vacant (ve) => ve
     };
 
-    if 1 == 2 {ve.insert (ticker.into(), unsafe {std::mem::zeroed()});}
-    ERR! ("TBD")
+    let c_ticker = try_s! (CString::new (ticker));
+    // NB: 0 for anything that's not "BTC" or "KMD".
+    let port = unsafe {lp::LP_rpcport (c_ticker.as_ptr() as *mut c_char)};
+
+    // NB: Unlike the previous C implementation we're never *moving* the `iguana_info` instance, it's effectively pinned.
+    let mut ii: Box<lp::iguana_info> = Box::new (unsafe {zeroed()});
+    // Following is the initialization data taken from `LP_coinfind`, it's used primarily for the default "BTC" and "KMD" coins.
+    // TODO: Merge with the configurable initialization in `LP_coincreate`, which is used for the rest of the coins (the command-line ones).
+    // TODO: Maybe a *table* with hardcoded defaults, for readability?
+    try_s! (safecopy! (ii.symbol, "{}", ticker));
+    ii.txversion = if ticker == "PART" {160} else {1};
+    ii.updaterate = (now_ms() / 1000) as u32;
+    ii.isPoS = 0;
+    ii.taddr = 0;
+    ii.wiftaddr = 0;
+    ii.longestchain = 1;
+    ii.txfee = if ticker == "BTC" {0} else {lp::LP_MIN_TXFEE as u64};
+    ii.pubtype = if ticker == "BTC" {0} else {60};
+    ii.p2shtype = if ticker == "BTC" {5} else {85};
+    ii.wiftype = if ticker == "BTC" {128} else {188};
+    ii.inactive = (now_ms() / 1000) as u32;
+    ii.ctx = unsafe {bitcoin_ctx() as *mut c_void};
+    ii.noimportprivkey_flag = match ticker {"XVG" | "CLOAK" | "PPC" | "BCC" | "ORB" => 1, _ => 0};
+    if port != 0 {try_s! (safecopy! (ii.serverport, "127.0.0.1:{}", port))}
+    ii.zcash = match ticker {"BCH" => lp::LP_IS_BITCOINCASH, "BTG" => lp::LP_IS_BITCOINGOLD, "" => lp::LP_IS_BITCOINCASH, _ => 0} as u8;
+    unsafe {lp::LP_coin_curl_init (&mut *ii)};
+    ii.decimals = 0;
+
+    // NB: `LP_privkeycalc` initializes `lp::G.LP_privkey`, required to instantiate `UtxoCoin`.
+
+    // NB: `LP_privkeycalc` triggers a chain of functions that ends up calling `LP_coinfind`, which tries to auto-add a coin.
+    //     In order for this extra instance not to be added we have to make haste and add one ourselves.
+    // Copies the `iguana_info` generated by `lp_coininit` into the old global `LP_coins`.
+    let ii = Box::leak (ii);
+    common::for_c::LP_coinadd (&mut *ii);
+
+    // TODO: Move the private key into `MmCtx`. Initialize it before `lp_coininit`.
+    let passphrase = try_s! (ctx.conf["passphrase"].as_str().ok_or ("!passphrase"));
+    let c_passphrase = try_s! (CString::new (&passphrase[..]));
+    unsafe {
+        let mut pubkey33: [u8; 33] = zeroed();
+        let mut pubkey: bits256 = zeroed();
+        let pk = lp::LP_privkeycalc (
+            ctx.btc_ctx() as *mut c_void,          // void *ctx
+            pubkey33.as_mut_ptr(),                 // uint8_t *pubkey33
+            &mut pubkey,                           // bits256 *pubkeyp
+            &mut *ii,                              // struct iguana_info *coin
+            c_passphrase.as_ptr() as *mut c_char,  // char *passphrase
+            b"\0".as_ptr() as *mut c_char          // char *wifstr
+        );
+        if !pk.nonz() {return ERR! ("!LP_privkeycalc")}
+        if !lp::G.LP_privkey.nonz() {return ERR! ("Error initializing the global private key (G.LP_privkey)")}
+    }
+
+    // TODO: Should pick the correct coin implementation somehow.
+    let coin: MmCoinEnum = try_s! (coin_from_iguana_info (&mut *ii)) .into();
+
+    ve.insert (ticker.into(), coin.clone());
+    Ok (coin)
 }
 
 /*
@@ -635,7 +703,17 @@ int32_t LP_isdisabled(char *base,char *rel)
         return(1);
     else return(0);
 }
+*/
 
+/// NB: As of now only a part of coin information has been ported to `MmCoinEnum`, as much as necessary to fix the SWAP in #233.
+///     We plan to port the rest of it later (in lp_initcoins, lp_coininit).
+pub fn lp_coinfind (ctx: &MmArc, ticker: &str) -> Result<Option<MmCoinEnum>, String> {
+    let cctx = try_s! (CoinsContext::from_ctx (ctx));
+    let coins = try_s! (cctx.coins.lock());
+    Ok (coins.get (ticker) .map (|coin| coin.clone()))
+}
+
+/*
 struct iguana_info *LP_coinfind(char *symbol)
 {
     struct iguana_info *coin,cdata; int32_t isinactive,isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
@@ -753,24 +831,20 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     // A special case for default coins?
     // TODO: Can we refactor the default and the configured coins into a single loop?
     for &ticker in ["BTC", "KMD"].iter() {
-        if let Err (err) = lp_coininit (ctx, ticker) {
-            // Non-fatal while we're still porting `lp_coininit`.
-            // Not sure about making it fatal later. We might have coins in configuration that we can't init,
-            // but we might still be able to use the MarketMaker without them.
-            log! ("lp_coininit error: " (err));
-        }
+        let _coin_enum = match lp_coininit (ctx, ticker) {
+            Ok (t) => t,
+            Err (err) => return ERR! ("lp_coininit error: {}", err),
+        };
 
         let c_ticker = try_s! (CString::new (ticker));
         let c_ticker = c_ticker.as_ptr() as *mut c_char;
-        // Indirectly adds the coin into `LP_coins`.
         let c_coin = unsafe {lp::LP_coinfind (c_ticker)};
         if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
         let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
         assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+
         let _price_info = unsafe {lp::LP_priceinfoadd (c_ticker)};
-        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
         assert_eq! (unsafe {lp::LP_coinfind (c_ticker)}, c_coin);
-        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
 
         let mut notarized = 0;
         if unsafe {lp::LP_getheight (&mut notarized, coin)} <= 0 {
@@ -793,18 +867,22 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
             Some (ticker) => ticker,
             None => {log! ("lp_initcoins] Skipping a coin entry lacking the ticker symbol field 'coin': " [coins_en]); continue}
         };
-        if let Err (err) = lp_coininit (ctx, ticker) {
-            // Non-fatal while we're still porting `lp_coininit`.
-            // Not sure about making it fatal later. We might have coins in configuration that we can't init,
-            // but we might still be able to use the MarketMaker without them.
-            log! ("lp_coininit error: " (err));
-        }
+
+        // Triggered in test_autoprice_coinmarketcap.
+        // TODO: We should merge these loops instead.
+        if ticker == "BTC" || ticker == "KMD" {continue}
+
+        let _coin_enum = match lp_coininit (ctx, ticker) {
+            Ok (t) => t,
+            Err (err) => return ERR! ("lp_coininit error: {}", err),
+        };
 
         let c_ticker = try_s! (CString::new (ticker));
         let c_ticker = c_ticker.as_ptr() as *mut c_char;
         let c_coin = unsafe {
             let item = try_s! (json::to_string (coins_en));
             let item = try_s! (common::CJSON::from_str (&item));
+            // TODO: port into lp_coininit
             lp::LP_coincreate (item.0);  // Returns nullptr.
             lp::LP_coinfind (c_ticker)
         };
