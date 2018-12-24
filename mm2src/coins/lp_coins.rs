@@ -21,6 +21,7 @@
 extern crate base64;
 extern crate bitcrypto;
 extern crate byteorder;
+extern crate bytes;
 extern crate chain;
 #[macro_use]
 extern crate common;
@@ -32,6 +33,7 @@ extern crate fomat_macros;
 extern crate futures;
 #[macro_use]
 extern crate gstuff;
+extern crate hashbrown;
 extern crate hex;
 extern crate hyper;
 extern crate keys;
@@ -47,6 +49,7 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate serialization;
 extern crate sha2;
+extern crate tokio;
 extern crate tokio_timer;
 #[macro_use]
 extern crate unwrap;

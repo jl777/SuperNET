@@ -18,6 +18,7 @@
 //
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
+mod electrum;
 
 use base64::{encode_config as base64_encode, URL_SAFE};
 use bitcoin_rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
@@ -59,8 +60,16 @@ fn clone_into_array<A: Default + AsMut<[T]>, T: Clone>(slice: &[T]) -> A {
     a
 }
 
+/// Generic unspent info required to build transactions, we need this separate type because native
+/// and Electrum provide different list_unspent format.
+#[derive(Debug)]
+struct UnspentInfo {
+    outpoint: OutPoint,
+    value: u64,
+}
+
 #[derive(Clone, Deserialize, Debug, PartialEq)]
-pub struct UnspentOutput {
+pub struct NativeUnspent {
     pub txid: H256Json,
     pub vout: u32,
     pub address: String,
@@ -226,14 +235,14 @@ pub struct UtxoRpcClient {
 impl UtxoRpcClient {
     /// https://bitcoin.org/en/developer-reference#listunspent
     rpc_func!(pub fn list_unspent(&self, min_conf: u64, max_conf: u64, addresses: Vec<String>)
-        -> RpcRes<Vec<UnspentOutput>>);
+        -> RpcRes<Vec<NativeUnspent>>);
 
     pub fn list_unspent_ordered(
         &self,
         min_conf: u64,
         max_conf: u64,
         addresses: Vec<String>
-    ) -> RpcRes<Vec<UnspentOutput>> {
+    ) -> RpcRes<Vec<NativeUnspent>> {
         Box::new(self.list_unspent(min_conf, max_conf, addresses).and_then(move |mut unspents| {
             unspents.sort_unstable_by(|a, b| {
                 if a.amount < b.amount {
@@ -322,7 +331,7 @@ pub struct UtxoCoin {
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
     utxo_mutex: Mutex<()>,
-    my_address: Address
+    my_address: Address,
 }
 
 /// Only ETH and ERC20 tokens are supported currently
@@ -349,7 +358,7 @@ struct EthCoin {
 /// This function expects that utxos are sorted by amounts in ascending order
 /// Consider sorting before calling this function
 fn generate_transaction(
-    utxos: Vec<UnspentOutput>,
+    utxos: Vec<UnspentInfo>,
     mut outputs: Vec<TransactionOutput>,
     lock_time: u32,
     version: i32,
@@ -379,14 +388,11 @@ fn generate_transaction(
     let mut value_to_spend = 0;
     let mut inputs = vec![];
     for utxo in utxos.iter() {
-        value_to_spend += f64_to_sat(utxo.amount, decimals);
+        value_to_spend += utxo.value;
         inputs.push(UnsignedTransactionInput {
-            previous_output: OutPoint {
-                hash: utxo.txid.reversed().into(),
-                index: utxo.vout,
-            },
+            previous_output: utxo.outpoint.clone(),
             sequence: SEQUENCE_FINAL,
-            amount: f64_to_sat(utxo.amount, decimals),
+            amount: utxo.value,
         });
         if value_to_spend >= target_value { break; }
     }
@@ -639,7 +645,18 @@ impl UtxoCoinArc {
         let arc = self.clone();
         let unspent_fut = self.rpc_client.list_unspent_ordered(0, 999999, vec![self.my_address.to_string()]);
         Box::new(unspent_fut.then(move |unspents| -> BoxedTxFut {
-            let unspents = try_fus!(unspents);
+            let native_unspents = try_fus!(unspents);
+            let mut unspents = vec![];
+            for unspent in native_unspents.iter() {
+                unspents.push(UnspentInfo {
+                    outpoint: OutPoint {
+                        hash: unspent.txid.reversed().into(),
+                        index: unspent.vout,
+                    },
+                    value: f64_to_sat(unspent.amount, arc.decimals)
+                });
+            }
+
             let mut unsigned = try_fus!(generate_transaction(
                 unspents,
                 outputs,
@@ -650,6 +667,7 @@ impl UtxoCoinArc {
                 arc.decimals,
                 change_script_pubkey.clone()
             ));
+
             for input in unsigned.inputs.iter_mut() {
                 (*input).amount = try_fus!(arc.rpc_client.output_amount(
                     H256Json::from(input.previous_output.hash.reversed()), input.previous_output.index as usize
@@ -1189,7 +1207,7 @@ impl<'a> Future for WaitForTxSpend<'a> {
                 WaitForTxSpendState::GetBlock(ref mut future) => {
                     let block = try_ready!(future.poll());
                     for tx in block.tx.iter() {
-                        // TODO replace it with poll() per every Future later
+                        // TODO replace it with join_all: https://docs.rs/futures/0.1.13/futures/future/struct.JoinAll.html
                         let transaction = match self.coin.rpc_client.get_raw_transaction(tx.clone(), 1).wait() {
                             Ok(tx) => tx,
                             Err(_e) => continue
