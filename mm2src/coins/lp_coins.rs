@@ -18,96 +18,62 @@
 //  marketmaker
 //
 
-extern crate base64;
-extern crate bitcrypto;
-extern crate byteorder;
-extern crate bytes;
-extern crate chain;
-#[macro_use]
-extern crate common;
-#[macro_use]
-extern crate downcast_rs;
-#[macro_use]
-extern crate fomat_macros;
-#[macro_use]
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-extern crate hashbrown;
-extern crate hex;
-extern crate hyper;
-extern crate keys;
-extern crate libc;
-#[macro_use]
-extern crate lazy_static;
-extern crate primitives;
+#[macro_use] extern crate common;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate futures;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
 extern crate rpc as bitcoin_rpc;
-extern crate script;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-extern crate serialization;
-extern crate sha2;
-extern crate tokio;
-extern crate tokio_timer;
-#[macro_use]
-extern crate unwrap;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate unwrap;
 
-use downcast_rs::Downcast;
+use common::lp;
+use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
+use gstuff::now_ms;
+use hashbrown::HashMap;
+use libc::c_char;
+use serde_json::{self as json};
+use std::ffi::{CStr, CString};
+use std::ops::Deref;
 use std::fmt::Debug;
-
-macro_rules! downcast_fus {
-    ($e: expr) => {
-        match $e.downcast() {
-            Ok (ok) => ok,
-            Err (_) => return Box::new (futures::future::err (ERRL! ("Couldn't downcast")))
-        }
-    }
-}
-
-macro_rules! downcast_s {
-    ($e: expr) => {
-        match $e.downcast() {
-            Ok (ok) => ok,
-            Err (_) => return ERR!("Couldn't downcast")
-        }
-    }
-}
+use std::sync::{Arc, Mutex};
 
 #[doc(hidden)]
 pub mod coins_tests;
 pub mod eth;
 pub mod utxo;
+use self::utxo::{ExtendedUtxoTx, UtxoCoin};
 
-pub trait Transaction: Downcast + Debug {
+pub trait Transaction: Debug + 'static {
     fn to_raw_bytes(&self) -> Vec<u8>;
-
-    fn box_clone(&self) -> Box<Transaction>;
-
     fn extract_secret(&self) -> Result<Vec<u8>, String>;
 }
-impl_downcast!(Transaction);
 
-/// We need to clone the Box<Transaction> instance, it's the workaround to implement it
-/// https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
-/// We can't just do "pub trait Transaction: Clone" due to Rust object safety rules:
-/// https://github.com/rust-lang/rfcs/blob/master/text/0255-object-safety.md
-impl Clone for Box<Transaction> {
-    fn clone(&self) -> Box<Transaction> {
-        self.box_clone()
-    }
+#[derive(Clone)]
+pub enum TransactionEnum {
+    ExtendedUtxoTx (ExtendedUtxoTx)
 }
 
-pub type BoxedTx = Box<dyn Transaction>;
-pub type BoxedTxFut = Box<dyn Future<Item=BoxedTx, Error=String>>;
+impl From<ExtendedUtxoTx> for TransactionEnum {
+    fn from (t: ExtendedUtxoTx) -> TransactionEnum {
+        TransactionEnum::ExtendedUtxoTx (t)
+}   }
 
-/// Common functions that every coin must implement to be exchanged on MM
-/// Amounts are f64, it's responsibility of particular implementation to convert it to
-/// integer amount depending on decimals.
-pub trait ExchangeableCoin: Downcast + Debug {
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> BoxedTxFut;
+// NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
+impl Deref for TransactionEnum {
+    type Target = Transaction;
+    fn deref (&self) -> &dyn Transaction {
+        match self {
+            &TransactionEnum::ExtendedUtxoTx (ref t) => t
+}   }   }
+
+pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
+
+/// Operations that coins have independenty from the MarketMaker.
+/// That is, things implemented by the coin wallets or public coin services.
+pub trait MarketCoinOps: Debug + 'static {
+    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_buyer_payment(
         &self,
@@ -116,7 +82,7 @@ pub trait ExchangeableCoin: Downcast + Debug {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_seller_payment(
         &self,
@@ -125,56 +91,92 @@ pub trait ExchangeableCoin: Downcast + Debug {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_seller_spends_buyer_payment(
         &self,
-        buyer_payment_tx: BoxedTx,
+        buyer_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_buyer_spends_seller_payment(
         &self,
-        seller_payment_tx: BoxedTx,
+        seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_buyer_refunds_payment(
         &self,
-        buyer_payment_tx: BoxedTx,
+        buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn send_seller_refunds_payment(
         &self,
-        seller_payment_tx: BoxedTx,
+        seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         amount: f64
-    ) -> BoxedTxFut;
+    ) -> TransactionFut;
 
     fn get_balance(&self) -> f64;
 
-    fn send_raw_tx(&self, tx: BoxedTx) -> BoxedTxFut;
+    fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut;
 
     fn wait_for_confirmations(
         &self,
-        tx: BoxedTx,
+        tx: TransactionEnum,
         confirmations: i32,
     ) -> Box<dyn Future<Item=(), Error=String>>;
 
-    fn wait_for_tx_spend(&self, transaction: BoxedTx, wait_until: u64) -> BoxedTxFut;
+    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut;
 
-    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<BoxedTx, String>;
+    fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }
-impl_downcast!(ExchangeableCoin);
 
-struct Coins {
-    coins: Vec<Box<dyn ExchangeableCoin>>
+/// Common functions that every coin must implement to be exchanged on MM
+/// Amounts are f64, it's responsibility of particular implementation to convert it to
+/// integer amount depending on decimals.
+///
+/// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and automatic garbage collection.
+pub trait MmCoin: MarketCoinOps {}
+
+#[derive(Clone, Debug)]
+pub enum MmCoinEnum {
+    UtxoCoin (UtxoCoin)
+}
+
+impl From<UtxoCoin> for MmCoinEnum {
+    fn from (c: UtxoCoin) -> MmCoinEnum {
+        MmCoinEnum::UtxoCoin (c)
+}   }
+
+// NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
+impl Deref for MmCoinEnum {
+    type Target = MmCoin;
+    fn deref (&self) -> &dyn MmCoin {
+        match self {
+            &MmCoinEnum::UtxoCoin (ref c) => c
+}   }   }
+
+struct CoinsContext {
+    /// A map from a currencty ticker symbol to the corresponding coin.
+    /// Similar to `LP_coins`.
+    coins: Mutex<HashMap<String, MmCoinEnum>>
+}
+impl CoinsContext {
+    /// Obtains a reference to this crate context, creating it if necessary.
+    fn from_ctx (ctx: &MmArc) -> Result<Arc<CoinsContext>, String> {
+        Ok (try_s! (from_ctx (&ctx.coins_ctx, move || {
+            Ok (CoinsContext {
+                coins: Mutex::new (HashMap::new())
+            })
+        })))
+    }
 }
 
 /*
@@ -536,8 +538,28 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     strcpy(coin->estimatefeestr,"estimatefee");
     return(coin);
 }
+*/
 
-void *curl_easy_init();
+/// Adds a new currency into the list of currencies configured.
+///
+/// Returns an error if the currency already exists. Initializing the same currency twice is a bad habit
+/// (might lead to misleading and confusing information during debugging and maintenance, see DRY)
+/// and should be fixed on the call site.
+fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
+    use hashbrown::hash_map::RawEntryMut;
+
+    let cctx = try_s! (CoinsContext::from_ctx (ctx));
+    let mut coins = try_s! (cctx.coins.lock());
+    let ve = match coins.raw_entry_mut().from_key (ticker) {
+        RawEntryMut::Occupied (_oe) => return ERR! ("Coin {} already initialized", ticker),
+        RawEntryMut::Vacant (ve) => ve
+    };
+
+    if 1 == 2 {ve.insert (ticker.into(), unsafe {std::mem::zeroed()});}
+    ERR! ("TBD")
+}
+
+/*
 uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath,uint8_t decimals)
 {
     static void *ctx;
@@ -725,3 +747,102 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
 }
 */
+
+pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
+    // The function lived in the "LP_nativeDEX.c" originally, but I suspect that we can have it encapsulated in the `coins` proper.
+
+    // A special case for default coins?
+    // TODO: Can we refactor the default and the configured coins into a single loop?
+    for &ticker in ["BTC", "KMD"].iter() {
+        if let Err (err) = lp_coininit (ctx, ticker) {
+            // Non-fatal while we're still porting `lp_coininit`.
+            // Not sure about making it fatal later. We might have coins in configuration that we can't init,
+            // but we might still be able to use the MarketMaker without them.
+            log! ("lp_coininit error: " (err));
+        }
+
+        let c_ticker = try_s! (CString::new (ticker));
+        let c_ticker = c_ticker.as_ptr() as *mut c_char;
+        // Indirectly adds the coin into `LP_coins`.
+        let c_coin = unsafe {lp::LP_coinfind (c_ticker)};
+        if c_coin.is_null() {return ERR! ("Error creating a coin instance for {}", ticker)}
+        let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+        let _price_info = unsafe {lp::LP_priceinfoadd (c_ticker)};
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+        assert_eq! (unsafe {lp::LP_coinfind (c_ticker)}, c_coin);
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+
+        let mut notarized = 0;
+        if unsafe {lp::LP_getheight (&mut notarized, coin)} <= 0 {
+            coin.inactive = (now_ms() / 1000) as u32
+        } else {
+            unsafe {lp::LP_unspents_load (coin.symbol.as_mut_ptr(), coin.smartaddr.as_mut_ptr())};
+            if ticker == "KMD" {
+                unsafe {lp::LP_importaddress (b"KMD\0".as_ptr() as *mut c_char, lp::BOTS_BONDADDRESS.as_ptr() as *mut c_char)};
+                unsafe {lp::LP_dPoW_request (c_coin)};
+            }
+        }
+
+        if coin.txfee == 0 && ticker != "BTC" {
+            coin.txfee = lp::LP_MIN_TXFEE as u64
+        }
+    }
+
+    for coins_en in ctx.conf["coins"].as_array().map (|v| v.iter()) .unwrap_or (Vec::new().iter()) {
+        let ticker = match coins_en["coin"].as_str() {
+            Some (ticker) => ticker,
+            None => {log! ("lp_initcoins] Skipping a coin entry lacking the ticker symbol field 'coin': " [coins_en]); continue}
+        };
+        if let Err (err) = lp_coininit (ctx, ticker) {
+            // Non-fatal while we're still porting `lp_coininit`.
+            // Not sure about making it fatal later. We might have coins in configuration that we can't init,
+            // but we might still be able to use the MarketMaker without them.
+            log! ("lp_coininit error: " (err));
+        }
+
+        let c_ticker = try_s! (CString::new (ticker));
+        let c_ticker = c_ticker.as_ptr() as *mut c_char;
+        let c_coin = unsafe {
+            let item = try_s! (json::to_string (coins_en));
+            let item = try_s! (common::CJSON::from_str (&item));
+            lp::LP_coincreate (item.0);  // Returns nullptr.
+            lp::LP_coinfind (c_ticker)
+        };
+        if c_coin.is_null() {
+            // NB: Not fatal for now, because slim configurations like {"coin": "LTC", "name": "litecoin"}
+            // don't have enough information for the `LP_coins` entry but can still be useful
+            // for ticker<->name conversions (cf. `fn test_autoprice_coinmarketcap`).
+            log! ("Error creating the `LP_coins` entry for " (ticker));
+            continue
+        }
+        let coin: &mut lp::iguana_info = unsafe {&mut *c_coin};
+        assert_eq! (ticker, unwrap! (unsafe {CStr::from_ptr (coin.symbol.as_ptr())} .to_str()));
+
+        unsafe {lp::LP_priceinfoadd (c_ticker)};
+        assert_eq! (unsafe {lp::LP_coinfind (c_ticker)}, c_coin);
+
+        if !coins_en["etomic"].is_null() {
+            let etomic = match coins_en["etomic"].as_str() {Some (s) => s, None => return ERR! ("Field 'etomic' is not a string")};
+            try_s! (safecopy! (coin.etomic, "{}", etomic));
+        } else {
+            let mut notarized = 0;
+            if unsafe {lp::LP_getheight (&mut notarized, coin)} <= 0 {
+                coin.inactive = (now_ms() / 1000) as u32
+            } else {
+                unsafe {lp::LP_unspents_load (coin.symbol.as_mut_ptr(), coin.smartaddr.as_mut_ptr())};
+            }
+
+            if coin.txfee == 0 && ticker != "BTC" {
+                coin.txfee = lp::LP_MIN_TXFEE as u64
+            }
+        }
+    }
+
+    // List the coins we've initialized.
+    let mut coins = Vec::new();
+    try_s! (unsafe {common::coins_iter (lp::LP_coins, &mut |coin| {coins.push (CStr::from_ptr ((*coin).symbol.as_ptr())); Ok(())})});
+    log! ("lp_initcoins] Finished with: " for coin in coins {(unwrap! (coin.to_str()))} separated {", "} '.');
+
+    Ok(())
+}

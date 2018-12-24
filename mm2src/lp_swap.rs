@@ -57,7 +57,7 @@
 //  lp_swap.rs
 //  marketmaker
 //
-use coins::{BoxedTx, ExchangeableCoin};
+use coins::{MmCoin, MmCoinEnum, Transaction, TransactionEnum};
 use coins::utxo::{coin_from_iguana_info};
 use common::{bits256, dstr, Timeout};
 use common::log::TagParam;
@@ -899,10 +899,10 @@ pub struct AtomicSwap {
     state: Option<AtomicSwapState>,
     buffer: Vec<u8>,
     buffer_len: u64,
-    buyer_coin: Box<dyn ExchangeableCoin>,
-    seller_coin: Box<dyn ExchangeableCoin>,
-    buyer_payment: Option<BoxedTx>,
-    seller_payment: Option<BoxedTx>,
+    buyer_coin: MmCoinEnum,
+    seller_coin: MmCoinEnum,
+    buyer_payment: Option<TransactionEnum>,
+    seller_payment: Option<TransactionEnum>,
     buyer: bits256,
     seller: bits256,
     session: String,

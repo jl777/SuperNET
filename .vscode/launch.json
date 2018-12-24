@@ -16,8 +16,8 @@
             "name": "test-autoprice",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/target/debug/mm2-9b76a2364dbc9f6a.exe",
-            "args": ["autoprice", "--nocapture"],
+            "program": "${workspaceRoot}/target/debug/mm2-f80854269d26b0bb.exe",
+            "args": ["test_autoprice_coingecko", "--nocapture"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [

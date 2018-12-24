@@ -63,7 +63,7 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         if ( is_cJSON_Array(argjson) != 0 )
             printf("RAWARRAY command? %s\n",jprint(argjson,0));
         if ( flag == 0 || jobj(argjson,"result") != 0 )
-            printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
+            printf("stats_JSON] no method: (%s)\n",jprint(argjson,0));
         return(0);
     }
     if ( strcmp(method,"hello") == 0 )

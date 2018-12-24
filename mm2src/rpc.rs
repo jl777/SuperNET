@@ -314,8 +314,9 @@ pub extern fn spawn_rpc(ctx_h: u32) {
     let mut shutdown_tx = Some (shutdown_tx);
     ctx.on_stop (Box::new (move || {
         if let Some (shutdown_tx) = shutdown_tx.take() {
-            log! ("rpc] on_stop, firing shutdown_tx!");
-            if let Err (_) = shutdown_tx.send(()) {ERR! ("shutdown_tx already closed")} else {Ok(())}
+            log! ("on_stop] firing shutdown_tx!");
+            if let Err (_) = shutdown_tx.send(()) {log! ("on_stop] Warning, shutdown_tx already closed")}
+            Ok(())
         } else {ERR! ("on_stop callback called twice!")}
     }));
 

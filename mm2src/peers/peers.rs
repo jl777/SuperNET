@@ -1,29 +1,10 @@
-extern crate byteorder;
-#[macro_use]
-extern crate common;
-extern crate crc;
-extern crate crossbeam;
-extern crate dirs;
-#[macro_use]
-extern crate fomat_macros;
-extern crate futures;
-#[macro_use]
-extern crate gstuff;
-extern crate hashbrown;
-extern crate itertools;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate rand;
-extern crate serde;
-//#[macro_use]
-//extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-extern crate serde_bencode;
-extern crate serde_bytes;
-#[macro_use]
-extern crate unwrap;
+#[macro_use] extern crate common;
+#[macro_use] extern crate fomat_macros;
+#[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
+//#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate unwrap;
 // As of now the large payloads are not compressable,
 // 01 13:30:15, peers:617] peers_send_compat] Compression from 16046 to 16056
 // 01 13:30:16, peers:617] peers_send_compat] Compression from 32084 to 32094
@@ -86,7 +67,11 @@ impl dugout_t {
 }
 impl Drop for dugout_t {
     fn drop (&mut self) {
+        // libtorrent might hang there, particularly when we're trying to delete it while it is still booting up.
+        // TODO: Try to track when we began initializing libtorrent and wait a predefined minimum time from that.
+        log! ("delete_dugout...");
         let err = unsafe {delete_dugout (self)};
+        log! ("delete_dugout finished!");
         if !err.is_null() {
             let what = unwrap! (unsafe {CStr::from_ptr (err)} .to_str());
             log! ("delete_dugout error: " (what));
@@ -531,8 +516,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         if let Some (err) = dugout.take_err() {log! ("dht_load_state (" [dht_state_path] ") error: " (err))}
     }
 
-    // Skip DHT bootstrapping if we're already stopping. But give libtorrent a bit of time first, just in case.
-    if ctx.is_stopping() {thread::sleep (Duration::from_millis (200)); return}
+    if ctx.is_stopping() {return}
 
     ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap ...") .detach();
     unsafe {enable_dht (&mut dugout)};
@@ -746,11 +730,21 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
         let ctx = ctx.clone();
         let pctx = pctx.clone();
         Box::new (move || -> Result<(), String> {
+            assert! (ctx.is_stopping());  // Check that the `dht_thread` can see the flag.
             if let Ok (mut dht_thread) = pctx.dht_thread.lock() {
                 if let Some (dht_thread) = dht_thread.take() {
                     let join_status = ctx.log.status (&[&"dht-stop"], "Waiting for the dht_thread to stop...");
-                    let _ = dht_thread.join();
-                    join_status.append (" Done.");
+                    // We want to shutdown libtorrent and stuff gracefully,
+                    // but the `join` might sometimes hang when we're stopping libtorrent, so we implement a timeout.
+                    let (tx, rx) = channel::bounded (1);
+                    try_s! (thread::Builder::new().name ("dht-stop".into()) .spawn (move || {
+                        let _ = dht_thread.join();
+                        let _ = tx.send (());
+                    }));
+                    match rx.recv_timeout (Duration::from_secs (3)) {
+                        Ok (()) => join_status.append (" Done."),
+                        Err (_timeout) => join_status.append (" Timeout!")
+                    }
                 }
             }
             Ok(())

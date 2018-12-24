@@ -22,8 +22,10 @@ matrix:
 before_install:
 - eval "${MATRIX_EVAL}"
 - wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh
-- sh /tmp/rustup-init.sh -y --default-toolchain stable
+- sh /tmp/rustup-init.sh -y --default-toolchain none
 - source $HOME/.cargo/env
+- rustup install nightly
+- rustup default nightly
 - rustup component add rustfmt-preview
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh;
   fi
