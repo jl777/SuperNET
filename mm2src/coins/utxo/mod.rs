@@ -42,6 +42,7 @@ use serialization::{serialize, deserialize};
 use serde::de::DeserializeOwned;
 use serde_json::{self as json, Value as Json};
 use sha2::{Sha256, Digest};
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::convert::AsMut;
 use std::ffi::CStr;
@@ -724,6 +725,10 @@ fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, Str
 }
 
 impl MarketCoinOps for UtxoCoin {
+    fn address(&self) -> Cow<str> {
+        self.0.my_address.to_string().into()
+    }
+
     fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
