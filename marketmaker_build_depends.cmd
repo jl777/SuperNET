@@ -45,8 +45,8 @@ curl https://win.rustup.rs/ -o rustup-init.exe
 rustup-init.exe -y --default-toolchain none --default-host x86_64-pc-windows-msvc
 del rustup-init.exe
 set PATH=%USERPROFILE%\.cargo\bin;%PATH%
-rustup install nightly-x86_64-pc-windows-msvc
-rustup default nightly-x86_64-pc-windows-msvc
+rustup install nightly-2018-12-24-x86_64-pc-windows-msvc
+rustup default nightly-2018-12-24-x86_64-pc-windows-msvc
 rustup component add rustfmt-preview
 
 rem TODO: Download automatically from build.rs.
