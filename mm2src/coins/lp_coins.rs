@@ -565,8 +565,9 @@ fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
         RawEntryMut::Vacant (ve) => ve
     };
 
-    let coins = try_s! (ctx.conf["coins"].as_array().ok_or ("!coins"));
-    let coins_en = coins.iter().find (|coin| coin["coin"].as_str() == Some (ticker)) .unwrap_or (&Json::Null);
+    let coins_en = if let Some (coins) = ctx.conf["coins"].as_array() {
+        coins.iter().find (|coin| coin["coin"].as_str() == Some (ticker)) .unwrap_or (&Json::Null)
+    } else {&Json::Null};
 
     let c_ticker = try_s! (CString::new (ticker));
     let rpcport = match coins_en["rpcport"].as_u64() {
