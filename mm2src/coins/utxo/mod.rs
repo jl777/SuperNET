@@ -21,7 +21,7 @@
 mod electrum;
 
 use base64::{encode_config as base64_encode, URL_SAFE};
-use rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
+use bitcoin_rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
 use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
@@ -51,6 +51,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
+use self::electrum::ElectrumClient;
 use super::{MarketCoinOps, MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
@@ -59,14 +60,6 @@ fn clone_into_array<A: Default + AsMut<[T]>, T: Clone>(slice: &[T]) -> A {
     let mut a = Default::default();
     <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
     a
-}
-
-/// Generic unspent info required to build transactions, we need this separate type because native
-/// and Electrum provide different list_unspent format.
-#[derive(Debug)]
-struct UnspentInfo {
-    outpoint: OutPoint,
-    value: u64,
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq)]
@@ -145,17 +138,17 @@ impl Transaction for ExtendedUtxoTx {
 
 /// Serializable RPC request
 #[derive(Serialize, Debug)]
-struct UtxoRpcRequest {
+struct JsonRpcRequest {
     jsonrpc: String,
     id: String,
     method: String,
     params: Vec<Json>,
 }
 
-impl UtxoRpcRequest {
+impl JsonRpcRequest {
     /// JSON RPC v1 request
-    pub fn new_v1(method: String, params: Vec<Json>) -> UtxoRpcRequest {
-        UtxoRpcRequest {
+    pub fn new_v1(method: String, params: Vec<Json>) -> JsonRpcRequest {
+        JsonRpcRequest {
             jsonrpc: "1.0".to_owned(),
             id: "test".to_owned(),
             method,
@@ -171,7 +164,7 @@ type RpcRes<T> = Box<Future<Item=T, Error=String> + Send>;
 fn json_rpc_v1_request<T: DeserializeOwned + Send + 'static>(
     uri: &str,
     auth: &str,
-    request: UtxoRpcRequest
+    request: JsonRpcRequest
 ) -> RpcRes<T> {
     let request_body = try_fus!(json::to_string(&request));
 
@@ -205,16 +198,14 @@ fn json_rpc_v1_request<T: DeserializeOwned + Send + 'static>(
 /// Args must implement/derive Serialize trait.
 /// Generates params vector from input args, builds the request and sends it.
 macro_rules! rpc_func {
-    (pub fn $method:ident(&$selff:ident $(, $arg_name:ident: $arg_ty:ty)*) -> $return_ty:ty) => {
-        pub fn $method(&$selff $(, $arg_name: $arg_ty)*) -> $return_ty {
-            let mut params = vec![];
-            $(
-                params.push(try_fus!(json::value::to_value($arg_name)));
-            )*
-            let request = UtxoRpcRequest::new_v1(stringify!($method).replace("_", ""), params);
-            json_rpc_v1_request(&$selff.uri, &$selff.auth, request)
-        }
-    }
+    ($selff:ident, $method:expr $(, $arg_name:ident)*) => {{
+        let mut params = vec![];
+        $(
+            params.push(try_fus!(json::value::to_value($arg_name)));
+        )*
+        let request = JsonRpcRequest::new_v1($method.into(), params);
+        json_rpc_v1_request(&$selff.uri, &$selff.auth, request)
+    }}
 }
 
 /// RPC client for UTXO based coins
@@ -222,63 +213,119 @@ macro_rules! rpc_func {
 /// Other coins have additional methods or miss some of these
 /// This description will be updated with more info
 #[derive(Clone, Debug)]
-pub struct UtxoRpcClient {
+pub struct NativeClient {
     /// The uri to send requests to
     pub uri: String,
     /// Value of Authorization header, e.g. "Basic base64(user:password)"
     pub auth: String,
 }
 
-impl UtxoRpcClient {
+impl NativeClient {
     /// https://bitcoin.org/en/developer-reference#listunspent
-    rpc_func!(pub fn list_unspent(&self, min_conf: u64, max_conf: u64, addresses: Vec<String>)
-        -> RpcRes<Vec<NativeUnspent>>);
+    pub fn list_unspent(&self, min_conf: u64, max_conf: u64, addresses: Vec<String>) -> RpcRes<Vec<NativeUnspent>> {
+        rpc_func!(self, "listunspent", min_conf, max_conf, addresses)
+    }
 
-    pub fn list_unspent_ordered(
+    fn list_unspent_ordered(
         &self,
         min_conf: u64,
         max_conf: u64,
         addresses: Vec<String>
-    ) -> RpcRes<Vec<NativeUnspent>> {
-        Box::new(self.list_unspent(min_conf, max_conf, addresses).and_then(move |mut unspents| {
-            unspents.sort_unstable_by(|a, b| {
-                if a.amount < b.amount {
-                    Ordering::Less
-                } else {
-                    Ordering::Greater
-                }
-            });
-            futures::future::ok(unspents)
+    ) -> RpcRes<Vec<UnspentInfo>> {
+        let clone = self.clone();
+        Box::new(self.list_unspent(min_conf, max_conf, addresses).and_then(move |unspents| {
+            let mut futures = vec![];
+            for unspent in unspents.iter() {
+                futures.push(clone.output_amount(unspent.txid.clone(), unspent.vout as usize));
+            }
+
+            futures::future::join_all(futures).map(move |amounts| {
+                let zip_iter = amounts.iter().zip(unspents.iter());
+                let mut result: Vec<UnspentInfo> = zip_iter.map(|(value, unspent)| UnspentInfo {
+                    outpoint: OutPoint {
+                        hash: unspent.txid.reversed().into(),
+                        index: unspent.vout,
+                    },
+                    value: *value,
+                }).collect();
+
+                result.sort_unstable_by(|a, b| {
+                    if a.value < b.value {
+                        Ordering::Less
+                    } else {
+                        Ordering::Greater
+                    }
+                });
+                result
+            })
         }))
     }
 
     /// https://bitcoin.org/en/developer-reference#importaddress
-    rpc_func!(pub fn import_address(&self, address: String, label: String, rescan: bool)
-        -> RpcRes<()>);
+    pub fn import_address(&self, address: String, label: String, rescan: bool) -> RpcRes<()> {
+        rpc_func!(self, "importaddress", address, label, rescan)
+    }
 
     /// https://bitcoin.org/en/developer-reference#getblockcount
-    rpc_func!(pub fn get_block_count(&self) -> RpcRes<u64>);
+    pub fn get_block_count(&self) -> RpcRes<u64> {
+        rpc_func!(self, "getblockcount")
+    }
 
     /// https://bitcoin.org/en/developer-reference#sendrawtransaction
-    rpc_func!(pub fn send_raw_transaction(&self, tx: BytesJson) -> RpcRes<H256Json>);
+    pub fn send_raw_transaction(&self, tx: BytesJson) -> RpcRes<H256Json> {
+        rpc_func!(self, "sendrawtransaction", tx)
+    }
 
     /// https://bitcoin.org/en/developer-reference#validateaddress
-    rpc_func!(pub fn validate_address(&self, address: String) -> RpcRes<ValidateAddressRes>);
+    pub fn validate_address(&self, address: String) -> RpcRes<ValidateAddressRes> {
+        rpc_func!(self, "validateaddress", address)
+    }
 
     /// https://bitcoin.org/en/developer-reference#getrawtransaction
-    /// It expects that verbose param is always 1 to get deserialized transaction
-    rpc_func!(pub fn get_raw_transaction(&self, txid: H256Json, verbose: u32) -> RpcRes<RpcTransaction>);
+    /// Always returns verbose transaction
+    pub fn get_raw_transaction(&self, txid: H256Json) -> RpcRes<RpcTransaction> {
+        let verbose = 1;
+        rpc_func!(self, "getrawtransaction", txid, verbose)
+    }
 
-    pub fn output_amount(&self, txid: H256Json, index: usize) -> Result<u64, String> {
-        let tx: UtxoTransaction = try_s!(deserialize(
-            try_s!(self.get_raw_transaction(txid, 1).wait()).hex.as_slice()).map_err(|e| ERRL!("{:?}", e))
-        );
-        Ok(tx.outputs[index].value)
+    pub fn output_amount(&self, txid: H256Json, index: usize) -> RpcRes<u64> {
+        let fut = self.get_raw_transaction(txid);
+        Box::new(fut.and_then(move |transaction| {
+            let tx: UtxoTransaction = try_s!(deserialize(transaction.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+            Ok(tx.outputs[index].value)
+        }))
     }
 
     /// https://bitcoin.org/en/developer-reference#getblock
-    /// It expects that verbose param is always true to get verbose block
-    rpc_func!(pub fn get_block(&self, height: String, verbose: bool) -> RpcRes<VerboseBlockClient>);
+    /// Always returns verbose block
+    pub fn get_block(&self, height: String) -> RpcRes<VerboseBlockClient> {
+        let verbose = true;
+        rpc_func!(self, "getblock", height, verbose)
+    }
+}
+
+/// Generic unspent info required to build transactions, we need this separate type because native
+/// and Electrum provide different list_unspent format.
+#[derive(Debug)]
+struct UnspentInfo {
+    outpoint: OutPoint,
+    value: u64,
+}
+
+enum UtxoRpcClient {
+    Native(NativeClient),
+    Electrum(ElectrumClient),
+}
+
+impl UtxoRpcClient {
+    fn list_unspent(&self, addr: &str) -> RpcRes<Vec<UnspentInfo>> {
+        match self {
+            UtxoRpcClient::Native(native) => {
+                native.list_unspent_ordered(0, 999999, vec![addr.into()])
+            },
+            UtxoRpcClient::Electrum(electrum) => panic!()
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -323,7 +370,7 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// RPC password
     rpc_password: String,
     /// RPC client
-    rpc_client: UtxoRpcClient,
+    rpc_client: NativeClient,
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
@@ -641,19 +688,8 @@ impl UtxoCoin {
         let arc = self.clone();
         let unspent_fut = self.rpc_client.list_unspent_ordered(0, 999999, vec![self.my_address.to_string()]);
         Box::new(unspent_fut.then(move |unspents| -> TransactionFut {
-            let native_unspents = try_fus!(unspents);
-            let mut unspents = vec![];
-            for unspent in native_unspents.iter() {
-                unspents.push(UnspentInfo {
-                    outpoint: OutPoint {
-                        hash: unspent.txid.reversed().into(),
-                        index: unspent.vout,
-                    },
-                    value: f64_to_sat(unspent.amount, arc.decimals)
-                });
-            }
-
-            let mut unsigned = try_fus!(generate_transaction(
+            let unspents = try_fus!(unspents);
+            let unsigned = try_fus!(generate_transaction(
                 unspents,
                 outputs,
                 0,
@@ -663,12 +699,6 @@ impl UtxoCoin {
                 arc.decimals,
                 change_script_pubkey.clone()
             ));
-
-            for input in unsigned.inputs.iter_mut() {
-                (*input).amount = try_fus!(arc.rpc_client.output_amount(
-                    H256Json::from(input.previous_output.hash.reversed()), input.previous_output.index as usize
-                ));
-            }
 
             let signed = try_fus!(sign_tx(unsigned, &arc.key_pair, change_script_pubkey.into()));
             let tx = ExtendedUtxoTx {
@@ -911,7 +941,6 @@ impl MarketCoinOps for UtxoCoin {
             self.wait_for_confirmations(tx.clone().into(), 1).and_then(move |_| {
                 arc.rpc_client.get_raw_transaction(
                     tx.transaction.hash().reversed().into(),
-                    1
                 ).and_then(move |rpc_transaction| {
                     WaitForTxSpend::new(
                         arc,
@@ -998,7 +1027,7 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, S
 
     let coin = UtxoCoinImpl {
         decimals: 8,
-        rpc_client: UtxoRpcClient {
+        rpc_client: NativeClient {
             uri: format!("http://{}", uri),
             auth: format!("Basic {}", base64_encode(auth_str, URL_SAFE)),
         },
@@ -1086,7 +1115,7 @@ impl<'a> Future for WaitForUtxoTxConfirmations<'a> {
                             })
                     );
                     WaitForConfirmationState::CheckingConfirmations(
-                        self.coin.rpc_client.get_raw_transaction(self.txid.clone(), 1)
+                        self.coin.rpc_client.get_raw_transaction(self.txid.clone())
                     )
                 },
                 WaitForConfirmationState::CheckingConfirmations(ref mut future) => {
@@ -1154,7 +1183,7 @@ impl<'a> WaitForTxSpend<'a> {
         current_height: u64,
     ) -> Self {
         log!("Start waiting for tx spend " [txid] " height: " (current_height));
-        let fut = coin.rpc_client.get_block(current_height.to_string(), true);
+        let fut = coin.rpc_client.get_block(current_height.to_string());
         WaitForTxSpend {
             coin,
             status: MEMORY_LOG.status(&[&"transaction", &(format!("{:?}:{}", txid, vout), "waiting")], "Waiting for tx spend..."),
@@ -1196,7 +1225,7 @@ impl<'a> Future for WaitForTxSpend<'a> {
                     let height = try_ready!(future.poll());
                     if self.current_height < height {
                         self.current_height += 1;
-                        let get_block_fut = self.coin.rpc_client.get_block(self.current_height.to_string(), true);
+                        let get_block_fut = self.coin.rpc_client.get_block(self.current_height.to_string());
                         WaitForTxSpendState::GetBlock(get_block_fut)
                     } else {
                         WaitForTxSpendState::WaitForInterval
@@ -1206,7 +1235,7 @@ impl<'a> Future for WaitForTxSpend<'a> {
                     let block = try_ready!(future.poll());
                     for tx in block.tx.iter() {
                         // TODO replace it with join_all: https://docs.rs/futures/0.1.13/futures/future/struct.JoinAll.html
-                        let transaction = match self.coin.rpc_client.get_raw_transaction(tx.clone(), 1).wait() {
+                        let transaction = match self.coin.rpc_client.get_raw_transaction(tx.clone()).wait() {
                             Ok(tx) => tx,
                             Err(_e) => continue
                         };
