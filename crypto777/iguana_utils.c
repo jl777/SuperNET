@@ -261,16 +261,6 @@ int32_t TerminateQ_queued; queue_t TerminateQ;
     }
 }*/
 
-
-int32_t iguana_numthreads(struct iguana_info *coin,int32_t mask)
-{
-    int32_t i,sum = 0;
-    for (i=0; i<8; i++)
-        if ( ((1 << i) & mask) != 0 )
-            sum += (coin->Launched[i] - coin->Terminated[i]);
-    return(sum);
-}
-
 void iguana_launcher(void *ptr)
 {
     struct iguana_thread *t = ptr; //struct iguana_info *coin;
@@ -290,29 +280,6 @@ void iguana_terminate(struct iguana_thread *t)
         printf("error.%d terminating t.%p thread.%s\n",retval,t,t->name);
 #endif
     myfree(t,sizeof(*t));
-}
-
-struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_func funcp,void *arg,uint8_t type)
-{
-    int32_t retval; struct iguana_thread *t;
-    t = mycalloc('Z',1,sizeof(*t));
-    strcpy(t->name,name);
-    t->coin = coin;
-    t->funcp = funcp;
-    t->arg = arg;
-    t->type = (type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated)));
-    if ( coin != 0 )
-        coin->Launched[t->type]++;
-    retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
-    if ( retval != 0 )
-        printf("error launching %s retval.%d errno.%d\n",t->name,retval,errno);
-    while ( (t= queue_dequeue(&TerminateQ)) != 0 )
-    {
-        if ( (rand() % 100000) == 0 && coin != 0 )
-            printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);
-        iguana_terminate(t);
-    }
-    return(t);
 }
 
 char hexbyte(int32_t c)
