@@ -1,6 +1,7 @@
 use bitcoin_rpc::v1::types::{H256 as H256Json};
 use bytes::{BufMut, BytesMut};
 use common::{CORE, Timeout};
+use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
 use futures::{Async, Future, Poll, Sink};
 use futures::sync::mpsc;
 use hashbrown::HashMap;
@@ -21,26 +22,9 @@ struct ElectrumUnspent {
     value: u64,
 }
 
-/// Serializable RPC request
-#[derive(Serialize, Debug, Clone)]
-pub struct RpcRequest {
-    pub jsonrpc: String,
-    pub id: String,
-    pub method: String,
-    pub params: Vec<Json>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct RpcResponse {
-    pub jsonrpc: String,
-    pub id: String,
-    pub result: Option<Json>,
-    pub error: Option<Json>,
-}
-
 pub fn spawn_electrum(
     addr: &str,
-    arc: Arc<Mutex<HashMap<String, RpcResponse>>>,
+    arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
 ) -> Box<Future<Item=mpsc::Sender<Vec<u8>>, Error=String>> {
     let mut addr = try_fus!(addr.to_socket_addrs());
 
@@ -48,8 +32,23 @@ pub fn spawn_electrum(
 }
 
 pub struct ElectrumClient {
-    pub results: Arc<Mutex<HashMap<String, RpcResponse>>>,
-    pub senders: Vec<mpsc::Sender<Vec<u8>>>,
+    results: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
+    senders: Vec<mpsc::Sender<Vec<u8>>>,
+    next_id: Mutex<u64>,
+}
+
+impl JsonRpcClient for ElectrumClient {
+    fn version(&self) -> &'static str { "2.0" }
+
+    fn next_id(&self) -> String {
+        let mut next = unwrap!(self.next_id.lock());
+        *next += 1;
+        next.to_string()
+    }
+
+    fn transport(&self, request: JsonRpcRequest) -> JsonRpcResponseFut {
+        Box::new(electrum_request_multi(request, self.senders.clone(), self.results.clone()))
+    }
 }
 
 impl ElectrumClient {
@@ -57,6 +56,7 @@ impl ElectrumClient {
         ElectrumClient {
             results: Arc::new(Mutex::new(HashMap::new())),
             senders: vec![],
+            next_id: Mutex::new(0),
         }
     }
 
@@ -68,8 +68,8 @@ impl ElectrumClient {
         Ok(())
     }
 
-    pub fn send_request(&self, request: RpcRequest) -> impl Future<Item=RpcResponse, Error=String> {
-        electrum_request_multi(request, self.senders.clone(), self.results.clone())
+    pub fn server_ping(&self) -> RpcRes<()> {
+        rpc_func!(self, "server.ping")
     }
 }
 
@@ -79,7 +79,7 @@ fn rx_to_stream(rx: mpsc::Receiver<Vec<u8>>) -> impl Stream<Item = Vec<u8>, Erro
 
 fn electrum_connect(
     addr: &SocketAddr,
-    arc: Arc<Mutex<HashMap<String, RpcResponse>>>,
+    arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
 ) -> impl Future<Item=mpsc::Sender<Vec<u8>>, Error=String> {
     let tcp = TcpStream::connect(addr);
 
@@ -105,9 +105,9 @@ fn electrum_connect(
                 CORE.spawn(|_| {
                     stream
                         .for_each(move |chunk| {
-                            match json::from_slice::<RpcResponse>(&chunk) {
+                            match json::from_slice::<JsonRpcResponse>(&chunk) {
                                 Ok(json) => {
-                                    (*arc.lock().unwrap()).insert(json.id.clone(), json);
+                                    (*arc.lock().unwrap()).insert(json.get_id().to_string(), json);
                                 },
                                 Err(e) => {
                                     log!([e])
@@ -157,15 +157,15 @@ impl Encoder for Bytes {
 }
 
 struct ElectrumRequestFut {
-    context: Arc<Mutex<HashMap<String, RpcResponse>>>,
+    context: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
     request_id: String,
 }
 
 impl Future for ElectrumRequestFut {
-    type Item = RpcResponse;
+    type Item = JsonRpcResponse;
     type Error = String;
 
-    fn poll(&mut self) -> Poll<RpcResponse, String> {
+    fn poll(&mut self) -> Poll<JsonRpcResponse, String> {
         loop {
             let elem = try_s!(self.context.lock()).remove(&self.request_id);
             if let Some(res) = elem {
@@ -183,16 +183,16 @@ impl Future for ElectrumRequestFut {
 }
 
 fn electrum_request(
-    request: RpcRequest,
+    request: JsonRpcRequest,
     tx: mpsc::Sender<Vec<u8>>,
-    context: Arc<Mutex<HashMap<String, RpcResponse>>>
-) -> Box<Future<Item=RpcResponse, Error=String>> {
+    context: Arc<Mutex<HashMap<String, JsonRpcResponse>>>
+) -> JsonRpcResponseFut {
     let mut json = try_fus!(json::to_string(&request));
     // Electrum request and responses must end with \n
     // https://electrumx.readthedocs.io/en/latest/protocol-basics.html#message-stream
     json.push('\n');
 
-    let request_id = request.id.clone();
+    let request_id = request.get_id().to_string();
     let send_fut = Box::new(tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
         .and_then(move |res| -> ElectrumRequestFut {
@@ -207,17 +207,17 @@ fn electrum_request(
 }
 
 fn electrum_request_multi(
-    request: RpcRequest,
+    request: JsonRpcRequest,
     senders: Vec<mpsc::Sender<Vec<u8>>>,
-    ctx: Arc<Mutex<HashMap<String, RpcResponse>>>
-) -> impl Future<Item=RpcResponse, Error=String> {
+    ctx: Arc<Mutex<HashMap<String, JsonRpcResponse>>>
+) -> JsonRpcResponseFut {
     let futures = senders.iter().map(|sender| electrum_request(request.clone(), sender.clone(), ctx.clone()));
 
-    futures::future::select_ok(futures)
+    Box::new(futures::future::select_ok(futures)
         .map(|(result, _)| {
             result
         })
-        .map_err(|e| ERRL!("{:?}", e))
+        .map_err(|e| ERRL!("{:?}", e)))
 }
 
 #[test]
@@ -227,11 +227,5 @@ fn test_electrum_ping() {
     client.add_server("electrum2.cipig.net:10022").unwrap();
     client.add_server("electrum3.cipig.net:10022").unwrap();
 
-    let request = RpcRequest {
-        jsonrpc: "2.0".into(),
-        id: "1".into(),
-        method: "server.ping".into(),
-        params: vec![]
-    };
-    client.send_request(request).wait().unwrap();
+    client.server_ping().wait().unwrap();
 }

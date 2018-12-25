@@ -27,6 +27,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
 use common::{slurp_req};
+use common::jsonrpc_client::{JsonRpcResponseFut, RpcRes, JsonRpcClient, JsonRpcRequest, JsonRpcResponse};
 use common::log::{LogState, StatusHandle};
 use common::lp;
 use futures::{Async, Future, Poll, Stream};
@@ -137,78 +138,6 @@ impl Transaction for ExtendedUtxoTx {
     }
 }
 
-/// Serializable RPC request
-#[derive(Serialize, Debug)]
-struct JsonRpcRequest {
-    jsonrpc: String,
-    id: String,
-    method: String,
-    params: Vec<Json>,
-}
-
-impl JsonRpcRequest {
-    /// JSON RPC v1 request
-    pub fn new_v1(method: String, params: Vec<Json>) -> JsonRpcRequest {
-        JsonRpcRequest {
-            jsonrpc: "1.0".to_owned(),
-            id: "test".to_owned(),
-            method,
-            params,
-        }
-    }
-}
-
-type RpcRes<T> = Box<Future<Item=T, Error=String> + Send>;
-
-/// Sends RPC request, returns a Future.
-/// Errors in case of non-200 HTTP status code or if JSON rpc response has non-null error.
-fn json_rpc_v1_request<T: DeserializeOwned + Send + 'static>(
-    uri: &str,
-    auth: &str,
-    request: JsonRpcRequest
-) -> RpcRes<T> {
-    let request_body = try_fus!(json::to_string(&request));
-
-    let http_request = try_fus!(
-        Request::builder()
-                .method("POST")
-                .header(
-                    AUTHORIZATION,
-                    auth.clone()
-                )
-                .uri(uri)
-                .body(Body::from(request_body))
-    );
-    Box::new(slurp_req(http_request).then(move |result| -> Result<T, String> {
-        let res = try_s!(result);
-        let body = try_s!(std::str::from_utf8(&res.2));
-        if res.0 != StatusCode::OK {
-            return ERR!("Rpc request {:?} failed with HTTP status code {}, response body: {}",
-                        request, res.0, body);
-        }
-        let json_body: Json = try_s!(json::from_str(body));
-        if !json_body["error"].is_null() {
-            return ERR!("Rpc request {:?} failed with error, response body: {}",
-                        request, json_body);
-        }
-        Ok(try_s!(json::from_value(json_body["result"].clone())))
-    }))
-}
-
-/// Macro generating functions for RPC v1 requests.
-/// Args must implement/derive Serialize trait.
-/// Generates params vector from input args, builds the request and sends it.
-macro_rules! rpc_func {
-    ($selff:ident, $method:expr $(, $arg_name:ident)*) => {{
-        let mut params = vec![];
-        $(
-            params.push(try_fus!(json::value::to_value($arg_name)));
-        )*
-        let request = JsonRpcRequest::new_v1($method.into(), params);
-        json_rpc_v1_request(&$selff.uri, &$selff.auth, request)
-    }}
-}
-
 /// RPC client for UTXO based coins
 /// https://bitcoin.org/en/developer-reference#rpc-quick-reference - Bitcoin RPC API reference
 /// Other coins have additional methods or miss some of these
@@ -219,6 +148,36 @@ pub struct NativeClient {
     pub uri: String,
     /// Value of Authorization header, e.g. "Basic base64(user:password)"
     pub auth: String,
+}
+
+impl JsonRpcClient for NativeClient {
+    fn version(&self) -> &'static str { "1.0" }
+
+    fn next_id(&self) -> String { "0".into() }
+
+    fn transport(&self, request: JsonRpcRequest) -> JsonRpcResponseFut {
+        let request_body = try_fus!(json::to_string(&request));
+
+        let http_request = try_fus!(
+        Request::builder()
+                .method("POST")
+                .header(
+                    AUTHORIZATION,
+                    self.auth.clone()
+                )
+                .uri(self.uri.clone())
+                .body(Body::from(request_body))
+        );
+        Box::new(slurp_req(http_request).then(move |result| -> Result<JsonRpcResponse, String> {
+            let res = try_s!(result);
+            let body = try_s!(std::str::from_utf8(&res.2));
+            if res.0 != StatusCode::OK {
+                return ERR!("Rpc request {:?} failed with HTTP status code {}, response body: {}",
+                        request, res.0, body);
+            }
+            try_s!(json::from_str(body))
+        }))
+    }
 }
 
 impl NativeClient {
