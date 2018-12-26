@@ -6,6 +6,7 @@ pipeline {
       steps {
         sh '''rustup install nightly-2018-12-24'''
         sh '''rustup default nightly-2018-12-24'''
+        sh '''rustup component add rustfmt-preview'''
       }
     }
     stage('Build') {
