@@ -137,10 +137,10 @@ char *LP_portfolio()
     retjson = cJSON_CreateObject();
     for (iter=0; iter<2; iter++)
     {
-        const int32_t coins_size = 256;
-        struct iguana_info* coins_buf[coins_size];
-        LP_get_coin_pointers(&coins_buf, coins_size);
-        for (int idx = 0; idx < coins_size && coins_buf[idx]; ++idx)
+        #define COINS_SIZE 256
+        struct iguana_info* coins_buf[COINS_SIZE];
+        LP_get_coin_pointers(&coins_buf, COINS_SIZE);
+        for (int idx = 0; idx < COINS_SIZE && coins_buf[idx]; ++idx)
         {
             struct iguana_info* coin = coins_buf[idx];
             if ( coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )

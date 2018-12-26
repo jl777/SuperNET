@@ -62,7 +62,7 @@ pub extern fn LP_get_coin_pointers (coins_buf: *mut *mut lp::iguana_info, coins_
     let coins = unwrap! (COINS.lock());
     assert! (coins_size > 0);
     // NB: Resulting buffer is either zero-terminated or full.
-    unsafe {*coins_buf.offset ((coins.len() - 1) as isize) = null_mut()}
+    if coins.len() < coins_size as usize {unsafe {*coins_buf.offset (coins.len() as isize) = null_mut()}}
     for ((_ticker, ii), idx) in coins.iter().zip (0..) {
         if idx >= coins_size as isize {break}
         unsafe {*coins_buf.offset (idx) = ii.0}

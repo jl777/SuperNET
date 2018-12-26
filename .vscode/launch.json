@@ -16,7 +16,7 @@
             "name": "test-autoprice",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/target/debug/mm2-431fc78234901a21.exe",
+            "program": "${workspaceRoot}/target/debug/mm2-3de214edaec591e4.exe",
             "args": ["test_autoprice_coingecko", "--nocapture"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
@@ -30,7 +30,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             // Waiting for https://github.com/rust-lang/cargo/issues/1924.
-            "program": "${workspaceRoot}/target/debug/mm2-431fc78234901a21.exe",
+            "program": "${workspaceRoot}/target/debug/mm2-3de214edaec591e4.exe",
             "args": ["trade_beer_pizza", "--nocapture", "--ignored"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
