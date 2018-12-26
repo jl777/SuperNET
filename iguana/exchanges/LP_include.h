@@ -643,6 +643,8 @@ void unbuffered_output_support(const char* log_path);
 void LP_dPoW_request(struct iguana_info *coin);
 // The `item` here is an entry from the "coins" command-line configuration.
 struct iguana_info *LP_coincreate(cJSON *item);
+/// Helps `lp_coininit` to initialize the `userpass`.
+uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath,uint16_t origport);
 /// Helps `lp_coininit` to initialize things that we can't readily initialize from Rust.
 void LP_coin_curl_init(struct iguana_info* coin);
 void LP_mutex_init();
