@@ -33,6 +33,8 @@ macro_rules! safecopy {
 }
 
 #[macro_use]
+pub mod jsonrpc_client;
+#[macro_use]
 pub mod log;
 
 pub mod for_c;
@@ -455,6 +457,8 @@ impl<R> Timeout<R> {
             deadline: now_float() + duration_to_float (timeout),
             monitor: None
 }   }   }
+
+unsafe impl<R> Send for Timeout<R> {}
 
 /// Initialize the crate.
 pub fn init() {

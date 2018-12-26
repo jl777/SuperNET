@@ -18,31 +18,27 @@
 //
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
+pub mod rpc_clients;
 
 use base64::{encode_config as base64_encode, URL_SAFE};
-use rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
+use bitcoin_rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
 use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
-use common::{slurp_req};
 use common::log::{LogState, StatusHandle};
 use common::lp;
+use common::jsonrpc_client::RpcRes;
 use futures::{Async, Future, Poll, Stream};
 use gstuff::now_ms;
-use hyper::{Body, Request, StatusCode};
-use hyper::header::{AUTHORIZATION};
 use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
 use primitives::hash::{H256, H512};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
-use serde::de::DeserializeOwned;
-use serde_json::{self as json, Value as Json};
 use sha2::{Sha256, Digest};
 use std::borrow::Cow;
-use std::cmp::Ordering;
 use std::convert::AsMut;
 use std::ffi::CStr;
 use std::mem::transmute;
@@ -51,6 +47,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
+use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, NativeClient};
 use super::{MarketCoinOps, MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
@@ -59,37 +56,6 @@ fn clone_into_array<A: Default + AsMut<[T]>, T: Clone>(slice: &[T]) -> A {
     let mut a = Default::default();
     <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
     a
-}
-
-#[derive(Clone, Deserialize, Debug, PartialEq)]
-pub struct UnspentOutput {
-    pub txid: H256Json,
-    pub vout: u32,
-    pub address: String,
-    pub account: String,
-    #[serde(rename = "scriptPubKey")]
-    pub script_pub_key: BytesJson,
-    pub amount: f64,
-    pub confirmations: u64,
-    pub spendable: bool
-}
-
-#[derive(Clone, Deserialize, Debug)]
-pub struct ValidateAddressRes {
-    #[serde(rename = "isvalid")]
-    pub is_valid: bool,
-    pub address: String,
-    #[serde(rename = "scriptPubKey")]
-    pub script_pub_key: BytesJson,
-    #[serde(rename = "segid")]
-    pub seg_id: Option<u32>,
-    #[serde(rename = "ismine")]
-    pub is_mine: bool,
-    #[serde(rename = "iswatchonly")]
-    pub is_watch_only: bool,
-    #[serde(rename = "isscript")]
-    pub is_script: bool,
-    pub account: Option<String>,
 }
 
 /// Extended UTXO transaction, contains redeem script to spend p2sh output
@@ -135,144 +101,6 @@ impl Transaction for ExtendedUtxoTx {
     }
 }
 
-/// Serializable RPC request
-#[derive(Serialize, Debug)]
-struct UtxoRpcRequest {
-    jsonrpc: String,
-    id: String,
-    method: String,
-    params: Vec<Json>,
-}
-
-impl UtxoRpcRequest {
-    /// JSON RPC v1 request
-    pub fn new_v1(method: String, params: Vec<Json>) -> UtxoRpcRequest {
-        UtxoRpcRequest {
-            jsonrpc: "1.0".to_owned(),
-            id: "test".to_owned(),
-            method,
-            params,
-        }
-    }
-}
-
-type RpcRes<T> = Box<Future<Item=T, Error=String> + Send>;
-
-/// Sends RPC request, returns a Future.
-/// Errors in case of non-200 HTTP status code or if JSON rpc response has non-null error.
-fn json_rpc_v1_request<T: DeserializeOwned + Send + 'static>(
-    uri: &str,
-    auth: &str,
-    request: UtxoRpcRequest
-) -> RpcRes<T> {
-    let request_body = try_fus!(json::to_string(&request));
-
-    let http_request = try_fus!(
-        Request::builder()
-                .method("POST")
-                .header(
-                    AUTHORIZATION,
-                    auth.clone()
-                )
-                .uri(uri)
-                .body(Body::from(request_body))
-    );
-    Box::new(slurp_req(http_request).then(move |result| -> Result<T, String> {
-        let res = try_s!(result);
-        let body = try_s!(std::str::from_utf8(&res.2));
-        if res.0 != StatusCode::OK {
-            return ERR!("Rpc request {:?} failed with HTTP status code {}, response body: {}",
-                        request, res.0, body);
-        }
-        let json_body: Json = try_s!(json::from_str(body));
-        if !json_body["error"].is_null() {
-            return ERR!("Rpc request {:?} failed with error, response body: {}",
-                        request, json_body);
-        }
-        Ok(try_s!(json::from_value(json_body["result"].clone())))
-    }))
-}
-
-/// Macro generating functions for RPC v1 requests.
-/// Args must implement/derive Serialize trait.
-/// Generates params vector from input args, builds the request and sends it.
-macro_rules! rpc_func {
-    (pub fn $method:ident(&$selff:ident $(, $arg_name:ident: $arg_ty:ty)*) -> $return_ty:ty) => {
-        pub fn $method(&$selff $(, $arg_name: $arg_ty)*) -> $return_ty {
-            let mut params = vec![];
-            $(
-                params.push(try_fus!(json::value::to_value($arg_name)));
-            )*
-            let request = UtxoRpcRequest::new_v1(stringify!($method).replace("_", ""), params);
-            json_rpc_v1_request(&$selff.uri, &$selff.auth, request)
-        }
-    }
-}
-
-/// RPC client for UTXO based coins
-/// https://bitcoin.org/en/developer-reference#rpc-quick-reference - Bitcoin RPC API reference
-/// Other coins have additional methods or miss some of these
-/// This description will be updated with more info
-#[derive(Clone, Debug)]
-pub struct UtxoRpcClient {
-    /// The uri to send requests to
-    pub uri: String,
-    /// Value of Authorization header, e.g. "Basic base64(user:password)"
-    pub auth: String,
-}
-
-impl UtxoRpcClient {
-    /// https://bitcoin.org/en/developer-reference#listunspent
-    rpc_func!(pub fn list_unspent(&self, min_conf: u64, max_conf: u64, addresses: Vec<String>)
-        -> RpcRes<Vec<UnspentOutput>>);
-
-    pub fn list_unspent_ordered(
-        &self,
-        min_conf: u64,
-        max_conf: u64,
-        addresses: Vec<String>
-    ) -> RpcRes<Vec<UnspentOutput>> {
-        Box::new(self.list_unspent(min_conf, max_conf, addresses).and_then(move |mut unspents| {
-            unspents.sort_unstable_by(|a, b| {
-                if a.amount < b.amount {
-                    Ordering::Less
-                } else {
-                    Ordering::Greater
-                }
-            });
-            futures::future::ok(unspents)
-        }))
-    }
-
-    /// https://bitcoin.org/en/developer-reference#importaddress
-    rpc_func!(pub fn import_address(&self, address: String, label: String, rescan: bool)
-        -> RpcRes<()>);
-
-    /// https://bitcoin.org/en/developer-reference#getblockcount
-    rpc_func!(pub fn get_block_count(&self) -> RpcRes<u64>);
-
-    /// https://bitcoin.org/en/developer-reference#sendrawtransaction
-    rpc_func!(pub fn send_raw_transaction(&self, tx: BytesJson) -> RpcRes<H256Json>);
-
-    /// https://bitcoin.org/en/developer-reference#validateaddress
-    rpc_func!(pub fn validate_address(&self, address: String) -> RpcRes<ValidateAddressRes>);
-
-    /// https://bitcoin.org/en/developer-reference#getrawtransaction
-    /// It expects that verbose param is always 1 to get deserialized transaction
-    rpc_func!(pub fn get_raw_transaction(&self, txid: H256Json, verbose: u32) -> RpcRes<RpcTransaction>);
-
-    pub fn output_amount(&self, txid: H256Json, index: usize) -> Result<u64, String> {
-        let tx: UtxoTransaction = try_s!(deserialize(
-            try_s!(self.get_raw_transaction(txid, 1).wait()).hex.as_slice()).map_err(|e| ERRL!("{:?}", e))
-        );
-        Ok(tx.outputs[index].value)
-    }
-
-    /// https://bitcoin.org/en/developer-reference#getblock
-    /// It expects that verbose param is always true to get verbose block
-    rpc_func!(pub fn get_block(&self, height: String, verbose: bool) -> RpcRes<VerboseBlockClient>);
-}
-
 #[derive(Debug)]
 pub struct UtxoCoinImpl {  // pImpl idiom.
     /// https://en.bitcoin.it/wiki/List_of_address_prefixes
@@ -315,12 +143,12 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// RPC password
     rpc_password: String,
     /// RPC client
-    rpc_client: UtxoRpcClient,
+    rpc_client: UtxoRpcClientEnum,
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
     utxo_mutex: Mutex<()>,
-    my_address: Address
+    my_address: Address,
 }
 
 /// Only ETH and ERC20 tokens are supported currently
@@ -347,7 +175,7 @@ struct EthCoin {
 /// This function expects that utxos are sorted by amounts in ascending order
 /// Consider sorting before calling this function
 fn generate_transaction(
-    utxos: Vec<UnspentOutput>,
+    utxos: Vec<UnspentInfo>,
     mut outputs: Vec<TransactionOutput>,
     lock_time: u32,
     version: i32,
@@ -377,14 +205,11 @@ fn generate_transaction(
     let mut value_to_spend = 0;
     let mut inputs = vec![];
     for utxo in utxos.iter() {
-        value_to_spend += f64_to_sat(utxo.amount, decimals);
+        value_to_spend += utxo.value;
         inputs.push(UnsignedTransactionInput {
-            previous_output: OutPoint {
-                hash: utxo.txid.reversed().into(),
-                index: utxo.vout,
-            },
+            previous_output: utxo.outpoint.clone(),
             sequence: SEQUENCE_FINAL,
-            amount: f64_to_sat(utxo.amount, decimals),
+            amount: utxo.value,
         });
         if value_to_spend >= target_value { break; }
     }
@@ -634,10 +459,10 @@ impl UtxoCoin {
     fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> TransactionFut {
         let change_script_pubkey = Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes();
         let arc = self.clone();
-        let unspent_fut = self.rpc_client.list_unspent_ordered(0, 999999, vec![self.my_address.to_string()]);
+        let unspent_fut = self.rpc_client.list_unspent_ordered(&self.my_address);
         Box::new(unspent_fut.then(move |unspents| -> TransactionFut {
             let unspents = try_fus!(unspents);
-            let mut unsigned = try_fus!(generate_transaction(
+            let unsigned = try_fus!(generate_transaction(
                 unspents,
                 outputs,
                 0,
@@ -647,11 +472,6 @@ impl UtxoCoin {
                 arc.decimals,
                 change_script_pubkey.clone()
             ));
-            for input in unsigned.inputs.iter_mut() {
-                (*input).amount = try_fus!(arc.rpc_client.output_amount(
-                    H256Json::from(input.previous_output.hash.reversed()), input.previous_output.index as usize
-                ));
-            }
 
             let signed = try_fus!(sign_tx(unsigned, &arc.key_pair, change_script_pubkey.into()));
             let tx = ExtendedUtxoTx {
@@ -866,7 +686,7 @@ impl MarketCoinOps for UtxoCoin {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         println!("Raw tx {:?}", tx.transaction);
         println!("Hash {}", tx.transaction.hash().reversed());
-        let send_fut = self.rpc_client.send_raw_transaction(BytesJson::from(serialize(&tx.transaction)));
+        let send_fut = self.rpc_client.send_transaction(BytesJson::from(serialize(&tx.transaction)));
         Box::new(
             send_fut.then(move |res| -> Result<TransactionEnum, String> {
                 let res = try_s!(res);
@@ -896,9 +716,8 @@ impl MarketCoinOps for UtxoCoin {
         let arc = self.clone();
         Box::new(
             self.wait_for_confirmations(tx.clone().into(), 1).and_then(move |_| {
-                arc.rpc_client.get_raw_transaction(
+                arc.rpc_client.get_transaction(
                     tx.transaction.hash().reversed().into(),
-                    1
                 ).and_then(move |rpc_transaction| {
                     WaitForTxSpend::new(
                         arc,
@@ -985,10 +804,10 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, S
 
     let coin = UtxoCoinImpl {
         decimals: 8,
-        rpc_client: UtxoRpcClient {
+        rpc_client: UtxoRpcClientEnum::Native(NativeClient {
             uri: format!("http://{}", uri),
             auth: format!("Basic {}", base64_encode(auth_str, URL_SAFE)),
-        },
+        }),
         key_pair,
         is_pos: false,
         notarized: false,
@@ -1073,7 +892,7 @@ impl<'a> Future for WaitForUtxoTxConfirmations<'a> {
                             })
                     );
                     WaitForConfirmationState::CheckingConfirmations(
-                        self.coin.rpc_client.get_raw_transaction(self.txid.clone(), 1)
+                        self.coin.rpc_client.get_transaction(self.txid.clone())
                     )
                 },
                 WaitForConfirmationState::CheckingConfirmations(ref mut future) => {
@@ -1141,7 +960,7 @@ impl<'a> WaitForTxSpend<'a> {
         current_height: u64,
     ) -> Self {
         log!("Start waiting for tx spend " [txid] " height: " (current_height));
-        let fut = coin.rpc_client.get_block(current_height.to_string(), true);
+        let fut = coin.rpc_client.get_block(current_height.to_string());
         WaitForTxSpend {
             coin,
             status: MEMORY_LOG.status(&[&"transaction", &(format!("{:?}:{}", txid, vout), "waiting")], "Waiting for tx spend..."),
@@ -1183,7 +1002,7 @@ impl<'a> Future for WaitForTxSpend<'a> {
                     let height = try_ready!(future.poll());
                     if self.current_height < height {
                         self.current_height += 1;
-                        let get_block_fut = self.coin.rpc_client.get_block(self.current_height.to_string(), true);
+                        let get_block_fut = self.coin.rpc_client.get_block(self.current_height.to_string());
                         WaitForTxSpendState::GetBlock(get_block_fut)
                     } else {
                         WaitForTxSpendState::WaitForInterval
@@ -1192,8 +1011,8 @@ impl<'a> Future for WaitForTxSpend<'a> {
                 WaitForTxSpendState::GetBlock(ref mut future) => {
                     let block = try_ready!(future.poll());
                     for tx in block.tx.iter() {
-                        // TODO replace it with poll() per every Future later
-                        let transaction = match self.coin.rpc_client.get_raw_transaction(tx.clone(), 1).wait() {
+                        // TODO replace it with join_all: https://docs.rs/futures/0.1.13/futures/future/struct.JoinAll.html
+                        let transaction = match self.coin.rpc_client.get_transaction(tx.clone()).wait() {
                             Ok(tx) => tx,
                             Err(_e) => continue
                         };

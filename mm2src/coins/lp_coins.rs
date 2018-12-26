@@ -23,7 +23,9 @@
 #[macro_use] extern crate futures;
 #[macro_use] extern crate gstuff;
 #[macro_use] extern crate lazy_static;
+extern crate rpc as bitcoin_rpc;
 #[macro_use] extern crate serde_derive;
+extern crate sha2;
 #[macro_use] extern crate unwrap;
 
 use common::{bitcoin_ctx, bits256, lp};
@@ -35,9 +37,9 @@ use libc::{c_char, c_void};
 use serde_json::{Value as Json};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
+use std::fmt::Debug;
 use std::mem::zeroed;
 use std::ops::Deref;
-use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 
 #[doc(hidden)]
@@ -51,7 +53,7 @@ pub trait Transaction: Debug + 'static {
     fn extract_secret(&self) -> Result<Vec<u8>, String>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TransactionEnum {
     ExtendedUtxoTx (ExtendedUtxoTx)
 }
@@ -71,8 +73,13 @@ impl Deref for TransactionEnum {
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
-/// Operations that coins have independenty from the MarketMaker.
+/// Operations that coins have independently from the MarketMaker.
 /// That is, things implemented by the coin wallets or public coin services.
+///
+/// Swap operations like `send_buyer_payment` are not present in coin operations by their nature.
+/// However these are just standard Hash/Time locked transactions that every coin supports.
+/// We don't need a public interface like `send_hash_time_locked_tx`, so it's more convenient for
+/// calling code (swap loops) to work with more abstract interface.
 pub trait MarketCoinOps: Debug + 'static {
     fn address(&self) -> Cow<str>;
 
@@ -152,6 +159,7 @@ pub trait MmCoin: MarketCoinOps {
     // enabled (a piece of MM-specific configuration);
     // coin statistics that we might want to share with UI;
     // state serialization, to get full rewind and debugging information about the coins participating in a SWAP operation.
+    // status/availability check: https://github.com/artemii235/SuperNET/issues/156#issuecomment-446501816
 }
 
 #[derive(Clone, Debug)]
@@ -173,7 +181,7 @@ impl Deref for MmCoinEnum {
 }   }   }
 
 struct CoinsContext {
-    /// A map from a currencty ticker symbol to the corresponding coin.  
+    /// A map from a currencty ticker symbol to the corresponding coin.
     /// Similar to `LP_coins`.
     coins: Mutex<HashMap<String, MmCoinEnum>>
 }
@@ -550,11 +558,11 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 */
 
 /// Adds a new currency into the list of currencies configured.
-/// 
+///
 /// Returns an error if the currency already exists. Initializing the same currency twice is a bad habit
 /// (might lead to misleading and confusing information during debugging and maintenance, see DRY)
 /// and should be fixed on the call site.
-/// 
+///
 /// NB: As of now only a part of coin information has been ported to `MmCoinEnum`, as much as necessary to fix the SWAP in #233.
 ///     We plan to port the rest of it later.
 fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
