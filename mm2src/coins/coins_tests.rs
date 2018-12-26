@@ -1,7 +1,7 @@
 use base64::{encode_config as base64_encode, URL_SAFE};
 use futures::Future;
 
-use crate::utxo::NativeClient;
+use crate::utxo::rpc_clients::NativeClient;
 
 pub fn test_list_unspent() {
     let client = NativeClient {

@@ -23,9 +23,10 @@ macro_rules! rpc_func {
 }
 
 /// Serializable RPC request
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsonRpcRequest {
     pub jsonrpc: String,
+    #[serde(default)]
     pub id: String,
     pub method: String,
     pub params: Vec<Json>,
@@ -39,18 +40,13 @@ impl JsonRpcRequest {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct JsonRpcResponse {
-    jsonrpc: String,
-    id: String,
+    pub jsonrpc: String,
     #[serde(default)]
-    result: Json,
+    pub id: String,
     #[serde(default)]
-    error: Json,
-}
-
-impl JsonRpcResponse {
-    pub fn get_id(&self) -> &str {
-        &self.id
-    }
+    pub result: Json,
+    #[serde(default)]
+    pub error: Json,
 }
 
 pub type JsonRpcResponseFut = Box<Future<Item=JsonRpcResponse, Error=String> + Send>;
