@@ -5,8 +5,6 @@
 # 
 # docker build --tag mm2 .
 
-# TODO: https://docs.docker.com/develop/develop-images/multistage-build/
-
 # NB: The version here was picked to match the one tested in our CI. The latest Travis has (as of 2018-11) is Xenial.
 FROM ubuntu:xenial
 
@@ -28,13 +26,16 @@ RUN wget https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh && \
 
 RUN \
     wget -O- https://sh.rustup.rs > /tmp/rustup-init.sh &&\
-    sh /tmp/rustup-init.sh -y --default-toolchain stable &&\
+    sh /tmp/rustup-init.sh -y --default-toolchain none &&\
+    . /root/.cargo/env &&\
+    rustup install nightly-2018-12-24 &&\
+    rustup default nightly-2018-12-24 &&\
+    # It seems that bindgen won't prettify without it:
+    rustup component add rustfmt-preview &&\
+    rm -rf /root/.rustup/toolchains/nightly-2018-12-24-x86_64-unknown-linux-gnu/share/doc &&\
     rm -f /tmp/rustup-init.sh
 
 ENV PATH="/root/.cargo/bin:${PATH}"
-
-# It seems that bindgen won't prettify without it:
-RUN rustup component add rustfmt-preview
 
 # Unlike the `COPY` command, the `RUN git clone` remains cached by Docker even if we change something locally.
 # This allows us to more easily play with later Dockerfile steps by adding the `COPY` there.
