@@ -864,6 +864,18 @@ fn test_wait_for_tx_spend_native() {
 
 #[test]
 #[ignore]
+fn test_list_unspent_ordered_native() {
+    let client = NativeClient {
+        uri: "http://127.0.0.1:11608".to_owned(),
+        auth: fomat!("Basic " (base64_encode("user693461146:passef3e4fbcee47f264b6bd071def8171800241cedd56705c27905f36dd1df2737f99", URL_SAFE))),
+    };
+
+    let res = client.list_unspent_ordered(&"RKGn1jkeS7VNLfwY74esW7a8JFfLNj1Yoo".into()).wait().unwrap();
+    log!([res]);
+}
+
+#[test]
+#[ignore]
 fn test_wait_for_tx_confirmations() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();

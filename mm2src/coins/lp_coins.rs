@@ -657,14 +657,27 @@ fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
         let c_asset = try_s! (CString::new (asset.unwrap_or ("")));
         let c_name = try_s! (CString::new (name));
         let c_name2 = try_s! (CString::new (name2));
-        let c_confpath = try_s! (CString::new (coins_en["confpath"].as_str().unwrap_or ("")));
+        let c_name2_ptr = if name2 == "" {
+            null_mut()
+        } else {
+            c_name2.as_ptr() as *mut c_char
+        };
+
+        let confpath = coins_en["confpath"].as_str().unwrap_or ("");
+        let c_confpath = try_s! (CString::new (confpath));
+        let confpath_ptr = if confpath == "" {
+            null_mut()
+        } else {
+            c_confpath.as_ptr() as *mut c_char
+        };
+
         lp::LP_userpass (
             ii.userpass.as_mut_ptr(),            // userpass
             c_ticker.as_ptr() as *mut c_char,    // symbol
             c_asset.as_ptr() as *mut c_char,     // assetname
             c_name.as_ptr() as *mut c_char,      // confroot
-            null_mut(),                          // name
-            null_mut(),                          // confpath
+            c_name2_ptr,                         // name
+            confpath_ptr,                        // confpath
             rpcport                              // origport
         )
     };
