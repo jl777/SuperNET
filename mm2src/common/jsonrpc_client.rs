@@ -40,6 +40,7 @@ impl JsonRpcRequest {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct JsonRpcResponse {
+    #[serde(default)]
     pub jsonrpc: String,
     #[serde(default)]
     pub id: String,

@@ -701,36 +701,27 @@ impl MarketCoinOps for UtxoCoin {
         confirmations: i32,
     ) -> Box<dyn Future<Item=(), Error=String>> {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        Box::new(WaitForUtxoTxConfirmations::new(
-            self.clone(),
-            tx.transaction.hash().reversed().into(),
-            10,
+        let res = try_fus!(self.rpc_client.wait_for_confirmations(
+            &tx.transaction,
+            confirmations as u32,
             now_ms() / 1000 + 1000,
-            confirmations,
-            10
-        ))
+        ));
+
+        Box::new(futures::future::ok(res))
     }
 
     fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut {
         let tx = match transaction {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let arc = self.clone();
-        Box::new(
-            self.wait_for_confirmations(tx.clone().into(), 1).and_then(move |_| {
-                arc.rpc_client.get_transaction(
-                    tx.transaction.hash().reversed().into(),
-                ).and_then(move |rpc_transaction| {
-                    WaitForTxSpend::new(
-                        arc,
-                        tx.transaction.hash().reversed().into(),
-                        0,
-                        1,
-                        now_ms() / 1000 + 1000,
-                        10,
-                        rpc_transaction.height,
-                    )
-                })
-            })
-        )
+        let res = try_fus!(self.rpc_client.wait_for_payment_spend(
+            &tx.transaction,
+            0,
+            now_ms() / 1000 + 1000,
+        ));
+
+        Box::new(futures::future::ok(TransactionEnum::ExtendedUtxoTx(ExtendedUtxoTx {
+            transaction: res,
+            redeem_script: vec![].into(),
+        })))
     }
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
@@ -826,212 +817,6 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, S
         my_address: my_address.clone(),
     };
     Ok(UtxoCoin(Arc::new(coin)).into())
-}
-
-/// Temporary in memory LogState instance, consider replacing with LogState instance from MmCtx
-lazy_static!(
-    pub static ref MEMORY_LOG: LogState = LogState::in_memory();
-);
-
-enum WaitForConfirmationState {
-    WaitingForInterval,
-    CheckingConfirmations(RpcRes<RpcTransaction>),
-}
-
-struct WaitForUtxoTxConfirmations<'a> {
-    coin: UtxoCoin,
-    txid: H256Json,
-    interval: Interval,
-    wait_until: u64,
-    status: StatusHandle<'a>,
-    confirmations: i32,
-    retries: u8,
-    max_retries: u8,
-    state: WaitForConfirmationState
-}
-
-impl<'a> WaitForUtxoTxConfirmations<'a> {
-    pub fn new(
-        coin: UtxoCoin,
-        txid: H256Json,
-        poll_interval: u64,
-        wait_until: u64,
-        confirmations: i32,
-        max_retries: u8,
-    ) -> Self {
-        WaitForUtxoTxConfirmations {
-            coin,
-            status: MEMORY_LOG.status(&[&"transaction", &(format!("{:?}", txid), "waiting")], "Waiting for confirmations..."),
-            txid,
-            interval: Timer::default().interval(Duration::from_secs(poll_interval)),
-            wait_until,
-            confirmations,
-            retries: 0,
-            max_retries,
-            state: WaitForConfirmationState::WaitingForInterval,
-        }
-    }
-}
-
-impl<'a> Future for WaitForUtxoTxConfirmations<'a> {
-    type Item = ();
-    type Error = String;
-
-    fn poll(&mut self) -> Poll<(), String> {
-        loop {
-            let next_state = match self.state {
-                WaitForConfirmationState::WaitingForInterval => {
-                    if now_ms() / 1000 > self.wait_until {
-                        return ERR!("Waited too long until {}, aborted", self.wait_until);
-                    }
-                    let _ready = try_ready!(
-                        self.interval
-                            .poll()
-                            .map_err(|e| {
-                                ERRL!("{}", e)
-                            })
-                    );
-                    WaitForConfirmationState::CheckingConfirmations(
-                        self.coin.rpc_client.get_transaction(self.txid.clone())
-                    )
-                },
-                WaitForConfirmationState::CheckingConfirmations(ref mut future) => {
-                    let tx = future.poll();
-                    match tx {
-                        Ok(Async::Ready(transaction)) => {
-                            if transaction.confirmations as i32 >= self.confirmations {
-                                self.status.append("Reached required confirmations");
-                                return Ok(Async::Ready(()))
-                            } else {
-                                self.status.append(
-                                    &format!(
-                                        "Confirmed {} times, target {}..",
-                                        transaction.confirmations,
-                                        self.confirmations
-                                    )
-                                );
-                            }
-                        },
-                        Ok(Async::NotReady) => return Ok(Async::NotReady),
-                        Err(e) => {
-                            self.status.append(&format!("Attempt {}, got error {}..", self.retries, e));
-                            self.retries += 1;
-                            if self.retries >= self.max_retries {
-                                self.status.append("Reached max attempts count, aborting..");
-                                return ERR!("Error waiting for tx confirmation {:?}", self.txid)
-                            }
-                        }
-                    }
-                    WaitForConfirmationState::WaitingForInterval
-                },
-            };
-            self.state = next_state;
-        }
-    }
-}
-
-enum WaitForTxSpendState {
-    WaitForInterval,
-    GetBlockCount(RpcRes<u64>),
-    GetBlock(RpcRes<VerboseBlockClient>),
-}
-
-struct WaitForTxSpend<'a> {
-    coin: UtxoCoin,
-    txid: H256Json,
-    vout: u32,
-    interval: Interval,
-    wait_until: u64,
-    status: StatusHandle<'a>,
-    retries: u8,
-    max_retries: u8,
-    state: WaitForTxSpendState,
-    current_height: u64,
-}
-
-impl<'a> WaitForTxSpend<'a> {
-    pub fn new(
-        coin: UtxoCoin,
-        txid: H256Json,
-        vout: u32,
-        poll_interval: u64,
-        wait_until: u64,
-        max_retries: u8,
-        current_height: u64,
-    ) -> Self {
-        log!("Start waiting for tx spend " [txid] " height: " (current_height));
-        let fut = coin.rpc_client.get_block(current_height.to_string());
-        WaitForTxSpend {
-            coin,
-            status: MEMORY_LOG.status(&[&"transaction", &(format!("{:?}:{}", txid, vout), "waiting")], "Waiting for tx spend..."),
-            txid,
-            vout,
-            interval: Timer::default().interval(Duration::from_secs(poll_interval)),
-            wait_until,
-            retries: 0,
-            max_retries,
-            state: WaitForTxSpendState::GetBlock(fut),
-            current_height
-        }
-    }
-}
-
-impl<'a> Future for WaitForTxSpend<'a> {
-    type Item = TransactionEnum;
-    type Error = String;
-
-    fn poll(&mut self) -> Poll<TransactionEnum, String> {
-        loop {
-            let next_state = match self.state {
-                WaitForTxSpendState::WaitForInterval => {
-                    if now_ms() / 1000 > self.wait_until {
-                        return ERR!("Waited too long until {}, aborted", self.wait_until);
-                    }
-                    let _ready = try_ready!(
-                        self.interval
-                            .poll()
-                            .map_err(|e| {
-                                ERRL!("{}", e)
-                            })
-                    );
-                    WaitForTxSpendState::GetBlockCount(
-                        self.coin.rpc_client.get_block_count()
-                    )
-                },
-                WaitForTxSpendState::GetBlockCount(ref mut future) => {
-                    let height = try_ready!(future.poll());
-                    if self.current_height < height {
-                        self.current_height += 1;
-                        let get_block_fut = self.coin.rpc_client.get_block(self.current_height.to_string());
-                        WaitForTxSpendState::GetBlock(get_block_fut)
-                    } else {
-                        WaitForTxSpendState::WaitForInterval
-                    }
-                },
-                WaitForTxSpendState::GetBlock(ref mut future) => {
-                    let block = try_ready!(future.poll());
-                    for tx in block.tx.iter() {
-                        // TODO replace it with join_all: https://docs.rs/futures/0.1.13/futures/future/struct.JoinAll.html
-                        let transaction = match self.coin.rpc_client.get_transaction(tx.clone()).wait() {
-                            Ok(tx) => tx,
-                            Err(_e) => continue
-                        };
-                        for input in transaction.vin.iter() {
-                            if input.txid == self.txid && input.vout == self.vout {
-                                let result = ExtendedUtxoTx {
-                                    transaction: try_s!(deserialize(transaction.hex.as_slice()).map_err(|e| format!("{:?}", e))),
-                                    redeem_script: vec![].into()
-                                };
-                                return Ok(Async::Ready(result.into()))
-                            }
-                        }
-                    }
-                    WaitForTxSpendState::WaitForInterval
-                },
-            };
-            self.state = next_state;
-        }
-    }
 }
 
 #[test]

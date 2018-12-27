@@ -1,6 +1,7 @@
+use base64::{encode_config as base64_encode, URL_SAFE};
 use bitcoin_rpc::v1::types::{H256 as H256Json, Transaction as RpcTransaction, Bytes as BytesJson, VerboseBlockClient};
 use bytes::{BytesMut};
-use chain::{OutPoint, TransactionOutput, Transaction as UtxoTransaction};
+use chain::{OutPoint, Transaction as UtxoTransaction};
 use common::{CORE, Timeout, slurp_req};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
 use futures::{Async, Future, Poll, Sink};
@@ -25,7 +26,6 @@ use tokio::codec::{Encoder, Decoder};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use super::{TransactionEnum, ExtendedUtxoTx};
 #[derive(Debug)]
 pub enum UtxoRpcClientEnum {
     Native(NativeClient),
@@ -61,6 +61,28 @@ pub trait UtxoRpcClientOps: Debug + 'static {
     fn get_block_count(&self) -> RpcRes<u64>;
 
     fn get_block(&self, height: String) -> RpcRes<VerboseBlockClient>;
+
+    // TODO This operation is synchronous because it's currently simpler to do it this way.
+    // Might consider refactoring when async/await is released.
+    fn wait_for_payment_spend(&self, tx: &UtxoTransaction, vout: usize, wait_until: u64) -> Result<UtxoTransaction, String>;
+
+    // TODO This operation is synchronous because it's currently simpler to do it this way.
+    // Might consider refactoring when async/await is released.
+    fn wait_for_confirmations(&self, tx: &UtxoTransaction, confirmations: u32, wait_until: u64) -> Result<(), String> {
+        loop {
+            if now_ms() / 1000 > wait_until {
+                return ERR!("Waited too long until {} for transaction {:?} to be confirmed {} times", wait_until, tx, confirmations);
+            }
+
+            let tx: RpcTransaction = try_s!(self.get_transaction(tx.hash().reversed().into()).wait());
+
+            if tx.confirmations >= confirmations {
+                return Ok(());
+            }
+
+            thread::sleep(Duration::from_secs(10));
+        }
+    }
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq)]
@@ -131,7 +153,7 @@ impl JsonRpcClient for NativeClient {
                 return ERR!("Rpc request {:?} failed with HTTP status code {}, response body: {}",
                         request, res.0, body);
             }
-            try_s!(json::from_str(body))
+            Ok(try_s!(json::from_str(body)))
         }))
     }
 }
@@ -185,6 +207,48 @@ impl UtxoRpcClientOps for NativeClient {
     fn get_block(&self, height: String) -> RpcRes<VerboseBlockClient> {
         let verbose = true;
         rpc_func!(self, "getblock", height, verbose)
+    }
+
+    fn wait_for_payment_spend(&self, tx: &UtxoTransaction, vout: usize, wait_until: u64) -> Result<UtxoTransaction, String> {
+        let mut current_height = 0;
+
+        loop {
+            if now_ms() / 1000 > wait_until {
+                return ERR!("Waited too long until {} for transaction {:?} {} to be spent ", wait_until, tx, vout);
+            }
+
+            if current_height == 0 {
+                let tx: RpcTransaction = try_s!(self.get_transaction(tx.hash().reversed().into()).wait());
+
+                if tx.confirmations >= 1 {
+                    current_height = tx.height;
+                    continue;
+                }
+
+                thread::sleep(Duration::from_secs(10));
+            } else {
+                let coin_height = try_s!(self.get_block_count().wait());
+                while current_height <= coin_height {
+                    let block = try_s!(self.get_block(current_height.to_string()).wait());
+                    for tx_hash in block.tx.iter() {
+                        let transaction = match self.get_transaction(tx_hash.clone()).wait() {
+                            Ok(tx) => tx,
+                            Err(_e) => continue
+                        };
+
+                        for input in transaction.vin.iter() {
+                            if input.txid == tx.hash().reversed().into() && input.vout == vout as u32 {
+                                let tx: UtxoTransaction = try_s!(deserialize(transaction.hex.as_slice()).map_err(|e| format!("{:?}", e)));
+                                return Ok(tx);
+                            }
+                        }
+                    }
+
+                    current_height += 1;
+                }
+                thread::sleep(Duration::from_secs(10));
+            }
+        }
     }
 }
 
@@ -347,8 +411,37 @@ impl UtxoRpcClientOps for ElectrumClient {
     /// https://bitcoin.org/en/developer-reference#getblock
     /// Always returns verbose block
     fn get_block(&self, height: String) -> RpcRes<VerboseBlockClient> {
-        let verbose = true;
-        rpc_func!(self, "getblock", height, verbose)
+        unimplemented!()
+    }
+
+    /// This function is assumed to be used to search for spend of swap payment.
+    /// For this case we can just wait that address history contains 2 or more records: the payment itself and spending transaction.
+    fn wait_for_payment_spend(&self, transaction: &UtxoTransaction, vout: usize, wait_until: u64) -> Result<UtxoTransaction, String> {
+        let script_hash = hex::encode(electrum_script_hash(&transaction.outputs[vout].script_pubkey));
+
+        loop {
+            if now_ms() / 1000 > wait_until {
+                return ERR!("Waited too long until {} for output {:?} to be spent ", wait_until, transaction.outputs[vout]);
+            }
+
+            let history = try_s!(self.scripthash_get_history(&script_hash).wait());
+            if history.len() < 2 {
+                thread::sleep(Duration::from_secs(10));
+                continue;
+            }
+
+            for item in history.iter() {
+                let tx: RpcTransaction = try_s!(self.get_transaction(item.tx_hash.clone()).wait());
+                for input in tx.vin.iter() {
+                    if input.txid == transaction.hash().reversed().into() && input.vout == vout as u32 {
+                        let tx: UtxoTransaction = try_s!(deserialize(tx.hex.as_slice()).map_err(|e| format!("{:?}", e)));
+                        return Ok(tx);
+                    }
+                }
+            }
+
+            thread::sleep(Duration::from_secs(10));
+        }
     }
 }
 
@@ -401,39 +494,6 @@ impl ElectrumClient {
             })
         )
     }
-
-    /// This function is assumed to be used to search for swap payment to be spent.
-    /// For this case we can just wait that address history contains 2 or more records: the payment itself and spending transaction.
-    fn wait_for_payment_spend(&self, transaction: &UtxoTransaction, index: usize, wait_until: u64) -> Result<TransactionEnum, String> {
-        let script_hash = hex::encode(electrum_script_hash(&transaction.outputs[index].script_pubkey));
-
-        loop {
-            if now_ms() / 1000 > wait_until {
-                return ERR!("Waited too long until {} for output {:?} to be spent ", wait_until, transaction.outputs[index]);
-            }
-
-            let history = try_s!(self.scripthash_get_history(&script_hash).wait());
-            if history.len() < 2 {
-                thread::sleep(Duration::from_secs(10));
-                continue;
-            }
-
-            for item in history.iter() {
-                let tx: RpcTransaction = try_s!(self.get_transaction(item.tx_hash.clone()).wait());
-                for input in tx.vin.iter() {
-                    if input.txid == transaction.hash().reversed().into() && input.vout == index as u32 {
-                        let tx: UtxoTransaction = try_s!(deserialize(tx.hex.as_slice()).map_err(|e| format!("{:?}", e)));
-                        return Ok(TransactionEnum::ExtendedUtxoTx(ExtendedUtxoTx {
-                            transaction: tx,
-                            redeem_script: vec![].into(),
-                        }));
-                    }
-                }
-            }
-
-            thread::sleep(Duration::from_secs(10));
-        }
-    }
 }
 
 /// Helper function casting mpsc::Receiver as Stream.
@@ -442,36 +502,56 @@ fn rx_to_stream(rx: mpsc::Receiver<Vec<u8>>) -> impl Stream<Item = Vec<u8>, Erro
 }
 
 fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>) {
-    let raw_json: Json = match json::from_slice(&chunk) {
-        Ok(json) => json,
-        Err(e) => { log!([e]); return; }
-    };
+    // we should split the received chunk because we can get several responses in 1 chunk.
+    let split = chunk.split(|item| *item == '\n' as u8);
 
-    // detect if we got standard JSONRPC response or subscription response as JSONRPC request
-    if raw_json["method"].is_null() && raw_json["params"].is_null() {
-        let response: JsonRpcResponse = match json::from_value(raw_json) {
-            Ok(res) => res,
-            Err(e) => { log!([e]); return; }
-        };
-        (*arc.lock().unwrap()).insert(response.id.to_string(), response);
-    } else {
-        let request: JsonRpcRequest = match json::from_value(raw_json) {
-            Ok(res) => res,
-            Err(e) => { log!([e]); return; }
-        };
-        let id = match request.method.as_ref() {
-            BLOCKCHAIN_HEADERS_SUB_ID => BLOCKCHAIN_HEADERS_SUB_ID,
-            _ => { log!("Couldn't get id for request " [request]); return; }
-        };
+    for chunk in split {
+        // split returns empty slice if it ends with separator which is our case
+        if chunk.len() > 0 {
+            let raw_json: Json = match json::from_slice(chunk) {
+                Ok(json) => json,
+                Err(e) => {
+                    log!([e]);
+                    return;
+                }
+            };
 
-        let response = JsonRpcResponse {
-            id: id.into(),
-            jsonrpc: "2.0".into(),
-            result: request.params[0].clone(),
-            error: Json::Null,
-        };
+            // detect if we got standard JSONRPC response or subscription response as JSONRPC request
+            if raw_json["method"].is_null() && raw_json["params"].is_null() {
+                let response: JsonRpcResponse = match json::from_value(raw_json) {
+                    Ok(res) => res,
+                    Err(e) => {
+                        log!([e]);
+                        return;
+                    }
+                };
+                (*arc.lock().unwrap()).insert(response.id.to_string(), response);
+            } else {
+                let request: JsonRpcRequest = match json::from_value(raw_json) {
+                    Ok(res) => res,
+                    Err(e) => {
+                        log!([e]);
+                        return;
+                    }
+                };
+                let id = match request.method.as_ref() {
+                    BLOCKCHAIN_HEADERS_SUB_ID => BLOCKCHAIN_HEADERS_SUB_ID,
+                    _ => {
+                        log!("Couldn't get id for request "[request]);
+                        return;
+                    }
+                };
 
-        (*arc.lock().unwrap()).insert(id.into(), response);
+                let response = JsonRpcResponse {
+                    id: id.into(),
+                    jsonrpc: "2.0".into(),
+                    result: request.params[0].clone(),
+                    error: Json::Null,
+                };
+
+                (*arc.lock().unwrap()).insert(id.into(), response);
+            }
+        }
     }
 }
 
@@ -674,16 +754,17 @@ fn electrum_subscribe_multi(
 }
 
 #[test]
+#[ignore]
 fn test_electrum_ping() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();
     client.add_server("electrum2.cipig.net:10022").unwrap();
     client.add_server("electrum3.cipig.net:10022").unwrap();
-
-    client.server_ping().wait().unwrap();
+    log!([client.server_ping().wait().unwrap()]);
 }
 
 #[test]
+#[ignore]
 fn test_electrum_listunspent() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();
@@ -697,6 +778,7 @@ fn test_electrum_listunspent() {
 }
 
 #[test]
+#[ignore]
 fn test_electrum_transaction_get() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();
@@ -708,6 +790,7 @@ fn test_electrum_transaction_get() {
 }
 
 #[test]
+#[ignore]
 fn test_electrum_listunspent_ordered() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();
@@ -719,6 +802,7 @@ fn test_electrum_listunspent_ordered() {
 }
 
 #[test]
+#[ignore]
 fn test_electrum_subsribe() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10001").unwrap();
@@ -735,6 +819,7 @@ fn test_electrum_subsribe() {
 }
 
 #[test]
+#[ignore]
 fn test_electrum_get_history() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();
@@ -748,7 +833,8 @@ fn test_electrum_get_history() {
 }
 
 #[test]
-fn test_wait_for_tx_spend() {
+#[ignore]
+fn test_wait_for_tx_spend_electrum() {
     let mut client = ElectrumClient::new();
     client.add_server("electrum1.cipig.net:10022").unwrap();
     client.add_server("electrum2.cipig.net:10022").unwrap();
@@ -758,5 +844,35 @@ fn test_wait_for_tx_spend() {
 
     let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
     let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
+    log!([wait]);
+}
+
+#[test]
+#[ignore]
+fn test_wait_for_tx_spend_native() {
+    let client = NativeClient {
+        uri: "http://127.0.0.1:8923".to_owned(),
+        auth: fomat!("Basic " (base64_encode("user1031481471:pass4421be10fa22e70fca76c4917556f1613cdd1fa83e7c9d04abfd98c3367c6252ba", URL_SAFE))),
+    };
+
+    let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
+
+    let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
+    let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
+    log!([wait]);
+}
+
+#[test]
+#[ignore]
+fn test_wait_for_tx_confirmations() {
+    let mut client = ElectrumClient::new();
+    client.add_server("electrum1.cipig.net:10022").unwrap();
+    client.add_server("electrum2.cipig.net:10022").unwrap();
+    client.add_server("electrum3.cipig.net:10022").unwrap();
+
+    let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
+
+    let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
+    let wait = client.wait_for_confirmations(&tx, 10, now_ms() / 1000 + 1000).unwrap();
     log!([wait]);
 }
