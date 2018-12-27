@@ -40,6 +40,7 @@ use std::ffi::{CStr, CString};
 use std::fmt::Debug;
 use std::mem::zeroed;
 use std::ops::Deref;
+use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
 
 #[doc(hidden)]
@@ -662,8 +663,8 @@ fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
             c_ticker.as_ptr() as *mut c_char,    // symbol
             c_asset.as_ptr() as *mut c_char,     // assetname
             c_name.as_ptr() as *mut c_char,      // confroot
-            c_name2.as_ptr() as *mut c_char,     // name
-            c_confpath.as_ptr() as *mut c_char,  // confpath
+            null_mut(),                          // name
+            null_mut(),                          // confpath
             rpcport                              // origport
         )
     };
