@@ -1,5 +1,5 @@
 use common::identity;
-use common::for_tests::{mm_dump, mm_spat, LocalStart, MarketMakerIt, RaiiKill};
+use common::for_tests::{mm_dump, mm_spat, LocalStart, MarketMakerIt, RaiiDump, RaiiKill};
 use dirs;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
@@ -53,7 +53,7 @@ fn test_fundvalue() {portfolio::portfolio_tests::test_fundvalue (local_start())}
 /// Check that MM doesn't crash in case of invalid RPC requests
 #[test]
 fn test_rpc() {
-    let (_, mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
+    let (_, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let no_method = unwrap! (mm.rpc (json! ({
@@ -181,59 +181,47 @@ fn test_events() {
             unwrap! (events (&["_test".into(), "events".into()]));
         },
         _ => {
+            let conf = json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"});
+            println! ("Starting the MarketMaker, similar to\n  gdb --args target/debug/mm2 '{}'\n  run", unwrap! (json::to_string (&conf)));
             let mut mm = unwrap! (MarketMakerIt::start (
-                json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"}),
+                conf,
                 "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
                 match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "1" => Some (local_start()), _ => None}));
             let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
 
+            let expected_bind = format! (">>>>>>>>> DEX stats {}:7783", mm.ip);
+            unwrap! (mm.wait_for_log (22., &|log| log.contains (&expected_bind)));
+
+            println! ("Asking for a websocket endpoint with a stream of events…");
+            let (status, body, _headers) = unwrap! (mm.rpc (json! ({"userpass": mm.userpass, "method": "getendpoint"})));
+            log! ({"test_events] getendpoint response: {:?}, {}", status, body});
+            assert_eq! (status, StatusCode::OK);
+            //let expected_endpoint = format! ("\"endpoint\":\"ws://{}:5555\"", mm.ip);
+            assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""), "{}", body);
+
+            println! ("Starting 'mm2 events'…");
             let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
                 .env ("_MM2_TEST_EVENTS_MODE", "MM_EVENTS")
                 .env ("MM2_UNBUFFERED_OUTPUT", "1")
                 .stderr_to_stdout().stdout (&mm_events_output) .start()));
 
-            #[derive(Debug)] enum MmState {Starting, Started, GetendpointSent, Passed}
-            let mut mm_state = MmState::Starting;
-
-            // Monitor the MM output.
-            let started = now_float();
+            println! ("Waiting for 'mm2 events' to print some interesting data, {:?}…", mm_events_output);
+            let mm_events_output = RaiiDump {log_path: mm_events_output};
+            let start = now_float();
             loop {
                 if let Some (ref mut pc) = mm.pc {if !pc.running() {panic! ("MM process terminated prematurely.")}}
                 if !mm_events.running() {panic! ("`mm2 events` terminated prematurely.")}
-
-                mm_state = match mm_state {
-                    MmState::Starting => {  // See if MM started.
-                        let mm_log = unwrap! (mm.log_as_utf8());
-                        let expected_bind = format! (">>>>>>>>> DEX stats {}:7783", mm.ip);
-                        if mm_log.contains (&expected_bind) {MmState::Started}
-                            else {MmState::Starting}
-                    },
-                    MmState::Started => {  // Kickstart the events stream by invoking the "getendpoint".
-                        let (status, body, _headers) = unwrap! (mm.rpc (json! (
-                            {"userpass": mm.userpass, "method": "getendpoint"})));
-                        log! ({"test_events] getendpoint response: {:?}, {}", status, body});
-                        assert_eq! (status, StatusCode::OK);
-                        //let expected_endpoint = format! ("\"endpoint\":\"ws://{}:5555\"", mm.ip);
-                        assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""), "{}", body);
-                        MmState::GetendpointSent
-                    },
-                    MmState::GetendpointSent => {  // Wait for the `mm2 events` test to finish.
-                        let mm_events_log = slurp (&mm_events_output);
-                        let mm_events_log = unsafe {from_utf8_unchecked (&mm_events_log)};
-                        if mm_events_log.contains ("\"base\":\"KMD\"") && mm_events_log.contains ("\"price64\":\"") {MmState::Passed}
-                            else {MmState::GetendpointSent}
-                    },
-                    MmState::Passed => {  // Gracefully stop the MM.
-                        unwrap! (mm.stop());
-                        sleep (Duration::from_millis (100));
-                        let _ = fs::remove_file (mm_events_output);
-                        break
-                    }
-                };
-
-                if now_float() - started > 60. {panic! ("Test didn't pass withing the 60 seconds timeframe. mm_state={:?}", mm_state)}
-                sleep (Duration::from_millis (20))
+                let log = slurp (&mm_events_output.log_path);
+                let log = unsafe {from_utf8_unchecked (&log)};
+                if log.contains ("\"base\":\"KMD\"") && log.contains ("\"price64\":\"") {break}  // Gotcha!
+                if now_float() - start > 123. {panic! ("Timeout expired waiting for data on event stream")}
+                sleep (Duration::from_secs (1));
             }
+
+            println! ("Stopping MMs…");
+            unwrap! (mm.stop());
+            sleep (Duration::from_millis (100));
+            let _ = fs::remove_file (&mm_events_output.log_path);
         }
     }
 }
@@ -241,7 +229,7 @@ fn test_events() {
 /// Invokes the RPC "notify" method, adding a node to the peer-to-peer ring.
 #[test]
 fn test_notify() {
-    let (_passphrase, mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
+    let (_passphrase, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let notify = unwrap! (mm.rpc (json! ({
@@ -352,7 +340,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
     ]);
 
-    let mm_bob = unwrap! (MarketMakerIt::start (
+    let mut mm_bob = unwrap! (MarketMakerIt::start (
         json! ({
             "gui": "nogui",
             "netid": 9999,
@@ -369,7 +357,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
-    let mm_alice = unwrap! (MarketMakerIt::start (
+    let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
             "gui": "nogui",
             "netid": 9999,

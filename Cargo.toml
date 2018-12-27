@@ -15,6 +15,10 @@ path = "mm2src/mm2.rs"
 # Can override this with "set CARGO_BUILD_RUSTFLAGS=-C opt-level=0".
 opt-level = 1
 
+[profile.test]
+# Should probably match "profile.dev", given that we're reusing the libraries.
+opt-level = 1
+
 [features]
 # Uncomment in order to enable ETOMIC builds by default:
 default = ["etomic"]

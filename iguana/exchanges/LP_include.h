@@ -520,7 +520,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin);
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg);
-void LP_coinadd_(struct iguana_info *cdata);
+void LP_coinadd_(struct iguana_info *cdata, int32_t iguana_info_size);
 struct iguana_info *LP_coinfind(char *symbol);
 /// Returns the "BTC" and "KMD" ports defined in `portstrs`. 0 for other currencies.
 uint16_t LP_rpcport(char *symbol);

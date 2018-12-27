@@ -1,6 +1,7 @@
 use hashbrown::HashMap;
 use libc::c_char;
 use std::ffi::CStr;
+use std::mem::size_of;
 use std::ptr::null_mut;
 use std::sync::Mutex;
 
@@ -53,7 +54,7 @@ pub extern fn LP_coinadd (ii: *mut lp::iguana_info) -> *mut lp::iguana_info {
     coins.insert (ticker.into(), IISafe (ii));
     // As of now we still need the `LP_coins` in order to iterate over the coins,
     // but the improvement is that we're not moving the instance anywhere, it's effectively pinned.
-    unsafe {lp::LP_coinadd_ (ii)};
+    unsafe {lp::LP_coinadd_ (ii, size_of::<lp::iguana_info>() as i32)};
     ii
 }
 

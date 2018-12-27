@@ -195,13 +195,14 @@ impl MarketMakerIt {
         Ok (mm_log)
     }
     /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
-    pub fn wait_for_log (&self, timeout_sec: f64, pred: &dyn Fn (&str) -> bool) -> Result<(), String> {
+    pub fn wait_for_log (&mut self, timeout_sec: f64, pred: &dyn Fn (&str) -> bool) -> Result<(), String> {
         let start = now_float();
         let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
         loop {
             let mm_log = try_s! (self.log_as_utf8());
             if pred (&mm_log) {return Ok(())}
             if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
+            if let Some (ref mut pc) = self.pc {if !pc.running() {return ERR! ("MM process terminated prematurely.")}}
             sleep (Duration::from_millis (ms));
         }
     }

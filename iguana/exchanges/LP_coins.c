@@ -350,8 +350,13 @@ char *LP_getcoin(char *symbol)
 }
 
 /// Non-moving add.
-void LP_coinadd_(struct iguana_info *coin)
+void LP_coinadd_(struct iguana_info *coin, int32_t iguana_info_size)
 {
+    // Might happen if we accidentially use the generated bindings (LP_include.rs) with a different compiler.
+    if (sizeof(struct iguana_info) != iguana_info_size) {
+        printf("LP_coinadd_] Rust size of iguana_info, %i, is different from the C size, %i!\n", iguana_info_size, (int) sizeof (struct iguana_info));
+        abort();
+    }
     portable_mutex_lock(&LP_coinmutex);
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
     portable_mutex_unlock(&LP_coinmutex);

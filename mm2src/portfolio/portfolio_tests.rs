@@ -14,8 +14,8 @@ pub fn test_autoprice_coingecko (local_start: LocalStart) {
     // it should be readable, there should be enough information for both the users and the GUI to understand what's going on
     // and to make an informed decision about whether the MarketMaker is performing correctly.
 
-    let (passphrase, mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &identity);
-    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    let (passphrase, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &identity);
+    unwrap! (mm.wait_for_log (19., &mut |log| log.contains (">>>>>>>>> DEX stats ")));
 
     enable_electrum (&mm, "BEER", "electrum1.cipig.net", 10022);
     enable_electrum (&mm, "PIZZA", "electrum1.cipig.net", 10024);
@@ -56,12 +56,12 @@ pub fn test_autoprice_coingecko (local_start: LocalStart) {
     assert_eq! (autoprice.0, StatusCode::OK, "autoprice reply: {:?}", autoprice);
 
     // TODO: Turn into a proper (human-readable, tagged) log entry?
-    unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_autoprice] 0 Using ref dash/coinmarketcap for PIZZA/BEER factor None")));
+    unwrap! (mm.wait_for_log (9., &mut |log| log.contains ("lp_autoprice] 0 Using ref dash/coinmarketcap for PIZZA/BEER factor None")));
 
-    unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
-    unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for Cryptopia markets... Ok.")));
-    unwrap! (mm.wait_for_log (44., &|log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
-    unwrap! (mm.wait_for_log (9., &|log| {
+    unwrap! (mm.wait_for_log (44., &mut |log| log.contains ("Waiting for Bittrex market summaries... Ok.")));
+    unwrap! (mm.wait_for_log (44., &mut |log| log.contains ("Waiting for Cryptopia markets... Ok.")));
+    unwrap! (mm.wait_for_log (44., &mut |log| log.contains ("Waiting for coin prices (KMD, BCH, LTC)... Done!")));
+    unwrap! (mm.wait_for_log (9., &mut |log| {
         log.contains ("[portfolio ext-price ref-num=0] Discovered the CoinGecko Bitcoin price of dash is 0.") ||
         log.contains ("[portfolio ext-price ref-num=0] Waiting for the CoinGecko Bitcoin price of dash ... Done")
     }));
@@ -69,13 +69,13 @@ pub fn test_autoprice_coingecko (local_start: LocalStart) {
     unwrap! (mm.stop());
 
     // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
-    unwrap! (mm.wait_for_log (9., &|log| log.contains ("on_stop] firing shutdown_tx!")));
+    unwrap! (mm.wait_for_log (9., &mut |log| log.contains ("on_stop] firing shutdown_tx!")));
     //TODO//unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!")));
 }
 
 /// Uses a private `conf["cmc_key"]` to test the CMC mode.
 pub fn test_autoprice_coinmarketcap (local_start: LocalStart) {
-    let (passphrase, mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &|mut conf| {
+    let (passphrase, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &|mut conf| {
         conf["cmc_key"] = "8498a278-a031-4ff1-9a7b-5f576d36149a".into();  // From "https://pro.coinmarketcap.com/account".
         // The command-line "coins" configuration is used to map the coin names to the corresponding ticker symbols.
         let coins = unwrap! (conf["coins"].as_array_mut());
@@ -89,7 +89,7 @@ pub fn test_autoprice_coinmarketcap (local_start: LocalStart) {
         coins.push (json! ({"coin": "BCH", "name": "bitcoin-cash"}));
         conf
     });
-    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (mm.wait_for_log (19., &mut |log| log.contains (">>>>>>>>> DEX stats ")));
 
     enable_electrum (&mm, "BEER", "electrum1.cipig.net", 10022);
     enable_electrum (&mm, "PIZZA", "electrum1.cipig.net", 10024);
@@ -133,12 +133,12 @@ pub fn test_autoprice_coinmarketcap (local_start: LocalStart) {
     unwrap! (mm.stop());
 
     // See if `LogState` is properly dropped, which is needed in order to log the remaining dashboard entries.
-    unwrap! (mm.wait_for_log (9., &|log| log.contains ("on_stop] firing shutdown_tx!")));
+    unwrap! (mm.wait_for_log (9., &mut |log| log.contains ("on_stop] firing shutdown_tx!")));
     //TODO//unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!")));
 }
 
 pub fn test_fundvalue (local_start: LocalStart) {
-    let (_, mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &identity);
+    let (_, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &identity);
     unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
 
     let fundvalue = unwrap! (mm.rpc (json! ({
