@@ -160,17 +160,15 @@ pub fn bitcoin_address (coin: &str, addrtype: u8, rmd160: [u8; 20usize]) -> Resu
     Ok (try_s! (try_s! (CStr::from_bytes_with_nul (&coinaddr[..])) .to_str()) .to_string())
 }
 
-/// Port of `HASH_ITER` over `iguana_info`.  
-/// [functional]
-pub unsafe fn coins_iter (mut coins: *mut lp::iguana_info, cb: &mut dyn FnMut (*mut lp::iguana_info) -> Result<(), String>) -> Result<(), String> {
-    if coins.is_null() {return Ok(())}
-    let mut tmp = (*coins).hh.next as *mut lp::iguana_info;
+/// A safer version of `HASH_ITER` over `iguana_info` coins from `for_c::COINS`.
+pub fn coins_iter (cb: &mut dyn FnMut (*mut lp::iguana_info) -> Result<(), String>) -> Result<(), String> {
+    let coins = try_s! (for_c::COINS.lock());
+    let mut iis = Vec::with_capacity (coins.len());
+    for (_ticker, ii) in coins.iter() {iis.push (ii.0)}
+    drop (coins);  // Unlock before callbacks, avoiding possibility of deadlocks and poisoning.
 
-    while !coins.is_null() {
-        try_s! (cb (coins));
-        coins = tmp;
-        tmp = if !tmp.is_null() {(*tmp).hh.next as *mut lp::iguana_info} else {null_mut()}
-    }
+    for ii in iis {try_s! (cb (ii))}
+
     Ok(())
 }
 

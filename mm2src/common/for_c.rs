@@ -27,12 +27,12 @@ pub extern fn log_stacktrace (desc: *const c_char) {
     log! ({"Stacktrace. {}\n{}", desc, trace});
 }
 
-struct IISafe (*mut lp::iguana_info);
+pub struct IISafe (pub *mut lp::iguana_info);
 unsafe impl Send for IISafe {}
 unsafe impl Sync for IISafe {}
 
 lazy_static! {
-    static ref COINS: Mutex<HashMap<String, IISafe>> = Mutex::new (HashMap::new());
+    pub static ref COINS: Mutex<HashMap<String, IISafe>> = Mutex::new (HashMap::new());
 }
 
 #[no_mangle]
@@ -55,4 +55,16 @@ pub extern fn LP_coinadd (ii: *mut lp::iguana_info) -> *mut lp::iguana_info {
     // but the improvement is that we're not moving the instance anywhere, it's effectively pinned.
     unsafe {lp::LP_coinadd_ (ii)};
     ii
+}
+
+#[no_mangle]
+pub extern fn LP_get_coin_pointers (coins_buf: *mut *mut lp::iguana_info, coins_size: i32) {
+    let coins = unwrap! (COINS.lock());
+    assert! (coins_size > 0);
+    // NB: Resulting buffer is either zero-terminated or full.
+    if coins.len() < coins_size as usize {unsafe {*coins_buf.offset (coins.len() as isize) = null_mut()}}
+    for ((_ticker, ii), idx) in coins.iter().zip (0..) {
+        if idx >= coins_size as isize {break}
+        unsafe {*coins_buf.offset (idx) = ii.0}
+    }
 }

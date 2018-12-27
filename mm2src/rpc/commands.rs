@@ -245,7 +245,7 @@ pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
         Some (&req.passphrase), req.gui.as_ref().map (|s| &s[..]), req.seednode.as_ref().map (|s| &s[..])))};
 
     let mut coins = Vec::new();
-    try_h! (unsafe {coins_iter (lp::LP_coins, &mut |coin| {
+    try_h! (unsafe {coins_iter (&mut |coin| {
         let coin_json = lp::LP_coinjson (coin, lp::LP_showwif);
         let cjs = lp::jprint (coin_json, 1);
         let cjs_copy = Vec::from (CStr::from_ptr (cjs) .to_bytes());

@@ -981,7 +981,7 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
 
     // List the coins we've initialized.
     let mut coins = Vec::new();
-    try_s! (unsafe {common::coins_iter (lp::LP_coins, &mut |coin| {coins.push (CStr::from_ptr ((*coin).symbol.as_ptr())); Ok(())})});
+    try_s! (common::coins_iter (&mut |coin| {coins.push (unsafe {CStr::from_ptr ((*coin).symbol.as_ptr())}); Ok(())}));
     log! ("lp_initcoins] Finished with: " for coin in coins {(unwrap! (coin.to_str()))} separated {", "} '.');
 
     Ok(())

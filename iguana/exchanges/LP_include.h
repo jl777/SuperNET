@@ -23,13 +23,6 @@
 
 #include <stdint.h>
 
-// Things we presently share with the C code from Rust.
-// cf. "for_c.rs"
-
-void log_stacktrace (const char const* desc);
-
-// ---
-
 #ifndef LP_TECHSUPPORT
 #define LP_TECHSUPPORT 1
 #endif
@@ -734,7 +727,6 @@ void (*LP_QUEUE_COMMAND)(char**,char*,int32_t,int32_t,uint32_t);
 
 extern int32_t IPC_ENDPOINT;
 char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
-struct iguana_info *LP_coinsearch(char *symbol);
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson);
 char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast);
 
@@ -844,3 +836,13 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay);
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay);
 void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid);
 #endif
+
+// ---
+
+// Things we presently share with the C code from Rust.
+// cf. "for_c.rs"
+
+void log_stacktrace (char const* desc);
+struct iguana_info* LP_coinadd (struct iguana_info* ii);
+struct iguana_info* LP_coinsearch (char const* ticker);
+void LP_get_coin_pointers (struct iguana_info** coins_buf, int32_t coins_size);

@@ -1499,7 +1499,7 @@ pub unsafe fn lp_passphrase_init (ctx: &MmArc, passphrase: Option<&str>, gui: Op
         }
     };
     let userpass_counter = lp::G.USERPASS_COUNTER;
-    try_s! (coins_iter (lp::LP_coins, &mut |coin| {
+    try_s! (coins_iter (&mut |coin| {
         (*coin).importedprivkey = 0;
         Ok(())
     }));
