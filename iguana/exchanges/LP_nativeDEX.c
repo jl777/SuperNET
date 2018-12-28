@@ -1315,15 +1315,6 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
 {
     long filesize; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void* ctx;
 
-#ifndef NOTETOMIC
-    extern void *LP_eth_client;
-    if (LP_eth_client != NULL) {
-        eth_client_destruct(LP_eth_client);
-    }
-    char privkey_str[100];
-    uint8arrayToHex(privkey_str, G.LP_privkey.bytes, 32);
-    LP_eth_client = eth_client(privkey_str, LP_eth_node_url, LP_alice_contract, LP_bob_contract, mm_ctx_id);
-#endif
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

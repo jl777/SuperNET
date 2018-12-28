@@ -106,29 +106,9 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->uuidstr,jstr(argjson,"uuid"),sizeof(qp->uuidstr));
-#ifndef NOTETOMIC
-    if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
-    {
-        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || compare_addresses(etomicstr,etomic) == 0 )
-        {
-            printf("etomic src mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
-            return(-1);
-        }
-    }
-#endif
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->etomicsrc,jstr(argjson,"etomicsrc"),sizeof(qp->etomicsrc));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
-#ifndef NOTETOMIC
-    if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
-    {
-        if ( (etomicstr= jstr(argjson,"alicetomic")) == 0 || compare_addresses(etomicstr,etomic) == 0 )
-        {
-            printf("etomic dest mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
-            return(-1);
-        }
-    }
-#endif
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     safecopy(qp->etomicdest,jstr(argjson,"etomicdest"),sizeof(qp->etomicdest));
     qp->aliceid = (uint64_t)juint(argjson,"aliceid");
@@ -421,17 +401,6 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddstr(reqjson,"pubsecp",pubsecpstr);
         if ( (kmd= LP_coinfind("KMD")) != 0 && (ap= LP_address(kmd,kmd->smartaddr)) != 0 && ap->instantdex_credits != 0 )
             jaddnum(reqjson,"credits",dstr(ap->instantdex_credits));
-#ifndef NOTETOMIC
-        if (basecoin->etomic[0] != 0) {
-            int error = 0;
-            uint64_t etomic_coin_balance = LP_etomic_get_balance(basecoin, basecoin->smartaddr, &error);
-            jaddstr(reqjson,"utxocoin","ETH_OR_ERC20");
-            jaddnum(reqjson,"bal",dstr(etomic_coin_balance));
-            jaddnum(reqjson,"min",dstr(etomic_coin_balance));
-            jaddnum(reqjson,"max",dstr(etomic_coin_balance));
-            jaddnum(reqjson,"n",1);
-        } else
-#endif
         if ( (numutxos= LP_address_minmax(1,&median,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
         {
             //printf("send %s numutxos.%d median %.8f min %.8f max %.8f\n",base,numutxos,dstr(median),dstr(minsize),dstr(maxsize));

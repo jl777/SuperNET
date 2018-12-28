@@ -30,7 +30,6 @@ use std::mem::zeroed;
 use std::ptr::null_mut;
 use std::time::Duration;
 
-use crate::etomiccurl::get_gas_price_from_station;
 use crate::lp_native_dex::lp_passphrase_init;
 use crate::lp_ordermatch::{AutoBuyInput, lp_auto_buy};
 
@@ -537,6 +536,8 @@ pub struct GasPriceResult {
 }
 
 pub fn eth_gas_price() -> HyRes {
+    unimplemented!();
+    /*
     let gas_price = get_gas_price_from_station(0);
     if gas_price > 0 {
         let result = try_h!(json::to_string(&GasPriceResult { gas_price }));
@@ -544,6 +545,7 @@ pub fn eth_gas_price() -> HyRes {
     } else {
         rpc_err_response(500, "Could not get gas price from station")
     }
+    */
 }
 /*
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )

@@ -560,10 +560,6 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         return(-1);
     }
     rawtx->I.redeemlen = recvbuf[offset++];
-#ifndef NOTETOMIC
-    uint8arrayToHex(rawtx->I.ethTxid, &recvbuf[offset], 32);
-    printf("ETH txid received: %s\n", rawtx->I.ethTxid);
-#endif
     offset += 32;
     data = &recvbuf[offset];
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )

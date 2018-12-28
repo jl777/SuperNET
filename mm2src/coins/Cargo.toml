@@ -15,6 +15,10 @@ byteorder = "1.2.2"
 bytes = "0.4"
 chain = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 common = { path = "../common" }
+ethabi = { git = "https://github.com/artemii235/ethabi" }
+ethcore-transaction = { git = "https://github.com/artemii235/parity-ethereum.git" }
+ethereum-types = "~0.3"
+ethkey = { git = "https://github.com/artemii235/parity-ethereum.git" }
 # Waiting for https://github.com/rust-lang/rust/issues/54725 to use on Stable.
 #enum_dispatch = "0.1"
 fomat-macros = "0.2"
@@ -27,6 +31,7 @@ keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 lazy_static = "1.2"
 libc = "0.2"
 primitives = { git = "https://github.com/artemii235/parity-bitcoin.git" }
+rlp = { git = "https://github.com/paritytech/parity-common", rev = "0045887fecd2fec39e56c962a0b27e2caf3b9474" }
 rpc = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 script = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 serde = "1.0"
@@ -37,3 +42,4 @@ sha2 = "0.8"
 tokio-timer = "0.1"
 tokio = "0.1.13"
 unwrap = "1.2"
+web3 = { git = "https://github.com/artemii235/rust-web3" }

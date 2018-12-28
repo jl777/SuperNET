@@ -18,3 +18,8 @@
 //
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
+extern crate ethcore_transaction;
+extern crate ethereum_types;
+extern crate ethkey;
+
+pub mod eth;

@@ -434,32 +434,6 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
-#ifndef NOTETOMIC
-                    if (strcmp(coin, "ETOMIC") == 0 && LP_RTsmartbalance(ptr) < 20 * SATOSHIDEN) {
-                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
-                            return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
-                        }
-                    }
-
-                    if (ptr->etomic[0] != 0) {
-                        if (is_valid_address(ptr->etomic) == 0) {
-                            return(clonestr("{\"error\":\"'etomic' field is not valid address!\"}"));
-                        }
-
-                        struct iguana_info *etomic_coin = LP_coinsearch("ETOMIC");
-                        if (etomic_coin->inactive != 0) {
-                            return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
-                        }
-
-                        if (ptr->decimals == 0 && strcmp(coin, "ETH") != 0) {
-                            extern void *LP_eth_client;
-                            ptr->decimals = get_erc20_decimals(ptr->etomic, LP_eth_client);
-                            if (ptr->decimals == 0) {
-                                return(clonestr("{\"error\":\"Could not get token decimals or token has zero decimals which is not supported!\"}"));
-                            }
-                        }
-                    }
-#endif
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         cJSON *array;
@@ -585,14 +559,6 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));
             }
-#ifndef NOTETOMIC
-            else if ( strcmp(method,"eth_withdraw") == 0 )
-            {
-                if ( (ptr= LP_coinsearch(coin)) != 0 ) {
-                    return LP_eth_withdraw(ptr, argjson);
-                }
-            }
-#endif
             else if ( strcmp(method,"setconfirms") == 0 )
             {
                 int32_t n;

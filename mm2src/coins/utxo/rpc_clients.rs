@@ -568,27 +568,23 @@ fn electrum_connect(
         .map(move |stream| {
             let (sink, stream) = Bytes.framed(stream).split();
 
-            thread::spawn(|| {
-                CORE.spawn(|_| {
-                    rx.forward(sink).then(|result| {
-                        if let Err(e) = result {
-                            log!("failed to write to socket " [e])
-                        }
-                        Ok(())
-                    })
+            CORE.spawn(|_| {
+                rx.forward(sink).then(|result| {
+                    if let Err(e) = result {
+                        log!("failed to write to socket " [e])
+                    }
+                    Ok(())
                 })
             });
 
-            thread::spawn(||
-                CORE.spawn(|_| {
-                    stream
-                        .for_each(move |chunk| {
-                            electrum_process_chunk(&chunk, arc.clone());
-                            futures::future::ok(())
-                        })
-                        .map_err(|e| { log!([e]); () })
-                })
-            );
+            CORE.spawn(|_| {
+                stream
+                    .for_each(move |chunk| {
+                        electrum_process_chunk(&chunk, arc.clone());
+                        futures::future::ok(())
+                    })
+                    .map_err(|e| { log!([e]); () })
+            });
             tx
         })
         .map_err(|e| ERRL!("{}", e))

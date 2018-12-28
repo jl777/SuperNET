@@ -12,10 +12,6 @@ set(MM_LIBS
         ssl
     )
 
-if(DEFINED ETOMIC)
-    set(MM_SOURCES ${MM_SOURCES} LP_etomic.c)
-endif()
-
 if(WIN32)
 link_directories(${CMAKE_SOURCE_DIR}/marketmaker_depends/curl/build_msvc_2015_win64/lib/Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/pthread-win32/bin/x64_MSVC2015.Release ${CMAKE_SOURCE_DIR}/marketmaker_depends/nanomsg/build_msvc_2015_win64/Release)
 set(MM_LIBS ${MM_LIBS} nanomsg)
