@@ -9,7 +9,6 @@ build_script:
 - cmd: marketmaker_build_etomic.cmd
 test_script:
   - cargo test
-  - cargo test --package etomicrs
 cache:
   - marketmaker_depends
 

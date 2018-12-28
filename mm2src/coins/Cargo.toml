@@ -17,7 +17,7 @@ chain = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 common = { path = "../common" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
 ethcore-transaction = { git = "https://github.com/artemii235/parity-ethereum.git" }
-ethereum-types = "~0.3"
+ethereum-types = "~0.4"
 ethkey = { git = "https://github.com/artemii235/parity-ethereum.git" }
 # Waiting for https://github.com/rust-lang/rust/issues/54725 to use on Stable.
 #enum_dispatch = "0.1"

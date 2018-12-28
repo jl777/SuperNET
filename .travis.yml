@@ -40,7 +40,6 @@ script:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - cargo build -vv --color never 2>&1 | grep --line-buffered -v '     Running `rustc --' | grep --line-buffered -v '       Fresh'
 - cargo test
-- cargo test --package etomicrs
 - mv target/debug/mm2 marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG
 before_deploy:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`

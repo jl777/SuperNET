@@ -303,7 +303,7 @@ dependencies = [
  "common 0.1.0",
  "ethabi 6.0.0 (git+https://github.com/artemii235/ethabi)",
  "ethcore-transaction 0.1.0 (git+https://github.com/artemii235/parity-ethereum.git)",
- "ethereum-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethkey 0.3.0 (git+https://github.com/artemii235/parity-ethereum.git)",
  "fomat-macros 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",

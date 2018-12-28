@@ -18,7 +18,6 @@ pipeline {
 export CC=gcc-5 CXX=g++-5
 cargo build -vv --color never 2>&1 | grep --line-buffered -v '     Running `rustc --' | grep --line-buffered -v '       Fresh'
 cargo test
-cargo test --package etomicrs
 '''
       }
     }

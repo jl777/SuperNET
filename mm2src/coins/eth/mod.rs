@@ -22,4 +22,6 @@ extern crate ethcore_transaction;
 extern crate ethereum_types;
 extern crate ethkey;
 
+use super::{MarketCoinOps, MmCoinEnum, TransactionFut, TransactionEnum};
+
 pub mod eth;

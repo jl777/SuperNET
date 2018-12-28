@@ -151,25 +151,6 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     my_address: Address,
 }
 
-/// Only ETH and ERC20 tokens are supported currently
-/// It's planned to support another ERC token standards
-enum EthTokenType {
-    /// The Ethereum itself or it's forks: ETC and others
-    Base,
-    /// ERC20 token: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
-    /// The string param defines to what base coin the token belongs (ETH, ETC or another fork)
-    Erc20(String)
-}
-
-struct EthCoin {
-    /// Default ETH decimals is 18 but tokens can have any number (even zero or > 18)
-    decimals: u8,
-    token_type: EthTokenType,
-    /// The address of Smart contract representing Alice side. Raw bytes form
-    alice_contract_address: Vec<u8>,
-    /// The address of Smart contract representing Bob side. Raw bytes form
-    bob_contract_address: Vec<u8>,
-}
 
 /// Generates unsigned transaction (TransactionInputSigner) from specified utxos and outputs.
 /// This function expects that utxos are sorted by amounts in ascending order
