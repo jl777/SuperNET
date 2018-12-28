@@ -174,7 +174,6 @@ fn local_start() -> LocalStart {local_start_impl}
 fn test_events() {
     let executable = unwrap! (env::args().next());
     let executable = unwrap! (Path::new (&executable) .canonicalize());
-    let mm_events_output = env::temp_dir().join ("test_events.mm_events.log");
     match var ("_MM2_TEST_EVENTS_MODE") {
         Ok (ref mode) if mode == "MM_EVENTS" => {
             log! ("test_events] Starting the `mm2 events`...");
@@ -182,7 +181,7 @@ fn test_events() {
         },
         _ => {
             let conf = json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"});
-            println! ("Starting the MarketMaker, similar to\n  gdb --args target/debug/mm2 '{}'\n  run", unwrap! (json::to_string (&conf)));
+            log! ("Starting the MarketMaker, similar to\n  gdb --args target/debug/mm2 '" (unwrap! (json::to_string (&conf))) "'\n  run");
             let mut mm = unwrap! (MarketMakerIt::start (
                 conf,
                 "5bfaeae675f043461416861c3558146bf7623526891d890dc96bc5e0e5dbc337".into(),
@@ -192,20 +191,22 @@ fn test_events() {
             let expected_bind = format! (">>>>>>>>> DEX stats {}:7783", mm.ip);
             unwrap! (mm.wait_for_log (22., &|log| log.contains (&expected_bind)));
 
-            println! ("Asking for a websocket endpoint with a stream of events…");
+            log! ("Asking for a websocket endpoint with a stream of events…");
             let (status, body, _headers) = unwrap! (mm.rpc (json! ({"userpass": mm.userpass, "method": "getendpoint"})));
             log! ({"test_events] getendpoint response: {:?}, {}", status, body});
             assert_eq! (status, StatusCode::OK);
             //let expected_endpoint = format! ("\"endpoint\":\"ws://{}:5555\"", mm.ip);
             assert! (body.contains ("\"endpoint\":\"ws://127.0.0.1:5555\""), "{}", body);
 
-            println! ("Starting 'mm2 events'…");
+            log! ("Starting 'mm2 events', " [executable] "…");
+            let mm_events_output = mm.folder.join ("mm2_events.log");
             let mut mm_events = RaiiKill::from_handle (unwrap! (cmd! (executable, "test_events", "--nocapture")
+                .dir (env::temp_dir())
                 .env ("_MM2_TEST_EVENTS_MODE", "MM_EVENTS")
                 .env ("MM2_UNBUFFERED_OUTPUT", "1")
                 .stderr_to_stdout().stdout (&mm_events_output) .start()));
 
-            println! ("Waiting for 'mm2 events' to print some interesting data, {:?}…", mm_events_output);
+            log! ("Waiting for 'mm2 events' to print some interesting data, " [mm_events_output] "…");
             let mm_events_output = RaiiDump {log_path: mm_events_output};
             let start = now_float();
             loop {
@@ -218,10 +219,9 @@ fn test_events() {
                 sleep (Duration::from_secs (1));
             }
 
-            println! ("Stopping MMs…");
+            log! ("Stopping MMs…");
             unwrap! (mm.stop());
             sleep (Duration::from_millis (100));
-            let _ = fs::remove_file (&mm_events_output.log_path);
         }
     }
 }
