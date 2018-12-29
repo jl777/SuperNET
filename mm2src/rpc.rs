@@ -28,6 +28,7 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::{c_char, c_void};
+use coins::{enable, electrum};
 use portfolio::lp_autoprice;
 use portfolio::prices::lp_fundvalue;
 use serde_json::{self as json, Value as Json};
@@ -41,8 +42,8 @@ use hex;
 use crate::lp_network::lp_queue_command;
 use crate::CJSON;
 
-mod commands;
-use self::commands::*;
+mod lp_commands;
+use self::lp_commands::*;
 
 mod lp_signatures;
 
@@ -195,6 +196,8 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
     DispatcherRes::Match (match &method[..] {  // Sorted alphanumerically (on the first latter) for readability.
         "autoprice" => lp_autoprice (ctx, req),
         "buy" => buy(&req),
+        "enable" => enable (ctx, req),
+        "electrum" => electrum (ctx, req),
         "eth_gas_price" => eth_gas_price(),
         "fundvalue" => lp_fundvalue (ctx, req, false),
         "help" => help(),

@@ -21,7 +21,6 @@
 pub mod rpc_clients;
 
 use base64::{encode_config as base64_encode, URL_SAFE};
-use bitcoin_rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
 use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
@@ -35,6 +34,7 @@ use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
 use primitives::hash::{H256, H512};
+use rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
@@ -48,7 +48,7 @@ use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
 use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, NativeClient};
-use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
+use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
 /// https://stackoverflow.com/a/37682288/8707622
@@ -151,7 +151,6 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     utxo_mutex: Mutex<()>,
     my_address: Address,
 }
-
 
 /// Generates unsigned transaction (TransactionInputSigner) from specified utxos and outputs.
 /// This function expects that utxos are sorted by amounts in ascending order
@@ -478,11 +477,7 @@ fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, Str
     Ok(try_s!(KeyPair::from_private(private)))
 }
 
-impl MarketCoinOps for UtxoCoin {
-    fn address(&self) -> Cow<str> {
-        self.0.my_address.to_string().into()
-    }
-
+impl SwapOps for UtxoCoin {
     fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
@@ -660,6 +655,12 @@ impl MarketCoinOps for UtxoCoin {
             transaction,
             redeem_script: vec![].into()
         }.into())
+    }
+}
+
+impl MarketCoinOps for UtxoCoin {
+    fn address(&self) -> Cow<str> {
+        self.0.my_address.to_string().into()
     }
 
     fn get_balance(&self) -> f64 { unimplemented!() }

@@ -1,5 +1,4 @@
 use base64::{encode_config as base64_encode, URL_SAFE};
-use bitcoin_rpc::v1::types::{H256 as H256Json, Transaction as RpcTransaction, Bytes as BytesJson, VerboseBlockClient};
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
 use common::{CORE, Timeout, slurp_req};
@@ -11,6 +10,7 @@ use hashbrown::HashMap;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::{AUTHORIZATION};
 use keys::Address;
+use rpc::v1::types::{H256 as H256Json, Transaction as RpcTransaction, Bytes as BytesJson, VerboseBlockClient};
 use script::{Builder};
 use serde_json::{self as json, Value as Json};
 use serialization::{deserialize};

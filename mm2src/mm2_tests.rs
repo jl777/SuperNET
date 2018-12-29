@@ -11,7 +11,6 @@ use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::env::{self, var};
 use std::ffi::CString;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::{from_utf8_unchecked};
 use std::thread::{self, sleep};

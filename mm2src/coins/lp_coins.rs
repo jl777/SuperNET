@@ -20,12 +20,8 @@
 
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
-#[macro_use] extern crate futures;
 #[macro_use] extern crate gstuff;
-#[macro_use] extern crate lazy_static;
-extern crate rpc as bitcoin_rpc;
 #[macro_use] extern crate serde_derive;
-extern crate sha2;
 #[macro_use] extern crate unwrap;
 
 use common::{bitcoin_ctx, bits256, lp, rpc_response, HyRes};
@@ -46,6 +42,7 @@ use std::sync::{Arc, Mutex};
 #[doc(hidden)]
 pub mod coins_tests;
 pub mod eth;
+use self::eth::{EthCoin};
 pub mod utxo;
 use self::utxo::{coin_from_iguana_info, ExtendedUtxoTx, UtxoCoin};
 
@@ -74,18 +71,8 @@ impl Deref for TransactionEnum {
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
-/// Operations that coins have independently from the MarketMaker.
-/// That is, things implemented by the coin wallets or public coin services.
-///
-/// Swap operations like `send_buyer_payment` are not present in coin operations by their nature.
-/// However these are just standard Hash/Time locked transactions that every coin supports.
-/// We don't need a public interface like `send_hash_time_locked_tx`, so it's more convenient for
-/// calling code (swap loops) to work with more abstract interface.
-pub trait MarketCoinOps: Debug + 'static {
-    fn address(&self) -> Cow<str>;
-
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
-
+/// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
+pub trait SwapOps {
     fn send_buyer_payment(
         &self,
         time_lock: u32,
@@ -134,6 +121,14 @@ pub trait MarketCoinOps: Debug + 'static {
         amount: f64
     ) -> TransactionFut;
 
+    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
+}
+
+/// Operations that coins have independently from the MarketMaker.
+/// That is, things implemented by the coin wallets or public coin services.
+pub trait MarketCoinOps {
+    fn address(&self) -> Cow<str>;
+
     fn get_balance(&self) -> f64;
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut;
@@ -167,7 +162,7 @@ pub trait IguanaInfo {
 /// integer amount depending on decimals.
 /// 
 /// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and garbage collection.
-pub trait MmCoin: MarketCoinOps + IguanaInfo {
+pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
     // `MmCoin` is an extension fulcrum for something that doesn't fit the `MarketCoinOps`. Practical examples:
     // name (might be required for some APIs, CoinMarketCap for instance);
     // enabled (a piece of MM-specific configuration);
@@ -178,7 +173,8 @@ pub trait MmCoin: MarketCoinOps + IguanaInfo {
 
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {
-    UtxoCoin (UtxoCoin)
+    UtxoCoin (UtxoCoin),
+    EthCoin (EthCoin)
 }
 
 impl From<UtxoCoin> for MmCoinEnum {
@@ -186,12 +182,18 @@ impl From<UtxoCoin> for MmCoinEnum {
         MmCoinEnum::UtxoCoin (c)
 }   }
 
+impl From<EthCoin> for MmCoinEnum {
+    fn from (c: EthCoin) -> MmCoinEnum {
+        MmCoinEnum::EthCoin (c)
+}   }
+
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for MmCoinEnum {
     type Target = MmCoin;
     fn deref (&self) -> &dyn MmCoin {
         match self {
-            &MmCoinEnum::UtxoCoin (ref c) => c
+            &MmCoinEnum::UtxoCoin (ref c) => c,
+            &MmCoinEnum::EthCoin (ref c) => c
 }   }   }
 
 struct CoinsContext {
@@ -723,8 +725,8 @@ fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
 
 pub fn enable (_ctx: MmArc, req: Json) -> HyRes {
     log! ("enable] " [=req]);  // TODO delme
-    panic! ("hi there");
-    rpc_response (500, "{}")
+    // XXX
+    rpc_response (200, "{}")
 }
 
 /// Enable a coin in the Electrum mode.
@@ -737,8 +739,10 @@ pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
     //  "port": Number(10022)
 
     let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
-    try_h! (lp_coininit (&ctx, ticker));
-    rpc_response (500, "{}")
+    //try_h! (lp_coininit (&ctx, ticker));
+    if let Err (err) = lp_coininit (&ctx, ticker) {log! ("lp_coininit error: " (err))}
+    // XXX
+    rpc_response (200, "{}")
 }
 
 /*
