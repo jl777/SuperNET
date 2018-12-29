@@ -303,5 +303,5 @@ pub fn enable_electrum (mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32)
         "ipaddr": ipaddr,
         "port": port
     })));
-    assert_eq! (electrum.0, StatusCode::OK);
+    assert_eq! (electrum.0, StatusCode::OK, "RPC «electrum» failed with status «{}»", electrum.0);
 }

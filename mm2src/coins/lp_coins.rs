@@ -28,7 +28,7 @@ extern crate rpc as bitcoin_rpc;
 extern crate sha2;
 #[macro_use] extern crate unwrap;
 
-use common::{bitcoin_ctx, bits256, lp};
+use common::{bitcoin_ctx, bits256, lp, rpc_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::now_ms;
@@ -149,12 +149,25 @@ pub trait MarketCoinOps: Debug + 'static {
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }
 
+/// Compatibility layer on top of `lp::iguana_info`.  
+/// Some of the coin information is kept in the old C `iguana_info` struct,
+/// we're going to port it eventually and consequently this trait should go away.
+pub trait IguanaInfo {
+    fn ticker<'a> (&'a self) -> &'a str;
+
+    fn iguana_info (&self) -> &'static mut lp::iguana_info {
+        let ticker = unwrap! (CString::new (self.ticker()));
+        let ii = common::for_c::LP_coinsearch (ticker.as_ptr());
+        unsafe {&mut *ii}
+    }
+}
+
 /// Common functions that every coin must implement to be exchanged on MM
 /// Amounts are f64, it's responsibility of particular implementation to convert it to
 /// integer amount depending on decimals.
 /// 
 /// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and garbage collection.
-pub trait MmCoin: MarketCoinOps {
+pub trait MmCoin: MarketCoinOps + IguanaInfo {
     // `MmCoin` is an extension fulcrum for something that doesn't fit the `MarketCoinOps`. Practical examples:
     // name (might be required for some APIs, CoinMarketCap for instance);
     // enabled (a piece of MM-specific configuration);
@@ -565,7 +578,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 /// and should be fixed on the call site.
 ///
 /// NB: As of now only a part of coin information has been ported to `MmCoinEnum`, as much as necessary to fix the SWAP in #233.
-///     We plan to port the rest of it later.
+///     We plan to port the rest of it later. Until then, it is accessible through the old `iguana_info` struct.
 fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
     let cctx = try_s! (CoinsContext::from_ctx (ctx));
     let mut coins = try_s! (cctx.coins.lock());
@@ -708,74 +721,27 @@ fn lp_coininit (ctx: &MmArc, ticker: &str) -> Result<MmCoinEnum, String> {
     Ok (coin)
 }
 
-/*
-uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath,uint8_t decimals)
-{
-    static void *ctx;
-    char *name2; uint16_t origport = port;
-    memset(coin,0,sizeof(*coin));
-    safecopy(coin->symbol,symbol,sizeof(coin->symbol));
-    if ( strcmp(symbol,"PART") == 0 )
-        coin->txversion = 160;
-    else coin->txversion = 1;
-    coin->updaterate = (uint32_t)time(NULL);
-    coin->isPoS = isPoS;
-    coin->taddr = taddr;
-    coin->wiftaddr = wiftaddr;
-    coin->longestchain = longestchain;
-    if ( (coin->txfee= txfee) > 0 && txfee < LP_MIN_TXFEE )
-        coin->txfee = LP_MIN_TXFEE;
-    coin->pubtype = pubtype;
-    coin->p2shtype = p2shtype;
-    coin->wiftype = wiftype;
-    coin->inactive = (uint32_t)time(NULL);
-    //coin->bussock = LP_coinbus(busport);
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    coin->ctx = ctx;
-    if ( assetname != 0 && strcmp(name,assetname) == 0 )
-    {
-        //printf("%s is assetchain\n",symbol);
-        if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
-            coin->isassetchain = 1;
-    }
-    if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
-        name2 = 0;
-    else name2 = name;
-    if ( strcmp(symbol,"XVG") == 0 || strcmp(symbol,"CLOAK") == 0 || strcmp(symbol,"PPC") == 0 || strcmp(symbol,"BCC") == 0 || strcmp(symbol,"ORB") == 0 )
-    {
-        coin->noimportprivkey_flag = 1;
-        printf("truncate importprivkey for %s\n",symbol);
-    }
-#ifndef FROM_JS
-    port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
-#endif
-    sprintf(coin->serverport,"127.0.0.1:%u",port);
-    if ( port != origport )
-        printf("set curl path for %s to %s\n",symbol,coin->serverport);
-    if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
-        coin->zcash = LP_IS_ZCASHPROTOCOL;
-    else if ( strcmp(symbol,"BCH") == 0 )
-    {
-        coin->zcash = LP_IS_BITCOINCASH;
-        //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
-    }
-    else if ( strcmp(symbol,"BTG") == 0 )
-    {
-        coin->zcash = LP_IS_BITCOINGOLD;
-        printf("set coin.%s <- LP_IS_BITCOINGOLD %d\n",symbol,coin->zcash);
-    }
-    else if ( strcmp(symbol,"CMM") == 0 )
-    {
-        coin->zcash = LP_IS_BITCOINCASH;
-        //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
-    }
-    coin->curl_handle = curl_easy_init();
-    portable_mutex_init(&coin->curl_mutex);
-    coin->decimals = decimals;
-    return(port);
+pub fn enable (_ctx: MmArc, req: Json) -> HyRes {
+    log! ("enable] " [=req]);  // TODO delme
+    panic! ("hi there");
+    rpc_response (500, "{}")
 }
 
+/// Enable a coin in the Electrum mode.
+pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
+    log! ("electrum] " [=req]);  // TODO delme
+
+    // {"coin": String("BEER"),
+    //  "ipaddr": String("electrum1.cipig.net"),
+    //  "method": String("electrum"),
+    //  "port": Number(10022)
+
+    let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
+    try_h! (lp_coininit (&ctx, ticker));
+    rpc_response (500, "{}")
+}
+
+/*
 int32_t LP_isdisabled(char *base,char *rel)
 {
     struct iguana_info *coin;
@@ -796,106 +762,6 @@ pub fn lp_coinfind (ctx: &MmArc, ticker: &str) -> Result<Option<MmCoinEnum>, Str
 }
 
 /*
-struct iguana_info *LP_coinfind(char *symbol)
-{
-    struct iguana_info *coin,cdata; int32_t isinactive,isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
-    if ( symbol == 0 || symbol[0] == 0 )
-        return(0);
-    if ( (coin= LP_coinsearch(symbol)) != 0 )
-        return(coin);
-    if ( (port= LP_rpcport(symbol)) == 0 )
-        return(0);
-    if ( (busport= LP_busport(port)) == 0 )
-        return(0);
-    isPoS = 0;
-    txfee = LP_MIN_TXFEE;
-    estimatedrate = 20;
-    pubtype = 60;
-    p2shtype = 85;
-    wiftype = 188;
-    assetname = "";
-    if ( strcmp(symbol,"BTC") == 0 )
-    {
-        txfee = 0;
-        estimatedrate = 300;
-        pubtype = 0;
-        p2shtype = 5;
-        wiftype = 128;
-        name = "bitcoin";
-    }
-    else if ( strcmp(symbol,"KMD") == 0 )
-        name = "komodo";
-    else return(0);
-    port = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0,0);
-    if ( port == 0 )
-        isinactive = 1;
-    else isinactive = 0;
-    if ( (coin= LP_coinadd(&cdata)) != 0 )
-    {
-        coin->inactive = isinactive * (uint32_t)time(NULL);
-        /*if ( strcmp(symbol,"KMD") == 0 )
-            coin->inactive = 0;
-        else*/ if ( strcmp(symbol,"BTC") == 0 )
-        {
-            coin->inactive = (uint32_t)time(NULL) * !IAMLP;
-            printf("BTC inactive.%u\n",coin->inactive);
-        }
-    }
-    return(coin);
-}
-
-// "coins":[{"coin":"<assetchain>", "rpcport":pppp}, {"coin":"LTC", "name":"litecoin", "rpcport":9332, "pubtype":48, "p2shtype":5, "wiftype":176, "txfee":100000 }]
-// {"coin":"HUSH", "name":"hush", "rpcport":8822, "taddr":28, "pubtype":184, "p2shtype":189, "wiftype":128, "txfee":10000 }
-
-struct iguana_info *LP_coincreate(cJSON *item)
-{
-    struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
-    if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
-    {
-        isPoS = jint(item,"isPoS");
-        txfee = j64bits(item,"txfee");
-        if ( (estimatedrate= jdouble(item,"estimatedrate")) == 0. )
-            estimatedrate = 20;
-        pubtype = juint(item,"pubtype");
-        if ( (p2shtype= juint(item,"p2shtype")) == 0 )
-            p2shtype = 85;
-        if ( (wiftype= juint(item,"wiftype")) == 0 )
-            wiftype = 188;
-        if ( (assetname= jstr(item,"asset")) != 0 )
-        {
-            name = assetname;
-            pubtype = 60;
-        }
-        else if ( (name= jstr(item,"name")) == 0 )
-            name = symbol;
-
-        uint8_t decimals = juint(item,"decimals");
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals) < 0 )
-        {
-            coin = LP_coinadd(&cdata);
-            coin->inactive = (uint32_t)time(NULL);
-        } else coin = LP_coinadd(&cdata);
-    } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
-        printf("SKIP %s, missing rpcport field in coins array\n",symbol);
-    if ( coin != 0 && item != 0 )
-    {
-        if ( strcmp("KMD",coin->symbol) != 0 )
-        {
-            if ( jobj(item,"active") != 0 )
-                coin->inactive = !jint(item,"active");
-            else
-            {
-                if ( IAMLP == 0 || assetname != name )
-                    coin->inactive = (uint32_t)time(NULL);
-                else coin->inactive = 0;
-            }
-        } else coin->inactive = 0;
-    }
-    if ( 0 && coin != 0 && coin->inactive != 0 )
-        printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
-    return(0);
-}
-
 void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr)
 {
     uint8_t addrtype,rmd160[20]; struct iguana_info *src,*dest;

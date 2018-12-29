@@ -48,7 +48,7 @@ use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
 use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, NativeClient};
-use super::{MarketCoinOps, MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
+use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
 /// https://stackoverflow.com/a/37682288/8707622
@@ -103,6 +103,7 @@ impl Transaction for ExtendedUtxoTx {
 
 #[derive(Debug)]
 pub struct UtxoCoinImpl {  // pImpl idiom.
+    ticker: String,
     /// https://en.bitcoin.it/wiki/List_of_address_prefixes
     /// https://github.com/jl777/coins/blob/master/coins
     pub_addr_prefix: u8,
@@ -725,6 +726,9 @@ impl MarketCoinOps for UtxoCoin {
     }
 }
 
+impl IguanaInfo for UtxoCoin {
+    fn ticker<'a> (&'a self) -> &'a str {&self.ticker[..]}
+}
 impl MmCoin for UtxoCoin {}
 
 fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
@@ -775,6 +779,7 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, S
     let overwintered = info.txversion >= 3;
 
     let coin = UtxoCoinImpl {
+        ticker: try_s! (unsafe {CStr::from_ptr (info.symbol.as_ptr())} .to_str()) .into(),
         decimals: 8,
         rpc_client: UtxoRpcClientEnum::Native(NativeClient {
             uri: format!("http://{}", uri),
