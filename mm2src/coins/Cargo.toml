@@ -31,7 +31,7 @@ keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 lazy_static = "1.2"
 libc = "0.2"
 primitives = { git = "https://github.com/artemii235/parity-bitcoin.git" }
-rlp = { git = "https://github.com/paritytech/parity-common", rev = "0045887fecd2fec39e56c962a0b27e2caf3b9474" }
+rlp = { git = "https://github.com/paritytech/parity-common" }
 rpc = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 script = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 serde = "1.0"

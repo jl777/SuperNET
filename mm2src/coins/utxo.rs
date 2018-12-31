@@ -492,6 +492,7 @@ impl SwapOps for UtxoCoin {
         time_lock: u32,
         pub_a0: &[u8],
         pub_b0: &[u8],
+        _taker_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
     ) -> TransactionFut {
@@ -513,6 +514,7 @@ impl SwapOps for UtxoCoin {
         time_lock: u32,
         pub_a0: &[u8],
         pub_b0: &[u8],
+        _maker_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
     ) -> TransactionFut {
@@ -534,6 +536,7 @@ impl SwapOps for UtxoCoin {
         buyer_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
+        taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
@@ -567,6 +570,7 @@ impl SwapOps for UtxoCoin {
         seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
+        _maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
@@ -599,6 +603,7 @@ impl SwapOps for UtxoCoin {
         &self,
         buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
+        _maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
@@ -630,6 +635,7 @@ impl SwapOps for UtxoCoin {
         &self,
         seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
+        _taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};

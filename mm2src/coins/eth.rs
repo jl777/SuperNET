@@ -18,10 +18,15 @@
 //
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
+use bitcrypto::dhash160;
 use common::CORE;
-use ethereum_types::Address;
+use ethabi::{Contract, Token};
+use ethcore_transaction::{ Action, Transaction };
+use ethereum_types::{Address, U256, H160};
 use ethkey::{ KeyPair, Secret, Public, public_to_address };
 use futures::Future;
+use gstuff::now_ms;
+use keys::generator::{Random, Generator};
 use std::borrow::Cow;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -67,6 +72,7 @@ impl SwapOps for EthCoin {
         time_lock: u32,
         pub_a0: &[u8],
         pub_b0: &[u8],
+        taker_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: f64
     ) -> TransactionFut {
@@ -78,6 +84,7 @@ impl SwapOps for EthCoin {
         time_lock: u32,
         pub_a0: &[u8],
         pub_b0: &[u8],
+        maker_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
     ) -> TransactionFut {
@@ -89,6 +96,7 @@ impl SwapOps for EthCoin {
         buyer_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
+        taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         unimplemented!();
@@ -99,6 +107,7 @@ impl SwapOps for EthCoin {
         seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
+        maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         unimplemented!();
@@ -108,6 +117,7 @@ impl SwapOps for EthCoin {
         &self,
         buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
+        maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         unimplemented!();
@@ -117,6 +127,7 @@ impl SwapOps for EthCoin {
         &self,
         seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
+        taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
         unimplemented!();
@@ -164,4 +175,96 @@ fn web3_from_core() {
 
     let web3 = Web3::new(transport);
     log!([web3.eth().block_number().wait().unwrap()]);
+
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let key_pair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+    log!([key_pair.address()]);
+    let nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
+    let gas_price = U256::exp10(10);
+    let value = U256::exp10(17);
+    let gas = U256::from(21000);
+    let action = Action::Call(key_pair.address());
+    let data = vec![].into();
+
+    let tx = Transaction {
+        nonce,
+        value,
+        action,
+        data,
+        gas,
+        gas_price,
+    };
+
+    let signed = tx.sign(key_pair.secret(), None);
+    log!([web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&signed).to_vec())).wait().unwrap()]);
+}
+
+#[test]
+fn test_send_and_refund_eth_payment() {
+    let contract_address = Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94");
+
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let id = Random::new(0).generate().unwrap();
+
+    let web3 = Web3::new(transport);
+    log!([web3.eth().block_number().wait().unwrap()]);
+
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let key_pair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+    log!([key_pair.address()]);
+
+    let abi = Contract::load(SWAP_CONTRACT_ABI.as_bytes()).unwrap();
+    let function = abi.function("ethPayment").unwrap();
+    let data = function.encode_input(&[
+        Token::FixedBytes(id.private().secret.to_vec()),
+        Token::Address(key_pair.address()),
+        Token::FixedBytes(dhash160(&secret_hex).to_vec()),
+        Token::Uint(U256::from(now_ms() / 1000 + 1000))
+    ]).unwrap();
+
+    let nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
+    let gas_price = U256::exp10(10);
+    let value = U256::exp10(17);
+    let gas = U256::from(150000);
+    let action = Action::Call(contract_address.clone());
+
+    let tx = Transaction {
+        nonce,
+        value,
+        action,
+        data,
+        gas,
+        gas_price,
+    };
+
+    let signed = tx.sign(key_pair.secret(), None);
+    log!([web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&signed).to_vec())).wait().unwrap()]);
+
+    let function = abi.function("receiverSpend").unwrap();
+    let nonce = web3.eth().parity_next_nonce(key_pair.address()).wait().unwrap();
+    let gas_price = U256::exp10(10);
+    let value = U256::exp10(17);
+    let gas = U256::from(150000);
+    let action = Action::Call(contract_address.clone());
+
+    let data = function.encode_input(&[
+        Token::FixedBytes(id.private().secret.to_vec()),
+        Token::Uint(value),
+        Token::FixedBytes(secret_hex.clone()),
+        Token::Address(H160::default()),
+        Token::Address(key_pair.address()),
+    ]).unwrap();
+
+    let tx = Transaction {
+        nonce,
+        value: U256::from(0),
+        action,
+        data,
+        gas,
+        gas_price,
+    };
+    let signed = tx.sign(key_pair.secret(), None);
+    log!([web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&signed).to_vec())).wait().unwrap()]);
 }

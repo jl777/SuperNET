@@ -80,6 +80,7 @@ pub trait SwapOps {
         time_lock: u32,
         pub_a0: &[u8],
         pub_b0: &[u8],
+        taker_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: f64
     ) -> TransactionFut;
@@ -89,6 +90,7 @@ pub trait SwapOps {
         time_lock: u32,
         pub_a0: &[u8],
         pub_b0: &[u8],
+        maker_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: f64,
     ) -> TransactionFut;
@@ -98,6 +100,7 @@ pub trait SwapOps {
         buyer_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
+        taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut;
 
@@ -106,6 +109,7 @@ pub trait SwapOps {
         seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
+        maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut;
 
@@ -113,6 +117,7 @@ pub trait SwapOps {
         &self,
         buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
+        maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut;
 
@@ -120,6 +125,7 @@ pub trait SwapOps {
         &self,
         seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
+        taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut;
 }
