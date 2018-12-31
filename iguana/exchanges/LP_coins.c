@@ -385,9 +385,6 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     char *name2; uint16_t origport = port;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
-    if ( strcmp(symbol,"PART") == 0 )
-        coin->txversion = 160;
-    else coin->txversion = txversion;
     coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
@@ -423,7 +420,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     if ( port != origport )
         printf("set curl path for %s to %s\n",symbol,coin->serverport);
-    if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
+    if ( strcmp(symbol,"KMD") == 0 || strcmp(symbol,"BEER") == 0 || strcmp(symbol,"PIZZA") == 0 || coin->isassetchain != 0 || taddr != 0 )
         coin->zcash = LP_IS_ZCASHPROTOCOL;
     else if ( strcmp(symbol,"BCH") == 0 )
     {
@@ -443,6 +440,15 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->curl_handle = curl_easy_init();
     portable_mutex_init(&coin->curl_mutex);
     coin->decimals = decimals;
+    if ( strcmp(symbol,"PART") == 0 ) {
+        coin->txversion = 160;
+    } else if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 ) {
+        coin->txversion = 4;
+    } else if ( strcmp(name,"BEER") == 0 || strcmp("PIZZA",name) == 0 || strcmp("KMD",name) == 0 ) {
+        coin->txversion = 4;
+    } else {
+        coin->txversion = txversion;
+    }
     return(port);
 }
 
@@ -541,8 +547,6 @@ struct iguana_info *LP_coincreate(cJSON *item)
         {
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);
-            if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 )
-                coin->txversion = 4;
         } else coin = LP_coinadd(&cdata);
     } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
         printf("SKIP %s, missing rpcport field in coins array\n",symbol);

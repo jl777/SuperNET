@@ -31,26 +31,18 @@ int32_t LP_etomic_wait_for_confirmation(char *txId)
     return(waitForConfirmation(txId));
 }
 
-void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output)
-{
-    char *address = pubKey2Addr(pubkey);
-    strcpy(output, address);
-    free(address);
-}
-
 char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 {
-    char amount[100], secretKey[70], dexaddr[50];
+    char amount[100], secretKey[70];
     satoshisToWei(amount, LP_DEXFEE(swap->I.alicerealsat));
     swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
     uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
-    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(sendEth(dexaddr, amount, secretKey, 1, 0, 0, 1));
+        return(sendEth(INSTANTDEX_ETHADDR, amount, secretKey, 1, 0, 0, 1));
     } else {
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
-        return(sendErc20(swap->I.alicetomic, dexaddr, amount, secretKey, 1, 0, 0, 1, alicecoin->decimals));
+        return(sendErc20(swap->I.alicetomic, INSTANTDEX_ETHADDR, amount, secretKey, 1, 0, 0, 1, alicecoin->decimals));
     }
 }
 
@@ -66,10 +58,8 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         return(0);
     }
 
-    char dexaddr[50];
-    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        if (compareAddresses(data.to, dexaddr) == 0) {
+        if (compareAddresses(data.to, INSTANTDEX_ETHADDR) == 0) {
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
@@ -88,7 +78,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         }
         char weiAmount[70];
         satoshisToWei(weiAmount, LP_DEXFEE(swap->I.alicerealsat));
-        return(verifyAliceErc20FeeData(swap->I.alicetomic, dexaddr, weiAmount, data.input, alicecoin->decimals));
+        return(verifyAliceErc20FeeData(swap->I.alicetomic, INSTANTDEX_ETHADDR, weiAmount, data.input, alicecoin->decimals));
     }
 }
 
