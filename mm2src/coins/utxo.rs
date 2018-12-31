@@ -487,27 +487,6 @@ impl SwapOps for UtxoCoin {
         self.send_outputs_from_my_address(vec![output], vec![].into())
     }
 
-    fn send_buyer_payment(
-        &self,
-        time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        priv_bn_hash: &[u8],
-        amount: f64,
-    ) -> TransactionFut {
-        let redeem_script = try_fus!(payment_script(
-            time_lock,
-            priv_bn_hash,
-            &try_fus!(Public::from_slice(pub_a0)),
-            &try_fus!(Public::from_slice(pub_b0)),
-        ));
-        let output = TransactionOutput {
-            value: f64_to_sat(amount, self.decimals),
-            script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
-        };
-        self.send_outputs_from_my_address(vec![output], redeem_script.into())
-    }
-
     fn send_seller_payment(
         &self,
         time_lock: u32,
@@ -521,6 +500,27 @@ impl SwapOps for UtxoCoin {
             priv_bn_hash,
             &try_fus!(Public::from_slice(pub_b0)),
             &try_fus!(Public::from_slice(pub_a0)),
+        ));
+        let output = TransactionOutput {
+            value: f64_to_sat(amount, self.decimals),
+            script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
+        };
+        self.send_outputs_from_my_address(vec![output], redeem_script.into())
+    }
+
+    fn send_buyer_payment(
+        &self,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        priv_bn_hash: &[u8],
+        amount: f64,
+    ) -> TransactionFut {
+        let redeem_script = try_fus!(payment_script(
+            time_lock,
+            priv_bn_hash,
+            &try_fus!(Public::from_slice(pub_a0)),
+            &try_fus!(Public::from_slice(pub_b0)),
         ));
         let output = TransactionOutput {
             value: f64_to_sat(amount, self.decimals),

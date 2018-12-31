@@ -73,14 +73,7 @@ pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
 /// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
 pub trait SwapOps {
-    fn send_buyer_payment(
-        &self,
-        time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        priv_bn_hash: &[u8],
-        amount: f64,
-    ) -> TransactionFut;
+    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_seller_payment(
         &self,
@@ -89,6 +82,15 @@ pub trait SwapOps {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64
+    ) -> TransactionFut;
+
+    fn send_buyer_payment(
+        &self,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        priv_bn_hash: &[u8],
+        amount: f64,
     ) -> TransactionFut;
 
     fn send_seller_spends_buyer_payment(
@@ -120,8 +122,6 @@ pub trait SwapOps {
         b_priv_0: &[u8],
         amount: f64
     ) -> TransactionFut;
-
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 }
 
 /// Operations that coins have independently from the MarketMaker.

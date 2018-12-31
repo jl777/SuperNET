@@ -62,17 +62,6 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_buyer_payment(
-        &self,
-        time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        priv_bn_hash: &[u8],
-        amount: f64,
-    ) -> TransactionFut {
-        unimplemented!();
-    }
-
     fn send_seller_payment(
         &self,
         time_lock: u32,
@@ -80,6 +69,17 @@ impl SwapOps for EthCoin {
         pub_b0: &[u8],
         priv_bn_hash: &[u8],
         amount: f64
+    ) -> TransactionFut {
+        unimplemented!();
+    }
+
+    fn send_buyer_payment(
+        &self,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        priv_bn_hash: &[u8],
+        amount: f64,
     ) -> TransactionFut {
         unimplemented!();
     }
