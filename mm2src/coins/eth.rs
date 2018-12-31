@@ -20,10 +20,11 @@
 //
 use bitcrypto::dhash160;
 use common::CORE;
+use secp256k1::key::PublicKey;
 use ethabi::{Contract, Token};
 use ethcore_transaction::{ Action, Transaction };
-use ethereum_types::{Address, U256, H160};
-use ethkey::{ KeyPair, Secret, Public, public_to_address };
+use ethereum_types::{Address, U256, H160, H512};
+use ethkey::{ KeyPair, Secret, Public, public_to_address, SECP256K1 };
 use futures::Future;
 use gstuff::now_ms;
 use keys::generator::{Random, Generator};
@@ -33,6 +34,7 @@ use std::sync::Arc;
 use web3::transports::{ Http };
 use web3::{ self, Web3 };
 
+use super::utxo::compressed_key_pair_from_bytes;
 use super::{IguanaInfo, MarketCoinOps, MmCoin, SwapOps, TransactionFut, TransactionEnum};
 
 const SWAP_CONTRACT_ABI: &'static str = r#"[{"constant":false,"inputs":[{"name":"_id","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_secret","type":"bytes32"},{"name":"_tokenAddress","type":"address"},{"name":"_sender","type":"address"}],"name":"receiverSpend","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"payments","outputs":[{"name":"paymentHash","type":"bytes20"},{"name":"lockTime","type":"uint64"},{"name":"state","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_id","type":"bytes32"},{"name":"_receiver","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"ethPayment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_id","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_paymentHash","type":"bytes20"},{"name":"_tokenAddress","type":"address"},{"name":"_receiver","type":"address"}],"name":"senderRefund","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_id","type":"bytes32"},{"name":"_amount","type":"uint256"},{"name":"_tokenAddress","type":"address"},{"name":"_receiver","type":"address"},{"name":"_secretHash","type":"bytes20"},{"name":"_lockTime","type":"uint64"}],"name":"erc20Payment","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"name":"id","type":"bytes32"}],"name":"PaymentSent","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"id","type":"bytes32"},{"indexed":false,"name":"secret","type":"bytes32"}],"name":"ReceiverSpent","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"id","type":"bytes32"}],"name":"SenderRefunded","type":"event"}]"#;
@@ -267,4 +269,16 @@ fn test_send_and_refund_eth_payment() {
     };
     let signed = tx.sign(key_pair.secret(), None);
     log!([web3.eth().send_raw_transaction(web3::types::Bytes(rlp::encode(&signed).to_vec())).wait().unwrap()]);
+}
+
+#[test]
+fn fee_addr_from_compressed_pubkey() {
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let private = compressed_key_pair_from_bytes(&secret_hex, 0).unwrap();
+    log!([private]);
+    let pubkey = private.public();
+    let pubkey = hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06").unwrap();
+    let pubkey = PublicKey::from_slice(&SECP256K1, &pubkey).unwrap();
+    let eth_public = Public::from(&pubkey.serialize_vec(&SECP256K1, false)[1..65]);
+    log!([public_to_address(&eth_public)]);
 }

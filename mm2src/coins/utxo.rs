@@ -464,7 +464,7 @@ impl UtxoCoin {
     }
 }
 
-fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, String> {
+pub fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, String> {
     if raw.len() != 32 {
         return ERR!("Invalid raw priv key len {}", raw.len());
     }

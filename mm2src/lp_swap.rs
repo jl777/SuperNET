@@ -1034,6 +1034,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     (now_ms() / 1000) as u32 + 2000,
                     &(*swap.basilisk_swap).I.pubA0,
                     &(*swap.basilisk_swap).I.pubB0,
+                    &(*swap.basilisk_swap).persistent_other33,
                     &(*swap.basilisk_swap).I.secretBn,
                     payment_amount,
                 );
@@ -1076,6 +1077,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     swap.buyer_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
                     &reversed_secret,
+                    &(*swap.basilisk_swap).persistent_other33,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
                 status.status(SWAP_STATUS, "Waiting for Taker fee to be spent…");
@@ -1208,6 +1210,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     (now_ms() / 1000) as u32 + 1000,
                     &(*swap.basilisk_swap).I.pubA0,
                     &(*swap.basilisk_swap).I.pubB0,
+                    &(*swap.basilisk_swap).persistent_other33,
                     &(*swap.basilisk_swap).I.secretBn,
                     payment_amount,
                 );
@@ -1254,6 +1257,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     swap.seller_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
                     &swap.secret,
+                    &(*swap.basilisk_swap).persistent_other33,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
                 let _transaction = match spend_fut.wait() {
@@ -1267,6 +1271,7 @@ pub fn buyer_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let refund_fut = swap.buyer_coin.send_buyer_refunds_payment(
                     swap.buyer_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
+                    &(*swap.basilisk_swap).persistent_other33,
                     dstr((*swap.basilisk_swap).I.alicesatoshis)
                 );
 
