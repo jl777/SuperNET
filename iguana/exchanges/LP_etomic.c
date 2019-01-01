@@ -59,7 +59,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
     }
 
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        if (compareAddresses(data.to, INSTANTDEX_ETHADDR) == 0) {
+        if (compareAddresses(data.to, INSTANTDEX_ETHADDR) == 0 && compareAddresses(data.to, INSTANTDEX_OLD_ETHADDR) == 0) {
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
@@ -78,7 +78,9 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         }
         char weiAmount[70];
         satoshisToWei(weiAmount, LP_DEXFEE(swap->I.alicerealsat));
-        return(verifyAliceErc20FeeData(swap->I.alicetomic, INSTANTDEX_ETHADDR, weiAmount, data.input, alicecoin->decimals));
+        uint8_t verify_new = verifyAliceErc20FeeData(swap->I.alicetomic, INSTANTDEX_ETHADDR, weiAmount, data.input, alicecoin->decimals);
+        uint8_t verify_old = verifyAliceErc20FeeData(swap->I.alicetomic, INSTANTDEX_OLD_ETHADDR, weiAmount, data.input, alicecoin->decimals);
+        return((uint8_t)(verify_new || verify_old));
     }
 }
 

@@ -113,6 +113,11 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define INSTANTDEX_INSURANCEDIV 777
 #define INSTANTDEX_PUBKEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
 #define INSTANTDEX_ETHADDR "0xd8997941dd1346e9231118d5685d866294f59e5b"
+// Artem Pikulin:
+// This is invalid address got from zero pubkey because of error in pubKey2Addr(char* pubKey)
+// Going to keep it for a while because some nodes might be not updated and still send fee to old address.
+// I think it's better to allow swap to continue even if fee sent to wrong address.
+#define INSTANTDEX_OLD_ETHADDR "0x3f17f1962B36e491b30A40b2405849e597Ba5FB5"
 #define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
 #define JUMBLR_RMD160 "5177f8b427e5f47342a4b8ab5dac770815d4389e"
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
