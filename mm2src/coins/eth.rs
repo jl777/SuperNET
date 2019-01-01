@@ -138,7 +138,7 @@ impl SwapOps for EthCoin {
 
 impl MarketCoinOps for EthCoin {
     fn address(&self) -> Cow<str> {
-        self.my_address.to_string().into()
+        format!("{:#02x}", self.my_address).into()
     }
 
     fn get_balance(&self) -> f64 {
@@ -170,6 +170,12 @@ impl IguanaInfo for EthCoin {
     fn ticker<'a> (&'a self) -> &'a str {&self.ticker[..]}
 }
 impl MmCoin for EthCoin {}
+
+fn addr_from_raw_pubkey(pubkey: &[u8]) -> Result<Address, String> {
+    let pubkey = try_s!(PublicKey::from_slice(&SECP256K1, &pubkey));
+    let eth_public = Public::from(&pubkey.serialize_vec(&SECP256K1, false)[1..65]);
+    Ok(public_to_address(&eth_public))
+}
 
 #[test]
 fn web3_from_core() {
@@ -272,13 +278,16 @@ fn test_send_and_refund_eth_payment() {
 }
 
 #[test]
-fn fee_addr_from_compressed_pubkey() {
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let private = compressed_key_pair_from_bytes(&secret_hex, 0).unwrap();
-    log!([private]);
-    let pubkey = private.public();
+fn test_addr_from_raw_pubkey() {
     let pubkey = hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06").unwrap();
-    let pubkey = PublicKey::from_slice(&SECP256K1, &pubkey).unwrap();
-    let eth_public = Public::from(&pubkey.serialize_vec(&SECP256K1, false)[1..65]);
-    log!([public_to_address(&eth_public)]);
+    let address = addr_from_raw_pubkey(&pubkey).unwrap();
+    assert_eq!(format!("{:#02x}", address), "0xd8997941dd1346e9231118d5685d866294f59e5b");
+
+    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+    let address = addr_from_raw_pubkey(&pubkey).unwrap();
+    assert_eq!(format!("{:#02x}", address), "0xbab36286672fbdc7b250804bf6d14be0df69fa29");
+
+    let pubkey = hex::decode("04031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f34bfe18b698c3d8ebff1e240fb52f38b44326c534eb2064968f873772baab789e").unwrap();
+    let address = addr_from_raw_pubkey(&pubkey).unwrap();
+    assert_eq!(format!("{:#02x}", address), "0xbab36286672fbdc7b250804bf6d14be0df69fa29");
 }
