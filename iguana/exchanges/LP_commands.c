@@ -717,6 +717,7 @@ version\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     ptr->inactive = 0;
+                    ptr->cache_history = juint(argjson, "cache_history");
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }

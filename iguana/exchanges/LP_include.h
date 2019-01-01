@@ -337,8 +337,9 @@ struct iguana_info
     uint64_t txfee,do_autofill_merge;
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
-    uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
+    uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms,cache_history;
     char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64],validateaddress[64];
+    struct LP_tx_history_item *tx_history;
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
@@ -348,7 +349,6 @@ struct iguana_info
     void *curl_handle; portable_mutex_t curl_mutex;
     bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
-    struct LP_tx_history_item *tx_history;
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t height; uint32_t vout:30,suppress:1,pad:1; };

@@ -1502,7 +1502,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         cJSON_Delete(balance);
     }
 #endif
-    if (coin->electrum != 0 && cur == 0) {
+    if (coin->cache_history > 0 && coin->electrum != 0 && cur == 0) {
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_electrum_txhistory_loop,(void *)coin) != 0 )
         {
             printf("error launching LP_electrum_tx_history_loop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
