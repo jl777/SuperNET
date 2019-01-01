@@ -21,6 +21,7 @@
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
+#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate unwrap;
 
@@ -42,7 +43,7 @@ use std::sync::{Arc, Mutex};
 #[doc(hidden)]
 pub mod coins_tests;
 pub mod eth;
-use self::eth::{EthCoin};
+use self::eth::{EthCoin, SignedEthTransaction};
 pub mod utxo;
 use self::utxo::{coin_from_iguana_info, ExtendedUtxoTx, UtxoCoin};
 
@@ -53,7 +54,8 @@ pub trait Transaction: Debug + 'static {
 
 #[derive(Clone, Debug)]
 pub enum TransactionEnum {
-    ExtendedUtxoTx (ExtendedUtxoTx)
+    ExtendedUtxoTx (ExtendedUtxoTx),
+    Eth (SignedEthTransaction)
 }
 
 impl From<ExtendedUtxoTx> for TransactionEnum {
@@ -61,19 +63,25 @@ impl From<ExtendedUtxoTx> for TransactionEnum {
         TransactionEnum::ExtendedUtxoTx (t)
 }   }
 
+impl From<SignedEthTransaction> for TransactionEnum {
+    fn from (t: SignedEthTransaction) -> TransactionEnum {
+        TransactionEnum::Eth (t)
+}   }
+
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for TransactionEnum {
     type Target = Transaction;
     fn deref (&self) -> &dyn Transaction {
         match self {
-            &TransactionEnum::ExtendedUtxoTx (ref t) => t
+            &TransactionEnum::ExtendedUtxoTx (ref t) => t,
+            &TransactionEnum::Eth (ref t) => t,
 }   }   }
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
 /// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
 pub trait SwapOps {
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
+    fn send_buyer_fee(&self, fee_addr: &[u8], amount: u64) -> TransactionFut;
 
     fn send_seller_payment(
         &self,
@@ -82,7 +90,7 @@ pub trait SwapOps {
         pub_b0: &[u8],
         taker_addr: &[u8],
         priv_bn_hash: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut;
 
     fn send_buyer_payment(
@@ -92,7 +100,7 @@ pub trait SwapOps {
         pub_b0: &[u8],
         maker_addr: &[u8],
         priv_bn_hash: &[u8],
-        amount: f64,
+        amount: u64,
     ) -> TransactionFut;
 
     fn send_seller_spends_buyer_payment(
@@ -101,7 +109,7 @@ pub trait SwapOps {
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         taker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut;
 
     fn send_buyer_spends_seller_payment(
@@ -110,7 +118,7 @@ pub trait SwapOps {
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         maker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut;
 
     fn send_buyer_refunds_payment(
@@ -118,7 +126,7 @@ pub trait SwapOps {
         buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         maker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut;
 
     fn send_seller_refunds_payment(
@@ -126,7 +134,7 @@ pub trait SwapOps {
         seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         taker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut;
 }
 

@@ -230,10 +230,6 @@ fn generate_transaction(
     })
 }
 
-fn f64_to_sat(amount: f64, decimals: u8) -> u64 {
-    (amount * 10u64.pow(decimals as u32) as f64) as u64
-}
-
 fn payment_script(
     time_lock: u32,
     secret_hash: &[u8],
@@ -478,10 +474,10 @@ pub fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair,
 }
 
 impl SwapOps for UtxoCoin {
-    fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
+    fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: u64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
-            value: f64_to_sat(amount, self.decimals),
+            value: amount,
             script_pubkey: Builder::build_p2pkh(&address.hash).to_bytes()
         };
         self.send_outputs_from_my_address(vec![output], vec![].into())
@@ -494,7 +490,7 @@ impl SwapOps for UtxoCoin {
         pub_b0: &[u8],
         _taker_addr: &[u8],
         priv_bn_hash: &[u8],
-        amount: f64,
+        amount: u64,
     ) -> TransactionFut {
         let redeem_script = try_fus!(payment_script(
             time_lock,
@@ -503,7 +499,7 @@ impl SwapOps for UtxoCoin {
             &try_fus!(Public::from_slice(pub_a0)),
         ));
         let output = TransactionOutput {
-            value: f64_to_sat(amount, self.decimals),
+            value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
         };
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
@@ -516,7 +512,7 @@ impl SwapOps for UtxoCoin {
         pub_b0: &[u8],
         _maker_addr: &[u8],
         priv_bn_hash: &[u8],
-        amount: f64,
+        amount: u64,
     ) -> TransactionFut {
         let redeem_script = try_fus!(payment_script(
             time_lock,
@@ -525,7 +521,7 @@ impl SwapOps for UtxoCoin {
             &try_fus!(Public::from_slice(pub_b0)),
         ));
         let output = TransactionOutput {
-            value: f64_to_sat(amount, self.decimals),
+            value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
         };
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
@@ -537,7 +533,7 @@ impl SwapOps for UtxoCoin {
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         taker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut {
         let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
@@ -571,7 +567,7 @@ impl SwapOps for UtxoCoin {
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         _maker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut {
         let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
@@ -604,7 +600,7 @@ impl SwapOps for UtxoCoin {
         buyer_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         _maker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut {
         let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
@@ -636,7 +632,7 @@ impl SwapOps for UtxoCoin {
         seller_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         _taker_addr: &[u8],
-        amount: f64
+        amount: u64
     ) -> TransactionFut {
         let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
