@@ -29,7 +29,7 @@
 #define DPOW_VERSION 0x1782
 #define DPOW_UTXOSIZE dpow_utxosize(coin->symbol) //10000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 1200
+#define DPOW_DURATION 300
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
@@ -109,7 +109,7 @@ struct dpow_recvdata { uint64_t recvmask,bestmask; int8_t bestk; };
 
 struct dpow_block
 {
-    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM;
+    bits256 hashmsg,desttxid,srctxid,beacon,commit,MoM,mysrcutxo,mydestutxo;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
@@ -135,6 +135,8 @@ struct pax_transaction
     char symbol[16],coinaddr[64]; uint8_t rmd160[20],shortflag;
 };
 
+#define DPOW_MAXIPBITS 512
+
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; uint64_t lastrecvmask;
@@ -146,7 +148,7 @@ struct dpow_info
     struct pax_transaction *PAX;
     uint32_t fullCCid;
     portable_mutex_t paxmutex,dexmutex;
-    uint32_t ipbits[128],numipbits;
+    uint32_t ipbits[DPOW_MAXIPBITS],numipbits;
     struct dpow_block **blocks,*currentbp;
 };
 
@@ -170,6 +172,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);
 void komodo_assetcoins(int32_t fullnode,uint64_t mask);
 int32_t iguana_isnotarychain(char *symbol);
+int32_t dpow_smallopreturn(char *symbol);
 
 cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);

@@ -287,7 +287,7 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     }
     if ( n == 0 || A == 0 || a == 0 )
         return(0);
-    if ( A > 5*a || a > 5*A || a > n*20 || A > n*20 ) // unlikely it is a real wif
+    if ( A > 5*a || a > 5*A || a > n*26 || A > n*26 ) // unlikely it is a real wif
     {
         printf("reject wif %s due to n.%d a.%d A.%d (%d %d %d %d)\n",wifstr,n,a,A,A > 5*a,a < 5*A,a > n*20,A > n*20);
         return(0);
@@ -352,6 +352,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 {
     //static uint32_t counter;
     bits256 privkey,userpub,zero,userpass,checkkey,tmpkey; char str[65],str2[65],tmpstr[128]; cJSON *retjson; uint8_t tmptype,sig[128]; int32_t notarized,siglen; uint64_t nxtaddr;
+    uint8_t rmd160[20];
     if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(coin->symbol,passphrase) > 0 )
     {
         wifstr = passphrase;
@@ -399,7 +400,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 #ifndef NOTETOMIC
     if ( coin->etomic[0] != 0 )
     {
-        uint8_t check64[64],checktype,checkrmd160[20],rmd160[20]; char checkaddr[64],checkaddr2[64];
+        uint8_t check64[64],checktype,checkrmd160[20]; char checkaddr[64],checkaddr2[64];
         if ( LP_etomic_priv2pub(check64,privkey) == 0 )
         {
             if ( memcmp(check64,coin->pubkey33+1,32) == 0 )
@@ -434,8 +435,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         coin->counter++;
         memcpy(G.LP_pubsecp,coin->pubkey33,33);
         bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,coin->wiftype);
-        bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
-        LP_privkeyadd(privkey,G.LP_myrmd160);
+        bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,rmd160,coin->smartaddr);
+        LP_privkeyadd(privkey,rmd160);
         G.LP_privkey = privkey;
         if ( G.counter++ == 0 )
         {
@@ -503,7 +504,7 @@ void verus_utxos(struct iguana_info *coin,char *coinaddr)
 
 char *verusblocks()
 {
-    bits256 hash,txid; uint8_t script[44]; double value,avestakedsize,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num10,num17,num20,num16,num23000,numpow,numpos,num,locked,height,i,m,n,z,numstaked,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
+    bits256 hash,txid; uint8_t script[44]; double value,avestakedsize,stakedval,RTu3sum,powsum,supply,possum,histo[1280],myhisto[1280]; int32_t num10,num17,num20,num16,num23000,numpow,numpos,num,locked,height,i,m,n,z,gotblock,numstaked,posflag,npos,npow; char hashstr[64],firstaddr[64],stakingaddr[64],*addr0,*lastaddr,*hexstr; cJSON *blockjson,*txobj,*vouts,*vout,*vout1,*sobj,*addresses,*txs;
     struct iguana_info *coin = LP_coinfind("VRSC");
     if ( coin == 0 )
         return(clonestr("{\"error\":\"VRSC not active\"}"));
@@ -532,6 +533,7 @@ char *verusblocks()
                 value = 0;
                 posflag = 0;
                 locked = 0;
+                gotblock = 0;
                 lastaddr = addr0 = "";
                 memset(script,0,sizeof(script));
                 memset(firstaddr,0,sizeof(firstaddr));
@@ -546,6 +548,13 @@ char *verusblocks()
                             value = jdouble(vout,"value");
                             supply += value;
                             hexstr = 0;
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 )
+                            {
+                                if ( strcmp(hexstr,"2102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ac") == 0 || strcmp(hexstr,"2102aef0f54a967031f4c63b36d12741fbb9ca39713baedfff7f8c0d0d8ee14ee0ebac") == 0 || strcmp(hexstr,"76a914cc39e9e699f86b03a5cf1d7f2a0b411cf652641788ac") == 0 || strcmp(hexstr,"76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac") == 0 )
+                                {
+                                    gotblock = 1;
+                                }
+                            }
                             if ( m == 2 && (vout1= jitem(vouts,1)) != 0 )
                             {
                                 // 6a2001039bbc0bb17576a9149a3af738444dd86b55c86752247aec2e7deb842688ac
@@ -565,7 +574,7 @@ char *verusblocks()
                                     locked = ((int32_t)script[6] << 16) + ((int32_t)script[5] << 8) + script[4];
                                     addr0 = firstaddr;
                                 } else printf("unexpected vout1.(%s) (%s).%d %.8f\n",jprint(vout1,0),hexstr!=0?hexstr:"",(int32_t)strlen(hexstr),jdouble(vout1,"value"));
-                            } else printf("coinbase without opret (%s)\n",jprint(vouts,0));
+                            } //else printf("coinbase without opret (%s)\n",jprint(vouts,0));
                         }
                     }
                     free_json(txobj);
@@ -629,7 +638,7 @@ char *verusblocks()
                     numpow++;
                     if ( num < 100 && strcmp(coinaddr,addr0) == 0 )
                         printf("ht.%-5d lock.%-7d PoW coinbase.(%s) %.8f\n",height,locked,addr0,value);
-                    if ( strcmp(coinaddr,addr0) == 0 )
+                    if ( strcmp(coinaddr,addr0) == 0 || gotblock != 0 )
                         powsum += value, npow++;
                 }
                 histo[locked/1000] += value;
@@ -705,6 +714,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode)
 {
     static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;
+    uint8_t pubkey33[100];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -739,8 +749,11 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     memset(&G,0,sizeof(G));
     G.netid = netid;
     safecopy(G.seednode,seednode,sizeof(G.seednode));
+
     vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
+    bitcoin_pubkey33(ctx, pubkey33, G.LP_privkey);
+    calc_rmd160_sha256(G.LP_myrmd160, pubkey33, 33);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));

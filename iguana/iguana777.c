@@ -1066,6 +1066,7 @@ void iguana_nameset(char name[64],char *symbol,cJSON *json)
 
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin)
 {
+    // printf("[Decker] iguana_setcoin: [%s] %s", symbol, cJSON_Print(json));
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct supernet_info *myinfo = SuperNET_MYINFO(0);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64]; cJSON *peers;
@@ -1134,7 +1135,15 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->enableCACHE = 1;//0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
-    if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
+	
+	coin->sapling = 0;
+	if (jobj(json, "sapling") != 0)
+	{
+		coin->sapling = juint(json, "sapling");
+		printf("[Decker] %s sapling = %d\n", symbol, coin->sapling);
+	}
+    
+	if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = IGUANA_DEFAULT_POLLTIMEOUT;
     coin->active = juint(json,"active");
     if ( (coin->minconfirms= minconfirms) == 0 )

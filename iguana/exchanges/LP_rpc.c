@@ -137,6 +137,12 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
 
 uint64_t LP_RTsmartbalance(struct iguana_info *coin)
 {
+#ifndef NOTETOMIC
+    if (coin->etomic[0] != 0) {
+        int error = 0;
+        return LP_etomic_get_balance(coin, coin->smartaddr, &error);
+    }
+#endif
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value; bits256 zero;
     valuesum = 0;
     memset(zero.bytes,0,sizeof(zero));
@@ -248,14 +254,17 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( bits256_nonz(txid) == 0 )
         return(cJSON_Parse("{\"error\":\"null txid\"}"));
-    if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts )
-    {
-        if ( tx->outpoints[vout].spendheight > 0 )
-            return(0);
-        //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
-    }
     if ( coin->electrum == 0 )
     {
+        if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts )
+        {
+            if ( tx->outpoints[vout].spendheight > 0 )
+            {
+                //fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
+                return(0);
+            }
+            //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
+        }
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
         return(bitcoin_json(coin,"gettxout",buf));
     }
@@ -275,7 +284,10 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
             {
                 if ( up->spendheight > 0 )
+                {
+                    //fprintf(stderr,"LP_gettxout (%s) up->spendheight > 0\n",coinaddr);
                     return(0);
+                }
                 //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
             memset(zero.bytes,0,sizeof(zero));
@@ -401,6 +413,8 @@ int32_t LP_address_isvalid(char *symbol,char *address)
     int32_t isvalid = 0; cJSON *retjson;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
+    if ( strcmp(symbol,"BCH") == 0 && (address[0] == '1' || address[0] == '3') )
+        return(-1);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
         if ( jobj(retjson,"isvalid") != 0 && is_cJSON_True(jobj(retjson,"isvalid")) != 0 )
@@ -1137,7 +1151,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[1024]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     memset(notarizedhashp,0,sizeof(*notarizedhashp));
-    if ( (txobj= LP_gettx("LP_txhasnotarization",coin->symbol,txid,0)) != 0 )
+    if ( (txobj= LP_gettx("LP_txhasnotarization",coin->symbol,txid,1)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
         {
@@ -1149,7 +1163,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
                     vin = jitem(vins,i);
                     spenttxid = jbits256(vin,"txid");
                     spentvout = jint(vin,"vout");
-                    if ( (spentobj= LP_gettx("LP_txhasnotarization",coin->symbol,spenttxid,0)) != 0 )
+                    if ( (spentobj= LP_gettx("LP_txhasnotarization",coin->symbol,spenttxid,1)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
                         {

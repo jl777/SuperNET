@@ -7,16 +7,13 @@ copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.lib 
 copy marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread.lib
 
 echo [#2] Prepare build etomic needed things ...
-git submodule init
 git submodule update --init --recursive
 cd cpp-ethereum
-rem git submodule init
-rem git submodule update --init
-call scripts\install_deps.bat 
+call scripts\install_deps.bat
 cd ..
 mkdir build_win64_release
 cd build_win64_release
-cmake .. -G "Visual Studio 14 2015 Win64"
+cmake .. -G "Visual Studio 14 2015 Win64" -DMM_VERSION="%APPVEYOR_BUILD_VERSION%"
 
 rem Steps before build:
 rem 
