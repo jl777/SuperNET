@@ -69,7 +69,7 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_seller_payment(
+    fn send_maker_payment(
         &self,
         time_lock: u32,
         pub_a0: &[u8],
@@ -93,7 +93,7 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_seller_spends_taker_payment(
+    fn send_maker_spends_taker_payment(
         &self,
         taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
@@ -104,9 +104,9 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_taker_spends_seller_payment(
+    fn send_taker_spends_maker_payment(
         &self,
-        seller_payment_tx: TransactionEnum,
+        maker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         maker_addr: &[u8],
@@ -125,9 +125,9 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_seller_refunds_payment(
+    fn send_maker_refunds_payment(
         &self,
-        seller_payment_tx: TransactionEnum,
+        maker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         taker_addr: &[u8],
         amount: f64

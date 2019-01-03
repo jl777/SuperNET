@@ -36,8 +36,6 @@
 //! OP_ENDIF
 //! 
 
-// TODO: Rename Seller to Maker everywhere.
-
 /******************************************************************************
  * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
@@ -876,20 +874,20 @@ unsafe impl Send for Swap {}
 // 3) Preferably untangling them from the portions of the shared state that are not relevant to them,
 // that is, avoiding the "big ball of mud" and "object orgy" antipatterns of a single shared state structure.
 
-/// Contains all available states of Atomic swap of both sides (seller and taker)
+/// Contains all available states of Atomic swap of both sides (maker and taker)
 enum AtomicSwapState {
     PubkeyExchange,
     SendTakerFee,
     WaitTakerFee {sending_f: Box<Stream<Item=(), Error=String>>},
-    SendSellerPayment,
-    WaitSellerPayment {sending_f: Box<Stream<Item=(), Error=String>>},
+    SendMakerPayment,
+    WaitMakerPayment {sending_f: Box<Stream<Item=(), Error=String>>},
     SendTakerPayment,
     WaitTakerPayment {sending_f: Box<Stream<Item=(), Error=String>>},
     SpendTakerPayment,
     WaitTakerPaymentSpent {sending_f: Box<Stream<Item=(), Error=String>>},
-    SpendSellerPayment,
+    SpendMakerPayment,
     RefundTakerPayment,
-    RefundSellerPayment,
+    RefundMakerPayment,
 }
 
 pub struct AtomicSwap {
@@ -899,11 +897,11 @@ pub struct AtomicSwap {
     buffer: Vec<u8>,
     buffer_len: u64,
     taker_coin: MmCoinEnum,
-    seller_coin: MmCoinEnum,
+    maker_coin: MmCoinEnum,
     taker_payment: Option<TransactionEnum>,
-    seller_payment: Option<TransactionEnum>,
+    maker_payment: Option<TransactionEnum>,
     taker: bits256,
-    seller: bits256,
+    maker: bits256,
     session: String,
     secret: Vec<u8>,
 }
@@ -913,7 +911,7 @@ impl AtomicSwap {
         basilisk_swap: *mut lp::basilisk_swap,
         ctx: MmArc,
         taker: bits256,
-        seller: bits256,
+        maker: bits256,
         session: String
     ) -> Result<AtomicSwap, String> {
         let alice_coin_ptr = lp::LP_coinfind((*basilisk_swap).I.alicestr.as_mut_ptr());
@@ -928,18 +926,18 @@ impl AtomicSwap {
             buffer_len: 2 * 1024 * 1024,
             buffer: vec![0; 2 * 1024 * 1024],
             taker_coin: alice_coin,
-            seller_coin: bob_coin,
+            maker_coin: bob_coin,
             taker_payment: None,
-            seller_payment: None,
+            maker_payment: None,
             taker,
-            seller,
+            maker,
             session,
             secret: vec![]
         })
     }
 }
 
-pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
+pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     // NB: We can communicate the SWAP status to UI progress indicators via documented tags,
     // cf. https://github.com/artemii235/SuperNET/commit/d66ab944bfd8c5e8fb17f1d36ac303797156b88e#r31676734
     // (but first we need to establish a use case for such indication with the UI guys,
@@ -1024,12 +1022,12 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-2003, "!tx_from_raw_bytes: "(err)),
                 };
 
-                AtomicSwapState::SendSellerPayment
+                AtomicSwapState::SendMakerPayment
             },
-            AtomicSwapState::SendSellerPayment => unsafe {
+            AtomicSwapState::SendMakerPayment => unsafe {
                 let payment_amount = dstr((*swap.basilisk_swap).I.bobsatoshis);
 
-                let payment_fut = swap.seller_coin.send_seller_payment(
+                let payment_fut = swap.maker_coin.send_maker_payment(
                     (now_ms() / 1000) as u32 + 2000,
                     &(*swap.basilisk_swap).I.pubA0,
                     &(*swap.basilisk_swap).I.pubB0,
@@ -1041,11 +1039,11 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 status.status(SWAP_STATUS, "Waiting for the Maker deposit to land…");
                 let transaction = match payment_fut.wait() {
                     Ok(t) => t,
-                    Err(err) => err!(-2006, "!send_seller_payment: "(err))
+                    Err(err) => err!(-2006, "!send_maker_payment: "(err))
                 };
 
-                let sending_f = send!("seller-payment", transaction.to_raw_bytes());
-                swap.seller_payment = Some(transaction.clone());
+                let sending_f = send!("maker-payment", transaction.to_raw_bytes());
+                swap.maker_payment = Some(transaction.clone());
 
                 AtomicSwapState::WaitTakerPayment {sending_f}
             },
@@ -1072,7 +1070,7 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             AtomicSwapState::SpendTakerPayment => unsafe {
                 let mut reversed_secret = (*swap.basilisk_swap).I.privBn.bytes.to_vec();
                 reversed_secret.reverse();
-                let spend_fut = swap.taker_coin.send_seller_spends_taker_payment(
+                let spend_fut = swap.taker_coin.send_maker_spends_taker_payment(
                     swap.taker_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
                     &reversed_secret,
@@ -1082,11 +1080,11 @@ pub fn seller_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 status.status(SWAP_STATUS, "Waiting for Taker fee to be spent…");
                 let _transaction = match spend_fut.wait() {
                     Ok(t) => t,
-                    Err(err) => err!(-2007, "!send_seller_spends_taker_payment: "(err))
+                    Err(err) => err!(-2007, "!send_maker_spends_taker_payment: "(err))
                 };
                 return Ok(());
             },
-            AtomicSwapState::RefundSellerPayment => {
+            AtomicSwapState::RefundMakerPayment => {
                 // TODO cover this case
                 return Ok(());
             },
@@ -1105,7 +1103,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
     macro_rules! send {
         ($subj: expr, $slice: expr) => {
-            send (&swap.ctx, swap.seller, fomat!(($subj) '@' (swap.session)), $slice.into())
+            send (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.session)), $slice.into())
         };
     }
     macro_rules! recv {
@@ -1153,7 +1151,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 //     cf. https://discordapp.com/channels/@me/472006550194618379/521651286861414410
                 //     (Preferred refactoring here might be to separate choosei parsing and verification from updating the swap,
                 //      performing the parsing and verification in the `validator`).
-                let payload = recv!(sending_f, "choosei-reply", "for the seller to confirm the key choice", 30, -1001, {|_: &[u8]| Ok(())});
+                let payload = recv!(sending_f, "choosei-reply", "for the maker to confirm the key choice", 30, -1001, {|_: &[u8]| Ok(())});
                 let rc = lp::LP_choosei_verify(swap.basilisk_swap, payload.as_ptr() as *mut u8, payload.len() as i32);
                 if rc != 0 {err!(-1001, "LP_choosei_verify != 0: "(rc))}
 
@@ -1185,19 +1183,19 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 let sending_f = send!("taker-fee", transaction.to_raw_bytes());
 
-                AtomicSwapState::WaitSellerPayment {sending_f}
+                AtomicSwapState::WaitMakerPayment {sending_f}
             },
-            AtomicSwapState::WaitSellerPayment {sending_f} => unsafe {
-                let payload = recv!(sending_f, "seller-payment", "for Maker deposit", 600, -1005, {|_: &[u8]| Ok(())});
-                let seller_payment = match swap.seller_coin.tx_from_raw_bytes(&payload) {
+            AtomicSwapState::WaitMakerPayment {sending_f} => unsafe {
+                let payload = recv!(sending_f, "maker-payment", "for Maker deposit", 600, -1005, {|_: &[u8]| Ok(())});
+                let maker_payment = match swap.maker_coin.tx_from_raw_bytes(&payload) {
                     Ok(p) => p,
-                    Err(err) => err!(-1005, "Error parsing the 'seller-payment': "(err))
+                    Err(err) => err!(-1005, "Error parsing the 'maker-payment': "(err))
                 };
-                swap.seller_payment = Some(seller_payment.clone());
+                swap.maker_payment = Some(maker_payment.clone());
 
                 status.status(SWAP_STATUS, "Waiting for the confirmation of the Maker payment…");
-                if let Err(err) = swap.seller_coin.wait_for_confirmations(seller_payment, (*swap.basilisk_swap).I.bobconfirms).wait() {
-                    err!(-1005, "!seller_coin.wait_for_confirmations: "(err))
+                if let Err(err) = swap.maker_coin.wait_for_confirmations(maker_payment, (*swap.basilisk_swap).I.bobconfirms).wait() {
+                    err!(-1005, "!maker_coin.wait_for_confirmations: "(err))
                 }
 
                 AtomicSwapState::SendTakerPayment
@@ -1238,7 +1236,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                         let secret = transaction.extract_secret();
                         if let Ok(bytes) = secret {
                             swap.secret = bytes;
-                            AtomicSwapState::SpendSellerPayment
+                            AtomicSwapState::SpendMakerPayment
                         } else {
                             AtomicSwapState::RefundTakerPayment
                         }
@@ -1249,11 +1247,11 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     }
                 }
             },
-            AtomicSwapState::SpendSellerPayment => unsafe {
-                // TODO: A human-readable label for send_taker_spends_seller_payment.
-                status.status(SWAP_STATUS, "send_taker_spends_seller_payment…");
-                let spend_fut = swap.seller_coin.send_taker_spends_seller_payment(
-                    swap.seller_payment.clone().unwrap(),
+            AtomicSwapState::SpendMakerPayment => unsafe {
+                // TODO: A human-readable label for send_taker_spends_maker_payment.
+                status.status(SWAP_STATUS, "send_taker_spends_maker_payment…");
+                let spend_fut = swap.maker_coin.send_taker_spends_maker_payment(
+                    swap.maker_payment.clone().unwrap(),
                     &(*swap.basilisk_swap).I.myprivs[0].bytes,
                     &swap.secret,
                     &(*swap.basilisk_swap).persistent_other33,

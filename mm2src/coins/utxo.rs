@@ -487,7 +487,7 @@ impl SwapOps for UtxoCoin {
         self.send_outputs_from_my_address(vec![output], vec![].into())
     }
 
-    fn send_seller_payment(
+    fn send_maker_payment(
         &self,
         time_lock: u32,
         pub_a0: &[u8],
@@ -531,7 +531,7 @@ impl SwapOps for UtxoCoin {
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
     }
 
-    fn send_seller_spends_taker_payment(
+    fn send_maker_spends_taker_payment(
         &self,
         taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
@@ -565,15 +565,15 @@ impl SwapOps for UtxoCoin {
         }.into())
     }
 
-    fn send_taker_spends_seller_payment(
+    fn send_taker_spends_maker_payment(
         &self,
-        seller_payment_tx: TransactionEnum,
+        maker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         b_priv_n: &[u8],
         _maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
-        let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
+        let prev_tx = match maker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
@@ -631,14 +631,14 @@ impl SwapOps for UtxoCoin {
         }.into())
     }
 
-    fn send_seller_refunds_payment(
+    fn send_maker_refunds_payment(
         &self,
-        seller_payment_tx: TransactionEnum,
+        maker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         _taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
-        let prev_tx = match seller_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
+        let prev_tx = match maker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,

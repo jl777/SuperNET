@@ -32,7 +32,7 @@ use std::time::Duration;
 use std::thread;
 
 use crate::lp_network::lp_queue_command;
-use crate::lp_swap::{AtomicSwap, taker_swap_loop, seller_swap_loop};
+use crate::lp_swap::{taker_swap_loop, maker_swap_loop, AtomicSwap};
 
 #[link="c"]
 extern {
@@ -462,9 +462,9 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                 let session = String::from (unwrap! (CStr::from_ptr (pair_str.as_ptr()) .to_str()));
                 log!("Seller loop");
                 move || {
-                    let mut seller_swap = AtomicSwap::new(b_swap.0, ctx, alice, lp::bits256::default(), session).unwrap();
-                    log!("Start seller swap");
-                    match seller_swap_loop(&mut seller_swap) {
+                    let mut maker_swap = AtomicSwap::new(b_swap.0, ctx, alice, lp::bits256::default(), session).unwrap();
+                    log!("Entering the maker_swap_loop");
+                    match maker_swap_loop(&mut maker_swap) {
                         Ok(_) => log!("Swap finished successfully"),
                         Err(e) => log!("Swap finished with error " [e])
                     };
