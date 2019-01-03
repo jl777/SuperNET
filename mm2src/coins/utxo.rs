@@ -478,7 +478,7 @@ pub fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair,
 }
 
 impl SwapOps for UtxoCoin {
-    fn send_buyer_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
+    fn send_taker_fee(&self, fee_pub_key: &[u8], amount: f64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
         let output = TransactionOutput {
             value: f64_to_sat(amount, self.decimals),
@@ -509,7 +509,7 @@ impl SwapOps for UtxoCoin {
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
     }
 
-    fn send_buyer_payment(
+    fn send_taker_payment(
         &self,
         time_lock: u32,
         pub_a0: &[u8],
@@ -531,15 +531,15 @@ impl SwapOps for UtxoCoin {
         self.send_outputs_from_my_address(vec![output], redeem_script.into())
     }
 
-    fn send_seller_spends_buyer_payment(
+    fn send_seller_spends_taker_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
-        let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
+        let prev_tx = match taker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
@@ -565,7 +565,7 @@ impl SwapOps for UtxoCoin {
         }.into())
     }
 
-    fn send_buyer_spends_seller_payment(
+    fn send_taker_spends_seller_payment(
         &self,
         seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
@@ -599,14 +599,14 @@ impl SwapOps for UtxoCoin {
         }.into())
     }
 
-    fn send_buyer_refunds_payment(
+    fn send_taker_refunds_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         _maker_addr: &[u8],
         amount: f64
     ) -> TransactionFut {
-        let prev_tx = match buyer_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
+        let prev_tx = match taker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,

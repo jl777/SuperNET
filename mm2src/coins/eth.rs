@@ -65,7 +65,7 @@ pub struct EthCoin(Arc<EthCoinImpl>);
 impl Deref for EthCoin {type Target = EthCoinImpl; fn deref (&self) -> &EthCoinImpl {&*self.0}}
 
 impl SwapOps for EthCoin {
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut {
+    fn send_taker_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut {
         unimplemented!();
     }
 
@@ -81,7 +81,7 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_buyer_payment(
+    fn send_taker_payment(
         &self,
         time_lock: u32,
         pub_a0: &[u8],
@@ -93,9 +93,9 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_seller_spends_buyer_payment(
+    fn send_seller_spends_taker_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         taker_addr: &[u8],
@@ -104,7 +104,7 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_buyer_spends_seller_payment(
+    fn send_taker_spends_seller_payment(
         &self,
         seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
@@ -115,9 +115,9 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_buyer_refunds_payment(
+    fn send_taker_refunds_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         maker_addr: &[u8],
         amount: f64

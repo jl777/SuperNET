@@ -416,7 +416,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
 
     // ensure the swap started
-    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("Start buyer swap")));
+    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("Entering the taker_swap_loop")));
     unwrap! (mm_bob.wait_for_log (20., &|log| log.contains ("Start seller swap")));
 
     // wait for swap to complete on both sides

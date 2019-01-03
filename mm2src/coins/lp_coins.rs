@@ -73,7 +73,7 @@ pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
 /// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
 pub trait SwapOps {
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
+    fn send_taker_fee(&self, fee_addr: &[u8], amount: f64) -> TransactionFut;
 
     fn send_seller_payment(
         &self,
@@ -85,7 +85,7 @@ pub trait SwapOps {
         amount: f64
     ) -> TransactionFut;
 
-    fn send_buyer_payment(
+    fn send_taker_payment(
         &self,
         time_lock: u32,
         pub_a0: &[u8],
@@ -95,16 +95,16 @@ pub trait SwapOps {
         amount: f64,
     ) -> TransactionFut;
 
-    fn send_seller_spends_buyer_payment(
+    fn send_seller_spends_taker_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         b_priv_n: &[u8],
         taker_addr: &[u8],
         amount: f64
     ) -> TransactionFut;
 
-    fn send_buyer_spends_seller_payment(
+    fn send_taker_spends_seller_payment(
         &self,
         seller_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
@@ -113,9 +113,9 @@ pub trait SwapOps {
         amount: f64
     ) -> TransactionFut;
 
-    fn send_buyer_refunds_payment(
+    fn send_taker_refunds_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         maker_addr: &[u8],
         amount: f64
@@ -770,7 +770,7 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
     let block_count = unsafe {lp::LP_getheight (&mut notarized, ii)};
     // TODO, #156: Warn the user when we know that the wallet is under-initialized.
     // TODO: `LP_getheight` returns 0 when the coin is being initialized in the electrum mode.
-    log! ([=block_count]);
+    log! ([=ticker] if !coins_en["etomic"].is_null() {", etomic"} ", " [=method] ", " [=block_count]);
     if block_count <= 0 {
         ii.inactive = (now_ms() / 1000) as u32
     } else {
