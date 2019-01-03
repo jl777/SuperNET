@@ -188,6 +188,8 @@ fn generate_bindings() {
             "LP_unspents_load",
             "LP_dPoW_request",
             "LP_coincreate",
+            "LP_conflicts_find",
+            "LP_electrumserver",
             "LP_coinjson",
             "LP_portfolio_trade",
             "LP_portfolio_order",

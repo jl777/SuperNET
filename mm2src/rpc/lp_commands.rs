@@ -634,58 +634,7 @@ pub fn sell(json: &Json) ->  HyRes {
 /*
         else if ( coin[0] != 0 )
         {
-            if ( strcmp(method,"enable") == 0 )
-            {
-                //*
-                if ( (ptr= LP_coinsearch(coin)) != 0 )
-                {
-                    if ( ptr->userpass[0] == 0 && ptr->etomic[0] == 0 )
-                    {
-                        cJSON *retjson = cJSON_CreateObject();
-                        jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
-                        jaddstr(retjson,"coin",coin);
-                        return(jprint(retjson,1));
-                    }
-#ifndef NOTETOMIC
-                    if (strcmp(coin, "ETOMIC") == 0 && LP_RTsmartbalance(ptr) < 20 * SATOSHIDEN) {
-                        if (get_etomic_from_faucet(ptr->smartaddr) != 1) {
-                            return(clonestr("{\"error\":\"Could not get ETOMIC from faucet!\"}"));
-                        }
-                    }
-
-                    if (ptr->etomic[0] != 0) {
-                        if (is_valid_address(ptr->etomic) == 0) {
-                            return(clonestr("{\"error\":\"'etomic' field is not valid address!\"}"));
-                        }
-
-                        struct iguana_info *etomic_coin = LP_coinsearch("ETOMIC");
-                        if (etomic_coin->inactive != 0) {
-                            return(clonestr("{\"error\":\"Enable ETOMIC first to use ETH/ERC20!\"}"));
-                        }
-
-                        if (ptr->decimals == 0 && strcmp(coin, "ETH") != 0) {
-                            extern void *LP_eth_client;
-                            ptr->decimals = get_erc20_decimals(ptr->etomic, LP_eth_client);
-                            if (ptr->decimals == 0) {
-                                return(clonestr("{\"error\":\"Could not get token decimals or token has zero decimals which is not supported!\"}"));
-                            }
-                        }
-                    }
-#endif
-                    if ( LP_conflicts_find(ptr) == 0 )
-                    {
-                        cJSON *array;
-                        ptr->inactive = 0;
-                        LP_unspents_load(coin,ptr->smartaddr);
-                        if ( strcmp(ptr->symbol,"KMD") == 0 )
-                            LP_importaddress("KMD",BOTS_BONDADDRESS);
-                        array = cJSON_CreateArray();
-                        jaddi(array,LP_coinjson(ptr,0));
-                        return(jprint(array,1));
-                    } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
-                } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
-            }
-            else if ( strcmp(method,"disable") == 0 )
+            if ( strcmp(method,"disable") == 0 )
             {
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
@@ -736,14 +685,6 @@ pub fn sell(json: &Json) ->  HyRes {
                     jaddnum(retjson,"txfee",dstr(txfee));
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
-            }
-            else if ( strcmp(method,"electrum") == 0 )
-            {
-                if ( (ptr= LP_coinsearch(coin)) != 0 )
-                {
-                    ptr->inactive = 0;
-                    return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
-                } else return(clonestr("{\"error\":\"Unknown coin ID. Make sure the coin is defined in `coins`.\"}"));
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
@@ -845,7 +786,7 @@ pub fn sell(json: &Json) ->  HyRes {
                 jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG1);
                 return(jprint(retjson,1));
             }
-            */*/*/
+            */*/
 
 pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
     let coin = match req["coin"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'coin' argument in request")};

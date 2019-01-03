@@ -422,32 +422,7 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
         }
         else if ( coin[0] != 0 )
         {
-            if ( strcmp(method,"enable") == 0 )
-            {
-                //*
-                if ( (ptr= LP_coinsearch(coin)) != 0 )
-                {
-                    if ( ptr->userpass[0] == 0 && ptr->etomic[0] == 0 )
-                    {
-                        cJSON *retjson = cJSON_CreateObject();
-                        jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
-                        jaddstr(retjson,"coin",coin);
-                        return(jprint(retjson,1));
-                    }
-                    if ( LP_conflicts_find(ptr) == 0 )
-                    {
-                        cJSON *array;
-                        ptr->inactive = 0;
-                        LP_unspents_load(coin,ptr->smartaddr);
-                        if ( strcmp(ptr->symbol,"KMD") == 0 )
-                            LP_importaddress("KMD",BOTS_BONDADDRESS);
-                        array = cJSON_CreateArray();
-                        jaddi(array,LP_coinjson(ptr,0));
-                        return(jprint(array,1));
-                    } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
-                } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
-            }
-            else if ( strcmp(method,"disable") == 0 )
+            if ( strcmp(method,"disable") == 0 )
             {
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
@@ -498,14 +473,6 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
                     jaddnum(retjson,"txfee",dstr(txfee));
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
-            }
-            else if ( strcmp(method,"electrum") == 0 )
-            {
-                if ( (ptr= LP_coinsearch(coin)) != 0 )
-                {
-                    ptr->inactive = 0;
-                    return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
-                } else return(clonestr("{\"error\":\"Unknown coin ID. Make sure the coin is defined in `coins`.\"}"));
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {

@@ -634,6 +634,8 @@ cJSON *LP_NXT_redeems();
 void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubport,char *passphrase,cJSON *argjson,uint32_t mm_ctx_id);
 void unbuffered_output_support(const char* log_path);
 void LP_dPoW_request(struct iguana_info *coin);
+struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin);
+cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port);
 // The `item` here is an entry from the "coins" command-line configuration.
 struct iguana_info *LP_coincreate(cJSON *item);
 /// Helps `lp_coininit` to initialize the `userpass`.
