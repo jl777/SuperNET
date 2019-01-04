@@ -35,6 +35,7 @@ use std::borrow::Cow;
 use std::ops::Deref;
 use std::sync::Arc;
 use web3::transports::{ Http };
+use web3::types::{BlockNumber, Bytes, CallRequest};
 use web3::{ self, Web3 };
 
 use super::utxo::compressed_key_pair_from_bytes;
@@ -163,7 +164,12 @@ impl SwapOps for EthCoin {
         maker_addr: &[u8],
         amount: u64
     ) -> TransactionFut {
-        unimplemented!();
+        let tx = match taker_payment_tx {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!(),
+        };
+
+        Box::new(self.refund_hash_time_locked_payment(tx).map(|t| TransactionEnum::Eth(t)))
     }
 
     fn send_maker_refunds_payment(
@@ -173,7 +179,12 @@ impl SwapOps for EthCoin {
         taker_addr: &[u8],
         amount: u64
     ) -> TransactionFut {
-        unimplemented!();
+        let tx = match maker_payment_tx {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!(),
+        };
+
+        Box::new(self.refund_hash_time_locked_payment(tx).map(|t| TransactionEnum::Eth(t)))
     }
 }
 
@@ -221,7 +232,11 @@ impl EthCoin {
         let nonce_fut = self.web3.eth().parity_next_nonce(self.my_address.clone()).map_err(|e| ERRL!("{}", e));
         Box::new(nonce_fut.then(move |nonce| -> EthTxFut {
             let nonce = try_fus!(nonce);
-            let gas_price_fut = GasStationData::get_gas_price(&arc.gas_station_url.clone().unwrap());
+            let gas_price_fut = if let Some(url) = &arc.gas_station_url {
+                GasStationData::get_gas_price(&url.clone())
+            } else {
+                Box::new(arc.web3.eth().gas_price().map_err(|e| ERRL!("{}", e)))
+            };
             Box::new(gas_price_fut.then(move |gas_price| -> EthTxFut {
                 let gas_price = try_fus!(gas_price);
                 let tx = UnsignedEthTransaction {
@@ -278,6 +293,8 @@ impl EthCoin {
                 self.sign_and_send_transaction(value, Action::Call(self.swap_contract_address), data, U256::from(150000))
             },
             EthCoinType::Erc20(token_addr) => {
+                let allowance_fut = self.allowance(self.swap_contract_address);
+
                 let function = try_fus!(SWAP_CONTRACT.function("erc20Payment"));
                 let data = try_fus!(function.encode_input(&[
                     Token::FixedBytes(id.to_vec()),
@@ -287,7 +304,20 @@ impl EthCoin {
                     Token::FixedBytes(secret_hash.to_vec()),
                     Token::Uint(U256::from(time_lock))
                 ]));
-                self.sign_and_send_transaction(0.into(), Action::Call(self.swap_contract_address), data, U256::from(150000))
+
+                let arc = self.clone();
+                Box::new(allowance_fut.and_then(move |allowed| -> EthTxFut {
+                    if allowed < value {
+                        let balance_f = arc.my_balance();
+                        Box::new(balance_f.and_then(move |balance| {
+                            arc.approve(arc.swap_contract_address, balance).and_then(move |_approved| {
+                                arc.sign_and_send_transaction(0.into(), Action::Call(arc.swap_contract_address), data, U256::from(150000))
+                            })
+                        }))
+                    } else {
+                        Box::new(arc.sign_and_send_transaction(0.into(), Action::Call(arc.swap_contract_address), data, U256::from(150000)))
+                    }
+                }))
             }
         }
     }
@@ -327,6 +357,119 @@ impl EthCoin {
                 ]));
 
                 self.sign_and_send_transaction(0.into(), Action::Call(self.swap_contract_address), data, U256::from(150000))
+            }
+        }
+    }
+
+    fn refund_hash_time_locked_payment(
+        &self,
+        payment: SignedEthTransaction,
+    ) -> EthTxFut {
+        let refund_func = try_fus!(SWAP_CONTRACT.function("senderRefund"));
+
+        match self.coin_type {
+            EthCoinType::Eth => {
+                let payment_func = try_fus!(SWAP_CONTRACT.function("ethPayment"));
+                let decoded = try_fus!(payment_func.decode_input(&payment.data));
+                let value = payment.value;
+                let data = try_fus!(refund_func.encode_input(&[
+                    decoded[0].clone(),
+                    Token::Uint(value),
+                    decoded[2].clone(),
+                    Token::Address(Address::default()),
+                    Token::Address(payment.sender()),
+                ]));
+
+                self.sign_and_send_transaction(0.into(), Action::Call(self.swap_contract_address), data, U256::from(150000))
+            },
+            EthCoinType::Erc20(token_addr) => {
+                let payment_func = try_fus!(SWAP_CONTRACT.function("erc20Payment"));
+                let decoded = try_fus!(payment_func.decode_input(&payment.data));
+
+                let data = try_fus!(refund_func.encode_input(&[
+                    decoded[0].clone(),
+                    decoded[1].clone(),
+                    decoded[4].clone(),
+                    Token::Address(token_addr),
+                    Token::Address(payment.sender()),
+                ]));
+
+                self.sign_and_send_transaction(0.into(), Action::Call(self.swap_contract_address), data, U256::from(150000))
+            }
+        }
+    }
+
+    fn my_balance(&self) -> Box<Future<Item=U256, Error=String> + Send> {
+        match self.coin_type {
+            EthCoinType::Eth => Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Pending)).map_err(|e| ERRL!("{:?}", e))),
+            EthCoinType::Erc20(token_addr) => {
+                let function = try_fus!(ERC20_CONTRACT.function("balanceOf"));
+                let data = try_fus!(function.encode_input(&[
+                    Token::Address(self.my_address),
+                ]));
+
+                let call_fut = self.call_request(token_addr, None, Some(data.into()));
+
+                Box::new(call_fut.and_then(move |res| {
+                    let decoded = try_s!(function.decode_output(&res.0));
+
+                    match decoded[0] {
+                        Token::Uint(number) => Ok(number),
+                        _ => ERR!("Expected U256 as balanceOf result but got {:?}", decoded),
+                    }
+                }))
+            }
+        }
+    }
+
+    fn call_request(&self, to: Address, value: Option<U256>, data: Option<Bytes>) -> impl Future<Item=Bytes, Error=String> {
+        let request = CallRequest {
+            from: Some(self.my_address),
+            to,
+            gas: None,
+            gas_price: None,
+            value,
+            data
+        };
+
+        self.web3.eth().call(request, Some(BlockNumber::Pending)).map_err(|e| ERRL!("{:?}", e))
+    }
+
+    fn allowance(&self, spender: Address) -> Box<Future<Item=U256, Error=String> + Send + 'static> {
+        match self.coin_type {
+            EthCoinType::Eth => panic!(),
+            EthCoinType::Erc20(token_addr) => {
+                let function = try_fus!(ERC20_CONTRACT.function("allowance"));
+                let data = try_fus!(function.encode_input(&[
+                    Token::Address(self.my_address),
+                    Token::Address(spender),
+                ]));
+
+                let call_fut = self.call_request(token_addr, None, Some(data.into()));
+
+                Box::new(call_fut.and_then(move |res| {
+                    let decoded = try_s!(function.decode_output(&res.0));
+
+                    match decoded[0] {
+                        Token::Uint(number) => Ok(number),
+                        _ => ERR!("Expected U256 as allowance result but got {:?}", decoded),
+                    }
+                }))
+            }
+        }
+    }
+
+    fn approve(&self, spender: Address, amount: U256) -> EthTxFut {
+        match self.coin_type {
+            EthCoinType::Eth => panic!(),
+            EthCoinType::Erc20(token_addr) => {
+                let function = try_fus!(ERC20_CONTRACT.function("approve"));
+                let data = try_fus!(function.encode_input(&[
+                    Token::Address(spender),
+                    Token::Uint(amount),
+                ]));
+
+                self.sign_and_send_transaction(0.into(), Action::Call(token_addr), data, U256::from(150000))
             }
         }
     }
@@ -584,6 +727,154 @@ fn test_send_buyer_fee_erc20() {
     let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
 
     let eth: SignedEthTransaction = match res {
+        TransactionEnum::Eth(t) => t,
+        _ => panic!()
+    };
+
+    log!([eth.hash()]);
+}
+
+#[test]
+fn test_get_allowance_erc20() {
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let web3 = Web3::new(transport);
+
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+    let coin = EthCoin(Arc::new(EthCoinImpl {
+        decimals: 18,
+        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+        web3,
+        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+        ticker: "ETH".into(),
+        my_address: key_pair.address().clone(),
+        key_pair,
+        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+    }));
+
+    log!([coin.allowance(coin.swap_contract_address).wait().unwrap()]);
+}
+
+#[test]
+fn test_my_balance_erc20() {
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let web3 = Web3::new(transport);
+
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+    log!([key_pair.address()]);
+
+    let coin = EthCoin(Arc::new(EthCoinImpl {
+        decimals: 18,
+        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+        web3,
+        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+        ticker: "ETH".into(),
+        my_address: key_pair.address().clone(),
+        key_pair,
+        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+    }));
+
+    log!([coin.my_balance().wait().unwrap()]);
+}
+
+
+#[test]
+fn test_send_and_refund_erc20_payment() {
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let web3 = Web3::new(transport);
+
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+    let coin = EthCoin(Arc::new(EthCoinImpl {
+        decimals: 18,
+        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+        web3,
+        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+        ticker: "ETH".into(),
+        my_address: key_pair.address().clone(),
+        key_pair,
+        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+    }));
+
+    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+    let res = coin.send_maker_payment(
+        (now_ms() / 1000) as u32 - 1000,
+        &[0],
+        &[0],
+        &pubkey,
+        &dhash160(&secret_hex).to_vec(),
+        1000,
+    ).wait().unwrap();
+
+    let eth: SignedEthTransaction = match res {
+        TransactionEnum::Eth(t) => t,
+        _ => panic!()
+    };
+
+    log!([eth.hash()]);
+
+    let refund = coin.send_taker_refunds_payment(
+        TransactionEnum::Eth(eth),
+        &[0],
+        &pubkey,
+        1000,
+    ).wait().unwrap();
+
+    let eth: SignedEthTransaction = match refund {
+        TransactionEnum::Eth(t) => t,
+        _ => panic!()
+    };
+
+    log!([eth.hash()]);
+}
+
+#[test]
+fn test_send_and_refund_eth_payment() {
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let web3 = Web3::new(transport);
+
+    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+    let coin = EthCoin(Arc::new(EthCoinImpl {
+        decimals: 18,
+        gas_station_url: None,
+        web3,
+        coin_type: EthCoinType::Eth,
+        ticker: "ETH".into(),
+        my_address: key_pair.address().clone(),
+        key_pair,
+        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+    }));
+
+    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+    let res = coin.send_maker_payment(
+        (now_ms() / 1000) as u32 - 1000,
+        &[0],
+        &[0],
+        &pubkey,
+        &dhash160(&secret_hex).to_vec(),
+        1000,
+    ).wait().unwrap();
+
+    let eth: SignedEthTransaction = match res {
+        TransactionEnum::Eth(t) => t,
+        _ => panic!()
+    };
+
+    log!([eth.hash()]);
+
+    let refund = coin.send_taker_refunds_payment(
+        TransactionEnum::Eth(eth),
+        &[0],
+        &pubkey,
+        1000,
+    ).wait().unwrap();
+
+    let eth: SignedEthTransaction = match refund {
         TransactionEnum::Eth(t) => t,
         _ => panic!()
     };
