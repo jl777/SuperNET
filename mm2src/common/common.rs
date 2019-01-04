@@ -47,6 +47,7 @@ pub mod mm_ctx;
 pub mod ser;
 
 use futures::{future, Async, Future, Poll};
+use futures::future::{Either, IntoFuture, Loop, loop_fn};
 use futures::sync::oneshot::{self, Receiver};
 use futures::task::Task;
 use gstuff::{any_to_str, duration_to_float, now_float};
@@ -727,4 +728,37 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
             None => cb (None)
         }
     }
+}
+
+/// The analogue of join_all combinator running futures `sequentially`.
+/// `join_all` runs futures `concurrently` which cause issues with native coins daemons RPC.
+/// We need to request transactions to which unspent outputs belong to when we build new one in order
+/// to get denominated integer amount of UTXO instead of f64 provided by `listunspent` call.
+/// Sometimes we might need info about dozens (or even hundreds) transactions at time so we can overflow
+/// RPC queue of daemon very fast like this: https://github.com/bitpay/bitcore-node/issues/463#issuecomment-228788871.
+/// Thx to https://stackoverflow.com/a/51717254/8707622
+pub fn join_all_sequential<I>(
+    i: I,
+) -> impl Future<Item = Vec<<I::Item as IntoFuture>::Item>, Error = <I::Item as IntoFuture>::Error>
+    where
+        I: IntoIterator,
+        I::Item: IntoFuture,
+{
+    let iter = i.into_iter();
+    loop_fn((vec![], iter), |(mut output, mut iter)| {
+        let fut = if let Some(next) = iter.next() {
+            Either::A(next.into_future().map(|v| Some(v)))
+        } else {
+            Either::B(future::ok(None))
+        };
+
+        fut.and_then(move |val| {
+            if let Some(val) = val {
+                output.push(val);
+                Ok(Loop::Continue((output, iter)))
+            } else {
+                Ok(Loop::Break(output))
+            }
+        })
+    })
 }

@@ -1,7 +1,7 @@
 use base64::{encode_config as base64_encode, URL_SAFE};
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
-use common::{CORE, Timeout, slurp_req};
+use common::{CORE, Timeout, slurp_req, join_all_sequential};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
 use futures::{Async, Future, Poll, Sink};
 use futures::sync::mpsc;
@@ -167,7 +167,7 @@ impl UtxoRpcClientOps for NativeClient {
                 futures.push(clone.output_amount(unspent.txid.clone(), unspent.vout as usize));
             }
 
-            futures::future::join_all(futures).map(move |amounts| {
+            join_all_sequential(futures).map(move |amounts| {
                 let zip_iter = amounts.iter().zip(unspents.iter());
                 let mut result: Vec<UnspentInfo> = zip_iter.map(|(value, unspent)| UnspentInfo {
                     outpoint: OutPoint {
