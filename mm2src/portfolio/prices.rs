@@ -21,6 +21,7 @@
 use common::{dstr, lp, rpc_response, slurp_req, HyRes, SATOSHIDEN, SMALLVAL};
 use common::mm_ctx::{MmArc, MmWeak};
 use common::log::TagParam;
+use coins::lp_coinfind;
 use futures::{self, Future, Async, Poll};
 use futures::task::{self};
 use gstuff::now_float;
@@ -1552,10 +1553,9 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
 
     for en in holdings {
         if en.balance <= SMALLVAL {continue}
-        let coin = try_h! (CString::new (&en.coin[..]));
-        let coin = unsafe {lp::LP_coinfind (coin.as_ptr() as *mut c_char)};
-        if coin != null_mut() {
-            let kmd_value = unsafe {lp::LP_KMDvalue (coin, (SATOSHIDEN as f64 * en.balance) as i64)};
+        let coin = try_h! (lp_coinfind (&ctx, &en.coin));
+        if let Some (coin) = coin {
+            let kmd_value = unsafe {lp::LP_KMDvalue (coin.iguana_info(), (SATOSHIDEN as f64 * en.balance) as i64)};
             if kmd_value > 0 {
                 log! ({"lp_fundvalue] LP_KMDvalue of '{}' is {}.", en.coin, kmd_value});
                 holdings_res.push (FundvalueHoldingRes {

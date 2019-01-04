@@ -18,13 +18,15 @@
 //  marketmaker
 //
 
+#![feature(non_ascii_idents)]
+
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate unwrap;
 
-use common::{bitcoin_ctx, bits256, free_c_ptr, lp, rpc_err_response, rpc_response, HyRes};
+use common::{bitcoin_ctx, bits256, free_c_ptr, lp, rpc_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::now_ms;
@@ -815,8 +817,11 @@ int32_t LP_isdisabled(char *base,char *rel)
 }
 */
 
-/// NB: As of now only a part of coin information has been ported to `MmCoinEnum`, as much as necessary to fix the SWAP in #233.
-///     We plan to port the rest of it later (in lp_initcoins, lp_coininit).
+/// NB: As of now only a part of coin information has been ported to `MmCoinEnum`.
+///     We plan to port the rest of it later (cf. `lp_coininit`).
+///     Use the `iguana_info()` interface to access the C version meanwhile.
+/// 
+/// NB: Returns only the enabled (aka active) coins.
 pub fn lp_coinfind (ctx: &MmArc, ticker: &str) -> Result<Option<MmCoinEnum>, String> {
     let cctx = try_s! (CoinsContext::from_ctx (ctx));
     let coins = try_s! (cctx.coins.lock());

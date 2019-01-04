@@ -183,7 +183,6 @@ fn generate_bindings() {
             "prices_loop",
             "LP_portfolio",
             "LP_coinadd_",
-            "LP_coinfind",
             "LP_priceinfoadd",
             "LP_unspents_load",
             "LP_dPoW_request",

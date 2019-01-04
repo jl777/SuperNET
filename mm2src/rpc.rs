@@ -195,7 +195,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
     };
     DispatcherRes::Match (match &method[..] {  // Sorted alphanumerically (on the first latter) for readability.
         "autoprice" => lp_autoprice (ctx, req),
-        "buy" => buy(&req),
+        "buy" => buy (ctx, req),
         "enable" => enable (ctx, req),
         "electrum" => electrum (ctx, req),
         "eth_gas_price" => eth_gas_price(),
@@ -205,7 +205,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "mpnet" => mpnet (&req),
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "passphrase" => passphrase (ctx, req),
-        "sell" => sell (&req),
+        "sell" => sell (ctx, req),
         "stop" => stop (ctx),
         "version" => version(),
         _ => return DispatcherRes::NoMatch (req)

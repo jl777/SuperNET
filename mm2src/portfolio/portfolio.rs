@@ -32,11 +32,12 @@ use self::prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, Fun
 #[doc(hidden)]
 pub mod portfolio_tests;
 
-use common::{find_coin, lp, rpc_response, rpc_err_response, slurp_url,
+use common::{lp, rpc_response, rpc_err_response, slurp_url,
   HyRes, RefreshedExternalResource, CJSON, SMALLVAL};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::log::TagParam;
 use common::ser::de_none_if_empty;
+use coins::lp_coinfind;
 use futures::{Future, Stream};
 use futures::task::Task;
 use gstuff::{now_ms, now_float};
@@ -1165,6 +1166,7 @@ pub fn prices_loop (ctx: MmArc) {
     let mut trades: [lp::LP_portfoliotrade; 256] = unsafe {zeroed()};
 
     loop {
+        sleep (Duration::from_millis (200));
         if ctx.is_stopping() {break}
 
         if !ctx.initialized.load (Ordering::Relaxed) {sleep (Duration::from_millis (100)); continue}
@@ -1191,59 +1193,68 @@ pub fn prices_loop (ctx: MmArc) {
 
         // TODO: `LP_portfolio` should return a `Json` (or a serializable structure) and not a string.
         let portfolio_cs = unsafe {lp::LP_portfolio()};
-        if portfolio_cs != null_mut() {
-            let portfolio_s = unwrap! (unsafe {CStr::from_ptr (portfolio_cs)} .to_str());
-            let portfolio: Json = unwrap! (json::from_str (portfolio_s));
-            let buy = find_coin (portfolio["buycoin"].as_str());
-            let sell = find_coin (portfolio["sellcoin"].as_str());
-            if let (Some ((buy, buycoin)), Some ((sell, sellcoin))) = (buy, sell) {
-                let mut request_id = 0;
-                let mut quote_id = 0;
-                let rc = unsafe {lp::LP_portfolio_trade (
-                    ctx.btc_ctx() as *mut c_void,
-                    &mut request_id,
-                    &mut quote_id,
-                    buy,
-                    sell,
-                    (*sell).relvolume,
-                    1,
-                    b"portfolio\0".as_ptr() as *mut c_char)};
+        if portfolio_cs == null_mut() {continue}
 
-                let entries = portfolio["portfolio"].as_array();
-                if rc == -1 && entries.is_some() {
-                    let entries = unwrap! (json::to_string (unwrap! (entries)));
-                    let entries = unwrap! (CJSON::from_str (&entries));
-                    let n = unsafe {lp::LP_portfolio_order (
-                        trades.as_mut_ptr(),
-                        trades.len() as i32,
-                        entries.0
-                    ) as usize};
-                    for i in 0..n {
-                        let tbuycoin = unwrap! (unsafe {CStr::from_ptr (trades[i].buycoin.as_ptr())} .to_str());
-                        let tsellcoin = unwrap! (unsafe {CStr::from_ptr (trades[i].sellcoin.as_ptr())} .to_str());
-                        if tbuycoin == buycoin || tsellcoin == sellcoin {
-                            // TODO: See if the extra `find_coin` here is necessary,
-                            // I think `buy` and `sell` already point at the right coins.
-                            let buy = find_coin (Some (&tbuycoin[..]));
-                            let sell = find_coin (Some (&tsellcoin[..]));
-                            if let (Some ((buy, _)), Some ((sell, _))) = (buy, sell) {
-                                let rc = unsafe {lp::LP_portfolio_trade (
-                                    ctx.btc_ctx() as *mut c_void,
-                                    &mut request_id,
-                                    &mut quote_id,
-                                    buy,
-                                    sell,
-                                    (*sell).relvolume,
-                                    0,
-                                    b"portfolio\0".as_ptr() as *mut c_char)};
-                                if rc == 0 {break}
-                            }
-                        }
-                    }
+        let portfolio_s = unwrap! (unsafe {CStr::from_ptr (portfolio_cs)} .to_str());
+        let portfolio: Json = unwrap! (json::from_str (portfolio_s));
+        unsafe {libc::free (portfolio_cs as *mut libc::c_void)};
+
+        let buycoin = match portfolio["buycoin"].as_str() {Some (t) => t, None => continue};
+        let sellcoin = match portfolio["sellcoin"].as_str() {Some (t) => t, None => continue};
+
+        let buy_coin = match lp_coinfind (&ctx, buycoin) {
+            Ok (Some (c)) => c,
+            Ok (None) => {log! ("Can't find coin '" (buycoin) "', is it enabled?"); continue},
+            Err (err) => {log! ("!lp_coinfind (" (buycoin) "): " (err)); continue}
+        };
+        let sell_coin = match lp_coinfind (&ctx, sellcoin) {
+            Ok (Some (c)) => c,
+            Ok (None) => {log! ("Can't find coin '" (sellcoin) "', is it enabled?"); continue},
+            Err (err) => {log! ("!lp_coinfind (" (sellcoin) "): " (err)); continue}
+        };
+
+        let buy_ii = buy_coin.iguana_info();
+        let sell_ii = sell_coin.iguana_info();
+
+        let mut request_id = 0;
+        let mut quote_id = 0;
+        let rc = unsafe {lp::LP_portfolio_trade (
+            ctx.btc_ctx() as *mut c_void,
+            &mut request_id,
+            &mut quote_id,
+            buy_ii,
+            sell_ii,
+            (*sell_ii).relvolume,
+            1,
+            b"portfolio\0".as_ptr() as *mut c_char)};
+
+        let entries = portfolio["portfolio"].as_array();
+        if rc == -1 && entries.is_some() {
+            let entries = unwrap! (json::to_string (unwrap! (entries)));
+            let entries = unwrap! (CJSON::from_str (&entries));
+            let n = unsafe {lp::LP_portfolio_order (
+                trades.as_mut_ptr(),
+                trades.len() as i32,
+                entries.0
+            ) as usize};
+            for i in 0..n {
+                let tbuycoin = unwrap! (unsafe {CStr::from_ptr (trades[i].buycoin.as_ptr())} .to_str());
+                let tsellcoin = unwrap! (unsafe {CStr::from_ptr (trades[i].sellcoin.as_ptr())} .to_str());
+                if tbuycoin == buycoin || tsellcoin == sellcoin {
+                    assert_eq! (buy_coin.ticker(), tbuycoin);
+                    assert_eq! (sell_coin.ticker(), tsellcoin);
+                    let rc = unsafe {lp::LP_portfolio_trade (
+                        ctx.btc_ctx() as *mut c_void,
+                        &mut request_id,
+                        &mut quote_id,
+                        buy_ii,
+                        sell_ii,
+                        (*sell_ii).relvolume,
+                        0,
+                        b"portfolio\0".as_ptr() as *mut c_char)};
+                    if rc == 0 {break}
                 }
             }
-            unsafe {libc::free (portfolio_cs as *mut libc::c_void)};
         }
-        sleep (Duration::from_millis (200))
     }
 }

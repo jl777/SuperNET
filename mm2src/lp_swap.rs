@@ -55,13 +55,14 @@
 //  marketmaker
 //
 use coins::{MmCoinEnum, TransactionEnum};
-use coins::utxo::{coin_from_iguana_info};
 use common::{bits256, dstr, Timeout};
 use common::log::TagParam;
 use common::mm_ctx::MmArc;
+use coins::lp_coinfind;
 use crc::crc32;
 use futures::{Future, Stream};
 use gstuff::now_ms;
+use std::ffi::CStr;
 use std::time::Duration;
 
 use crate::lp;
@@ -914,10 +915,10 @@ impl AtomicSwap {
         maker: bits256,
         session: String
     ) -> Result<AtomicSwap, String> {
-        let alice_coin_ptr = lp::LP_coinfind((*basilisk_swap).I.alicestr.as_mut_ptr());
-        let alice_coin = try_s!(coin_from_iguana_info(alice_coin_ptr));
-        let bob_coin_ptr = lp::LP_coinfind((*basilisk_swap).I.bobstr.as_mut_ptr());
-        let bob_coin = try_s!(coin_from_iguana_info(bob_coin_ptr));
+        let alicestr = try_s! (CStr::from_ptr ((*basilisk_swap).I.alicestr.as_ptr()) .to_str());
+        let alice_coin = try_s! (try_s! (lp_coinfind (&ctx, alicestr)) .ok_or ("Taker coin not found"));
+        let bobstr = try_s! (CStr::from_ptr ((*basilisk_swap).I.bobstr.as_ptr()) .to_str());
+        let bob_coin = try_s! (try_s! (lp_coinfind (&ctx, bobstr)) .ok_or ("Maker coin not found"));
 
         Ok(AtomicSwap {
             basilisk_swap,

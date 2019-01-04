@@ -18,8 +18,9 @@
 //  ordermatch.rs
 //  marketmaker
 //
-use common::{find_coin, lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
+use common::{lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
+use coins::lp_coinfind;
 use gstuff::now_ms;
 use hashbrown::hash_map::{Entry, HashMap};
 use libc::{self, c_void, c_char, strcpy, strlen, calloc, rand};
@@ -33,6 +34,9 @@ use std::thread;
 
 use crate::lp_network::lp_queue_command;
 use crate::lp_swap::{taker_swap_loop, maker_swap_loop, AtomicSwap};
+
+/// Temporary kludge, improving readability of the not-yet-fully-ported code. Should be removed eventually.
+macro_rules! c2s {($cs: expr) => {unwrap!(CStr::from_ptr($cs.as_ptr()).to_str())}}
 
 #[link="c"]
 extern {
@@ -409,37 +413,27 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
     let mut other_addr: [c_char; 64] = [0; 64];
     (*qp).quotetime = (now_ms() / 1000) as u32;
 
-    let srccoin = CStr::from_ptr((*qp).srccoin.as_ptr()).to_string_lossy();  // TODO: Later replace with a checked `to_str`.
-    log!("lp_connect_start_bob] srccoin is " (srccoin));
-    let coin = coins::lp_coinfind(ctx, &srccoin);
-    log!("lp_connect_start_bob] lp_coinfind returned " [coin]);
-    if let Ok(Some(coin)) = coin {
-        // TODO (refactoring angle): As discussed, the private key is already there in the `coin`, we shouldn't have to invoke `LP_privkey` to obtain it,
-        // plus there's no need to explicitly pass the private key through the context here,
-        // rather, the private key should be obtained and used in a refactored version of `LP_swapinit`.
-        // TODO: Non-panicking error handling.
-        let c_symbol = unwrap!(CString::new(&srccoin[..]));  // Ticker symbol.
-        let c_address = unwrap!(CString::new(&coin.address()[..]));
-        // TODO: We should refactor away the taddr in the future.
-        //       In Komodo forks it's always 0.
-        let taddr = 0;
-        let priv_key = lp::LP_privkey(c_symbol.as_ptr() as *mut c_char, c_address.as_ptr() as *mut c_char, taddr);
-        log!("lp_connect_start_bob] priv_key: " (priv_key));
-    }
+    let coin = match unwrap!(lp_coinfind(ctx, c2s!((*qp).srccoin))) {
+        Some(c) => c,
+        None => {
+            printf(b"cant find coin.%s\n\x00".as_ptr() as *const c_char, (*qp).srccoin);
+            lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3000.0, (*qp).uuidstr.as_mut_ptr());
+            return -1
+    }   };
 
-    let coin = lp::LP_coinfind((*qp).srccoin.as_mut_ptr());
-    if coin == null_mut() {
-        printf(b"cant find coin.%s\n\x00".as_ptr() as *const c_char, (*qp).srccoin);
-        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3000.0, (*qp).uuidstr.as_mut_ptr());
-        return -1;
-    }
-    let mut priv_key = lp::LP_privkey((*coin).symbol.as_mut_ptr(), (*coin).smartaddr.as_mut_ptr(), (*coin).taddr);
-    if (*coin).etomic[0] != 0 {
-        let e_coin = lp::LP_coinfind(b"ETOMIC\x00".as_ptr() as *mut c_char);
-        if e_coin != null_mut() {
-            priv_key = lp::LP_privkey((*e_coin).symbol.as_mut_ptr(), (*e_coin).smartaddr.as_mut_ptr(), (*e_coin).taddr);
-        }
-    }
+    // TODO (refactoring angle): As discussed, the private key is already there in the `coin`, we shouldn't have to invoke `LP_privkey` to obtain it,
+    // plus there's no need to explicitly pass the private key through the context here,
+    // rather, the private key should be obtained and used in a refactored version of `LP_swapinit`.
+    let c_address = unwrap!(CString::new(&coin.address()[..]));
+    // TODO: We should refactor away the [explicit passing] of taddr in the future.
+    //       In Komodo forks it's always 0.
+    let taddr = 0;
+    let mut priv_key = lp::LP_privkey(coin.iguana_info().symbol.as_mut_ptr(), c_address.as_ptr() as *mut c_char, taddr);
+
+    if coin.iguana_info().etomic[0] != 0 {
+        if let Some(e_coin) = unwrap!(lp_coinfind(ctx, "ETOMIC")) {
+            priv_key = lp::LP_privkey(e_coin.iguana_info().symbol.as_mut_ptr(), e_coin.iguana_info().smartaddr.as_mut_ptr(), taddr);
+    }   }
     if priv_key.nonz() && lp::G.LP_mypub25519 == (*qp).srchash {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
         let d_trust = lp::LP_dynamictrust((*qp).othercredits, (*qp).desthash, lp::LP_kmdvalue((*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis as i64));
@@ -450,7 +444,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             return -1;
         }
         pair = lp::LP_nanobind(ctx.btc_ctx() as *mut c_void, pair_str.as_mut_ptr());
-        log! ("LP_nanobind produced sock " (pair) ", pair_str " (CStr::from_ptr (pair_str.as_ptr()) .to_str().unwrap())
+        log! ("LP_nanobind produced sock " (pair) ", pair_str " (c2s!(pair_str))
               " (canbind " [ctx.conf["canbind"]] " LP_fixed_pairport " (lp::LP_fixed_pairport) ")"
               " Alice is " ((*qp).desthash));
         if pair >= 0 {
@@ -459,7 +453,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             let loop_thread = thread::Builder::new().name("bob_loop".into()).spawn({
                 let ctx = ctx.clone();
                 let alice = (*qp).desthash;
-                let session = String::from (unwrap! (CStr::from_ptr (pair_str.as_ptr()) .to_str()));
+                let session = String::from(c2s!(pair_str));
                 log!("Seller loop");
                 move || {
                     let mut maker_swap = AtomicSwap::new(b_swap.0, ctx, alice, lp::bits256::default(), session).unwrap();
@@ -476,9 +470,8 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                     lp::LP_swapsfp_update((*qp).R.requestid, (*qp).R.quoteid);
                     lp::jaddstr(req_json, b"method\x00".as_ptr() as *mut c_char, b"connected\x00".as_ptr() as *mut c_char);
                     lp::jaddstr(req_json, b"pair\x00".as_ptr() as *mut c_char, pair_str.as_mut_ptr());
-                    let kmd_coin = lp::LP_coinfind(b"KMD\x00".as_ptr() as *mut c_char);
-                    if kmd_coin != null_mut() {
-                        lp::jadd(req_json, b"proof".as_ptr() as *mut c_char, lp::LP_instantdex_txids(0, (*kmd_coin).smartaddr.as_mut_ptr()));
+                    if let Some(kmd_coin) = unwrap!(lp_coinfind(ctx, "KMD")) {
+                        lp::jadd(req_json, b"proof".as_ptr() as *mut c_char, lp::LP_instantdex_txids(0, kmd_coin.iguana_info().smartaddr.as_mut_ptr()));
                     }
 //char str[65]; printf(b"BOB pubsock.%d binds to %d (%s)\n\x00".as_ptr() as *const c_char,pubsock,pair,bits256_str(str,qp->desthash));
                     lp::LP_importaddress((*qp).destcoin.as_mut_ptr(), (*qp).destaddr.as_mut_ptr());
@@ -511,8 +504,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
         }
     } else {
         lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3004.0, (*qp).uuidstr.as_mut_ptr());
-        log!("cant find privkey for smartaddr " [CStr::from_ptr((*coin).smartaddr.as_ptr()).to_str()]
-             " (coin symbol is " [CStr::from_ptr((*coin).symbol.as_ptr()).to_str()] ")");
+        log!("cant find privkey for address " (coin.address()) " (coin " (coin.ticker()) ")");
     }
     if retval < 0 {
         if pair >= 0 {
@@ -725,6 +717,7 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
         lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4000.0, (*qp).uuidstr.as_mut_ptr());
         return;
     }
+    let ctx = unwrap!(MmArc::from_ffi_handle(ctx_ffi_handle));
     printf("CONNECTED mpnet.%d fill.%d gtc.%d numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n\x00".as_ptr() as *const c_char,
            (*qp).mpnet, (*qp).fill, (*qp).gtc, lp::G.LP_pendingswaps, (*qp).tradeid, (*qp).R.requestid, (*qp).R.quoteid, pairstr);
     let dex_selector = 0;
@@ -757,13 +750,14 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
     }
 //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
     printf(b"%s/%s bid %.8f ask %.8f\n\x00".as_ptr() as *const c_char, (*qp).srccoin.as_ptr(), (*qp).destcoin.as_ptr(), bid, ask);
-    let coin = lp::LP_coinfind((*qp).destcoin.as_mut_ptr());
-    if coin.is_null() {
-        lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error6\x00".as_ptr() as *mut c_char, 0, 0);
-        lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4003.0, (*qp).uuidstr.as_mut_ptr());
-        return;
-    }
-    (*qp).privkey = lp::LP_privkey((*coin).symbol.as_mut_ptr(), (*coin).smartaddr.as_mut_ptr(), (*coin).taddr);
+    let coin = match unwrap!(lp_coinfind(&ctx, c2s!((*qp).destcoin))) {
+        Some(c) => c,
+        None => {
+            lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error6\x00".as_ptr() as *mut c_char, 0, 0);
+            lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4003.0, (*qp).uuidstr.as_mut_ptr());
+            return
+    }   };
+    (*qp).privkey = lp::LP_privkey(coin.iguana_info().symbol.as_mut_ptr(), coin.iguana_info().smartaddr.as_mut_ptr(), coin.iguana_info().taddr);
     if (*qp).privkey.nonz() { //&& qp->quotetime >= qp->timestamp-3 )
         let swap = lp::LP_swapinit(0, 0, (*qp).privkey, &mut (*qp).R, qp,
                                    (lp::LP_dynamictrust((*qp).othercredits, (*qp).srchash, lp::LP_kmdvalue((*qp).srccoin.as_mut_ptr(), (*qp).satoshis as i64)) > 0) as i32);
@@ -773,7 +767,6 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
             return;
         }
         let pairsock = nn::nn_socket(nn::AF_SP as i32, nn::NN_PAIR as i32);
-        let ctx = unwrap! (MmArc::from_ffi_handle (ctx_ffi_handle));
         if pairstr.is_null() || *pairstr == 0 || pairsock < 0 {
             lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error8\x00".as_ptr() as *mut c_char, (*qp).R.requestid, (*qp).R.quoteid);
             lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4005.0, (*qp).uuidstr.as_mut_ptr());
@@ -830,7 +823,7 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
 //printf("connected result.(%s)\n",jprint(retjson,0));
     } else {
         lp::LP_aliceid((*qp).tradeid, (*qp).aliceid, b"error11\x00".as_ptr() as *mut c_char, 0, 0);
-        printf(b"no privkey found coin.%s %s taddr.%u\n\x00".as_ptr() as *mut c_char, (*qp).destcoin.as_ptr(), (*qp).destaddr.as_ptr(), (*coin).taddr as libc::c_uint);
+        printf(b"no privkey found coin.%s %s\n\x00".as_ptr() as *mut c_char, (*qp).destcoin.as_ptr(), (*qp).destaddr.as_ptr());
         lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -4008.0, (*qp).uuidstr.as_mut_ptr());
     }
 }
@@ -996,12 +989,9 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let mut str: [c_char; 65] = [0; 65];
     // AG: The Alice p2p ID seems to be in the `qp.desthash`.
     printf(b"bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n\x00".as_ptr() as *const c_char, lp::bits256_str(str.as_mut_ptr(), lp::G.LP_mypub25519), (*qp).uuidstr[32..].as_ptr(), (*qp).mpnet, (*qp).fill, (*qp).gtc);
-    let coin = lp::LP_coinfind((*qp).srccoin.as_mut_ptr());
-    let other_coin = lp::LP_coinfind((*qp).destcoin.as_mut_ptr());
-    if coin == null_mut() || other_coin == null_mut() {
-        return null_mut();
-    }
-    
+    let coin = match unwrap!(lp_coinfind(ctx, c2s!((*qp).srccoin))) {Some(c) => c, None => return null_mut()};
+    let other_coin = match unwrap!(lp_coinfind(ctx, c2s!((*qp).destcoin))) {Some(c) => c, None => return null_mut()};
+
     let mut bid = 0.;
     let mut ask = 0.;
     let my_price = lp::LP_trades_bobprice(&mut bid, &mut ask, qp);
@@ -1014,22 +1004,21 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let autxo = &mut a as *mut lp::LP_utxoinfo;
     let butxo = &mut b as *mut lp::LP_utxoinfo;
     lp::LP_abutxo_set(autxo, butxo, qp);
-    strcpy((*qp).coinaddr.as_mut_ptr(), (*coin).smartaddr.as_ptr());
+    unwrap!(safecopy!((*qp).coinaddr, "{}", coin.address()));
     if (*qp).srchash.nonz() == false || (*qp).srchash == lp::G.LP_mypub25519 {
         qprice = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
         strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
-        if (*coin).etomic[0] != 0 {
-            strcpy((*qp).etomicsrc.as_mut_ptr(), (*coin).smartaddr.as_ptr());
-        } else if (*other_coin).etomic[0] != 0 {
-            strcpy((*qp).etomicsrc.as_mut_ptr(), (*other_coin).smartaddr.as_ptr());
+        if coin.iguana_info().etomic[0] != 0 {
+            unwrap!(safecopy!((*qp).etomicsrc, "{}", coin.address()))
+        } else if other_coin.iguana_info().etomic[0] != 0 {
+            unwrap!(safecopy!((*qp).etomicsrc, "{}", other_coin.address()))
         }
-        if (*coin).etomic[0] != 0 {//|| othercoin->etomic[0] != 0 )
-            let ecoin = lp::LP_coinfind(b"ETOMIC\x00".as_ptr() as *mut c_char);
-            if ecoin != null_mut() {
-                strcpy((*qp).coinaddr.as_mut_ptr(), (*ecoin).smartaddr.as_ptr());
+        if coin.iguana_info().etomic[0] != 0 {//|| othercoin->etomic[0] != 0 )
+            if let Some(ecoin) = unwrap!(lp_coinfind(ctx, "ETOMIC")) {
+                unwrap!(safecopy!((*qp).coinaddr, "{}", ecoin.address()))
             } else {
                 log!("ETOMIC coin not found");
-                return null_mut();
+                return null_mut()
             }
         }
         strcpy((*butxo).coinaddr.as_mut_ptr(), (*qp).coinaddr.as_mut_ptr());
@@ -1061,24 +1050,23 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
 //printf("LP_address_utxo_reset.%s\n",coin->symbol);
 //LP_address_utxo_reset(coin);
 //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
-    if (*coin).etomic[0] != 0 {
-        strcpy((*qp).etomicsrc.as_mut_ptr(), (*coin).smartaddr.as_ptr());
-    } else if (*other_coin).etomic[0] != 0 {
-        strcpy((*qp).etomicsrc.as_mut_ptr(), (*other_coin).smartaddr.as_ptr());
+    if coin.iguana_info().etomic[0] != 0 {
+        unwrap!(safecopy!((*qp).etomicsrc, "{}", coin.address()))
+    } else if other_coin.iguana_info().etomic[0] != 0 {
+        unwrap!(safecopy!((*qp).etomicsrc, "{}", other_coin.address()))
     }
-    if (*coin).etomic[0] != 0 {
-        let ecoin = lp::LP_coinfind(b"ETOMIC\x00".as_ptr() as *mut c_char);
-        if ecoin != null_mut() {
-            strcpy((*qp).coinaddr.as_mut_ptr(), (*ecoin).smartaddr.as_ptr());
+    if coin.iguana_info().etomic[0] != 0 {
+        if let Some(ecoin) = unwrap!(lp_coinfind(ctx,"ETOMIC")) {
+            unwrap!(safecopy!((*qp).coinaddr, "{}", ecoin.address()))
         } else {
             log!("ETOMIC coin not found");
-            return null_mut();
+            return null_mut()
         }
     }
-    lp::LP_address_utxo_reset(&mut num, coin);
+    lp::LP_address_utxo_reset(&mut num, coin.iguana_info());
     if price >= my_price {
-        strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
-        strcpy((*qp).coinaddr.as_mut_ptr(), (*coin).smartaddr.as_ptr());
+        unwrap!(safecopy!((*qp).gui, "{}", c2s!(lp::G.gui)));
+        unwrap!(safecopy!((*qp).coinaddr, "{}", coin.address()));
         (*qp).srchash = lp::G.LP_mypub25519;
         (*qp).satoshis = lp::LP_basesatoshis(dstr((*qp).destsatoshis as i64), price, (*qp).txfee, (*qp).desttxfee);
         (*qp).quotetime = (now_ms() / 1000) as u32;
@@ -1096,7 +1084,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         return null_mut();
     }
     p = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
-    if lp::LP_trades_pricevalidate(qp, coin, p) < 0. {
+    if lp::LP_trades_pricevalidate(qp, coin.iguana_info(), p) < 0. {
         if (*qp).fill != 0 {
             return null_mut();
         }
@@ -1125,7 +1113,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
 
 unsafe fn lp_trades_gotreserved(qp: *mut lp::LP_quoteinfo, newqp: *mut lp::LP_quoteinfo) -> *mut lp::LP_quoteinfo {
     log!({"alice {:x?} received RESERVED.({}) {} mpnet.{} fill.{} gtc.{}",
-             lp::G.LP_mypub25519.bytes, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str()),
+             lp::G.LP_mypub25519.bytes, c2s!((*qp).uuidstr[32..]),
              (*qp).destsatoshis / ((*qp).satoshis + 1), (*qp).mpnet, (*qp).fill, (*qp).gtc});
     *newqp = *qp;
     let qp = newqp;
@@ -1146,10 +1134,8 @@ unsafe fn lp_trades_gotreserved(qp: *mut lp::LP_quoteinfo, newqp: *mut lp::LP_qu
 unsafe fn lp_trades_got_connect(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, new_qp: *mut lp::LP_quoteinfo) -> *mut lp::LP_quoteinfo {
     *new_qp = *qp;
     let qp = new_qp;
-    let coin = lp::LP_coinfind((*qp).srccoin.as_mut_ptr());
-    if coin == null_mut() {
-        return null_mut();
-    }
+    let coin = unwrap!(lp_coinfind(ctx, c2s!((*qp).srccoin)));
+    if coin.is_none() {return null_mut()}
     let mut bid = 0.;
     let mut ask = 0.;
     let my_price = lp::LP_trades_bobprice(&mut bid, &mut ask, qp);
@@ -1164,7 +1150,7 @@ unsafe fn lp_trades_got_connect(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, new_qp: 
     //}
     //if lp::LP_reservation_check((*qp).txid, (*qp).vout, (*qp).desthash) == 0 && lp::LP_reservation_check((*qp).txid2, (*qp).vout2, (*qp).desthash) == 0 {
     // AG: The Alice p2p ID seems to be in the `qp.desthash`.
-    log!({"bob {} received CONNECT.({})", lp::G.LP_mypub25519, unwrap!(CStr::from_ptr((*qp).uuidstr[32..].as_ptr()).to_str())});
+    log!({"bob {} received CONNECT.({})", lp::G.LP_mypub25519, c2s!((*qp).uuidstr[32..])});
     lp_connect_start_bob(&ctx, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), qp);
     return qp;
     //} else {
@@ -1262,7 +1248,6 @@ int32_t LP_trades_canceluuid(char *uuidstr)
 }
 */
 pub unsafe fn lp_trades_loop(ctx: MmArc) {
-    let mut coin: *mut lp::iguana_info;
     let mut timeout: u32;
     let mut now: u64;
     let mut q: lp::LP_quoteinfo;
@@ -1281,14 +1266,14 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
                 continue;
             }
             timeout = lp::LP_AUTOTRADE_TIMEOUT;
-            coin = lp::LP_coinfind(trade.Q.srccoin.as_mut_ptr());
-            if coin != null_mut() && (*coin).electrum != null_mut() {
+            let coin = unwrap!(lp_coinfind(&ctx, c2s!(trade.Q.srccoin)));
+            if let Some(coin) = coin {if coin.iguana_info().electrum != null_mut() {
                 timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
-            }
-            coin = lp::LP_coinfind(trade.Q.destcoin.as_mut_ptr());
-            if coin != null_mut() && (*coin).electrum != null_mut() {
+            }}
+            let coin = unwrap!(lp_coinfind(&ctx, c2s!(trade.Q.destcoin)));
+            if let Some(coin) = coin {if coin.iguana_info().electrum != null_mut() {
                 timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
-            }
+            }}
             now = now_ms() / 1000;
             if now > trade.lastprocessed && trade.iambob == 0 && trade.bestprice > 0. {
                 if trade.connectsent == 0 {
@@ -1310,14 +1295,14 @@ pub unsafe fn lp_trades_loop(ctx: MmArc) {
         now = now_ms() / 1000;
         for (key, trade) in (*trades_map).clone().iter_mut() {
             timeout = lp::LP_AUTOTRADE_TIMEOUT;
-            coin = lp::LP_coinfind(trade.Q.srccoin.as_mut_ptr());
-            if coin != null_mut() && (*coin).electrum != null_mut() {
+            let coin = unwrap!(lp_coinfind(&ctx, c2s!(trade.Q.srccoin)));
+            if let Some(coin) = coin {if coin.iguana_info().electrum != null_mut() {
                 timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
-            }
-            coin = lp::LP_coinfind(trade.Q.destcoin.as_mut_ptr());
-            if coin != null_mut() && (*coin).electrum != null_mut() {
+            }}
+            let coin = unwrap!(lp_coinfind(&ctx, c2s!(trade.Q.destcoin)));
+            if let Some(coin) = coin {if coin.iguana_info().electrum != null_mut() {
                 timeout += (lp::LP_AUTOTRADE_TIMEOUT as f64 * 0.5) as u32;
-            }
+            }}
             if now > trade.firstprocessed + timeout as u64 * 10 || trade.cancelled != 0 {
                 //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                 trades_map.remove(key);
@@ -1471,7 +1456,6 @@ pub unsafe fn lp_trade_command(
     let mut bid: f64 = 0.;
     let mut ask: f64 = 0.;
     let rq: u64;
-    let coin: *mut lp::iguana_info;
     let mut q = lp::LP_quoteinfo::default();
     let mut q2 = lp::LP_quoteinfo::default();
     let mut counter: i32 = 0;
@@ -1668,8 +1652,8 @@ pub unsafe fn lp_trade_command(
                             q.destcoin.as_mut_ptr(),
                         )
                     }
-                    coin = lp::LP_coinfind(q.srccoin.as_mut_ptr());
-                    if coin.is_null() || (*coin).inactive != 0 as libc::c_uint {
+                    let coin = unwrap!(lp_coinfind(&ctx, c2s!(q.srccoin)));
+                    if coin.is_none() {
                         //printf("%s is not active\n",Q.srccoin);
                         return retval;
                     } else if price <= 1e-15f64 || ask <= 1e-15f64 {
@@ -1814,7 +1798,7 @@ pub struct AutoBuyInput {
     dest_pub_key: Option<String>
 }
 
-pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
+pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
     if input.price < SMALLVAL {
         return ERR!("Price is too low, minimum is {}", SMALLVAL);
     }
@@ -1831,7 +1815,7 @@ pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
             if volume <= 0. {
                 return ERR!("Volume must be greater than 0");
             }
-            (find_coin(Some(&input.base)), find_coin(Some(&input.rel)), volume, input.price)
+            (try_s!(lp_coinfind(&ctx, &input.base)), try_s!(lp_coinfind(&ctx, &input.rel)), volume, input.price)
         },
         Some("sell") => {
             let volume = if input.dump > 0. {
@@ -1843,29 +1827,25 @@ pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
             if volume <= 0. {
                 return ERR!("Volume must be greater than 0");
             }
-            (find_coin(Some(&input.rel)), find_coin(Some(&input.base)), volume, 1. / input.price)
+            (try_s!(lp_coinfind(&ctx, &input.rel)), try_s!(lp_coinfind(&ctx, &input.base)), volume, 1. / input.price)
         },
         _ => return ERR!("Auto buy must be called only from buy/sell RPC methods")
     };
-    if base.is_none() {
-        return ERR!("Base coin is not found or inactive");
-    }
-    if rel.is_none() {
-        return ERR!("Rel coin is not found or inactive");
-    }
+    let base = match base {Some(c) => c, None => return ERR!("Base coin is not found or inactive")};
+    let rel = match rel {Some(c) => c, None => return ERR!("Rel coin is not found or inactive")};
+    let base_ii = base.iguana_info();
+    let rel_ii = rel.iguana_info();
 
     let mut timeout = input.timeout.unwrap_or(unsafe { lp::LP_AUTOTRADE_TIMEOUT });
     let mut num = 0;
     let num_ptr = &mut num as *mut i32;
 
     unsafe {
-        let base_coin = base.unwrap().0;
-        let rel_coin = rel.unwrap().0;
-        if (*base_coin).electrum != null_mut() && (*rel_coin).electrum != null_mut() {
+        if (*base_ii).electrum != null_mut() && (*rel_ii).electrum != null_mut() {
             if timeout < 2 * lp::LP_AUTOTRADE_TIMEOUT {
                 timeout = 2 * lp::LP_AUTOTRADE_TIMEOUT;
             }
-        } else if (*base_coin).electrum != null_mut() || (*rel_coin).electrum != null_mut() {
+        } else if (*base_ii).electrum != null_mut() || (*rel_ii).electrum != null_mut() {
             if timeout < (1.5 * lp::LP_AUTOTRADE_TIMEOUT as f32) as u32 {
                 timeout = (1.5 * lp::LP_AUTOTRADE_TIMEOUT as f32) as u32;
             }
@@ -1878,19 +1858,19 @@ pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
             lp::LP_alicequery_clear();
         }
 
-        if (*rel_coin).etomic[0] != 0 {
-            let etomic = find_coin(Some("ETOMIC"));
-            if etomic.is_none() {
-                return ERR!("ETOMIC is not found or inactive. It must be enabled for ETH/ERC20!");
-            }
-            let etomic_coin = etomic.unwrap().0;
-            lp::LP_address_utxo_reset(num_ptr, etomic_coin);
+        if (*rel_ii).etomic[0] != 0 {
+            let etomic = try_s!(lp_coinfind(&ctx, "ETOMIC"));
+            let etomic = match etomic {
+                Some (coin) => coin,
+                None => return ERR!("ETOMIC is not found or inactive. It must be enabled for ETH/ERC20!")
+            };
+            lp::LP_address_utxo_reset(num_ptr, etomic.iguana_info());
         } else {
-            lp::LP_address_utxo_reset(num_ptr, rel_coin);
+            lp::LP_address_utxo_reset(num_ptr, rel_ii);
             if num <= 1 {
-                if now_ms() / 1000 > ((*rel_coin).lastautosplit + 300).into() {
-                    (*rel_coin).lastautosplit = (now_ms() / 1000) as u32;
-                    let auto_split = lp::LP_autosplit(rel_coin);
+                if now_ms() / 1000 > ((*rel_ii).lastautosplit + 300).into() {
+                    (*rel_ii).lastautosplit = (now_ms() / 1000) as u32;
+                    let auto_split = lp::LP_autosplit(rel_ii);
                     let auto_split_str = try_s!(c_char_to_string(auto_split));
                     free_c_ptr(auto_split as *mut c_void);
                     return Ok(auto_split_str);
@@ -1925,8 +1905,8 @@ pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
                 &mut median as *mut u64,
                 &mut min_utxo as *mut u64,
                 &mut max_utxo as *mut u64,
-                rel_coin,
-                (*rel_coin).smartaddr.as_ptr() as *mut i8,
+                rel_ii,
+                (*rel_ii).smartaddr.as_ptr() as *mut i8,
             );
             if max_utxo > 0 {
                 volume = volume.min(sat_to_f(max_utxo) - sat_to_f(dest_tx_fee) * 3.);
@@ -1985,15 +1965,15 @@ pub fn lp_auto_buy(input: AutoBuyInput) -> Result<String, String> {
         if lp::LP_quotedestinfo(
             &mut q as *mut lp::LP_quoteinfo,
             lp::G.LP_mypub25519,
-            (*base_coin).smartaddr.as_mut_ptr(),
+            (*base_ii).smartaddr.as_mut_ptr(),
         ) < 0 {
             return ERR!("cant set ordermatch quote info");
         }
-        if (*rel_coin).etomic[0] != 0 || (*base_coin).etomic[0] != 0 {
-            if (*rel_coin).etomic[0] != 0 {
-                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*rel_coin).smartaddr.as_ptr());
-            } else if (*base_coin).etomic[0] != 0 {
-                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*base_coin).smartaddr.as_ptr());
+        if (*rel_ii).etomic[0] != 0 || (*base_ii).etomic[0] != 0 {
+            if (*rel_ii).etomic[0] != 0 {
+                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*rel_ii).smartaddr.as_ptr());
+            } else if (*base_ii).etomic[0] != 0 {
+                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*base_ii).smartaddr.as_ptr());
             }
         }
         let mut changed : i32 = 0;

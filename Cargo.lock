@@ -1418,6 +1418,7 @@ name = "portfolio"
 version = "0.1.0"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "coins 0.1.0",
  "common 0.1.0",
  "fomat-macros 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",

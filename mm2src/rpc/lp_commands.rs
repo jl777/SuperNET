@@ -17,8 +17,9 @@
 //  rpc_commands.rs
 //  marketmaker
 //
-use common::{bitcoin_address, bits256, coins_iter, find_coin, lp, rpc_response, rpc_err_response, HyRes, CORE, MM_VERSION};
+use common::{bitcoin_address, bits256, coins_iter, lp, rpc_response, rpc_err_response, HyRes, CORE, MM_VERSION};
 use common::mm_ctx::MmArc;
+use coins::lp_coinfind;
 use futures::Future;
 use futures_timer::Delay;
 use gstuff::now_ms;
@@ -622,14 +623,14 @@ pub fn eth_gas_price() -> HyRes {
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
 */
-pub fn buy(json: &Json) ->  HyRes {
+pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
-    rpc_response(200, try_h!(lp_auto_buy(input)))
+    rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
 }
 
-pub fn sell(json: &Json) ->  HyRes {
+pub fn sell(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
-    rpc_response(200, try_h!(lp_auto_buy(input)))
+    rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
 }
 /*
         else if ( coin[0] != 0 )
@@ -789,34 +790,39 @@ pub fn sell(json: &Json) ->  HyRes {
             */*/
 
 pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
-    let coin = match req["coin"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'coin' argument in request")};
-    let (ptr, _) = match find_coin (Some (coin)) {Some (t) => t, None => return rpc_err_response (500, &fomat! ("No such coin: " (coin)))};
+    let ticker = match req["coin"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'coin' argument in request")};
+    let coin = match lp_coinfind (&ctx, ticker) {
+        Ok (Some (t)) => t,
+        Ok (None) => return rpc_err_response (500, &fomat! ("No such coin: " (ticker))),
+        Err (err) => return rpc_err_response (500, &fomat! ("!lp_coinfind(" (ticker) "): " (err)))
+    };
+    let ii = coin.iguana_info();
 
-    unsafe {lp::LP_address (ptr, (*ptr).smartaddr.as_mut_ptr())};
+    unsafe {lp::LP_address (ii, (*ii).smartaddr.as_mut_ptr())};
     if req["reset"].as_i64().unwrap_or (0) != 0 {
         // AG: I wonder if we can narrow down the meaning of "reset" in order to touch the minimal amount of state?
         //     Reinitializing the state of a running program is generally a bad idea.
-        unsafe {(*ptr).privkeydepth = 0}
+        (*ii).privkeydepth = 0;
         let mut num: i32 = 0;
-        unsafe {lp::LP_address_utxo_reset (&mut num, ptr)};
+        unsafe {lp::LP_address_utxo_reset (&mut num, ii)};
         let passphrase = match req["passphrase"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'passphrase' in request")};
         unsafe {try_h! (lp_passphrase_init (&ctx, Some (passphrase), None, None))};
     }
     if unsafe {lp::G.LP_privkey.nonz()} {
-        unsafe {lp::LP_privkey_init (-1, ptr, lp::G.LP_privkey, lp::G.LP_mypub25519)};
+        unsafe {lp::LP_privkey_init (-1, ii, lp::G.LP_privkey, lp::G.LP_mypub25519)};
     } else {
         log! ("inventory] no LP_privkey");
     }
     let retjson = json! ({
         "result": "success",
-        "coin": coin,
+        "coin": ticker,
         "timestamp": now_ms() / 1000,
         "alice": []  // LP_inventory(coin)
         // "bob": LP_inventory(coin,1)
     });
     //LP_smartutxos_push(ptr);
     let mut num: i32 = 0;
-    unsafe {lp::LP_address_utxo_reset (&mut num, ptr)};
+    unsafe {lp::LP_address_utxo_reset (&mut num, ii)};
     rpc_response (200, try_h! (json::to_string (&retjson)))
 }
 
