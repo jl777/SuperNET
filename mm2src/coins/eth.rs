@@ -77,7 +77,7 @@ pub struct EthCoin(Arc<EthCoinImpl>);
 impl Deref for EthCoin {type Target = EthCoinImpl; fn deref (&self) -> &EthCoinImpl {&*self.0}}
 
 impl SwapOps for EthCoin {
-    fn send_buyer_fee(&self, fee_addr: &[u8], amount: u64) -> TransactionFut {
+    fn send_taker_fee(&self, fee_addr: &[u8], amount: u64) -> TransactionFut {
         let address = try_fus!(addr_from_raw_pubkey(fee_addr));
 
         Box::new(self.send_to_address(
@@ -86,7 +86,7 @@ impl SwapOps for EthCoin {
         ).map(|tx| TransactionEnum::Eth(tx)))
     }
 
-    fn send_seller_payment(
+    fn send_maker_payment(
         &self,
         time_lock: u32,
         _pub_a0: &[u8],
@@ -105,7 +105,7 @@ impl SwapOps for EthCoin {
         ).map(|tx| TransactionEnum::Eth(tx)))
     }
 
-    fn send_buyer_payment(
+    fn send_taker_payment(
         &self,
         time_lock: u32,
         _pub_a0: &[u8],
@@ -124,15 +124,15 @@ impl SwapOps for EthCoin {
         ).map(|tx| TransactionEnum::Eth(tx)))
     }
 
-    fn send_seller_spends_buyer_payment(
+    fn send_maker_spends_taker_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
-        _b_priv_0: &[u8],
+        taker_payment_tx: TransactionEnum,
+        b_priv_0: &[u8],
         b_priv_n: &[u8],
         taker_addr: &[u8],
         amount: u64
     ) -> TransactionFut {
-        let tx = match buyer_payment_tx {
+        let tx = match taker_payment_tx {
             TransactionEnum::Eth(t) => t,
             _ => panic!(),
         };
@@ -140,15 +140,15 @@ impl SwapOps for EthCoin {
         Box::new(self.spend_hash_time_locked_payment(tx, b_priv_n).map(|t| TransactionEnum::Eth(t)))
     }
 
-    fn send_buyer_spends_seller_payment(
+    fn send_taker_spends_maker_payment(
         &self,
-        seller_payment_tx: TransactionEnum,
+        maker_payment_tx: TransactionEnum,
         _a_priv_0: &[u8],
         b_priv_n: &[u8],
         maker_addr: &[u8],
         amount: u64
     ) -> TransactionFut {
-        let tx = match seller_payment_tx {
+        let tx = match maker_payment_tx {
             TransactionEnum::Eth(t) => t,
             _ => panic!(),
         };
@@ -156,9 +156,9 @@ impl SwapOps for EthCoin {
         Box::new(self.spend_hash_time_locked_payment(tx, b_priv_n).map(|t| TransactionEnum::Eth(t)))
     }
 
-    fn send_buyer_refunds_payment(
+    fn send_taker_refunds_payment(
         &self,
-        buyer_payment_tx: TransactionEnum,
+        taker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
         maker_addr: &[u8],
         amount: u64
@@ -166,9 +166,9 @@ impl SwapOps for EthCoin {
         unimplemented!();
     }
 
-    fn send_seller_refunds_payment(
+    fn send_maker_refunds_payment(
         &self,
-        seller_payment_tx: TransactionEnum,
+        maker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
         taker_addr: &[u8],
         amount: u64
@@ -427,7 +427,7 @@ fn test_send_and_spend_eth_payment() {
     }));
 
     let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_seller_payment(
+    let res = coin.send_taker_payment(
         (now_ms() / 1000) as u32 + 1000,
         &[0],
         &[0],
@@ -443,7 +443,7 @@ fn test_send_and_spend_eth_payment() {
 
     log!([eth.hash()]);
 
-    let refund = coin.send_buyer_spends_seller_payment(
+    let refund = coin.send_taker_spends_maker_payment(
         TransactionEnum::Eth(eth),
         &[0],
         &secret_hex,
@@ -479,7 +479,7 @@ fn test_send_and_spend_erc20_payment() {
     }));
 
     let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_seller_payment(
+    let res = coin.send_maker_payment(
         (now_ms() / 1000) as u32 + 1000,
         &[0],
         &[0],
@@ -495,7 +495,7 @@ fn test_send_and_spend_erc20_payment() {
 
     log!([eth.hash()]);
 
-    let refund = coin.send_buyer_spends_seller_payment(
+    let refund = coin.send_taker_spends_maker_payment(
         TransactionEnum::Eth(eth),
         &[0],
         &secret_hex,
@@ -551,7 +551,7 @@ fn test_send_buyer_fee_eth() {
     }));
 
     let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_buyer_fee(&pubkey, 1000).wait().unwrap();
+    let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
 
     let eth: SignedEthTransaction = match res {
         TransactionEnum::Eth(t) => t,
@@ -581,7 +581,7 @@ fn test_send_buyer_fee_erc20() {
     }));
 
     let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_buyer_fee(&pubkey, 1000).wait().unwrap();
+    let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
 
     let eth: SignedEthTransaction = match res {
         TransactionEnum::Eth(t) => t,

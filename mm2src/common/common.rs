@@ -1,4 +1,4 @@
-//! A common dependency for the non-WASM crates.
+//! A common dependency for subcrates.
 //! 
 //!                   common
 //!                     ^
@@ -9,6 +9,8 @@
 //!         +-----------+----------+
 //!                     |
 //!                   binary
+
+#![feature(non_ascii_idents)]
 
 #[macro_use] extern crate duct;
 #[macro_use] extern crate fomat_macros;
@@ -604,16 +606,6 @@ pub fn rpc_err_response(status: u16, msg: &str) -> HyRes {
     log! ({"RPC error response: {}", msg});
 
     rpc_response(status, err_to_rpc_json_string(msg))
-}
-
-/// Wrapper for LP_coinfind C function
-pub fn find_coin (coin: Option<&str>) -> Option<(*mut lp::iguana_info, String)> {
-    let coin = match coin {Some (c) => c, None => return None};
-    let coin_cs = unwrap! (CString::new (coin));
-    let coin_inf = unsafe {lp::LP_coinfind (coin_cs.as_ptr() as *mut c_char)};
-    if coin_inf == null_mut() {return None}
-    if unsafe {(*coin_inf).inactive} != 0 {return None}
-    Some ((coin_inf, coin.into()))
 }
 
 /// A closure that would (re)start a `Future` to synchronize with an external resource in `RefreshedExternalResource`.

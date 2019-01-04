@@ -33,6 +33,8 @@ unsafe impl Send for IISafe {}
 unsafe impl Sync for IISafe {}
 
 lazy_static! {
+    /// NB: This singleton is here to support the C code. When the corresponding C code is ported,
+    ///     the `COINS` should be removed in favor of `CoinsContext::coins`.
     pub static ref COINS: Mutex<HashMap<String, IISafe>> = Mutex::new (HashMap::new());
 }
 

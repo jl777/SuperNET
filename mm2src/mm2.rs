@@ -19,7 +19,7 @@
 //  Copyright © 2017-2018 SuperNET. All rights reserved.
 //
 
-#![allow(non_camel_case_types)]
+#![feature(non_ascii_idents)]
 
 #[macro_use] extern crate common;
 #[allow(unused_imports)]
