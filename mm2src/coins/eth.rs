@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2018 The SuperNET Developers.                             *
+ * Copyright © 2014-2019 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -16,13 +16,13 @@
 //  eth.rs
 //  marketmaker
 //
-//  Copyright © 2017-2018 SuperNET. All rights reserved.
+//  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
 use bitcrypto::dhash160;
 use common::{CORE, slurp_url};
 use secp256k1::key::PublicKey;
-use ethabi::{Contract, Token};
-use ethcore_transaction::{ Action, Transaction as UnsignedEthTransaction};
+use ethabi::{Contract, Log, RawLog, Token};
+use ethcore_transaction::{ Action, Transaction as UnsignedEthTransaction, UnverifiedTransaction};
 use ethereum_types::{Address, U256, H160, H512};
 use ethkey::{ KeyPair, Secret, Public, public_to_address, SECP256K1 };
 use futures::Future;
@@ -34,8 +34,10 @@ use serde_json::{self as json};
 use std::borrow::Cow;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 use web3::transports::{ Http };
-use web3::types::{BlockNumber, Bytes, CallRequest};
+use web3::types::{BlockNumber, Bytes, CallRequest, FilterBuilder};
 use web3::{ self, Web3 };
 
 use super::utxo::compressed_key_pair_from_bytes;
@@ -205,16 +207,47 @@ impl MarketCoinOps for EthCoin {
         &self,
         tx: TransactionEnum,
         confirmations: i32,
-    ) -> Box<dyn Future<Item=(), Error=String>> {
-        unimplemented!();
+        wait_until: u64,
+    ) -> Result<(), String> {
+        let tx = match tx {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!(),
+        };
+
+        let mut confirmed_at = None;
+        let required_confirms = U256::from(confirmations);
+        loop {
+            if now_ms() / 1000 > wait_until {
+                return ERR!("Waited too long until {} for transaction {:?} confirmation ", wait_until, tx);
+            }
+
+            if confirmed_at.is_none() {
+                let receipt = try_s!(self.web3.eth().transaction_receipt(tx.hash()).wait());
+                confirmed_at = match receipt {
+                    Some(receipt) => receipt.block_number,
+                    None => {
+                        thread::sleep(Duration::from_secs(15));
+                        continue;
+                    },
+                }
+            }
+
+            let current_block = try_s!(self.web3.eth().block_number().wait());
+            if current_block - confirmed_at.unwrap() >= required_confirms {
+                return Ok(());
+            }
+            thread::sleep(Duration::from_secs(15));
+        }
     }
 
-    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut {
+    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String> {
         unimplemented!();
     }
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
-        unimplemented!();
+        let tx: UnverifiedTransaction = try_s!(rlp::decode(bytes));
+        let signed = try_s!(SignedEthTransaction::new(tx));
+        Ok(TransactionEnum::Eth(signed))
     }
 }
 
@@ -472,6 +505,35 @@ impl EthCoin {
                 self.sign_and_send_transaction(0.into(), Action::Call(token_addr), data, U256::from(150000))
             }
         }
+    }
+
+    fn spend_events(&self, from_block: u64) -> Box<Future<Item=Vec<Log>, Error=String>> {
+        let contract_event = try_fus!(SWAP_CONTRACT.event("ReceiverSpent"));
+        let filter = FilterBuilder::default()
+            .topics(Some(vec![contract_event.signature()]), None, None, None)
+            .from_block(BlockNumber::Number(from_block))
+            .address(vec![self.swap_contract_address])
+            .build();
+
+        let events_f = self.web3.eth().logs(filter).map_err(|e| ERRL!("{:?}", e));
+
+        Box::new(events_f.map(move |events| {
+            events.iter().filter_map(|event| {
+                let raw_log = RawLog {
+                    topics: event.topics.clone(),
+                    data: event.data.0.clone(),
+                };
+
+                match contract_event.parse_log(raw_log) {
+                    Ok(log) => Some(log),
+                    Err(e) => {
+                        // this situation shouldn't happen because we previously set the filter to get ReceiverSpent events only.
+                        log!("Skipping event " [event] " due to parse error " [e]);
+                        None
+                    }
+                }
+            }).collect()
+        }))
     }
 }
 
@@ -860,15 +922,17 @@ fn test_send_and_refund_eth_payment() {
         1000,
     ).wait().unwrap();
 
-    let eth: SignedEthTransaction = match res {
+    let eth: SignedEthTransaction = match res.clone() {
         TransactionEnum::Eth(t) => t,
         _ => panic!()
     };
 
     log!([eth.hash()]);
 
+    coin.wait_for_confirmations(res.clone(), 3, now_ms() / 1000 + 1000);
+
     let refund = coin.send_taker_refunds_payment(
-        TransactionEnum::Eth(eth),
+        res,
         &[0],
         &pubkey,
         1000,
@@ -880,4 +944,28 @@ fn test_send_and_refund_eth_payment() {
     };
 
     log!([eth.hash()]);
+}
+
+#[test]
+fn test_logs() {
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let web3 = Web3::new(transport);
+
+    let event = SWAP_CONTRACT.event("ReceiverSpent").unwrap();
+    let filter = FilterBuilder::default()
+        .topics(Some(vec![event.signature()]), None, None, None)
+        .from_block(BlockNumber::Number(4000000))
+        .address(vec![Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94")])
+        .build();
+
+    let events = web3.eth().logs(filter).wait().unwrap();
+
+    let raw_log = RawLog {
+        topics: events[0].topics.clone(),
+        data: events[0].data.0.clone(),
+    };
+
+    let parsed = event.parse_log(raw_log).unwrap();
+
+    log!([parsed]);
 }

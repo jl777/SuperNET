@@ -1057,13 +1057,14 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 swap.taker_payment = Some(taker_payment.clone());
 
-                let wait_fut = swap.taker_coin.wait_for_confirmations(
+                status.status(SWAP_STATUS, "Waiting for Taker payment confirmation…");
+                let wait = swap.taker_coin.wait_for_confirmations(
                     taker_payment,
-                    (*swap.basilisk_swap).I.aliceconfirms
+                    (*swap.basilisk_swap).I.aliceconfirms,
+                    (now_ms() / 1000) + 1000,
                 );
 
-                status.status(SWAP_STATUS, "Waiting for Taker fee confirmation…");
-                if let Err(err) = wait_fut.wait() {err!(-2006, "!taker_coin.wait_for_confirmations: "(err))}
+                if let Err(err) = wait {err!(-2006, "!taker_coin.wait_for_confirmations: "(err))}
 
                 AtomicSwapState::SpendTakerPayment
             },
@@ -1193,7 +1194,11 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 swap.maker_payment = Some(maker_payment.clone());
 
                 status.status(SWAP_STATUS, "Waiting for the confirmation of the Maker payment…");
-                if let Err(err) = swap.maker_coin.wait_for_confirmations(maker_payment, (*swap.basilisk_swap).I.bobconfirms).wait() {
+                if let Err(err) = swap.maker_coin.wait_for_confirmations(
+                    maker_payment,
+                    (*swap.basilisk_swap).I.bobconfirms,
+                    now_ms() / 1000 + 1000,
+                ) {
                     err!(-1005, "!maker_coin.wait_for_confirmations: "(err))
                 }
 
@@ -1224,8 +1229,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             },
             AtomicSwapState::WaitTakerPaymentSpent {sending_f} => {
                 status.status(SWAP_STATUS, "Waiting for taker payment spend…");
-                let wait_spend_fut = swap.taker_coin.wait_for_tx_spend(swap.taker_payment.clone().unwrap(), now_ms() / 1000 + 1000);
-                let got = wait_spend_fut.wait();
+                let got = swap.taker_coin.wait_for_tx_spend(swap.taker_payment.clone().unwrap(), now_ms() / 1000 + 1000);
                 drop(sending_f);
 
                 match got {

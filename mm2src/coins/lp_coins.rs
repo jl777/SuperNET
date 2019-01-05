@@ -153,9 +153,10 @@ pub trait MarketCoinOps {
         &self,
         tx: TransactionEnum,
         confirmations: i32,
-    ) -> Box<dyn Future<Item=(), Error=String>>;
+        wait_until: u64,
+    ) -> Result<(), String>;
 
-    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut;
+    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String>;
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 }

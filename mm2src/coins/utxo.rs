@@ -684,29 +684,28 @@ impl MarketCoinOps for UtxoCoin {
         &self,
         tx: TransactionEnum,
         confirmations: i32,
-    ) -> Box<dyn Future<Item=(), Error=String>> {
+        wait_until: u64,
+    ) -> Result<(), String> {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let res = try_fus!(self.rpc_client.wait_for_confirmations(
+        self.rpc_client.wait_for_confirmations(
             &tx.transaction,
             confirmations as u32,
-            now_ms() / 1000 + 1000,
-        ));
-
-        Box::new(futures::future::ok(res))
+            wait_until,
+        )
     }
 
-    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> TransactionFut {
+    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String> {
         let tx = match transaction {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let res = try_fus!(self.rpc_client.wait_for_payment_spend(
+        let res = try_s!(self.rpc_client.wait_for_payment_spend(
             &tx.transaction,
             0,
             now_ms() / 1000 + 1000,
         ));
 
-        Box::new(futures::future::ok(TransactionEnum::ExtendedUtxoTx(ExtendedUtxoTx {
+        Ok(TransactionEnum::ExtendedUtxoTx(ExtendedUtxoTx {
             transaction: res,
             redeem_script: vec![].into(),
-        })))
+        }))
     }
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
