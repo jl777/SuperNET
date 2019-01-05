@@ -210,13 +210,13 @@ extern "C" int32_t as_dht_pkt_alert (
     *direction = packet_direction;
 
     lt::span<char const> pkt = dpa->pkt_buf();
-    if (pkt.size() > buflen) return -1;
+    if ((int32_t) pkt.size() > buflen) return -1;
     std::copy (pkt.begin(), pkt.end(), buf);
 
     std::ostringstream ip_buf;
     ip_buf << dpa->node.address();
     std::string ip = ip_buf.str();
-    if (ip.size() > *ipbuflen) return -2;
+    if ((int32_t) ip.size() > *ipbuflen) return -2;
     std::copy (ip.begin(), ip.end(), ipbuf);
     *ipbuflen = (int32_t) ip.size();
     *port = dpa->node.port();
@@ -291,7 +291,9 @@ extern "C" void dht_get (dugout_t* dugout,
 
 extern "C" void lt_send_udp (dugout_t* dugout) {
     // NB: Local IPs aren't routable, so LT listens on 0.0.0.0 in the unit tests, reachable through 127.0.0.1.
-    lt::udp::endpoint ep (lt::make_address ("127.0.0.1"), 2111);
+    lt::error_code ec;
+    lt::udp::endpoint ep (lt::make_address ("127.0.0.1", ec), 2111);
+    if (ec) return;  // TODO: Error via `dugout`.
     lt::entry en;
     // TODO: Figure out a proper way to extend the DHT packets, if any?
     en["qwe"] = "foobar";

@@ -52,5 +52,5 @@ pub fn test_dht() {
     }
 
     // WIP, direct UDP communication (triggered by `send`).
-    unwrap! (wait_for_log (&alice.log, 12., &|en| en.contains ("as_dht_pkt_alert! from 127.0.0.1")));
+    unwrap! (wait_for_log (&alice.log, 12., &|en| en.contains ("[dht] Direct packet received!")));
 }

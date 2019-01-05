@@ -576,6 +576,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 if unsafe {from_utf8_unchecked (pkt) .contains ("3:qwe6:foobar")} {
                     let ip = unsafe {from_utf8_unchecked (&ipbuf[0 .. ipbuflen as usize])};
                     log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", " (binprint (pkt, b'.')));
+                    cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
                 }
             } else if rc < 0 {
                 log! ("as_dht_pkt error: " (rc));
