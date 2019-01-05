@@ -39,6 +39,7 @@ use std::net::IpAddr;
 use std::path::Path;
 use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
+use std::str::from_utf8_unchecked;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -98,6 +99,11 @@ extern "C" {
         saltbuf: *mut i8, saltbuflen: i32,
         buf: *mut u8, buflen: i32,
         seq: *mut i64, auth: *mut bool) -> i32;
+    fn as_dht_pkt_alert (alert: *const Alert,
+        buf: *mut u8, buflen: i32,
+        direction: *mut i8,
+        ipbuf: *mut u8, ipbuflen: *mut i32,
+        port: *mut u16) -> i32;
     // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
     //           The public key of that pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
     // * `keylen` - The length of the `key` in bytes. Must be 32 bytes, no more no less.
@@ -132,6 +138,7 @@ extern "C" {
     //             This public key identifies the entries obtained via the `dht_mutable_item_alert` (because DHT storage nodes don't know our seed).
     // * `pkbuflen` - Must be 32 bytes. Passed explicitly in order for us to check it.
     fn dht_get (dugout: *mut dugout_t, key: *const u8, keylen: i32, salt: *const u8, saltlen: i32, pkbuf: *mut u8, pkbuflen: i32);
+    fn lt_send_udp (dugout: *mut dugout_t);  // WIP
 }
 
 /// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
@@ -240,6 +247,11 @@ fn ratelim_maintenance (seed: [u8; 32]) -> f32 {
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
 fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: &mut dugout_t) {
+    if 1 == 1 {  // TODO
+        // Exploring direct UDP communication.
+        unsafe {lt_send_udp (dugout)};
+    }
+
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
     // chunk 3 {{piece of data} crc32}
@@ -548,7 +560,27 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             // We don't want to hit the 1000 bytes limit
             // (in BEP 44 it's optional, but I guess a lot of implementations enforce it by default),
             // meaning that a limited-size buffer is enough to get the data from C.
-            let mut buf: [u8; 1024] = unsafe {uninitialized()};
+            let mut buf: [u8; 2048] = unsafe {uninitialized()};
+
+            let mut ipbuf: [u8; 64] = unsafe {uninitialized()};
+            let mut direction: i8 = 1;  // Interested in incoming packets.
+            let mut ipbuflen = ipbuf.len() as i32;
+            let mut port: u16 = 0;
+            let rc = unsafe {as_dht_pkt_alert (alert,
+                buf.as_mut_ptr(), buf.len() as i32,
+                &mut direction,
+                ipbuf.as_mut_ptr(), &mut ipbuflen,
+                &mut port)};
+            if rc > 0 {  // TODO
+                let pkt = &buf[0 .. rc as usize];
+                if unsafe {from_utf8_unchecked (pkt) .contains ("3:qwe6:foobar")} {
+                    let ip = unsafe {from_utf8_unchecked (&ipbuf[0 .. ipbuflen as usize])};
+                    log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", " (binprint (pkt, b'.')));
+                    cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
+                }
+            } else if rc < 0 {
+                log! ("as_dht_pkt error: " (rc));
+            }
 
             let mut keybuf: [u8; 32] = unsafe {uninitialized()};
             let mut saltbuf: [i8; 256] = unsafe {uninitialized()};
