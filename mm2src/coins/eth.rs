@@ -21,7 +21,7 @@
 use bitcrypto::dhash160;
 use common::{CORE, slurp_url};
 use secp256k1::key::PublicKey;
-use ethabi::{Contract, Log, RawLog, Token};
+use ethabi::{Contract, RawLog, Token};
 use ethcore_transaction::{ Action, Transaction as UnsignedEthTransaction, UnverifiedTransaction};
 use ethereum_types::{Address, U256, H160, H512};
 use ethkey::{ KeyPair, Secret, Public, public_to_address, SECP256K1 };
@@ -37,7 +37,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use web3::transports::{ Http };
-use web3::types::{BlockNumber, Bytes, CallRequest, FilterBuilder};
+use web3::types::{BlockNumber, Bytes, CallRequest, FilterBuilder, Log, TransactionId};
 use web3::{ self, Web3 };
 
 use super::utxo::compressed_key_pair_from_bytes;
@@ -240,8 +240,67 @@ impl MarketCoinOps for EthCoin {
         }
     }
 
-    fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String> {
-        unimplemented!();
+    fn wait_for_tx_spend(&self, tx: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String> {
+        let tx = match tx {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!(),
+        };
+
+        let func_name = match self.coin_type {
+            EthCoinType::Eth => "ethPayment",
+            EthCoinType::Erc20(token_addr) => "erc20Payment",
+        };
+
+        let payment_func = try_s!(SWAP_CONTRACT.function(func_name));
+        let decoded = try_s!(payment_func.decode_input(&tx.data));
+        let id = match &decoded[0] {
+            Token::FixedBytes(bytes) => bytes.clone(),
+            _ => panic!(),
+        };
+
+        loop {
+            if now_ms() / 1000 > wait_until {
+                return ERR!("Waited too long until {} for transaction {:?} to be spent ", wait_until, tx);
+            }
+
+            let events = try_s!(self.spend_events(4000000).wait());
+
+            let found = events.iter().find(|event| &event.data.0[..32] == id.as_slice());
+
+            if let Some(event) = found {
+                if let Some(tx_hash) = event.transaction_hash {
+                    let transaction = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx_hash)).wait()).unwrap();
+
+                    return Ok(TransactionEnum::Eth(SignedEthTransaction {
+                        transaction: UnverifiedTransaction {
+                            r: 0.into(),
+                            s: 0.into(),
+                            v: 0,
+                            hash: tx_hash,
+                            unsigned: UnsignedEthTransaction {
+                                data: transaction.input.0,
+                                gas_price: transaction.gas_price,
+                                gas: transaction.gas,
+                                value: transaction.value,
+                                nonce: transaction.nonce,
+                                action: match transaction.to {
+                                    Some(addr) => Action::Call(addr),
+                                    None => Action::Create,
+                                }
+                            }
+                        },
+                        public: None,
+                        sender: transaction.from,
+                    }))
+                } else {
+                    thread::sleep(Duration::from_secs(15));
+                    continue;
+                }
+            } else {
+                thread::sleep(Duration::from_secs(15));
+                continue;
+            }
+        }
     }
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
@@ -515,25 +574,7 @@ impl EthCoin {
             .address(vec![self.swap_contract_address])
             .build();
 
-        let events_f = self.web3.eth().logs(filter).map_err(|e| ERRL!("{:?}", e));
-
-        Box::new(events_f.map(move |events| {
-            events.iter().filter_map(|event| {
-                let raw_log = RawLog {
-                    topics: event.topics.clone(),
-                    data: event.data.0.clone(),
-                };
-
-                match contract_event.parse_log(raw_log) {
-                    Ok(log) => Some(log),
-                    Err(e) => {
-                        // this situation shouldn't happen because we previously set the filter to get ReceiverSpent events only.
-                        log!("Skipping event " [event] " due to parse error " [e]);
-                        None
-                    }
-                }
-            }).collect()
-        }))
+        Box::new(self.web3.eth().logs(filter).map_err(|e| ERRL!("{:?}", e)))
     }
 }
 
@@ -609,7 +650,7 @@ fn web3_from_core() {
     let transport = Http::with_remote_reactor("http://195.201.0.6:8555", &CORE, 1).unwrap();
 
     let web3 = Web3::new(transport);
-    log!([web3.eth().gas_price().wait().unwrap()]);
+    log!([web3.eth().block_number().wait().unwrap()]);
 }
 
 #[test]
@@ -622,7 +663,7 @@ fn test_send_and_spend_eth_payment() {
 
     let coin = EthCoin(Arc::new(EthCoinImpl {
         decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+        gas_station_url: None,
         web3,
         coin_type: EthCoinType::Eth,
         ticker: "ETH".into(),
@@ -632,7 +673,7 @@ fn test_send_and_spend_eth_payment() {
     }));
 
     let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_taker_payment(
+    let payment = coin.send_taker_payment(
         (now_ms() / 1000) as u32 + 1000,
         &[0],
         &[0],
@@ -641,12 +682,12 @@ fn test_send_and_spend_eth_payment() {
         1000,
     ).wait().unwrap();
 
-    let eth: SignedEthTransaction = match res {
+    let eth: SignedEthTransaction = match payment.clone() {
         TransactionEnum::Eth(t) => t,
         _ => panic!()
     };
 
-    log!([eth.hash()]);
+    log!([eth]);
 
     let refund = coin.send_taker_spends_maker_payment(
         TransactionEnum::Eth(eth),
@@ -662,6 +703,11 @@ fn test_send_and_spend_eth_payment() {
     };
 
     log!([eth.hash()]);
+
+
+    let find_spend = coin.wait_for_tx_spend(payment, now_ms() / 1000 + 1000).unwrap();
+
+    log!([find_spend]);
 }
 
 #[test]
@@ -913,7 +959,7 @@ fn test_send_and_refund_eth_payment() {
     }));
 
     let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_maker_payment(
+    let payment = coin.send_maker_payment(
         (now_ms() / 1000) as u32 - 1000,
         &[0],
         &[0],
@@ -922,17 +968,17 @@ fn test_send_and_refund_eth_payment() {
         1000,
     ).wait().unwrap();
 
-    let eth: SignedEthTransaction = match res.clone() {
+    let eth: SignedEthTransaction = match payment.clone() {
         TransactionEnum::Eth(t) => t,
         _ => panic!()
     };
 
     log!([eth.hash()]);
 
-    coin.wait_for_confirmations(res.clone(), 3, now_ms() / 1000 + 1000);
+    coin.wait_for_confirmations(payment.clone(), 3, now_ms() / 1000 + 1000);
 
     let refund = coin.send_taker_refunds_payment(
-        res,
+        payment,
         &[0],
         &pubkey,
         1000,

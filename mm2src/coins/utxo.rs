@@ -699,7 +699,7 @@ impl MarketCoinOps for UtxoCoin {
         let res = try_s!(self.rpc_client.wait_for_payment_spend(
             &tx.transaction,
             0,
-            now_ms() / 1000 + 1000,
+            wait_until,
         ));
 
         Ok(TransactionEnum::ExtendedUtxoTx(ExtendedUtxoTx {

@@ -587,7 +587,7 @@ dependencies = [
 [[package]]
 name = "ethcore-transaction"
 version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#2aaa28e987c16faf83cfd62e5841432c19d13db3"
+source = "git+https://github.com/artemii235/parity-ethereum.git#84ab4c7bcefea87b0c48f1e432d05165c775ff32"
 dependencies = [
  "ethereum-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethkey 0.3.0 (git+https://github.com/artemii235/parity-ethereum.git)",
@@ -634,7 +634,7 @@ dependencies = [
 [[package]]
 name = "ethkey"
 version = "0.3.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#2aaa28e987c16faf83cfd62e5841432c19d13db3"
+source = "git+https://github.com/artemii235/parity-ethereum.git#84ab4c7bcefea87b0c48f1e432d05165c775ff32"
 dependencies = [
  "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "edit-distance 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1077,7 +1077,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "mem"
 version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#2aaa28e987c16faf83cfd62e5841432c19d13db3"
+source = "git+https://github.com/artemii235/parity-ethereum.git#84ab4c7bcefea87b0c48f1e432d05165c775ff32"
 
 [[package]]
 name = "memchr"
@@ -2343,7 +2343,7 @@ dependencies = [
 [[package]]
 name = "unexpected"
 version = "0.1.0"
-source = "git+https://github.com/artemii235/parity-ethereum.git#2aaa28e987c16faf83cfd62e5841432c19d13db3"
+source = "git+https://github.com/artemii235/parity-ethereum.git#84ab4c7bcefea87b0c48f1e432d05165c775ff32"
 
 [[package]]
 name = "unicase"
