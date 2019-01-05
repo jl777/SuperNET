@@ -50,4 +50,7 @@ pub fn test_dht() {
         let received = unwrap! (receiving_f.wait());
         assert_eq! (received, message);
     }
+
+    // WIP, direct UDP communication (triggered by `send`).
+    unwrap! (wait_for_log (&alice.log, 12., &|en| en.contains ("as_dht_pkt_alert! from 127.0.0.1")));
 }
