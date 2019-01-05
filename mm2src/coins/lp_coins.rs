@@ -612,6 +612,11 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         coins.iter().find (|coin| coin["coin"].as_str() == Some (ticker)) .unwrap_or (&Json::Null)
     } else {&Json::Null};
 
+    if coins_en.is_null() {
+        ctx.log.log ("😅", &[&("coin" as &str), &ticker, &("no-conf" as &str)],
+            &fomat! ("Warning, coin " (ticker) " is used without a corresponding configuration."));
+    }
+
     let c_ticker = try_s! (CString::new (ticker));
     let rpcport = match coins_en["rpcport"].as_u64() {
         Some (port) if port > 0 && port < u16::max_value() as u64 => port as u16,
@@ -626,7 +631,6 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
     // NB: Read values from local variables and not from `ii`
     //     (that is, to read A: let A = ...; ii.A = A; ii.B = ... A ...),
     //     allowing the compiler to verify the dependencies.
-    // TODO: Maybe a *table* with hardcoded defaults, for readability?
     try_s! (safecopy! (ii.symbol, "{}", ticker));
     ii.txversion = coins_en["txversion"].as_i64().unwrap_or (if ticker == "PART" {160} else {1}) as i32;
     ii.updaterate = (now_ms() / 1000) as u32;

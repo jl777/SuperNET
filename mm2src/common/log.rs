@@ -91,6 +91,8 @@ pub fn short_log_time() -> DelayedFormat<StrftimeItems<'static>> {
 /// This logging SHOULD be human-readable but it is not intended for the end users specifically.
 /// Rather, it's being used as debugging and testing tool.
 /// 
+/// (As such it doesn't have to be a text paragraph, the capital letters and end marks are not necessary).
+/// 
 /// For the user-targeted logging use the `LogState::log` instead.
 /// 
 /// On Windows the Rust standard output and the standard output of the MM1 C library are not compatible,
@@ -503,6 +505,9 @@ impl LogState {
     /// as the information here is intended for the end users
     /// (and to be shared through the GUI),
     /// explaining what's going on with MM.
+    /// 
+    /// Since the focus here is on human-readability, the log entry SHOULD be treated
+    /// as a text paragraph, namely starting with a capital letter and ending with an end mark.
     /// 
     /// * `emotion` - We might use a unicode smiley here
     ///   (https://unicode.org/emoji/charts/full-emoji-list.html)
