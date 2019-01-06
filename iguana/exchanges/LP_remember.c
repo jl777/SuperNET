@@ -93,26 +93,6 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
         if ( swap->I.etomicsrc[0] != 0 )
             fprintf(fp,",\"etomicsrc\":\"%s\"",swap->I.etomicsrc);
-#ifndef NOTETOMIC
-        if (swap->myfee.I.ethTxid[0] != 0) {
-            fprintf(fp,",\"aliceFeeEthTx\":\"%s\"", swap->myfee.I.ethTxid);
-        }
-        if (swap->otherfee.I.ethTxid[0] != 0) {
-            fprintf(fp,",\"aliceFeeEthTx\":\"%s\"", swap->otherfee.I.ethTxid);
-        }
-        if (swap->bobdeposit.I.ethTxid[0] != 0) {
-            fprintf(fp,",\"bobDepositEthTx\":\"%s\"", swap->bobdeposit.I.ethTxid);
-        }
-        if (swap->bobpayment.I.ethTxid[0] != 0) {
-            fprintf(fp,",\"bobPaymentEthTx\":\"%s\"", swap->bobpayment.I.ethTxid);
-        }
-        if (swap->alicepayment.I.ethTxid[0] != 0) {
-            fprintf(fp,",\"alicePaymentEthTx\":\"%s\"", swap->alicepayment.I.ethTxid);
-        }
-
-        fprintf(fp,",\"aliceRealSat\":\"%" PRId64 "\"", swap->I.alicerealsat);
-        fprintf(fp,",\"bobRealSat\":\"%" PRId64 "\"", swap->I.bobrealsat);
-#endif
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
             fprintf(fp,",\"alicetomic\":\"%s\"",swap->I.alicetomic);
@@ -271,22 +251,6 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
         {
             if ( (reqjson= cJSON_Parse(fstr)) != 0 )
             {
-#ifndef NOTETOMIC
-                if (strcmp(rawtx->symbol,"ETOMIC") == 0) {
-                    jdelete(reqjson,"txid");
-                    jdelete(reqjson,"amount");
-                    jaddstr(reqjson,"txid", rawtx->I.ethTxid);
-                    jaddnum(reqjson,"amount", dstr(rawtx->I.eth_amount));
-                    jdelete(reqjson, "coin");
-                    if (rawtx == &swap->myfee || rawtx == &swap->otherfee || rawtx == &swap->alicepayment || rawtx == &swap->bobspend || rawtx == &swap->alicereclaim) {
-                        jaddstr(reqjson,"coin", swap->I.alicestr);
-                    }
-
-                    if (rawtx == &swap->bobdeposit || rawtx == &swap->bobrefund || rawtx == &swap->aliceclaim || rawtx == &swap->bobpayment || rawtx == &swap->bobreclaim || rawtx == &swap->alicespend) {
-                        jaddstr(reqjson,"coin", swap->I.bobstr);
-                    }
-                }
-#endif
                 if ( jobj(reqjson,"method") != 0 )
                     jdelete(reqjson,"method");
                 jaddstr(reqjson,"method","update");
@@ -1162,8 +1126,6 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
     srcAdest = srcBdest = destAdest = destBdest = 0;
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
-    LP_etomicsymbol(bobstr,bobtomic,rswap.src);
-    LP_etomicsymbol(alicestr,alicetomic,rswap.dest);
     lockduration = LP_atomic_locktime(rswap.bobcoin,rswap.alicecoin);
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,bobstr) != 0 || strcmp(rswap.alicecoin,alicestr) != 0 )
     {

@@ -109,34 +109,6 @@ fn bindgen<
 fn generate_bindings() {
     let _ = fs::create_dir("c_headers");
 
-    bindgen(
-        vec![
-            "../../iguana/exchanges/etomicswap/etomiclib.h".into(),
-            "../../iguana/exchanges/etomicswap/etomiccurl.h".into(),
-        ],
-        "c_headers/etomiclib.rs",
-        empty(),
-        [
-            "AliceSendsEthPaymentInput",
-            "AliceSendsErc20PaymentInput",
-            "AliceReclaimsPaymentInput",
-            "BobSpendsAlicePaymentInput",
-            "BobSendsEthDepositInput",
-            "BobSendsErc20DepositInput",
-            "BobRefundsDepositInput",
-            "AliceClaimsBobDepositInput",
-            "BobSendsEthPaymentInput",
-            "BobSendsErc20PaymentInput",
-            "BobReclaimsBobPaymentInput",
-            "AliceSpendsBobPaymentInput",
-            "ApproveErc20Input",
-            "EthTxReceipt",
-            "EthTxData",
-        ]
-        .iter(),
-        empty(),
-    );
-
     // NB: curve25519.h and cJSON.h are needed to parse LP_include.h.
     bindgen(
         vec![
@@ -273,7 +245,6 @@ fn generate_bindings() {
             "LP_reservation_check",
             "LP_nanobind",
             "LP_instantdex_txids",
-            "LP_etomicsymbol",
             "LP_calc_waittimeout",
             "LP_pubkeys_verify",
             "LP_pubkeys_data",

@@ -430,10 +430,6 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
     let taddr = 0;
     let mut priv_key = lp::LP_privkey(coin.iguana_info().symbol.as_mut_ptr(), c_address.as_ptr() as *mut c_char, taddr);
 
-    if coin.iguana_info().etomic[0] != 0 {
-        if let Some(e_coin) = unwrap!(lp_coinfind(ctx, "ETOMIC")) {
-            priv_key = lp::LP_privkey(e_coin.iguana_info().symbol.as_mut_ptr(), e_coin.iguana_info().smartaddr.as_mut_ptr(), taddr);
-    }   }
     if priv_key.nonz() && lp::G.LP_mypub25519 == (*qp).srchash {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
         let d_trust = lp::LP_dynamictrust((*qp).othercredits, (*qp).desthash, lp::LP_kmdvalue((*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis as i64));
@@ -1008,19 +1004,6 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     if (*qp).srchash.nonz() == false || (*qp).srchash == lp::G.LP_mypub25519 {
         qprice = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
         strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
-        if coin.iguana_info().etomic[0] != 0 {
-            unwrap!(safecopy!((*qp).etomicsrc, "{}", coin.address()))
-        } else if other_coin.iguana_info().etomic[0] != 0 {
-            unwrap!(safecopy!((*qp).etomicsrc, "{}", other_coin.address()))
-        }
-        if coin.iguana_info().etomic[0] != 0 {//|| othercoin->etomic[0] != 0 )
-            if let Some(ecoin) = unwrap!(lp_coinfind(ctx, "ETOMIC")) {
-                unwrap!(safecopy!((*qp).coinaddr, "{}", ecoin.address()))
-            } else {
-                log!("ETOMIC coin not found");
-                return null_mut()
-            }
-        }
         strcpy((*butxo).coinaddr.as_mut_ptr(), (*qp).coinaddr.as_mut_ptr());
         (*qp).srchash = lp::G.LP_mypub25519;
     } else {
@@ -1050,19 +1033,6 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
 //printf("LP_address_utxo_reset.%s\n",coin->symbol);
 //LP_address_utxo_reset(coin);
 //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
-    if coin.iguana_info().etomic[0] != 0 {
-        unwrap!(safecopy!((*qp).etomicsrc, "{}", coin.address()))
-    } else if other_coin.iguana_info().etomic[0] != 0 {
-        unwrap!(safecopy!((*qp).etomicsrc, "{}", other_coin.address()))
-    }
-    if coin.iguana_info().etomic[0] != 0 {
-        if let Some(ecoin) = unwrap!(lp_coinfind(ctx,"ETOMIC")) {
-            unwrap!(safecopy!((*qp).coinaddr, "{}", ecoin.address()))
-        } else {
-            log!("ETOMIC coin not found");
-            return null_mut()
-        }
-    }
     lp::LP_address_utxo_reset(&mut num, coin.iguana_info());
     if price >= my_price {
         unwrap!(safecopy!((*qp).gui, "{}", c2s!(lp::G.gui)));
@@ -1858,26 +1828,6 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
             lp::LP_alicequery_clear();
         }
 
-        if (*rel_ii).etomic[0] != 0 {
-            let etomic = try_s!(lp_coinfind(&ctx, "ETOMIC"));
-            let etomic = match etomic {
-                Some (coin) => coin,
-                None => return ERR!("ETOMIC is not found or inactive. It must be enabled for ETH/ERC20!")
-            };
-            lp::LP_address_utxo_reset(num_ptr, etomic.iguana_info());
-        } else {
-            lp::LP_address_utxo_reset(num_ptr, rel_ii);
-            if num <= 1 {
-                if now_ms() / 1000 > ((*rel_ii).lastautosplit + 300).into() {
-                    (*rel_ii).lastautosplit = (now_ms() / 1000) as u32;
-                    let auto_split = lp::LP_autosplit(rel_ii);
-                    let auto_split_str = try_s!(c_char_to_string(auto_split));
-                    free_c_ptr(auto_split as *mut c_void);
-                    return Ok(auto_split_str);
-                }
-                return ERR!("not enough utxo, please make more deposits");
-            }
-        }
         let mut tx_fee : u64 = 0;
         let mut dest_tx_fee : u64 = 0;
         let base_str = try_s!(CString::new(input.base.clone()));
@@ -1968,13 +1918,6 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
             (*base_ii).smartaddr.as_mut_ptr(),
         ) < 0 {
             return ERR!("cant set ordermatch quote info");
-        }
-        if (*rel_ii).etomic[0] != 0 || (*base_ii).etomic[0] != 0 {
-            if (*rel_ii).etomic[0] != 0 {
-                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*rel_ii).smartaddr.as_ptr());
-            } else if (*base_ii).etomic[0] != 0 {
-                strcpy(q.etomicdest.as_ptr() as *mut c_char, (*base_ii).smartaddr.as_ptr());
-            }
         }
         let mut changed : i32 = 0;
         q.mpnet = lp::G.mpnet;

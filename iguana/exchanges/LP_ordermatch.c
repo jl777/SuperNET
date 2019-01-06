@@ -67,8 +67,6 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
 double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp,int32_t iambob)
 {
     double qprice=0.; char str[65],srccoin[65],destcoin[65],bobtomic[64],alicetomic[64]; cJSON *txout; uint64_t txfee,desttxfee,srcvalue=0,srcvalue2=0,destvalue=0,destvalue2=0;
-    LP_etomicsymbol(srccoin,bobtomic,qp->srccoin);
-    LP_etomicsymbol(destcoin,alicetomic,qp->destcoin);
   //printf(">>>>>>> quote satoshis.(%.8f %.8f) %s %.8f -> %s %.8f\n",dstr(qp->satoshis),dstr(qp->destsatoshis),qp->srccoin,dstr(qp->satoshis),qp->destcoin,dstr(qp->destsatoshis));
     if ( butxo != 0 )
     {

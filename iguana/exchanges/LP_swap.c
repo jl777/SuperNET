@@ -104,10 +104,6 @@
  */
 #define TX_WAIT_TIMEOUT 1800 // hard to increase this without hitting protocol limits (2/4 hrs)
 
-#ifndef NOTETOMIC
-extern void *LP_eth_client;
-#endif
-
 uint32_t LP_atomic_locktime(char *base,char *rel)
 {
     if ( strcmp(base,"BTC") == 0 && strcmp(rel,"BTC") == 0 )
@@ -535,114 +531,6 @@ struct basilisk_rawtx *LP_swapdata_rawtx(struct basilisk_swap *swap,uint8_t *dat
     return(0);
 }
 
-int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
-{
-    bits256 otherhash,myhash,txid; int64_t txfee,val; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr,bobstr[65],alicestr[65],redeemaddr[64],checkaddr[64]; uint32_t quoteid,msgbits; struct iguana_info *coin;
-    LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
-    LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
-    if ( (coin= LP_coinfind(rawtx->symbol)) == 0 )
-    {
-        printf("LP_rawtx_spendscript couldnt find coin.(%s)\n",rawtx->symbol);
-        return(-1);
-    }
-    for (i=0; i<32; i++)
-        otherhash.bytes[i] = recvbuf[offset++];
-    for (i=0; i<32; i++)
-        myhash.bytes[i] = recvbuf[offset++];
-
-    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
-    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(msgbits),&msgbits);
-    datalen = recvbuf[offset++];
-    datalen += (int32_t)recvbuf[offset++] << 8;
-    if ( datalen > 1024 )
-    {
-        printf("LP_rawtx_spendscript %s datalen.%d too big\n",rawtx->name,datalen);
-        return(-1);
-    }
-    rawtx->I.redeemlen = recvbuf[offset++];
-    offset += 32;
-    data = &recvbuf[offset];
-    if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
-    {
-        memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
-        //for (i=0; i<rawtx->I.redeemlen; i++)
-        //    printf("%02x",rawtx->redeemscript[i]);
-        bitcoin_address(coin->symbol,redeemaddr,coin->taddr,coin->p2shtype,rawtx->redeemscript,rawtx->I.redeemlen);
-        //printf(" received redeemscript.(%s) %s taddr.%d\n",redeemaddr,coin->symbol,coin->taddr);
-        LP_swap_coinaddr(coin,checkaddr,0,data,datalen,0);
-        if ( strcmp(redeemaddr,checkaddr) != 0 )
-        {
-            printf("REDEEMADDR MISMATCH??? %s != %s\n",redeemaddr,checkaddr);
-            return(-1);
-        }
-    }
-    //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
-    if ( rawtx->I.datalen == 0 )
-    {
-        //for (i=0; i<datalen; i++)
-        //    printf("%02x",data[i]);
-        //printf(" <- received\n");
-        memcpy(rawtx->txbytes,data,datalen);
-        rawtx->I.datalen = datalen;
-    }
-    else if ( datalen != rawtx->I.datalen || memcmp(rawtx->txbytes,data,datalen) != 0 )
-    {
-        for (i=0; i<rawtx->I.datalen; i++)
-            printf("%02x",rawtx->txbytes[i]);
-        printf(" <- rawtx\n");
-        printf("%s rawtx data compare error, len %d vs %d <<<<<<<<<< warning\n",rawtx->name,rawtx->I.datalen,datalen);
-        return(-1);
-    }
-
-
-    if ( recvlen != datalen+rawtx->I.redeemlen + 107 )
-        printf("RECVLEN %d != %d + %d\n",recvlen,datalen,rawtx->I.redeemlen);
-    txid = bits256_calctxid(coin->symbol,data,datalen);
-    //char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
-    if ( bits256_cmp(txid,rawtx->I.actualtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
-        rawtx->I.actualtxid = txid;
-    if ( (txobj= bitcoin_data2json(coin->symbol,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys,coin->zcash)) != 0 )
-    {
-        rawtx->I.actualtxid = rawtx->I.signedtxid;
-        rawtx->I.locktime = rawtx->msgtx.lock_time;
-        if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
-        {
-            vout = jitem(vouts,v);
-            if ( strcmp("BTC",coin->symbol) == 0 && rawtx == &swap->otherfee )
-                txfee = LP_MIN_TXFEE;
-            else
-            {
-                if ( strcmp(coin->symbol,bobstr) == 0 )
-                    txfee = swap->I.Btxfee;
-                else if ( strcmp(coin->symbol,alicestr) == 0 )
-                    txfee = swap->I.Atxfee;
-                else txfee = LP_MIN_TXFEE;
-            }
-            if ( rawtx->I.amount > 2*txfee)
-                val = rawtx->I.amount-2*txfee;
-            else val = 1;
-            if ( j64bits(vout,"satoshis") >= val && (skey= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(skey,"hex")) != 0 )
-            {
-                if ( (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(rawtx->spendscript) )
-                {
-                    decode_hex(rawtx->spendscript,hexlen,hexstr);
-                    rawtx->I.spendlen = hexlen;
-                    //if ( swap != 0 )
-                    //    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
-                    retval = 0;
-                    if ( rawtx == &swap->otherfee )
-                    {
-                        LP_swap_coinaddr(coin,rawtx->p2shaddr,0,data,datalen,0);
-                        //printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
-                    } else bitcoin_address(coin->symbol,rawtx->p2shaddr,coin->taddr,coin->p2shtype,rawtx->spendscript,hexlen);
-                }
-            } else printf("%s satoshis %.8f ERROR.(%s) txfees.[%.8f %.8f: %.8f] amount.%.8f -> %.8f\n",rawtx->name,dstr(j64bits(vout,"satoshis")),jprint(txobj,0),dstr(swap->I.Atxfee),dstr(swap->I.Btxfee),dstr(txfee),dstr(rawtx->I.amount),dstr(rawtx->I.amount)-dstr(txfee));
-        }
-        free_json(txobj);
-    }
-    return(retval);
-}
-
 uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t sleeptime)
 {
     char *retstr; uint32_t finished = 0; cJSON *retjson=0;
@@ -804,44 +692,30 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
 struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,struct LP_quoteinfo *qp,int32_t dynamictrust)
 {
     //FILE *fp; char fname[512];
-    uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *bobcoin,*alicecoin; char bobstr[65],alicestr[65];
-    strcpy(swap->I.etomicsrc,qp->etomicsrc);
-    strcpy(swap->I.etomicdest,qp->etomicdest);
+    uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *bobcoin,*alicecoin;
     strcpy(swap->I.bobstr,swap->I.req.src);
     strcpy(swap->I.alicestr,swap->I.req.dest);
-    LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
-    LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
-    if ( (alicecoin= LP_coinfind(alicestr)) == 0 )
+    if ( (alicecoin= LP_coinfind(swap->I.alicestr)) == 0 )
     {
-        printf("missing alicecoin src.%p dest.%p\n",LP_coinfind(alicestr),LP_coinfind(bobstr));
-        free(swap);
+        printf("missing alicecoin %s\n",swap->I.alicestr);
         return(0);
     }
-    if ( (bobcoin= LP_coinfind(bobstr)) == 0 )
+    if ( (bobcoin= LP_coinfind(swap->I.bobstr)) == 0 )
     {
-        printf("missing bobcoin src.%p dest.%p\n",LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
-        free(swap);
-        return(0);
-    }
-    if ( alicecoin == 0 || bobcoin == 0 )
-    {
-        printf("couldnt find ETOMIC\n");
-        free(swap);
+        printf("missing bobcoin %s \n",swap->I.bobstr);
         return(0);
     }
     if ( (swap->I.Atxfee= qp->desttxfee) < 0 )
     {
         printf("bitcoin_swapinit %s Atxfee %.8f rejected\n",swap->I.req.dest,dstr(swap->I.Atxfee));
-        free(swap);
         return(0);
     }
     if ( (swap->I.Btxfee= qp->txfee) < 0 )
     {
         printf("bitcoin_swapinit %s Btxfee %.8f rejected\n",swap->I.req.src,dstr(swap->I.Btxfee));
-        free(swap);
         return(0);
     }
-    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(bobstr,alicestr);
+    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr);
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
     else if ( optionduration > 0 )
@@ -849,25 +723,13 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     if ( (swap->I.bobsatoshis= swap->I.req.srcamount) <= 0 )
     {
         printf("bitcoin_swapinit %s bobsatoshis %.8f rejected\n",swap->I.req.src,dstr(swap->I.bobsatoshis));
-        free(swap);
         return(0);
     }
     if ( (swap->I.alicesatoshis= swap->I.req.destamount) <= 0 )
     {
         printf("bitcoin_swapinit %s alicesatoshis %.8f rejected\n",swap->I.req.dest,dstr(swap->I.alicesatoshis));
-        free(swap);
         return(0);
     }
-#ifndef NOTETOMIC
-    if (strcmp(alicestr, "ETOMIC") == 0) {
-        swap->I.alicerealsat = swap->I.alicesatoshis;
-        swap->I.alicesatoshis = 100000000;
-    }
-    if (strcmp(bobstr, "ETOMIC") == 0) {
-        swap->I.bobrealsat = swap->I.bobsatoshis;
-        swap->I.bobsatoshis = 100000000;
-    }
-#endif
     if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
@@ -901,15 +763,14 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
         char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
-        free(swap);
         return(0);
     }
-    if ( strcmp("BTC",bobstr) == 0 )
+    if ( strcmp("BTC",swap->I.bobstr) == 0 )
     {
         swap->I.bobconfirms = 1;//(1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
-    else if ( strcmp("BTC",alicestr) == 0 )
+    else if ( strcmp("BTC",swap->I.alicestr) == 0 )
     {
         swap->I.aliceconfirms = 1;//(1 + sqrt(dstr(swap->I.alicesatoshis) * .1));
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
@@ -932,18 +793,10 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
     if ( bobcoin->isassetchain != 0 ) {
-        if (strcmp(bobstr, "ETOMIC") != 0) {
-            swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
-        } else {
-            swap->I.bobconfirms = 1;
-        }
+        swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
     }
     if ( alicecoin->isassetchain != 0 ) {
-        if (strcmp(alicestr, "ETOMIC") != 0) {
-            swap->I.aliceconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
-        } else {
-            swap->I.aliceconfirms = 1;
-        }
+        swap->I.aliceconfirms = 1;
     }
     if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
     {
@@ -985,20 +838,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     swap->bobspend.I.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
     swap->alicereclaim.I.suppress_pubkeys = 1;
-#ifndef NOTETOMIC
-    if (strcmp(alicestr, "ETOMIC") == 0) {
-        swap->alicepayment.I.eth_amount = swap->I.alicerealsat;
-        if (swap->I.iambob == 1) {
-            swap->otherfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
-        } else {
-            swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
-        }
-    }
-    if (strcmp(bobstr, "ETOMIC") == 0) {
-        swap->bobpayment.I.eth_amount = swap->I.bobrealsat;
-        swap->bobdeposit.I.eth_amount = LP_DEPOSITSATOSHIS(swap->I.bobrealsat);
-    }
-#endif
     //char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s [%s %s]\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid),bobstr,alicestr);
     return(swap);
 }

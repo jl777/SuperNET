@@ -2451,25 +2451,10 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
  OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
  OP_ENDIF*/
 
-int32_t LP_etomicsymbol(char *activesymbol,char *etomic,char *symbol)
-{
-    struct iguana_info *coin;
-    etomic[0] = activesymbol[0] = 0;
-    if ( (coin= LP_coinfind(symbol)) != 0 )
-    {
-        strcpy(etomic,coin->etomic);
-        if ( etomic[0] != 0 )
-            strcpy(activesymbol,"ETOMIC");
-        else strcpy(activesymbol,symbol);
-    }
-    return(etomic[0] != 0);
-}
-
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
     static bits256 zero;
-    uint8_t userdata[512]; char bobstr[65],bobtomic[128]; int32_t retval,len = 0; struct iguana_info *coin;
-    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    uint8_t userdata[512]; char bobstr[65]; int32_t retval,len = 0; struct iguana_info *coin;
     if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         //printf("basilisk_bobpayment_reclaim\n");
@@ -2485,28 +2470,6 @@ int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
             return(retval);
         }
     } else printf("basilisk_bobpayment_reclaim cant find (%s)\n",bobstr);
-    return(-1);
-}
-
-int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
-{
-    uint8_t userdata[512]; int32_t i,retval,len = 0; char str[65],bobstr[65],bobtomic[128]; struct iguana_info *coin;
-    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
-    if ( (coin= LP_coinfind(bobstr)) != 0 )
-    {
-        len = basilisk_swapuserdata(userdata,swap->I.privBn,0,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
-        memcpy(swap->I.userdata_bobrefund,userdata,len);
-        swap->I.userdata_bobrefundlen = len;
-        if ( (retval= basilisk_rawtx_sign(coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,swap,&swap->bobrefund,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,0,swap->changermd160,swap->bobdeposit.I.destaddr,coin->zcash)) == 0 )
-        {
-            for (i=0; i<swap->bobrefund.I.datalen; i++)
-                printf("%02x",swap->bobrefund.txbytes[i]);
-            printf(" <- bobrefund.(%s)\n",bits256_str(str,swap->bobrefund.I.txid));
-            //basilisk_txlog(swap,&swap->bobrefund,delay);
-            return(retval);
-        }
-    } else printf("basilisk_bobdeposit_refund cant find (%s)\n",bobstr);
-    
     return(-1);
 }
 
@@ -2531,8 +2494,7 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
 
 int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag)
 {
-    char coinaddr[64],checkaddr[64],bobstr[65],bobtomic[128]; struct iguana_info *coin;
-    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    char coinaddr[64],checkaddr[64],bobstr[65]; struct iguana_info *coin;
     if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         bitcoin_address(coin->symbol,coinaddr,coin->taddr,coin->pubtype,swap->changermd160,20);

@@ -56,12 +56,8 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     jaddnum(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
-    if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
-        jaddstr(retjson,"bobtomic",etomic);
     jaddstr(retjson,"etomicsrc",qp->etomicsrc);
     jaddstr(retjson,"rel",qp->destcoin);
-    if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
-        jaddstr(retjson,"alicetomic",etomic);
     jaddstr(retjson,"etomicdest",qp->etomicdest);
     if ( qp->coinaddr[0] != 0 )
         jaddstr(retjson,"address",qp->coinaddr);

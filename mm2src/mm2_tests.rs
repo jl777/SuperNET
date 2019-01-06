@@ -484,6 +484,18 @@ fn trade_eth_pizza() {
 
 #[test]
 #[ignore]
+fn trade_beer_eth() {
+    trade_base_rel("BEER", "ETH");
+}
+
+#[test]
+#[ignore]
+fn trade_eth_beer() {
+    trade_base_rel("ETH", "BEER");
+}
+
+#[test]
+#[ignore]
 fn trade_pizza_beer() {
     trade_base_rel("PIZZA", "BEER");
 }

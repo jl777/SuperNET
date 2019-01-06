@@ -784,13 +784,7 @@ cJSON *LP_balances(char *coinaddr)
         }
         else
         {
-#ifndef NOTETOMIC
-            if (coin->etomic[0] == 0 || coin->inactive == 0) {
-#endif
-                balance = LP_RTsmartbalance(coin);
-#ifndef NOTETOMIC
-            }
-#endif
+            balance = LP_RTsmartbalance(coin);
             if ( balance != 0 )
             {
                 item = cJSON_CreateObject();
