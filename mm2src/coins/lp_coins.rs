@@ -25,6 +25,7 @@
 #[macro_use] extern crate gstuff;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
 
 use common::{bitcoin_ctx, bits256, free_c_ptr, lp, rpc_response, HyRes};
@@ -33,7 +34,7 @@ use futures::{Future};
 use gstuff::now_ms;
 use hashbrown::hash_map::{HashMap, RawEntryMut};
 use libc::{c_char, c_void};
-use serde_json::{Value as Json};
+use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::fmt::Debug;
@@ -45,9 +46,9 @@ use std::sync::{Arc, Mutex};
 #[doc(hidden)]
 pub mod coins_tests;
 pub mod eth;
-use self::eth::{EthCoin, SignedEthTransaction};
+use self::eth::{eth_coin_from_iguana_info, EthCoin, SignedEthTransaction};
 pub mod utxo;
-use self::utxo::{coin_from_iguana_info, ExtendedUtxoTx, UtxoCoin};
+use self::utxo::{utxo_coin_from_iguana_info, ExtendedUtxoTx, UtxoCoin, UtxoInitMode};
 
 pub trait Transaction: Debug + 'static {
     fn to_raw_bytes(&self) -> Vec<u8>;
@@ -749,33 +750,16 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
     }
 
     let method = req["method"].as_str();
-    if method == Some ("electrum") {
-        let ipaddr = try_s! (req["ipaddr"].as_str().ok_or ("!ipaddr"));
-        let port = try_s! (req["port"].as_u64().ok_or ("!port"));
-        if port > u16::max_value() as u64 {return ERR! ("Port number too big")}
-        let port = port as u16;
-
-        let mut jret = None;
-        unsafe {
-            let ipaddr = try_s! (CString::new (ipaddr));
-            let json = lp::LP_electrumserver (ii, ipaddr.as_ptr() as *mut c_char, port);
-            if !json.is_null() {
-                let stringified = lp::jprint (json, 0);
-                if !stringified.is_null() {
-                    if let Ok (stringified) = CStr::from_ptr (stringified) .to_str() {
-                        jret = Some (stringified)
-                    }
-                    free_c_ptr (stringified as *mut c_void);
-                }
-                lp::free_json (json);
-            }
-        }
-        let jret = try_s! (jret.ok_or ("!LP_electrumserver"));
-        if !jret.contains (r#""result":"success""#) {return ERR! ("!LP_electrumserver: {}", jret)}
+    let utxo_mode = if method == Some ("electrum") {
+        let urls: Vec<String> = try_s!(json::from_value(req["urls"].clone()));
+        UtxoInitMode::Electrum(urls)
     } else if method == Some ("enable") {
         if unsafe {!lp::LP_conflicts_find (ii) .is_null()} {return ERR! ("coin port conflicts with existing coin")}
-        ii.inactive = 0
-    }
+        ii.inactive = 0;
+        UtxoInitMode::Native
+    } else {
+        return ERR! ("lp_coininit unknown method {:?}", method);
+    };
 
     let mut notarized = 0;
     let block_count = unsafe {lp::LP_getheight (&mut notarized, ii)};
@@ -794,7 +778,11 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
     }
 
     // TODO: Should pick the correct coin implementation somehow.
-    let coin: MmCoinEnum = try_s! (coin_from_iguana_info (ii)) .into();
+    let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
+        try_s! (utxo_coin_from_iguana_info (ii, utxo_mode)) .into()
+    } else {
+        try_s! (eth_coin_from_iguana_info(ii)) .into()
+    };
 
     ve.insert (ticker.into(), coin.clone());
     Ok (coin)
@@ -860,7 +848,7 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     let default_coins = ["BTC", "KMD"];
 
     for &ticker in default_coins.iter() {
-        try_s! (lp_coininit (ctx, ticker, &Json::Null));
+        try_s! (lp_coininit (ctx, ticker, &json!({"method":"enable"})));
     }
 
     Ok(())

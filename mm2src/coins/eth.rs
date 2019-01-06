@@ -19,7 +19,7 @@
 //  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
 use bitcrypto::dhash160;
-use common::{CORE, slurp_url};
+use common::{CORE, lp, slurp_url};
 use secp256k1::key::PublicKey;
 use ethabi::{Contract, RawLog, Token};
 use ethcore_transaction::{ Action, Transaction as UnsignedEthTransaction, UnverifiedTransaction};
@@ -37,7 +37,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use web3::transports::{ Http };
-use web3::types::{BlockNumber, Bytes, CallRequest, FilterBuilder, Log, TransactionId};
+use web3::types::{BlockNumber, Bytes, CallRequest, FilterBuilder, Log, Transaction as Web3Transaction, TransactionId};
 use web3::{ self, Web3 };
 
 use super::utxo::compressed_key_pair_from_bytes;
@@ -271,35 +271,11 @@ impl MarketCoinOps for EthCoin {
                 if let Some(tx_hash) = event.transaction_hash {
                     let transaction = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx_hash)).wait()).unwrap();
 
-                    return Ok(TransactionEnum::Eth(SignedEthTransaction {
-                        transaction: UnverifiedTransaction {
-                            r: 0.into(),
-                            s: 0.into(),
-                            v: 0,
-                            hash: tx_hash,
-                            unsigned: UnsignedEthTransaction {
-                                data: transaction.input.0,
-                                gas_price: transaction.gas_price,
-                                gas: transaction.gas,
-                                value: transaction.value,
-                                nonce: transaction.nonce,
-                                action: match transaction.to {
-                                    Some(addr) => Action::Call(addr),
-                                    None => Action::Create,
-                                }
-                            }
-                        },
-                        public: None,
-                        sender: transaction.from,
-                    }))
-                } else {
-                    thread::sleep(Duration::from_secs(15));
-                    continue;
+                    return Ok(TransactionEnum::Eth(signed_tx_from_web3_tx(transaction)))
                 }
-            } else {
-                thread::sleep(Duration::from_secs(15));
-                continue;
             }
+            thread::sleep(Duration::from_secs(15));
+            continue;
         }
     }
 
@@ -603,7 +579,36 @@ impl Transaction for SignedEthTransaction {
     }
 
     fn extract_secret(&self) -> Result<Vec<u8>, String> {
-        unimplemented!()
+        let function = try_s!(SWAP_CONTRACT.function("receiverSpend"));
+        let tokens = try_s!(function.decode_input(&self.data));
+        match &tokens[2] {
+            Token::FixedBytes(secret) => Ok(secret.to_vec()),
+            _ => ERR!("Expected secret to be fixed bytes, decoded function data is {:?}", tokens),
+        }
+    }
+}
+
+fn signed_tx_from_web3_tx(transaction: Web3Transaction) -> SignedEthTransaction {
+    SignedEthTransaction {
+        transaction: UnverifiedTransaction {
+            r: 0.into(),
+            s: 0.into(),
+            v: 0,
+            hash: transaction.hash,
+            unsigned: UnsignedEthTransaction {
+                data: transaction.input.0,
+                gas_price: transaction.gas_price,
+                gas: transaction.gas,
+                value: transaction.value,
+                nonce: transaction.nonce,
+                action: match transaction.to {
+                    Some(addr) => Action::Call(addr),
+                    None => Action::Create,
+                }
+            }
+        },
+        public: None,
+        sender: transaction.from,
     }
 }
 
@@ -643,6 +648,28 @@ impl GasStationData {
             Ok(result.average_gwei())
         }))
     }
+}
+
+pub fn eth_coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<EthCoin, String> {
+    let info = unsafe { *info };
+
+    let key_pair: KeyPair = try_s!(KeyPair::from_secret_slice(unsafe { &lp::G.LP_privkey.bytes }));
+    let my_address = key_pair.address();
+
+    let transport = try_s!(Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1));
+    let web3 = Web3::new(transport);
+
+    let coin = EthCoinImpl {
+        key_pair,
+        my_address,
+        coin_type: EthCoinType::Eth,
+        swap_contract_address: Address::from("0x7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        decimals: 18,
+        ticker: "ETH".into(),
+        gas_station_url: None,
+        web3,
+    };
+    Ok(EthCoin(Arc::new(coin)).into())
 }
 
 #[test]
@@ -1001,7 +1028,7 @@ fn test_logs() {
     let filter = FilterBuilder::default()
         .topics(Some(vec![event.signature()]), None, None, None)
         .from_block(BlockNumber::Number(4000000))
-        .address(vec![Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94")])
+        .address(vec![Address::from("0x7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94")])
         .build();
 
     let events = web3.eth().logs(filter).wait().unwrap();
@@ -1014,4 +1041,19 @@ fn test_logs() {
     let parsed = event.parse_log(raw_log).unwrap();
 
     log!([parsed]);
+}
+
+#[test]
+fn test_extract_secret() {
+    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+    let web3 = Web3::new(transport);
+
+    let transaction = web3.eth().transaction(TransactionId::Hash("0x020a75081ec1660dbbcff0cca8a4139987ce31241dd291b3596bf353e2c1e098".into())).wait().unwrap().unwrap();
+    let transaction = signed_tx_from_web3_tx(transaction);
+    log!([transaction]);
+
+    let secret = transaction.extract_secret().unwrap();
+
+    let expected = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+    assert_eq!(expected, secret);
 }

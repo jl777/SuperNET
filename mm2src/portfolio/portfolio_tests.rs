@@ -17,8 +17,8 @@ pub fn test_autoprice_coingecko (local_start: LocalStart) {
     let (passphrase, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start, &identity);
     unwrap! (mm.wait_for_log (19., &mut |log| log.contains (">>>>>>>>> DEX stats ")));
 
-    enable_electrum (&mm, "BEER", "electrum1.cipig.net", 10022);
-    enable_electrum (&mm, "PIZZA", "electrum1.cipig.net", 10024);
+    enable_electrum (&mm, "BEER", vec!["electrum1.cipig.net:10022"]);
+    enable_electrum (&mm, "PIZZA", vec!["electrum1.cipig.net:10024"]);
 
     // Looks like we don't need enabling the coin to base the price on it.
     // let electrum_dash = unwrap! (mm.rpc (json! ({
@@ -91,8 +91,8 @@ pub fn test_autoprice_coinmarketcap (local_start: LocalStart) {
     });
     unwrap! (mm.wait_for_log (19., &mut |log| log.contains (">>>>>>>>> DEX stats ")));
 
-    enable_electrum (&mm, "BEER", "electrum1.cipig.net", 10022);
-    enable_electrum (&mm, "PIZZA", "electrum1.cipig.net", 10024);
+    enable_electrum (&mm, "BEER", vec!["electrum1.cipig.net:10022"]);
+    enable_electrum (&mm, "PIZZA", vec!["electrum1.cipig.net:10024"]);
 
     let address = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,

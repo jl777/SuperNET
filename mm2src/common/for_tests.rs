@@ -295,13 +295,12 @@ pub fn mm_spat (local_start: LocalStart, conf_mod: &dyn Fn(Json)->Json) -> (&'st
 
 /// Asks MM to enable the given currency in electrum mode
 /// fresh list of servers at https://github.com/jl777/coins/blob/master/electrums/.
-pub fn enable_electrum (mm: &MarketMakerIt, coin: &str, ipaddr: &str, port: i32) {
+pub fn enable_electrum (mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) {
     let electrum = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
         "method": "electrum",
         "coin": coin,
-        "ipaddr": ipaddr,
-        "port": port
+        "urls": urls,
     })));
     assert_eq! (electrum.0, StatusCode::OK, "RPC «electrum» failed with status «{}»", electrum.0);
 }

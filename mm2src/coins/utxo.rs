@@ -47,7 +47,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio_timer::{Interval, Timer};
 
-use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, NativeClient};
+use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, ElectrumClient, NativeClient};
 use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
@@ -759,10 +759,13 @@ fn key_pair_from_seed(seed: &[u8], prefix: u8) -> KeyPair {
     KeyPair::from_private(private).unwrap()
 }
 
-pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, String> {
+pub enum UtxoInitMode {
+    Native,
+    Electrum(Vec<String>),
+}
+
+pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode) -> Result<MmCoinEnum, String> {
     let info = unsafe { *info };
-    let auth_str = unsafe { try_s!(CStr::from_ptr(info.userpass.as_ptr()).to_str()) };
-    let uri = unsafe { try_s!(CStr::from_ptr(info.serverport.as_ptr()).to_str()) };
     let private = Private {
         prefix: info.wiftype,
         secret: H256::from(unsafe { lp::G.LP_privkey.bytes }),
@@ -780,13 +783,28 @@ pub fn coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<MmCoinEnum, S
     // TODO Consider refactoring, overwintered flag should be explicitly set in coins config
     let overwintered = info.txversion >= 3;
 
+    let rpc_client = match mode {
+        UtxoInitMode::Native => {
+            let auth_str = unsafe { try_s!(CStr::from_ptr(info.userpass.as_ptr()).to_str()) };
+            let uri = unsafe { try_s!(CStr::from_ptr(info.serverport.as_ptr()).to_str()) };
+            UtxoRpcClientEnum::Native(NativeClient {
+                uri: format!("http://{}", uri),
+                auth: format!("Basic {}", base64_encode(auth_str, URL_SAFE)),
+            })
+        },
+        UtxoInitMode::Electrum(urls) => {
+            let mut client = ElectrumClient::new();
+            for url in urls.iter() {
+                try_s!(client.add_server(url));
+            }
+            UtxoRpcClientEnum::Electrum(client)
+        }
+    };
+
     let coin = UtxoCoinImpl {
         ticker: try_s! (unsafe {CStr::from_ptr (info.symbol.as_ptr())} .to_str()) .into(),
         decimals: 8,
-        rpc_client: UtxoRpcClientEnum::Native(NativeClient {
-            uri: format!("http://{}", uri),
-            auth: format!("Basic {}", base64_encode(auth_str, URL_SAFE)),
-        }),
+        rpc_client,
         key_pair,
         is_pos: false,
         notarized: false,
