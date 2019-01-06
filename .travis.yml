@@ -50,6 +50,7 @@ after_success:
 - export TAG=`echo "$(git rev-parse --short HEAD)"`
 - lftp sftp://${SFTP_USER}:${SFTP_PASSWORD}@195.201.0.6
   -e "set sftp:auto-confirm yes; cd uploads; mkdir $TRAVIS_BRANCH; cd $TRAVIS_BRANCH; put marketmaker-mainnet-$TRAVIS_OS_NAME-$TAG; bye"
+- (cargo install cargo-bloat && cargo bloat --crates) || true
 deploy:
   provider: releases
   api_key:

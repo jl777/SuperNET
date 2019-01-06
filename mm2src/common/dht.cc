@@ -289,16 +289,24 @@ extern "C" void dht_get (dugout_t* dugout,
     dugout->session->dht_get_item (pk.bytes, salt);
 }
 
+// TODO: Get the IP address and port from the call site.
+// TODO: Get the bencoded payload from the call site.
 extern "C" void lt_send_udp (dugout_t* dugout) {
     // NB: Local IPs aren't routable, so LT listens on 0.0.0.0 in the unit tests, reachable through 127.0.0.1.
     lt::error_code ec;
     lt::udp::endpoint ep (lt::make_address ("127.0.0.1", ec), 2111);
     if (ec) return;  // TODO: Error via `dugout`.
     lt::entry en;
-    // TODO: Figure out a proper way to extend the DHT packets, if any?
-    en["qwe"] = "foobar";
+
+    // We're sending normal http://www.bittorrent.org/beps/bep_0005.html pings, only with extra `en["a"]` arguments.
+    // That way if something would happen with the delivery of the MM packets via `dht_direct_request`
+    // then the problem will be a subset of a generic ping delivery problem.
+
+    // NB: libtorrent automatically adds a random `en["t"]`.
+    en["y"] = "q";  // It's a query.
+    en["q"] = "ping";  // It's a DHT ping query.
+    // Arguments. NB: libtorrent automatically adds a proper `en["a"]["id"]`.
+    en["a"]["qwe"] = "foobar";
     void* userdata = nullptr;
-    // TODO: See if `dht_direct_request` generates a separate alert when the message is received (otherwise why the `userdata`?)?
-    // TODO: See if `dht_direct_request` would retry sending the message if the first attempt fails?
     dugout->session->dht_direct_request (ep, en, userdata);
 }
