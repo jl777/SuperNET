@@ -32,7 +32,9 @@ use keys::generator::{Random, Generator};
 use rand::Rng;
 use serde_json::{self as json};
 use std::borrow::Cow;
+use std::ffi::CStr;
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -650,6 +652,34 @@ impl GasStationData {
     }
 }
 
+fn get_token_decimals(url: &str, token_addr: Address) -> Result<u8, String> {
+    /// This function is executed on separate event loop to avoid blocking shared core in `eth_coin_from_iguana_info`.
+    /// Maybe we should consider refactoring functions like `eth_coin_from_iguana_info` to async versions as it's
+    /// required to perform some async IO to get essential coin data.
+    let (_event_loop, transport) = try_s!(Http::new(url));
+    let web3 = Web3::new(transport);
+
+    let function = try_s!(ERC20_CONTRACT.function("decimals"));
+    let data = try_s!(function.encode_input(&[]));
+    let request = CallRequest {
+        from: Some(Address::default()),
+        to: token_addr,
+        gas: None,
+        gas_price: None,
+        value: Some(0.into()),
+        data: Some(data.into())
+    };
+
+    let f = web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e));
+    let res = try_s!(f.wait());
+    let tokens = try_s!(function.decode_output(&res.0));
+    let decimals: u64 = match tokens[0] {
+        Token::Uint(dec) => dec.into(),
+        _ => return ERR!("Invalid decimals type {:?}", tokens),
+    };
+    Ok(decimals as u8)
+}
+
 pub fn eth_coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<EthCoin, String> {
     let info = unsafe { *info };
 
@@ -659,12 +689,25 @@ pub fn eth_coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<EthCoin, 
     let transport = try_s!(Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1));
     let web3 = Web3::new(transport);
 
+    let etomic = try_s!(unsafe { CStr::from_ptr(info.etomic.as_ptr()).to_str() } );
+    let token_addr = Address::from(etomic);
+    let (coin_type, decimals) = if token_addr == Address::default() {
+        (EthCoinType::Eth, 18)
+    } else {
+        let decimals = if info.decimals > 0 {
+            info.decimals
+        } else {
+            try_s!(get_token_decimals("http://195.201.0.6:8545", token_addr))
+        };
+        (EthCoinType::Erc20(token_addr), decimals)
+    };
+
     let coin = EthCoinImpl {
         key_pair,
         my_address,
-        coin_type: EthCoinType::Eth,
+        coin_type,
         swap_contract_address: Address::from("0x7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-        decimals: 18,
+        decimals,
         ticker: "ETH".into(),
         gas_station_url: None,
         web3,
@@ -1028,7 +1071,7 @@ fn test_logs() {
     let filter = FilterBuilder::default()
         .topics(Some(vec![event.signature()]), None, None, None)
         .from_block(BlockNumber::Number(4000000))
-        .address(vec![Address::from("0x7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94")])
+        .address(vec![Address::from_str("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94").unwrap()])
         .build();
 
     let events = web3.eth().logs(filter).wait().unwrap();
@@ -1056,4 +1099,9 @@ fn test_extract_secret() {
 
     let expected = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
     assert_eq!(expected, secret);
+}
+
+#[test]
+fn test_get_token_decimals() {
+    log!([get_token_decimals("http://195.201.0.6:8545", Address::from("0xc0eb7aed740e1796992a08962c15661bdeb58003"))]);
 }
