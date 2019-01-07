@@ -829,6 +829,13 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 };
 
                 log!("Taker fee tx " (taker_fee.tx_hash()));
+
+                let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
+                let fee_amount = unsafe { (*swap.basilisk_swap).I.alicesatoshis / 777 };
+                match swap.taker_coin.validate_fee(taker_fee, &fee_addr_pub_key, fee_amount as u64) {
+                    Ok(_) => (),
+                    Err(err) => err!(-2010, "!validate taker fee: "(err)),
+                };
                 AtomicSwapState::SendMakerPayment
             },
             AtomicSwapState::SendMakerPayment => unsafe {

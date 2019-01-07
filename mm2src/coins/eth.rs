@@ -186,6 +186,68 @@ impl SwapOps for EthCoin {
 
         Box::new(self.refund_hash_time_locked_payment(tx).map(|t| TransactionEnum::Eth(t)))
     }
+
+    fn validate_fee(
+        &self,
+        fee_tx: TransactionEnum,
+        fee_addr: &[u8],
+        amount: u64
+    ) -> Result<(), String> {
+        let tx = match fee_tx {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!(),
+        };
+
+        let expected_value = u256_denominate_from_satoshis(amount, self.decimals);
+        let fee_addr = try_s!(addr_from_raw_pubkey(fee_addr));
+        let tx_from_rpc = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx.hash)).wait());
+        let tx_from_rpc = match tx_from_rpc {
+            Some(t) => t,
+            None => return ERR!("Didn't find provided tx {:?} on ETH node", tx),
+        };
+
+        match self.coin_type {
+            EthCoinType::Eth => {
+                if tx_from_rpc.to != Some(fee_addr) {
+                    return ERR!("Fee tx {:?} was sent to wrong address, expected {:?}", tx_from_rpc, fee_addr);
+                }
+
+                if tx_from_rpc.value != expected_value {
+                    return ERR!("Fee tx {:?} value is invalid, expected {:?}", tx_from_rpc, expected_value);
+                }
+            },
+            EthCoinType::Erc20(token_addr) => {
+                if tx_from_rpc.to != Some(token_addr) {
+                    return ERR!("ERC20 Fee tx {:?} called wrong smart contract, expected {:?}", tx_from_rpc, token_addr);
+                }
+
+                let function = try_s!(ERC20_CONTRACT.function("transfer"));
+                let expected_data = try_s!(function.encode_input(&[
+                    Token::Address(fee_addr),
+                    Token::Uint(expected_value),
+                ]));
+
+                if tx_from_rpc.input.0 != expected_data {
+                    return ERR!("ERC20 Fee tx {:?} input is invalid, expected {:?}", tx_from_rpc, expected_data);
+                }
+            },
+        }
+
+        Ok(())
+    }
+
+    fn validate_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        other_addr: &[u8],
+        priv_bn_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String> {
+        unimplemented!();
+    }
 }
 
 impl MarketCoinOps for EthCoin {

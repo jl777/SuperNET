@@ -413,14 +413,6 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
     let mut other_addr: [c_char; 64] = [0; 64];
     (*qp).quotetime = (now_ms() / 1000) as u32;
 
-    let coin = match unwrap!(lp_coinfind(ctx, c2s!((*qp).srccoin))) {
-        Some(c) => c,
-        None => {
-            printf(b"cant find coin.%s\n\x00".as_ptr() as *const c_char, (*qp).srccoin);
-            lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3000.0, (*qp).uuidstr.as_mut_ptr());
-            return -1
-    }   };
-
     if lp::G.LP_mypub25519 == (*qp).srchash {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
         let d_trust = lp::LP_dynamictrust((*qp).othercredits, (*qp).desthash, lp::LP_kmdvalue((*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis as i64));

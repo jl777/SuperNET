@@ -658,6 +658,48 @@ impl SwapOps for UtxoCoin {
             redeem_script: vec![].into()
         }.into())
     }
+
+    fn validate_fee(
+        &self,
+        fee_tx: TransactionEnum,
+        fee_addr: &[u8],
+        amount: u64
+    ) -> Result<(), String> {
+        let tx = match fee_tx {
+            TransactionEnum::ExtendedUtxoTx(tx) => tx,
+            _ => panic!(),
+        };
+
+        let tx_from_rpc = try_s!(self.rpc_client.get_transaction(tx.transaction.hash().reversed().into()).wait());
+
+        if tx_from_rpc.hex.0 != serialize(&tx.transaction).take() {
+            return ERR!("Provided dex fee tx doesn't match real tx data {:?} {:?}", tx, tx_from_rpc);
+        }
+
+        let address = try_s!(address_from_raw_pubkey(fee_addr, self.pub_addr_prefix, self.pub_t_addr_prefix));
+        let expected_output = TransactionOutput {
+            value: amount,
+            script_pubkey: Builder::build_p2pkh(&address.hash).to_bytes()
+        };
+
+        if tx.transaction.outputs[0] != expected_output {
+            return ERR!("Provided dex fee tx output doesn't match expected {:?} {:?}", tx.transaction.outputs[0], expected_output);
+        }
+        Ok(())
+    }
+
+    fn validate_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        other_addr: &[u8],
+        priv_bn_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String> {
+        unimplemented!();
+    }
 }
 
 impl MarketCoinOps for UtxoCoin {
