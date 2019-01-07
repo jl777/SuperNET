@@ -28,7 +28,7 @@
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
 
-use common::{bitcoin_ctx, bits256, free_c_ptr, lp, rpc_response, HyRes};
+use common::{bitcoin_ctx, bits256, lp, rpc_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::now_ms;
@@ -36,7 +36,7 @@ use hashbrown::hash_map::{HashMap, RawEntryMut};
 use libc::{c_char, c_void};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
-use std::ffi::{CStr, CString};
+use std::ffi::{CString};
 use std::fmt::Debug;
 use std::mem::zeroed;
 use std::ops::Deref;

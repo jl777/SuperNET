@@ -428,7 +428,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
     // TODO: We should refactor away the [explicit passing] of taddr in the future.
     //       In Komodo forks it's always 0.
     let taddr = 0;
-    let mut priv_key = lp::LP_privkey(coin.iguana_info().symbol.as_mut_ptr(), c_address.as_ptr() as *mut c_char, taddr);
+    let priv_key = lp::LP_privkey(coin.iguana_info().symbol.as_mut_ptr(), c_address.as_ptr() as *mut c_char, taddr);
 
     if priv_key.nonz() && lp::G.LP_mypub25519 == (*qp).srchash {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
@@ -986,7 +986,6 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     // AG: The Alice p2p ID seems to be in the `qp.desthash`.
     printf(b"bob %s received REQUEST.(%s) mpnet.%d fill.%d gtc.%d\n\x00".as_ptr() as *const c_char, lp::bits256_str(str.as_mut_ptr(), lp::G.LP_mypub25519), (*qp).uuidstr[32..].as_ptr(), (*qp).mpnet, (*qp).fill, (*qp).gtc);
     let coin = match unwrap!(lp_coinfind(ctx, c2s!((*qp).srccoin))) {Some(c) => c, None => return null_mut()};
-    let other_coin = match unwrap!(lp_coinfind(ctx, c2s!((*qp).destcoin))) {Some(c) => c, None => return null_mut()};
 
     let mut bid = 0.;
     let mut ask = 0.;
@@ -1807,8 +1806,6 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
     let rel_ii = rel.iguana_info();
 
     let mut timeout = input.timeout.unwrap_or(unsafe { lp::LP_AUTOTRADE_TIMEOUT });
-    let mut num = 0;
-    let num_ptr = &mut num as *mut i32;
 
     unsafe {
         if (*base_ii).electrum != null_mut() && (*rel_ii).electrum != null_mut() {

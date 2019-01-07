@@ -24,6 +24,7 @@ ethkey = { git = "https://github.com/artemii235/parity-ethereum.git" }
 #enum_dispatch = "0.1"
 fomat-macros = "0.2"
 futures = "0.1"
+futures-timer = "0.1"
 gstuff = "0.5"
 hashbrown = {git = "https://github.com/Amanieu/hashbrown", branch = "raw_entry", features = ["serde", "nightly"]}
 hex = "0.3.2"

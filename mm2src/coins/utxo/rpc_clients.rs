@@ -1,10 +1,10 @@
-use base64::{encode_config as base64_encode, URL_SAFE};
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
 use common::{CORE, Timeout, slurp_req, join_all_sequential};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
 use futures::{Async, Future, Poll, Sink};
 use futures::sync::mpsc;
+use futures_timer::Delay;
 use gstuff::now_ms;
 use hashbrown::HashMap;
 use hyper::{Body, Request, StatusCode};
@@ -21,7 +21,7 @@ use std::cmp::Ordering;
 use std::net::{ToSocketAddrs, SocketAddr};
 use std::ops::Deref;
 use std::sync::{Mutex, Arc};
-use std::time::Duration;
+use std::time::{Duration};
 use tokio::codec::{Encoder, Decoder};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
@@ -164,7 +164,14 @@ impl UtxoRpcClientOps for NativeClient {
         Box::new(self.list_unspent(0, 999999, vec![address.to_string()]).and_then(move |unspents| {
             let mut futures = vec![];
             for unspent in unspents.iter() {
-                futures.push(clone.output_amount(unspent.txid.clone(), unspent.vout as usize));
+                let delay_f = Delay::new(Duration::from_millis(10)).map_err(|e| ERRL!("{}", e));
+                let tx_id = unspent.txid.clone();
+                let vout = unspent.vout as usize;
+                let arc = clone.clone();
+                // The delay here is required to mitigate "Work queue depth exceeded" error from coin daemon.
+                // It happens even when we run requests sequentially.
+                // Seems like daemon need some time to clean up it's queue after response is sent.
+                futures.push(delay_f.and_then(move |_| arc.output_amount(tx_id, vout)));
             }
 
             join_all_sequential(futures).map(move |amounts| {
@@ -298,7 +305,7 @@ struct ElectrumUnspent {
 }
 
 #[derive(Debug, Deserialize)]
-struct ElectrumBlockHeader {
+pub struct ElectrumBlockHeader {
     bits: u64,
     block_height: u64,
     merkle_root: H256Json,
@@ -477,7 +484,7 @@ impl ElectrumClient {
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-headers-subscribe
-    fn blockchain_headers_subscribe(&self) -> RpcRes<ElectrumBlockHeader> {
+    pub fn blockchain_headers_subscribe(&self) -> RpcRes<ElectrumBlockHeader> {
         Box::new(
             electrum_subscribe_multi(
                 JsonRpcRequest {
@@ -686,7 +693,7 @@ fn electrum_request(
     let request_id = request.get_id().to_string();
     let send_fut = Box::new(tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
-        .and_then(move |res| -> ElectrumResponseFut {
+        .and_then(move |_res| -> ElectrumResponseFut {
             ElectrumResponseFut {
                 request_id,
                 context,
@@ -724,7 +731,7 @@ fn electrum_subscribe(
     let request_id = request.get_id().to_string();
     let send_fut = Box::new(tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
-        .and_then(move |res| -> ElectrumSubscriptionFut {
+        .and_then(move |_res| -> ElectrumSubscriptionFut {
             ElectrumSubscriptionFut {
                 request_id,
                 context,
@@ -749,138 +756,132 @@ fn electrum_subscribe_multi(
         .map_err(|e| ERRL!("{:?}", e)))
 }
 
-#[test]
-#[ignore]
-fn test_electrum_ping() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
-    log!([client.server_ping().wait().unwrap()]);
-}
+// TODO these are just helpers functions that I used during development.
+// Trade tests also cover these functions, if some of these doesn't work properly trade will fail.
+// Maybe we should remove them at all or move to a kind of "helpers" file.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::{encode_config as base64_encode, URL_SAFE};
 
-#[test]
-#[ignore]
-fn test_electrum_listunspent() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
-    let script = Builder::build_p2pkh(&"05aab5342166f8594baf17a7d9bef5d567443327".into()).to_bytes();
-
-    let script_hash = electrum_script_hash(&script);
-    let res = client.scripthash_list_unspent(&hex::encode(script_hash)).wait().unwrap();
-    log!([res]);
-}
-
-#[test]
-#[ignore]
-fn test_electrum_transaction_get() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
-
-    let res = client.get_transaction("c2e633133449d0f3e1f8ddd79957f97c51a2c7ffd640e02e1731dcde75b2062a".into()).wait().unwrap();
-    log!([res]);
-}
-
-#[test]
-#[ignore]
-fn test_electrum_listunspent_ordered() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
-    let address: Address = "R9o9xTocqr6CeEDGDH6mEYpwLoMz6jNjMW".into();
-    let res = client.list_unspent_ordered(&address).wait().unwrap();
-    log!([res]);
-}
-
-#[test]
-#[ignore]
-fn test_electrum_subsribe() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10001").unwrap();
-    client.add_server("electrum2.cipig.net:10001").unwrap();
-    client.add_server("electrum3.cipig.net:10001").unwrap();
-    let res = client.blockchain_headers_subscribe().wait().unwrap();
-    log!([res]);
-
-    loop {
-        let res = client.get_block_count().wait().unwrap();
-        println!("Block {}", res);
-        thread::sleep(Duration::from_secs(10));
+    #[test]
+    #[ignore]
+    fn test_electrum_ping() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10022").unwrap();
+        client.add_server("electrum2.cipig.net:10022").unwrap();
+        client.add_server("electrum3.cipig.net:10022").unwrap();
+        log!([client.server_ping().wait().unwrap()]);
     }
-}
 
-#[test]
-#[ignore]
-fn test_electrum_get_history() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
-    let script = Builder::build_p2pkh(&"05aab5342166f8594baf17a7d9bef5d567443327".into()).to_bytes();
+    #[test]
+    #[ignore]
+    fn test_electrum_listunspent() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10022").unwrap();
+        client.add_server("electrum2.cipig.net:10022").unwrap();
+        client.add_server("electrum3.cipig.net:10022").unwrap();
+        let script = Builder::build_p2pkh(&"05aab5342166f8594baf17a7d9bef5d567443327".into()).to_bytes();
 
-    let script_hash = electrum_script_hash(&script);
-    let res = client.scripthash_get_history(&hex::encode(script_hash)).wait().unwrap();
-    log!([res]);
-}
+        let script_hash = electrum_script_hash(&script);
+        let res = client.scripthash_list_unspent(&hex::encode(script_hash)).wait().unwrap();
+        log!([res]);
+    }
 
-#[test]
-#[ignore]
-fn test_wait_for_tx_spend_electrum() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
+    #[test]
+    #[ignore]
+    fn test_electrum_transaction_get() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10022").unwrap();
+        client.add_server("electrum2.cipig.net:10022").unwrap();
+        client.add_server("electrum3.cipig.net:10022").unwrap();
 
-    let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
+        let res = client.get_transaction("c2e633133449d0f3e1f8ddd79957f97c51a2c7ffd640e02e1731dcde75b2062a".into()).wait().unwrap();
+        log!([res]);
+    }
 
-    let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
-    let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
-    log!([wait]);
-}
+    #[test]
+    #[ignore]
+    fn test_electrum_listunspent_ordered() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10022").unwrap();
+        client.add_server("electrum2.cipig.net:10022").unwrap();
+        client.add_server("electrum3.cipig.net:10022").unwrap();
+        let address: Address = "R9o9xTocqr6CeEDGDH6mEYpwLoMz6jNjMW".into();
+        let res = client.list_unspent_ordered(&address).wait().unwrap();
+        log!([res]);
+    }
 
-#[test]
-#[ignore]
-fn test_wait_for_tx_spend_native() {
-    let client = NativeClient {
-        uri: "http://127.0.0.1:8923".to_owned(),
-        auth: fomat!("Basic " (base64_encode("user1031481471:pass4421be10fa22e70fca76c4917556f1613cdd1fa83e7c9d04abfd98c3367c6252ba", URL_SAFE))),
-    };
+    #[test]
+    #[ignore]
+    fn test_electrum_subsribe() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10001").unwrap();
+        client.add_server("electrum2.cipig.net:10001").unwrap();
+        client.add_server("electrum3.cipig.net:10001").unwrap();
+        let res = client.blockchain_headers_subscribe().wait().unwrap();
+        log!([res]);
 
-    let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
+        loop {
+            let res = client.get_block_count().wait().unwrap();
+            println!("Block {}", res);
+            thread::sleep(Duration::from_secs(10));
+        }
+    }
 
-    let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
-    let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
-    log!([wait]);
-}
+    #[test]
+    #[ignore]
+    fn test_electrum_get_history() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10022").unwrap();
+        client.add_server("electrum2.cipig.net:10022").unwrap();
+        client.add_server("electrum3.cipig.net:10022").unwrap();
+        let script = Builder::build_p2pkh(&"05aab5342166f8594baf17a7d9bef5d567443327".into()).to_bytes();
 
-#[test]
-#[ignore]
-fn test_list_unspent_ordered_native() {
-    let client = NativeClient {
-        uri: "http://127.0.0.1:11608".to_owned(),
-        auth: fomat!("Basic " (base64_encode("user693461146:passef3e4fbcee47f264b6bd071def8171800241cedd56705c27905f36dd1df2737f99", URL_SAFE))),
-    };
+        let script_hash = electrum_script_hash(&script);
+        let res = client.scripthash_get_history(&hex::encode(script_hash)).wait().unwrap();
+        log!([res]);
+    }
 
-    let res = client.list_unspent_ordered(&"RKGn1jkeS7VNLfwY74esW7a8JFfLNj1Yoo".into()).wait().unwrap();
-    log!([res]);
-}
+    #[test]
+    #[ignore]
+    fn test_wait_for_tx_spend_electrum() {
+        let mut client = ElectrumClient::new();
+        client.add_server("electrum1.cipig.net:10022").unwrap();
+        client.add_server("electrum2.cipig.net:10022").unwrap();
+        client.add_server("electrum3.cipig.net:10022").unwrap();
 
-#[test]
-#[ignore]
-fn test_wait_for_tx_confirmations() {
-    let mut client = ElectrumClient::new();
-    client.add_server("electrum1.cipig.net:10022").unwrap();
-    client.add_server("electrum2.cipig.net:10022").unwrap();
-    client.add_server("electrum3.cipig.net:10022").unwrap();
+        let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
 
-    let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
+        let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
+        let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
+        log!([wait]);
+    }
 
-    let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
-    let wait = client.wait_for_confirmations(&tx, 10, now_ms() / 1000 + 1000).unwrap();
-    log!([wait]);
+    #[test]
+    #[ignore]
+    fn test_wait_for_tx_spend_native() {
+        let client = NativeClient {
+            uri: "http://127.0.0.1:8923".to_owned(),
+            auth: fomat!("Basic " (base64_encode("user1031481471:pass4421be10fa22e70fca76c4917556f1613cdd1fa83e7c9d04abfd98c3367c6252ba", URL_SAFE))),
+        };
+
+        let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
+
+        let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
+        let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
+        log!([wait]);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_list_unspent_ordered_native() {
+        let client = NativeClient {
+            uri: "http://127.0.0.1:11608".to_owned(),
+            auth: fomat!("Basic " (base64_encode("user693461146:passef3e4fbcee47f264b6bd071def8171800241cedd56705c27905f36dd1df2737f99", URL_SAFE))),
+        };
+
+        let res = client.list_unspent_ordered(&"RKGn1jkeS7VNLfwY74esW7a8JFfLNj1Yoo".into()).wait().unwrap();
+        log!([res]);
+    }
 }

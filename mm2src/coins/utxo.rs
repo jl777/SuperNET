@@ -25,16 +25,14 @@ use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
-use common::log::{LogState, StatusHandle};
 use common::lp;
-use common::jsonrpc_client::RpcRes;
-use futures::{Async, Future, Poll, Stream};
+use futures::{Future};
 use gstuff::now_ms;
 use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
 use primitives::hash::{H256, H512};
-use rpc::v1::types::{H256 as H256Json, Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient};
+use rpc::v1::types::{Bytes as BytesJson};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
@@ -44,8 +42,6 @@ use std::ffi::CStr;
 use std::mem::transmute;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use tokio_timer::{Interval, Timer};
 
 use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, ElectrumClient, NativeClient};
 use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, Transaction, TransactionEnum, TransactionFut};
@@ -669,15 +665,8 @@ impl MarketCoinOps for UtxoCoin {
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        println!("Raw tx {:?}", tx.transaction);
-        println!("Hash {}", tx.transaction.hash().reversed());
         let send_fut = self.rpc_client.send_transaction(BytesJson::from(serialize(&tx.transaction)));
-        Box::new(
-            send_fut.then(move |res| -> Result<TransactionEnum, String> {
-                let res = try_s!(res);
-                Ok(tx.into())
-            })
-        )
+        Box::new(send_fut.map(move |_res| { tx.into() }))
     }
 
     fn wait_for_confirmations(
@@ -797,6 +786,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
             for url in urls.iter() {
                 try_s!(client.add_server(url));
             }
+            try_s!(client.blockchain_headers_subscribe().wait());
             UtxoRpcClientEnum::Electrum(client)
         }
     };

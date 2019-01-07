@@ -18,23 +18,20 @@
 //
 //  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
-use bitcrypto::dhash160;
 use common::{CORE, lp, slurp_url};
 use secp256k1::key::PublicKey;
-use ethabi::{Contract, RawLog, Token};
+use ethabi::{Contract, Token};
 use ethcore_transaction::{ Action, Transaction as UnsignedEthTransaction, UnverifiedTransaction};
-use ethereum_types::{Address, U256, H160, H512};
-use ethkey::{ KeyPair, Secret, Public, public_to_address, SECP256K1 };
+use ethereum_types::{Address, U256};
+use ethkey::{ KeyPair, Public, public_to_address, SECP256K1 };
 use futures::Future;
 use gstuff::now_ms;
 use hyper::StatusCode;
-use keys::generator::{Random, Generator};
 use rand::Rng;
 use serde_json::{self as json};
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::ops::Deref;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -42,7 +39,6 @@ use web3::transports::{ Http };
 use web3::types::{BlockNumber, Bytes, CallRequest, FilterBuilder, Log, Transaction as Web3Transaction, TransactionId};
 use web3::{ self, Web3 };
 
-use super::utxo::compressed_key_pair_from_bytes;
 use super::{IguanaInfo, MarketCoinOps, MmCoin, SwapOps, TransactionFut, TransactionEnum, Transaction};
 
 pub use ethcore_transaction::SignedTransaction as SignedEthTransaction;
@@ -652,10 +648,10 @@ impl GasStationData {
     }
 }
 
+/// This function is executed on separate event loop to avoid blocking shared core in `eth_coin_from_iguana_info`.
+/// Maybe we should consider refactoring functions like `eth_coin_from_iguana_info` to async versions as it's
+/// required to perform some async IO to get essential coin data.
 fn get_token_decimals(url: &str, token_addr: Address) -> Result<u8, String> {
-    /// This function is executed on separate event loop to avoid blocking shared core in `eth_coin_from_iguana_info`.
-    /// Maybe we should consider refactoring functions like `eth_coin_from_iguana_info` to async versions as it's
-    /// required to perform some async IO to get essential coin data.
     let (_event_loop, transport) = try_s!(Http::new(url));
     let web3 = Web3::new(transport);
 
@@ -715,393 +711,378 @@ pub fn eth_coin_from_iguana_info(info: *mut lp::iguana_info) -> Result<EthCoin, 
     Ok(EthCoin(Arc::new(coin)).into())
 }
 
-#[test]
-fn web3_from_core() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8555", &CORE, 1).unwrap();
-
-    let web3 = Web3::new(transport);
-    log!([web3.eth().block_number().wait().unwrap()]);
-}
-
-#[test]
-fn test_send_and_spend_eth_payment() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: None,
-        web3,
-        coin_type: EthCoinType::Eth,
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let payment = coin.send_taker_payment(
-        (now_ms() / 1000) as u32 + 1000,
-        &[0],
-        &[0],
-        &pubkey,
-        &dhash160(&secret_hex).to_vec(),
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match payment.clone() {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth]);
-
-    let refund = coin.send_taker_spends_maker_payment(
-        TransactionEnum::Eth(eth),
-        &[0],
-        &secret_hex,
-        &pubkey,
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match refund {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-
-
-    let find_spend = coin.wait_for_tx_spend(payment, now_ms() / 1000 + 1000).unwrap();
-
-    log!([find_spend]);
-}
-
-#[test]
-fn test_send_and_spend_erc20_payment() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
-        web3,
-        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_maker_payment(
-        (now_ms() / 1000) as u32 + 1000,
-        &[0],
-        &[0],
-        &pubkey,
-        &dhash160(&secret_hex).to_vec(),
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match res {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-
-    let refund = coin.send_taker_spends_maker_payment(
-        TransactionEnum::Eth(eth),
-        &[0],
-        &secret_hex,
-        &pubkey,
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match refund {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-}
-
-#[test]
-fn test_addr_from_raw_pubkey() {
-    let pubkey = hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06").unwrap();
-    let address = addr_from_raw_pubkey(&pubkey).unwrap();
-    assert_eq!(format!("{:#02x}", address), "0xd8997941dd1346e9231118d5685d866294f59e5b");
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let address = addr_from_raw_pubkey(&pubkey).unwrap();
-    assert_eq!(format!("{:#02x}", address), "0xbab36286672fbdc7b250804bf6d14be0df69fa29");
-
-    let pubkey = hex::decode("04031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f34bfe18b698c3d8ebff1e240fb52f38b44326c534eb2064968f873772baab789e").unwrap();
-    let address = addr_from_raw_pubkey(&pubkey).unwrap();
-    assert_eq!(format!("{:#02x}", address), "0xbab36286672fbdc7b250804bf6d14be0df69fa29");
-}
-
-#[test]
-fn test_gas_price_from_station() {
-    let res = log!([GasStationData::get_gas_price("https://ethgasstation.info/json/ethgasAPI.json").wait().unwrap()]);
-}
-
-#[test]
-fn test_send_buyer_fee_eth() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
-        web3,
-        coin_type: EthCoinType::Eth,
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
-
-    let eth: SignedEthTransaction = match res {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-}
-
-#[test]
-fn test_send_buyer_fee_erc20() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
-        web3,
-        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
-
-    let eth: SignedEthTransaction = match res {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-}
-
-#[test]
-fn test_get_allowance_erc20() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
-        web3,
-        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    log!([coin.allowance(coin.swap_contract_address).wait().unwrap()]);
-}
-
-#[test]
-fn test_my_balance_erc20() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-    log!([key_pair.address()]);
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
-        web3,
-        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    log!([coin.my_balance().wait().unwrap()]);
-}
-
-
-#[test]
-fn test_send_and_refund_erc20_payment() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
-        web3,
-        coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let res = coin.send_maker_payment(
-        (now_ms() / 1000) as u32 - 1000,
-        &[0],
-        &[0],
-        &pubkey,
-        &dhash160(&secret_hex).to_vec(),
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match res {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-
-    let refund = coin.send_taker_refunds_payment(
-        TransactionEnum::Eth(eth),
-        &[0],
-        &pubkey,
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match refund {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-}
-
-#[test]
-fn test_send_and_refund_eth_payment() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
-
-    let coin = EthCoin(Arc::new(EthCoinImpl {
-        decimals: 18,
-        gas_station_url: None,
-        web3,
-        coin_type: EthCoinType::Eth,
-        ticker: "ETH".into(),
-        my_address: key_pair.address().clone(),
-        key_pair,
-        swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
-    }));
-
-    let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
-    let payment = coin.send_maker_payment(
-        (now_ms() / 1000) as u32 - 1000,
-        &[0],
-        &[0],
-        &pubkey,
-        &dhash160(&secret_hex).to_vec(),
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match payment.clone() {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-
-    coin.wait_for_confirmations(payment.clone(), 3, now_ms() / 1000 + 1000);
-
-    let refund = coin.send_taker_refunds_payment(
-        payment,
-        &[0],
-        &pubkey,
-        1000,
-    ).wait().unwrap();
-
-    let eth: SignedEthTransaction = match refund {
-        TransactionEnum::Eth(t) => t,
-        _ => panic!()
-    };
-
-    log!([eth.hash()]);
-}
-
-#[test]
-fn test_logs() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let event = SWAP_CONTRACT.event("ReceiverSpent").unwrap();
-    let filter = FilterBuilder::default()
-        .topics(Some(vec![event.signature()]), None, None, None)
-        .from_block(BlockNumber::Number(4000000))
-        .address(vec![Address::from_str("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94").unwrap()])
-        .build();
-
-    let events = web3.eth().logs(filter).wait().unwrap();
-
-    let raw_log = RawLog {
-        topics: events[0].topics.clone(),
-        data: events[0].data.0.clone(),
-    };
-
-    let parsed = event.parse_log(raw_log).unwrap();
-
-    log!([parsed]);
-}
-
-#[test]
-fn test_extract_secret() {
-    let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
-    let web3 = Web3::new(transport);
-
-    let transaction = web3.eth().transaction(TransactionId::Hash("0x020a75081ec1660dbbcff0cca8a4139987ce31241dd291b3596bf353e2c1e098".into())).wait().unwrap().unwrap();
-    let transaction = signed_tx_from_web3_tx(transaction);
-    log!([transaction]);
-
-    let secret = transaction.extract_secret().unwrap();
-
-    let expected = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
-    assert_eq!(expected, secret);
-}
-
-#[test]
-fn test_get_token_decimals() {
-    log!([get_token_decimals("http://195.201.0.6:8545", Address::from("0xc0eb7aed740e1796992a08962c15661bdeb58003"))]);
+// TODO these are just helpers functions that I used during development.
+// Trade tests also cover these functions, if some of these doesn't work properly trade will fail.
+// Maybe we should remove them at all or move to a kind of "helpers" file.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bitcrypto::dhash160;
+
+    #[test]
+    fn web3_from_core() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8555", &CORE, 1).unwrap();
+
+        let web3 = Web3::new(transport);
+        log!([web3.eth().block_number().wait().unwrap()]);
+    }
+
+    #[test]
+    fn test_send_and_spend_eth_payment() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: None,
+            web3,
+            coin_type: EthCoinType::Eth,
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let payment = coin.send_taker_payment(
+            (now_ms() / 1000) as u32 + 1000,
+            &[0],
+            &[0],
+            &pubkey,
+            &dhash160(&secret_hex).to_vec(),
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match payment.clone() {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth]);
+
+        let refund = coin.send_taker_spends_maker_payment(
+            TransactionEnum::Eth(eth),
+            &[0],
+            &secret_hex,
+            &pubkey,
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match refund {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+
+
+        let find_spend = coin.wait_for_tx_spend(payment, now_ms() / 1000 + 1000).unwrap();
+
+        log!([find_spend]);
+    }
+
+    #[test]
+    fn test_send_and_spend_erc20_payment() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+            web3,
+            coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let res = coin.send_maker_payment(
+            (now_ms() / 1000) as u32 + 1000,
+            &[0],
+            &[0],
+            &pubkey,
+            &dhash160(&secret_hex).to_vec(),
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match res {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+
+        let refund = coin.send_taker_spends_maker_payment(
+            TransactionEnum::Eth(eth),
+            &[0],
+            &secret_hex,
+            &pubkey,
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match refund {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+    }
+
+    #[test]
+    fn test_addr_from_raw_pubkey() {
+        let pubkey = hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06").unwrap();
+        let address = addr_from_raw_pubkey(&pubkey).unwrap();
+        assert_eq!(format!("{:#02x}", address), "0xd8997941dd1346e9231118d5685d866294f59e5b");
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let address = addr_from_raw_pubkey(&pubkey).unwrap();
+        assert_eq!(format!("{:#02x}", address), "0xbab36286672fbdc7b250804bf6d14be0df69fa29");
+
+        let pubkey = hex::decode("04031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f34bfe18b698c3d8ebff1e240fb52f38b44326c534eb2064968f873772baab789e").unwrap();
+        let address = addr_from_raw_pubkey(&pubkey).unwrap();
+        assert_eq!(format!("{:#02x}", address), "0xbab36286672fbdc7b250804bf6d14be0df69fa29");
+    }
+
+    #[test]
+    fn test_gas_price_from_station() {
+        let res = log!([GasStationData::get_gas_price("https://ethgasstation.info/json/ethgasAPI.json").wait().unwrap()]);
+    }
+
+    #[test]
+    fn test_send_buyer_fee_eth() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+            web3,
+            coin_type: EthCoinType::Eth,
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
+
+        let eth: SignedEthTransaction = match res {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+    }
+
+    #[test]
+    fn test_send_buyer_fee_erc20() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+            web3,
+            coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
+
+        let eth: SignedEthTransaction = match res {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+    }
+
+    #[test]
+    fn test_get_allowance_erc20() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+            web3,
+            coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        log!([coin.allowance(coin.swap_contract_address).wait().unwrap()]);
+    }
+
+    #[test]
+    fn test_my_balance_erc20() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+        log!([key_pair.address()]);
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+            web3,
+            coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        log!([coin.my_balance().wait().unwrap()]);
+    }
+
+
+    #[test]
+    fn test_send_and_refund_erc20_payment() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: Some("https://ethgasstation.info/json/ethgasAPI.json".into()),
+            web3,
+            coin_type: EthCoinType::Erc20(Address::from("c0eb7aed740e1796992a08962c15661bdeb58003")),
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let res = coin.send_maker_payment(
+            (now_ms() / 1000) as u32 - 1000,
+            &[0],
+            &[0],
+            &pubkey,
+            &dhash160(&secret_hex).to_vec(),
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match res {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+
+        let refund = coin.send_taker_refunds_payment(
+            TransactionEnum::Eth(eth),
+            &[0],
+            &pubkey,
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match refund {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+    }
+
+    #[test]
+    fn test_send_and_refund_eth_payment() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let secret_hex = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        let key_pair: KeyPair = unwrap!(KeyPair::from_secret_slice(&secret_hex));
+
+        let coin = EthCoin(Arc::new(EthCoinImpl {
+            decimals: 18,
+            gas_station_url: None,
+            web3,
+            coin_type: EthCoinType::Eth,
+            ticker: "ETH".into(),
+            my_address: key_pair.address().clone(),
+            key_pair,
+            swap_contract_address: Address::from("7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94"),
+        }));
+
+        let pubkey = hex::decode("02031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3").unwrap();
+        let payment = coin.send_maker_payment(
+            (now_ms() / 1000) as u32 - 1000,
+            &[0],
+            &[0],
+            &pubkey,
+            &dhash160(&secret_hex).to_vec(),
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match payment.clone() {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+
+        coin.wait_for_confirmations(payment.clone(), 3, now_ms() / 1000 + 1000);
+
+        let refund = coin.send_taker_refunds_payment(
+            payment,
+            &[0],
+            &pubkey,
+            1000,
+        ).wait().unwrap();
+
+        let eth: SignedEthTransaction = match refund {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!()
+        };
+
+        log!([eth.hash()]);
+    }
+
+    #[test]
+    fn test_extract_secret() {
+        let transport = Http::with_remote_reactor("http://195.201.0.6:8545", &CORE, 1).unwrap();
+        let web3 = Web3::new(transport);
+
+        let transaction = web3.eth().transaction(TransactionId::Hash("0x020a75081ec1660dbbcff0cca8a4139987ce31241dd291b3596bf353e2c1e098".into())).wait().unwrap().unwrap();
+        let transaction = signed_tx_from_web3_tx(transaction);
+        log!([transaction]);
+
+        let secret = transaction.extract_secret().unwrap();
+
+        let expected = hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap();
+        assert_eq!(expected, secret);
+    }
+
+    #[test]
+    fn test_get_token_decimals() {
+        log!([get_token_decimals("http://195.201.0.6:8545", Address::from("0xc0eb7aed740e1796992a08962c15661bdeb58003"))]);
+    }
 }

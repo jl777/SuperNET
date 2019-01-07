@@ -197,7 +197,9 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "autoprice" => lp_autoprice (ctx, req),
         "buy" => buy (ctx, req),
         "enable" => enable (ctx, req),
-        "electrum" => electrum (ctx, req),
+        // electrum initialization performs blocking IO, i.e request.wait(), have to run it on CPUPOOL to avoid blocking shared CORE.
+        // at least until we refactor the functions like `utxo_coin_from_iguana_info` to async versions.
+        "electrum" => Box::new(CPUPOOL.spawn_fn(move || { electrum (ctx, req) })),
         "eth_gas_price" => eth_gas_price(),
         "fundvalue" => lp_fundvalue (ctx, req, false),
         "help" => help(),
