@@ -212,27 +212,20 @@ impl MarketCoinOps for EthCoin {
             _ => panic!(),
         };
 
-        let mut confirmed_at = None;
         let required_confirms = U256::from(confirmations);
         loop {
             if now_ms() / 1000 > wait_until {
                 return ERR!("Waited too long until {} for transaction {:?} confirmation ", wait_until, tx);
             }
 
-            if confirmed_at.is_none() {
-                let receipt = try_s!(self.web3.eth().transaction_receipt(tx.hash()).wait());
-                confirmed_at = match receipt {
-                    Some(receipt) => receipt.block_number,
-                    None => {
-                        thread::sleep(Duration::from_secs(15));
-                        continue;
-                    },
+            let web3_tx = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx.hash())).wait());
+            if let Some(tx) = web3_tx {
+                if let Some(confirmed_at) = tx.block_number {
+                    let current_block = try_s!(self.web3.eth().block_number().wait());
+                    if current_block - confirmed_at + 1 >= required_confirms {
+                        return Ok(());
+                    }
                 }
-            }
-
-            let current_block = try_s!(self.web3.eth().block_number().wait());
-            if current_block - confirmed_at.unwrap() >= required_confirms {
-                return Ok(());
             }
             thread::sleep(Duration::from_secs(15));
         }
@@ -583,6 +576,10 @@ impl Transaction for SignedEthTransaction {
             Token::FixedBytes(secret) => Ok(secret.to_vec()),
             _ => ERR!("Expected secret to be fixed bytes, decoded function data is {:?}", tokens),
         }
+    }
+
+    fn tx_hash(&self) -> String {
+        format!("{:#02x}", self.hash)
     }
 }
 

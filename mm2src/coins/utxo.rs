@@ -95,6 +95,10 @@ impl Transaction for ExtendedUtxoTx {
         }
         ERR!("Couldn't extract secret")
     }
+
+    fn tx_hash(&self) -> String {
+        format!("{}", self.transaction.hash().reversed())
+    }
 }
 
 #[derive(Debug)]

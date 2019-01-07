@@ -421,19 +421,10 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
             return -1
     }   };
 
-    // TODO (refactoring angle): As discussed, the private key is already there in the `coin`, we shouldn't have to invoke `LP_privkey` to obtain it,
-    // plus there's no need to explicitly pass the private key through the context here,
-    // rather, the private key should be obtained and used in a refactored version of `LP_swapinit`.
-    let c_address = unwrap!(CString::new(&coin.address()[..]));
-    // TODO: We should refactor away the [explicit passing] of taddr in the future.
-    //       In Komodo forks it's always 0.
-    let taddr = 0;
-    let priv_key = lp::LP_privkey(coin.iguana_info().symbol.as_mut_ptr(), c_address.as_ptr() as *mut c_char, taddr);
-
-    if priv_key.nonz() && lp::G.LP_mypub25519 == (*qp).srchash {
+    if lp::G.LP_mypub25519 == (*qp).srchash {
         lp::LP_requestinit(&mut (*qp).R, (*qp).srchash, (*qp).desthash, base, (*qp).satoshis - (*qp).txfee, rel, (*qp).destsatoshis - (*qp).desttxfee, (*qp).timestamp, (*qp).quotetime, dex_selector, (*qp).fill as i32, (*qp).gtc as i32);
         let d_trust = lp::LP_dynamictrust((*qp).othercredits, (*qp).desthash, lp::LP_kmdvalue((*qp).destcoin.as_mut_ptr(), (*qp).destsatoshis as i64));
-        let swap = lp::LP_swapinit(1, 0, priv_key, &mut (*qp).R, qp, (d_trust > 0) as i32);
+        let swap = lp::LP_swapinit(1, 0, lp::G.LP_privkey, &mut (*qp).R, qp, (d_trust > 0) as i32);
         if swap == null_mut() {
             printf(b"cant initialize swap\n\x00".as_ptr() as *const c_char);
             lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3001.0, (*qp).uuidstr.as_mut_ptr());
@@ -500,7 +491,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
         }
     } else {
         lp::LP_failedmsg((*qp).R.requestid, (*qp).R.quoteid, -3004.0, (*qp).uuidstr.as_mut_ptr());
-        log!("cant find privkey for address " (coin.address()) " (coin " (coin.ticker()) ")");
+        log!("lp::G.LP_mypub25519 " (lp::G.LP_mypub25519) " != (*qp).srchash " ((*qp).srchash));
     }
     if retval < 0 {
         if pair >= 0 {

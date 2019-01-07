@@ -53,6 +53,8 @@ use self::utxo::{utxo_coin_from_iguana_info, ExtendedUtxoTx, UtxoCoin, UtxoInitM
 pub trait Transaction: Debug + 'static {
     fn to_raw_bytes(&self) -> Vec<u8>;
     fn extract_secret(&self) -> Result<Vec<u8>, String>;
+    /// String representation of tx hash for displaying purpose
+    fn tx_hash(&self) -> String;
 }
 
 #[derive(Clone, Debug)]

@@ -828,7 +828,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-2003, "!tx_from_raw_bytes: "(err)),
                 };
 
-                log!("Taker fee tx " [taker_fee]);
+                log!("Taker fee tx " (taker_fee.tx_hash()));
                 AtomicSwapState::SendMakerPayment
             },
             AtomicSwapState::SendMakerPayment => unsafe {
@@ -847,7 +847,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Ok(t) => t,
                     Err(err) => err!(-2006, "!send_maker_payment: "(err))
                 };
-                log!("Maker payment tx " [transaction]);
+                log!("Maker payment tx " (transaction.tx_hash()));
                 let sending_f = send!("maker-payment", transaction.to_raw_bytes());
                 swap.maker_payment = Some(transaction.clone());
 
@@ -861,7 +861,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-2006, "!taker_coin.tx_from_raw_bytes: "(err))
                 };
 
-                log!("Taker payment tx " [taker_payment]);
+                log!("Taker payment tx " (taker_payment.tx_hash()));
                 swap.taker_payment = Some(taker_payment.clone());
 
                 status.status(SWAP_STATUS, "Waiting for Taker payment confirmation…");
@@ -892,7 +892,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-2007, "!send_maker_spends_taker_payment: "(err))
                 };
 
-                log!("Maker payment spend tx " [transaction]);
+                log!("Taker payment spend tx " (transaction.tx_hash()));
                 return Ok(());
             },
             AtomicSwapState::RefundMakerPayment => {
@@ -986,12 +986,12 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let fee_amount = (*swap.basilisk_swap).I.alicesatoshis / 777;
                 status.status(SWAP_STATUS, "Sending Taker fee…");
                 let fee_tx = swap.taker_coin.send_taker_fee(&fee_addr_pub_key, fee_amount as u64).wait();
-                log!("Taker fee tx " [fee_tx]);
-
                 let transaction = match fee_tx {
                     Ok (t) => t,
                     Err (err) => err!(-1004, "!send_taker_fee: " (err))
                 };
+
+                log!("Taker fee tx hash " (transaction.tx_hash()));
                 let sending_f = send!("taker-fee", transaction.to_raw_bytes());
 
                 AtomicSwapState::WaitMakerPayment {sending_f}
@@ -1002,7 +1002,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Ok(p) => p,
                     Err(err) => err!(-1005, "Error parsing the 'maker-payment': "(err))
                 };
-                log!("Got maker payment " [maker_payment]);
+                log!("Got maker payment " (maker_payment.tx_hash()));
                 swap.maker_payment = Some(maker_payment.clone());
 
                 status.status(SWAP_STATUS, "Waiting for the confirmation of the Maker payment…");
@@ -1032,7 +1032,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-1006, "!send_taker_payment: "(err))
                 };
 
-                log!("Taker payment tx " [transaction]);
+                log!("Taker payment tx hash " (transaction.tx_hash()));
                 let msg = transaction.to_raw_bytes();
 
                 let sending_f = send!("taker-payment", msg);
@@ -1043,11 +1043,11 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             AtomicSwapState::WaitTakerPaymentSpent {sending_f} => {
                 status.status(SWAP_STATUS, "Waiting for taker payment spend…");
                 let got = swap.taker_coin.wait_for_tx_spend(swap.taker_payment.clone().unwrap(), now_ms() / 1000 + 1000);
-                log!("Taker payment spend tx " [got]);
                 drop(sending_f);
 
                 match got {
                     Ok(transaction) => {
+                        log!("Taker payment spend tx " (transaction.tx_hash()));
                         let secret = transaction.extract_secret();
                         if let Ok(bytes) = secret {
                             swap.secret = bytes;
@@ -1077,7 +1077,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-1, "Error: "(err))
                 };
 
-                log!("Maker payment spend tx " [transaction]);
+                log!("Maker payment spend tx " (transaction.tx_hash()));
                 return Ok(());
             },
             AtomicSwapState::RefundTakerPayment => unsafe {
