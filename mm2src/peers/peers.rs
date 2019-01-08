@@ -2,7 +2,7 @@
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
 #[macro_use] extern crate lazy_static;
-//#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
 // As of now the large payloads are not compressable,
@@ -28,6 +28,8 @@ use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry};
 use itertools::Itertools;
 use libc::{c_char, c_void};
 use rand::{thread_rng, Rng};
+use serde::Serialize;
+use serde_bencode::ser::to_bytes as bencode;
 use serde_bytes::{Bytes, ByteBuf};
 use std::cmp::Ordering;
 use std::env::temp_dir;
@@ -138,7 +140,7 @@ extern "C" {
     //             This public key identifies the entries obtained via the `dht_mutable_item_alert` (because DHT storage nodes don't know our seed).
     // * `pkbuflen` - Must be 32 bytes. Passed explicitly in order for us to check it.
     fn dht_get (dugout: *mut dugout_t, key: *const u8, keylen: i32, salt: *const u8, saltlen: i32, pkbuf: *mut u8, pkbuflen: i32);
-    fn lt_send_udp (dugout: *mut dugout_t);  // WIP
+    fn lt_send_udp (dugout: *mut dugout_t, ip: *const c_char, port: u16, benload: *const u8, benlen: i32);
 }
 
 /// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
@@ -244,12 +246,57 @@ fn ratelim_maintenance (seed: [u8; 32]) -> f32 {
     limops
 }
 
+macro_rules! s2b {($s: expr) => {Bytes::new ($s.as_bytes())};}
+
+/// Tells libtorrent to send a ping DHT packet with extra payload.
+/// 
+/// Should preferably be run from under the `dht_thread`
+/// in order to minimize the chance of synchronization issues in the unsafe C code.
+/// 
+/// * `ip` - The open (hole-punched) address of the peer.
+/// * `port` - The open (hole-punched) IP of the peer.
+/// * `extra_payload` - Carries the extra information in the "mm" ping argument.
+fn ping<P> (dugout: &mut dugout_t, ip: &str, port: u16, extra_payload: P) -> Result<(), String>
+where P: Serialize {
+    // We're sending normal http://www.bittorrent.org/beps/bep_0005.html pings, only with extra `en["a"]` arguments.
+    // That way if something would happen with the delivery of the MM packets via `dht_direct_request`
+    // then the problem will be a subset of a generic ping delivery problem.
+    // NB: libtorrent automatically adds a random `en["t"]`.
+    #[derive (Serialize)]
+    struct Ping<'a, P> {
+        y: Bytes<'a>,
+        q: Bytes<'a>,
+        a: PingArgs<P>
+    }
+    // NB: libtorrent automatically adds a proper `{"a" {"id": …}}` to the ping.
+    #[derive (Serialize)]
+    struct PingArgs<P> {
+        mm: P
+    }
+    let ping = Ping {
+        y: s2b! ("q"),  // It's a query.
+        q: s2b! ("ping"),  // It's a DHT ping query.
+        a: PingArgs {
+            mm: extra_payload
+        }
+    };
+
+    let ip = try_s! (CString::new (ip));
+    let benload = try_s! (bencode (&ping));
+
+    unsafe {lt_send_udp (dugout, ip.as_ptr(), port, benload.as_ptr(), benload.len() as i32)};
+    if let Some (err) = dugout.take_err() {return ERR! ("lt_send_udp error: {}", err)}
+    Ok(())
+}
+
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
 fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: &mut dugout_t) {
     if 1 == 1 {  // TODO
         // Exploring direct UDP communication.
-        unsafe {lt_send_udp (dugout)};
+
+        // NB: Local IPs aren't routable, so LT listens on 0.0.0.0 in the unit tests, reachable through 127.0.0.1.
+        if let Err (err) = ping (dugout, "127.0.0.1", 2111, s2b! ("foobar")) {log! ("ping error: " (err))}
     }
 
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
@@ -573,7 +620,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 &mut port)};
             if rc > 0 {  // TODO
                 let pkt = &buf[0 .. rc as usize];
-                if unsafe {from_utf8_unchecked (pkt) .contains ("3:qwe6:foobar")} {
+                if unsafe {from_utf8_unchecked (pkt) .contains ("2:mm6:foobar")} {
                     let ip = unsafe {from_utf8_unchecked (&ipbuf[0 .. ipbuflen as usize])};
                     log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", " (binprint (pkt, b'.')));
                     cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
