@@ -73,10 +73,15 @@ const BASIC_COMM_TIMEOUT: u64 = 90;
 
 const SWAP_STATUS: &[&TagParam] = &[&"swap"];
 
-fn send (ctx: &MmArc, to: bits256, subject: String, payload: Vec<u8>) -> Box<(dyn Stream<Item=(), Error=String> + 'static)> {
-    let crc = crc32::checksum_ieee (&payload);  // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
-    log!("Sending '" (subject) "' (" (payload.len()) " bytes, crc " (crc) ")");
-    peers::send (ctx, to, subject.as_bytes(), payload)
+// NB: Using a macro instead of a function in order to preserve the line numbers in the log.
+macro_rules! send_ {
+    ($ctx: expr, $to: expr, $subj: expr, $payload: expr) => {{
+        // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
+        let crc = crc32::checksum_ieee (&$payload);
+        log!("Sending '" ($subj) "' (" ($payload.len()) " bytes, crc " (crc) ")");
+
+        peers::send ($ctx, $to, $subj.as_bytes(), $payload.into())
+    }}
 }
 
 macro_rules! recv_ {
@@ -108,8 +113,13 @@ macro_rules! recv_ {
             }
         };
         $status.append (" Done.");
+
+        // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
+        let crc = crc32::checksum_ieee (&payload);
+        log! ("Received '" (recv_subject) "' (" (payload.len()) " bytes, crc " (crc) ")");
+
         payload
-    }};
+    }}
 }
 
 /*
@@ -752,9 +762,8 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
     macro_rules! send {
         ($subj: expr, $slice: expr) => {
-            send (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.session)), $slice.into())
-        };
-    }
+            send_! (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.session)), $slice)
+    }   }
     macro_rules! recv {
         ($subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
             recv_! (swap, status, $subj, $desc, $timeout_sec, $ec, $validator)
@@ -921,9 +930,8 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
     macro_rules! send {
         ($subj: expr, $slice: expr) => {
-            send (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.session)), $slice.into())
-        };
-    }
+            send_! (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.session)), $slice)
+    }   }
     macro_rules! recv {
         ($subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
             recv_! (swap, status, $subj, $desc, $timeout_sec, $ec, $validator)
