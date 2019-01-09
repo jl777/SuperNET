@@ -253,6 +253,17 @@ macro_rules! s2b {($s: expr) => {Bytes::new ($s.as_bytes())};}
 /// Should preferably be run from under the `dht_thread`
 /// in order to minimize the chance of synchronization issues in the unsafe C code.
 /// 
+/// DHT packets larger than 1500 bytes are dropped. Experimenting with payload size shows
+/// that the overhead is around 81 bytes. Thus the recommended maximum size of the `extra_payload`
+/// is about 1333-1400 bytes.
+/// The function will return an error if the `extra_payload` is larger than this.
+/// Note that we don't immediately know the actual size of the outgoing packet
+/// because the final encoding is performed by the libtorrent.
+/// 
+/// A `dht_direct_response` alert is usually fired when we get a confirmation of the packet delivery,
+/// but there seems to be a considerable time span (~15 seconds) between the time when the packet is received
+/// and the time we get the delivery alert.
+/// 
 /// * `ip` - The open (hole-punched) address of the peer.
 /// * `port` - The open (hole-punched) IP of the peer.
 /// * `extra_payload` - Carries the extra information in the "mm" ping argument.
@@ -283,6 +294,8 @@ where P: Serialize {
 
     let ip = try_s! (CString::new (ip));
     let benload = try_s! (bencode (&ping));
+    let extra_payload_size = benload.len() - 26;
+    if extra_payload_size > 1400 {return ERR! ("`extra_payload` is too large")}
 
     unsafe {lt_send_udp (dugout, ip.as_ptr(), port, benload.as_ptr(), benload.len() as i32)};
     if let Some (err) = dugout.take_err() {return ERR! ("lt_send_udp error: {}", err)}
@@ -295,8 +308,17 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
     if 1 == 1 {  // TODO
         // Exploring direct UDP communication.
 
-        // NB: Local IPs aren't routable, so LT listens on 0.0.0.0 in the unit tests, reachable through 127.0.0.1.
-        if let Err (err) = ping (dugout, "127.0.0.1", 2111, s2b! ("foobar")) {log! ("ping error: " (err))}
+        let mut rng = thread_rng();
+        for _x in 0..3 {
+            // NB: Local IPs aren't routable, so LT listens on 0.0.0.0 in the unit tests, reachable through 127.0.0.1.
+
+            let mut payload = String::new();
+            use std::fmt::Write;
+            unwrap! (witeln! (&mut payload, "foobar"));
+            while payload.len() < 111 {unwrap! (wite! (&mut payload, (if rng.gen_bool (0.5) {'1'} else {'0'})))}
+
+            if let Err (err) = ping (dugout, "127.0.0.1", 2111, s2b! (payload)) {log! ("ping error: " (err))}
+        }
     }
 
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
@@ -620,7 +642,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 &mut port)};
             if rc > 0 {  // TODO
                 let pkt = &buf[0 .. rc as usize];
-                if unsafe {from_utf8_unchecked (pkt) .contains ("2:mm6:foobar")} {
+                if unsafe {from_utf8_unchecked (pkt) .contains (":foobar")} {
                     let ip = unsafe {from_utf8_unchecked (&ipbuf[0 .. ipbuflen as usize])};
                     log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", " (binprint (pkt, b'.')));
                     cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
