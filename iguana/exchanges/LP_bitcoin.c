@@ -2866,7 +2866,7 @@ cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txv
 {
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
-    if (txversion >= 3) {
+    if (txversion == 3 || txversion == 4) {
         cJSON_AddBoolToObject(json,"overwintered",1);
         jaddnum(json,"expiryheight",0);
         if (txversion == 3) {
