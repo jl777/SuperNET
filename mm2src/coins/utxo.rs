@@ -673,7 +673,7 @@ impl SwapOps for UtxoCoin {
         let tx_from_rpc = try_s!(self.rpc_client.get_transaction(tx.transaction.hash().reversed().into()).wait());
 
         if tx_from_rpc.hex.0 != serialize(&tx.transaction).take() {
-            return ERR!("Provided dex fee tx doesn't match real tx data {:?} {:?}", tx, tx_from_rpc);
+            return ERR!("Provided dex fee tx {:?} doesn't match tx data from rpc {:?}", tx, tx_from_rpc);
         }
 
         let address = try_s!(address_from_raw_pubkey(fee_addr, self.pub_addr_prefix, self.pub_t_addr_prefix));
@@ -768,7 +768,7 @@ impl IguanaInfo for UtxoCoin {
 }
 impl MmCoin for UtxoCoin {}
 
-fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
+pub fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
     let random_key = try_s!(Random::new(prefix).generate());
 
     Ok(try_s!(KeyPair::from_private(Private {
