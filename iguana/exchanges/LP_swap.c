@@ -203,8 +203,6 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
     data[datalen++] = swap->I.otheristrusted;
     for (i=0; i<33; i++)
         data[datalen++] = swap->persistent_pubkey33[i];
-    for (i=0; i<sizeof(swap->deck)/sizeof(swap->deck[0][0]); i++)
-        datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->deck[i>>1][i&1]),&swap->deck[i>>1][i&1]);
     //printf("send >>>>>>>>> r.%u q.%u datalen.%d\n",swap->I.req.requestid,swap->I.req.quoteid,datalen);
     return(datalen);
 }
@@ -212,7 +210,7 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     uint32_t requestid,quoteid; int32_t i,nonz=0,alicemaxconfirms,bobmaxconfirms,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
-    if ( datalen == sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2 )
+    if ( datalen == 38+sizeof(uint32_t)*2 )
     {
         len += iguana_rwnum(0,&data[len],sizeof(requestid),&requestid);
         len += iguana_rwnum(0,&data[len],sizeof(quoteid),&quoteid);
@@ -256,11 +254,9 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
                 nonz++;
         if ( nonz > 8 )
             memcpy(swap->persistent_other33,other33,33);
-        for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
-            len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
         return(0);
     }
-    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)(sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2));
+    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)(38+sizeof(uint32_t)*2));
     return(-1);
 }
 
@@ -340,11 +336,6 @@ int32_t LP_mostprivs_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxle
 {
     int32_t i,j,datalen;
     datalen = 0;
-    for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
-    {
-        for (j=0; j<32; j++)
-            data[datalen++] = (i == swap->I.otherchoosei) ? 0 : swap->privkeys[i].bytes[j];
-    }
     if ( swap->I.iambob != 0 )
     {
         for (i=0; i<33; i++)
@@ -372,16 +363,6 @@ int32_t basilisk_verify_pubpair(int32_t *wrongfirstbytep,struct basilisk_swap *s
     {
         (*wrongfirstbytep)++;
         printf("wrongfirstbyte[%d] %02x\n",ind,pub0);
-        return(-1);
-    }
-    else if ( swap->otherdeck[ind][1] != pubi.txid )
-    {
-        printf("otherdeck[%d] priv ->pub mismatch %llx != %llx\n",ind,(long long)swap->otherdeck[ind][1],(long long)pubi.txid);
-        return(-1);
-    }
-    else if ( swap->otherdeck[ind][0] != txid )
-    {
-        printf("otherdeck[%d] priv mismatch %llx != %llx\n",ind,(long long)swap->otherdeck[ind][0],(long long)txid);
         return(-1);
     }
     return(0);
@@ -425,52 +406,33 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
 {
     int32_t i,j,wrongfirstbyte=0,errs=0,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33]; uint64_t txid;
     memset(otherpriv.bytes,0,sizeof(otherpriv));
-    if ( swap->I.cutverified == 0 && swap->I.otherchoosei >= 0 && datalen == sizeof(swap->privkeys)+20+32+33 )
-    {
-        for (i=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
-        {
-            for (j=0; j<32; j++)
-                otherpriv.bytes[j] = data[len++];
-            if ( i != swap->I.choosei )
-            {
-                pubi = bitcoin_pubkey33(swap->ctx,otherpubkey,otherpriv);
-                revcalc_rmd160_sha256(secret160,otherpriv);//.bytes,sizeof(otherpriv));
-                memcpy(&txid,secret160,sizeof(txid));
-                errs += basilisk_verify_pubpair(&wrongfirstbyte,swap,i,otherpubkey[0],pubi,txid);
+    if ( swap->I.cutverified == 0 && swap->I.otherchoosei >= 0 && datalen == 20+32+33 ) {
+        swap->I.cutverified = 1, printf("CUT VERIFIED\n");
+        if (swap->I.iambob != 0) {
+            printf("Pub am\n");
+            for (i = 0; i < 33; i++) {
+                swap->I.pubAm[i] = data[len++];
+                printf("%02x", swap->I.pubAm[i]);
             }
+            printf("\n");
+            for (i = 0; i < 20; i++)
+                swap->I.secretAm[i] = data[len++];
+            for (i = 0; i < 32; i++)
+                swap->I.secretAm256[i] = data[len++];
+            //basilisk_bobscripts_set(swap,1,1);
+        } else {
+            printf("Pub bn\n");
+            for (i = 0; i < 33; i++) {
+                swap->I.pubBn[i] = data[len++];
+                printf("%02x", swap->I.pubBn[i]);
+            }
+            printf("\n");
+            for (i = 0; i < 20; i++)
+                swap->I.secretBn[i] = data[len++];
+            for (i = 0; i < 32; i++)
+                swap->I.secretBn256[i] = data[len++];
+            //basilisk_bobscripts_set(swap,0);
         }
-        if ( errs == 0 && wrongfirstbyte == 0 )
-        {
-            swap->I.cutverified = 1, printf("CUT VERIFIED\n");
-            if ( swap->I.iambob != 0 )
-            {
-                printf("Pub am\n");
-                for (i=0; i<33; i++) {
-                    swap->I.pubAm[i] = data[len++];
-                    printf("%02x", swap->I.pubAm[i]);
-                }
-                printf("\n");
-                for (i=0; i<20; i++)
-                    swap->I.secretAm[i] = data[len++];
-                for (i=0; i<32; i++)
-                    swap->I.secretAm256[i] = data[len++];
-                //basilisk_bobscripts_set(swap,1,1);
-            }
-            else
-            {
-                printf("Pub bn\n");
-                for (i=0; i<33; i++) {
-                    swap->I.pubBn[i] = data[len++];
-                    printf("%02x", swap->I.pubBn[i]);
-                }
-                printf("\n");
-                for (i=0; i<20; i++)
-                    swap->I.secretBn[i] = data[len++];
-                for (i=0; i<32; i++)
-                    swap->I.secretBn256[i] = data[len++];
-                //basilisk_bobscripts_set(swap,0);
-            }
-        } else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
     }
     return(errs);
 }
@@ -643,8 +605,6 @@ int32_t instantdex_pubkeyargs(struct basilisk_swap *swap,int32_t numpubs,bits256
             swap->privkeys[m] = privkey;
             revcalc_rmd160_sha256(secret160,privkey);//.bytes,sizeof(privkey));
             memcpy(&txid,secret160,sizeof(txid));
-            len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
-            len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
             m++;
             if ( m > swap->I.numpubs )
                 swap->I.numpubs = m;
@@ -814,38 +774,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< r.%u q.%u, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,swap->I.req.requestid,swap->I.req.quoteid,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,bobcoin->taddr,alicecoin->taddr);
     if ( swap->I.etomicsrc[0] != 0 || swap->I.etomicdest[0] != 0 )
         printf("etomic src (%s %s) dest (%s %s)\n",swap->I.bobtomic,swap->I.etomicsrc,swap->I.alicetomic,swap->I.etomicdest);
-    if ( swap->I.iambob != 0 )
-    {
-        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*bobcoin->txfee,0,0,jumblrflag);
-        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + 0*alicecoin->txfee,0,0,jumblrflag);
-        bobpub33 = pubkey33;
-    }
-    else
-    {
-        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*bobcoin->txfee,0,0,jumblrflag);
-        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + 0*alicecoin->txfee,0,0,jumblrflag);
-        alicepub33 = pubkey33;
-    }
-    swap->myfee.I.locktime = swap->I.started + 1;
-    swap->otherfee.I.locktime = swap->I.started + 1;
-    basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,bobcoin,swap->I.bobconfirms,0,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis) + 2*bobcoin->txfee,4,0,jumblrflag);
-    basilisk_rawtx_setparms("bobrefund",swap->I.req.quoteid,&swap->bobrefund,bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,bobpub33,jumblrflag);
-    swap->bobrefund.I.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("aliceclaim",swap->I.req.quoteid,&swap->aliceclaim,bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,alicepub33,jumblrflag);
-    swap->aliceclaim.I.suppress_pubkeys = 1;
-    swap->aliceclaim.I.locktime = swap->I.started + swap->I.putduration+swap->I.callduration + 1;
-    
-    basilisk_rawtx_setparms("bobpayment",swap->I.req.quoteid,&swap->bobpayment,bobcoin,swap->I.bobconfirms,0,swap->I.bobsatoshis + 2*bobcoin->txfee,3,0,jumblrflag);
-    basilisk_rawtx_setparms("alicespend",swap->I.req.quoteid,&swap->alicespend,bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,alicepub33,jumblrflag);
-    swap->alicespend.I.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("bobreclaim",swap->I.req.quoteid,&swap->bobreclaim,bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,bobpub33,jumblrflag);
-    swap->bobreclaim.I.suppress_pubkeys = 1;
-    swap->bobreclaim.I.locktime = swap->I.started + swap->I.putduration + 1;
-    basilisk_rawtx_setparms("alicepayment",swap->I.req.quoteid,&swap->alicepayment,alicecoin,swap->I.aliceconfirms,0,swap->I.alicesatoshis + 2*alicecoin->txfee,2,0,jumblrflag);
-    basilisk_rawtx_setparms("bobspend",swap->I.req.quoteid,&swap->bobspend,alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,bobpub33,jumblrflag);
-    swap->bobspend.I.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
-    swap->alicereclaim.I.suppress_pubkeys = 1;
     //char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s [%s %s]\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid),bobstr,alicestr);
     return(swap);
 }

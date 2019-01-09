@@ -405,8 +405,6 @@ struct basilisk_swap
 {
     void *ctx; //struct LP_utxoinfo *utxo;
     struct LP_endpoint N;
-    void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
-    int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf;
     uint32_t lasttime,aborted,tradeid,received;
     FILE *fp;
     bits256 persistent_privkey,persistent_pubkey;
@@ -415,7 +413,7 @@ struct basilisk_swap
     bits256 privkeys[INSTANTDEX_DECKSIZE];
     //struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
     char Bdeposit[64],Bpayment[64],uuidstr[65];
-    uint64_t aliceid,otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint64_t aliceid;
     uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
 };
 

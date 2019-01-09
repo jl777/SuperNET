@@ -759,7 +759,6 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     // (but first we need to establish a use case for such indication with the UI guys,
     //  in order to avoid premature throw-away design, cf. https://www.agilealliance.org/glossary/simple-design).
     let mut status = swap.ctx.log.status_handle();
-
     macro_rules! send {
         ($subj: expr, $slice: expr) => {
             send_! (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.session)), $slice)
