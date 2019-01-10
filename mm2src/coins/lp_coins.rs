@@ -149,7 +149,18 @@ pub trait SwapOps {
         amount: u64
     ) -> Result<(), String>;
 
-    fn validate_payment(
+    fn validate_maker_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        other_addr: &[u8],
+        priv_bn_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String>;
+
+    fn validate_taker_payment(
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,

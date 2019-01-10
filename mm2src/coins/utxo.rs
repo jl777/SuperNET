@@ -458,6 +458,49 @@ impl UtxoCoin {
             arc.send_raw_tx(tx.into())
         }))
     }
+
+    fn validate_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        first_pub0: &[u8],
+        second_pub0: &[u8],
+        other_addr: &[u8],
+        priv_bn_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String> {
+        let tx = match payment_tx {
+            TransactionEnum::ExtendedUtxoTx(tx) => tx,
+            _ => panic!(),
+        };
+
+        let tx_from_rpc = try_s!(self.rpc_client.get_transaction(tx.transaction.hash().reversed().into()).wait());
+        if serialize(&tx.transaction).take() != tx_from_rpc.hex.0 {
+            return ERR!("Provided payment tx {:?} doesn't match tx data from rpc {:?}", tx, tx_from_rpc);
+        }
+
+        let expected_redeem = try_s!(payment_script(
+            time_lock,
+            priv_bn_hash,
+            &try_s!(Public::from_slice(first_pub0)),
+            &try_s!(Public::from_slice(second_pub0)),
+        ));
+
+        let actual_redeem = tx.redeem_script.into();
+        if expected_redeem != actual_redeem {
+            return ERR!("Provided redeem script {} doesn't match expected {}", actual_redeem, expected_redeem);
+        }
+
+        let expected_output = TransactionOutput {
+            value: amount,
+            script_pubkey: Builder::build_p2sh(&dhash160(&expected_redeem)).into(),
+        };
+
+        if tx.transaction.outputs[0] != expected_output {
+            return ERR!("Provided payment tx output doesn't match expected {:?} {:?}", tx.transaction.outputs[0], expected_output);
+        }
+        Ok(())
+    }
 }
 
 pub fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair, String> {
@@ -688,7 +731,7 @@ impl SwapOps for UtxoCoin {
         Ok(())
     }
 
-    fn validate_payment(
+    fn validate_maker_payment(
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
@@ -698,7 +741,36 @@ impl SwapOps for UtxoCoin {
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
-        unimplemented!();
+        self.validate_payment(
+            payment_tx,
+            time_lock,
+            pub_b0,
+            pub_a0,
+            other_addr,
+            priv_bn_hash,
+            amount
+        )
+    }
+
+    fn validate_taker_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        pub_a0: &[u8],
+        pub_b0: &[u8],
+        other_addr: &[u8],
+        priv_bn_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String> {
+        self.validate_payment(
+            payment_tx,
+            time_lock,
+            pub_a0,
+            pub_b0,
+            other_addr,
+            priv_bn_hash,
+            amount
+        )
     }
 }
 

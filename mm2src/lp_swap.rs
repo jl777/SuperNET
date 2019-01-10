@@ -348,6 +348,20 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-2006, "!taker_coin.tx_from_raw_bytes: "(err))
                 };
 
+                let validated = swap.taker_coin.validate_taker_payment(
+                    taker_payment.clone(),
+                    swap.taker_payment_lock as u32,
+                    &*swap.other_pub0,
+                    &**swap.my_priv0.public(),
+                    &*swap.other_persistent,
+                    &*swap.secret_hash,
+                    (*swap.basilisk_swap).I.alicesatoshis as u64,
+                );
+
+                if let Err(e) = validated {
+                    err!(-2011, "!validate taker payment: "(e));
+                }
+
                 log!("Taker payment tx " (taker_payment.tx_hash()));
                 swap.taker_payment = Some(taker_payment.clone());
 
@@ -486,6 +500,21 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Ok(p) => p,
                     Err(err) => err!(-1005, "Error parsing the 'maker-payment': "(err))
                 };
+
+                let validated = swap.maker_coin.validate_maker_payment(
+                    maker_payment.clone(),
+                    swap.maker_payment_lock as u32,
+                    &**swap.my_priv0.public(),
+                    &*swap.other_pub0,
+                    &*swap.other_persistent,
+                    &*swap.secret_hash,
+                    (*swap.basilisk_swap).I.bobsatoshis as u64,
+                );
+
+                if let Err(e) = validated {
+                    err!(-1011, "!validate maker payment: "(e));
+                }
+
                 log!("Got maker payment " (maker_payment.tx_hash()));
                 swap.maker_payment = Some(maker_payment.clone());
 

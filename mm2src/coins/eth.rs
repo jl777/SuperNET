@@ -236,17 +236,42 @@ impl SwapOps for EthCoin {
         Ok(())
     }
 
-    fn validate_payment(
+    fn validate_maker_payment(
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
+        _pub_a0: &[u8],
+        _pub_b0: &[u8],
         other_addr: &[u8],
-        priv_bn_hash: &[u8],
+        secret_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
-        unimplemented!();
+        self.validate_payment(
+            payment_tx,
+            time_lock,
+            other_addr,
+            secret_hash,
+            amount,
+        )
+    }
+
+    fn validate_taker_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        _pub_a0: &[u8],
+        _pub_b0: &[u8],
+        other_addr: &[u8],
+        secret_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String> {
+        self.validate_payment(
+            payment_tx,
+            time_lock,
+            other_addr,
+            secret_hash,
+            amount,
+        )
     }
 }
 
@@ -280,9 +305,13 @@ impl MarketCoinOps for EthCoin {
                 return ERR!("Waited too long until {} for transaction {:?} confirmation ", wait_until, tx);
             }
 
-            let web3_tx = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx.hash())).wait());
-            if let Some(tx) = web3_tx {
-                if let Some(confirmed_at) = tx.block_number {
+            let web3_receipt = try_s!(self.web3.eth().transaction_receipt(tx.hash()).wait());
+            if let Some(receipt) = web3_receipt {
+                if receipt.status != Some(1.into()) {
+                    return ERR!("Tx receipt {:?} of tx {:?} status is failed", receipt, tx);
+                }
+
+                if let Some(confirmed_at) = receipt.block_number {
                     let current_block = try_s!(self.web3.eth().block_number().wait());
                     if current_block - confirmed_at + 1 >= required_confirms {
                         return Ok(());
@@ -604,6 +633,82 @@ impl EthCoin {
             .build();
 
         Box::new(self.web3.eth().logs(filter).map_err(|e| ERRL!("{:?}", e)))
+    }
+
+    fn validate_payment(
+        &self,
+        payment_tx: TransactionEnum,
+        time_lock: u32,
+        other_addr: &[u8],
+        secret_hash: &[u8],
+        amount: u64,
+    ) -> Result<(), String> {
+        let tx = match payment_tx {
+            TransactionEnum::Eth(t) => t,
+            _ => panic!(),
+        };
+
+        let expected_value = u256_denominate_from_satoshis(amount, self.decimals);
+        let tx_from_rpc = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx.hash)).wait());
+        let tx_from_rpc = match tx_from_rpc {
+            Some(t) => t,
+            None => return ERR!("Didn't find provided tx {:?} on ETH node", tx),
+        };
+
+        match self.coin_type {
+            EthCoinType::Eth => {
+                if tx_from_rpc.to != Some(self.swap_contract_address) {
+                    return ERR!("Payment tx {:?} was sent to wrong address, expected {:?}", tx_from_rpc, self.swap_contract_address);
+                }
+
+                if tx_from_rpc.value != expected_value {
+                    return ERR!("Payment tx {:?} value is invalid, expected {:?}", tx_from_rpc, expected_value);
+                }
+
+                let function = try_s!(SWAP_CONTRACT.function("ethPayment"));
+                let decoded = try_s!(function.decode_input(&tx_from_rpc.input.0));
+                if decoded[1] != Token::Address(self.my_address) {
+                    return ERR!("Payment tx receiver arg {:?} is invalid, expected {:?}", decoded[1], Token::Address(self.my_address));
+                }
+
+                if decoded[2] != Token::FixedBytes(secret_hash.to_vec()) {
+                    return ERR!("Payment tx secret_hash arg {:?} is invalid, expected {:?}", decoded[2], Token::FixedBytes(secret_hash.to_vec()));
+                }
+
+                if decoded[3] != Token::Uint(U256::from(time_lock)) {
+                    return ERR!("Payment tx time_lock arg {:?} is invalid, expected {:?}", decoded[3], Token::Uint(U256::from(time_lock)));
+                }
+            },
+            EthCoinType::Erc20(token_addr) => {
+                if tx_from_rpc.to != Some(self.swap_contract_address) {
+                    return ERR!("Payment tx {:?} was sent to wrong address, expected {:?}", tx_from_rpc, self.swap_contract_address);
+                }
+
+                let function = try_s!(SWAP_CONTRACT.function("erc20Payment"));
+                let decoded = try_s!(function.decode_input(&tx_from_rpc.input.0));
+                if decoded[1] != Token::Uint(expected_value) {
+                    return ERR!("Payment tx value arg {:?} is invalid, expected {:?}", decoded[1], Token::Uint(expected_value));
+                }
+
+                if decoded[2] != Token::Address(token_addr) {
+                    return ERR!("Payment tx token_addr arg {:?} is invalid, expected {:?}", decoded[2], Token::Address(token_addr));
+                }
+
+                if decoded[3] != Token::Address(self.my_address) {
+                    return ERR!("Payment tx receiver arg {:?} is invalid, expected {:?}", decoded[3], Token::Address(self.my_address));
+                }
+
+                if decoded[4] != Token::FixedBytes(secret_hash.to_vec()) {
+                    return ERR!("Payment tx secret_hash arg {:?} is invalid, expected {:?}", decoded[4], Token::FixedBytes(secret_hash.to_vec()));
+                }
+
+                if decoded[5] != Token::Uint(U256::from(time_lock)) {
+                    return ERR!("Payment tx time_lock arg {:?} is invalid, expected {:?}", decoded[5], Token::Uint(U256::from(time_lock)));
+                }
+            },
+        }
+
+        Ok(())
     }
 }
 
