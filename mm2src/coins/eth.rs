@@ -128,41 +128,35 @@ impl SwapOps for EthCoin {
     fn send_maker_spends_taker_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        b_priv_0: &[u8],
-        b_priv_n: &[u8],
-        taker_addr: &[u8],
-        amount: u64
+        _b_priv_0: &[u8],
+        secret: &[u8],
     ) -> TransactionFut {
         let tx = match taker_payment_tx {
             TransactionEnum::Eth(t) => t,
             _ => panic!(),
         };
 
-        Box::new(self.spend_hash_time_locked_payment(tx, b_priv_n).map(|t| TransactionEnum::Eth(t)))
+        Box::new(self.spend_hash_time_locked_payment(tx, secret).map(|t| TransactionEnum::Eth(t)))
     }
 
     fn send_taker_spends_maker_payment(
         &self,
         maker_payment_tx: TransactionEnum,
         _a_priv_0: &[u8],
-        b_priv_n: &[u8],
-        maker_addr: &[u8],
-        amount: u64
+        secret: &[u8],
     ) -> TransactionFut {
         let tx = match maker_payment_tx {
             TransactionEnum::Eth(t) => t,
             _ => panic!(),
         };
 
-        Box::new(self.spend_hash_time_locked_payment(tx, b_priv_n).map(|t| TransactionEnum::Eth(t)))
+        Box::new(self.spend_hash_time_locked_payment(tx, secret).map(|t| TransactionEnum::Eth(t)))
     }
 
     fn send_taker_refunds_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        a_priv_0: &[u8],
-        maker_addr: &[u8],
-        amount: u64
+        _a_priv_0: &[u8],
     ) -> TransactionFut {
         let tx = match taker_payment_tx {
             TransactionEnum::Eth(t) => t,
@@ -175,9 +169,7 @@ impl SwapOps for EthCoin {
     fn send_maker_refunds_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        b_priv_0: &[u8],
-        taker_addr: &[u8],
-        amount: u64
+        _b_priv_0: &[u8],
     ) -> TransactionFut {
         let tx = match maker_payment_tx {
             TransactionEnum::Eth(t) => t,
@@ -639,7 +631,7 @@ impl EthCoin {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        other_addr: &[u8],
+        sender_pub: &[u8],
         secret_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
@@ -654,6 +646,11 @@ impl EthCoin {
             Some(t) => t,
             None => return ERR!("Didn't find provided tx {:?} on ETH node", tx),
         };
+
+        let sender = try_s!(addr_from_raw_pubkey(sender_pub));
+        if tx_from_rpc.from != sender {
+            return ERR!("Payment tx {:?} was sent from wrong address, expected {:?}", tx_from_rpc, sender);
+        }
 
         match self.coin_type {
             EthCoinType::Eth => {

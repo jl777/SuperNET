@@ -376,13 +376,11 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 AtomicSwapState::SpendTakerPayment
             },
-            AtomicSwapState::SpendTakerPayment => unsafe {
+            AtomicSwapState::SpendTakerPayment => {
                 let spend_fut = swap.taker_coin.send_maker_spends_taker_payment(
                     swap.taker_payment.clone().unwrap(),
                     &*swap.my_priv0.private().secret,
                     &*swap.secret,
-                    &*swap.other_persistent,
-                    (*swap.basilisk_swap).I.alicesatoshis as u64
                 );
 
                 status.status(SWAP_STATUS, "Waiting for Taker payment to be spent…");
@@ -575,15 +573,13 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     }
                 }
             },
-            AtomicSwapState::SpendMakerPayment => unsafe {
+            AtomicSwapState::SpendMakerPayment => {
                 // TODO: A human-readable label for send_taker_spends_maker_payment.
                 status.status(SWAP_STATUS, "send_taker_spends_maker_payment…");
                 let spend_fut = swap.maker_coin.send_taker_spends_maker_payment(
                     swap.maker_payment.clone().unwrap(),
                     &*swap.my_priv0.private().secret,
                     &*swap.secret,
-                    &*swap.other_persistent,
-                    (*swap.basilisk_swap).I.alicesatoshis as u64
                 );
 
                 let transaction = match spend_fut.wait() {
@@ -594,13 +590,11 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 log!("Maker payment spend tx " (transaction.tx_hash()));
                 return Ok(());
             },
-            AtomicSwapState::RefundTakerPayment => unsafe {
+            AtomicSwapState::RefundTakerPayment => {
                 status.status(SWAP_STATUS, "Refunding the Taker payment…");
                 let refund_fut = swap.taker_coin.send_taker_refunds_payment(
                     swap.taker_payment.clone().unwrap(),
-                    &(*swap.basilisk_swap).I.myprivs[0].bytes,
-                    &(*swap.basilisk_swap).persistent_other33,
-                    (*swap.basilisk_swap).I.alicesatoshis as u64
+                    &*swap.my_priv0.private().secret,
                 );
 
                 let _transaction = match refund_fut.wait() {

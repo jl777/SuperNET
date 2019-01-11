@@ -465,7 +465,7 @@ impl UtxoCoin {
         time_lock: u32,
         first_pub0: &[u8],
         second_pub0: &[u8],
-        other_addr: &[u8],
+        _other_addr: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
@@ -574,9 +574,7 @@ impl SwapOps for UtxoCoin {
         &self,
         taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
-        b_priv_n: &[u8],
-        taker_addr: &[u8],
-        amount: u64
+        secret: &[u8],
     ) -> TransactionFut {
         let prev_tx = match taker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
@@ -585,7 +583,7 @@ impl SwapOps for UtxoCoin {
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
         };
         let script_data = Builder::default()
-            .push_data(b_priv_n)
+            .push_data(secret)
             .push_opcode(Opcode::OP_0)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
@@ -608,9 +606,7 @@ impl SwapOps for UtxoCoin {
         &self,
         maker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
-        b_priv_n: &[u8],
-        _maker_addr: &[u8],
-        amount: u64
+        secret: &[u8],
     ) -> TransactionFut {
         let prev_tx = match maker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
@@ -619,7 +615,7 @@ impl SwapOps for UtxoCoin {
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
         };
         let script_data = Builder::default()
-            .push_data(b_priv_n)
+            .push_data(secret)
             .push_opcode(Opcode::OP_0)
             .into_script();
         let transaction = try_fus!(p2sh_spending_tx(
@@ -642,8 +638,6 @@ impl SwapOps for UtxoCoin {
         &self,
         taker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
-        _maker_addr: &[u8],
-        amount: u64
     ) -> TransactionFut {
         let prev_tx = match taker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
@@ -674,8 +668,6 @@ impl SwapOps for UtxoCoin {
         &self,
         maker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
-        _taker_addr: &[u8],
-        amount: u64
     ) -> TransactionFut {
         let prev_tx = match maker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
         let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));

@@ -94,7 +94,7 @@ pub trait SwapOps {
         pub_a0: &[u8],
         pub_b0: &[u8],
         taker_addr: &[u8],
-        priv_bn_hash: &[u8],
+        secret_hash: &[u8],
         amount: u64
     ) -> TransactionFut;
 
@@ -104,7 +104,7 @@ pub trait SwapOps {
         pub_a0: &[u8],
         pub_b0: &[u8],
         maker_addr: &[u8],
-        priv_bn_hash: &[u8],
+        secret_hash: &[u8],
         amount: u64,
     ) -> TransactionFut;
 
@@ -112,34 +112,26 @@ pub trait SwapOps {
         &self,
         taker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
-        b_priv_n: &[u8],
-        taker_addr: &[u8],
-        amount: u64
+        secret: &[u8],
     ) -> TransactionFut;
 
     fn send_taker_spends_maker_payment(
         &self,
         maker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
-        b_priv_n: &[u8],
-        maker_addr: &[u8],
-        amount: u64
+        secret: &[u8],
     ) -> TransactionFut;
 
     fn send_taker_refunds_payment(
         &self,
         taker_payment_tx: TransactionEnum,
         a_priv_0: &[u8],
-        maker_addr: &[u8],
-        amount: u64
     ) -> TransactionFut;
 
     fn send_maker_refunds_payment(
         &self,
         maker_payment_tx: TransactionEnum,
         b_priv_0: &[u8],
-        taker_addr: &[u8],
-        amount: u64
     ) -> TransactionFut;
 
     fn validate_fee(
