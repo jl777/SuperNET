@@ -170,6 +170,7 @@ fn local_start() -> LocalStart {local_start_impl}
 /// Integration test for the "mm2 events" mode.
 /// Starts MM in background and verifies that "mm2 events" produces a non-empty feed of events.
 #[test]
+#[ignore]
 fn test_events() {
     let executable = unwrap! (env::args().next());
     let executable = unwrap! (Path::new (&executable) .canonicalize());
