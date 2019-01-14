@@ -32,6 +32,7 @@ before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh;
   fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install jemalloc lftp; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade boost; fi
 script:
 - eval "${MATRIX_EVAL}"
 - export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"`
