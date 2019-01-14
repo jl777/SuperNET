@@ -16,11 +16,12 @@
 pub mod peers_tests;
 
 use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
-use common::{bits256, slice_to_malloc, RaiiRm};
+use common::{bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
 use crossbeam::channel;
+use either::Either;
 use futures::{future, stream, Async, Future, Poll, Stream};
 use futures::task::Task;
 use gstuff::{now_float, now_ms, slurp};
@@ -543,11 +544,57 @@ fn get_pieces_scheduler_en (dugout: &mut dugout_t, mut gets: OccupiedEntry<([u8;
 
 const BOOTSTRAP_STATUS: &[&TagParam] = &[&"dht-boot"];
 
+struct DhtInitialized;
+impl DhtInitialized {
+    fn delay (self, ctx: &MmArc, seconds: f64) -> DhtDelayed {
+        ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap delayed ...") .detach();
+        DhtDelayed {until: now_float() + seconds}
+    }
+    fn bootstrap (self, ctx: &MmArc, dugout: &mut dugout_t) -> Result<DhtBootstrapping, String> {
+        Ok (try_s! (DhtBootstrapping::bootstrap (ctx, dugout)))
+}   }
+struct DhtDelayed {until: f64}
+impl DhtDelayed {
+    fn kick (self, ctx: &MmArc, dugout: &mut dugout_t) -> Either<DhtDelayed, Result<DhtBootstrapping, String>> {
+        if now_float() > self.until {
+            match DhtBootstrapping::bootstrap (ctx, dugout) {
+                Ok (bootstrapping) => Either::Right (Ok (bootstrapping)),
+                Err (err) => Either::Right (ERR! ("{}", err))
+            }
+        } else {
+            Either::Left (self)
+}   }   }
+struct DhtBootstrapping;
+impl DhtBootstrapping {
+    fn bootstrap (ctx: &MmArc, dugout: &mut dugout_t) -> Result<DhtBootstrapping, String> {
+        ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap ...") .detach();
+        unsafe {enable_dht (dugout)};
+        if let Some (err) = dugout.take_err() {
+            ctx.log.status (BOOTSTRAP_STATUS, &fomat! ("DHT bootstrap error: " (err)));
+            return ERR! ("enable_dht error: {}", err)
+        }
+        Ok (DhtBootstrapping)
+    }
+    fn bootstrapped (self) -> DhtBootstrapped {DhtBootstrapped}
+}
+struct DhtBootstrapped;
+
+enum DhtBootStatus {
+    DhtInitialized (DhtInitialized),
+    DhtDelayed (DhtDelayed),
+    DhtBootstrapping (DhtBootstrapping),
+    DhtBootstrapped (DhtBootstrapped)
+}
+ifrom! (DhtBootStatus, DhtInitialized);
+ifrom! (DhtBootStatus, DhtDelayed);
+ifrom! (DhtBootStatus, DhtBootstrapping);
+ifrom! (DhtBootStatus, DhtBootstrapped);
+
 /// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
 /// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
 /// allowing it to initialize and then stop at its own pace.
-fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool) {
+fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool, delay_dht: f64) {
     let myipaddr = ctx.conf["myipaddr"].as_str();
     let listen_interfaces = (|| {
         if let Some (myipaddr) = myipaddr {
@@ -597,15 +644,6 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         if let Some (err) = dugout.take_err() {log! ("dht_load_state (" [dht_state_path] ") error: " (err))}
     }
 
-    if ctx.is_stopping() {return}
-
-    ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap ...") .detach();
-    unsafe {enable_dht (&mut dugout)};
-    if let Some (err) = dugout.take_err() {
-        ctx.log.status (BOOTSTRAP_STATUS, &fomat! ("DHT bootstrap error: " (err)));
-        return
-    }
-
     let pctx = unwrap! (PeersContext::from_ctx (&ctx));
 
     struct CbCtx<'a, 'b, 'c> {
@@ -614,6 +652,8 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         our_public_key: bits256,
         bootstrapped: &'c mut f64
     }
+
+    let mut boot_status = DhtBootStatus::from (DhtInitialized);
 
     let mut bootstrapped = 0.;
     let mut last_state_save = 0.;
@@ -759,6 +799,31 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 
         if ctx.is_stopping() {break}
 
+        // TODO: Simplify by making `delay` a mandatory step (`delay (0.)` is okay).
+        boot_status = match boot_status {
+            DhtBootStatus::DhtInitialized (initialized) => {
+                if delay_dht > 0. {
+                    initialized.delay (&ctx, delay_dht) .into()
+                } else {
+                    match initialized.bootstrap (&ctx, &mut dugout) {
+                        Ok (bootstrapping) => bootstrapping.into(),
+                        Err (err) => {log! ((err)); return}
+                    }
+            }   },
+            DhtBootStatus::DhtDelayed (delayed) => match delayed.kick (&ctx, &mut dugout) {
+                Either::Left (delayed) => delayed.into(),
+                Either::Right (Ok (bootstrapping)) => bootstrapping.into(),
+                Either::Right (Err (err)) => {log! ((err)); return}
+            },
+            DhtBootStatus::DhtBootstrapping (bootstrapping) => {
+                if bootstrapped > 0. {
+                    bootstrapping.bootstrapped().into()
+                } else {
+                    bootstrapping.into()
+            }   },
+            DhtBootStatus::DhtBootstrapped (bootstrapped) => bootstrapped.into()
+        };
+
         match pctx.cmd_rx.recv_timeout (Duration::from_millis (100)) {
             Ok (LtCommand::Put {seed, salt, payload}) => split_and_put (seed, salt, payload, &mut dugout),
             Ok (LtCommand::Get {seed, salt, frid, task}) => get_pieces_scheduler (seed, salt, frid, task, &mut dugout, &mut gets, &*pctx),
@@ -809,23 +874,30 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 ///                      We're not limited to this port though and might try other ports as well.
 /// * `session_id` - Identifies our incarnation, allowing other peers to know if they're talking with the same instance.
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16, _session_id: u32) -> Result<(), String> {
+    let drill = is_a_test_drill();
+
     // NB: From the `fn test_trade` logs it looks like the `session_id` isn't shared with the peers currently.
     //     In "lp_ordermatch.rs" we're [temporarily] using `pair_str` as the session identifier and manually embedding it in the `subject`.
-    log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port));
+    log! ("initialize] netid " (netid) " public key " (our_public_key) " preferred port " (preferred_port) " drill " (drill));
     if !our_public_key.nonz() {return ERR! ("No public key")}
 
     // TODO: Set it to `true` for smaller tests and to `false` for real-life deployments.
     // Maybe take the saved DHT state into account: tests always have a fresh directory,
     // whereas the real-life MM2 deployments are often restarted in an existing directory.
     // For small non-DHT tests we don't need to register ourselves.
-    let read_only = true;  // Whether to register in the DHT network.
+    let read_only = drill;  // Whether to register in the DHT network.
+    // We need to avoid DHT bootstrapping in short tests
+    // in order not to confuse the unsafe C code in libtorrent with simultaneous bootstrap and shutdown.
+    // Delaying the DHT bootstrap might also help us to test the direct UDP communication.
+    // Undocumented {"dht": "on"} option is used in some tests to assure us that the DHT is required.
+    let delay_dht = if ctx.conf["dht"].as_str() == Some ("on") {0.} else if drill {33.} else {0.};
 
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     *try_s! (pctx.our_public_key.lock()) = our_public_key;
     *try_s! (pctx.dht_thread.lock()) =
         Some (try_s! (thread::Builder::new().name ("dht".into()) .spawn ({
             let ctx = ctx.clone();
-            move || dht_thread (ctx, netid, our_public_key, preferred_port, read_only)
+            move || dht_thread (ctx, netid, our_public_key, preferred_port, read_only, delay_dht)
         })));
     ctx.on_stop ({
         let ctx = ctx.clone();

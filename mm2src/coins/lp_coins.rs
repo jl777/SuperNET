@@ -60,18 +60,10 @@ pub trait Transaction: Debug + 'static {
 #[derive(Clone, Debug)]
 pub enum TransactionEnum {
     ExtendedUtxoTx (ExtendedUtxoTx),
-    Eth (SignedEthTransaction)
+    SignedEthTransaction (SignedEthTransaction)
 }
-
-impl From<ExtendedUtxoTx> for TransactionEnum {
-    fn from (t: ExtendedUtxoTx) -> TransactionEnum {
-        TransactionEnum::ExtendedUtxoTx (t)
-}   }
-
-impl From<SignedEthTransaction> for TransactionEnum {
-    fn from (t: SignedEthTransaction) -> TransactionEnum {
-        TransactionEnum::Eth (t)
-}   }
+ifrom! (TransactionEnum, ExtendedUtxoTx);
+ifrom! (TransactionEnum, SignedEthTransaction);
 
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for TransactionEnum {
@@ -79,7 +71,7 @@ impl Deref for TransactionEnum {
     fn deref (&self) -> &dyn Transaction {
         match self {
             &TransactionEnum::ExtendedUtxoTx (ref t) => t,
-            &TransactionEnum::Eth (ref t) => t,
+            &TransactionEnum::SignedEthTransaction (ref t) => t,
 }   }   }
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
