@@ -1,4 +1,5 @@
 #!/bin/bash
+brew info boost
 brew uninstall cmake --force
 wget https://cmake.org/files/v3.12/cmake-3.12.0-rc2-Darwin-x86_64.tar.gz
 tar -xzf cmake-3.12.0-rc2-Darwin-x86_64.tar.gz
