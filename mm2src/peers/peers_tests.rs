@@ -9,9 +9,9 @@ use std::net::{Ipv4Addr, SocketAddr};
 pub fn test_dht() {
     // Create the Alice and Bob contexts.
 
-    let alice = MmCtx::new (json! ({}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
+    let alice = MmCtx::new (json! ({"dht": "on"}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
 
-    let bob = MmCtx::new (json! ({}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
+    let bob = MmCtx::new (json! ({"dht": "on"}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
 
     let mut rng = rand::thread_rng();
 

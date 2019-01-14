@@ -34,6 +34,21 @@ macro_rules! safecopy {
     }}
 }
 
+/// Implements a `From` for `enum` with a variant name matching the name of the type stored.
+/// 
+/// This is helpful as a workaround for the lack of datasort refinements.  
+/// And also as a simpler alternative to `enum_dispatch` and `enum_derive`.
+/// 
+///     enum Color {Red (Red)}
+///     ifrom! (Color, Red);
+#[macro_export]
+macro_rules! ifrom {
+    ($enum: ident, $id: ident) => {
+        impl From<$id> for $enum {
+            fn from (t: $id) -> $enum {
+                $enum::$id (t)
+}   }   }   }
+
 #[macro_use]
 pub mod jsonrpc_client;
 #[macro_use]
@@ -59,6 +74,7 @@ use hyper::rt::Stream;
 use hyper_rustls::HttpsConnector;
 use libc::{c_char, c_void, malloc, free};
 use serde_json::{self as json, Value as Json};
+use std::env::args;
 use std::fmt;
 use std::fs;
 use std::ffi::{CStr, CString};
@@ -351,6 +367,30 @@ pub fn stack_trace (format: &mut dyn FnMut (&mut Write, &backtrace::Symbol), out
         });
         true
     });
+}
+
+/// Tries to detect if we're running under a test, allowing us to be lazy and *delay* some costly operations.
+/// 
+/// Note that the code SHOULD behave uniformely regardless of where it's invoked from
+/// (nondeterminism breaks POLA and we don't know how the code will be used in the future)
+/// but in certain cases we have a leeway of adjusting to being run from a test
+/// without breaking any invariants or expectations.
+/// For instance, DHT might take unknown time to initialize, and by delaying this initialization in the tests
+/// we can avoid the unnecessary overhead of DHT initializaion and destruction while maintaining the contract.
+pub fn is_a_test_drill() -> bool {
+    let mut trace = String::with_capacity (1024);
+    stack_trace (
+        &mut |mut fwr, sym| {if let Some (name) = sym.name() {let _ = witeln! (fwr, (name));}},
+        &mut |tr| {trace.push_str (tr)});
+
+    if trace.contains ("\nmm2::main\n") || trace.contains ("\nmm2::run_lp_main\n") {return false}
+
+    if let Some (executable) = args().next() {
+        if executable.ends_with (r"\mm2.exe") {return false}
+        if executable.ends_with ("/mm2") {return false}
+    }
+
+    true
 }
 
 fn start_core_thread() -> Remote {

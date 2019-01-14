@@ -92,7 +92,7 @@ impl SwapOps for EthCoin {
         Box::new(self.send_to_address(
             address,
             u256_denominate_from_satoshis(amount, self.decimals),
-        ).map(|tx| TransactionEnum::Eth(tx)))
+        ).map(TransactionEnum::from))
     }
 
     fn send_maker_payment(
@@ -111,7 +111,7 @@ impl SwapOps for EthCoin {
             time_lock,
             priv_bn_hash,
             taker_addr,
-        ).map(|tx| TransactionEnum::Eth(tx)))
+        ).map(TransactionEnum::from))
     }
 
     fn send_taker_payment(
@@ -130,7 +130,7 @@ impl SwapOps for EthCoin {
             time_lock,
             priv_bn_hash,
             maker_addr,
-        ).map(|tx| TransactionEnum::Eth(tx)))
+        ).map(TransactionEnum::from))
     }
 
     fn send_maker_spends_taker_payment(
@@ -140,11 +140,11 @@ impl SwapOps for EthCoin {
         secret: &[u8],
     ) -> TransactionFut {
         let tx = match taker_payment_tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
-        Box::new(self.spend_hash_time_locked_payment(tx, secret).map(|t| TransactionEnum::Eth(t)))
+        Box::new(self.spend_hash_time_locked_payment(tx, secret).map(TransactionEnum::from))
     }
 
     fn send_taker_spends_maker_payment(
@@ -154,11 +154,11 @@ impl SwapOps for EthCoin {
         secret: &[u8],
     ) -> TransactionFut {
         let tx = match maker_payment_tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
-        Box::new(self.spend_hash_time_locked_payment(tx, secret).map(|t| TransactionEnum::Eth(t)))
+        Box::new(self.spend_hash_time_locked_payment(tx, secret).map(TransactionEnum::from))
     }
 
     fn send_taker_refunds_payment(
@@ -167,11 +167,11 @@ impl SwapOps for EthCoin {
         _a_priv_0: &[u8],
     ) -> TransactionFut {
         let tx = match taker_payment_tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
-        Box::new(self.refund_hash_time_locked_payment(tx).map(|t| TransactionEnum::Eth(t)))
+        Box::new(self.refund_hash_time_locked_payment(tx).map(TransactionEnum::from))
     }
 
     fn send_maker_refunds_payment(
@@ -180,11 +180,11 @@ impl SwapOps for EthCoin {
         _b_priv_0: &[u8],
     ) -> TransactionFut {
         let tx = match maker_payment_tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
-        Box::new(self.refund_hash_time_locked_payment(tx).map(|t| TransactionEnum::Eth(t)))
+        Box::new(self.refund_hash_time_locked_payment(tx).map(TransactionEnum::from))
     }
 
     fn validate_fee(
@@ -194,7 +194,7 @@ impl SwapOps for EthCoin {
         amount: u64
     ) -> Result<(), String> {
         let tx = match fee_tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
@@ -295,7 +295,7 @@ impl MarketCoinOps for EthCoin {
         wait_until: u64,
     ) -> Result<(), String> {
         let tx = match tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
@@ -324,7 +324,7 @@ impl MarketCoinOps for EthCoin {
 
     fn wait_for_tx_spend(&self, tx: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String> {
         let tx = match tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
@@ -353,7 +353,7 @@ impl MarketCoinOps for EthCoin {
                 if let Some(tx_hash) = event.transaction_hash {
                     let transaction = try_s!(self.web3.eth().transaction(TransactionId::Hash(tx_hash)).wait()).unwrap();
 
-                    return Ok(TransactionEnum::Eth(signed_tx_from_web3_tx(transaction)))
+                    return Ok(TransactionEnum::from(signed_tx_from_web3_tx(transaction)))
                 }
             }
             thread::sleep(Duration::from_secs(15));
@@ -364,7 +364,7 @@ impl MarketCoinOps for EthCoin {
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
         let tx: UnverifiedTransaction = try_s!(rlp::decode(bytes));
         let signed = try_s!(SignedEthTransaction::new(tx));
-        Ok(TransactionEnum::Eth(signed))
+        Ok(TransactionEnum::from(signed))
     }
 }
 
@@ -675,7 +675,7 @@ impl EthCoin {
         amount: u64,
     ) -> Result<(), String> {
         let tx = match payment_tx {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!(),
         };
 
