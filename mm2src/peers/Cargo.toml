@@ -19,7 +19,7 @@ either = "1.5"
 fomat-macros = "0.2"
 futures = "0.1"
 gstuff = "0.5"
-hashbrown = {git = "https://github.com/Amanieu/hashbrown", branch = "raw_entry", features = ["serde", "nightly"]}
+hashbrown = {version = "0.1.8", features = ["serde", "nightly"]}
 itertools = "0.7"
 lazy_static = "1.2"
 libc = "0.2"
