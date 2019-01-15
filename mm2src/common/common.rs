@@ -128,8 +128,7 @@ impl fmt::Display for bits256 {
         let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
         let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
         f.write_str (hex)
-    }
-}
+}   }
 
 impl std::cmp::PartialEq for bits256 {
     /// Should be preferred to `bits256_cmp`.
@@ -139,10 +138,17 @@ impl std::cmp::PartialEq for bits256 {
             self.ulongs[1] == other.ulongs[1] &&
             self.ulongs[2] == other.ulongs[2] &&
             self.ulongs[3] == other.ulongs[3]
-        }
-    }
-}
+}   }   }
 impl std::cmp::Eq for bits256 {}
+
+impl std::hash::Hash for bits256 {
+    fn hash<H: std::hash::Hasher> (&self, state: &mut H) {
+        unsafe {
+            self.ulongs[0].hash (state);
+            self.ulongs[1].hash (state);
+            self.ulongs[2].hash (state);
+            self.ulongs[3].hash (state);
+}   }   }
 
 impl bits256 {
     /// Returns true if the hash is not zero.  

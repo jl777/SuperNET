@@ -184,6 +184,13 @@ enum LtCommand {
     }
 }
 
+/// A friend is a MM peer we're communicating with.  
+/// We track their endpoints and try to discover them via the DHT.
+#[derive(Debug, Default)]
+struct Friend {
+    endpoints: ()
+}
+
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     our_public_key: Mutex<bits256>,
@@ -193,7 +200,8 @@ pub struct PeersContext {
     cmd_rx: channel::Receiver<LtCommand>,
     // TODO: Remove the outdated `recently_fetched` entries after a while.
     /// seed, salt -> last-modified, value
-    recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>
+    recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>,
+    friends: Mutex<HashMap<bits256, Friend>>
 }
 
 impl PeersContext {
@@ -206,7 +214,8 @@ impl PeersContext {
                 dht_thread: Mutex::new (None),
                 cmd_tx,
                 cmd_rx,
-                recently_fetched: Mutex::new (HashMap::default())
+                recently_fetched: Mutex::new (HashMap::new()),
+                friends: Mutex::new (HashMap::new())
             })
         })))
     }
@@ -969,10 +978,10 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], payload: Vec<u8>) -> Bo
         Err (err) => return Box::new (stream::once (Err (ERRL! ("Error getting PeersContext: {}", err))))
     };
 
-    // TODO: Consider storing several seeds for reliability.
-    //       Maybe after a certain delay.
-    //       Might need a feedback mechanism, repeating the `put`s and expanding the number of seeds used if there is no answer from the other side.
-    //       (Dropping the returned `Future` is such a feedback).
+    // Add the peer into the friendlist, in order to discover and track its endpoints.
+    if let Ok (mut friends) = pctx.friends.lock() {
+        friends.insert (peer, Default::default());
+    }
 
     if !peer.nonz() {return Box::new (stream::once (Err (ERRL! ("peer key is empty"))))}
     let seed: [u8; 32] = unsafe {peer.bytes};
@@ -1059,4 +1068,10 @@ pub fn recv (ctx: &MmArc, subject: &[u8], validator: Box<Fn(&[u8])->bool + Send>
     let salt = Vec::from (subject);
 
     Box::new (RecvFuture {pctx, seed, salt, validator, frid: None})
+}
+
+pub fn key (ctx: &MmArc) -> Result<bits256, String> {
+    let pctx = try_s! (PeersContext::from_ctx (&ctx));
+    let pk = try_s! (pctx.our_public_key.lock());
+    Ok (pk.clone())
 }

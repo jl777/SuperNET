@@ -249,7 +249,10 @@ fn test_notify() {
 fn test_status() {common::log::tests::test_status()}
 
 #[test]
-fn test_dht() {peers::peers_tests::test_dht()}
+fn test_peers_dht() {peers::peers_tests::test_peers_dht()}
+
+#[test]
+fn test_peers_direct_send() {peers::peers_tests::test_peers_direct_send()}
 
 #[cfg(windows)]
 fn get_special_folder_path() -> PathBuf {
