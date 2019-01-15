@@ -83,6 +83,8 @@ pub trait UtxoRpcClientOps: Debug + 'static {
             thread::sleep(Duration::from_secs(10));
         }
     }
+
+    fn display_balance(&self, address: Address) -> RpcRes<f64>;
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq)]
@@ -257,6 +259,12 @@ impl UtxoRpcClientOps for NativeClient {
             }
         }
     }
+
+    fn display_balance(&self, address: Address) -> RpcRes<f64> {
+        Box::new(self.list_unspent(0, 999999, vec![address.to_string()]).map(|unspents|
+            unspents.iter().fold(0., |sum, unspent| sum + unspent.amount)
+        ))
+    }
 }
 
 impl NativeClient {
@@ -320,6 +328,12 @@ struct ElectrumTxHistoryItem {
     height: u64,
     tx_hash: H256Json,
     fee: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ElectrumBalance {
+    confirmed: u64,
+    unconfirmed: u64,
 }
 
 fn sha_256(input: &[u8]) -> Vec<u8> {
@@ -450,6 +464,14 @@ impl UtxoRpcClientOps for ElectrumClient {
             thread::sleep(Duration::from_secs(10));
         }
     }
+
+    fn display_balance(&self, address: Address) -> RpcRes<f64> {
+        let hash = electrum_script_hash(&Builder::build_p2pkh(&address.hash));
+        let hash_str = hex::encode(hash);
+        Box::new(self.scripthash_get_balance(&hash_str).map(|result| {
+            (result.confirmed as f64 + result.unconfirmed as f64) / 100000000.0
+        }))
+    }
 }
 
 impl ElectrumClient {
@@ -479,8 +501,14 @@ impl ElectrumClient {
         rpc_func!(self, "blockchain.scripthash.listunspent", hash)
     }
 
+    /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-scripthash-get-history
     fn scripthash_get_history(&self, hash: &str) -> RpcRes<Vec<ElectrumTxHistoryItem>> {
         rpc_func!(self, "blockchain.scripthash.get_history", hash)
+    }
+
+    /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-scripthash-gethistory
+    fn scripthash_get_balance(&self, hash: &str) -> RpcRes<ElectrumBalance> {
+        rpc_func!(self, "blockchain.scripthash.get_balance", hash)
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-headers-subscribe

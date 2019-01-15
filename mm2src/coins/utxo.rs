@@ -779,7 +779,9 @@ impl MarketCoinOps for UtxoCoin {
         self.0.my_address.to_string().into()
     }
 
-    fn get_balance(&self) -> f64 { unimplemented!() }
+    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
+        self.rpc_client.display_balance(self.my_address.clone())
+    }
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};

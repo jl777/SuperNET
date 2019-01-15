@@ -51,7 +51,7 @@ pub struct JsonRpcResponse {
 }
 
 pub type JsonRpcResponseFut = Box<Future<Item=JsonRpcResponse, Error=String> + Send>;
-pub type RpcRes<T> = Box<Future<Item=T, Error=String>>;
+pub type RpcRes<T> = Box<Future<Item=T, Error=String> + Send + 'static>;
 
 pub trait JsonRpcClient {
     fn version(&self) -> &'static str;

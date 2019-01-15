@@ -161,7 +161,7 @@ pub trait SwapOps {
 pub trait MarketCoinOps {
     fn address(&self) -> Cow<str>;
 
-    fn get_balance(&self) -> f64;
+    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send>;
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut;
 
@@ -807,15 +807,27 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
 /// Enable a coin in the local wallet mode.
 pub fn enable (ctx: MmArc, req: Json) -> HyRes {
     let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
-    try_h! (lp_coininit (&ctx, ticker, &req));
-    rpc_response (200, r#"{"result": "success"}"#)
+    let coin: MmCoinEnum = try_h! (lp_coininit (&ctx, ticker, &req));
+    Box::new(coin.get_balance().and_then(move |balance|
+        rpc_response(200, json!({
+            "result": "success",
+            "address": coin.address(),
+            "balance": balance
+        }).to_string())
+    ))
 }
 
 /// Enable a coin in the Electrum mode.
 pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
     let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
-    try_h! (lp_coininit (&ctx, ticker, &req));
-    rpc_response (200, r#"{"result": "success"}"#)
+    let coin: MmCoinEnum = try_h! (lp_coininit (&ctx, ticker, &req));
+    Box::new(coin.get_balance().and_then(move |balance|
+        rpc_response(200, json!({
+            "result": "success",
+            "address": coin.address(),
+            "balance": balance
+        }).to_string())
+    ))
 }
 
 /*

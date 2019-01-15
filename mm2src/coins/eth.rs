@@ -280,8 +280,13 @@ impl MarketCoinOps for EthCoin {
         format!("{:#02x}", self.my_address).into()
     }
 
-    fn get_balance(&self) -> f64 {
-        unimplemented!();
+    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
+        let decimals = self.decimals;
+        Box::new(self.my_balance().and_then(move|result| {
+            let string = display_u256_with_decimal_point(result, decimals);
+            let number: f64 = try_s!(string.parse());
+            Ok(number)
+        }))
     }
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut {
@@ -582,7 +587,7 @@ impl EthCoin {
 
     fn my_balance(&self) -> Box<Future<Item=U256, Error=String> + Send> {
         match self.coin_type {
-            EthCoinType::Eth => Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Pending)).map_err(|e| ERRL!("{:?}", e))),
+            EthCoinType::Eth => Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e))),
             EthCoinType::Erc20(token_addr) => {
                 let function = try_fus!(ERC20_CONTRACT.function("balanceOf"));
                 let data = try_fus!(function.encode_input(&[
@@ -613,7 +618,7 @@ impl EthCoin {
             data
         };
 
-        self.web3.eth().call(request, Some(BlockNumber::Pending)).map_err(|e| ERRL!("{:?}", e))
+        self.web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e))
     }
 
     fn allowance(&self, spender: Address) -> Box<Future<Item=U256, Error=String> + Send + 'static> {
@@ -781,6 +786,48 @@ fn u256_denominate_from_satoshis(satoshis: u64, decimals: u8) -> U256 {
     } else {
         U256::from(satoshis) * U256::exp10(decimals as usize - 8)
     }
+}
+
+fn display_u256_with_decimal_point(number: U256, decimals: u8) -> String {
+    let mut string = number.to_string();
+    let decimals = decimals as usize;
+    if string.len() <= decimals {
+        string.insert_str(0, &"0".repeat(decimals - string.len() + 1));
+    }
+
+    string.insert(string.len() - decimals, '.');
+    string.trim_end_matches('0').into()
+}
+
+#[test]
+fn display_u256_with_point() {
+    let number = U256::from_dec_str("1000000000000000000").unwrap();
+    let string = display_u256_with_decimal_point(number, 18);
+    assert_eq!("1.", string);
+
+    let number = U256::from_dec_str("1234567890000000000").unwrap();
+    let string = display_u256_with_decimal_point(number, 18);
+    assert_eq!("1.23456789", string);
+
+    let number = U256::from_dec_str("1234567890000000000").unwrap();
+    let string = display_u256_with_decimal_point(number, 16);
+    assert_eq!("123.456789", string);
+
+    let number = U256::from_dec_str("1234567890000000000").unwrap();
+    let string = display_u256_with_decimal_point(number, 0);
+    assert_eq!("1234567890000000000.", string);
+
+    let number = U256::from_dec_str("1000000000000000").unwrap();
+    let string = display_u256_with_decimal_point(number, 18);
+    assert_eq!("0.001", string);
+
+    let number = U256::from_dec_str("0").unwrap();
+    let string = display_u256_with_decimal_point(number, 18);
+    assert_eq!("0.", string);
+
+    let number = U256::from_dec_str("0").unwrap();
+    let string = display_u256_with_decimal_point(number, 0);
+    assert_eq!("0.", string);
 }
 
 impl Transaction for SignedEthTransaction {
@@ -973,22 +1020,20 @@ mod tests {
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match payment.clone() {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
         log!([eth]);
 
         let refund = coin.send_taker_spends_maker_payment(
-            TransactionEnum::Eth(eth),
+            TransactionEnum::SignedEthTransaction(eth),
             &[0],
             &secret_hex,
-            &pubkey,
-            1000,
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match refund {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
@@ -1030,22 +1075,20 @@ mod tests {
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match res {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
         log!([eth.hash()]);
 
         let refund = coin.send_taker_spends_maker_payment(
-            TransactionEnum::Eth(eth),
+            TransactionEnum::SignedEthTransaction(eth),
             &[0],
             &secret_hex,
-            &pubkey,
-            1000,
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match refund {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
@@ -1095,7 +1138,7 @@ mod tests {
         let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
 
         let eth: SignedEthTransaction = match res {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
@@ -1125,7 +1168,7 @@ mod tests {
         let res = coin.send_taker_fee(&pubkey, 1000).wait().unwrap();
 
         let eth: SignedEthTransaction = match res {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
@@ -1208,21 +1251,19 @@ mod tests {
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match res {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
         log!([eth.hash()]);
 
         let refund = coin.send_taker_refunds_payment(
-            TransactionEnum::Eth(eth),
+            TransactionEnum::SignedEthTransaction(eth),
             &[0],
-            &pubkey,
-            1000,
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match refund {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
@@ -1259,7 +1300,7 @@ mod tests {
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match payment.clone() {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
@@ -1270,12 +1311,10 @@ mod tests {
         let refund = coin.send_taker_refunds_payment(
             payment,
             &[0],
-            &pubkey,
-            1000,
         ).wait().unwrap();
 
         let eth: SignedEthTransaction = match refund {
-            TransactionEnum::Eth(t) => t,
+            TransactionEnum::SignedEthTransaction(t) => t,
             _ => panic!()
         };
 
