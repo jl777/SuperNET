@@ -291,7 +291,7 @@ impl MarketCoinOps for EthCoin {
     fn wait_for_confirmations(
         &self,
         tx: TransactionEnum,
-        confirmations: i32,
+        confirmations: u32,
         wait_until: u64,
     ) -> Result<(), String> {
         let tx = match tx {
@@ -765,7 +765,9 @@ impl EthCoin {
 impl IguanaInfo for EthCoin {
     fn ticker<'a> (&'a self) -> &'a str {&self.ticker[..]}
 }
-impl MmCoin for EthCoin {}
+impl MmCoin for EthCoin {
+    fn is_asset_chain(&self) -> bool { false }
+}
 
 fn addr_from_raw_pubkey(pubkey: &[u8]) -> Result<Address, String> {
     let pubkey = try_s!(PublicKey::from_slice(&SECP256K1, &pubkey));

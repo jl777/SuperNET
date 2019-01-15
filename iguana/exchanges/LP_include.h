@@ -207,8 +207,6 @@ struct vin_info
     uint8_t *data;
 };*/
 
-struct basilisk_swap;
-
 struct basilisk_rawtxinfo
 {
     char destaddr[64],ethTxid[75];
@@ -239,29 +237,6 @@ struct basilisk_rawtx
     cJSON *vins;
     bits256 utxotxid; int32_t utxovout;
     uint8_t txbytes[16384],spendscript[512],redeemscript[1024],extraspace[4096],pubkey33[33];
-};
-
-struct basilisk_swapinfo
-{
-    struct basilisk_request req;
-    char bobstr[128],alicestr[128],bobtomic[64],alicetomic[64],etomicsrc[65],etomicdest[65];
-    bits256 myhash,otherhash,orderhash;
-    uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
-    int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
-    int64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee,alicerealsat,bobrealsat;
-    
-    bits256 myprivs[2],mypubs[2],otherpubs[2],privAm,privBn;
-    uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
-    int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate,pad2;
-    uint8_t secretAm[20],secretBn[20];
-    uint8_t secretAm256[32],secretBn256[32];
-    uint8_t pubA0[33],pubA1[33],pubAm[33],pubB0[33],pubB1[33],pubBn[33];
-    uint8_t userdata_aliceclaim[256],userdata_aliceclaimlen;
-    uint8_t userdata_alicereclaim[256],userdata_alicereclaimlen;
-    uint8_t userdata_alicespend[256],userdata_alicespendlen;
-    uint8_t userdata_bobspend[256],userdata_bobspendlen;
-    uint8_t userdata_bobreclaim[256],userdata_bobreclaimlen;
-    uint8_t userdata_bobrefund[256],userdata_bobrefundlen;
 };
 
 #define BASILISK_MYFEE 0
@@ -400,22 +375,6 @@ struct LP_quoteinfo
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
-
-struct basilisk_swap
-{
-    void *ctx; //struct LP_utxoinfo *utxo;
-    struct LP_endpoint N;
-    uint32_t lasttime,aborted,tradeid,received;
-    FILE *fp;
-    bits256 persistent_privkey,persistent_pubkey;
-    struct basilisk_swapinfo I;
-    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
-    bits256 privkeys[INSTANTDEX_DECKSIZE];
-    //struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
-    char Bdeposit[64],Bpayment[64],uuidstr[65];
-    uint64_t aliceid;
-    uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
-};
 
 struct LP_pubkey_quote
 {

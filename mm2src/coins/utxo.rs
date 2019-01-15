@@ -31,7 +31,7 @@ use gstuff::now_ms;
 use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
-use primitives::hash::{H256, H512};
+use primitives::hash::{H256, H264, H512};
 use rpc::v1::types::{Bytes as BytesJson};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
@@ -150,6 +150,9 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// Lock the mutex when we deal with address utxos
     utxo_mutex: Mutex<()>,
     my_address: Address,
+    /// Is current coin KMD asset chain?
+    /// https://komodoplatform.atlassian.net/wiki/spaces/KPSD/pages/71729160/What+is+a+Parallel+Chain+Asset+Chain
+    asset_chain: bool,
 }
 
 /// Generates unsigned transaction (TransactionInputSigner) from specified utxos and outputs.
@@ -516,6 +519,11 @@ pub fn compressed_key_pair_from_bytes(raw: &[u8], prefix: u8) -> Result<KeyPair,
     Ok(try_s!(KeyPair::from_private(private)))
 }
 
+pub fn compressed_pub_key_from_priv_raw(raw_priv: &[u8]) -> Result<H264, String> {
+    let key_pair: KeyPair = try_s!(compressed_key_pair_from_bytes(raw_priv, 0));
+    Ok(H264::from(&**key_pair.public()))
+}
+
 impl SwapOps for UtxoCoin {
     fn send_taker_fee(&self, fee_pub_key: &[u8], amount: u64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
@@ -782,7 +790,7 @@ impl MarketCoinOps for UtxoCoin {
     fn wait_for_confirmations(
         &self,
         tx: TransactionEnum,
-        confirmations: i32,
+        confirmations: u32,
         wait_until: u64,
     ) -> Result<(), String> {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
@@ -830,7 +838,9 @@ impl MarketCoinOps for UtxoCoin {
 impl IguanaInfo for UtxoCoin {
     fn ticker<'a> (&'a self) -> &'a str {&self.ticker[..]}
 }
-impl MmCoin for UtxoCoin {}
+impl MmCoin for UtxoCoin {
+    fn is_asset_chain(&self) -> bool { self.asset_chain }
+}
 
 pub fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
     let random_key = try_s!(Random::new(prefix).generate());
@@ -921,6 +931,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         tx_version: info.txversion,
         utxo_mutex: Mutex::new(()),
         my_address: my_address.clone(),
+        asset_chain: info.isassetchain == 1,
     };
     Ok(UtxoCoin(Arc::new(coin)).into())
 }

@@ -168,7 +168,7 @@ pub trait MarketCoinOps {
     fn wait_for_confirmations(
         &self,
         tx: TransactionEnum,
-        confirmations: i32,
+        confirmations: u32,
         wait_until: u64,
     ) -> Result<(), String>;
 
@@ -190,18 +190,15 @@ pub trait IguanaInfo {
     }
 }
 
-/// Common functions that every coin must implement to be exchanged on MM
-/// Amounts are f64, it's responsibility of particular implementation to convert it to
-/// integer amount depending on decimals.
-/// 
 /// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and garbage collection.
 pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
     // `MmCoin` is an extension fulcrum for something that doesn't fit the `MarketCoinOps`. Practical examples:
     // name (might be required for some APIs, CoinMarketCap for instance);
-    // enabled (a piece of MM-specific configuration);
     // coin statistics that we might want to share with UI;
     // state serialization, to get full rewind and debugging information about the coins participating in a SWAP operation.
     // status/availability check: https://github.com/artemii235/SuperNET/issues/156#issuecomment-446501816
+
+    fn is_asset_chain(&self) -> bool;
 }
 
 #[derive(Clone, Debug)]

@@ -20,7 +20,7 @@
 //! Nowadays the protocol can be simplified to the following (UTXO coins, BTC and forks):
 //! 
 //! 1. AFee: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
-//! 
+//!
 //! 2. BPayment:
 //! OP_IF
 //! <now + LOCKTIME*2> OP_CLTV OP_DROP <bob_pubB0> OP_CHECKSIG
@@ -59,7 +59,6 @@ use coins::{MmCoinEnum, TransactionEnum};
 use common::{bits256, Timeout};
 use common::log::TagParam;
 use common::mm_ctx::MmArc;
-use coins::lp_coinfind;
 use coins::utxo::{random_compressed_key_pair};
 use crc::crc32;
 use futures::{Future, Stream};
@@ -68,16 +67,72 @@ use keys::KeyPair;
 use rand::Rng;
 use primitives::hash::{H160, H256, H264};
 use serialization::{deserialize, serialize};
-use std::ffi::CStr;
 use std::time::Duration;
-
-use crate::lp;
 
 /// Includes the grace time we add to the "normal" timeouts
 /// in order to give different and/or heavy communication channels a chance.
 const BASIC_COMM_TIMEOUT: u64 = 90;
 
 const SWAP_STATUS: &[&TagParam] = &[&"swap"];
+
+/// Default atomic swap payment locktime.
+/// Maker sends payment with LOCKTIME * 2
+/// Taker sends payment with LOCKTIME
+const PAYMENT_LOCKTIME: u64 = 3600 * 2 + 300 * 2;
+const SWAP_DEFAULT_NUM_CONFIRMS: u32 = 1;
+const SWAP_DEFAULT_MAX_CONFIRMS: u32 = 6;
+
+/// Some coins are "slow" (block time is high - e.g. BTC average block time is ~10 minutes).
+/// https://bitinfocharts.com/comparison/bitcoin-confirmationtime.html
+/// We need to increase payment locktime accordingly when at least 1 side of swap uses "slow" coin.
+fn lp_atomic_locktime(base: &str, rel: &str) -> u64 {
+    if base == "BTC" || rel == "BTC" {
+        PAYMENT_LOCKTIME * 10
+    } else if base == "BCH" || rel == "BCH" || base == "BTG" || rel == "BTG" || base == "SBTC" || rel == "SBTC" {
+        PAYMENT_LOCKTIME * 4
+    } else {
+        PAYMENT_LOCKTIME
+    }
+}
+
+fn payment_confirmations(maker_coin: &MmCoinEnum, taker_coin: &MmCoinEnum) -> (u32, u32) {
+    let mut maker_confirmations = SWAP_DEFAULT_NUM_CONFIRMS;
+    let mut taker_confirmations = SWAP_DEFAULT_NUM_CONFIRMS;
+    if maker_coin.ticker() == "BTC" {
+        maker_confirmations = 1;
+    }
+
+    if taker_coin.ticker() == "BTC" {
+        taker_confirmations = 1;
+    }
+
+    if maker_coin.is_asset_chain() {
+        if maker_coin.ticker() == "ETOMIC" {
+            maker_confirmations = 1;
+        } else {
+            maker_confirmations = SWAP_DEFAULT_MAX_CONFIRMS / 2;
+        }
+    }
+
+    if taker_coin.is_asset_chain() {
+        if taker_coin.ticker() == "ETOMIC" {
+            taker_confirmations = 1;
+        } else {
+            taker_confirmations = SWAP_DEFAULT_MAX_CONFIRMS / 2;
+        }
+    }
+
+    // TODO recognize why the BAY case is special, ask JL777
+    /*
+        if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
+    {
+        swap->I.bobconfirms *= !swap->I.bobistrusted;
+        swap->I.aliceconfirms *= !swap->I.aliceistrusted;
+    }
+    */
+
+    (maker_confirmations, taker_confirmations)
+}
 
 // NB: Using a macro instead of a function in order to preserve the line numbers in the log.
 macro_rules! send_ {
@@ -160,7 +215,6 @@ enum AtomicSwapState {
 }
 
 pub struct AtomicSwap {
-    basilisk_swap: *mut lp::basilisk_swap,
     ctx: MmArc,
     state: Option<AtomicSwapState>,
     taker_coin: MmCoinEnum,
@@ -175,29 +229,36 @@ pub struct AtomicSwap {
     secret: H256,
     secret_hash: H160,
     my_priv0: KeyPair,
+    my_persistent_pub: H264,
     other_pub0: H264,
-    other_persistent: H264,
+    other_persistent_pub: H264,
+    lock_duration: u64,
+    maker_amount: u64,
+    taker_amount: u64,
+    maker_payment_confirmations: u32,
+    taker_payment_confirmations: u32,
 }
 
 impl AtomicSwap {
-    pub unsafe fn new(
-        basilisk_swap: *mut lp::basilisk_swap,
+    pub fn new(
         ctx: MmArc,
         taker: bits256,
         maker: bits256,
-        session: String
+        session: String,
+        maker_coin: MmCoinEnum,
+        taker_coin: MmCoinEnum,
+        maker_amount: u64,
+        taker_amount: u64,
+        my_persistent_pub: H264,
     ) -> Result<AtomicSwap, String> {
-        let alicestr = try_s! (CStr::from_ptr ((*basilisk_swap).I.alicestr.as_ptr()) .to_str());
-        let alice_coin = try_s! (try_s! (lp_coinfind (&ctx, alicestr)) .ok_or ("Taker coin not found"));
-        let bobstr = try_s! (CStr::from_ptr ((*basilisk_swap).I.bobstr.as_ptr()) .to_str());
-        let bob_coin = try_s! (try_s! (lp_coinfind (&ctx, bobstr)) .ok_or ("Maker coin not found"));
+        let lock_duration = lp_atomic_locktime(maker_coin.ticker(), taker_coin.ticker());
+        let (maker_payment_confirmations, taker_payment_confirmations) = payment_confirmations(&maker_coin, &taker_coin);
 
         Ok(AtomicSwap {
-            basilisk_swap,
             ctx,
             state: Some (AtomicSwapState::Negotiation),
-            taker_coin: alice_coin,
-            maker_coin: bob_coin,
+            taker_coin,
+            maker_coin,
             taker_payment: None,
             taker_payment_lock: 0,
             maker_payment: None,
@@ -209,7 +270,13 @@ impl AtomicSwap {
             secret_hash: H160::default(),
             my_priv0: try_s!(random_compressed_key_pair(0)),
             other_pub0: H264::default(),
-            other_persistent: H264::default(),
+            other_persistent_pub: H264::default(),
+            lock_duration,
+            maker_amount,
+            taker_amount,
+            maker_payment_confirmations,
+            taker_payment_confirmations,
+            my_persistent_pub,
         })
     }
 }
@@ -268,7 +335,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     let started_at = now_ms() / 1000;
     let mut rng = rand::thread_rng();
     let secret: [u8; 32] = rng.gen();
-    swap.maker_payment_lock = started_at + unsafe { (*swap.basilisk_swap).I.putduration as u64 * 2 };
+    swap.maker_payment_lock = started_at + swap.lock_duration * 2;
 
     swap.secret_hash = dhash160(&secret);
     swap.secret = secret.into();
@@ -277,7 +344,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         payment_locktime: swap.maker_payment_lock,
         secret_hash: swap.secret_hash.clone(),
         pub0: H264::from(&**swap.my_priv0.public()),
-        persistent_pubkey: H264::from(unsafe { (*swap.basilisk_swap).persistent_pubkey33 }),
+        persistent_pubkey: swap.my_persistent_pub.clone(),
     };
 
     loop {
@@ -294,7 +361,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 swap.taker_payment_lock = taker_data.payment_locktime;
                 swap.other_pub0 = taker_data.pub0;
-                swap.other_persistent = taker_data.persistent_pubkey;
+                swap.other_persistent_pub = taker_data.persistent_pubkey;
 
                 let negotiated = serialize(&true);
                 let sending_f = send!("negotiated", negotiated.as_slice());
@@ -311,22 +378,21 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 log!("Taker fee tx " (taker_fee.tx_hash()));
 
                 let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
-                let fee_amount = unsafe { (*swap.basilisk_swap).I.alicesatoshis / 777 };
+                let fee_amount = swap.taker_amount / 777;
                 match swap.taker_coin.validate_fee(taker_fee, &fee_addr_pub_key, fee_amount as u64) {
                     Ok(_) => (),
                     Err(err) => err!(-2010, "!validate taker fee: "(err)),
                 };
                 AtomicSwapState::SendMakerPayment
             },
-            AtomicSwapState::SendMakerPayment => unsafe {
-
+            AtomicSwapState::SendMakerPayment => {
                 let payment_fut = swap.maker_coin.send_maker_payment(
                     swap.maker_payment_lock as u32,
                     &*swap.other_pub0,
                     &**swap.my_priv0.public(),
-                    &*swap.other_persistent,
+                    &*swap.other_persistent_pub,
                     &*swap.secret_hash,
-                    (*swap.basilisk_swap).I.bobsatoshis as u64,
+                    swap.maker_amount,
                 );
 
                 status.status(SWAP_STATUS, "Waiting for the Maker payment to land…");
@@ -340,7 +406,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 AtomicSwapState::WaitTakerPayment {sending_f}
             },
-            AtomicSwapState::WaitTakerPayment {sending_f} => unsafe {
+            AtomicSwapState::WaitTakerPayment {sending_f} => {
                 let payload = recv!(sending_f, "taker-payment", "for Taker fee", 600, -2006, {|_: &[u8]| Ok(())});
 
                 let taker_payment = match swap.taker_coin.tx_from_raw_bytes(&payload) {
@@ -353,9 +419,9 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     swap.taker_payment_lock as u32,
                     &*swap.other_pub0,
                     &**swap.my_priv0.public(),
-                    &*swap.other_persistent,
+                    &*swap.other_persistent_pub,
                     &*swap.secret_hash,
-                    (*swap.basilisk_swap).I.alicesatoshis as u64,
+                    swap.taker_amount,
                 );
 
                 if let Err(e) = validated {
@@ -368,7 +434,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 status.status(SWAP_STATUS, "Waiting for Taker payment confirmation…");
                 let wait = swap.taker_coin.wait_for_confirmations(
                     taker_payment,
-                    (*swap.basilisk_swap).I.aliceconfirms,
+                    swap.taker_payment_confirmations,
                     (now_ms() / 1000) + 1000,
                 );
 
@@ -436,7 +502,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         }};
     }
     let started_at = now_ms() / 1000;
-    swap.taker_payment_lock = started_at + unsafe { (*swap.basilisk_swap).I.putduration as u64 };
+    swap.taker_payment_lock = started_at + swap.lock_duration;
 
     loop {
         let next_state = match unwrap!(swap.state.take()) {
@@ -452,7 +518,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     err!(-1002, "Started_at time_dif over 60: "(time_dif))
                 }
                 swap.other_pub0 = maker_data.pub0;
-                swap.other_persistent = maker_data.persistent_pubkey;
+                swap.other_persistent_pub = maker_data.persistent_pubkey;
                 swap.maker_payment_lock = maker_data.payment_locktime;
                 swap.secret_hash = maker_data.secret_hash.clone();
 
@@ -461,7 +527,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     secret_hash: maker_data.secret_hash,
                     payment_locktime: swap.taker_payment_lock,
                     pub0: H264::from(&**swap.my_priv0.public()),
-                    persistent_pubkey: H264::from(unsafe { (*swap.basilisk_swap).persistent_pubkey33 }),
+                    persistent_pubkey: swap.my_persistent_pub.clone(),
                 };
                 let bytes = serialize(&taker_data);
                 let sending_f = send!("negotiation-reply", bytes.as_slice());
@@ -477,9 +543,9 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 AtomicSwapState::SendTakerFee
             },
-            AtomicSwapState::SendTakerFee => unsafe {
+            AtomicSwapState::SendTakerFee => {
                 let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
-                let fee_amount = (*swap.basilisk_swap).I.alicesatoshis / 777;
+                let fee_amount = swap.taker_amount / 777;
                 status.status(SWAP_STATUS, "Sending Taker fee…");
                 let fee_tx = swap.taker_coin.send_taker_fee(&fee_addr_pub_key, fee_amount as u64).wait();
                 let transaction = match fee_tx {
@@ -492,7 +558,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 AtomicSwapState::WaitMakerPayment {sending_f}
             },
-            AtomicSwapState::WaitMakerPayment {sending_f} => unsafe {
+            AtomicSwapState::WaitMakerPayment {sending_f} => {
                 let payload = recv!(sending_f, "maker-payment", "for Maker deposit", 600, -1005, {|_: &[u8]| Ok(())});
                 let maker_payment = match swap.maker_coin.tx_from_raw_bytes(&payload) {
                     Ok(p) => p,
@@ -504,9 +570,9 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     swap.maker_payment_lock as u32,
                     &**swap.my_priv0.public(),
                     &*swap.other_pub0,
-                    &*swap.other_persistent,
+                    &*swap.other_persistent_pub,
                     &*swap.secret_hash,
-                    (*swap.basilisk_swap).I.bobsatoshis as u64,
+                    swap.maker_amount,
                 );
 
                 if let Err(e) = validated {
@@ -519,7 +585,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 status.status(SWAP_STATUS, "Waiting for the confirmation of the Maker payment…");
                 if let Err(err) = swap.maker_coin.wait_for_confirmations(
                     maker_payment,
-                    (*swap.basilisk_swap).I.bobconfirms,
+                    swap.maker_payment_confirmations,
                     now_ms() / 1000 + 1000,
                 ) {
                     err!(-1005, "!maker_coin.wait_for_confirmations: "(err))
@@ -527,14 +593,14 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 AtomicSwapState::SendTakerPayment
             },
-            AtomicSwapState::SendTakerPayment => unsafe {
+            AtomicSwapState::SendTakerPayment => {
                 let payment_fut = swap.taker_coin.send_taker_payment(
                     swap.taker_payment_lock as u32,
                     &**swap.my_priv0.public(),
                     &*swap.other_pub0,
-                    &*swap.other_persistent,
+                    &*swap.other_persistent_pub,
                     &*swap.secret_hash,
-                    (*swap.basilisk_swap).I.alicesatoshis as u64,
+                    swap.taker_amount,
                 );
 
                 status.status(SWAP_STATUS, "Sending the Taker fee…");

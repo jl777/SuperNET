@@ -51,7 +51,7 @@ void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,in
         fprintf(fp,"\",\"%s\":\"%s\"",userdataname,scriptstr);
     }
 }
-
+/*
 void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
 {
     char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256]; struct iguana_info *bobcoin,*alicecoin;
@@ -111,12 +111,6 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             init_hexbytes_noT(scriptstr,rawtx->redeemscript,rawtx->I.redeemlen);
             fprintf(fp,",\"redeem\":\"%s\"",scriptstr);
         }
-        /*basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
-         basilisk_dontforget_userdata("Areclaim",fp,swap->I.userdata_alicereclaim,swap->I.userdata_alicereclaimlen);
-         basilisk_dontforget_userdata("Aspend",fp,swap->I.userdata_alicespend,swap->I.userdata_alicespendlen);
-         basilisk_dontforget_userdata("Bspend",fp,swap->I.userdata_bobspend,swap->I.userdata_bobspendlen);
-         basilisk_dontforget_userdata("Breclaim",fp,swap->I.userdata_bobreclaim,swap->I.userdata_bobreclaimlen);
-         basilisk_dontforget_userdata("Brefund",fp,swap->I.userdata_bobrefund,swap->I.userdata_bobrefundlen);*/
         fprintf(fp,"}\n");
         fclose(fp);
     }
@@ -269,7 +263,7 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
         }
     }
 }
-
+*/
 bits256 basilisk_swap_privbob_extract(char *symbol,bits256 spendtxid,int32_t vini,int32_t revflag)
 {
     bits256 privkey; int32_t i,scriptlen,siglen; uint8_t script[1024]; // from Bob refund of Bob deposit

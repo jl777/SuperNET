@@ -230,7 +230,6 @@ fn generate_bindings() {
             "LP_privkey_updates",
             "LP_privkey_init",
             "LP_privkey",
-            "LP_swapinit",
             "LP_importaddress",
             "LP_otheraddress",
             "LP_swapsfp_update",
