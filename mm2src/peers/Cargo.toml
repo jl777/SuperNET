@@ -10,6 +10,7 @@ path = "peers.rs"
 doctest = false
 
 [dependencies]
+arrayref = "0.3"
 byteorder = "1.2"
 common = { path = "../common" }
 crc = "1.8"

@@ -6,6 +6,8 @@ use rand::{self, Rng};
 use serde_json::Value as Json;
 use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
+use std::thread::sleep;
+use std::time::Duration;
 
 fn peer (conf: Json, port: u16) -> MmArc {
     let ctx = MmCtx::new (conf, SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
@@ -48,14 +50,15 @@ pub fn test_peers_dht() {
         let received = unwrap! (receiving_f.wait());
         assert_eq! (received, message);
     }
-
-    // WIP, direct UDP communication (triggered by `send`).
-    unwrap! (wait_for_log (&alice.log, 12., &|en| en.contains ("[dht] Direct packet received!")));
 }
 
 pub fn test_peers_direct_send() {
+    // NB: Still need the DHT enabled in order for the pings to work.
     let alice = peer (json! ({"dht": "on"}), 2121);
     let bob = peer (json! ({"dht": "on"}), 2122);
+
+    // Wait enough for libtorrent to open the ports and load the keys. The ping will be lost otherwise.
+    sleep (Duration::from_millis (300));
 
     let bob_key = unwrap! (super::key (&bob));
 
@@ -69,9 +72,16 @@ pub fn test_peers_direct_send() {
     assert! (unwrap! (alice_pctx.friends.lock()) .contains_key (&bob_key));
 
     // Hint at the Bob's endpoint.
-    //investigate_peer ();
+    unwrap! (super::investigate_peer (&alice, "127.0.0.1", 2122));
+
+    // WIP, ping triggered by `investigate_peer`.
+    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
+    // WIP, bob's reply.
+    unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
 
     // Confirm that Bob now has the address.
+    //let bob_addr = SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 2122);
+    //assert! (unwrap! (alice_pctx.friends.lock()) [&bob_key] .endpoints.contains_key (&bob_addr));
 
     // And see if Bob received the message.
 }

@@ -346,6 +346,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         json! ({
             "gui": "nogui",
             "netid": 9999,
+            "dht": "on",  // Enable DHT without delay.
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
@@ -363,6 +364,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         json! ({
             "gui": "nogui",
             "netid": 9999,
+            "dht": "on",  // Enable DHT without delay.
             "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
