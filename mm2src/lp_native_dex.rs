@@ -997,11 +997,17 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
 
     type IP<'a> = Cow<'a, str>;
 
-    /// True if the node is a liquid provider (e.g. Bob, server).  
+    /// True if the node is a liquid provider (e.g. Bob, Maker).  
     /// NB: We want the peers to be equal, freely functioning as either a Bob or an Alice, and I wonder how the p2p LP flags are affected by that.
     type IsLp = bool;
 
     let seeds: Vec<(IP, IsLp)> = if let Some (seednode) = seednode {
+        // A custom `seednode` is often used in automatic or manual tests
+        // in order to directly give the Taker the address of the Maker.
+        // We don't want to unnecessarily spam the friendlist of a public seed node,
+        // but for a custom `seednode` we invoke the `investigate_peer`,
+        // facilitating direct `peers` communication between the two.
+        try_s! (peers::investigate_peer (ctx, seednode, pubport + 1));
         vec! [(seednode.into(), true)]
     } else if netid > 0 && netid < 9 {
         vec! [(format! ("5.9.253.{}", 195 + netid) .into(), true)]
@@ -1014,7 +1020,6 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
     };
 
     for (seed_ip, is_lp) in seeds {
-        try_s! (peers::investigate_peer (ctx, &seed_ip, pubport));
         let ip = try_s! (CString::new (&seed_ip[..]));
         lp::LP_addpeer (mypeer, pubsock, ip.as_ptr() as *mut c_char, myport, pullport, pubport, if is_lp {1} else {0}, lp::G.LP_sessionid, netid);
     }

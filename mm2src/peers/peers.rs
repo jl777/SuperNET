@@ -1,3 +1,6 @@
+#![feature (non_ascii_idents)]
+
+#[macro_use] extern crate arrayref;
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
@@ -31,14 +34,16 @@ use libc::{c_char, c_void};
 use rand::{thread_rng, Rng};
 use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
+use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::{Bytes, ByteBuf};
 use std::cmp::Ordering;
 use std::env::temp_dir;
 use std::fs;
 use std::ffi::{CStr, CString};
+use std::fmt::Write as FmtWrite;
 use std::io::Write;
 use std::mem::{uninitialized, zeroed};
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
@@ -181,7 +186,18 @@ enum LtCommand {
         salt: Vec<u8>,
         // Identifies the `Future` responsible for this get operation.
         frid: u64
+    },
+    // Direct communication. Sends a DHT ping packet to a given endpoint.
+    Ping {
+        endpoint: SocketAddr
     }
+}
+
+/// A friend is a MM peer we're communicating with.  
+/// We track their endpoints and try to discover them via the DHT.
+#[derive(Debug, Default)]
+struct Friend {
+    endpoints: HashMap<SocketAddr, ()>
 }
 
 /// The peer-to-peer and connectivity information local to the MM2 instance.
@@ -193,7 +209,8 @@ pub struct PeersContext {
     cmd_rx: channel::Receiver<LtCommand>,
     // TODO: Remove the outdated `recently_fetched` entries after a while.
     /// seed, salt -> last-modified, value
-    recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>
+    recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>,
+    friends: Mutex<HashMap<bits256, Friend>>
 }
 
 impl PeersContext {
@@ -206,7 +223,8 @@ impl PeersContext {
                 dht_thread: Mutex::new (None),
                 cmd_tx,
                 cmd_rx,
-                recently_fetched: Mutex::new (HashMap::default())
+                recently_fetched: Mutex::new (HashMap::new()),
+                friends: Mutex::new (HashMap::new())
             })
         })))
     }
@@ -247,7 +265,26 @@ fn ratelim_maintenance (seed: [u8; 32]) -> f32 {
     limops
 }
 
-macro_rules! s2b {($s: expr) => {Bytes::new ($s.as_bytes())};}
+macro_rules! s2b {($s: expr) => {ByteBuf::from ($s.as_bytes())};}
+
+// TODO: Consider directly embedding `MmPayload` without generics.
+
+// We're sending normal http://www.bittorrent.org/beps/bep_0005.html pings, only with extra `en["a"]` arguments.
+// That way if something would happen with the delivery of the MM packets via `dht_direct_request`
+// then the problem will be a subset of a generic ping delivery problem.
+// NB: libtorrent automatically adds a random `en["t"]`.
+// 1:ad2:id20:.....DG1.v.'...y..h.2:mmd4:from32:..HO).S.h_?.:....z.x5^as..XoKZ.j4:pongi0eee1:q4:ping2:roi1e1:t2:.j1:v4:LT..1:y1:qe
+#[derive (Serialize, Deserialize)]
+struct Ping<P> {
+    y: ByteBuf,
+    q: ByteBuf,
+    a: PingArgs<P>
+}
+// NB: libtorrent automatically adds a proper `{"a" {"id": …}}` to the ping.
+#[derive (Serialize, Deserialize)]
+struct PingArgs<P> {
+    mm: P
+}
 
 /// Tells libtorrent to send a ping DHT packet with extra payload.
 /// 
@@ -270,21 +307,6 @@ macro_rules! s2b {($s: expr) => {Bytes::new ($s.as_bytes())};}
 /// * `extra_payload` - Carries the extra information in the "mm" ping argument.
 fn ping<P> (dugout: &mut dugout_t, ip: &str, port: u16, extra_payload: P) -> Result<(), String>
 where P: Serialize {
-    // We're sending normal http://www.bittorrent.org/beps/bep_0005.html pings, only with extra `en["a"]` arguments.
-    // That way if something would happen with the delivery of the MM packets via `dht_direct_request`
-    // then the problem will be a subset of a generic ping delivery problem.
-    // NB: libtorrent automatically adds a random `en["t"]`.
-    #[derive (Serialize)]
-    struct Ping<'a, P> {
-        y: Bytes<'a>,
-        q: Bytes<'a>,
-        a: PingArgs<P>
-    }
-    // NB: libtorrent automatically adds a proper `{"a" {"id": …}}` to the ping.
-    #[derive (Serialize)]
-    struct PingArgs<P> {
-        mm: P
-    }
     let ping = Ping {
         y: s2b! ("q"),  // It's a query.
         q: s2b! ("ping"),  // It's a DHT ping query.
@@ -295,7 +317,7 @@ where P: Serialize {
 
     let ip = try_s! (CString::new (ip));
     let benload = try_s! (bencode (&ping));
-    let extra_payload_size = benload.len() - 26;
+    let extra_payload_size = if benload.len() > 26 {benload.len() - 26} else {0};
     if extra_payload_size > 1400 {return ERR! ("`extra_payload` is too large")}
 
     unsafe {lt_send_udp (dugout, ip.as_ptr(), port, benload.as_ptr(), benload.len() as i32)};
@@ -303,25 +325,32 @@ where P: Serialize {
     Ok(())
 }
 
+#[derive (Serialize, Deserialize)]
+struct MmPayload {
+    from: ByteBuf,
+    pong: u8
+}
+
+fn pingʹ (dugout: &mut dugout_t, from: bits256, endpoint: SocketAddr, pong: bool) {
+    let mut ip = String::with_capacity (64);
+    let _ = wite! (&mut ip, (endpoint.ip()));
+    let mm_payload = MmPayload {
+        from: unsafe {&from.bytes[..]} .to_vec().into(),
+        pong: if pong {1} else {0}
+    };
+    log! ("Sending a " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
+    // TODO: Consider adding the ping into a retransmissible queue instead of directly scheduling it.
+    // When the peer is a custom seednode, `investigate_peer` is invoked directly after the `peers` initialization
+    // and we know that libtorrent can't send the pings that early, it needs 200-300 milliseconds to initialize.
+    // Plus packet retransmission is necessary in the face of bandwidth limit and unreliable transports.
+    if let Err (err) = ping (dugout, &ip, endpoint.port(), mm_payload) {
+        log! ("ping error: " (err))
+    }
+}
+
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
 fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: &mut dugout_t) {
-    if 1 == 1 {  // TODO
-        // Exploring direct UDP communication.
-
-        let mut rng = thread_rng();
-        for _x in 0..3 {
-            // NB: Local IPs aren't routable, so LT listens on 0.0.0.0 in the unit tests, reachable through 127.0.0.1.
-
-            let mut payload = String::new();
-            use std::fmt::Write;
-            unwrap! (witeln! (&mut payload, "foobar"));
-            while payload.len() < 111 {unwrap! (wite! (&mut payload, (if rng.gen_bool (0.5) {'1'} else {'0'})))}
-
-            if let Err (err) = ping (dugout, "127.0.0.1", 2111, s2b! (payload)) {log! ("ping error: " (err))}
-        }
-    }
-
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
     // chunk 3 {{piece of data} crc32}
@@ -663,7 +692,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 
     loop {
         extern fn cb (dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
-            let _dugout: &mut dugout_t = unsafe {&mut *dugout};
+            let dugout: &mut dugout_t = unsafe {&mut *dugout};
             let cbctx: &mut CbCtx = unsafe {&mut *(cbctx as *mut CbCtx)};
 
             // We don't want to hit the 1000 bytes limit
@@ -682,10 +711,27 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 &mut port)};
             if rc > 0 {  // TODO
                 let pkt = &buf[0 .. rc as usize];
-                if unsafe {from_utf8_unchecked (pkt) .contains (":foobar")} {
+                if let Ok (ping) = bdecode::<Ping<MmPayload>> (pkt) {
                     let ip = unsafe {from_utf8_unchecked (&ipbuf[0 .. ipbuflen as usize])};
-                    log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", " (binprint (pkt, b'.')));
-                    cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
+                    let from = &ping.a.mm.from[..];
+                    if from.len() != 32 {
+                        log! ("Wrong `from` length in a ping: " (from.len()))
+                    } else {
+                        let from = bits256 {bytes: *array_ref! (from, 0, 32)};
+                        log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", key " (from) ", " (binprint (pkt, b'.')));
+                        cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
+                        match ip.parse() {
+                            Ok (ip) => {
+                                let endpoint = SocketAddr::new (ip, port);
+                                if ping.a.mm.pong == 0 {
+                                    pingʹ (dugout, cbctx.our_public_key, endpoint, true)  // Pong.
+                                }
+                            },
+                            Err (err) => {
+                                log! ("Can't parse incoming ping IP " [ip] ": " (err))
+                            }
+                        }
+                    }
                 }
             } else if rc < 0 {
                 log! ("as_dht_pkt error: " (rc));
@@ -828,6 +874,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             Ok (LtCommand::Put {seed, salt, payload}) => split_and_put (seed, salt, payload, &mut dugout),
             Ok (LtCommand::Get {seed, salt, frid, task}) => get_pieces_scheduler (seed, salt, frid, task, &mut dugout, &mut gets, &*pctx),
             Ok (LtCommand::DropGet {seed, salt, frid}) => {gets.remove (&(seed, salt, frid));},
+            Ok (LtCommand::Ping {endpoint}) => pingʹ (&mut dugout, our_public_key, endpoint, false),
             Err (channel::RecvTimeoutError::Timeout) => {},
             Err (channel::RecvTimeoutError::Disconnected) => break
         };
@@ -931,9 +978,11 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
 /// 
 /// * `ip` - The public IP where the peer is supposedly listens for incoming connections.
 /// * `preferred_port` - The preferred port of the peer.
-pub fn investigate_peer (_ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<(), String> {
+pub fn investigate_peer (ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<(), String> {
     log! ("investigate_peer] ip " (ip) " preferred port " (preferred_port));
-    // TODO: Add the peer to the DHT.
+    let pctx = try_s! (PeersContext::from_ctx (&ctx));
+    let endpoint = SocketAddr::new (try_s! (ip.parse()), preferred_port);
+    try_s! (pctx.cmd_tx.send (LtCommand::Ping {endpoint}));
     Ok(())
 }
 
@@ -969,10 +1018,10 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], payload: Vec<u8>) -> Bo
         Err (err) => return Box::new (stream::once (Err (ERRL! ("Error getting PeersContext: {}", err))))
     };
 
-    // TODO: Consider storing several seeds for reliability.
-    //       Maybe after a certain delay.
-    //       Might need a feedback mechanism, repeating the `put`s and expanding the number of seeds used if there is no answer from the other side.
-    //       (Dropping the returned `Future` is such a feedback).
+    // Add the peer into the friendlist, in order to discover and track its endpoints.
+    if let Ok (mut friends) = pctx.friends.lock() {
+        friends.insert (peer, Default::default());
+    }
 
     if !peer.nonz() {return Box::new (stream::once (Err (ERRL! ("peer key is empty"))))}
     let seed: [u8; 32] = unsafe {peer.bytes};
@@ -1059,4 +1108,10 @@ pub fn recv (ctx: &MmArc, subject: &[u8], validator: Box<Fn(&[u8])->bool + Send>
     let salt = Vec::from (subject);
 
     Box::new (RecvFuture {pctx, seed, salt, validator, frid: None})
+}
+
+pub fn key (ctx: &MmArc) -> Result<bits256, String> {
+    let pctx = try_s! (PeersContext::from_ctx (&ctx));
+    let pk = try_s! (pctx.our_public_key.lock());
+    Ok (pk.clone())
 }

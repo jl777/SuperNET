@@ -249,7 +249,10 @@ fn test_notify() {
 fn test_status() {common::log::tests::test_status()}
 
 #[test]
-fn test_dht() {peers::peers_tests::test_dht()}
+fn test_peers_dht() {peers::peers_tests::test_peers_dht()}
+
+#[test]
+fn test_peers_direct_send() {peers::peers_tests::test_peers_direct_send()}
 
 #[cfg(windows)]
 fn get_special_folder_path() -> PathBuf {
@@ -343,6 +346,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         json! ({
             "gui": "nogui",
             "netid": 9999,
+            "dht": "on",  // Enable DHT without delay.
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
@@ -360,6 +364,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         json! ({
             "gui": "nogui",
             "netid": 9999,
+            "dht": "on",  // Enable DHT without delay.
             "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
