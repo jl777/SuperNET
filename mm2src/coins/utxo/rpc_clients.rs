@@ -596,12 +596,14 @@ fn electrum_connect(
     arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
 ) -> impl Future<Item=mpsc::Sender<Vec<u8>>, Error=String> {
     let tcp = TcpStream::connect(addr);
-
     let (tx, rx) = mpsc::channel(0);
     let rx = rx_to_stream(rx);
 
     tcp
-        .map(move |stream| {
+        .map_err(|e| ERRL!("{}", e))
+        .and_then(move |stream| {
+            try_s!(stream.set_nodelay(true));
+
             let (sink, stream) = Bytes.framed(stream).split();
 
             CORE.spawn(|_| {
@@ -621,9 +623,8 @@ fn electrum_connect(
                     })
                     .map_err(|e| { log!([e]); () })
             });
-            tx
+            Ok(tx)
         })
-        .map_err(|e| ERRL!("{}", e))
 }
 
 /// A simple `Codec` implementation that reads buffer until \n according to Electrum protocol specification:
