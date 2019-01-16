@@ -1,3 +1,0 @@
-#!/bin/bash
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvupdate\",\"key\":\"test\",\"value\":\"$1\",\"flags\":0,\"symbol\":\"KMD\"}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvupdate\",\"key\":\"testtest\",\"value\":\"$1\",\"flags\":0,\"symbol\":\"KV\"}"

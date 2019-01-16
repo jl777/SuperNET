@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"tradebot\",\"method\":\"amlp\",\"blocktrail\":\"e5ddfdceb58fa6c1bf9411aaeff4b6ee28cbc370\"}"

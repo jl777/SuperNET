@@ -1,4 +1,0 @@
-#!/bin/sh
-cd ..
-make -f exchanges/Makefile
-

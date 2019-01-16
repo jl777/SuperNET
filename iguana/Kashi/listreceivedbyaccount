@@ -1,3 +1,0 @@
-#!/bin/bash
-
-curl -s --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"listreceivedbyaccount\",\"confirmations\":\"10\",\"includeempty\":\"1\",\"watchonly\":\"0\"}"

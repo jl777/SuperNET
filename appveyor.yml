@@ -6,7 +6,7 @@ init:
     $env:SHORT_HASH = "$($env:APPVEYOR_REPO_COMMIT.Substring(0, 7))"
 
 build_script:
-- cmd: marketmaker_build_etomic.cmd
+- cmd: marketmaker2_build_win.cmd
 test_script:
   - cargo test
 cache:

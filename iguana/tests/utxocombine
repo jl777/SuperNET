@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"symbol\":\"BTC\",\"agent\":\"basilisk\",\"method\":\"utxocombine\",\"vals\":{\"coinaddr\":\"1E2ac2gxeFR2ir1H3vqETTperWkiXkwy99\",\"maxamount\":0.0001,\"sendflag\":0}}"

@@ -1,4 +1,0 @@
-#!/bin/bash
-#!/bin/bash
-curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"gettransaction\",\"coin\":\"BTCD\",\"params\":[\"8091ecac0b6796bac05fed2838c1951a25b86c4ced31f9f711b0711c839dbbea\"]}"
-

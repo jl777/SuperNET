@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"tradebot\",\"method\":\"gensvm\",\"base\":\"BTC\",\"rel\":\"USD\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"tradebot\",\"method\":\"gensvm\",\"base\":\"BTCD\",\"rel\":\"BTC\"}"

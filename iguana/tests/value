@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"value\",\"vals\":{\"vout\":0,\"txid\":\"aa82ebd1c5bd2a9e19214cbc959df1745378676fddfd6f4903930ac16485c7ae\",\"symbol\":\"BTC\"}}"

@@ -1,6 +1,0 @@
-#!/bin/bash
-
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"sendmany\", \"params\":[\"RVQV5spiARDTqfwBCxstWnMbrT6Q8mhRYz\", {\"RL1tyXPK5NzT1d4upgcHnujgG5v3xjLaYC\":0.04, \"1353tsE8YMTA4EuV7dgUXGjNFf9KpVvKHz\":0.04}, 2]}"
-
-
-

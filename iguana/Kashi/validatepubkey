@@ -1,1 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"validatepubkey\",\"pubkey\":\"026b49ef6a53346455a947c462bbb2a6af25d68ea08fcacb9c288dc7ca727937fe\"}"

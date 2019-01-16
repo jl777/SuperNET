@@ -1,7 +1,0 @@
-while true
-do
-../agents/iguana coins/genbtc8.json
-sleep 3
-rm -rf tmp
-done
-

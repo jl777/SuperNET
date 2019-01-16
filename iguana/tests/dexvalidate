@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"validateaddress\",\"address\":\"1En4tL4drN5qAZDtu1BCC7DThj58yrx7cX\",\"symbol\":\"BTC\"}"

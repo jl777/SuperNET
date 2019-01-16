@@ -1,1 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"lockunspent\",\"flag\":\"1\",\"array\":\"e3c08af74ca337ec632294c78c1deb461944e824f9272a280e4e750e70782714\"}"

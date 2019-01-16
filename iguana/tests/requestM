@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"MVP\",\"amount\":0.1,\"dest\":\"USD\",\"minprice\":0.09}}"
-

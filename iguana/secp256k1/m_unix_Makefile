@@ -1,7 +1,0 @@
-# author: fadedreamz@SuperNet.org
-# date: August, 2017
-
-all:
-	gcc -c -o ../secp256k1.o -I. -I./src  -I./include -I./src -O3 -W -std=c89 -pedantic -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-function -Wno-long-long -Wno-overlength-strings -fvisibility=hidden -DHAVE_CONFIG_H src/secp256k1.c
-
-.PHONY: all

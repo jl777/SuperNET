@@ -1,6 +1,0 @@
-while true
-do
-../agents/iguana coins/genbtcfast.json
-sleep 3
-done
-

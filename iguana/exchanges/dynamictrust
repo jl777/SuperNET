@@ -1,3 +1,0 @@
-#!/bin/bash
-source userpass
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"dynamictrust\",\"address\":\"RMfQwu5ey23eWJ4as2ckd8dqsQJwo836ny\"}"

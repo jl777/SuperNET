@@ -1,1 +1,0 @@
-gprof -b ../marketmaker ../gmon.out

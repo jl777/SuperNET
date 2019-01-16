@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"dividends\",\"height\":1486500,\"symbol\":\"BTCD\",\"vals\":{\"exclude\":[\"RWc6VDt5SdjnWXoVQ2AJsuxU2QSaDcG5R7\", \"RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA\"],\"dust\":0,\"dividend\":0,\"system\":0,\"prefix\":\"fiat/revs sendtoaddress\",\"suffix\":\"\"}}"
-

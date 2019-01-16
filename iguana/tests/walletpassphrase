@@ -1,4 +1,0 @@
-#!/bin/bash
-#curl --url "http://127.0.0.1:7778" --data "{\"method\":\"walletpassphrase\",\"params\":[\"test\", 600]}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"walletpassphrase\",\"password\":\"test\",\"timeout\":86444}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"jumblr\",\"method\":\"setpassphrase\",\"passphrase\":\"jumblr test\"}"

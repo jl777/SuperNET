@@ -1,5 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"walletpassphrase\",\"password\":\"3809853923098test\",\"timeout\":86444}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"tradebot\",\"method\":\"amlp\"}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"KMD\",\"vals\":{\"ask\":0.000077,\"bid\":0.000067,\"maxvol\":400,\"minvol\":100}}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"MVP\",\"vals\":{\"rel\":\"USD\",\"bid\":0.09,\"ask\":0.11,\"maxvol\":100}}"

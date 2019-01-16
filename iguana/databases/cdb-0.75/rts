@@ -1,3 +1,0 @@
-#!/bin/sh
-# WARNING: This file was auto-generated. Do not edit!
-env - PATH="`pwd`:$PATH" sh rts.tests 2>&1 | cat -v

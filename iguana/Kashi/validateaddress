@@ -1,7 +1,0 @@
-#!/bin/bash
-echo ""
-echo "The validateaddress RPC accepts a block, verifies it is a valid addition to the block chain, and broadcasts it to the network. Extra parameters are ignored by Bitcoin Core but may be used by mining pools or other programs."
-
-echo""
-
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"validateaddress\",\"address\":\"RKfr35KdFCvM5DrmVFPouszesqUWvL6vxd\"}"

@@ -1,1 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"move\",\"fromaccount\":\"iguana\",\"toaccount\":\"iguana\",\"amount\":\"0.004\",\"minconf\":\"0\",\"comment\":\"moving\"}"

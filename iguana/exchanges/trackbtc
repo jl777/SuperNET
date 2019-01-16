@@ -1,2 +1,0 @@
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"$coin\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"BTC\",\"factor\":$invprice,\"margin\":$margin}"
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"$coin\",\"rel\":\"KMD\",\"offset\":0.0,\"refbase\":\"BTC\",\"refrel\":\"KMD\",\"factor\":$price,\"margin\":$margin}"

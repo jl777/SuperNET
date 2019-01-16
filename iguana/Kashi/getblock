@@ -1,3 +1,0 @@
-#!/bin/bash
-
-curl -s --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"getblock\",\"blockhash\":\"50a4f738d4319ad1f437df56ec90fdfb2592b95f5508db379c41227b2cc992c0\",\"verbose\":\"1\",\"remoteonly\":\"0\"}"

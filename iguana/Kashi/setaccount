@@ -1,1 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"setaccount\",\"params\":[\"RQK4mc7ZySXtQ6EweC4r2fcCdBTvsZqDc6\", \"change\"]}"

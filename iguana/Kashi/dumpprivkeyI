@@ -1,3 +1,0 @@
-#!/bin/bash
-
-curl -s --url "http://127.0.0.1:7778" --data "{\"method\":\"dumpprivkey\",\"params\":[\"RJy9q8GbvqKGZkHmHn6cav96fJqCREWr8d\"]}"

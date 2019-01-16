@@ -1,5 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"checkaddress\",\"address\":\"RYHpUJFaB4QHUW8jCJCCNL2kzWq3D3QoyG\",\"symbol\":\"KMD\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"checkaddress\",\"address\":\"1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE\",\"symbol\":\"BTC\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"checkaddress\",\"address\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"symbol\":\"USD\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"checkaddress\",\"address\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"symbol\":\"MVP\"}"
