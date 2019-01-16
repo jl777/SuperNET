@@ -83,8 +83,8 @@ pub fn test_peers_direct_send() {
     unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
 
     // Confirm that Bob now has the address.
-    //let bob_addr = SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 2122);
-    //assert! (unwrap! (alice_pctx.friends.lock()) [&bob_key] .endpoints.contains_key (&bob_addr));
+    let bob_addr = SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 2122);
+    assert! (unwrap! (alice_pctx.friends.lock()) [&bob_key] .endpoints.contains_key (&bob_addr));
 
     // And see if Bob received the message.
 

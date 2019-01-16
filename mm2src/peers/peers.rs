@@ -619,6 +619,33 @@ ifrom! (DhtBootStatus, DhtDelayed);
 ifrom! (DhtBootStatus, DhtBootstrapping);
 ifrom! (DhtBootStatus, DhtBootstrapped);
 
+fn incoming_ping (dugout: &mut dugout_t, ctx: &MmArc, our_public_key: bits256, pkt: &[u8], ip: &[u8], port: u16) -> Result<(), String> {
+    let ping = match bdecode::<Ping<MmPayload>> (pkt) {Ok (p) => p, Err (_) => return Ok(())};
+
+    let from = &ping.a.mm.from[..];
+    if from.len() != 32 {return ERR! ("Wrong `from` length in a ping: {}", from.len())}
+    let from = bits256 {bytes: *array_ref! (from, 0, 32)};
+
+    let ip: IpAddr = try_s! (unsafe {from_utf8_unchecked (ip)} .parse());
+    log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", key " (from) ", " (binprint (pkt, b'.')));
+    ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
+
+    let endpoint = SocketAddr::new (ip, port);
+    if ping.a.mm.pong == 0 {
+        pingʹ (dugout, our_public_key, endpoint, true)  // Pong.
+    }
+    // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
+    let pctx = try_s! (PeersContext::from_ctx (ctx));
+    let mut friends = try_s! (pctx.friends.lock());
+    let friend = friends.entry (from) .or_insert (Friend::default());
+    match friend.endpoints.entry (endpoint) {
+        Entry::Occupied (_oe) => {},
+        Entry::Vacant (ve) => {ve.insert (());}
+    };
+
+    Ok(())
+}
+
 /// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
 /// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
@@ -710,30 +737,10 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 &mut direction,
                 ipbuf.as_mut_ptr(), &mut ipbuflen,
                 &mut port)};
-            if rc > 0 {  // TODO
-                let pkt = &buf[0 .. rc as usize];
-                if let Ok (ping) = bdecode::<Ping<MmPayload>> (pkt) {
-                    let ip = unsafe {from_utf8_unchecked (&ipbuf[0 .. ipbuflen as usize])};
-                    let from = &ping.a.mm.from[..];
-                    if from.len() != 32 {
-                        log! ("Wrong `from` length in a ping: " (from.len()))
-                    } else {
-                        let from = bits256 {bytes: *array_ref! (from, 0, 32)};
-                        log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", key " (from) ", " (binprint (pkt, b'.')));
-                        cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
-                        match ip.parse() {
-                            Ok (ip) => {
-                                let endpoint = SocketAddr::new (ip, port);
-                                if ping.a.mm.pong == 0 {
-                                    pingʹ (dugout, cbctx.our_public_key, endpoint, true)  // Pong.
-                                }
-                            },
-                            Err (err) => {
-                                log! ("Can't parse incoming ping IP " [ip] ": " (err))
-                            }
-                        }
-                    }
-                }
+            if rc > 0 {
+                let rc = incoming_ping (dugout, cbctx.ctx, cbctx.our_public_key,
+                                        &buf[0 .. rc as usize], &ipbuf[0 .. ipbuflen as usize], port);
+                if let Err (err) = rc {log! ("incoming_ping error: " (err))}
             } else if rc < 0 {
                 log! ("as_dht_pkt error: " (rc));
             }
