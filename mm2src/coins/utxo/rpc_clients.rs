@@ -1,6 +1,6 @@
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
-use common::{CORE, Timeout, slurp_req, join_all_sequential};
+use common::{CORE, slurp_req, join_all_sequential};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
 use futures::{Async, Future, Poll, Sink};
 use futures::sync::mpsc;
@@ -359,15 +359,19 @@ pub fn spawn_electrum(
 }
 
 #[derive(Debug)]
-pub struct ElectrumClient {
+pub struct ElectrumClientImpl {
     results: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
     senders: Vec<mpsc::Sender<Vec<u8>>>,
     next_id: Mutex<u64>,
 }
 
+#[derive(Debug)]
+pub struct ElectrumClient(pub Arc<ElectrumClientImpl>);
+impl Deref for ElectrumClient {type Target = ElectrumClientImpl; fn deref (&self) -> &ElectrumClientImpl {&*self.0}}
+
 const BLOCKCHAIN_HEADERS_SUB_ID: &'static str = "blockchain.headers.subscribe";
 
-impl JsonRpcClient for ElectrumClient {
+impl JsonRpcClient for ElectrumClientImpl {
     fn version(&self) -> &'static str { "2.0" }
 
     fn next_id(&self) -> String {
@@ -475,9 +479,9 @@ impl UtxoRpcClientOps for ElectrumClient {
     }
 }
 
-impl ElectrumClient {
-    pub fn new() -> ElectrumClient {
-        ElectrumClient {
+impl ElectrumClientImpl {
+    pub fn new() -> ElectrumClientImpl {
+        ElectrumClientImpl {
             results: Arc::new(Mutex::new(HashMap::new())),
             senders: vec![],
             next_id: Mutex::new(0),
