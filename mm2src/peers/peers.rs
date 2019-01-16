@@ -624,6 +624,7 @@ ifrom! (DhtBootStatus, DhtBootstrapped);
 /// This seems like a good enough reason to use a separate thread for managing the libtorrent,
 /// allowing it to initialize and then stop at its own pace.
 fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool, delay_dht: f64) {
+    if let Err (err) = ctx.log.register_my_thread() {log! ((err))}
     let myipaddr = ctx.conf["myipaddr"].as_str();
     let listen_interfaces = (|| {
         if let Some (myipaddr) = myipaddr {
