@@ -1,4 +1,0 @@
-#!/bin/sh
-# WARNING: This file was auto-generated. Do not edit!
-main="$1"; shift
-exec gcc -o "$main" "$main".o ${1+"$@"}

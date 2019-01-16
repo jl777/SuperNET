@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"agent\":\"basilisk\",\"method\":\"rawtx\",\"vals\":{\"changeaddr\":\"RD1rFucYCMhCGeEqdztivP3DFdJwVAzXn7\",\"addresses\":[\"RD1rFucYCMhCGeEqdztivP3DFdJwVAzXn7\"],\"timeout\":15000,\"satoshis\":\"130000\",\"spendscript\":\"76a9145da2ae69885741a6946e01ad8aa8b5312eed856088ac\"}}"

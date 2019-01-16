@@ -1,8 +1,0 @@
-#!/bin/bash
-#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
-rm ../agents/iguana *.o
-git pull
-cd secp256k1; ./m_osx_release; cd ..
-clang -g -mmacosx-version-min=10.6 -Wno-deprecated -c -O2 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
-clang -g -mmacosx-version-min=10.6 -Wno-deprecated -c -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c
-clang -g -mmacosx-version-min=10.6 /usr/local/lib/libnanomsg.5.0.0.dylib -o ../agents/iguana *.o ../agents/libcrypto777.a -lcurl -lssl -lcrypto -lpthread -lz -lm

@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"BTC\",\"amount\":0.0001,\"dest\":\"BTCD\",\"minprice\":240}}"
-

@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"refresh\",\"symbol\":\"KMD\",\"address\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"timeout\":600000}"

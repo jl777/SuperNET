@@ -1,9 +1,0 @@
-#!/bin/bash
-echo BTC
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"alladdresses\",\"symbol\":\"BTC\"}"
-echo KMD
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"alladdresses\",\"symbol\":\"KMD\"}"
-echo MVP
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"alladdresses\",\"symbol\":\"MVP\"}"
-echo USD
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"alladdresses\",\"symbol\":\"USD\"}"

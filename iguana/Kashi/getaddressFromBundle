@@ -1,2 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"bundleaddresses\",\"activecoin\":\"BTCD\",\"height\":\"500\"}"
-

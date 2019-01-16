@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:14632" --data "{\"method\":\"getblockcount\",\"params\":[]}"

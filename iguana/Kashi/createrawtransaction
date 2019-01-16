@@ -1,2 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"createrawtransaction\",\"params\":[[{\"txid\":\"d8e4c1e92fad9e58ecc3352f35b90298fc0b81241577897b11f414ee88ff11e3\",\"vout\":1}], {\"RAoMou7euzvDwa9dQwjrNB5A41hrAWgvBt\":0.01}]}"
-

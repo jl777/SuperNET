@@ -1,9 +1,0 @@
-#!/bin/bash
-#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
-rm ../agents/iguana *.o
-git pull
-cd secp256k1; ./m_unix; cd ..
-cd ../crypto777; ./m_unix; cd ../iguana
-gcc -g -Wno-address-of-packed-member -Wno-deprecated -c -O2 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
-gcc -g -Wno-address-of-packed-member -Wno-deprecated -c -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c iguana_ramchain.c
-gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -lcrypto -lpthread -lz -lm

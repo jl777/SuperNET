@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"BTC\",\"ipaddr\":\"5.9.102.210\"}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"BTC\",\"ipaddr\":\"78.47.196.146\"}"

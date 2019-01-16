@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"activecoin\":\"BTCD\",\"timeout\":20000,\"agent\":\"iguana\",\"method\":\"balance\",\"address\":\"RDbGxL8QYdEp8sMULaVZS2E6XThcTKT9Jd\"}"

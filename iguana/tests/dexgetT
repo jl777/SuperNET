@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"gettransaction\",\"txid\":\"88794bbb699f130951c40dc99a27d2c7c7016e12824fd1040cbedf86980de04d\",\"symbol\":\"REVS\"}"

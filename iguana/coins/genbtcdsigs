@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"prefetchlag\":-1,\"poll\":50,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"startpend\":8,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"RELAY\":1,\"VALIDATE\":2,\"portp2p\":14631,\"rpc\":14632}"

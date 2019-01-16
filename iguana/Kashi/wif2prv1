@@ -1,1 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"SuperNET\",\"method\":\"wif2priv\",\"wif\":\"UsQyVEi7TZ8JJmzcmJijU98HUc55b2wdPcfmuWfZgE5e8tG5xeXz\"}"

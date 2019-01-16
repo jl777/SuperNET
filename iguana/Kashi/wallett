@@ -1,2 +1,0 @@
-curl -s --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"walletpassphrase\",\"password\":\"kashif!Ali123\",\"timeout\":300}"
-

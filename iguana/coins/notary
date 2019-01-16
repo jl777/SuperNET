@@ -1,3 +1,0 @@
-#!/bin/bash
-
-curl --url "http://127.0.0.1:7778" --data "{\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"NOTARY\",\"services\":128,\"maxpeers\":2048,\"RELAY\":0,\"VALIDATE\":0,\"portp2p\":7775,\"rpc\":0}"

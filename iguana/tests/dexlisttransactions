@@ -1,5 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listtransactions\",\"address\":\"RWE3NWHT6Fb1zW4mY9LU859MPoWGYvtLfj\",\"count\":100,\"skip\":0,\"symbol\":\"KMD\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listtransactions\",\"address\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"count\":100,\"skip\":0,\"symbol\":\"MVP\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listtransactions\",\"address\":\"RMGpGoX82M1ZUUbHxZ3JKHacxY9NYVakqr\",\"count\":100,\"skip\":0,\"symbol\":\"USD\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listtransactions\",\"address\":\"RMGpGoX82M1ZUUbHxZ3JKHacxY9NYVakqr\",\"count\":100,\"skip\":0,\"symbol\":\"MVP\"}"

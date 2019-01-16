@@ -1,1 +1,0 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"decodescript\",\"scriptstr\":\"76a914dcc39f9cfc5558b09fc7862535cafc98e5a4d63088ac\"}"

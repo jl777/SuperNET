@@ -1,7 +1,0 @@
-#!/bin/bash
-
-
-#curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"createmultisig\",\"params\":[2, [\"026b49ef6a53346455a947c462bbb2a6af25d68ea08fcacb9c288dc7ca727937fe\"]}"
-
-curl -s --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"createmultisig\",\"Message\":\"1\",\"pubkeys\":\"026b49ef6a53346455a947c462bbb2a6af25d68ea08fcacb9c288dc7ca727937fe\",\"ignore\":\"\"}"
-

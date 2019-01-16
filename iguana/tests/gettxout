@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778"  --data "{\"coin\":\"KMD\",\"method\":\"gettxout\",\"params\":[\"78d8efb10877c2293d5f2ed6fd3b7ff2da4f599ab63de25043e9211ddb669c13\", 1]}"
-

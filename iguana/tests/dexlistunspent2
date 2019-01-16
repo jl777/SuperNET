@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listunspent2\",\"address\":\"RNJmgYaFF5DbnrNUX6pMYz9rcnDKC2tuAc\",\"symbol\":\"KMD\"}"

@@ -1,3 +1,0 @@
-#!/bin/bash
-#curl --url "http://127.0.0.1:7779" --data "{\"method\":\"bitmap\",\"endtimestamp\":0,\"source\":\"KMD\",\"dest\":\"BTC\",\"numdates\":30}"
-curl --url "http://78.46.193.199:7779" --data "{\"method\":\"bitmap\",\"endtimestamp\":0,\"source\":\"KMD\",\"dest\":\"BTC\",\"numdates\":30}"

@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"importprivkey\",\"params\":[\"Kzw1ordPLaxDqgn2Uz8UyjszcjyPsSM8a16CpHQ4DJF2DiVtFSX1\"]}"

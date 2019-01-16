@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"snapshot\",\"height\":1486000,\"symbol\":\"BTCD\"}"
-

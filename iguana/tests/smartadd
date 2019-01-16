@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"smartaddress\",\"type\":\"usd\",\"symbol\":\"USD\"}" # first time
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"smartaddress\",\"type\":\"usd\",\"symbol\":\"REVS\",\"maxbid\":0.20,\"minask\":0.10}" 

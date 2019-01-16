@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"gettxin\",\"vout\":0,\"txid\":\"cad09f4c3e23ef4cde4980cc0e2b296943f22cbaac183a30f86f49f7eccfedfd\",\"symbol\":\"KMD\"}"

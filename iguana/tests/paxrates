@@ -1,2 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"rates\",\"quotes\":[\"USD\", \"EUR\", \"JPY\", \"GBP\", \"AUD\", \"CAD\", \"CHF\", \"NZD\", \"CNY\", \"RUB\", \"MXN\", \"BRL\", \"INR\", \"HKD\", \"TRY\", \"ZAR\", \"PLN\", \"NOK\", \"SEK\", \"DKK\", \"CZK\", \"HUF\", \"ILS\", \"KRW\", \"MYR\", \"PHP\", \"RON\", \"SGD\", \"THB\", \"BGN\", \"IDR\", \"HRK\"]}"

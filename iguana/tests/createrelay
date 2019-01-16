@@ -1,3 +1,0 @@
-#!/bin/bash
-curl --url "http://127.0.0.1:14632" --data "{\"method\":\"createrelay\",\"params\":[\"ipaddr\", \"secp\", \"curve25519\"] }"
-

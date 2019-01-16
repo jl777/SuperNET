@@ -1,6 +1,0 @@
-# RF4jZsF5BUckQqX5hsS68kjQMYSba8Fypm KMD 40223.19497203, REVS 101.00000000
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"importaddress\",\"address\":\"RF4jZsF5BUckQqX5hsS68kjQMYSba8Fypm\",\"symbol\":\"REVS\"}" # 101.00000000
-sleep 3
-# RGQmMzmUfa6R5dZvvL5wvy2vxPLEcgkkyC KMD 137.73071692, REVS 2.73426759
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"importaddress\",\"address\":\"RGQmMzmUfa6R5dZvvL5wvy2vxPLEcgkkyC\",\"symbol\":\"REVS\"}" # 2.73426759
-sleep 3
