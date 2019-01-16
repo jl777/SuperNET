@@ -1,10 +1,11 @@
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
-use common::{CORE, Timeout, slurp_req, join_all_sequential};
+use common::{CORE, slurp_req, join_all_sequential};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
 use futures::{Async, Future, Poll, Sink};
 use futures::sync::mpsc;
 use futures_timer::Delay;
+use futures_timer::FutureExt;
 use gstuff::now_ms;
 use hashbrown::HashMap;
 use hyper::{Body, Request, StatusCode};
@@ -358,15 +359,19 @@ pub fn spawn_electrum(
 }
 
 #[derive(Debug)]
-pub struct ElectrumClient {
+pub struct ElectrumClientImpl {
     results: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
     senders: Vec<mpsc::Sender<Vec<u8>>>,
     next_id: Mutex<u64>,
 }
 
+#[derive(Debug)]
+pub struct ElectrumClient(pub Arc<ElectrumClientImpl>);
+impl Deref for ElectrumClient {type Target = ElectrumClientImpl; fn deref (&self) -> &ElectrumClientImpl {&*self.0}}
+
 const BLOCKCHAIN_HEADERS_SUB_ID: &'static str = "blockchain.headers.subscribe";
 
-impl JsonRpcClient for ElectrumClient {
+impl JsonRpcClient for ElectrumClientImpl {
     fn version(&self) -> &'static str { "2.0" }
 
     fn next_id(&self) -> String {
@@ -474,9 +479,9 @@ impl UtxoRpcClientOps for ElectrumClient {
     }
 }
 
-impl ElectrumClient {
-    pub fn new() -> ElectrumClient {
-        ElectrumClient {
+impl ElectrumClientImpl {
+    pub fn new() -> ElectrumClientImpl {
+        ElectrumClientImpl {
             results: Arc::new(Mutex::new(HashMap::new())),
             senders: vec![],
             next_id: Mutex::new(0),
@@ -595,12 +600,14 @@ fn electrum_connect(
     arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
 ) -> impl Future<Item=mpsc::Sender<Vec<u8>>, Error=String> {
     let tcp = TcpStream::connect(addr);
-
     let (tx, rx) = mpsc::channel(0);
     let rx = rx_to_stream(rx);
 
     tcp
-        .map(move |stream| {
+        .map_err(|e| ERRL!("{}", e))
+        .and_then(move |stream| {
+            try_s!(stream.set_nodelay(true));
+
             let (sink, stream) = Bytes.framed(stream).split();
 
             CORE.spawn(|_| {
@@ -620,9 +627,8 @@ fn electrum_connect(
                     })
                     .map_err(|e| { log!([e]); () })
             });
-            tx
+            Ok(tx)
         })
-        .map_err(|e| ERRL!("{}", e))
 }
 
 /// A simple `Codec` implementation that reads buffer until \n according to Electrum protocol specification:
@@ -708,6 +714,17 @@ impl Future for ElectrumSubscriptionFut {
     }
 }
 
+/// From<io::Error> is required to be implemented by futures-timer timeout.
+/// We can't implement it for String directly due to Rust restrictions.
+/// So this solution looks like simplest at least for now. We have to remap errors to get proper type.
+struct StringError(String);
+
+impl From<std::io::Error> for StringError {
+    fn from(e: std::io::Error) -> StringError {
+        StringError(ERRL!("{}", e))
+    }
+}
+
 fn electrum_request(
     request: JsonRpcRequest,
     tx: mpsc::Sender<Vec<u8>>,
@@ -719,17 +736,18 @@ fn electrum_request(
     json.push('\n');
 
     let request_id = request.get_id().to_string();
-    let send_fut = Box::new(tx.send(json.into_bytes())
+    let send_fut = tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
-        .and_then(move |_res| -> ElectrumResponseFut {
+        .and_then(move |_res| {
             ElectrumResponseFut {
                 request_id,
                 context,
             }
-        }));
+        })
+        .map_err(|e| StringError(e))
+        .timeout(Duration::from_secs(30));
 
-    // 5 seconds should be enough to detect that there is some issue with connection
-    Box::new(Timeout::new(send_fut, Duration::from_secs(5)))
+    Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
 
 fn electrum_request_multi(
@@ -757,17 +775,18 @@ fn electrum_subscribe(
     json.push('\n');
 
     let request_id = request.get_id().to_string();
-    let send_fut = Box::new(tx.send(json.into_bytes())
+    let send_fut = tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
         .and_then(move |_res| -> ElectrumSubscriptionFut {
             ElectrumSubscriptionFut {
                 request_id,
                 context,
             }
-        }));
+        })
+        .map_err(|e| StringError(e))
+        .timeout(Duration::from_secs(30));
 
-    // 5 seconds should be enough to detect that there is some issue with connection
-    Box::new(Timeout::new(send_fut, Duration::from_secs(5)))
+    Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
 
 fn electrum_subscribe_multi(

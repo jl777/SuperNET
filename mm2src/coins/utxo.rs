@@ -42,8 +42,10 @@ use std::ffi::CStr;
 use std::mem::transmute;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
-use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, ElectrumClient, NativeClient};
+use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, ElectrumClient, ElectrumClientImpl, NativeClient};
 use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, Transaction, TransactionEnum, TransactionFut};
 
 /// Clones slice into fixed size array
@@ -890,6 +892,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         hash: key_pair.public().address_hash(),
     };
 
+    let ticker = try_s! (unsafe {CStr::from_ptr (info.symbol.as_ptr())} .to_str()) .into();
     // At least for now only ZEC and forks rely on tx version so we can use it to detect overwintered
     // TODO Consider refactoring, overwintered flag should be explicitly set in coins config
     let overwintered = info.txversion >= 3;
@@ -904,17 +907,36 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
             })
         },
         UtxoInitMode::Electrum(urls) => {
-            let mut client = ElectrumClient::new();
+            let mut client = ElectrumClientImpl::new();
             for url in urls.iter() {
                 try_s!(client.add_server(url));
             }
             try_s!(client.blockchain_headers_subscribe().wait());
+
+            let client = ElectrumClient(Arc::new(client));
+            // ping the electrum servers every minute to prevent them from disconnecting us.
+            // according to docs server can do it if there are no messages in ~10 minutes.
+            // https://electrumx.readthedocs.io/en/latest/protocol-methods.html?highlight=keep#server-ping
+            // weak reference will allow to stop the thread if client is dropped
+            let weak_client = Arc::downgrade(&client.0);
+            try_s!(thread::Builder::new().name(format!("electrum_ping_{}", ticker)).spawn(move || {
+                loop {
+                    if let Some(client) = weak_client.upgrade() {
+                        if let Err(e) = client.server_ping().wait() {
+                            log!("Electrum servers " [urls] " ping error " [e]);
+                        }
+                    } else {
+                        break;
+                    }
+                    thread::sleep(Duration::from_secs(60));
+                }
+            }));
             UtxoRpcClientEnum::Electrum(client)
         }
     };
 
     let coin = UtxoCoinImpl {
-        ticker: try_s! (unsafe {CStr::from_ptr (info.symbol.as_ptr())} .to_str()) .into(),
+        ticker,
         decimals: 8,
         rpc_client,
         key_pair,

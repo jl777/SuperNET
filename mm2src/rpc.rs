@@ -269,6 +269,9 @@ impl Service for RpcService {
                 rpc_cors
             );
             res
+        }).then(|res| {
+            // even if future returns error we need to map it to JSON response and send to client
+            Box::new(futures::future::ok(try_h!(res)))
         });
 
         Box::new (f)
