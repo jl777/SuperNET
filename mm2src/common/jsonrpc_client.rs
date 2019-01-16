@@ -50,7 +50,7 @@ pub struct JsonRpcResponse {
     pub error: Json,
 }
 
-pub type JsonRpcResponseFut = Box<Future<Item=JsonRpcResponse, Error=String> + Send>;
+pub type JsonRpcResponseFut = Box<Future<Item=JsonRpcResponse, Error=String> + Send + 'static>;
 pub type RpcRes<T> = Box<Future<Item=T, Error=String> + Send + 'static>;
 
 pub trait JsonRpcClient {

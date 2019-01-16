@@ -5,6 +5,7 @@ use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, 
 use futures::{Async, Future, Poll, Sink};
 use futures::sync::mpsc;
 use futures_timer::Delay;
+use futures_timer::FutureExt;
 use gstuff::now_ms;
 use hashbrown::HashMap;
 use hyper::{Body, Request, StatusCode};
@@ -708,6 +709,17 @@ impl Future for ElectrumSubscriptionFut {
     }
 }
 
+/// From<io::Error> is required to be implemented by futures-timer timeout.
+/// We can't implement it for String directly due to Rust restrictions.
+/// So this solution looks like simplest at least for now. We have to remap errors to get proper type.
+struct StringError(String);
+
+impl From<std::io::Error> for StringError {
+    fn from(e: std::io::Error) -> StringError {
+        StringError(ERRL!("{}", e))
+    }
+}
+
 fn electrum_request(
     request: JsonRpcRequest,
     tx: mpsc::Sender<Vec<u8>>,
@@ -719,17 +731,18 @@ fn electrum_request(
     json.push('\n');
 
     let request_id = request.get_id().to_string();
-    let send_fut = Box::new(tx.send(json.into_bytes())
+    let send_fut = tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
-        .and_then(move |_res| -> ElectrumResponseFut {
+        .and_then(move |_res| {
             ElectrumResponseFut {
                 request_id,
                 context,
             }
-        }));
+        })
+        .map_err(|e| StringError(e))
+        .timeout(Duration::from_secs(30));
 
-    // 5 seconds should be enough to detect that there is some issue with connection
-    Box::new(Timeout::new(send_fut, Duration::from_secs(5)))
+    Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
 
 fn electrum_request_multi(
@@ -757,17 +770,18 @@ fn electrum_subscribe(
     json.push('\n');
 
     let request_id = request.get_id().to_string();
-    let send_fut = Box::new(tx.send(json.into_bytes())
+    let send_fut = tx.send(json.into_bytes())
         .map_err(|e| ERRL!("{}", e))
         .and_then(move |_res| -> ElectrumSubscriptionFut {
             ElectrumSubscriptionFut {
                 request_id,
                 context,
             }
-        }));
+        })
+        .map_err(|e| StringError(e))
+        .timeout(Duration::from_secs(30));
 
-    // 5 seconds should be enough to detect that there is some issue with connection
-    Box::new(Timeout::new(send_fut, Duration::from_secs(5)))
+    Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
 
 fn electrum_subscribe_multi(
