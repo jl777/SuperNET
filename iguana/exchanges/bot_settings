@@ -1,3 +1,0 @@
-#!/bin/bash
-source userpass
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"bot_settings\",\"botid\":$1,\"newprice\":$2,\"newvolume\":$3}"

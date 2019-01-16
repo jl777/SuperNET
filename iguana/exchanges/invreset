@@ -1,4 +1,0 @@
-#!/bin/bash
-source userpass
-source passphrase
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"inventory\",\"coin\":\"KMD\",\"reset\":1,\"passphrase\":\"$passphrase\"}"
