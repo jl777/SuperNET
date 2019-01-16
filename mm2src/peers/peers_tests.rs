@@ -11,6 +11,7 @@ use std::time::Duration;
 
 fn peer (conf: Json, port: u16) -> MmArc {
     let ctx = MmCtx::new (conf, SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
+    unwrap! (ctx.log.thread_gravity_on());
     let mut rng = rand::thread_rng();
 
     let mut alice_key: bits256 = unsafe {zeroed()};
@@ -50,6 +51,8 @@ pub fn test_peers_dht() {
         let received = unwrap! (receiving_f.wait());
         assert_eq! (received, message);
     }
+
+    // TODO: Use RAII to stop the `dht_thread`, in order to see the full log if something fails.
 }
 
 pub fn test_peers_direct_send() {
@@ -58,7 +61,7 @@ pub fn test_peers_direct_send() {
     let bob = peer (json! ({"dht": "on"}), 2122);
 
     // Wait enough for libtorrent to open the ports and load the keys. The ping will be lost otherwise.
-    sleep (Duration::from_millis (300));
+    sleep (Duration::from_millis (999));
 
     let bob_key = unwrap! (super::key (&bob));
 
@@ -84,4 +87,6 @@ pub fn test_peers_direct_send() {
     //assert! (unwrap! (alice_pctx.friends.lock()) [&bob_key] .endpoints.contains_key (&bob_addr));
 
     // And see if Bob received the message.
+
+    // TODO: Use RAII to stop the `dht_thread`, in order to see the full log if something fails.
 }

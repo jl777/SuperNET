@@ -10,6 +10,7 @@ use gstuff::now_ms;
 use libc::{c_char, c_int};
 use regex::Regex;
 use serde_json::{Value as Json};
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::default::Default;
 use std::env;
@@ -20,6 +21,7 @@ use std::io::{Seek, SeekFrom, Write};
 use std::mem::swap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::thread;
 
 lazy_static! {
     /// True if we're likely to be under a capturing cargo test.
@@ -48,9 +50,53 @@ fn flush_stdout() {
 #[cfg(not(windows))]
 fn flush_stdout() {}
 
+/// Initialized and used when there's a need to chute the logging into a given thread.
+struct Gravity {
+    /// The center of gravity, the thread where the logging should reach the `println!` output.
+    target_thread_id: thread::ThreadId,
+    /// Log chunks received from satellite threads.
+    landing: Mutex<Vec<String>>
+}
+
+impl Gravity {
+    /// Files a log chunk to be logged from the center of gravity thread.
+    fn chunk2log (&self, chunk: String) {
+        if let Ok (mut landing) = self.landing.lock() {
+            landing.push (chunk);
+            if thread::current().id() == self.target_thread_id {
+                Gravity::flush (&mut landing)
+            }
+        }
+    }
+    /// Prints the collected log chunks.  
+    /// `println!` is used for compatibility with unit test stdout capturing.
+    fn flush (landing: &mut Vec<String>) {
+        for chunk in landing.drain (..) {println! ("{}", chunk)}
+    }
+}
+
+thread_local! {
+    /// If set, pulls the `chunk2log` (aka `log!`) invocations into the gravity of another thread.
+    static GRAVITY: RefCell<Option<Arc<Gravity>>> = RefCell::new (None)
+}
+
 #[doc(hidden)]
 pub fn chunk2log (mut chunk: String) {
     extern {fn printf(_: *const c_char, ...) -> c_int;}
+
+    if *CAPTURING_TEST {
+        let rc = GRAVITY.try_with (|gravity| {
+            if let Some (ref gravity) = *gravity.borrow() {
+                let mut chunkʹ = String::new();
+                swap (&mut chunk, &mut chunkʹ);
+                gravity.chunk2log (chunkʹ);
+                true
+            } else {
+                false
+            }
+        });
+        match rc {Ok (true) => return, _ => ()}
+    }
 
     // The C and the Rust standard outputs overlap on Windows,
     // so we use the C `printf` in order to avoid that.
@@ -103,7 +149,8 @@ macro_rules! log {
     ($($args: tt)+) => {{
         use std::fmt::Write;
 
-        // We can optimize this with a stack-allocated SmallVec from https://github.com/arcnmx/stack-rs, though it doesn't worth the trouble at the moment.
+        // We can optimize this with a stack-allocated SmallVec from https://github.com/arcnmx/stack-rs,
+        // though it doesn't worth the trouble at the moment.
         let mut buf = String::new();
         unwrap! (wite! (&mut buf,
             ($crate::log::short_log_time()) ", "
@@ -293,6 +340,10 @@ pub struct LogState {
     /// Keeps recent log entries in memory in case we need them for debugging.  
     /// Should allow us to examine the log from withing the unit tests, core dumps and live debugging sessions.
     tail: Mutex<VecDeque<LogEntry>>,
+    /// Initialized when we need the logging to happen through a certain thread
+    /// (this thread becomes a center of gravity for the other registered threads).
+    /// In the future we might also use `gravity` to log into a file.
+    gravity: Mutex<Option<Arc<Gravity>>>,
     /// Log to stdout if `None`.
     _log_file: Option<Mutex<fs::File>>,
     /// Dashboard is dumped here, allowing us to easily observe it from a command-line or the tests.  
@@ -306,6 +357,7 @@ impl LogState {
         LogState {
             dashboard: Mutex::new (Vec::new()),
             tail: Mutex::new (VecDeque::with_capacity (64)),
+            gravity: Mutex::new (None),
             _log_file: None,
             dashboard_file: None
         }
@@ -334,6 +386,7 @@ impl LogState {
         LogState {
             dashboard: Mutex::new (Vec::new()),
             tail: Mutex::new (VecDeque::with_capacity (64)),
+            gravity: Mutex::new (None),
             _log_file: log_file,
             dashboard_file
         }
@@ -570,10 +623,62 @@ impl LogState {
         line.push ('\n');
         self.chunk2log (line);
     }
+
+    /// Binds the logger to the current thread,
+    /// creating a gravity anomaly that would pull log entries made on other threads into this thread.
+    /// Useful for unit tests, since they can only capture the output made from the initial test thread
+    /// (https://github.com/rust-lang/rust/issues/12309,
+    ///  https://github.com/rust-lang/rust/issues/50297#issuecomment-388988381).
+    pub fn thread_gravity_on (&self) -> Result<(), String> {
+        let mut gravity = try_s! (self.gravity.lock());
+        if let Some (ref gravity) = *gravity {
+            if gravity.target_thread_id == thread::current().id() {
+                Ok(())
+            } else {
+                ERR! ("Gravity already enabled and for a different thread")
+            }
+        } else {
+            *gravity = Some (Arc::new (Gravity {
+                target_thread_id: thread::current().id(),
+                landing: Mutex::new (Vec::new())
+            }));
+            Ok(())
+        }
+    }
+
+    /// Start intercepting the `log!` invocations happening on the current thread.
+    pub fn register_my_thread (&self) -> Result<(), String> {
+        let gravity = try_s! (self.gravity.lock());
+        if let Some (ref gravity) = *gravity {
+            try_s! (GRAVITY.try_with (|thread_local_gravity| {
+                thread_local_gravity.replace (Some (gravity.clone()))
+            }));
+        } else {
+            // If no gravity thread is registered then `register_my_thread` is currently a no-op.
+            // In the future we might implement a version of `Gravity` that pulls log entries into a file
+            // (but we might want to get rid of C logging first).
+        }
+        Ok(())
+    }
 }
 
 impl Drop for LogState {
     fn drop (&mut self) {
+        // Make sure to log the chunks received from the satellite threads.
+        // NB: The `drop` might happen in a thread that is not the center of gravity,
+        //     resulting in log chunks escaping the unit test capture.
+        //     One way to fight this might be adding a flushing RAII struct into a unit test.
+        // NB: The `drop` will not be happening if some of the satellite threads still hold to the context.
+        let mut gravity_arc = None;
+        if let Ok (gravity) = self.gravity.lock() {
+            if let Some (ref gravity) = *gravity {
+                gravity_arc = Some (gravity.clone())
+        }   }
+        if let Some (gravity) = gravity_arc {
+            if let Ok (mut landing) = gravity.landing.lock() {
+                Gravity::flush (&mut landing)
+        }   }
+
         let dashboard_copy = {
             let dashboard = match self.dashboard.lock() {
                 Ok (d) => d,
