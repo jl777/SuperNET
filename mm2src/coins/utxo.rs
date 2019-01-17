@@ -837,6 +837,10 @@ impl MarketCoinOps for UtxoCoin {
             redeem_script,
         }.into())
     }
+
+    fn current_block(&self) -> Box<Future<Item=u64, Error=String> + Send> {
+        self.rpc_client.get_block_count()
+    }
 }
 
 impl IguanaInfo for UtxoCoin {

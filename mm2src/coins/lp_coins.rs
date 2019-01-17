@@ -175,6 +175,8 @@ pub trait MarketCoinOps {
     fn wait_for_tx_spend(&self, transaction: TransactionEnum, wait_until: u64) -> Result<TransactionEnum, String>;
 
     fn tx_from_raw_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
+
+    fn current_block(&self) -> Box<Future<Item=u64, Error=String> + Send>;
 }
 
 /// Compatibility layer on top of `lp::iguana_info`.  
@@ -771,20 +773,29 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         UtxoInitMode::Electrum(urls)
     } else if method == Some ("enable") {
         if unsafe {!lp::LP_conflicts_find (ii) .is_null()} {return ERR! ("coin port conflicts with existing coin")}
-        ii.inactive = 0;
         UtxoInitMode::Native
     } else {
         return ERR! ("lp_coininit unknown method {:?}", method);
     };
 
-    let mut notarized = 0;
-    let block_count = unsafe {lp::LP_getheight (&mut notarized, ii)};
+    // TODO: Should pick the correct coin implementation somehow.
+    //       Consider changing the config format to set the coin type `explicitly`.
+    let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
+        try_s! (utxo_coin_from_iguana_info (ii, utxo_mode)) .into()
+    } else {
+        try_s! (eth_coin_from_iguana_info(ii)) .into()
+    };
+
+    // TODO we should return the error here instead of using the default 0 value because coin
+    //      is not usable for sure in case of error on getting the block count.
+    //      We can't put try_s! here due to default BTC and KMD initialization which we should get rid of.
+    let block_count = coin.current_block().wait().unwrap_or(0);
     // TODO, #156: Warn the user when we know that the wallet is under-initialized.
-    // TODO: `LP_getheight` returns 0 when the coin is being initialized in the electrum mode.
     log! ([=ticker] if !coins_en["etomic"].is_null() {", etomic"} ", " [=method] ", " [=block_count]);
-    if block_count <= 0 {
+    if block_count == 0 {
         ii.inactive = (now_ms() / 1000) as u32
     } else {
+        ii.inactive = 0;
         unsafe {lp::LP_unspents_load (ii.symbol.as_mut_ptr(), ii.smartaddr.as_mut_ptr())};
         // AG: I wonder why the special treatment.
         //     We invoke `LP_importaddress` during the SWAP, so maybe we can remove the "KMD"-only invocation here.
@@ -792,13 +803,6 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
             unsafe {lp::LP_importaddress (b"KMD\0".as_ptr() as *mut c_char, lp::BOTS_BONDADDRESS.as_ptr() as *mut c_char)};
         }
     }
-
-    // TODO: Should pick the correct coin implementation somehow.
-    let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
-        try_s! (utxo_coin_from_iguana_info (ii, utxo_mode)) .into()
-    } else {
-        try_s! (eth_coin_from_iguana_info(ii)) .into()
-    };
 
     ve.insert (ticker.into(), coin.clone());
     Ok (coin)

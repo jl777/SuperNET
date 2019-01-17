@@ -371,6 +371,10 @@ impl MarketCoinOps for EthCoin {
         let signed = try_s!(SignedEthTransaction::new(tx));
         Ok(TransactionEnum::from(signed))
     }
+
+    fn current_block(&self) -> Box<Future<Item=u64, Error=String> + Send> {
+        Box::new(self.web3.eth().block_number().map(|res| res.into()).map_err(|e| ERRL!("{:?}", e)))
+    }
 }
 
 type EthTxFut = Box<Future<Item=SignedEthTransaction, Error=String> + Send + 'static>;
