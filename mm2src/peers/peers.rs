@@ -197,6 +197,7 @@ enum LtCommand {
 /// We track their endpoints and try to discover them via the DHT.
 #[derive(Debug, Default)]
 struct Friend {
+    /// The outer DHT IPs and ports of the friend peer which are known to us.
     endpoints: HashMap<SocketAddr, ()>
 }
 
@@ -210,7 +211,10 @@ pub struct PeersContext {
     // TODO: Remove the outdated `recently_fetched` entries after a while.
     /// seed, salt -> last-modified, value
     recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>,
-    friends: Mutex<HashMap<bits256, Friend>>
+    /// Tracks the endpons of the peers we're directly communicating with.
+    friends: Mutex<HashMap<bits256, Friend>>,
+    /// Groups of direct ping packets scheduled for delivery.
+    direct_packages: Mutex<Vec<DirectPackage>>
 }
 
 impl PeersContext {
@@ -224,7 +228,8 @@ impl PeersContext {
                 cmd_tx,
                 cmd_rx,
                 recently_fetched: Mutex::new (HashMap::new()),
-                friends: Mutex::new (HashMap::new())
+                friends: Mutex::new (HashMap::new()),
+                direct_packages: Mutex::new (Vec::new())
             })
         })))
     }
@@ -325,13 +330,22 @@ where P: Serialize {
     Ok(())
 }
 
-#[derive (Serialize, Deserialize)]
+#[derive (Clone, Deserialize, Serialize)]
 struct MmPayload {
     from: ByteBuf,
     pong: u8
 }
 
-fn pingʹ (dugout: &mut dugout_t, from: bits256, endpoint: SocketAddr, pong: bool) {
+/// A group of ping packets (one or more) that we want to deliver.  
+/// TODO: This groups is cancellable, like when we `drop` a `Future` returned by `send`.  
+/// The target is either a specific endpoint (when we're trying to discover a peer)
+/// or a friend's public key (when we're `send`ing data to that friend).
+struct DirectPackage {
+    pings: Vec<MmPayload>,
+    to: Either<bits256, SocketAddr>
+}
+
+fn pingʹ (dugout: &mut dugout_t, ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: bool) {
     let mut ip = String::with_capacity (64);
     let _ = wite! (&mut ip, (endpoint.ip()));
     let mm_payload = MmPayload {
@@ -339,10 +353,17 @@ fn pingʹ (dugout: &mut dugout_t, from: bits256, endpoint: SocketAddr, pong: boo
         pong: if pong {1} else {0}
     };
     log! ("Sending a " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
-    // TODO: Consider adding the ping into a retransmissible queue instead of directly scheduling it.
-    // When the peer is a custom seednode, `investigate_peer` is invoked directly after the `peers` initialization
-    // and we know that libtorrent can't send the pings that early, it needs 200-300 milliseconds to initialize.
-    // Plus packet retransmission is necessary in the face of bandwidth limit and unreliable transports.
+
+    let direct_package = DirectPackage {
+        pings: vec! [mm_payload.clone()],
+        to: Either::Right (endpoint)
+    };
+
+    let pctx = match PeersContext::from_ctx (ctx) {Ok (c) => c, Err (err) => {log! ((err)); return}};
+    let mut direct_packages = match pctx.direct_packages.lock() {Ok (c) => c, Err (err) => {log! ((err)); return}};
+    direct_packages.push (direct_package);
+
+    // TODO: Implement `dht_thread` sending `DirectPackage` pings instead.
     if let Err (err) = ping (dugout, &ip, endpoint.port(), mm_payload) {
         log! ("ping error: " (err))
     }
@@ -632,7 +653,7 @@ fn incoming_ping (dugout: &mut dugout_t, ctx: &MmArc, our_public_key: bits256, p
 
     let endpoint = SocketAddr::new (ip, port);
     if ping.a.mm.pong == 0 {
-        pingʹ (dugout, our_public_key, endpoint, true)  // Pong.
+        pingʹ (dugout, ctx, our_public_key, endpoint, true)  // Pong.
     }
     // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
     let pctx = try_s! (PeersContext::from_ctx (ctx));
@@ -882,7 +903,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             Ok (LtCommand::Put {seed, salt, payload}) => split_and_put (seed, salt, payload, &mut dugout),
             Ok (LtCommand::Get {seed, salt, frid, task}) => get_pieces_scheduler (seed, salt, frid, task, &mut dugout, &mut gets, &*pctx),
             Ok (LtCommand::DropGet {seed, salt, frid}) => {gets.remove (&(seed, salt, frid));},
-            Ok (LtCommand::Ping {endpoint}) => pingʹ (&mut dugout, our_public_key, endpoint, false),
+            Ok (LtCommand::Ping {endpoint}) => pingʹ (&mut dugout, &ctx, our_public_key, endpoint, false),
             Err (channel::RecvTimeoutError::Timeout) => {},
             Err (channel::RecvTimeoutError::Disconnected) => break
         };
