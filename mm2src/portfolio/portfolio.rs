@@ -27,7 +27,7 @@
 #[macro_use] extern crate unwrap;
 
 pub mod prices;
-use self::prices::{lp_btcprice, lp_fundvalue, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
+use self::prices::{lp_btcprice, lp_fundvalue, broadcast_my_prices, Coins, CoinId, ExternalPrices, FundvalueRes, PricingProvider, PriceUnit};
 
 #[doc(hidden)]
 pub mod portfolio_tests;
@@ -58,14 +58,17 @@ use std::thread::sleep;
 struct PortfolioContext {
     // NB: We're using the MM configuration ("coins"), therefore every MM must have its own set of price resources.
     //     That's why we keep the price resources in the `PortfolioContext` and not in a singleton.
-    price_resources: Mutex<HashMap<(PricingProvider, PriceUnit), (Arc<Coins>, RefreshedExternalResource<ExternalPrices>)>>
+    price_resources: Mutex<HashMap<(PricingProvider, PriceUnit), (Arc<Coins>, RefreshedExternalResource<ExternalPrices>)>>,
+    // Fixed prices explicitly set by "setprice" RPC call
+    my_prices: Mutex<HashMap<(String, String), f64>>,
 }
 impl PortfolioContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx (ctx: &MmArc) -> Result<Arc<PortfolioContext>, String> {
         Ok (try_s! (from_ctx (&ctx.portfolio_ctx, move || {
             Ok (PortfolioContext {
-                price_resources: Mutex::new (HashMap::new())
+                price_resources: Mutex::new (HashMap::new()),
+                my_prices: Mutex::new (HashMap::new())
             })
         })))
     }
@@ -785,9 +788,9 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                     else {autoref.lastask = (autoref.lastask * 0.9) + (0.1 * askprice)}
                     askprice = autoref.lastask;
                     unsafe {lp::LP_mypriceset (1, &mut changed, c_rel, c_base, bidprice)};
-                    unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_rel, c_base, bidprice)};
+                    unsafe {lp::LP_pricepings (c_rel, c_base, bidprice)};
                     unsafe {lp::LP_mypriceset (1, &mut changed, c_base, c_rel, askprice)};
-                    unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_base, c_rel, askprice)};
+                    unsafe {lp::LP_pricepings (c_base, c_rel, askprice)};
                 }
                 autoref.count += 1
             }
@@ -866,7 +869,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                 };
 
                 unsafe {lp::LP_mypriceset (1, &mut changed, c_rel, c_base, newprice)};
-                unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_rel, c_base, newprice)};
+                unsafe {lp::LP_pricepings (c_rel, c_base, newprice)};
 
                 let newprice = {
                     let with_margin = (1. / price) * (1. + sellmargin);
@@ -880,7 +883,7 @@ fn lp_autoprice_iter (ctx: &MmArc, btcpp: *mut lp::LP_priceinfo) -> Result<(), S
                     }
                 };
                 unsafe {lp::LP_mypriceset (1, &mut changed, c_base, c_rel, newprice)};
-                unsafe {lp::LP_pricepings (c_ctx, lp::LP_myipaddr.as_ptr() as *mut c_char, lp::LP_mypubsock, c_base, c_rel, newprice)};
+                unsafe {lp::LP_pricepings (c_base, c_rel, newprice)};
             }
         }
         else
@@ -1164,12 +1167,20 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 pub fn prices_loop (ctx: MmArc) {
     let mut btc_wait_status = None;
     let mut trades: [lp::LP_portfoliotrade; 256] = unsafe {zeroed()};
-
+    let mut last_price_broadcast = 0;
     loop {
         sleep (Duration::from_millis (200));
         if ctx.is_stopping() {break}
 
         if !ctx.initialized.load (Ordering::Relaxed) {sleep (Duration::from_millis (100)); continue}
+
+        if now_ms() - last_price_broadcast > 10000 {
+            if let Err(e) = broadcast_my_prices(&ctx) {
+                ctx.log.log("", &[&"broadcast_my_prices"], &format!("error {}", e));
+            }
+            last_price_broadcast = now_ms();
+        }
+
         unsafe {lp::LP_tradebots_timeslice (ctx.btc_ctx() as *mut c_void)};
 
         let btcpp = unsafe {lp::LP_priceinfofind (b"BTC\0".as_ptr() as *mut c_char)};

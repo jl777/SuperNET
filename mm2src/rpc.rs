@@ -30,7 +30,7 @@ use hyper::service::Service;
 use libc::{c_char, c_void};
 use coins::{enable, electrum};
 use portfolio::lp_autoprice;
-use portfolio::prices::lp_fundvalue;
+use portfolio::prices::{lp_fundvalue, set_price};
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 use std::net::{SocketAddr};
@@ -208,6 +208,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "passphrase" => passphrase (ctx, req),
         "sell" => sell (ctx, req),
+        "setprice" => set_price (ctx, req),
         "stop" => stop (ctx),
         "version" => version(),
         _ => return DispatcherRes::NoMatch (req)

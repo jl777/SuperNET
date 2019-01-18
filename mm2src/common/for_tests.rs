@@ -304,3 +304,19 @@ pub fn enable_electrum (mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) {
     })));
     assert_eq! (electrum.0, StatusCode::OK, "RPC «electrum» failed with status «{}»", electrum.0);
 }
+
+/// Reads passphrase and userpass from .env file
+pub fn from_env_file (env: Vec<u8>) -> (Option<String>, Option<String>) {
+    use regex::bytes::Regex;
+    let (mut passphrase, mut userpass) = (None, None);
+    for cap in unwrap! (Regex::new (r"(?m)^(PASSPHRASE|USERPASS)=(\w[\w ]+)$")) .captures_iter (&env) {
+        match cap.get (1) {
+            Some (name) if name.as_bytes() == b"PASSPHRASE" =>
+                passphrase = cap.get (2) .map (|v| unwrap! (String::from_utf8 (v.as_bytes().into()))),
+            Some (name) if name.as_bytes() == b"USERPASS" =>
+                userpass = cap.get (2) .map (|v| unwrap! (String::from_utf8 (v.as_bytes().into()))),
+            _ => ()
+        }
+    }
+    (passphrase, userpass)
+}

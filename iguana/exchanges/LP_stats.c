@@ -36,7 +36,7 @@ void LP_dPoW_request(struct iguana_info *coin)
     jaddstr(reqjson,"coin",coin->symbol);
     memset(zero.bytes,0,sizeof(zero));
     //printf("request %s\n",jprint(reqjson,0));
-    LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+    LP_reserved_msg(0,zero,jprint(reqjson,1));
 }
 
 void LP_dPoW_broadcast(struct iguana_info *coin)
@@ -52,7 +52,7 @@ void LP_dPoW_broadcast(struct iguana_info *coin)
         jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
         memset(zero.bytes,0,sizeof(zero));
         //printf("broadcast %s\n",jprint(reqjson,0));
-        LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+        LP_reserved_msg(0,zero,jprint(reqjson,1));
         coin->dPoWtime = (uint32_t)time(NULL);
     }
 }
@@ -668,7 +668,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
                 {
                     jaddstr(reqjson,"method","swapstatus");
                     memset(zero.bytes,0,sizeof(zero));
-                    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+                    LP_reserved_msg(0,zero,jprint(reqjson,1));
                 }
                 if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 )
                     LP_dPoW_broadcast(bob);
@@ -687,7 +687,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
                 jaddstr(swapjson,"method","swapstatus");
                 memset(zero.bytes,0,sizeof(zero));
                 printf("send local swapstatus\n");
-                LP_reserved_msg(0,"","",zero,jprint(swapjson,0));
+                LP_reserved_msg(0,zero,jprint(swapjson,0));
             }
             free_json(swapjson);
         }

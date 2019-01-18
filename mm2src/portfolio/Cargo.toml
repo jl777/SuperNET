@@ -17,6 +17,7 @@ fomat-macros = "0.2"
 futures = "0.1"
 gstuff = "0.5"
 hashbrown = {version = "0.1.8", features = ["serde", "nightly"]}
+hex = "0.3.2"
 hyper = "0.12"
 hyper-rustls = "0.15"
 lazy_static = "1.2"

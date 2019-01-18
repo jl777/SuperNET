@@ -743,7 +743,7 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
                 jaddstr(reqjson,"method","gettradestatus");
                 jaddnum(reqjson,"aliceid",sp->aliceid);
                 memset(zero.bytes,0,sizeof(zero));
-                LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+                LP_reserved_msg(0,zero,jprint(reqjson,1));
             }
             if ( (swapstr= basilisk_swapentry(1,sp->Q.R.requestid,sp->Q.R.quoteid,0)) != 0 )
             {

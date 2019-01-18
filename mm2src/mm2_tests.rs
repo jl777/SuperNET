@@ -1,12 +1,11 @@
 use common::identity;
-use common::for_tests::{mm_dump, mm_spat, LocalStart, MarketMakerIt, RaiiDump, RaiiKill};
+use common::for_tests::{from_env_file, mm_dump, mm_spat, LocalStart, MarketMakerIt, RaiiDump, RaiiKill};
 use dirs;
 use gstuff::{now_float, slurp};
 use hyper::StatusCode;
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use libc::c_char;
 use peers;
-use regex;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::env::{self, var};
@@ -245,6 +244,126 @@ fn test_notify() {
     unwrap! (mm.wait_for_log (9., &|log| log.contains ("lp_notify_recv] hailed by peer: 45.32.19.196")));
 }
 
+/// https://github.com/artemii235/SuperNET/issues/241
+#[test]
+fn alice_can_see_the_active_order_after_connection() {
+    let beer_cfp = unwrap! (komodo_conf_path (Some ("BEER")));
+    let pizza_cfp = unwrap! (komodo_conf_path (Some ("PIZZA")));
+    let etomic_cfp = unwrap! (komodo_conf_path (Some ("ETOMIC")));
+    assert! (beer_cfp.exists(), "BEER config {:?} is not found", beer_cfp);
+    assert! (pizza_cfp.exists(), "PIZZA config {:?} is not found", pizza_cfp);
+    assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
+
+    let (bob_file_passphrase, bob_file_userpass) = from_env_file (slurp (&".env.seed"));
+    let (alice_file_passphrase, alice_file_userpass) = from_env_file (slurp (&".env.client"));
+
+    let bob_passphrase = unwrap! (var ("BOB_PASSPHRASE") .ok().or (bob_file_passphrase), "No BOB_PASSPHRASE or .env.seed/PASSPHRASE");
+    let bob_userpass = unwrap! (var ("BOB_USERPASS") .ok().or (bob_file_userpass), "No BOB_USERPASS or .env.seed/USERPASS");
+    let alice_passphrase = unwrap! (var ("ALICE_PASSPHRASE") .ok().or (alice_file_passphrase), "No ALICE_PASSPHRASE or .env.client/PASSPHRASE");
+    let alice_userpass = unwrap! (var ("ALICE_USERPASS") .ok().or (alice_file_userpass), "No ALICE_USERPASS or .env.client/USERPASS");
+
+    let coins = json!([
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str()),"txversion":4},
+        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"confpath":unwrap!(pizza_cfp.to_str()),"txversion":4},
+        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str()),"txversion":4},
+        {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
+    ]);
+
+    // start bob and immediately place the order
+    let mut mm_bob = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": bob_passphrase,
+            "coins": coins,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        bob_userpass,
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
+    log!({"Bob log path: {}", mm_bob.log_path.display()});
+    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    // Enable coins on Bob side. Print the replies in case we need the "address".
+    log! ({"enable_coins (bob): {:?}", enable_coins (&mm_bob)});
+    // issue sell request on Bob side by setting base/rel price
+    log!("Issue bob sell request");
+    let rc = unwrap! (mm_bob.rpc (json! ({
+        "userpass": mm_bob.userpass,
+        "method": "setprice",
+        "base": "BEER",
+        "rel": "PIZZA",
+        "price": 0.9
+    })));
+    assert! (rc.0.is_success(), "!setprice: {}", rc.1);
+
+    thread::sleep(Duration::from_secs(10));
+    // Bob orderbook must show the new order
+    log!("Get BEER/PIZZA orderbook on Bob side");
+    let rc = unwrap! (mm_bob.rpc (json! ({
+        "userpass": mm_bob.userpass,
+        "method": "orderbook",
+        "base": "BEER",
+        "rel": "PIZZA",
+    })));
+    assert! (rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let bob_orderbook: Json = unwrap!(json::from_str(&rc.1));
+    assert!(bob_orderbook["asks"].as_array().unwrap().len() > 0, "Bob BEER/PIZZA asks are empty");
+
+    let mut mm_alice = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
+            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
+            "passphrase": alice_passphrase,
+            "coins": coins,
+            "seednode": fomat!((mm_bob.ip)),
+            "client": 1,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        alice_userpass,
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
+    ));
+
+    let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
+    log!({"Alice log path: {}", mm_alice.log_path.display()});
+
+    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+
+    // Enable coins on Alice side. Print the replies in case we need the "address".
+    log! ({"enable_coins (alice): {:?}", enable_coins (&mm_alice)});
+
+    // wait until Alice recognize Bob node by importing it's pubkey
+    unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
+
+    for _ in 0..3 {
+        // Alice should be able to see the order no later than 10 seconds after recognizing the bob
+        thread::sleep(Duration::from_secs(10));
+        log!("Get BEER/PIZZA orderbook on Alice side");
+        let rc = unwrap!(mm_alice.rpc (json! ({
+            "userpass": mm_alice.userpass,
+            "method": "orderbook",
+            "base": "BEER",
+            "rel": "PIZZA",
+        })));
+        assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+        let alice_orderbook: Json = unwrap!(json::from_str(&rc.1));
+        assert_eq!(alice_orderbook["asks"].as_array().unwrap().len(), 1, "Alice BEER/PIZZA orderbook must have exactly 1 ask");
+    }
+}
+
 #[test]
 fn test_status() {common::log::tests::test_status()}
 
@@ -314,20 +433,6 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (pizza_cfp.exists(), "PIZZA config {:?} is not found", pizza_cfp);
     assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
 
-    fn from_env_file (env: Vec<u8>) -> (Option<String>, Option<String>) {
-        use self::regex::bytes::Regex;
-        let (mut passphrase, mut userpass) = (None, None);
-        for cap in unwrap! (Regex::new (r"(?m)^(PASSPHRASE|USERPASS)=(\w[\w ]+)$")) .captures_iter (&env) {
-            match cap.get (1) {
-                Some (name) if name.as_bytes() == b"PASSPHRASE" =>
-                    passphrase = cap.get (2) .map (|v| unwrap! (String::from_utf8 (v.as_bytes().into()))),
-                Some (name) if name.as_bytes() == b"USERPASS" =>
-                    userpass = cap.get (2) .map (|v| unwrap! (String::from_utf8 (v.as_bytes().into()))),
-                _ => ()
-            }
-        }
-        (passphrase, userpass)
-    }
     let (bob_file_passphrase, bob_file_userpass) = from_env_file (slurp (&".env.seed"));
     let (alice_file_passphrase, alice_file_userpass) = from_env_file (slurp (&".env.client"));
 

@@ -771,7 +771,7 @@ void LP_pubkeys_query()
             jaddstr(reqjson,"method","wantnotify");
             jaddbits256(reqjson,"pub",pubp->pubkey);
             //printf("LP_pubkeys_query %s\n",jprint(reqjson,0));
-            LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+            LP_reserved_msg(0,zero,jprint(reqjson,1));
         }
     }
 }

@@ -247,11 +247,7 @@ fn generate_bindings() {
             "LP_calc_waittimeout",
             "LP_numconfirms",
             "LP_pendswap_add",
-            "basilisk_swap_finished",
-            "basilisk_bobscripts_set",
-            "basilisk_bobdeposit_refund",
-            "basilisk_bobpayment_reclaim",
-            "basilisk_dontforget",
+            "LP_price_sig",
         ]
         .iter(),
         // types

@@ -192,34 +192,22 @@ char *LP_quotereceived(struct LP_quoteinfo *qp)
     //} else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
-int32_t LP_bitcoinsig_add(cJSON *item,bits256 priv,uint8_t *pubsecp,bits256 sighash)
+char *LP_bitcoinsig_str(bits256 priv,uint8_t *pubsecp,bits256 sighash)
 {
-    static void *ctx; int32_t i,j,siglen; uint8_t pub33[33],sig[65]; char sigstr[256];
+    static void *ctx; int32_t i,j,siglen; uint8_t pub33[33],sig[65]; char *sigstr;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    for (j=0; j<100; j++)
-    {
-        if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,1)) > 0 && siglen == 65 )
-        {
-            memset(pub33,0,33);
-            if ( bitcoin_recoververify(ctx,"test",sig,sighash,pub33,0) == 0 && memcmp(pub33,pubsecp,33) == 0 )
-            {
-                init_hexbytes_noT(sigstr,sig,siglen);
-                jaddstr(item,"sig",sigstr);
-                return(siglen);
-            }
-            if ( 0 )
-            {
-                for (i=0; i<33; i++)
-                    printf("%02x",pubsecp[i]);
-                printf(" pubsecp -> ");
-                for (i=0; i<33; i++)
-                    printf("%02x",pub33[i]);
-                printf(" mismatched recovered pubkey.%d of %d\n",j,100);
+    for (j=0; j<100; j++) {
+        if ((siglen = bitcoin_sign(ctx, "sigadd", sig, sighash, priv, 1)) > 0 && siglen == 65) {
+            memset(pub33, 0, 33);
+            if (bitcoin_recoververify(ctx, "test", sig, sighash, pub33, 0) == 0 && memcmp(pub33, pubsecp, 33) == 0) {
+                sigstr = malloc((size_t) siglen * 2 + 1);
+                init_hexbytes_noT(sigstr, sig, siglen);
+                return (sigstr);
             }
         }
     }
-    return(-1);
+    return(0);
 }
 
 bits256 LP_price_sighash(uint32_t timestamp,uint8_t *pubsecp,bits256 pubkey,char *base,char *rel,uint64_t price64)
@@ -309,7 +297,12 @@ int32_t LP_utxos_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pub
 {
     bits256 sighash;
     sighash = LP_utxos_sighash(timestamp,pubsecp,pubkey,utxoshash);
-    return(LP_bitcoinsig_add(item,priv,pubsecp,sighash));
+    char *sig = LP_bitcoinsig_str(priv,pubsecp,sighash);
+    if (sig != NULL) {
+        jaddstr(item,"sig",sig);
+        free(sig);
+    }
+    return(1);
 }
 
 void LP_postutxos(char *symbol,char *coinaddr)
@@ -337,7 +330,7 @@ return;
             //char str[65]; printf("utxoshash add %s\n",bits256_str(str,utxoshash));
             LP_utxos_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,utxoshash);
             //printf("post (%s) -> %d\n",msg,LP_mypubsock);
-            LP_reserved_msg(0,symbol,symbol,zero,jprint(reqjson,1));
+            LP_reserved_msg(0,zero,jprint(reqjson,1));
         }
     }
 }
@@ -370,14 +363,14 @@ int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
     return(retval);
 }
 
-int32_t LP_price_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pubsecp,bits256 pubkey,char *base,char *rel,uint64_t price64)
+char *LP_price_sig(uint32_t timestamp,bits256 priv,uint8_t *pubsecp,bits256 pubkey,char *base,char *rel,uint64_t price64)
 {
     bits256 sighash;
     sighash = LP_price_sighash(timestamp,pubsecp,pubkey,base,rel,price64);
-    return(LP_bitcoinsig_add(item,priv,pubsecp,sighash));
+    return(LP_bitcoinsig_str(priv,pubsecp,sighash));
 }
 
-char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
+char *LP_pricepings(char *base,char *rel,double price)
 {
     struct iguana_info *basecoin,*relcoin,*kmd; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,median,minsize,maxsize; bits256 zero; cJSON *reqjson;
     reqjson = cJSON_CreateObject();
@@ -406,8 +399,12 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
             jaddnum(reqjson,"min",dstr(minsize));
             jaddnum(reqjson,"max",dstr(maxsize));
         }
-        LP_price_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,base,rel,price64);
-        LP_reserved_msg(0,base,rel,zero,jprint(reqjson,1));
+        char *sig = LP_price_sig(timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,base,rel,price64);
+        if (sig != NULL) {
+            jaddstr(reqjson, "sig", sig);
+            free(sig);
+        }
+        LP_reserved_msg(0,zero,jprint(reqjson,1));
         return(clonestr("{\"result\":\"success\"}"));
     } else return(clonestr("{\"error\":\"electrum node cant post bob asks\"}"));
 }
@@ -468,7 +465,12 @@ int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub
 {
     bits256 sighash;
     sighash = LP_pubkey_sighash(timestamp,pub,rmd160,pubsecp);
-    return(LP_bitcoinsig_add(item,priv,pubsecp,sighash));
+    char *sig = LP_bitcoinsig_str(priv,pubsecp,sighash);
+    if (sig != NULL) {
+        jaddstr(item,"sig",sig);
+        free(sig);
+    }
+    return(1);
 }
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item)
@@ -548,7 +550,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
         } else printf("no LPipaddr\n");
     }
     jaddnum(reqjson,"session",G.LP_sessionid);
-    LP_reserved_msg(1,"","",zero,jprint(reqjson,1));
+    LP_reserved_msg(1,zero,jprint(reqjson,1));
 }
 
 void LP_smartutxos_push(struct iguana_info *coin)
@@ -580,7 +582,7 @@ return;
                 jaddnum(req,"ht",height);
                 jadd64bits(req,"value",value);
                 //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
-                LP_reserved_msg(0,"","",zero,jprint(req,1));
+                LP_reserved_msg(0,zero,jprint(req,1));
             }
         }
         free_json(array);
@@ -613,7 +615,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
     jaddstr(reqjson,"method","addr_unspents");
     jaddstr(reqjson,"coin",symbol);
     jaddstr(reqjson,"address",coinaddr);
-    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+    LP_reserved_msg(0,zero,jprint(reqjson,1));
 }
 
 void LP_query(char *method,struct LP_quoteinfo *qp)
@@ -637,11 +639,11 @@ void LP_query(char *method,struct LP_quoteinfo *qp)
         if ( IPC_ENDPOINT >= 0 )
             LP_QUEUE_COMMAND(0,msg,IPC_ENDPOINT,-1,0);
         memset(&zero,0,sizeof(zero));
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+        LP_reserved_msg(1,zero,clonestr(msg));
         //if ( bits256_nonz(qp->srchash) != 0 )
         {
             sleep(1);
-            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
+            LP_reserved_msg(1,qp->srchash,clonestr(msg));
         }
     }
     if ( strcmp(method,"connect") == 0 && qp->mpnet != 0 && qp->gtc == 0 )

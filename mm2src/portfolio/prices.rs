@@ -18,17 +18,17 @@
 //  marketmaker
 //
 
-use common::{dstr, lp, rpc_response, slurp_req, HyRes, SATOSHIDEN, SMALLVAL};
+use common::{dstr, free_c_ptr, lp, rpc_response, rpc_err_response, slurp_req, HyRes, str_to_malloc, SATOSHIDEN, SMALLVAL};
 use common::mm_ctx::{MmArc, MmWeak};
 use common::log::TagParam;
 use coins::lp_coinfind;
 use futures::{self, Future, Async, Poll};
 use futures::task::{self};
-use gstuff::now_float;
+use gstuff::{now_ms, now_float};
 use hashbrown::{HashMap, HashSet};
 use hyper::{Body, Request, StatusCode};
 use hyper::header::CONTENT_TYPE;
-use libc::{c_char};
+use libc::{c_char, c_void};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
@@ -39,6 +39,124 @@ use std::sync::{Arc, Mutex};
 use super::{default_pricing_provider, register_interest_in_coin_prices, PortfolioContext, InterestingCoins};
 use url;
 
+#[derive(Serialize)]
+struct PricePingRequest {
+    method: &'static str,
+    pubkey: String,
+    base: String,
+    rel: String,
+    price: f64,
+    price64: String,
+    timestamp: u64,
+    pubsecp: String,
+    sig: String,
+}
+
+impl PricePingRequest {
+    fn new(ctx: &MmArc, base: &str, rel: &str, price: f64) -> Result<PricePingRequest, String> {
+        let _base_coin = match try_s!(lp_coinfind(ctx, base)) {
+            Some(coin) => coin,
+            None => return ERR!("Base coin {} is not found", base),
+        };
+
+        let _rel_coin = match try_s!(lp_coinfind(ctx, rel)) {
+            Some(coin) => coin,
+            None => return ERR!("Rel coin {} is not found", rel),
+        };
+
+        let price64 = (price * 100000000.0) as u64;
+        let timestamp = now_ms() / 1000;
+        let base_c: CString = try_s!(CString::new(base));
+        let rel_c: CString = try_s!(CString::new(rel));
+
+        let sig = unsafe {
+            let sig_c = lp::LP_price_sig(timestamp as u32, lp::G.LP_privkey, lp::G.LP_pubsecp.as_mut_ptr(), lp::G.LP_mypub25519,
+                             base_c.as_ptr() as *mut c_char, rel_c.as_ptr() as *mut c_char, price64);
+            let sig_str = try_s!(CStr::from_ptr(sig_c).to_str()).into();
+            free_c_ptr(sig_c as *mut c_void);
+            sig_str
+        };
+
+        Ok(PricePingRequest {
+            method: "postprice",
+            pubkey: unsafe { hex::encode(&lp::G.LP_mypub25519.bytes) },
+            base: base.into(),
+            rel: rel.into(),
+            price64: price64.to_string(),
+            price,
+            timestamp,
+            pubsecp: unsafe { hex::encode(&lp::G.LP_pubsecp.to_vec()) },
+            sig,
+        })
+    }
+}
+
+fn lp_send_price_ping(req: &PricePingRequest) -> Result<(), String> {
+    let req_string = try_s!(json::to_string(req));
+    let req_c_string = str_to_malloc(&req_string);
+    let zero = lp::bits256::default();
+    unsafe { lp::LP_reserved_msg(0, zero, req_c_string); }
+    Ok(())
+}
+
+fn one() -> u8 { 1 }
+
+#[derive(Deserialize)]
+struct SetPriceReq {
+    base: String,
+    rel: String,
+    price: f64,
+    #[serde(default = "one")]
+    broadcast: u8,
+}
+
+pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
+    let req: SetPriceReq = try_h!(json::from_value(req));
+    let _base_coin = match try_h!(lp_coinfind(&ctx, &req.base)) {
+        Some(coin) => coin,
+        None => return rpc_err_response(500, &format!("Base coin {} is not found", req.base)),
+    };
+
+    let _rel_coin = match try_h!(lp_coinfind(&ctx, &req.rel)) {
+        Some(coin) => coin,
+        None => return rpc_err_response(500, &format!("Rel coin {} is not found", req.rel)),
+    };
+
+    let mut changed: i32 = 0;
+    let base = try_h!(CString::new(req.base.as_str()));
+    let rel = try_h!(CString::new(req.rel.as_str()));
+    let price_set_res = unsafe { lp::LP_mypriceset(1, &mut changed, base.as_ptr() as *mut c_char, rel.as_ptr() as *mut c_char, req.price) };
+    if price_set_res < 0 {
+        return rpc_err_response(500, "could not set price");
+    }
+    if req.broadcast == 1 {
+        let portfolio_ctx = try_h!(PortfolioContext::from_ctx(&ctx));
+        let mut my_prices = try_h!(portfolio_ctx.my_prices.lock());
+        my_prices.insert((req.base, req.rel), req.price);
+    }
+    rpc_response(200, json!({"result":"success"}).to_string())
+}
+
+pub fn broadcast_my_prices(ctx: &MmArc) -> Result<(), String> {
+    let portfolio_ctx = try_s!(PortfolioContext::from_ctx(ctx));
+    let my_prices = try_s!(portfolio_ctx.my_prices.lock());
+
+    for ((base, rel), price) in my_prices.iter() {
+        let ping = match PricePingRequest::new(ctx, base, rel, *price) {
+            Ok(p) => p,
+            Err(e) => {
+                ctx.log.log("", &[&"broadcast_my_prices", &base.as_str(), &rel.as_str()], &format! ("ping request creation failed {}", e));
+                continue;
+            },
+        };
+
+        if let Err(e) = lp_send_price_ping(&ping) {
+            ctx.log.log("", &[&"broadcast_my_prices", &base.as_str(), &rel.as_str()], &format! ("ping request send failed {}", e));
+            continue;
+        }
+    }
+    Ok(())
+}
 /*
 struct LP_orderbookentry
 {

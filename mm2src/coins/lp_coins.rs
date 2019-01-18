@@ -229,7 +229,7 @@ impl Deref for MmCoinEnum {
 }   }   }
 
 struct CoinsContext {
-    /// A map from a currencty ticker symbol to the corresponding coin.
+    /// A map from a currency ticker symbol to the corresponding coin.
     /// Similar to `LP_coins`.
     coins: Mutex<HashMap<String, MmCoinEnum>>
 }

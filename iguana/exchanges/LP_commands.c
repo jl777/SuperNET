@@ -397,17 +397,7 @@ char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t pubsock,cJSON
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
-            if ( strcmp(method,"setprice") == 0 )
-            {
-                if ( LP_mypriceset(1,&changed,base,rel,price) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                //else if ( LP_mypriceset(1,&changed,rel,base,1./price) < 0 )
-                //    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else if ( price == 0. || jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
-                    return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
-                else return(clonestr("{\"result\":\"success\"}"));
-            }
-            else if ( strcmp(method,"myprice") == 0 )
+            if ( strcmp(method,"myprice") == 0 )
             {
                 if ( LP_myprice(1,&bid,&ask,base,rel) > SMALLVAL )
                 {

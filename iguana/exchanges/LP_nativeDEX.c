@@ -300,7 +300,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                             memset(zero.bytes,0,sizeof(zero));
                             if ( 0 && (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"tradestatus") == 0) )
                                     printf("broadcast.(%s)\n",Broadcaststr);
-                            LP_reserved_msg(0,"","",zero,jprint(reqjson,0));
+                            LP_reserved_msg(0,zero,jprint(reqjson,0));
                         }
                         retstr = clonestr("{\"result\":\"success\"}");
                         free_json(reqjson);
@@ -903,7 +903,7 @@ void LP_pubkeysloop(void *ctx)
         }
         {
             LP_millistats_update(&LP_pubkeysloop_stats);
-            if ( time(NULL) > lasttime+100 )
+            if ( time(NULL) > lasttime+20 )
             {
                 //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
                 LP_notify_pubkeys(ctx,LP_mypubsock);
@@ -1203,7 +1203,7 @@ void LP_reserved_msgs(void *ignore)
     }
 }
 
-int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg)
+int32_t LP_reserved_msg(int32_t priority,bits256 pubkey,char *msg)
 {
     struct LP_pubkey_info *pubp; uint32_t timestamp; char *method; cJSON *argjson; int32_t skip,sentbytes,n = 0;
     skip = 0;

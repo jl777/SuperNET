@@ -467,10 +467,10 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                     lp::LP_otheraddress((*qp).srccoin.as_mut_ptr(), other_addr.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), (*qp).destaddr.as_mut_ptr());
                     lp::LP_importaddress((*qp).srccoin.as_mut_ptr(), other_addr.as_mut_ptr());
                     let zero = lp::bits256::default();
-                    lp::LP_reserved_msg(1, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), (*qp).desthash, lp::jprint(req_json, 0));
+                    lp::LP_reserved_msg(1, (*qp).desthash, lp::jprint(req_json, 0));
                     thread::sleep(Duration::from_secs(1));
                     printf(b"send CONNECT for %u-%u\n\x00".as_ptr() as *const c_char, (*qp).R.requestid, (*qp).R.quoteid);
-                    lp::LP_reserved_msg(1, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), zero, lp::jprint(req_json, 0));
+                    lp::LP_reserved_msg(1, zero, lp::jprint(req_json, 0));
                     if lp::IPC_ENDPOINT >= 0 {
                         lp_queue_command(null_mut(), lp::jprint(req_json, 0), lp::IPC_ENDPOINT, -1, 0);
                     }
@@ -1050,9 +1050,9 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     lp::jaddnum(reqjson, b"quotetime\x00".as_ptr() as *mut c_char, (*qp).quotetime as f64);
     lp::jaddnum(reqjson, b"pending\x00".as_ptr() as *mut c_char, ((*qp).timestamp + lp::LP_RESERVETIME) as f64);
     lp::jaddstr(reqjson, b"method\x00".as_ptr() as *mut c_char, b"reserved\x00".as_ptr() as *mut c_char);
-    lp::LP_reserved_msg(1, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), (*qp).desthash, lp::jprint(reqjson, 0));
+    lp::LP_reserved_msg(1, (*qp).desthash, lp::jprint(reqjson, 0));
     let zero = lp::bits256::default();
-    lp::LP_reserved_msg(1, (*qp).srccoin.as_mut_ptr(), (*qp).destcoin.as_mut_ptr(), zero, lp::jprint(reqjson, 0));
+    lp::LP_reserved_msg(1, zero, lp::jprint(reqjson, 0));
     if (*qp).mpnet != 0 && (*qp).gtc == 0 {
         let msg = lp::jprint(reqjson, 0);
         lp::LP_mpnet_send(0, msg, 1, (*qp).destaddr.as_mut_ptr());

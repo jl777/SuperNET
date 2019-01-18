@@ -447,7 +447,6 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
 /// Find the given address in `coin->addresses`.
 struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
-void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
 uint32_t basilisk_quoteid(struct basilisk_request *rp);
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp,int32_t dynamictrust);
@@ -474,14 +473,14 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin);
-int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg);
+int32_t LP_reserved_msg(int32_t priority,bits256 pubkey,char *msg);
 void LP_coinadd_(struct iguana_info *cdata, int32_t iguana_info_size);
 /// Deprecated, use the ported `coins::lp_coinfind` instead.
 struct iguana_info *LP_coinfind(char *symbol);
 /// Returns the "BTC" and "KMD" ports defined in `portstrs`. 0 for other currencies.
 uint16_t LP_rpcport(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
-char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
+char *LP_pricepings(char *base,char *rel,double price);
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height);
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,bits256 reftxid);
 cJSON *LP_myzdebits();
@@ -796,3 +795,4 @@ void log_stacktrace (char const* desc);
 struct iguana_info* LP_coinadd (struct iguana_info* ii);
 struct iguana_info* LP_coinsearch (char const* ticker);
 void LP_get_coin_pointers (struct iguana_info** coins_buf, int32_t coins_size);
+char *LP_price_sig(uint32_t timestamp,bits256 priv,uint8_t *pubsecp,bits256 pubkey,char *base,char *rel,uint64_t price64);
