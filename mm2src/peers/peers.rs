@@ -594,17 +594,14 @@ fn get_pieces_scheduler_en (dugout: &mut dugout_t, mut gets: OccupiedEntry<([u8;
 
 const BOOTSTRAP_STATUS: &[&TagParam] = &[&"dht-boot"];
 
-struct DhtInitialized;
-impl DhtInitialized {
-    fn delay (self, ctx: &MmArc, seconds: f64) -> DhtDelayed {
-        ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap delayed ...") .detach();
-        DhtDelayed {until: now_float() + seconds}
-    }
-    fn bootstrap (self, ctx: &MmArc, dugout: &mut dugout_t) -> Result<DhtBootstrapping, String> {
-        Ok (try_s! (DhtBootstrapping::bootstrap (ctx, dugout)))
-}   }
 struct DhtDelayed {until: f64}
 impl DhtDelayed {
+    fn init (ctx: &MmArc, seconds: f64) -> DhtDelayed {
+        if seconds > 0. {
+            ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap delayed ...") .detach();
+        }
+        DhtDelayed {until: now_float() + seconds}
+    }
     fn kick (self, ctx: &MmArc, dugout: &mut dugout_t) -> Either<DhtDelayed, Result<DhtBootstrapping, String>> {
         if now_float() > self.until {
             match DhtBootstrapping::bootstrap (ctx, dugout) {
@@ -630,12 +627,10 @@ impl DhtBootstrapping {
 struct DhtBootstrapped;
 
 enum DhtBootStatus {
-    DhtInitialized (DhtInitialized),
     DhtDelayed (DhtDelayed),
     DhtBootstrapping (DhtBootstrapping),
     DhtBootstrapped (DhtBootstrapped)
 }
-ifrom! (DhtBootStatus, DhtInitialized);
 ifrom! (DhtBootStatus, DhtDelayed);
 ifrom! (DhtBootStatus, DhtBootstrapping);
 ifrom! (DhtBootStatus, DhtBootstrapped);
@@ -731,7 +726,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         bootstrapped: &'c mut f64
     }
 
-    let mut boot_status = DhtBootStatus::from (DhtInitialized);
+    let mut boot_status = DhtBootStatus::from (DhtDelayed::init (&ctx, delay_dht));
 
     let mut bootstrapped = 0.;
     let mut last_state_save = 0.;
@@ -874,17 +869,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 
         if ctx.is_stopping() {break}
 
-        // TODO: Simplify by making `delay` a mandatory step (`delay (0.)` is okay).
         boot_status = match boot_status {
-            DhtBootStatus::DhtInitialized (initialized) => {
-                if delay_dht > 0. {
-                    initialized.delay (&ctx, delay_dht) .into()
-                } else {
-                    match initialized.bootstrap (&ctx, &mut dugout) {
-                        Ok (bootstrapping) => bootstrapping.into(),
-                        Err (err) => {log! ((err)); return}
-                    }
-            }   },
             DhtBootStatus::DhtDelayed (delayed) => match delayed.kick (&ctx, &mut dugout) {
                 Either::Left (delayed) => delayed.into(),
                 Either::Right (Ok (bootstrapping)) => bootstrapping.into(),
