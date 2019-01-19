@@ -254,13 +254,21 @@ pub fn wait_for_log (log: &LogState, timeout_sec: f64, pred: &dyn Fn (&str) -> b
     let mut found = false;
     loop {
         log.with_tail (&mut |tail| {
-            for en in &*tail {
+            for en in tail {
                 if en.format (&mut buf) .is_ok() {
                     if pred (&buf) {found = true; break}
                 }
             }
         });
         if found {return Ok(())}
+
+        log.with_gravity_tail (&mut |tail| {
+            for chunk in tail {
+                if pred (chunk) {found = true; break}
+            }
+        });
+        if found {return Ok(())}
+
         if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
         sleep (Duration::from_millis (ms));
     }

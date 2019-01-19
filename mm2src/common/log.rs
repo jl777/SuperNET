@@ -6,6 +6,7 @@
 use chrono::{Local, TimeZone, Utc};
 use chrono::format::DelayedFormat;
 use chrono::format::strftime::StrftimeItems;
+use crossbeam::queue::SegQueue;
 use gstuff::now_ms;
 use libc::{c_char, c_int};
 use regex::Regex;
@@ -55,24 +56,29 @@ struct Gravity {
     /// The center of gravity, the thread where the logging should reach the `println!` output.
     target_thread_id: thread::ThreadId,
     /// Log chunks received from satellite threads.
-    landing: Mutex<Vec<String>>
+    landing: SegQueue<String>,
+    /// Keeps a portiong of a recently flushed gravity log in RAM for inspection by the unit tests.
+    tail: Mutex<VecDeque<String>>
 }
 
 impl Gravity {
     /// Files a log chunk to be logged from the center of gravity thread.
     fn chunk2log (&self, chunk: String) {
-        if let Ok (mut landing) = self.landing.lock() {
-            landing.push (chunk);
-            if thread::current().id() == self.target_thread_id {
-                Gravity::flush (&mut landing)
-            }
+        self.landing.push (chunk);
+        if thread::current().id() == self.target_thread_id {
+            self.flush()
         }
     }
     /// Prints the collected log chunks.  
     /// `println!` is used for compatibility with unit test stdout capturing.
-    fn flush (landing: &mut Vec<String>) {
-        for chunk in landing.drain (..) {println! ("{}", chunk)}
-    }
+    fn flush (&self) {
+        let mut tail = self.tail.lock();
+        while let Some (chunk) = self.landing.try_pop() {
+            println! ("{}", chunk);
+            if let Ok (ref mut tail) = tail {
+                if tail.len() == tail.capacity() {let _ = tail.pop_front();}
+                tail.push_back (chunk)
+    }   }   }
 }
 
 thread_local! {
@@ -84,19 +90,18 @@ thread_local! {
 pub fn chunk2log (mut chunk: String) {
     extern {fn printf(_: *const c_char, ...) -> c_int;}
 
-    if *CAPTURING_TEST {
-        let rc = GRAVITY.try_with (|gravity| {
-            if let Some (ref gravity) = *gravity.borrow() {
-                let mut chunkʹ = String::new();
-                swap (&mut chunk, &mut chunkʹ);
-                gravity.chunk2log (chunkʹ);
-                true
-            } else {
-                false
-            }
-        });
-        match rc {Ok (true) => return, _ => ()}
-    }
+    // NB: Using gravity even in the non-capturing tests in order to give the tests access to the gravity tail.
+    let rc = GRAVITY.try_with (|gravity| {
+        if let Some (ref gravity) = *gravity.borrow() {
+            let mut chunkʹ = String::new();
+            swap (&mut chunk, &mut chunkʹ);
+            gravity.chunk2log (chunkʹ);
+            true
+        } else {
+            false
+        }
+    });
+    match rc {Ok (true) => return, _ => ()}
 
     // The C and the Rust standard outputs overlap on Windows,
     // so we use the C `printf` in order to avoid that.
@@ -502,6 +507,14 @@ impl LogState {
         cb (&*tail)
     }
 
+    pub fn with_gravity_tail (&self, cb: &mut dyn FnMut (&VecDeque<String>)) {
+        let gravity = unwrap! (self.gravity.lock(), "Can't lock the gravity");
+        if let Some (ref gravity) = *gravity {
+            gravity.flush();
+            let tail = unwrap! (gravity.tail.lock(), "Can't lock the tail");
+            cb (&*tail)
+    }   }
+
     /// Creates the status or rewrites it if the tags match.
     pub fn status<'b> (&self, tags: &[&TagParam], line: &str) -> StatusHandle {
         let mut status = self.claim_status (tags) .unwrap_or (self.status_handle());
@@ -640,7 +653,8 @@ impl LogState {
         } else {
             *gravity = Some (Arc::new (Gravity {
                 target_thread_id: thread::current().id(),
-                landing: Mutex::new (Vec::new())
+                landing: SegQueue::new(),
+                tail: Mutex::new (VecDeque::with_capacity (64))
             }));
             Ok(())
         }
@@ -669,15 +683,14 @@ impl Drop for LogState {
         //     resulting in log chunks escaping the unit test capture.
         //     One way to fight this might be adding a flushing RAII struct into a unit test.
         // NB: The `drop` will not be happening if some of the satellite threads still hold to the context.
-        let mut gravity_arc = None;
+        let mut gravity_arc = None;  // Variable is used in order not to hold two locks.
         if let Ok (gravity) = self.gravity.lock() {
             if let Some (ref gravity) = *gravity {
                 gravity_arc = Some (gravity.clone())
         }   }
         if let Some (gravity) = gravity_arc {
-            if let Ok (mut landing) = gravity.landing.lock() {
-                Gravity::flush (&mut landing)
-        }   }
+            gravity.flush()
+        }
 
         let dashboard_copy = {
             let dashboard = match self.dashboard.lock() {

@@ -52,7 +52,10 @@ pub fn test_peers_dht() {
         assert_eq! (received, message);
     }
 
-    // TODO: Use RAII to stop the `dht_thread`, in order to see the full log if something fails.
+    alice.stop();
+    bob.stop();
+    unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("delete_dugout finished!")));
+    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("delete_dugout finished!")));
 }
 
 pub fn test_peers_direct_send() {
@@ -88,5 +91,8 @@ pub fn test_peers_direct_send() {
 
     // And see if Bob received the message.
 
-    // TODO: Use RAII to stop the `dht_thread`, in order to see the full log if something fails.
+    alice.stop();
+    bob.stop();
+    unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("delete_dugout finished!")));
+    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("delete_dugout finished!")));
 }
