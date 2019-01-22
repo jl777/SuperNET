@@ -163,7 +163,6 @@ fn rpc_process_json(ctx: MmArc, remote_addr: SocketAddr, json: Json, c_json: CJS
         let status = if let Ok (maybe_error) = json::from_str::<MaybeError> (&res_str) {
             if maybe_error.error.is_some() {500} else {200}
         } else {200};
-
         rpc_response (status, res_str)
     } else {
         rpc_err_response (500, "Empty result from stats_JSON")

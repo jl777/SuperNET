@@ -297,6 +297,7 @@ fn alice_can_see_the_active_order_after_connection() {
     assert! (rc.0.is_success(), "!setprice: {}", rc.1);
 
     thread::sleep(Duration::from_secs(10));
+
     // Bob orderbook must show the new order
     log!("Get BEER/PIZZA orderbook on Bob side");
     let rc = unwrap! (mm_bob.rpc (json! ({
@@ -310,6 +311,7 @@ fn alice_can_see_the_active_order_after_connection() {
     let bob_orderbook: Json = unwrap!(json::from_str(&rc.1));
     assert!(bob_orderbook["asks"].as_array().unwrap().len() > 0, "Bob BEER/PIZZA asks are empty");
 
+    log!("Bob orderbook " [bob_orderbook]);
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
             "gui": "nogui",
@@ -340,7 +342,7 @@ fn alice_can_see_the_active_order_after_connection() {
     // wait until Alice recognize Bob node by importing it's pubkey
     unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
 
-    for _ in 0..3 {
+    for _ in 0..2 {
         // Alice should be able to see the order no later than 10 seconds after recognizing the bob
         thread::sleep(Duration::from_secs(10));
         log!("Get BEER/PIZZA orderbook on Alice side");
