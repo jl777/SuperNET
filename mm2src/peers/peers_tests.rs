@@ -6,8 +6,6 @@ use rand::{self, Rng};
 use serde_json::Value as Json;
 use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
-use std::thread::sleep;
-use std::time::Duration;
 
 fn peer (conf: Json, port: u16) -> MmArc {
     let ctx = MmCtx::new (conf, SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
@@ -63,9 +61,6 @@ pub fn test_peers_direct_send() {
     let alice = peer (json! ({"dht": "on"}), 2121);
     let bob = peer (json! ({"dht": "on"}), 2122);
 
-    // Wait enough for libtorrent to open the ports and load the keys. The ping will be lost otherwise.
-    sleep (Duration::from_millis (999));
-
     let bob_key = unwrap! (super::key (&bob));
 
     // Bob isn't a friend yet.
@@ -89,7 +84,7 @@ pub fn test_peers_direct_send() {
     let bob_addr = SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 2122);
     assert! (unwrap! (alice_pctx.friends.lock()) [&bob_key] .endpoints.contains_key (&bob_addr));
 
-    // And see if Bob received the message.
+    // TODO And see if Bob received the message.
 
     alice.stop();
     bob.stop();

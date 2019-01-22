@@ -1,4 +1,4 @@
-#![feature (non_ascii_idents)]
+#![feature (non_ascii_idents, integer_atomics)]
 
 #[macro_use] extern crate arrayref;
 #[macro_use] extern crate common;
@@ -18,7 +18,7 @@
 #[doc(hidden)]
 pub mod peers_tests;
 
-use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use common::{bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
@@ -31,7 +31,7 @@ use gstuff::{now_float, now_ms, slurp};
 use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry};
 use itertools::Itertools;
 use libc::{c_char, c_void};
-use rand::{thread_rng, Rng};
+use rand::{thread_rng, Rng, RngCore};
 use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
@@ -41,7 +41,7 @@ use std::env::temp_dir;
 use std::fs;
 use std::ffi::{CStr, CString};
 use std::fmt::Write as FmtWrite;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::mem::{uninitialized, zeroed};
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
@@ -49,6 +49,7 @@ use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
 use std::str::from_utf8_unchecked;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU16, Ordering as AtomicOrdering};
 use std::thread;
 use std::time::Duration;
 
@@ -146,7 +147,7 @@ extern "C" {
     //             This public key identifies the entries obtained via the `dht_mutable_item_alert` (because DHT storage nodes don't know our seed).
     // * `pkbuflen` - Must be 32 bytes. Passed explicitly in order for us to check it.
     fn dht_get (dugout: *mut dugout_t, key: *const u8, keylen: i32, salt: *const u8, saltlen: i32, pkbuf: *mut u8, pkbuflen: i32);
-    fn lt_send_udp (dugout: *mut dugout_t, ip: *const c_char, port: u16, benload: *const u8, benlen: i32);
+    fn lt_send_udp (dugout: *mut dugout_t, ip: *const u8, port: u16, benload: *const u8, benlen: i32);
 }
 
 /// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
@@ -214,7 +215,10 @@ pub struct PeersContext {
     /// Tracks the endpons of the peers we're directly communicating with.
     friends: Mutex<HashMap<bits256, Friend>>,
     /// Groups of direct ping packets scheduled for delivery.
-    direct_packages: Mutex<Vec<DirectPackage>>
+    direct_packages: Mutex<Vec<DirectPackage>>,
+    /// The monotonically incremented part of the outgoing ping packet IDs.  
+    /// Locally unique unless we have way too much packets in fly.
+    id_seq: AtomicU16
 }
 
 impl PeersContext {
@@ -229,7 +233,8 @@ impl PeersContext {
                 cmd_rx,
                 recently_fetched: Mutex::new (HashMap::new()),
                 friends: Mutex::new (HashMap::new()),
-                direct_packages: Mutex::new (Vec::new())
+                direct_packages: Mutex::new (Vec::new()),
+                id_seq: AtomicU16::new (thread_rng().gen())
             })
         })))
     }
@@ -307,10 +312,9 @@ struct PingArgs<P> {
 /// but there seems to be a considerable time span (~15 seconds) between the time when the packet is received
 /// and the time we get the delivery alert.
 /// 
-/// * `ip` - The open (hole-punched) address of the peer.
-/// * `port` - The open (hole-punched) IP of the peer.
+/// * `endpoint` - The open (and possibly hole-punched) address of the peer.
 /// * `extra_payload` - Carries the extra information in the "mm" ping argument.
-fn ping<P> (dugout: &mut dugout_t, ip: &str, port: u16, extra_payload: P) -> Result<(), String>
+fn ping<P> (dugout: &mut dugout_t, endpoint: &SocketAddr, extra_payload: P) -> Result<(), String>
 where P: Serialize {
     let ping = Ping {
         y: s2b! ("q"),  // It's a query.
@@ -320,19 +324,26 @@ where P: Serialize {
         }
     };
 
-    let ip = try_s! (CString::new (ip));
+    let mut ipz = String::with_capacity (64);
+    let _ = wite! (&mut ipz, (endpoint.ip()) '\0');
     let benload = try_s! (bencode (&ping));
     let extra_payload_size = if benload.len() > 26 {benload.len() - 26} else {0};
     if extra_payload_size > 1400 {return ERR! ("`extra_payload` is too large")}
 
-    unsafe {lt_send_udp (dugout, ip.as_ptr(), port, benload.as_ptr(), benload.len() as i32)};
+    unsafe {lt_send_udp (dugout, ipz.as_ptr(), endpoint.port(), benload.as_ptr(), benload.len() as i32)};
     if let Some (err) = dugout.take_err() {return ERR! ("lt_send_udp error: {}", err)}
     Ok(())
 }
 
 #[derive (Clone, Deserialize, Serialize)]
 struct MmPayload {
+    /// 64-bit ID of the payload.  
+    /// Pong packets have the same ID as the packets they're echoing.
+    id: ByteBuf,
+    /// The public key ID (`LP_mypub25519`) of the sender.
     from: ByteBuf,
+    /// 1 if this payload is a confirmation we emit for a previously received ping.  
+    /// NB: The pongs aren't confirmed with more pongs.
     pong: u8
 }
 
@@ -341,32 +352,73 @@ struct MmPayload {
 /// The target is either a specific endpoint (when we're trying to discover a peer)
 /// or a friend's public key (when we're `send`ing data to that friend).
 struct DirectPackage {
-    pings: Vec<MmPayload>,
+    payloads: Vec<MmPayload>,
     to: Either<bits256, SocketAddr>
 }
 
-fn pingʹ (dugout: &mut dugout_t, ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: bool) {
-    let mut ip = String::with_capacity (64);
-    let _ = wite! (&mut ip, (endpoint.ip()));
+/// Invoked periodically from the `dht_thread` in order to manage and retransmit the outgoing ping packets.
+fn send_pings (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
+    // TODO: Maintain a version of RATELIM to fit the bandwidth limiting profile.
+    //       Order the packets according to the endpoint freshness, etc, forming a sliceable queue?
+
+    let pctx = try_s! (PeersContext::from_ctx (ctx));
+    let mut direct_packages = try_s! (pctx.direct_packages.lock());
+    for pix in (0 .. direct_packages.len()) .rev() {
+        let mut finished = Vec::new();
+        let package = &mut direct_packages[pix];
+        if let Either::Right (ref endpoint) = package.to {
+            for (ix, payload) in (0..) .zip (package.payloads.iter_mut()) {
+                let pong = payload.pong == 1;
+                log! ("send_pings] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
+                if let Err (err) = ping (dugout, endpoint, payload) {
+                    log! ("ping error: " (err))
+                }
+                // Don't sent the pongs twice (because we're not getting pong replies to pongs and won't remove them that way).
+                if pong {finished.push (ix)}
+            }
+        }
+        for ix in finished.into_iter().rev() {
+            package.payloads.remove (ix);
+        }
+        if package.payloads.is_empty() {
+            log! ("A package to " [direct_packages[pix].to] " was fully delivered");
+            direct_packages.remove (pix);
+        }
+    }
+    Ok(())
+}
+
+fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBuf>) {
+    let pctx = match PeersContext::from_ctx (ctx) {Ok (c) => c, Err (err) => {log! ((err)); return}};
+    let (pong, id) = if let Some (original_id) = pong {
+        (true, original_id)
+    } else {
+        let id = loop {
+            let have = pctx.id_seq.load (AtomicOrdering::Relaxed);
+            let next = have.wrapping_add (1);
+            if pctx.id_seq.compare_and_swap (have, next, AtomicOrdering::Relaxed) != have {continue}
+            break ((next as u64) << 48) | (thread_rng().next_u64() & 0xFFFFFFFFFFFF)
+        };
+        let mut id_buf: [u8; 8] = unsafe {zeroed()};
+        let mut cur = Cursor::new (&mut id_buf[..]);
+        unwrap! (cur.write_u64::<BigEndian> (id));
+        (false, ByteBuf::from (&id_buf[..]))
+    };
+
     let mm_payload = MmPayload {
+        id,
         from: unsafe {&from.bytes[..]} .to_vec().into(),
         pong: if pong {1} else {0}
     };
     log! ("Sending a " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
 
     let direct_package = DirectPackage {
-        pings: vec! [mm_payload.clone()],
+        payloads: vec! [mm_payload.clone()],
         to: Either::Right (endpoint)
     };
 
-    let pctx = match PeersContext::from_ctx (ctx) {Ok (c) => c, Err (err) => {log! ((err)); return}};
     let mut direct_packages = match pctx.direct_packages.lock() {Ok (c) => c, Err (err) => {log! ((err)); return}};
     direct_packages.push (direct_package);
-
-    // TODO: Implement `dht_thread` sending `DirectPackage` pings instead.
-    if let Err (err) = ping (dugout, &ip, endpoint.port(), mm_payload) {
-        log! ("ping error: " (err))
-    }
 }
 
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
@@ -406,7 +458,7 @@ fn split_and_put (seed: [u8; 32], mut salt: Vec<u8>, mut data: Vec<u8>, dugout: 
         let mut crc = update (idx, &IEEE_TABLE, &chunk);
         crc = update (crc, &IEEE_TABLE, &seed[..]);
         crc = update (crc, &IEEE_TABLE, &salt);
-        unwrap! (chunk.write_u32::<LittleEndian> (crc));
+        unwrap! (chunk.write_u32::<BigEndian> (crc));
         assert! (chunk.len() <= 996);
     }
 
@@ -643,21 +695,29 @@ fn incoming_ping (dugout: &mut dugout_t, ctx: &MmArc, our_public_key: bits256, p
     let from = bits256 {bytes: *array_ref! (from, 0, 32)};
 
     let ip: IpAddr = try_s! (unsafe {from_utf8_unchecked (ip)} .parse());
-    log! ("as_dht_pkt_alert! from " (ip) " port " (port) ", key " (from) ", " (binprint (pkt, b'.')));
+    log! ("incoming_ping] from " (ip) " port " (port) " " [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"});
     ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
 
     let endpoint = SocketAddr::new (ip, port);
     if ping.a.mm.pong == 0 {
-        pingʹ (dugout, ctx, our_public_key, endpoint, true)  // Pong.
+        pingʹ (ctx, our_public_key, endpoint, Some (ping.a.mm.id.clone()))  // Pong.
     }
-    // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
     let pctx = try_s! (PeersContext::from_ctx (ctx));
+    // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
     let mut friends = try_s! (pctx.friends.lock());
     let friend = friends.entry (from) .or_insert (Friend::default());
     match friend.endpoints.entry (endpoint) {
         Entry::Occupied (_oe) => {},
         Entry::Vacant (ve) => {ve.insert (());}
     };
+    drop (friends);
+    // And if we've got a pong, remove the ping from the queue.
+    if ping.a.mm.pong == 1 {
+        let mut direct_packages = try_s! (pctx.direct_packages.lock());
+        for pix in (0 .. direct_packages.len()) .rev() {
+            direct_packages[pix].payloads.retain (|el| el.id != ping.a.mm.id);
+        }
+    }
 
     Ok(())
 }
@@ -798,7 +858,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
 
                 // Reject the chunk if there is a checksum mismatch.
                 if payload.len() < 5 {return}  // A chunk without a checksum and at least a single byte of payload is gibberish.
-                let incoming_checksum = match (&payload[payload.len() - 4 ..]) .read_u32::<LittleEndian>() {Ok (c) => c, Err (_err) => return};
+                let incoming_checksum = match (&payload[payload.len() - 4 ..]) .read_u32::<BigEndian>() {Ok (c) => c, Err (_err) => return};
                 for _ in 0..4 {payload.pop();}  // Drain the checksum.
                 let mut crc = update (idx as u32, &IEEE_TABLE, &payload);
                 crc = update (crc, &IEEE_TABLE, unsafe {&cbctx.our_public_key.bytes[..]});
@@ -888,10 +948,12 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             Ok (LtCommand::Put {seed, salt, payload}) => split_and_put (seed, salt, payload, &mut dugout),
             Ok (LtCommand::Get {seed, salt, frid, task}) => get_pieces_scheduler (seed, salt, frid, task, &mut dugout, &mut gets, &*pctx),
             Ok (LtCommand::DropGet {seed, salt, frid}) => {gets.remove (&(seed, salt, frid));},
-            Ok (LtCommand::Ping {endpoint}) => pingʹ (&mut dugout, &ctx, our_public_key, endpoint, false),
+            Ok (LtCommand::Ping {endpoint}) => pingʹ (&ctx, our_public_key, endpoint, None),
             Err (channel::RecvTimeoutError::Timeout) => {},
             Err (channel::RecvTimeoutError::Disconnected) => break
         };
+
+        if let Err (err) = send_pings (&mut dugout, &ctx) {log! ("send_pings error: " (err))}
 
         let gets_keys: Vec<_> = gets.keys().map (|k| k.clone()) .collect();
         for key in gets_keys {
