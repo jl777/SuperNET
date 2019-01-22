@@ -1,0 +1,34 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+variables:
+  COMMIT_HASH: $(git rev-parse --short HEAD)
+
+trigger:
+  branches:
+    include:
+      - refs/heads/*
+  paths:
+    exclude:
+      - README.md
+      - mm2src/README.md
+      - etomic_build/*
+      - iguana/Readme.md
+
+jobs:
+  - template: azure-pipelines-job.yml  # Template reference
+    parameters:
+      name: 'MM2_Linux'
+      os: 'Linux'
+
+  - template: azure-pipelines-job.yml  # Template reference
+    parameters:
+      name: 'MM2_MacOS'
+      os: 'Darwin'
+
+  - template: azure-pipelines-job.yml  # Template reference
+    parameters:
+      name: 'MM2_Windows'
+      os: 'Windows_NT'
