@@ -619,7 +619,9 @@ pub fn lp_notify_recv (ctx: MmArc, req: Json) -> HyRes {
                 log! ("lp_notify_recv] Got our IP from a peer (" (pubk) "). G.LP_IAMLP = 1.");
                 unsafe {lp::G.LP_IAMLP = 1}
             }
-            try_h! (peers::investigate_peer (&ctx, peer_ip, unsafe {lp::RPC_port + 20}));
+            // TODO: Figure out what kind of peers we're dealing with here (MM1, MM2, seeds, observers?)
+            //       and whether we want them added into the friendlist (to further talk with them through the `peers`).
+            //try_h! (peers::investigate_peer (&ctx, peer_ip, unsafe {lp::RPC_port + 20}));
             unsafe {lp::LP_addpeer (
                 lp::LP_mypeer,
                 lp::LP_mypubsock,
