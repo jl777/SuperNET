@@ -19,6 +19,14 @@ fn peer (conf: Json, port: u16) -> MmArc {
     ctx
 }
 
+fn destruction_check (mm: MmArc) {
+    mm.stop();
+    if let Err (err) = wait_for_log (&mm.log, 1., &|en| en.contains ("delete_dugout finished!")) {
+        // NB: We want to know if/when the `peers` destruction doesn't happen, but we don't want to panic about it.
+        pintln! ((err))
+    }
+}
+
 pub fn test_peers_dht() {
     let alice = peer (json! ({"dht": "on"}), 2111);
     let bob = peer (json! ({"dht": "on"}), 2112);
@@ -29,7 +37,7 @@ pub fn test_peers_dht() {
     let tested_lengths: &[usize] = if option_env! ("TEST_MAX_LENGTH") == Some ("true") {
         &[992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */]
     } else {
-        &[1024, 1]
+        &[2222, 1]
     };
     let mut rng = rand::thread_rng();
     for message_len in tested_lengths.iter() {
@@ -50,10 +58,8 @@ pub fn test_peers_dht() {
         assert_eq! (received, message);
     }
 
-    alice.stop();
-    bob.stop();
-    unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("delete_dugout finished!")));
-    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("delete_dugout finished!")));
+    destruction_check (alice);
+    destruction_check (bob);
 }
 
 pub fn test_peers_direct_send() {
@@ -86,8 +92,6 @@ pub fn test_peers_direct_send() {
 
     // TODO And see if Bob received the message.
 
-    alice.stop();
-    bob.stop();
-    unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("delete_dugout finished!")));
-    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("delete_dugout finished!")));
+    destruction_check (alice);
+    destruction_check (bob);
 }
