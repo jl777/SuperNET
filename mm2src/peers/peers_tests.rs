@@ -71,24 +71,34 @@ pub fn test_peers_direct_send() {
 
     // Bob isn't a friend yet.
     let alice_pctx = unwrap! (super::PeersContext::from_ctx (&alice));
-    assert! (!unwrap! (alice_pctx.friends.lock()) .contains_key (&bob_key));
+    {
+        let alice_trans = unwrap! (alice_pctx.trans_meta.lock());
+        assert! (!alice_trans.friends.contains_key (&bob_key))
+    }
 
     let _sending_f = super::send (&alice, bob_key, b"subj", Vec::from (&b"foobar"[..]));
 
     // Confirm that Bob was added into the friendlist and that we don't know its address yet.
-    assert! (unwrap! (alice_pctx.friends.lock()) .contains_key (&bob_key));
+    {
+        let alice_trans = unwrap! (alice_pctx.trans_meta.lock());
+        assert! (alice_trans.friends.contains_key (&bob_key))
+    }
 
     // Hint at the Bob's endpoint.
     unwrap! (super::investigate_peer (&alice, "127.0.0.1", 2122));
 
     // WIP, ping triggered by `investigate_peer`.
-    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
+    // NB: The sleep here is larger than expected because the actual pings start to fly only after the DHT initialization kicks in.
+    unwrap! (wait_for_log (&bob.log, 2., &|en| en.contains ("[dht] Direct packet received!")));
     // WIP, bob's reply.
     unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
 
     // Confirm that Bob now has the address.
     let bob_addr = SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 2122);
-    assert! (unwrap! (alice_pctx.friends.lock()) [&bob_key] .endpoints.contains_key (&bob_addr));
+    {
+        let alice_trans = unwrap! (alice_pctx.trans_meta.lock());
+        assert! (alice_trans.friends[&bob_key].endpoints.contains_key (&bob_addr))
+    }
 
     // TODO And see if Bob received the message.
 

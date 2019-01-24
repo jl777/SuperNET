@@ -49,7 +49,6 @@ use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
 use std::str::from_utf8_unchecked;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicU16, Ordering as AtomicOrdering};
 use std::thread;
 use std::time::Duration;
 
@@ -202,6 +201,26 @@ struct Friend {
     endpoints: HashMap<SocketAddr, ()>
 }
 
+/// Internal structures used by the retransmission subsystem.
+#[derive(Default)]
+struct TransMeta {
+    /// Tracks the endpons of the peers we're directly communicating with.
+    friends: HashMap<bits256, Friend>,
+    /// Groups of direct ping packets scheduled for delivery.
+    packages: Vec<Package>,
+    /// The monotonically incremented part of the outgoing ping packet ID.
+    id_seq: u16
+}
+impl TransMeta {
+    /// Borrow both `friends` and `packages` with separate mutable lifetimes.
+    fn split_borrow<'a, 'b, 'c> (&'a mut self) -> (&'b mut HashMap<bits256, Friend>, &'c mut Vec<Package>) {
+        // cf. https://github.com/rust-lang/rfcs/issues/1215 ?
+        let friends: *mut HashMap<bits256, Friend> = &mut self.friends;
+        let packages: *mut Vec<Package> = &mut self.packages;
+        unsafe {(&mut *friends, &mut *packages)}
+    }
+}
+
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     our_public_key: Mutex<bits256>,
@@ -212,13 +231,8 @@ pub struct PeersContext {
     // TODO: Remove the outdated `recently_fetched` entries after a while.
     /// seed, salt -> last-modified, value
     recently_fetched: Mutex<HashMap<([u8; 32], Vec<u8>), (f64, Vec<u8>)>>,
-    /// Tracks the endpons of the peers we're directly communicating with.
-    friends: Mutex<HashMap<bits256, Friend>>,
-    /// Groups of direct ping packets scheduled for delivery.
-    packages: Mutex<Vec<Package>>,
-    /// The monotonically incremented part of the outgoing ping packet IDs.  
-    /// Locally unique unless we have way too much packets in fly.
-    id_seq: AtomicU16
+    /// Of retransmission subsystem.
+    trans_meta: Mutex<TransMeta>
 }
 
 impl PeersContext {
@@ -232,9 +246,7 @@ impl PeersContext {
                 cmd_tx,
                 cmd_rx,
                 recently_fetched: Mutex::new (HashMap::new()),
-                friends: Mutex::new (HashMap::new()),
-                packages: Mutex::new (Vec::new()),
-                id_seq: AtomicU16::new (thread_rng().gen())
+                trans_meta: Mutex::new (TransMeta::default())
             })
         })))
     }
@@ -351,13 +363,9 @@ struct MmPayload {
     chunk: Option<ByteBuf>
 }
 impl MmPayload {
-    fn next_id (pctx: &PeersContext) -> ByteBuf {
-        let id = loop {
-            let have = pctx.id_seq.load (AtomicOrdering::Relaxed);
-            let next = have.wrapping_add (1);
-            if pctx.id_seq.compare_and_swap (have, next, AtomicOrdering::Relaxed) != have {continue}
-            break ((next as u64) << 48) | (thread_rng().next_u64() & 0xFFFFFFFFFFFF)
-        };
+    fn next_id (trans: &mut TransMeta) -> ByteBuf {
+        trans.id_seq = trans.id_seq.wrapping_add (1);
+        let id = ((trans.id_seq as u64) << 48) | (thread_rng().next_u64() & 0xFFFFFFFFFFFF);
         let mut id_buf: [u8; 8] = unsafe {zeroed()};
         let mut cur = Cursor::new (&mut id_buf[..]);
         unwrap! (cur.write_u64::<BigEndian> (id));
@@ -424,28 +432,47 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
 //        if idx > 3 && ratelim_maintenance (seed) > 3. {thread::sleep (Duration::from_millis (90))}
 
     let pctx = try_s! (PeersContext::from_ctx (ctx));
-    let mut packages = try_s! (pctx.packages.lock());
+    let mut trans = try_s! (pctx.trans_meta.lock());
+    let (friends, packages) = trans.split_borrow();
     for pix in (0 .. packages.len()) .rev() {
         let mut finished = Vec::new();
-        let package = &mut packages[pix];
+        let package = &mut trans.packages[pix];
         match package.to {
+            // Recepient is an IP and port, directly reachable or tested to be.
             Either::Right (ref endpoint) => {
                 for (ix, (payload, meta)) in (0..) .zip (package.payloads.iter_mut()) {
                     if meta.pongs != 0 {continue}  // We don't retransmit the delivered discovery pings at present.
                     if meta.pings == u8::max_value() {continue}  // A natural limit on the number of retries.
-                    meta.pings += 1;
 
                     let pong = payload.pong == 1;
-                    log! ("send_pings] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
+                    log! ("transmit] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
                     if let Err (err) = ping (dugout, endpoint, payload) {
                         log! ("ping error: " (err))
+                    } else {
+                        meta.pings += 1
                     }
                     // Don't sent the pongs twice (because we're not getting pong replies to pongs and won't remove them that way).
                     if pong {finished.push (ix)}
                 }
             },
+            // Recipient is a `LP_mypub25519` key of a peer.
             Either::Left (ref seed) => {
-                // TODO: See if there are endpoints that we could use to send this directly.
+                // See if the seed is a friend with directly-reachable endpoints.
+                if let Some (friend) = friends.get_mut (seed) {
+                    for (endpoint, _endpoint_meta) in friend.endpoints.iter_mut() {
+                        for (payload, meta) in package.payloads.iter_mut() {
+                            if meta.pongs != 0 {continue}  // TODO: Should retransmit ponged packets, but later and less often.
+                            if meta.pings == u8::max_value() {continue}  // Reached a natural retransmission limit.
+                            log! ("transmit] Sending " [payload.id] " ping to " [endpoint] "…");
+                            if let Err (err) = ping (dugout, endpoint, payload) {
+                                log! ("ping error: " (err))
+                            } else {
+                                meta.pings += 1
+                            }
+                        }
+                    }
+                }
+
                 // TODO: Delay the `dht_put` a bit (skipping for a few loops) if we're trying direct communication.
                 let now = now_ms();
                 for (payload, meta) in package.payloads.iter_mut() {
@@ -490,11 +517,13 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
 
 fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBuf>) {
     let pctx = match PeersContext::from_ctx (ctx) {Ok (c) => c, Err (err) => {log! ((err)); return}};
+    let mut trans = unwrap! (pctx.trans_meta.lock());
     let (pong, id) = if let Some (original_id) = pong {
         (true, original_id)
     } else {
-        (false, MmPayload::next_id (&pctx))
+        (false, MmPayload::next_id (&mut trans))
     };
+    log! ("Sending a " if pong {"pong"} else {"ping"} ' ' [id] " to " [endpoint] "…");
 
     let mm_payload = MmPayload {
         id,
@@ -503,15 +532,13 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
         salt: None,
         chunk: None
     };
-    log! ("Sending a " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
 
     let direct_package = Package {
         payloads: vec! [(mm_payload.clone(), PayloadOutMeta::default())],
         to: Either::Right (endpoint)
     };
 
-    let mut packages = match pctx.packages.lock() {Ok (c) => c, Err (err) => {log! ((err)); return}};
-    packages.push (direct_package);
+    trans.packages.push (direct_package);
 }
 
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
@@ -568,12 +595,14 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
         to: Either::Left (seed)
     };
 
+    let mut trans = unwrap! (pctx.trans_meta.lock());
+
     for (idx, chunk) in (1..) .zip (chunks) {
         salt.truncate (salt_base_len);
         salt.push (idx);  // Should not be zero. A zero in the salt might be lost along the way (`CStr::from_ptr`).
 
         package.payloads.push ((MmPayload {
-            id: MmPayload::next_id (&pctx),
+            id: MmPayload::next_id (&mut trans),
             from: ByteBuf::from (unsafe {&from.bytes[..]}),
             pong: 0,
             salt: Some (ByteBuf::from (&salt[..])),
@@ -581,8 +610,7 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
         }, PayloadOutMeta::default()));
     }
 
-    let mut packages = unwrap! (pctx.packages.lock());
-    packages.push (package);
+    trans.packages.push (package);
 }
 
 /// Big values are split into chunks in order to conform to the BEP 44 size limit.
@@ -762,18 +790,16 @@ fn incoming_ping (ctx: &MmArc, our_public_key: bits256, pkt: &[u8], ip: &[u8], p
     }
     let pctx = try_s! (PeersContext::from_ctx (ctx));
     // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
-    let mut friends = try_s! (pctx.friends.lock());
-    let friend = friends.entry (from) .or_insert (Friend::default());
+    let mut trans = try_s! (pctx.trans_meta.lock());
+    let friend = trans.friends.entry (from) .or_insert (Friend::default());
     match friend.endpoints.entry (endpoint) {
         Entry::Occupied (_oe) => {},
         Entry::Vacant (ve) => {ve.insert (());}
     };
-    drop (friends);
 
     // Register the pong.
     if ping.a.mm.pong == 1 {
-        let mut packages = try_s! (pctx.packages.lock());
-        for package in packages.iter_mut() {
+        for package in trans.packages.iter_mut() {
             for (payload, meta) in package.payloads.iter_mut() {
                 if payload.id == ping.a.mm.id {
                     meta.pongs += 1
@@ -1155,8 +1181,8 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], payload: Vec<u8>) -> Bo
     };
 
     // Add the peer into the friendlist, in order to discover and track its endpoints.
-    if let Ok (mut friends) = pctx.friends.lock() {
-        friends.insert (peer, Default::default());
+    if let Ok (mut trans) = pctx.trans_meta.lock() {
+        trans.friends.insert (peer, Default::default());
     }
 
     if !peer.nonz() {return Box::new (stream::once (Err (ERRL! ("peer key is empty"))))}
