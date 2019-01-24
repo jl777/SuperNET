@@ -32,7 +32,6 @@ use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
 use primitives::hash::{H256, H264, H512};
-use rpc::v1::types::{Bytes as BytesJson};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
@@ -795,7 +794,7 @@ impl MarketCoinOps for UtxoCoin {
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let send_fut = self.rpc_client.send_transaction(BytesJson::from(serialize(&tx.transaction)));
+        let send_fut = self.rpc_client.send_transaction(&tx.transaction, self.my_address.clone());
         Box::new(send_fut.map(move |_res| { tx.into() }))
     }
 
@@ -925,12 +924,12 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
             }
             try_s!(client.blockchain_headers_subscribe().wait());
 
-            let client = ElectrumClient(Arc::new(client));
+            let client = Arc::new(client);
             // ping the electrum servers every minute to prevent them from disconnecting us.
             // according to docs server can do it if there are no messages in ~10 minutes.
             // https://electrumx.readthedocs.io/en/latest/protocol-methods.html?highlight=keep#server-ping
             // weak reference will allow to stop the thread if client is dropped
-            let weak_client = Arc::downgrade(&client.0);
+            let weak_client = Arc::downgrade(&client);
             try_s!(thread::Builder::new().name(format!("electrum_ping_{}", ticker)).spawn(move || {
                 loop {
                     if let Some(client) = weak_client.upgrade() {
@@ -943,7 +942,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
                     thread::sleep(Duration::from_secs(60));
                 }
             }));
-            UtxoRpcClientEnum::Electrum(client)
+            UtxoRpcClientEnum::Electrum(ElectrumClient(client))
         }
     };
 
