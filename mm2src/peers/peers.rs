@@ -35,7 +35,7 @@ use rand::{thread_rng, Rng, RngCore};
 use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
-use serde_bytes::{Bytes, ByteBuf};
+use serde_bytes::ByteBuf;
 use std::cmp::Ordering;
 use std::env::temp_dir;
 use std::fs;
@@ -365,13 +365,24 @@ impl MmPayload {
     }
 }
 
+/// What we on our side know about an outgoing payload.
+#[derive(Default, Debug)]
+struct PayloadOutMeta {
+    /// True if we have already asked libtorrent to save this chunk in the DHT.
+    dht_put_invoked: bool,
+    /// The number of times we scheduled direct UDP delivery of the chunk with libtorrent.
+    pings: u8,
+    /// The number of pong packets we've got confirming direct transfer.
+    pongs: u8
+}
+
 /// A group of ping packets (one or more) that we want to deliver.  
 /// TODO: This groups is cancellable, like when we `drop` a `Future` returned by `send`.  
 /// The target is either a specific endpoint (when we're trying to discover a peer)
 /// or a friend's public key (when we're `send`ing data to that friend).
 #[derive(Debug)]
 struct Package {
-    payloads: Vec<MmPayload>,
+    payloads: Vec<(MmPayload, PayloadOutMeta)>,
     to: Either<bits256, SocketAddr>
 }
 
@@ -419,7 +430,11 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
         let package = &mut packages[pix];
         match package.to {
             Either::Right (ref endpoint) => {
-                for (ix, payload) in (0..) .zip (package.payloads.iter_mut()) {
+                for (ix, (payload, meta)) in (0..) .zip (package.payloads.iter_mut()) {
+                    if meta.pongs != 0 {continue}  // We don't retransmit the delivered discovery pings at present.
+                    if meta.pings == u8::max_value() {continue}  // A natural limit on the number of retries.
+                    meta.pings += 1;
+
                     let pong = payload.pong == 1;
                     log! ("send_pings] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
                     if let Err (err) = ping (dugout, endpoint, payload) {
@@ -433,7 +448,9 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                 // TODO: See if there are endpoints that we could use to send this directly.
                 // TODO: Delay the `dht_put` a bit (skipping for a few loops) if we're trying direct communication.
                 let now = now_ms();
-                for payload in package.payloads.iter() {
+                for (payload, meta) in package.payloads.iter_mut() {
+                    if meta.dht_put_invoked {continue}
+
                     let salt = if let Some (ref salt) = payload.salt {salt.clone()} else {continue};
                     let chunk = if let Some (ref chunk) = payload.chunk {chunk.clone()} else {continue};
                     let seed = unsafe {seed.bytes};
@@ -453,9 +470,10 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     let shuttle_ptr = (&*shuttle) as *const PutShuttle as *const c_void;
                     shuttles.insert (shuttle_ptr as usize, (now, shuttle));
 
+                    // TODO: A different rate limiting, skipping the chunk instead of sleeping the thread.
                     with_ratelim (seed, |_lm, ops| *ops += 1.);
-                    // TODO: Mark that we've saved the chunk into the DHT and not repeat the `dht_put` (too much).
-//XXX//                    unsafe {dht_put (dugout, seed.as_ptr(), seed.len() as i32, salt.as_ptr(), salt.len() as i32, put_callback, shuttle_ptr, now)}
+                    unsafe {dht_put (dugout, seed.as_ptr(), seed.len() as i32, salt.as_ptr(), salt.len() as i32, put_callback, shuttle_ptr, now)}
+                    meta.dht_put_invoked = true
                 }
             }
         }
@@ -488,7 +506,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
     log! ("Sending a " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
 
     let direct_package = Package {
-        payloads: vec! [mm_payload.clone()],
+        payloads: vec! [(mm_payload.clone(), PayloadOutMeta::default())],
         to: Either::Right (endpoint)
     };
 
@@ -498,7 +516,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
 
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
-fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>, dugout: &mut dugout_t) {
+fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>) {
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
     // chunk 3 {{piece of data} crc32}
@@ -554,13 +572,13 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
         salt.truncate (salt_base_len);
         salt.push (idx);  // Should not be zero. A zero in the salt might be lost along the way (`CStr::from_ptr`).
 
-        package.payloads.push (MmPayload {
+        package.payloads.push ((MmPayload {
             id: MmPayload::next_id (&pctx),
             from: ByteBuf::from (unsafe {&from.bytes[..]}),
             pong: 0,
             salt: Some (ByteBuf::from (&salt[..])),
             chunk: Some (ByteBuf::from (&chunk[..]))
-        });
+        }, PayloadOutMeta::default()));
     }
 
     let mut packages = unwrap! (pctx.packages.lock());
@@ -727,7 +745,7 @@ ifrom! (DhtBootStatus, DhtDelayed);
 ifrom! (DhtBootStatus, DhtBootstrapping);
 ifrom! (DhtBootStatus, DhtBootstrapped);
 
-fn incoming_ping (dugout: &mut dugout_t, ctx: &MmArc, our_public_key: bits256, pkt: &[u8], ip: &[u8], port: u16) -> Result<(), String> {
+fn incoming_ping (ctx: &MmArc, our_public_key: bits256, pkt: &[u8], ip: &[u8], port: u16) -> Result<(), String> {
     let ping = match bdecode::<Ping<MmPayload>> (pkt) {Ok (p) => p, Err (_) => return Ok(())};
 
     let from = &ping.a.mm.from[..];
@@ -751,13 +769,15 @@ fn incoming_ping (dugout: &mut dugout_t, ctx: &MmArc, our_public_key: bits256, p
         Entry::Vacant (ve) => {ve.insert (());}
     };
     drop (friends);
-    // And if we've got a pong, remove the ping from the queue.
+
+    // Register the pong.
     if ping.a.mm.pong == 1 {
         let mut packages = try_s! (pctx.packages.lock());
-        for pix in (0 .. packages.len()) .rev() {
-            packages[pix].payloads.retain (|el| el.id != ping.a.mm.id);
-        }
-    }
+        for package in packages.iter_mut() {
+            for (payload, meta) in package.payloads.iter_mut() {
+                if payload.id == ping.a.mm.id {
+                    meta.pongs += 1
+    }   }   }   }
 
     Ok(())
 }
@@ -835,8 +855,8 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
     let mut gets = Gets::default();
 
     loop {
-        extern fn cb (dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
-            let dugout: &mut dugout_t = unsafe {&mut *dugout};
+        extern fn cb (_dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
+            //let dugout: &mut dugout_t = unsafe {&mut *dugout};
             let cbctx: &mut CbCtx = unsafe {&mut *(cbctx as *mut CbCtx)};
 
             // We don't want to hit the 1000 bytes limit
@@ -854,7 +874,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 ipbuf.as_mut_ptr(), &mut ipbuflen,
                 &mut port)};
             if rc > 0 {
-                let rc = incoming_ping (dugout, cbctx.ctx, cbctx.our_public_key,
+                let rc = incoming_ping (cbctx.ctx, cbctx.our_public_key,
                                         &buf[0 .. rc as usize], &ipbuf[0 .. ipbuflen as usize], port);
                 if let Err (err) = rc {log! ("incoming_ping error: " (err))}
             } else if rc < 0 {
@@ -985,7 +1005,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         };
 
         match pctx.cmd_rx.recv_timeout (Duration::from_millis (100)) {
-            Ok (LtCommand::Put {seed, salt, payload}) => split_and_put (&ctx, our_public_key, seed, salt, payload, &mut dugout),
+            Ok (LtCommand::Put {seed, salt, payload}) => split_and_put (&ctx, our_public_key, seed, salt, payload),
             Ok (LtCommand::Get {seed, salt, frid, task}) => get_pieces_scheduler (seed, salt, frid, task, &mut dugout, &mut gets, &*pctx),
             Ok (LtCommand::DropGet {seed, salt, frid}) => {gets.remove (&(seed, salt, frid));},
             Ok (LtCommand::Ping {endpoint}) => pingʹ (&ctx, our_public_key, endpoint, None),
@@ -1194,10 +1214,7 @@ impl Drop for RecvFuture {
         if let Some (frid) = self.frid {
             if let Err (err) = self.pctx.cmd_tx.send (LtCommand::DropGet {seed: self.seed, salt: self.salt.clone(), frid}) {
                 log! ("!send: " (err))
-            }
-        }
-    }
-}
+}   }   }   }
 
 /// * `subject` - Uniquely identifies the message for both the sending and the receiving sides.
 ///               Should include some kind of *session* mechanics
