@@ -775,7 +775,7 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
 
 /// The analogue of join_all combinator running futures `sequentially`.
 /// `join_all` runs futures `concurrently` which cause issues with native coins daemons RPC.
-/// We need to request transactions to which unspent outputs belong to when we build new one in order
+/// We need to get raw transactions containing unspent outputs when we build new one in order
 /// to get denominated integer amount of UTXO instead of f64 provided by `listunspent` call.
 /// Sometimes we might need info about dozens (or even hundreds) transactions at time so we can overflow
 /// RPC queue of daemon very fast like this: https://github.com/bitpay/bitcore-node/issues/463#issuecomment-228788871.
@@ -801,6 +801,44 @@ pub fn join_all_sequential<I>(
                 Ok(Loop::Continue((output, iter)))
             } else {
                 Ok(Loop::Break(output))
+            }
+        })
+    })
+}
+
+/// The analogue of select_ok combinator running futures `sequentially`.
+/// The use case of such combinator is Electrum (and maybe not only Electrum) multiple servers support.
+/// Electrum client uses shared HashMap to store responses and we can treat the first received response as
+/// error while it's really successful. We might change the Electrum support design in the future to avoid
+/// such race condition but `select_ok_sequential` might be still useful to reduce the networking overhead.
+/// There is no reason actually to send same request to all servers concurrently when it's enough to use just 1.
+/// But we do a kind of round-robin if first server fails to respond, etc, and we return error only if all servers attempts failed.
+pub fn select_ok_sequential<I: IntoIterator>(
+    i: I,
+) -> impl Future<Item = <I::Item as IntoFuture>::Item, Error = Vec<<I::Item as IntoFuture>::Error>>
+    where I::Item: IntoFuture,
+{
+    let futures = i.into_iter();
+    loop_fn((vec![], futures), |(mut errors, mut futures)| {
+        let fut = if let Some(next) = futures.next() {
+            Either::A(next.into_future().map(|v| Some(v)))
+        } else {
+            Either::B(future::ok(None))
+        };
+
+        fut.then(move |val| {
+            let val = match val {
+                Ok(val) => val,
+                Err(e) => {
+                    errors.push(e);
+                    return Ok(Loop::Continue((errors, futures)))
+                },
+            };
+
+            if let Some(val) = val {
+                Ok(Loop::Break(val))
+            } else {
+                Err(errors)
             }
         })
     })
