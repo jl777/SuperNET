@@ -179,6 +179,27 @@ extern "C" int32_t as_dht_mutable_item_alert (
     return (int32_t) v.size();
 }
 
+extern "C" int32_t as_external_ip_alert (
+    lt::alert const* alert,
+    // Out: The new IP address. Supposedly triggers a DHT restart.
+    uint8_t* ipbuf,
+    // In: The length (= capacity) of the `ipbuf`.
+    // Out: The length of the IP address copied to `ipbuf`.
+    int32_t* ipbuflen
+) {
+    if (alert->type() != lt::external_ip_alert::alert_type) return 0;
+    assert (ipbuf != nullptr && ipbuflen != nullptr && *ipbuflen > 0);
+
+    auto eia = static_cast<lt::external_ip_alert const*> (alert);
+    std::ostringstream ip_buf;
+    ip_buf << eia->external_address;
+    std::string ip = ip_buf.str();
+    if ((int32_t) ip.size() > *ipbuflen) return -2;
+    std::copy (ip.begin(), ip.end(), ipbuf);
+    *ipbuflen = (int32_t) ip.size();
+    return 1;
+}
+
 extern "C" int32_t as_dht_pkt_alert (
     lt::alert const* alert,
     // Out: The raw contents of the DHT packet. Usually bencoded.

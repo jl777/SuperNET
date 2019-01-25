@@ -107,6 +107,7 @@ extern "C" {
         saltbuf: *mut i8, saltbuflen: i32,
         buf: *mut u8, buflen: i32,
         seq: *mut i64, auth: *mut bool) -> i32;
+    fn as_external_ip_alert (alert: *const Alert, ipbuf: *mut u8, ipbuflen: *mut i32) -> i32;
     fn as_dht_pkt_alert (alert: *const Alert,
         buf: *mut u8, buflen: i32,
         direction: *mut i8,
@@ -115,7 +116,8 @@ extern "C" {
     // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
     //           The public key of that pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
     // * `keylen` - The length of the `key` in bytes. Must be 32 bytes, no more no less.
-    // * `salt` - Identifies the value without affecting its DHT location (TODO: check).
+    // * `salt` - Essentially a second part of the key identifying the value.
+    //            Using a differnt `salt` means storing the value on a different set of DHT nodes.
     // * `saltlen` - The length of the `salt` in bytes. 0 if not used.
     // * `callback` - Invoked from inside the libtorrent code, after the latter obtains the previous (existing) value from the DHT.
     // * `arg` - A pointer passed to the `callback`.
@@ -139,7 +141,8 @@ extern "C" {
                 callback: extern fn (*mut c_void, u64, *const u8, i32, *mut *mut u8, *mut i32, *mut i64), arg: *const c_void, arg2: u64);
     // * `key` - The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
     //           The public key of that pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
-    // * `salt` - Identifies the value without affecting its DHT location (TODO: check).
+    // * `salt` - Essentially a second part of the key identifying the value.
+    //            Using a differnt `salt` means storing the value on a different set of DHT nodes.
     // * `pkbuf` - The public key derived from the `key` seed.
     //             If not zero, it is reused, skipping the `ed25519_create_keypair`.
     //             If zero, receives the generated public key.
@@ -213,7 +216,7 @@ struct TransMeta {
 }
 impl TransMeta {
     /// Borrow both `friends` and `packages` with separate mutable lifetimes.
-    fn split_borrow<'a, 'b, 'c> (&'a mut self) -> (&'b mut HashMap<bits256, Friend>, &'c mut Vec<Package>) {
+    fn split_borrow<'a> (&'a mut self) -> (&'a mut HashMap<bits256, Friend>, &'a mut Vec<Package>) {
         // cf. https://github.com/rust-lang/rfcs/issues/1215 ?
         let friends: *mut HashMap<bits256, Friend> = &mut self.friends;
         let packages: *mut Vec<Package> = &mut self.packages;
@@ -436,7 +439,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
     let (friends, packages) = trans.split_borrow();
     for pix in (0 .. packages.len()) .rev() {
         let mut finished = Vec::new();
-        let package = &mut trans.packages[pix];
+        let package = &mut packages[pix];
         match package.to {
             // Recepient is an IP and port, directly reachable or tested to be.
             Either::Right (ref endpoint) => {
@@ -905,6 +908,16 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 if let Err (err) = rc {log! ("incoming_ping error: " (err))}
             } else if rc < 0 {
                 log! ("as_dht_pkt error: " (rc));
+            }
+
+            ipbuflen = ipbuf.len() as i32;
+            let rc = unsafe {as_external_ip_alert (alert, ipbuf.as_mut_ptr(), &mut ipbuflen)};
+            if rc == 1 {
+                let eip = unsafe {from_raw_parts (ipbuf.as_ptr(), ipbuflen as usize)};
+                // NB: Still investigating this alert. Sometimes it wouldn't happen at all.
+                log! ("external_ip_alert, ip: " (unsafe {from_utf8_unchecked (eip)}));
+            } else if rc < 0 {
+                log! ("as_external_ip_alert error: " (rc));
             }
 
             let mut keybuf: [u8; 32] = unsafe {uninitialized()};

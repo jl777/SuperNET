@@ -89,7 +89,7 @@ pub fn test_peers_direct_send() {
 
     // WIP, ping triggered by `investigate_peer`.
     // NB: The sleep here is larger than expected because the actual pings start to fly only after the DHT initialization kicks in.
-    unwrap! (wait_for_log (&bob.log, 2., &|en| en.contains ("[dht] Direct packet received!")));
+    unwrap! (wait_for_log (&bob.log, 9., &|en| en.contains ("[dht] Direct packet received!")));
     // WIP, bob's reply.
     unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
 
