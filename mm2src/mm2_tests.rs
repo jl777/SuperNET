@@ -309,7 +309,10 @@ fn alice_can_see_the_active_order_after_connection() {
     assert! (rc.0.is_success(), "!orderbook: {}", rc.1);
 
     let bob_orderbook: Json = unwrap!(json::from_str(&rc.1));
-    assert!(bob_orderbook["asks"].as_array().unwrap().len() > 0, "Bob BEER/PIZZA asks are empty");
+    let asks = bob_orderbook["asks"].as_array().unwrap();
+    assert!(asks.len() > 0, "Bob BEER/PIZZA asks are empty");
+    let vol = asks[0]["maxvolume"].as_f64().unwrap();
+    assert_eq!(vol, 1.0);
 
     log!("Bob orderbook " [bob_orderbook]);
     let mut mm_alice = unwrap! (MarketMakerIt::start (
@@ -355,7 +358,10 @@ fn alice_can_see_the_active_order_after_connection() {
         assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
 
         let alice_orderbook: Json = unwrap!(json::from_str(&rc.1));
-        assert_eq!(alice_orderbook["asks"].as_array().unwrap().len(), 1, "Alice BEER/PIZZA orderbook must have exactly 1 ask");
+        let asks = alice_orderbook["asks"].as_array().unwrap();
+        assert_eq!(asks.len(), 1, "Alice BEER/PIZZA orderbook must have exactly 1 ask");
+        let vol = asks[0]["maxvolume"].as_f64().unwrap();
+        assert_eq!(vol, 1.0);
     }
 }
 

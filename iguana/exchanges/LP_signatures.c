@@ -428,8 +428,7 @@ char *LP_postprice_recv(cJSON *argjson)
                         free(argstr);
                     }
                 }
-                //printf("call pricefeed update\n");
-                LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN,jdouble(argjson,"credits")*SATOSHIDEN);
+                LP_pricefeedupdate(pubkey,base,rel,price,jdouble(argjson,"bal"),jdouble(argjson,"credits")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
             }
             else
