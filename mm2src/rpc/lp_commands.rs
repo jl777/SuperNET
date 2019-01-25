@@ -804,8 +804,6 @@ pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
         // AG: I wonder if we can narrow down the meaning of "reset" in order to touch the minimal amount of state?
         //     Reinitializing the state of a running program is generally a bad idea.
         (*ii).privkeydepth = 0;
-        let mut num: i32 = 0;
-        unsafe {lp::LP_address_utxo_reset (&mut num, ii)};
         let passphrase = match req["passphrase"].as_str() {Some (s) => s, None => return rpc_err_response (500, "No 'passphrase' in request")};
         unsafe {try_h! (lp_passphrase_init (&ctx, Some (passphrase), None, None))};
     }
@@ -822,8 +820,6 @@ pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
         // "bob": LP_inventory(coin,1)
     });
     //LP_smartutxos_push(ptr);
-    let mut num: i32 = 0;
-    unsafe {lp::LP_address_utxo_reset (&mut num, ii)};
     rpc_response (200, try_h! (json::to_string (&retjson)))
 }
 

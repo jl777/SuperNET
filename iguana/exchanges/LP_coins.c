@@ -487,53 +487,6 @@ struct iguana_info *LP_coinfind(char *symbol)
 // "coins":[{"coin":"<assetchain>", "rpcport":pppp}, {"coin":"LTC", "name":"litecoin", "rpcport":9332, "pubtype":48, "p2shtype":5, "wiftype":176, "txfee":100000 }]
 // {"coin":"HUSH", "name":"hush", "rpcport":8822, "taddr":28, "pubtype":184, "p2shtype":189, "wiftype":128, "txfee":10000 }
 
-struct iguana_info *LP_coincreate(cJSON *item)
-{
-    struct iguana_info *coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
-    if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
-    {
-        isPoS = jint(item,"isPoS");
-        txfee = j64bits(item,"txfee");
-        if ( (estimatedrate= jdouble(item,"estimatedrate")) == 0. )
-            estimatedrate = 20;
-        pubtype = juint(item,"pubtype");
-        if ( (p2shtype= juint(item,"p2shtype")) == 0 )
-            p2shtype = 85;
-        if ( (wiftype= juint(item,"wiftype")) == 0 )
-            wiftype = 188;
-        if ( (assetname= jstr(item,"asset")) != 0 )
-        {
-            name = assetname;
-            pubtype = 60;
-        }
-        else if ( (name= jstr(item,"name")) == 0 )
-            name = symbol;
-
-        uint8_t decimals = juint(item,"decimals");
-        coin = LP_coinfind(symbol);
-        coin->inactive = (uint32_t)time(NULL);
-        //TODO//if ( LP_coininit(&cdata,,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,jint(item,"txversion")) < 0 )
-    } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
-        printf("SKIP %s, missing rpcport field in coins array\n",symbol);
-    if ( coin != 0 && item != 0 )
-    {
-        if ( strcmp("KMD",coin->symbol) != 0 )
-        {
-            if ( jobj(item,"active") != 0 )
-                coin->inactive = !jint(item,"active");
-            else
-            {
-                if ( IAMLP == 0 || assetname != name )
-                    coin->inactive = (uint32_t)time(NULL);
-                else coin->inactive = 0;
-            }
-        } else coin->inactive = 0;
-    }
-    if ( 0 && coin != 0 && coin->inactive != 0 )
-        printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
-    return(0);
-}
-
 void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr)
 {
     uint8_t addrtype,rmd160[20]; struct iguana_info *src,*dest;
