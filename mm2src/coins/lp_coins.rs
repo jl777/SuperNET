@@ -28,7 +28,7 @@
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
 
-use common::{bitcoin_ctx, bits256, lp, rpc_response, HyRes};
+use common::{bitcoin_ctx, bits256, lp, rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::now_ms;
@@ -159,9 +159,9 @@ pub trait SwapOps {
 /// Operations that coins have independently from the MarketMaker.
 /// That is, things implemented by the coin wallets or public coin services.
 pub trait MarketCoinOps {
-    fn address(&self) -> Cow<str>;
+    fn my_address(&self) -> Cow<str>;
 
-    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send>;
+    fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send>;
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut;
 
@@ -812,10 +812,10 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
 pub fn enable (ctx: MmArc, req: Json) -> HyRes {
     let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
     let coin: MmCoinEnum = try_h! (lp_coininit (&ctx, ticker, &req));
-    Box::new(coin.get_balance().and_then(move |balance|
+    Box::new(coin.my_balance().and_then(move |balance|
         rpc_response(200, json!({
             "result": "success",
-            "address": coin.address(),
+            "address": coin.my_address(),
             "balance": balance
         }).to_string())
     ))
@@ -825,10 +825,10 @@ pub fn enable (ctx: MmArc, req: Json) -> HyRes {
 pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
     let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
     let coin: MmCoinEnum = try_h! (lp_coininit (&ctx, ticker, &req));
-    Box::new(coin.get_balance().and_then(move |balance|
+    Box::new(coin.my_balance().and_then(move |balance|
         rpc_response(200, json!({
             "result": "success",
-            "address": coin.address(),
+            "address": coin.my_address(),
             "balance": balance
         }).to_string())
     ))
@@ -884,4 +884,18 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Get my_balance of a coin
+pub fn my_balance (ctx: MmArc, req: Json) -> HyRes {
+    let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();
+    let coin = match lp_coinfind (&ctx, &ticker) {
+        Ok (Some (t)) => t,
+        Ok (None) => return rpc_err_response (500, &fomat! ("No such coin: " (ticker))),
+        Err (err) => return rpc_err_response (500, &fomat! ("!lp_coinfind(" (ticker) "): " (err)))
+    };
+    Box::new(coin.my_balance().and_then(move |balance| rpc_response(200, json!({
+        "coin": ticker,
+        "balance": balance,
+    }).to_string())))
 }

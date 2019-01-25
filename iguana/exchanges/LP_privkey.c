@@ -147,8 +147,6 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
             }
         }
         free_json(array);
-        if ( 0 && flag != 0 )
-            LP_postutxos(coin->symbol,coin->smartaddr);
     }
     if ( values != 0 )
         free(values);

@@ -28,7 +28,7 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::{c_char, c_void};
-use coins::{enable, electrum};
+use coins::{enable, electrum, my_balance};
 use portfolio::lp_autoprice;
 use portfolio::prices::{lp_fundvalue, set_price};
 use serde_json::{self as json, Value as Json};
@@ -204,6 +204,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "help" => help(),
         "inventory" => inventory (ctx, req),
         "mpnet" => mpnet (&req),
+        "my_balance" => my_balance (ctx, req),
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "passphrase" => passphrase (ctx, req),
         "sell" => sell (ctx, req),

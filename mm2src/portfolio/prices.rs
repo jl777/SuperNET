@@ -50,11 +50,13 @@ struct PricePingRequest {
     timestamp: u64,
     pubsecp: String,
     sig: String,
+    #[serde(rename="bal")]
+    balance: f64,
 }
 
 impl PricePingRequest {
     fn new(ctx: &MmArc, base: &str, rel: &str, price: f64) -> Result<PricePingRequest, String> {
-        let _base_coin = match try_s!(lp_coinfind(ctx, base)) {
+        let base_coin = match try_s!(lp_coinfind(ctx, base)) {
             Some(coin) => coin,
             None => return ERR!("Base coin {} is not found", base),
         };
@@ -77,6 +79,8 @@ impl PricePingRequest {
             sig_str
         };
 
+        let balance = try_s!(base_coin.my_balance().wait());
+
         Ok(PricePingRequest {
             method: "postprice",
             pubkey: unsafe { hex::encode(&lp::G.LP_mypub25519.bytes) },
@@ -87,6 +91,7 @@ impl PricePingRequest {
             timestamp,
             pubsecp: unsafe { hex::encode(&lp::G.LP_pubsecp.to_vec()) },
             sig,
+            balance,
         })
     }
 }

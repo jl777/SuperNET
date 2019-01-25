@@ -784,11 +784,11 @@ impl SwapOps for UtxoCoin {
 }
 
 impl MarketCoinOps for UtxoCoin {
-    fn address(&self) -> Cow<str> {
+    fn my_address(&self) -> Cow<str> {
         self.0.my_address.to_string().into()
     }
 
-    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
+    fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
         self.rpc_client.display_balance(self.my_address.clone())
     }
 

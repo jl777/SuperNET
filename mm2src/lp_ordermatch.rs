@@ -962,7 +962,6 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let bestprice;
     let range: f64;
     let r: u32;
-    let mut num = 0;
     *newqp = *qp;
     let qp = newqp;
     let mut str: [c_char; 65] = [0; 65];
@@ -977,16 +976,10 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         log!({"myprice {} bid {} ask {}", my_price, bid, ask});
         return null_mut();
     }
-    let mut a = lp::LP_utxoinfo::default();
-    let mut b = lp::LP_utxoinfo::default();
-    let autxo = &mut a as *mut lp::LP_utxoinfo;
-    let butxo = &mut b as *mut lp::LP_utxoinfo;
-    lp::LP_abutxo_set(autxo, butxo, qp);
-    unwrap!(safecopy!((*qp).coinaddr, "{}", coin.address()));
+    unwrap!(safecopy!((*qp).coinaddr, "{}", coin.my_address()));
     if (*qp).srchash.nonz() == false || (*qp).srchash == lp::G.LP_mypub25519 {
         qprice = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
         strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
-        strcpy((*butxo).coinaddr.as_mut_ptr(), (*qp).coinaddr.as_mut_ptr());
         (*qp).srchash = lp::G.LP_mypub25519;
     } else {
         return null_mut();
@@ -1012,13 +1005,9 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         printf(b"request from blacklisted %s, ignore\n\x00".as_ptr() as *const c_char, lp::bits256_str(str.as_mut_ptr(), (*qp).desthash));
         return null_mut();
     }
-//printf("LP_address_utxo_reset.%s\n",coin->symbol);
-//LP_address_utxo_reset(coin);
-//printf("done LP_address_utxo_reset.%s\n",coin->symbol);
-    lp::LP_address_utxo_reset(&mut num, coin.iguana_info());
     if price >= my_price {
         unwrap!(safecopy!((*qp).gui, "{}", c2s!(lp::G.gui)));
-        unwrap!(safecopy!((*qp).coinaddr, "{}", coin.address()));
+        unwrap!(safecopy!((*qp).coinaddr, "{}", coin.my_address()));
         (*qp).srchash = lp::G.LP_mypub25519;
         (*qp).satoshis = lp::LP_basesatoshis(dstr((*qp).destsatoshis as i64), price, (*qp).txfee, (*qp).desttxfee);
         (*qp).quotetime = (now_ms() / 1000) as u32;

@@ -544,12 +544,6 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
-            if ( coin->did_addrutxo_reset == 0 )
-            {
-                int32_t num;
-                LP_address_utxo_reset(&num,coin);
-                coin->did_addrutxo_reset = 1;
-            }
             //free_json(LP_address_balance(coin,coin->smartaddr,1)); expensive invoking gettxout
             if ( coin->do_autofill_merge != 0 )
             {

@@ -381,6 +381,7 @@ struct LP_pubkey_quote
     struct LP_pubkey_quote *next,*prev;
     float price;
     uint8_t baseind,relind,scale;
+    double_t balance;
 };
 
 struct LP_swapstats
@@ -519,12 +520,9 @@ int32_t LP_numpeers();
 char *basilisk_swapentry(int32_t fastflag,uint32_t requestid,uint32_t quoteid,int32_t forceflag);
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance);
 int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
-void LP_smartutxos_push(struct iguana_info *coin);
 void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
-void LP_postutxos(char *symbol,char *coinaddr);
-int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
 void LP_tradebot_pauseall();
 void LP_portfolio_reset();
@@ -556,7 +554,6 @@ int32_t LP_alice_eligible(uint32_t quotetime);
 int32_t LP_is_slowcoin(char *symbol);
 void LP_alicequery_clear();
 
-void LP_listunspent_query(char *symbol,char *coinaddr);
 int32_t bitcoin_priv2wif(char *symbol,uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);
 int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *in,int32_t inlen,int inbits,int pad);
 int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
@@ -589,9 +586,7 @@ void LPinit(char* myipaddr,uint16_t myport,uint16_t mypullport,uint16_t mypubpor
 void unbuffered_output_support(const char* log_path);
 void LP_dPoW_request(struct iguana_info *coin);
 struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin);
-cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port);
 // The `item` here is an entry from the "coins" command-line configuration.
-struct iguana_info *LP_coincreate(cJSON *item);
 /// Helps `lp_coininit` to initialize the `userpass`.
 uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath,uint16_t origport);
 /// Helps `lp_coininit` to initialize things that we can't readily initialize from Rust.
@@ -713,8 +708,6 @@ extern uint32_t LP_AUTOTRADE_TIMEOUT;
 extern uint32_t LP_RESERVETIME;
 extern uint32_t Alice_expiration;
 
-struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin);
-char *LP_autosplit(struct iguana_info *coin);
 void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel);
 int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr);
 double LP_fomoprice(char *base,char *rel,double *relvolumep);
@@ -780,10 +773,6 @@ int32_t LP_calc_waittimeout(char *symbol);
 extern uint32_t LP_swap_critical;
 extern uint32_t LP_swap_endcritical;
 void basilisk_swap_finished(struct basilisk_swap *swap);
-int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
-int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay);
-int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay);
-void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid);
 #endif
 
 // ---
