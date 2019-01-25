@@ -533,6 +533,48 @@ fn trade_base_rel(base: &str, rel: &str) {
     unwrap! (mm_alice.stop());
 }
 
+#[test]
+fn test_my_balance() {
+    let coins = json!([
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+    ]);
+
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "client": 1,
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        "db4be27033b636c6644c356ded97b0ad08914fcb8a1e2a1efc915b833c2cbd19".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
+    log!({"log path: {}", mm.log_path.display()});
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    // Enable BEER.
+    let enable = enable_electrum(&mm, "BEER", vec!["electrum1.cipig.net:10022","electrum2.cipig.net:10022","electrum3.cipig.net:10022"]);
+    let json: Json = unwrap!(json::from_str(&enable));
+    let balance_on_enable = unwrap!(json["balance"].as_f64());
+    assert_eq!(balance_on_enable, 1.0);
+
+    let my_balance = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "my_balance",
+        "coin": "BEER",
+    })));
+    assert_eq! (my_balance.0, StatusCode::OK, "RPC «my_balance» failed with status «{}»", my_balance.0);
+    let json: Json = unwrap!(json::from_str(&my_balance.1));
+    let my_balance = unwrap!(json["balance"].as_f64());
+    assert_eq!(my_balance, 1.0);
+}
+
 /// Integration test for PIZZA/BEER and BEER/PIZZA trade
 /// This test is ignored because as of now it requires additional environment setup:
 /// PIZZA and ETOMIC daemons must be running and fully synced for swaps to be successful

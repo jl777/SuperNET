@@ -982,7 +982,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     let autxo = &mut a as *mut lp::LP_utxoinfo;
     let butxo = &mut b as *mut lp::LP_utxoinfo;
     lp::LP_abutxo_set(autxo, butxo, qp);
-    unwrap!(safecopy!((*qp).coinaddr, "{}", coin.address()));
+    unwrap!(safecopy!((*qp).coinaddr, "{}", coin.my_address()));
     if (*qp).srchash.nonz() == false || (*qp).srchash == lp::G.LP_mypub25519 {
         qprice = (*qp).destsatoshis as f64 / ((*qp).satoshis - (*qp).txfee) as f64;
         strcpy((*qp).gui.as_mut_ptr(), lp::G.gui.as_ptr());
@@ -1018,7 +1018,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
     lp::LP_address_utxo_reset(&mut num, coin.iguana_info());
     if price >= my_price {
         unwrap!(safecopy!((*qp).gui, "{}", c2s!(lp::G.gui)));
-        unwrap!(safecopy!((*qp).coinaddr, "{}", coin.address()));
+        unwrap!(safecopy!((*qp).coinaddr, "{}", coin.my_address()));
         (*qp).srchash = lp::G.LP_mypub25519;
         (*qp).satoshis = lp::LP_basesatoshis(dstr((*qp).destsatoshis as i64), price, (*qp).txfee, (*qp).desttxfee);
         (*qp).quotetime = (now_ms() / 1000) as u32;

@@ -157,6 +157,7 @@ pub fn help() -> HyRes {
         listunspent(coin, address)
         setconfirms(coin, numconfirms, maxconfirms=6)
         trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist
+        my_balance(coin)
         balance(coin, address)
         balances(address)
         fundvalue(address=\"\", holdings=[], divisor=0)

@@ -276,11 +276,11 @@ impl SwapOps for EthCoin {
 }
 
 impl MarketCoinOps for EthCoin {
-    fn address(&self) -> Cow<str> {
+    fn my_address(&self) -> Cow<str> {
         format!("{:#02x}", self.my_address).into()
     }
 
-    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
+    fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
         let decimals = self.decimals;
         Box::new(self.my_balance().and_then(move|result| {
             let string = display_u256_with_decimal_point(result, decimals);
