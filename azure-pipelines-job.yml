@@ -34,6 +34,7 @@ jobs:
           fi
           cargo test
         displayName: 'Test MM2'
+        timeoutInMinutes: 22
       - bash: |
           cp -r target/debug/mm2 upload/mm2-$(COMMIT_HASH)-$(Agent.OS)
         displayName: 'Prepare upload Linux/MacOS'
