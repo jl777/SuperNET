@@ -327,9 +327,9 @@ pub struct ElectrumBlockHeader {
 
 #[derive(Debug, Deserialize)]
 struct ElectrumTxHistoryItem {
-    height: u64,
+    height: i64,
     tx_hash: H256Json,
-    fee: Option<u64>,
+    fee: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
