@@ -56,7 +56,7 @@
 //
 use bitcrypto::dhash160;
 use coins::{MmCoinEnum, TransactionEnum};
-use common::{bits256, Timeout};
+use common::{bits256, dstr, Timeout};
 use common::log::TagParam;
 use common::mm_ctx::MmArc;
 use coins::utxo::{random_compressed_key_pair};
@@ -332,6 +332,10 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         }};
     }
 
+    if let Err(e) = swap.maker_coin.check_i_have_enough_to_trade(dstr(swap.maker_amount as i64), true).wait() {
+        err!(-2000, "!check_i_have_enough_to_trade" [e]);
+    };
+
     let started_at = now_ms() / 1000;
     let mut rng = rand::thread_rng();
     let secret: [u8; 32] = rng.gen();
@@ -501,6 +505,11 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             return Err (($ec, msg))
         }};
     }
+
+    if let Err(e) = swap.taker_coin.check_i_have_enough_to_trade(dstr(swap.taker_amount as i64), true).wait() {
+        err!(-1000, "!check_i_have_enough_to_trade" [e]);
+    };
+
     let started_at = now_ms() / 1000;
     swap.taker_payment_lock = started_at + swap.lock_duration;
 

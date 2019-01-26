@@ -201,6 +201,8 @@ pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
     // status/availability check: https://github.com/artemii235/SuperNET/issues/156#issuecomment-446501816
 
     fn is_asset_chain(&self) -> bool;
+
+    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send>;
 }
 
 #[derive(Clone, Debug)]

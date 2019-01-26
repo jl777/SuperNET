@@ -32,7 +32,6 @@ use std::ptr::null_mut;
 use std::time::Duration;
 
 use crate::lp_native_dex::lp_passphrase_init;
-use crate::lp_ordermatch::{AutoBuyInput, lp_auto_buy};
 
 /*
 char *LP_numutxos()
@@ -624,15 +623,6 @@ pub fn eth_gas_price() -> HyRes {
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
 */
-pub fn buy(ctx: MmArc, json: Json) -> HyRes {
-    let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
-    rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
-}
-
-pub fn sell(ctx: MmArc, json: Json) -> HyRes {
-    let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
-    rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
-}
 /*
         else if ( coin[0] != 0 )
         {
