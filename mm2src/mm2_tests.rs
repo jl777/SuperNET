@@ -579,6 +579,8 @@ fn test_my_balance() {
     let json: Json = unwrap!(json::from_str(&my_balance.1));
     let my_balance = unwrap!(json["balance"].as_f64());
     assert_eq!(my_balance, 1.0);
+    let my_address = unwrap!(json["address"].as_str());
+    assert_eq!(my_address, "RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD");
 }
 
 /// Integration test for PIZZA/BEER and BEER/PIZZA trade

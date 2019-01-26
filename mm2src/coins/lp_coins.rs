@@ -897,5 +897,6 @@ pub fn my_balance (ctx: MmArc, req: Json) -> HyRes {
     Box::new(coin.my_balance().and_then(move |balance| rpc_response(200, json!({
         "coin": ticker,
         "balance": balance,
+        "address": coin.my_address(),
     }).to_string())))
 }
