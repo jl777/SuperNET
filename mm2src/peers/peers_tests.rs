@@ -2,6 +2,7 @@ use common::bits256;
 use common::for_tests::wait_for_log;
 use common::mm_ctx::{MmArc, MmCtx};
 use futures::Future;
+use gstuff::now_float;
 use rand::{self, Rng};
 use serde_json::Value as Json;
 use std::mem::zeroed;
@@ -34,16 +35,16 @@ pub fn test_peers_dht() {
     unwrap! (wait_for_log (&alice.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
 
-    let tested_lengths: &[usize] = if option_env! ("TEST_MAX_LENGTH") == Some ("true") {
-        &[992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */]
-    } else {
-        &[2222, 1]
-    };
+    let tested_lengths: &[usize] = &[
+        2222,  // Send multiple chunks.
+        1,  // Reduce the number of chunks *in the same subject*.
+        // 992 /* (1000 - bencode overhead - checksum) */ * 253 /* Compatible with (1u8..) */ - 1 /* space for number_of_chunks */
+    ];
     let mut rng = rand::thread_rng();
     for message_len in tested_lengths.iter() {
         // Send a message to Bob.
 
-        let message: Vec<u8> = (0..*message_len).map (|_| rng.gen()) .collect();
+        let message: Vec<u8> = (0..*message_len) .map (|_| rng.gen()) .collect();
 
         println! ("Sending {} bytes …", message.len());
         let _sending_f = super::send (&alice, unwrap! (super::key (&bob)), b"test_dht", message.clone());
@@ -76,7 +77,11 @@ pub fn test_peers_direct_send() {
         assert! (!alice_trans.friends.contains_key (&bob_key))
     }
 
-    let _sending_f = super::send (&alice, bob_key, b"subj", Vec::from (&b"foobar"[..]));
+    let mut rng = rand::thread_rng();
+    let message: Vec<u8> = (0..33) .map (|_| rng.gen()) .collect();
+
+    let _send_f = super::send (&alice, bob_key, b"subj", message.clone());
+    let recv_f = super::recv (&bob, b"subj", Box::new (|_| true));
 
     // Confirm that Bob was added into the friendlist and that we don't know its address yet.
     {
@@ -100,7 +105,12 @@ pub fn test_peers_direct_send() {
         assert! (alice_trans.friends[&bob_key].endpoints.contains_key (&bob_addr))
     }
 
-    // TODO And see if Bob received the message.
+    // Finally see if Bob got the message.
+    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("incoming_ping] chunk 1 captured")));
+    let start = now_float();
+    let received = unwrap! (recv_f.wait());
+    assert_eq! (received, message);
+    assert! (now_float() - start < 0.1);  // Double-check that we're not waiting for DHT chunks.
 
     destruction_check (alice);
     destruction_check (bob);
