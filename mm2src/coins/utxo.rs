@@ -953,10 +953,16 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
                         if let Err(e) = client.server_ping().wait() {
                             log!("Electrum servers " [urls] " ping error " [e]);
                         }
+                        // the simplest way to retrigger subscription in case of reconnecting is
+                        // just running subscribe requests in loop. It doesn't cause Electrum server
+                        // to double the subscription messages.
+                        if let Err(e) = client.blockchain_headers_subscribe().wait() {
+                            log!("Electrum servers " [urls] " resubscribe error " [e]);
+                        }
                     } else {
                         break;
                     }
-                    thread::sleep(Duration::from_secs(60));
+                    thread::sleep(Duration::from_secs(30));
                 }
             }));
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))

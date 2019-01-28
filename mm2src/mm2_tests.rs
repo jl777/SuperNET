@@ -433,7 +433,7 @@ fn test_check_balance_on_order_post() {
         json! ({
             "gui": "nogui",
             "netid": 9998,
-            "dht": "on",  // Enable DHT without delay.
+            "client": 1,
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),

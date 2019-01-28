@@ -1,9 +1,10 @@
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
-use common::{CORE, slurp_req, join_all_sequential, select_ok_sequential};
+use common::{CORE, slurp_req};
+use common::custom_futures::{join_all_sequential, select_ok_sequential, SendAll};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
-use futures::{Async, Future, Poll, Sink};
-use futures::future::{loop_fn, Loop, select_ok};
+use futures::{Async, Future, Poll, Sink, Stream};
+use futures::future::{Either, loop_fn, Loop, select_ok};
 use futures::sync::mpsc;
 use futures_timer::Delay;
 use futures_timer::FutureExt;
@@ -20,13 +21,12 @@ use sha2::{Sha256, Digest};
 use std::{io, thread};
 use std::fmt::Debug;
 use std::cmp::Ordering;
-use std::net::{ToSocketAddrs, SocketAddr};
+use std::net::{ToSocketAddrs, SocketAddr, TcpStream as TcpStreamStd};
 use std::ops::Deref;
 use std::sync::{Mutex, Arc};
 use std::time::{Duration};
 use tokio::codec::{Encoder, Decoder};
 use tokio::net::TcpStream;
-use tokio::prelude::*;
 
 #[derive(Debug)]
 pub enum UtxoRpcClientEnum {
@@ -351,12 +351,15 @@ pub fn electrum_script_hash(script: &[u8]) -> Vec<u8> {
 }
 
 pub fn spawn_electrum(
-    addr: &str,
+    addr_str: &str,
     arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
-) -> Box<Future<Item=mpsc::Sender<Vec<u8>>, Error=String>> {
-    let mut addr = try_fus!(addr.to_socket_addrs());
-
-    Box::new(electrum_connect(&addr.next().unwrap(), arc).map_err(|e| ERRL!("{}", e)))
+) -> Result<mpsc::Sender<Vec<u8>>, String> {
+    let mut addr = try_s!(addr_str.to_socket_addrs());
+    let addr = match addr.next() {
+        Some(a) => a,
+        None => return ERR!("Socket addr from addr {} is None.", addr_str),
+    };
+    Ok(try_s!(electrum_connect(addr, arc)))
 }
 
 #[derive(Debug)]
@@ -523,9 +526,7 @@ impl ElectrumClientImpl {
     }
 
     pub fn add_server(&mut self, addr: &str) -> Result<(), String> {
-        // TODO Have to implement this function as synchronous using .wait to avoid wrapping senders in Mutex/Arc.
-        // Consider refactoring when async/await is released.
-        let sender = try_s!(spawn_electrum(addr, self.results.clone()).wait());
+        let sender = try_s!(spawn_electrum(addr, self.results.clone()));
         self.senders.push(sender);
         Ok(())
     }
@@ -616,7 +617,7 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
                 let id = match request.method.as_ref() {
                     BLOCKCHAIN_HEADERS_SUB_ID => BLOCKCHAIN_HEADERS_SUB_ID,
                     _ => {
-                        log!("Couldn't get id for request "[request]);
+                        log!("Couldn't get id of request " [request]);
                         return;
                     }
                 };
@@ -627,7 +628,7 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
                     result: request.params[0].clone(),
                     error: Json::Null,
                 };
-
+                log!([response]);
                 (*arc.lock().unwrap()).insert(id.into(), response);
             }
         }
@@ -635,39 +636,63 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
 }
 
 fn electrum_connect(
-    addr: &SocketAddr,
-    arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
-) -> impl Future<Item=mpsc::Sender<Vec<u8>>, Error=String> {
-    let tcp = TcpStream::connect(addr);
+    addr: SocketAddr,
+    responses: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
+) -> Result<mpsc::Sender<Vec<u8>>, String> {
+    // try to connect synchronously first using std TcpStream to check if the server is reachable
+    try_s!(TcpStreamStd::connect(&addr));
     let (tx, rx) = mpsc::channel(0);
     let rx = rx_to_stream(rx);
 
-    tcp
-        .map_err(|e| ERRL!("{}", e))
-        .and_then(move |stream| {
-            try_s!(stream.set_nodelay(true));
+    let connect_loop = loop_fn((addr, rx, responses, 0), move |(addr, rx, responses, delay)| {
+        let tcp = if delay > 0 {
+            Either::A(Delay::new(Duration::from_secs(delay)).and_then(move |_| TcpStream::connect(&addr)))
+        } else {
+            Either::B(TcpStream::connect(&addr))
+        };
+        tcp.then(move |stream| -> Box<Future<Item=Loop<(), _>, Error=_> + Send> {
+            let stream = match stream {
+                Ok(s) => s,
+                Err(e) => {
+                    log!([addr] " connect error " [e]);
+                    return Box::new(futures::future::ok(Loop::Continue((addr, rx, responses, 5))));
+                },
+            };
+
+            if let Err(e) = stream.set_nodelay(true) {
+                log!([addr] " set no delay error " [e]);
+                return Box::new(futures::future::ok(Loop::Continue((addr, rx, responses, 5))));
+            }
 
             let (sink, stream) = Bytes.framed(stream).split();
 
-            CORE.spawn(|_| {
-                rx.forward(sink).then(|result| {
-                    if let Err(e) = result {
-                        log!("failed to write to socket " [e])
-                    }
-                    Ok(())
-                })
-            });
+            let send_all = SendAll::new(sink, rx);
 
+            let clone = responses.clone();
             CORE.spawn(|_| {
                 stream
                     .for_each(move |chunk| {
-                        electrum_process_chunk(&chunk, arc.clone());
+                        electrum_process_chunk(&chunk, clone.clone());
                         futures::future::ok(())
                     })
-                    .map_err(|e| { log!([e]); () })
+                    .map_err(|e| {
+                        log!([e]);
+                        ()
+                    })
             });
-            Ok(tx)
+
+            Box::new(send_all.then(move |result| {
+                if let Err((rx, e)) = result {
+                    log!([addr] " failed to write to socket " [e]);
+                    return Ok(Loop::Continue((addr, rx, responses, 5)));
+                }
+                Ok(Loop::Break(()))
+            }))
         })
+    });
+
+    CORE.spawn(|_| connect_loop);
+    Ok(tx)
 }
 
 /// A simple `Codec` implementation that reads buffer until \n according to Electrum protocol specification:
@@ -826,7 +851,7 @@ fn electrum_subscribe(
             }
         })
         .map_err(|e| StringError(e))
-        .timeout(Duration::from_secs(30));
+        .timeout(Duration::from_secs(10));
 
     Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
