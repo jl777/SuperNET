@@ -628,7 +628,6 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
                     result: request.params[0].clone(),
                     error: Json::Null,
                 };
-                log!([response]);
                 (*arc.lock().unwrap()).insert(id.into(), response);
             }
         }
