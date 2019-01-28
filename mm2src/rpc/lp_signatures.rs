@@ -22,7 +22,6 @@
 use common::{jbits256, lp, rpc_response, HyRes, CJSON};
 use common::mm_ctx::MmArc;
 use libc::c_char;
-use peers;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 

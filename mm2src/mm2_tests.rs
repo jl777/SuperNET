@@ -460,6 +460,13 @@ fn trade_base_rel(base: &str, rel: &str) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
+    // Both Alice and Bob might try to bind on the "0.0.0.0:47773" DHT port in this test
+    // (because the local "127.0.0.*:47773" addresses aren't that useful for DHT).
+    // We want to give Bob a headstart in acquiring the port,
+    // because Alice will then be able to directly reach it (thanks to "seednode").
+    // Direct communication is not required in this test, but it's nice to have.
+    unwrap! (mm_bob.wait_for_log (2., &|log| log.contains ("preferred port 47773 drill true")));
+
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
             "gui": "nogui",

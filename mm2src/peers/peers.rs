@@ -488,7 +488,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                 for (payload, meta) in package.payloads.iter_mut() {
                     // NB: `dht_put` is usually reliable, but not 100% so.
                     //     In particular, invoking `dht_put` during DHT initialization might have no effect.
-                    //     And DHT might reboot when the externap IP changes, adding a chance of some `dht_put` calls being skipped.
+                    //     And DHT might reboot when the external IP changes, adding a chance of some `dht_put` calls being skipped.
                     //     And the DHT topology might change due to churn.
                     //     We're supposed to maintain DHT values by rewriting them while they are still needed.
                     //     So here after a little while we're repeating the `dht_put`.
@@ -613,6 +613,7 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
     };
 
     let mut trans = unwrap! (pctx.trans_meta.lock());
+    log! ("split_and_put] " [=trans.friends]);
 
     for (idx, chunk) in (1..) .zip (chunks) {
         salt.truncate (salt_base_len);
@@ -822,7 +823,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
     let from = bits256 {bytes: *array_ref! (from, 0, 32)};
 
     let ip: IpAddr = try_s! (unsafe {from_utf8_unchecked (ip)} .parse());
-    log! ("incoming_ping] from " (ip) " port " (port) " " [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"});
+    log! ("incoming_ping] from " (ip) " port " (port) " key " (from) ' ' [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"});
     cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
 
     let endpoint = SocketAddr::new (ip, port);
@@ -832,7 +833,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
     let pctx = try_s! (PeersContext::from_ctx (cbctx.ctx));
     // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
     let mut trans = try_s! (pctx.trans_meta.lock());
-    let friend = trans.friends.entry (from) .or_insert (Friend::default());
+    let friend = trans.friends.entry (from) .or_default();
     match friend.endpoints.entry (endpoint) {
         Entry::Occupied (_oe) => {},
         Entry::Vacant (ve) => {ve.insert (());}
@@ -1254,7 +1255,7 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], payload: Vec<u8>) -> Re
 
     // Add the peer into the friendlist, in order to discover and track its endpoints.
     if let Ok (mut trans) = pctx.trans_meta.lock() {
-        trans.friends.insert (peer, Default::default());
+        trans.friends.entry (peer) .or_default();
     }
 
     if !peer.nonz() {return ERR! ("peer key is empty")}
