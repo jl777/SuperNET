@@ -201,6 +201,8 @@ pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
     // status/availability check: https://github.com/artemii235/SuperNET/issues/156#issuecomment-446501816
 
     fn is_asset_chain(&self) -> bool;
+
+    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send>;
 }
 
 #[derive(Clone, Debug)]
@@ -897,5 +899,6 @@ pub fn my_balance (ctx: MmArc, req: Json) -> HyRes {
     Box::new(coin.my_balance().and_then(move |balance| rpc_response(200, json!({
         "coin": ticker,
         "balance": balance,
+        "address": coin.my_address(),
     }).to_string())))
 }

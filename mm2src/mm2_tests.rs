@@ -375,6 +375,118 @@ fn test_peers_dht() {peers::peers_tests::test_peers_dht()}
 #[ignore]
 fn test_peers_direct_send() {peers::peers_tests::test_peers_direct_send()}
 
+#[test]
+fn test_my_balance() {
+    let coins = json!([
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+    ]);
+
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "client": 1,
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        "db4be27033b636c6644c356ded97b0ad08914fcb8a1e2a1efc915b833c2cbd19".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
+    log!({"log path: {}", mm.log_path.display()});
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    // Enable BEER.
+    let enable = enable_electrum(&mm, "BEER", vec!["electrum1.cipig.net:10022","electrum2.cipig.net:10022","electrum3.cipig.net:10022"]);
+    let json: Json = unwrap!(json::from_str(&enable));
+    let balance_on_enable = unwrap!(json["balance"].as_f64());
+    assert_eq!(balance_on_enable, 1.0);
+
+    let my_balance = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "my_balance",
+        "coin": "BEER",
+    })));
+    assert_eq! (my_balance.0, StatusCode::OK, "RPC «my_balance» failed with status «{}»", my_balance.0);
+    let json: Json = unwrap!(json::from_str(&my_balance.1));
+    let my_balance = unwrap!(json["balance"].as_f64());
+    assert_eq!(my_balance, 1.0);
+    let my_address = unwrap!(json["address"].as_str());
+    assert_eq!(my_address, "RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD");
+}
+
+#[test]
+fn test_check_balance_on_order_post() {
+    let coins = json!([
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"txversion":4},
+        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"txversion":4},
+        {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
+    ]);
+
+    // start bob and immediately place the order
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "client": 1,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
+            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
+            "ethnode":"http://195.201.0.6:8545"
+        }),
+        "db4be27033b636c6644c356ded97b0ad08914fcb8a1e2a1efc915b833c2cbd19".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
+    log!({"Log path: {}", mm.log_path.display()});
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    // Enable coins. Print the replies in case we need the "address".
+    log! ({"enable_coins (bob): {:?}", enable_coins_electrum (&mm)});
+    // issue sell request by setting base/rel price
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "setprice",
+        "base": "PIZZA",
+        "rel": "BEER",
+        "price": 0.9
+    })));
+    // Expect error as PIZZA balance is 0
+    assert! (rc.0.is_server_error(), "!setprice success but should be error: {}", rc.1);
+
+    // issue buy request
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "buy",
+        "base": "BEER",
+        "rel": "PIZZA",
+        "relvolume": 0.1,
+        "price": 0.9
+    })));
+    // Expect error as PIZZA balance is 0
+    assert! (rc.0.is_server_error(), "!buy success but should be error: {}", rc.1);
+
+    // issue sell request
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "sell",
+        "base": "PIZZA",
+        "rel": "BEER",
+        "basevolume": 0.1,
+        "price": 0.9
+    })));
+    // Expect error as PIZZA balance is 0
+    assert! (rc.0.is_server_error(), "!sell success but should be error: {}", rc.1);
+}
+
 #[cfg(windows)]
 fn get_special_folder_path() -> PathBuf {
     use std::ffi::CStr;
@@ -537,48 +649,6 @@ fn trade_base_rel(base: &str, rel: &str) {
 
     unwrap! (mm_bob.stop());
     unwrap! (mm_alice.stop());
-}
-
-#[test]
-fn test_my_balance() {
-    let coins = json!([
-        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
-    ]);
-
-    let mut mm = unwrap! (MarketMakerIt::start (
-        json! ({
-            "gui": "nogui",
-            "netid": 9998,
-            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
-            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
-            "client": 1,
-            "passphrase": "bob passphrase",
-            "coins": coins,
-            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
-            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
-            "ethnode":"http://195.201.0.6:8545"
-        }),
-        "db4be27033b636c6644c356ded97b0ad08914fcb8a1e2a1efc915b833c2cbd19".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
-    ));
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
-    log!({"log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    // Enable BEER.
-    let enable = enable_electrum(&mm, "BEER", vec!["electrum1.cipig.net:10022","electrum2.cipig.net:10022","electrum3.cipig.net:10022"]);
-    let json: Json = unwrap!(json::from_str(&enable));
-    let balance_on_enable = unwrap!(json["balance"].as_f64());
-    assert_eq!(balance_on_enable, 1.0);
-
-    let my_balance = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "my_balance",
-        "coin": "BEER",
-    })));
-    assert_eq! (my_balance.0, StatusCode::OK, "RPC «my_balance» failed with status «{}»", my_balance.0);
-    let json: Json = unwrap!(json::from_str(&my_balance.1));
-    let my_balance = unwrap!(json["balance"].as_f64());
-    assert_eq!(my_balance, 1.0);
 }
 
 /// Integration test for PIZZA/BEER and BEER/PIZZA trade

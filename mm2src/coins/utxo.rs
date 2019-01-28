@@ -25,7 +25,7 @@ use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
-use common::{lp, MutexGuardWrapper};
+use common::{dstr, lp, MutexGuardWrapper};
 use futures::{Future};
 use gstuff::now_ms;
 use keys::{KeyPair, Private, Public, Address, Secret};
@@ -153,6 +153,7 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// Is current coin KMD asset chain?
     /// https://komodoplatform.atlassian.net/wiki/spaces/KPSD/pages/71729160/What+is+a+Parallel+Chain+Asset+Chain
     asset_chain: bool,
+    tx_fee: u64,
 }
 
 /// Generates unsigned transaction (TransactionInputSigner) from specified utxos and outputs.
@@ -855,6 +856,22 @@ impl IguanaInfo for UtxoCoin {
 }
 impl MmCoin for UtxoCoin {
     fn is_asset_chain(&self) -> bool { self.asset_chain }
+
+    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
+        let fee_f64 = dstr(self.tx_fee as i64);
+        let arc = self.clone();
+        Box::new(self.my_balance().and_then(move |balance| {
+            let required = if maker {
+                amount + fee_f64
+            } else {
+                amount + amount / 777.0 + 2.0 * fee_f64
+            };
+            if balance < required {
+                return ERR!("{} balance {} is too low, required {:.6}", arc.ticker(), balance, required);
+            }
+            Ok(())
+        }))
+    }
 }
 
 pub fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
@@ -936,16 +953,21 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
                         if let Err(e) = client.server_ping().wait() {
                             log!("Electrum servers " [urls] " ping error " [e]);
                         }
+                        // the simplest way to retrigger subscription in case of reconnecting is
+                        // just running subscribe requests in loop. It doesn't cause Electrum server
+                        // to double the subscription messages.
+                        if let Err(e) = client.blockchain_headers_subscribe().wait() {
+                            log!("Electrum servers " [urls] " resubscribe error " [e]);
+                        }
                     } else {
                         break;
                     }
-                    thread::sleep(Duration::from_secs(60));
+                    thread::sleep(Duration::from_secs(30));
                 }
             }));
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))
         }
     };
-
     let coin = UtxoCoinImpl {
         ticker,
         decimals: 8,
@@ -966,6 +988,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         tx_version: info.txversion,
         my_address: my_address.clone(),
         asset_chain: info.isassetchain == 1,
+        tx_fee: info.txfee,
     };
     Ok(UtxoCoin(Arc::new(coin)).into())
 }

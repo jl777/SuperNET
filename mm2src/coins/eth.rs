@@ -622,6 +622,10 @@ impl EthCoin {
         }
     }
 
+    fn eth_balance(&self) -> Box<Future<Item=U256, Error=String> + Send> {
+        Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e)))
+    }
+
     fn call_request(&self, to: Address, value: Option<U256>, data: Option<Bytes>) -> impl Future<Item=Bytes, Error=String> {
         let request = CallRequest {
             from: Some(self.my_address),
@@ -786,6 +790,45 @@ impl IguanaInfo for EthCoin {
 }
 impl MmCoin for EthCoin {
     fn is_asset_chain(&self) -> bool { false }
+
+    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
+        let arc = self.clone();
+        let decimals = self.decimals;
+        let ticker = self.ticker.clone();
+        let required = if maker {
+            amount
+        } else {
+            amount + amount / 777.0
+        };
+        Box::new(self.my_balance().and_then(move |balance| -> Box<Future<Item=(), Error=String> + Send> {
+            let balance_f64: f64 = try_fus!(display_u256_with_decimal_point(balance, decimals).parse());
+            match arc.coin_type {
+                EthCoinType::Eth => {
+                    let required = required + 0.0002;
+                    if balance_f64 < required {
+                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_f64, required)))
+                    } else {
+                        Box::new(futures::future::ok(()))
+                    }
+                },
+                EthCoinType::Erc20(_addr) => {
+                    if balance_f64 < required {
+                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_f64, amount)))
+                    } else {
+                        // need to check ETH balance too, address should have some to cover gas fees
+                        Box::new(arc.eth_balance().and_then(move |eth_balance| {
+                            let eth_balance_f64: f64 = try_s!(display_u256_with_decimal_point(eth_balance, decimals).parse());
+                            if eth_balance_f64 < 0.0002 {
+                                ERR!("{} balance is enough, but base coin balance {} is too low to cover gas fee, required {}", ticker, eth_balance_f64, 0.0002)
+                            } else {
+                                Ok(())
+                            }
+                        }))
+                    }
+                }
+            }
+        }))
+    }
 }
 
 fn addr_from_raw_pubkey(pubkey: &[u8]) -> Result<Address, String> {
