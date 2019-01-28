@@ -17,6 +17,7 @@
 //
 //  Copyright © 2014-2018 SuperNET. All rights reserved.
 //
+use coins::{enable, electrum, my_balance};
 use common::{free_c_ptr, lp, rpc_response, rpc_err_response, HyRes, CORE};
 use common::mm_ctx::MmArc;
 use futures::{self, Future};
@@ -28,7 +29,6 @@ use hyper::server::conn::Http;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::{c_char, c_void};
-use coins::{enable, electrum};
 use portfolio::lp_autoprice;
 use portfolio::prices::{lp_fundvalue, set_price};
 use serde_json::{self as json, Value as Json};
@@ -40,6 +40,7 @@ use tokio_core::net::TcpListener;
 use hex;
 
 use crate::lp_network::lp_queue_command;
+use crate::lp_ordermatch::{buy, sell};
 use crate::CJSON;
 
 mod lp_commands;
@@ -204,6 +205,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "help" => help(),
         "inventory" => inventory (ctx, req),
         "mpnet" => mpnet (&req),
+        "my_balance" => my_balance (ctx, req),
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "passphrase" => passphrase (ctx, req),
         "sell" => sell (ctx, req),

@@ -56,7 +56,7 @@
 //
 use bitcrypto::dhash160;
 use coins::{MmCoinEnum, TransactionEnum};
-use common::{bits256, Timeout};
+use common::{bits256, dstr, Timeout};
 use common::log::TagParam;
 use common::mm_ctx::MmArc;
 use coins::utxo::{random_compressed_key_pair};
@@ -337,10 +337,15 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         }};
     }
 
+    if let Err(e) = swap.maker_coin.check_i_have_enough_to_trade(dstr(swap.maker_amount as i64), true).wait() {
+        err!(-2000, "!check_i_have_enough_to_trade" [e]);
+    };
+
     let started_at = now_ms() / 1000;
     let mut rng = rand::thread_rng();
     let secret: [u8; 32] = rng.gen();
     swap.maker_payment_lock = started_at + swap.lock_duration * 2;
+    let wait_taker_payment = started_at + swap.lock_duration / 3;
 
     swap.secret_hash = dhash160(&secret);
     swap.secret = secret.into();
@@ -400,7 +405,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     swap.maker_amount,
                 );
 
-                status.status(SWAP_STATUS, "Waiting for the Maker payment to land…");
+                status.status(SWAP_STATUS, "Sending Maker payment…");
                 let transaction = match payment_fut.wait() {
                     Ok(t) => t,
                     Err(err) => err!(-2006, "!send_maker_payment: "(err))
@@ -412,7 +417,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 AtomicSwapState::WaitTakerPayment {sending_f}
             },
             AtomicSwapState::WaitTakerPayment {sending_f} => {
-                let payload = recv!(sending_f, "taker-payment", "for Taker fee", 600, -2006, {|_: &[u8]| Ok(())});
+                let payload = recv!(sending_f, "taker-payment", "for Taker payment", swap.lock_duration / 3, -2006, {|_: &[u8]| Ok(())});
 
                 let taker_payment = match swap.taker_coin.tx_from_raw_bytes(&payload) {
                     Ok(tx) => tx,
@@ -440,7 +445,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let wait = swap.taker_coin.wait_for_confirmations(
                     taker_payment,
                     swap.taker_payment_confirmations,
-                    (now_ms() / 1000) + 1000,
+                    wait_taker_payment,
                 );
 
                 if let Err(err) = wait {err!(-2006, "!taker_coin.wait_for_confirmations: "(err))}
@@ -509,8 +514,14 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             return Err (($ec, msg))
         }};
     }
+
+    if let Err(e) = swap.taker_coin.check_i_have_enough_to_trade(dstr(swap.taker_amount as i64), true).wait() {
+        err!(-1000, "!check_i_have_enough_to_trade" [e]);
+    };
+
     let started_at = now_ms() / 1000;
     swap.taker_payment_lock = started_at + swap.lock_duration;
+    let maker_payment_wait = started_at + swap.lock_duration / 3;
 
     loop {
         let next_state = match unwrap!(swap.state.take()) {
@@ -567,7 +578,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 AtomicSwapState::WaitMakerPayment {sending_f}
             },
             AtomicSwapState::WaitMakerPayment {sending_f} => {
-                let payload = recv!(sending_f, "maker-payment", "for Maker deposit", 600, -1005, {|_: &[u8]| Ok(())});
+                let payload = recv!(sending_f, "maker-payment", "for Maker payment", 600, -1005, {|_: &[u8]| Ok(())});
                 let maker_payment = match swap.maker_coin.tx_from_raw_bytes(&payload) {
                     Ok(p) => p,
                     Err(err) => err!(-1005, "Error parsing the 'maker-payment': "(err))
@@ -594,7 +605,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 if let Err(err) = swap.maker_coin.wait_for_confirmations(
                     maker_payment,
                     swap.maker_payment_confirmations,
-                    now_ms() / 1000 + 1000,
+                    maker_payment_wait,
                 ) {
                     err!(-1005, "!maker_coin.wait_for_confirmations: "(err))
                 }
@@ -627,7 +638,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             },
             AtomicSwapState::WaitTakerPaymentSpent {sending_f} => {
                 status.status(SWAP_STATUS, "Waiting for taker payment spend…");
-                let got = swap.taker_coin.wait_for_tx_spend(swap.taker_payment.clone().unwrap(), now_ms() / 1000 + 1000);
+                let got = swap.taker_coin.wait_for_tx_spend(swap.taker_payment.clone().unwrap(), swap.taker_payment_lock);
                 drop(sending_f);
 
                 match got {
@@ -649,7 +660,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             },
             AtomicSwapState::SpendMakerPayment => {
                 // TODO: A human-readable label for send_taker_spends_maker_payment.
-                status.status(SWAP_STATUS, "send_taker_spends_maker_payment…");
+                status.status(SWAP_STATUS, "Spending maker payment…");
                 let spend_fut = swap.maker_coin.send_taker_spends_maker_payment(
                     swap.maker_payment.clone().unwrap(),
                     &*swap.my_priv0.private().secret,
@@ -666,15 +677,22 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             },
             AtomicSwapState::RefundTakerPayment => {
                 status.status(SWAP_STATUS, "Refunding the Taker payment…");
+                status.status(SWAP_STATUS, "Wait until payment is refundable…");
+                loop {
+                    if now_ms() / 1000 > swap.taker_payment_lock + 10 {
+                        break;
+                    }
+                }
                 let refund_fut = swap.taker_coin.send_taker_refunds_payment(
                     swap.taker_payment.clone().unwrap(),
                     &*swap.my_priv0.private().secret,
                 );
 
-                let _transaction = match refund_fut.wait() {
+                let transaction = match refund_fut.wait() {
                     Ok(t) => t,
                     Err(err) => err!(-1, "Error: "(err))
                 };
+                log!("Taker refund tx hash " (transaction.tx_hash()));
                 return Ok(());
             },
             _ => unimplemented!(),

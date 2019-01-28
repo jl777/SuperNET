@@ -1,8 +1,10 @@
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTransaction};
-use common::{CORE, slurp_req, join_all_sequential};
+use common::{CORE, slurp_req};
+use common::custom_futures::{join_all_sequential, select_ok_sequential, SendAll};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, JsonRpcResponse, RpcRes};
-use futures::{Async, Future, Poll, Sink};
+use futures::{Async, Future, Poll, Sink, Stream};
+use futures::future::{Either, loop_fn, Loop, select_ok};
 use futures::sync::mpsc;
 use futures_timer::Delay;
 use futures_timer::FutureExt;
@@ -14,18 +16,17 @@ use keys::Address;
 use rpc::v1::types::{H256 as H256Json, Transaction as RpcTransaction, Bytes as BytesJson, VerboseBlockClient};
 use script::{Builder};
 use serde_json::{self as json, Value as Json};
-use serialization::{deserialize};
+use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
 use std::{io, thread};
 use std::fmt::Debug;
 use std::cmp::Ordering;
-use std::net::{ToSocketAddrs, SocketAddr};
+use std::net::{ToSocketAddrs, SocketAddr, TcpStream as TcpStreamStd};
 use std::ops::Deref;
 use std::sync::{Mutex, Arc};
 use std::time::{Duration};
 use tokio::codec::{Encoder, Decoder};
 use tokio::net::TcpStream;
-use tokio::prelude::*;
 
 #[derive(Debug)]
 pub enum UtxoRpcClientEnum {
@@ -55,7 +56,7 @@ pub struct UnspentInfo {
 pub trait UtxoRpcClientOps: Debug + 'static {
     fn list_unspent_ordered(&self, address: &Address) -> RpcRes<Vec<UnspentInfo>>;
 
-    fn send_transaction(&self, tx: BytesJson) -> RpcRes<H256Json>;
+    fn send_transaction(&self, tx: &UtxoTransaction, my_addr: Address) -> RpcRes<H256Json>;
 
     fn get_transaction(&self, txid: H256Json) -> RpcRes<RpcTransaction>;
 
@@ -199,8 +200,8 @@ impl UtxoRpcClientOps for NativeClient {
         }))
     }
 
-    fn send_transaction(&self, tx: BytesJson) -> RpcRes<H256Json> {
-        self.send_raw_transaction(tx)
+    fn send_transaction(&self, tx: &UtxoTransaction, _addr: Address) -> RpcRes<H256Json> {
+        self.send_raw_transaction(BytesJson::from(serialize(tx)))
     }
 
     fn get_transaction(&self, txid: H256Json) -> RpcRes<RpcTransaction> {
@@ -326,9 +327,9 @@ pub struct ElectrumBlockHeader {
 
 #[derive(Debug, Deserialize)]
 struct ElectrumTxHistoryItem {
-    height: u64,
+    height: i64,
     tx_hash: H256Json,
-    fee: Option<u64>,
+    fee: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -350,12 +351,15 @@ pub fn electrum_script_hash(script: &[u8]) -> Vec<u8> {
 }
 
 pub fn spawn_electrum(
-    addr: &str,
+    addr_str: &str,
     arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
-) -> Box<Future<Item=mpsc::Sender<Vec<u8>>, Error=String>> {
-    let mut addr = try_fus!(addr.to_socket_addrs());
-
-    Box::new(electrum_connect(&addr.next().unwrap(), arc).map_err(|e| ERRL!("{}", e)))
+) -> Result<mpsc::Sender<Vec<u8>>, String> {
+    let mut addr = try_s!(addr_str.to_socket_addrs());
+    let addr = match addr.next() {
+        Some(a) => a,
+        None => return ERR!("Socket addr from addr {} is None.", addr_str),
+    };
+    Ok(try_s!(electrum_connect(addr, arc)))
 }
 
 #[derive(Debug)]
@@ -389,7 +393,7 @@ impl UtxoRpcClientOps for ElectrumClient {
     fn list_unspent_ordered(&self, address: &Address) -> RpcRes<Vec<UnspentInfo>> {
         let script = Builder::build_p2pkh(&address.hash);
         let script_hash = electrum_script_hash(&script);
-        Box::new(self.scripthash_list_unspent(&hex::encode(script_hash)).map(|unspents| {
+        Box::new(self.scripthash_list_unspent(&hex::encode(script_hash)).map(move |unspents| {
             let mut result: Vec<UnspentInfo> = unspents.iter().map(|unspent| UnspentInfo {
                 outpoint: OutPoint {
                     hash: unspent.tx_hash.reversed().into(),
@@ -409,9 +413,42 @@ impl UtxoRpcClientOps for ElectrumClient {
         }))
     }
 
-    /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-broadcast
-    fn send_transaction(&self, tx: BytesJson) -> RpcRes<H256Json> {
-        rpc_func!(self, "blockchain.transaction.broadcast", tx)
+    fn send_transaction(&self, tx: &UtxoTransaction, my_addr: Address) -> RpcRes<H256Json> {
+        let bytes = BytesJson::from(serialize(tx));
+        let inputs = tx.inputs.clone();
+        let arc = self.0.clone();
+        let script = Builder::build_p2pkh(&my_addr.hash);
+        let script_hash = hex::encode(electrum_script_hash(&script));
+        Box::new(self.blockchain_transaction_broadcast(bytes).and_then(move |res| {
+            // Check every second until Electrum server recognizes that used UTXOs are spent
+            loop_fn((res, arc, script_hash, inputs), move |(res, arc, script_hash, inputs)| {
+                let delay_f = Delay::new(Duration::from_secs(1)).map_err(|e| ERRL!("{}", e));
+                delay_f.and_then(move |_res| {
+                    arc.scripthash_list_unspent(&script_hash).then(move |unspents| {
+                        let unspents = match unspents {
+                            Ok(unspents) => unspents,
+                            Err(e) => {
+                                log!("Error getting Electrum unspents " [e]);
+                                // we can just keep looping in case of error hoping it will go away
+                                return Ok(Loop::Continue((res, arc, script_hash, inputs)));
+                            }
+                        };
+
+                        for input in inputs.iter() {
+                            let find = unspents.iter().find(|unspent| {
+                                unspent.tx_hash == input.previous_output.hash.reversed().into() && unspent.tx_pos == input.previous_output.index
+                            });
+                            // Check again if at least 1 spent outpoint is still there
+                            if find.is_some() {
+                                return Ok(Loop::Continue((res, arc, script_hash, inputs)));
+                            }
+                        }
+
+                        Ok(Loop::Break(res))
+                    })
+                })
+            })
+        }))
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-get
@@ -489,9 +526,7 @@ impl ElectrumClientImpl {
     }
 
     pub fn add_server(&mut self, addr: &str) -> Result<(), String> {
-        // TODO Have to implement this function as synchronous using .wait to avoid wrapping senders in Mutex/Arc.
-        // Consider refactoring when async/await is released.
-        let sender = try_s!(spawn_electrum(addr, self.results.clone()).wait());
+        let sender = try_s!(spawn_electrum(addr, self.results.clone()));
         self.senders.push(sender);
         Ok(())
     }
@@ -533,6 +568,11 @@ impl ElectrumClientImpl {
                 Ok(response)
             })
         )
+    }
+
+    /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-broadcast
+    fn blockchain_transaction_broadcast(&self, tx: BytesJson) -> RpcRes<H256Json> {
+        rpc_func!(self, "blockchain.transaction.broadcast", tx)
     }
 }
 
@@ -577,7 +617,7 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
                 let id = match request.method.as_ref() {
                     BLOCKCHAIN_HEADERS_SUB_ID => BLOCKCHAIN_HEADERS_SUB_ID,
                     _ => {
-                        log!("Couldn't get id for request "[request]);
+                        log!("Couldn't get id of request " [request]);
                         return;
                     }
                 };
@@ -588,7 +628,6 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
                     result: request.params[0].clone(),
                     error: Json::Null,
                 };
-
                 (*arc.lock().unwrap()).insert(id.into(), response);
             }
         }
@@ -596,39 +635,63 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
 }
 
 fn electrum_connect(
-    addr: &SocketAddr,
-    arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
-) -> impl Future<Item=mpsc::Sender<Vec<u8>>, Error=String> {
-    let tcp = TcpStream::connect(addr);
+    addr: SocketAddr,
+    responses: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
+) -> Result<mpsc::Sender<Vec<u8>>, String> {
+    // try to connect synchronously first using std TcpStream to check if the server is reachable
+    try_s!(TcpStreamStd::connect(&addr));
     let (tx, rx) = mpsc::channel(0);
     let rx = rx_to_stream(rx);
 
-    tcp
-        .map_err(|e| ERRL!("{}", e))
-        .and_then(move |stream| {
-            try_s!(stream.set_nodelay(true));
+    let connect_loop = loop_fn((addr, rx, responses, 0), move |(addr, rx, responses, delay)| {
+        let tcp = if delay > 0 {
+            Either::A(Delay::new(Duration::from_secs(delay)).and_then(move |_| TcpStream::connect(&addr)))
+        } else {
+            Either::B(TcpStream::connect(&addr))
+        };
+        tcp.then(move |stream| -> Box<Future<Item=Loop<(), _>, Error=_> + Send> {
+            let stream = match stream {
+                Ok(s) => s,
+                Err(e) => {
+                    log!([addr] " connect error " [e]);
+                    return Box::new(futures::future::ok(Loop::Continue((addr, rx, responses, 5))));
+                },
+            };
+
+            if let Err(e) = stream.set_nodelay(true) {
+                log!([addr] " set no delay error " [e]);
+                return Box::new(futures::future::ok(Loop::Continue((addr, rx, responses, 5))));
+            }
 
             let (sink, stream) = Bytes.framed(stream).split();
 
-            CORE.spawn(|_| {
-                rx.forward(sink).then(|result| {
-                    if let Err(e) = result {
-                        log!("failed to write to socket " [e])
-                    }
-                    Ok(())
-                })
-            });
+            let send_all = SendAll::new(sink, rx);
 
+            let clone = responses.clone();
             CORE.spawn(|_| {
                 stream
                     .for_each(move |chunk| {
-                        electrum_process_chunk(&chunk, arc.clone());
+                        electrum_process_chunk(&chunk, clone.clone());
                         futures::future::ok(())
                     })
-                    .map_err(|e| { log!([e]); () })
+                    .map_err(|e| {
+                        log!([e]);
+                        ()
+                    })
             });
-            Ok(tx)
+
+            Box::new(send_all.then(move |result| {
+                if let Err((rx, e)) = result {
+                    log!([addr] " failed to write to socket " [e]);
+                    return Ok(Loop::Continue((addr, rx, responses, 5)));
+                }
+                Ok(Loop::Break(()))
+            }))
         })
+    });
+
+    CORE.spawn(|_| connect_loop);
+    Ok(tx)
 }
 
 /// A simple `Codec` implementation that reads buffer until \n according to Electrum protocol specification:
@@ -745,7 +808,7 @@ fn electrum_request(
             }
         })
         .map_err(|e| StringError(e))
-        .timeout(Duration::from_secs(30));
+        .timeout(Duration::from_secs(10));
 
     Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
@@ -755,13 +818,16 @@ fn electrum_request_multi(
     senders: Vec<mpsc::Sender<Vec<u8>>>,
     ctx: Arc<Mutex<HashMap<String, JsonRpcResponse>>>
 ) -> JsonRpcResponseFut {
-    let futures = senders.iter().map(|sender| electrum_request(request.clone(), sender.clone(), ctx.clone()));
-
-    Box::new(futures::future::select_ok(futures)
-        .map(|(result, _)| {
-            result
-        })
-        .map_err(|e| ERRL!("{:?}", e)))
+    let mut futures = vec![];
+    for sender in senders.iter() {
+        futures.push(electrum_request(request.clone(), sender.clone(), ctx.clone()));
+    }
+    if request.method != "server.ping" {
+        Box::new(select_ok_sequential(futures).map_err(|e| ERRL!("{:?}", e)))
+    } else {
+        // server.ping must be sent to all servers to keep all connections alive
+        Box::new(select_ok(futures).map(|(result, _)| result).map_err(|e| ERRL!("{:?}", e)))
+    }
 }
 
 fn electrum_subscribe(
@@ -784,7 +850,7 @@ fn electrum_subscribe(
             }
         })
         .map_err(|e| StringError(e))
-        .timeout(Duration::from_secs(30));
+        .timeout(Duration::from_secs(10));
 
     Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
@@ -806,6 +872,7 @@ fn electrum_subscribe_multi(
 // TODO these are just helpers functions that I used during development.
 // Trade tests also cover these functions, if some of these doesn't work properly trade will fail.
 // Maybe we should remove them at all or move to a kind of "helpers" file.
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -932,3 +999,4 @@ mod tests {
         log!([res]);
     }
 }
+*/

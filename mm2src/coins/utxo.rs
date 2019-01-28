@@ -25,14 +25,13 @@ use bitcrypto::{dhash160};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chain::{TransactionOutput, TransactionInput, OutPoint, Transaction as UtxoTransaction};
 use chain::constants::{SEQUENCE_FINAL};
-use common::lp;
+use common::{dstr, lp, MutexGuardWrapper};
 use futures::{Future};
 use gstuff::now_ms;
 use keys::{KeyPair, Private, Public, Address, Secret};
 use keys::bytes::Bytes;
 use keys::generator::{Random, Generator};
 use primitives::hash::{H256, H264, H512};
-use rpc::v1::types::{Bytes as BytesJson};
 use script::{Opcode, Builder, Script, TransactionInputSigner, UnsignedTransactionInput, SignatureVersion};
 use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
@@ -150,11 +149,11 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
-    utxo_mutex: Mutex<()>,
     my_address: Address,
     /// Is current coin KMD asset chain?
     /// https://komodoplatform.atlassian.net/wiki/spaces/KPSD/pages/71729160/What+is+a+Parallel+Chain+Asset+Chain
     asset_chain: bool,
+    tx_fee: u64,
 }
 
 /// Generates unsigned transaction (TransactionInputSigner) from specified utxos and outputs.
@@ -437,10 +436,15 @@ fn sign_tx(
 pub struct UtxoCoin(Arc<UtxoCoinImpl>);
 impl Deref for UtxoCoin {type Target = UtxoCoinImpl; fn deref (&self) -> &UtxoCoinImpl {&*self.0}}
 
+// We can use a shared UTXO lock for all UTXO coins at 1 time.
+// It's highly likely that we won't experience any issues with it as we won't need to send "a lot" of transactions concurrently.
+lazy_static! {static ref UTXO_LOCK: Mutex<()> = Mutex::new(());}
+
 impl UtxoCoin {
     fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> TransactionFut {
         let change_script_pubkey = Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes();
         let arc = self.clone();
+        let utxo_lock = MutexGuardWrapper(try_fus!(UTXO_LOCK.lock()));
         let unspent_fut = self.rpc_client.list_unspent_ordered(&self.my_address);
         Box::new(unspent_fut.then(move |unspents| -> TransactionFut {
             let unspents = try_fus!(unspents);
@@ -460,7 +464,11 @@ impl UtxoCoin {
                 transaction: signed,
                 redeem_script
             };
-            arc.send_raw_tx(tx.into())
+            Box::new(arc.send_raw_tx(tx.into()).then(move |res| {
+                // Drop the UTXO lock only when the transaction send result is known.
+                drop(utxo_lock);
+                res
+            }))
         }))
     }
 
@@ -777,17 +785,17 @@ impl SwapOps for UtxoCoin {
 }
 
 impl MarketCoinOps for UtxoCoin {
-    fn address(&self) -> Cow<str> {
+    fn my_address(&self) -> Cow<str> {
         self.0.my_address.to_string().into()
     }
 
-    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
+    fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
         self.rpc_client.display_balance(self.my_address.clone())
     }
 
     fn send_raw_tx(&self, tx: TransactionEnum) -> TransactionFut {
         let tx = match tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let send_fut = self.rpc_client.send_transaction(BytesJson::from(serialize(&tx.transaction)));
+        let send_fut = self.rpc_client.send_transaction(&tx.transaction, self.my_address.clone());
         Box::new(send_fut.map(move |_res| { tx.into() }))
     }
 
@@ -848,6 +856,22 @@ impl IguanaInfo for UtxoCoin {
 }
 impl MmCoin for UtxoCoin {
     fn is_asset_chain(&self) -> bool { self.asset_chain }
+
+    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
+        let fee_f64 = dstr(self.tx_fee as i64);
+        let arc = self.clone();
+        Box::new(self.my_balance().and_then(move |balance| {
+            let required = if maker {
+                amount + fee_f64
+            } else {
+                amount + amount / 777.0 + 2.0 * fee_f64
+            };
+            if balance < required {
+                return ERR!("{} balance {} is too low, required {:.6}", arc.ticker(), balance, required);
+            }
+            Ok(())
+        }))
+    }
 }
 
 pub fn random_compressed_key_pair(prefix: u8) -> Result<KeyPair, String> {
@@ -917,28 +941,33 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
             }
             try_s!(client.blockchain_headers_subscribe().wait());
 
-            let client = ElectrumClient(Arc::new(client));
+            let client = Arc::new(client);
             // ping the electrum servers every minute to prevent them from disconnecting us.
             // according to docs server can do it if there are no messages in ~10 minutes.
             // https://electrumx.readthedocs.io/en/latest/protocol-methods.html?highlight=keep#server-ping
             // weak reference will allow to stop the thread if client is dropped
-            let weak_client = Arc::downgrade(&client.0);
+            let weak_client = Arc::downgrade(&client);
             try_s!(thread::Builder::new().name(format!("electrum_ping_{}", ticker)).spawn(move || {
                 loop {
                     if let Some(client) = weak_client.upgrade() {
                         if let Err(e) = client.server_ping().wait() {
                             log!("Electrum servers " [urls] " ping error " [e]);
                         }
+                        // the simplest way to retrigger subscription in case of reconnecting is
+                        // just running subscribe requests in loop. It doesn't cause Electrum server
+                        // to double the subscription messages.
+                        if let Err(e) = client.blockchain_headers_subscribe().wait() {
+                            log!("Electrum servers " [urls] " resubscribe error " [e]);
+                        }
                     } else {
                         break;
                     }
-                    thread::sleep(Duration::from_secs(60));
+                    thread::sleep(Duration::from_secs(30));
                 }
             }));
-            UtxoRpcClientEnum::Electrum(client)
+            UtxoRpcClientEnum::Electrum(ElectrumClient(client))
         }
     };
-
     let coin = UtxoCoinImpl {
         ticker,
         decimals: 8,
@@ -957,9 +986,9 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         segwit: false,
         wif_prefix: info.wiftype,
         tx_version: info.txversion,
-        utxo_mutex: Mutex::new(()),
         my_address: my_address.clone(),
         asset_chain: info.isassetchain == 1,
+        tx_fee: info.txfee,
     };
     Ok(UtxoCoin(Arc::new(coin)).into())
 }

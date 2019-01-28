@@ -1848,7 +1848,6 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     V = malloc(maxV * sizeof(*V));
     for (iter=0; iter<2; iter++)
     {
-        LP_address_utxo_reset(&num,coin);
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
@@ -1946,48 +1945,6 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     if ( allocated_outputs != 0 )
         free_json(outputs);
     return(jprint(retjson,1));
-}
-
-char *LP_autosplit(struct iguana_info *coin)
-{
-    char *retstr; cJSON *argjson,*withdrawjson,*outputs,*item; int64_t total,balance,txfee;
-    if ( coin->etomic[0] == 0 )
-    {
-        if ( coin->electrum != 0 )
-            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
-        else balance = LP_RTsmartbalance(coin);
-        if ( (txfee= coin->txfee) == 0 ) // BTC
-            txfee = LP_txfeecalc(coin,0,500);
-        balance -= (txfee + 100000);
-        //printf("balance %.8f, txfee %.8f, threshold %.8f\n",dstr(balance),dstr(txfee),dstr((1000000 - (txfee + 100000))));
-        if ( balance > txfee && balance >= (1000000 - (txfee + 100000)) )
-        {
-            // .95 / .02 / .02 / 0.005
-            //halfval = (balance / 100) * 45;
-            argjson = cJSON_CreateObject();
-            outputs = cJSON_CreateArray();
-            item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(balance/100) * 95);
-            jaddi(outputs,item);
-            item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(balance/50));
-            jaddi(outputs,item);
-            item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,dstr(balance/50));
-            jaddi(outputs,item);
-            item = cJSON_CreateObject();
-            jaddnum(item,coin->smartaddr,0.0001);
-            jaddi(outputs,item);
-            jadd(argjson,"outputs",outputs);
-            jaddnum(argjson,"broadcast",1);
-            jaddstr(argjson,"coin",coin->symbol);
-            //printf("halfval %.8f autosplit.(%s)\n",dstr(halfval),jprint(argjson,0));
-            retstr = LP_withdraw(coin,argjson);
-            free_json(argjson);
-            return(retstr);
-        } else return(clonestr("{\"error\":\"balance too small to autosplit, please make more deposits\"}"));
-    }
-    return(clonestr("{\"error\":\"couldnt autosplit\"}"));
 }
 
 char *LP_autofillbob(struct iguana_info *coin,uint64_t satoshis)

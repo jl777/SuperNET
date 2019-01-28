@@ -18,7 +18,7 @@
 //
 //  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
-use common::{CORE, lp, slurp_url};
+use common::{CORE, lp, MutexGuardWrapper, slurp_url};
 use secp256k1::key::PublicKey;
 use ethabi::{Contract, Token};
 use ethcore_transaction::{ Action, Transaction as UnsignedEthTransaction, UnverifiedTransaction};
@@ -32,7 +32,7 @@ use serde_json::{self as json};
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use web3::transports::{ Http };
@@ -276,11 +276,11 @@ impl SwapOps for EthCoin {
 }
 
 impl MarketCoinOps for EthCoin {
-    fn address(&self) -> Cow<str> {
+    fn my_address(&self) -> Cow<str> {
         format!("{:#02x}", self.my_address).into()
     }
 
-    fn get_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
+    fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
         let decimals = self.decimals;
         Box::new(self.my_balance().and_then(move|result| {
             let string = display_u256_with_decimal_point(result, decimals);
@@ -377,6 +377,12 @@ impl MarketCoinOps for EthCoin {
     }
 }
 
+// We can use a shared nonce lock for all ETH coins.
+// It's highly likely that we won't experience any issues with it as we won't need to send "a lot" of transactions concurrently.
+// For ETH it makes even more sense because different ERC20 tokens can be based on same ETH blockchain.
+// So we would need to handle shared locks anyway.
+lazy_static! {static ref NONCE_LOCK: Mutex<()> = Mutex::new(());}
+
 type EthTxFut = Box<Future<Item=SignedEthTransaction, Error=String> + Send + 'static>;
 
 impl EthCoin {
@@ -388,6 +394,7 @@ impl EthCoin {
         gas: U256,
     ) -> EthTxFut {
         let arc = self.clone();
+        let nonce_lock = MutexGuardWrapper(try_fus!(NONCE_LOCK.lock()));
         let nonce_fut = self.web3.eth().parity_next_nonce(self.my_address.clone()).map_err(|e| ERRL!("{}", e));
         Box::new(nonce_fut.then(move |nonce| -> EthTxFut {
             let nonce = try_fus!(nonce);
@@ -410,7 +417,10 @@ impl EthCoin {
                 let signed = tx.sign(arc.key_pair.secret(), None);
                 let bytes = web3::types::Bytes(rlp::encode(&signed).to_vec());
                 let send_fut = arc.web3.eth().send_raw_transaction(bytes).map_err(|e| ERRL!("{}", e));
-                Box::new(send_fut.map(move |_res| signed))
+                Box::new(send_fut.then(move |res| {
+                    drop(nonce_lock);
+                    res
+                }).map(move |_res| signed))
             }))
         }))
     }
@@ -612,6 +622,10 @@ impl EthCoin {
         }
     }
 
+    fn eth_balance(&self) -> Box<Future<Item=U256, Error=String> + Send> {
+        Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e)))
+    }
+
     fn call_request(&self, to: Address, value: Option<U256>, data: Option<Bytes>) -> impl Future<Item=Bytes, Error=String> {
         let request = CallRequest {
             from: Some(self.my_address),
@@ -776,6 +790,45 @@ impl IguanaInfo for EthCoin {
 }
 impl MmCoin for EthCoin {
     fn is_asset_chain(&self) -> bool { false }
+
+    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
+        let arc = self.clone();
+        let decimals = self.decimals;
+        let ticker = self.ticker.clone();
+        let required = if maker {
+            amount
+        } else {
+            amount + amount / 777.0
+        };
+        Box::new(self.my_balance().and_then(move |balance| -> Box<Future<Item=(), Error=String> + Send> {
+            let balance_f64: f64 = try_fus!(display_u256_with_decimal_point(balance, decimals).parse());
+            match arc.coin_type {
+                EthCoinType::Eth => {
+                    let required = required + 0.0002;
+                    if balance_f64 < required {
+                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_f64, required)))
+                    } else {
+                        Box::new(futures::future::ok(()))
+                    }
+                },
+                EthCoinType::Erc20(_addr) => {
+                    if balance_f64 < required {
+                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_f64, amount)))
+                    } else {
+                        // need to check ETH balance too, address should have some to cover gas fees
+                        Box::new(arc.eth_balance().and_then(move |eth_balance| {
+                            let eth_balance_f64: f64 = try_s!(display_u256_with_decimal_point(eth_balance, decimals).parse());
+                            if eth_balance_f64 < 0.0002 {
+                                ERR!("{} balance is enough, but base coin balance {} is too low to cover gas fee, required {}", ticker, eth_balance_f64, 0.0002)
+                            } else {
+                                Ok(())
+                            }
+                        }))
+                    }
+                }
+            }
+        }))
+    }
 }
 
 fn addr_from_raw_pubkey(pubkey: &[u8]) -> Result<Address, String> {
