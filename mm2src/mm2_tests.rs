@@ -570,6 +570,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
             "passphrase": bob_passphrase,
             "coins": coins,
+            "client": 1,  // https://github.com/artemii235/SuperNET/issues/242
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
             "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
             "ethnode":"http://195.201.0.6:8545"
@@ -583,7 +584,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     // We want to give Bob a headstart in acquiring the port,
     // because Alice will then be able to directly reach it (thanks to "seednode").
     // Direct communication is not required in this test, but it's nice to have.
-    unwrap! (mm_bob.wait_for_log (2., &|log| log.contains ("preferred port 47773 drill true")));
+    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port 47773 drill true")));
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({

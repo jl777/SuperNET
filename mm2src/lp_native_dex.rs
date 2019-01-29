@@ -1682,15 +1682,14 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     let ip : IpAddr = try_s!(rpcip.parse());
     let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport));
 
-    unsafe {lp::IAMLP = if ctx.am_client() {0} else {1}}
-    unsafe {lp::LP_canbind = if ctx.am_client() {0} else {1}}
+    unsafe {lp::IAMLP = 1}
+    unsafe {lp::LP_canbind = 1}
     unsafe {lp::G.netid = ctx.conf["netid"].as_u64().unwrap_or (0) as u16}
     unsafe {lp::LP_mypubsock = -1}
 
-    if !ctx.am_client() {
-        // TODO: Use `myipaddr` when it was explicitly specified. And disentangle `myipaddr` from the detected outer IP.
-        //let subaddr = fomat! ("tcp://" (myipaddr) ':' (mypubport));
-        let bindaddr = fomat! ("tcp://*:" (mypubport));
+    if true {
+        // NB: `myipaddr` should be a bindable IP, not some NAT-outer IP.
+        let bindaddr = fomat! ("tcp://" (myipaddr) ':' (mypubport));
         unsafe {lp::LP_mypubsock = nn_socket (AF_SP as i32, NN_PUB as i32)}
         if unsafe {lp::LP_mypubsock} >= 0 {
             let bindaddr_c = try_s! (CString::new (&bindaddr[..]));

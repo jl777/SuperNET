@@ -820,7 +820,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     if ( LP_canbind != 0 )
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
-        nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
+        nanomsg_transportname(0,bindaddr,myipaddr,mypullport);
     }
     else
     {
