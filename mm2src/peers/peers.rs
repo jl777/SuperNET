@@ -50,6 +50,7 @@ use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
 use std::str::from_utf8_unchecked;
 use std::sync::{Arc, Mutex, Weak};
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::thread;
 use std::time::Duration;
 
@@ -236,7 +237,12 @@ pub struct PeersContext {
     /// Salt -> last-modified, value.
     recently_fetched: Mutex<HashMap<Vec<u8>, (f64, Vec<u8>)>>,
     /// Of retransmission subsystem.
-    trans_meta: Mutex<TransMeta>
+    trans_meta: Mutex<TransMeta>,
+    /// The number of enhanced DHT pings received from MMs.
+    direct_pings: AtomicU64,
+    /// The number of data chunks delivered directly via the DHT pings.  
+    /// (direct_pings - discovery pings - pongs - invalid).
+    direct_chunks: AtomicU64
 }
 
 impl PeersContext {
@@ -250,7 +256,9 @@ impl PeersContext {
                 cmd_tx,
                 cmd_rx,
                 recently_fetched: Mutex::new (HashMap::new()),
-                trans_meta: Mutex::new (TransMeta::default())
+                trans_meta: Mutex::new (TransMeta::default()),
+                direct_pings: AtomicU64::new (0),
+                direct_chunks: AtomicU64::new (0)
             })
         })))
     }
@@ -447,7 +455,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     if meta.pings == u8::max_value() {continue}  // A natural limit on the number of retries.
 
                     let pong = payload.pong == 1;
-                    log! ("transmit] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
+                    //log! ("transmit] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
                     if let Err (err) = ping (dugout, endpoint, payload) {
                         log! ("ping error: " (err))
                     } else {
@@ -472,7 +480,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                             if meta.pongs != 0 {continue}  // TODO: Should retransmit ponged packets, but later and less often.
                             if meta.pings == u8::max_value() {continue}  // Reached a natural retransmission limit.
                             if limops > 33. {continue}
-                            log! ("transmit] Sending " [payload.id] " ping to " [endpoint] "…");
+                            //log! ("transmit] Sending " [payload.id] " ping to " [endpoint] "…");
                             if let Err (err) = ping (dugout, endpoint, payload) {
                                 log! ("ping error: " (err))
                             } else {
@@ -540,7 +548,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
     } else {
         (false, MmPayload::next_id (&mut trans))
     };
-    log! ("Sending a " if pong {"pong"} else {"ping"} ' ' [id] " to " [endpoint] "…");
+    //log! ("Sending a " if pong {"pong"} else {"ping"} ' ' [id] " to " [endpoint] "…");
 
     let mm_payload = MmPayload {
         id,
@@ -613,7 +621,6 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
     };
 
     let mut trans = unwrap! (pctx.trans_meta.lock());
-    log! ("split_and_put] " [=trans.friends]);
 
     for (idx, chunk) in (1..) .zip (chunks) {
         salt.truncate (salt_base_len);
@@ -823,8 +830,9 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
     let from = bits256 {bytes: *array_ref! (from, 0, 32)};
 
     let ip: IpAddr = try_s! (unsafe {from_utf8_unchecked (ip)} .parse());
-    log! ("incoming_ping] from " (ip) " port " (port) " key " (from) ' ' [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"});
-    cbctx.ctx.log.log ("😄", &[&"dht"], "Direct packet received!");
+    //log! ("incoming_ping] from " (ip) " port " (port) " key " (from) ' ' [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"});
+    let pctx = try_s! (PeersContext::from_ctx (cbctx.ctx));
+    pctx.direct_pings.fetch_add (1, AtomicOrdering::Relaxed);
 
     let endpoint = SocketAddr::new (ip, port);
     if ping.a.mm.pong == 0 {
@@ -872,7 +880,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
         if chunk_idx > number_of_chunks {return ERR! ("ping chunk out of bounds")}
         gets.chunks.resize_default (number_of_chunks as usize);
         gets.chunks[chunk_idx as usize - 1].payload = Some (payload);
-        log! ("incoming_ping] chunk " (chunk_idx) " captured");
+        pctx.direct_chunks.fetch_add (1, AtomicOrdering::Relaxed);
     }
 
     Ok(())
@@ -1214,7 +1222,7 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
 /// * `ip` - The public IP where the peer is supposedly listens for incoming connections.
 /// * `preferred_port` - The preferred port of the peer.
 pub fn investigate_peer (ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<(), String> {
-    log! ("investigate_peer] ip " (ip) " preferred port " (preferred_port));
+    //log! ("investigate_peer] ip " (ip) " preferred port " (preferred_port));
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     let endpoint = SocketAddr::new (try_s! (ip.parse()), preferred_port);
     try_s! (pctx.cmd_tx.send (LtCommand::Ping {endpoint}));

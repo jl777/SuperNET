@@ -7,6 +7,7 @@ use rand::{self, Rng};
 use serde_json::Value as Json;
 use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
+use std::sync::atomic::Ordering;
 
 fn peer (conf: Json, port: u16) -> MmArc {
     let ctx = MmCtx::new (conf, SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
@@ -89,14 +90,18 @@ pub fn test_peers_direct_send() {
         assert! (alice_trans.friends.contains_key (&bob_key))
     }
 
+    let bob_pctx = unwrap! (super::PeersContext::from_ctx (&bob));
+    assert_eq! (0, alice_pctx.direct_pings.load (Ordering::Relaxed));
+    assert_eq! (0, bob_pctx.direct_pings.load (Ordering::Relaxed));
+
     // Hint at the Bob's endpoint.
     unwrap! (super::investigate_peer (&alice, "127.0.0.1", 2122));
 
-    // WIP, ping triggered by `investigate_peer`.
+    // Direct pings triggered by `investigate_peer`.
     // NB: The sleep here is larger than expected because the actual pings start to fly only after the DHT initialization kicks in.
-    unwrap! (wait_for_log (&bob.log, 9., &|en| en.contains ("[dht] Direct packet received!")));
-    // WIP, bob's reply.
-    unwrap! (wait_for_log (&alice.log, 1., &|en| en.contains ("[dht] Direct packet received!")));
+    unwrap! (wait_for_log (&bob.log, 9., &|_| bob_pctx.direct_pings.load (Ordering::Relaxed) > 0));
+    // Bob's reply.
+    unwrap! (wait_for_log (&alice.log, 2., &|_| alice_pctx.direct_pings.load (Ordering::Relaxed) > 0));
 
     // Confirm that Bob now has the address.
     let bob_addr = SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 2122);
@@ -106,7 +111,7 @@ pub fn test_peers_direct_send() {
     }
 
     // Finally see if Bob got the message.
-    unwrap! (wait_for_log (&bob.log, 1., &|en| en.contains ("incoming_ping] chunk 1 captured")));
+    unwrap! (wait_for_log (&bob.log, 1., &|_| bob_pctx.direct_chunks.load (Ordering::Relaxed) > 0));
     let start = now_float();
     let received = unwrap! (recv_f.wait());
     assert_eq! (received, message);
