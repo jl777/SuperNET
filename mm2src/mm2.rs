@@ -36,11 +36,7 @@ use common::{bitcoin_priv2wif, lp, os, BitcoinCtx, CJSON, MM_VERSION};
 use common::lp::{_bits256 as bits256};
 use common::mm_ctx::MmCtx;
 
-// Re-export preserves the functions that are temporarily accessed from C during the gradual port.
-#[cfg(feature = "etomic")]
-pub use etomicrs::*;
-
-use gstuff::now_ms;
+use gstuff::{now_ms, slurp};
 
 use libc::{c_char, c_int, c_void};
 
@@ -345,10 +341,18 @@ fn run_lp_main (conf: &str) -> Result<(), String> {
         Ok (json) => json,
         Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
     };
-    let conf: Json = match json::from_str(conf) {
+    let mut conf: Json = match json::from_str(conf) {
         Ok (json) => json,
         Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
     };
+
+    if conf["coins"].is_null() {
+        let coins_from_file = slurp(&std::path::Path::new("coins"));
+        if coins_from_file.is_empty() {
+            return ERR!("No coins are set in JSON config and 'coins' file doesn't exist");
+        }
+        conf["coins"] = try_s!(json::from_slice(&coins_from_file));
+    }
 
     if conf["docker"] == 1 {
         unsafe {lp::DOCKERFLAG = 1}
