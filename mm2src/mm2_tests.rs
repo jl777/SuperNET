@@ -557,7 +557,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     let mut mm_bob = unwrap! (MarketMakerIt::start (
         json! ({
             "gui": "nogui",
-            "netid": 9999,
+            "netid": 9000,
             "dht": "on",  // Enable DHT without delay.
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
@@ -579,7 +579,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
             "gui": "nogui",
-            "netid": 9999,
+            "netid": 9000,
             "dht": "on",  // Enable DHT without delay.
             "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
