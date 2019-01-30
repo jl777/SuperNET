@@ -921,9 +921,6 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
     };
 
     let ticker = try_s! (unsafe {CStr::from_ptr (info.symbol.as_ptr())} .to_str()) .into();
-    // At least for now only ZEC and forks rely on tx version so we can use it to detect overwintered
-    // TODO Consider refactoring, overwintered flag should be explicitly set in coins config
-    let overwintered = info.txversion >= 3;
 
     let rpc_client = match mode {
         UtxoInitMode::Native => {
@@ -968,6 +965,15 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))
         }
     };
+    let tx_version = if info.isassetchain == 1 || ticker == "KMD" || ticker == "BEER" || ticker == "PIZZA" {
+        4
+    } else {
+        info.txversion
+    };
+    // At least for now only ZEC and forks rely on tx version so we can use it to detect overwintered
+    // TODO Consider refactoring, overwintered flag should be explicitly set in coins config
+    let overwintered = tx_version >= 3;
+
     let coin = UtxoCoinImpl {
         ticker,
         decimals: 8,
@@ -985,7 +991,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         rpc_user: "".to_owned(),
         segwit: false,
         wif_prefix: info.wiftype,
-        tx_version: info.txversion,
+        tx_version,
         my_address: my_address.clone(),
         asset_chain: info.isassetchain == 1,
         tx_fee: info.txfee,

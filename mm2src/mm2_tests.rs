@@ -273,9 +273,6 @@ fn alice_can_see_the_active_order_after_connection() {
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
             "passphrase": "bob passphrase",
             "coins": coins,
-            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
-            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
-            "ethnode":"http://195.201.0.6:8545"
         }),
         "db4be27033b636c6644c356ded97b0ad08914fcb8a1e2a1efc915b833c2cbd19".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
@@ -551,9 +548,9 @@ fn trade_base_rel(base: &str, rel: &str) {
     let alice_userpass = unwrap! (var ("ALICE_USERPASS") .ok().or (alice_file_userpass), "No ALICE_USERPASS or .env.client/USERPASS");
 
     let coins = json!([
-        {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str()),"txversion":4},
-        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"confpath":unwrap!(pizza_cfp.to_str()),"txversion":4},
-        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str()),"txversion":4},
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},
+        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"confpath":unwrap!(pizza_cfp.to_str())},
+        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str())},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
     ]);
 
@@ -567,9 +564,6 @@ fn trade_base_rel(base: &str, rel: &str) {
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
             "passphrase": bob_passphrase,
             "coins": coins,
-            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
-            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
-            "ethnode":"http://195.201.0.6:8545"
         }),
         bob_userpass,
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
@@ -591,10 +585,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
             "coins": coins,
-            "seednode": fomat!((mm_bob.ip)),
-            "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
-            "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
-            "ethnode":"http://195.201.0.6:8545"
+            "seednode": fomat!((mm_bob.ip))
         }),
         alice_userpass,
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
