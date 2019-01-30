@@ -120,15 +120,6 @@ impl MmCtx {
             stop_listeners.push (cb)
         }
     }
-
-    /// `true` if the MarketMaker was configured with the `{"client": 1}` command-line flag.
-    /// 
-    /// Should be used instead of the C `IAMLP` (where 1 means NOT client).
-    /// 
-    /// Soon as we learn it, should clarify the exact meaning of what being a client means.
-    pub fn am_client (&self) -> bool {
-        self.conf["client"].as_i64() == Some (1)
-    }
 }
 impl Drop for MmCtx {
     fn drop (&mut self) {

@@ -1682,7 +1682,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
     let ip : IpAddr = try_s!(rpcip.parse());
     let ctx = MmCtx::new(conf, SocketAddr::new(ip, myport));
 
-    unsafe {lp::IAMLP = 1}
+    unsafe {lp::IAMLP = 1}  // Anyone can be a Maker.
     unsafe {lp::LP_canbind = 1}
     unsafe {lp::G.netid = ctx.conf["netid"].as_u64().unwrap_or (0) as u16}
     unsafe {lp::LP_mypubsock = -1}

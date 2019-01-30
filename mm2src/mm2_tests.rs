@@ -186,7 +186,7 @@ fn test_events() {
             unwrap! (events (&["_test".into(), "events".into()]));
         },
         _ => {
-            let conf = json! ({"gui": "nogui", "client": 1, "passphrase": "123", "coins": "BTC,KMD"});
+            let conf = json! ({"gui": "nogui", "passphrase": "123", "coins": "BTC,KMD"});
             log! ("Starting the MarketMaker, similar to\n  gdb --args target/debug/mm2 '" (unwrap! (json::to_string (&conf))) "'\n  run");
             let mut mm = unwrap! (MarketMakerIt::start (
                 conf,
@@ -325,7 +325,6 @@ fn alice_can_see_the_active_order_after_connection() {
             "passphrase": "alice passphrase",
             "coins": coins,
             "seednode": fomat!((mm_bob.ip)),
-            "client": 1,
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
             "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
             "ethnode":"http://195.201.0.6:8545"
@@ -386,7 +385,6 @@ fn test_my_balance() {
             "netid": 9998,
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
-            "client": 1,
             "passphrase": "bob passphrase",
             "coins": coins,
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
@@ -432,7 +430,6 @@ fn test_check_balance_on_order_post() {
         json! ({
             "gui": "nogui",
             "netid": 9998,
-            "client": 1,
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
@@ -570,7 +567,6 @@ fn trade_base_rel(base: &str, rel: &str) {
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
             "passphrase": bob_passphrase,
             "coins": coins,
-            "client": 1,  // https://github.com/artemii235/SuperNET/issues/242
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
             "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
             "ethnode":"http://195.201.0.6:8545"
@@ -596,7 +592,6 @@ fn trade_base_rel(base: &str, rel: &str) {
             "passphrase": alice_passphrase,
             "coins": coins,
             "seednode": fomat!((mm_bob.ip)),
-            "client": 1,
             "alice_contract":"0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c",
             "bob_contract":"0x105aFE60fDC8B5c021092b09E8a042135A4A976E",
             "ethnode":"http://195.201.0.6:8545"

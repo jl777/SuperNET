@@ -127,6 +127,9 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
 }
 
 fn help() {
+    // Removed options:
+    // "client" - In MM2 anyone can be a Maker, the "client" option is no longer applicable.
+
     pintln! (
         "Command-line options.\n"
         "The first command-line argument is special and designates the mode.\n"
@@ -147,7 +150,6 @@ fn help() {
         "                     Default is 0x2896Db79fAF20ABC8776fc27D15719cf59b8138B (Mainnet).\n"
         "                     Set 0x105aFE60fDC8B5c021092b09E8a042135A4A976E for Ropsten testnet\n"
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
-        "  client         ..  '1' to use the Electrum mode.\n"
         // We don't want to break the existing RPC API,
         // so the "refrel=coinmarketcap" designator will act as autoselect,
         // using the CoinGecko behind the scenes unless the "cmc_key" is given.
