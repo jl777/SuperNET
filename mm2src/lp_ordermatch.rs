@@ -598,7 +598,7 @@ fn lp_trade(
         lp::LP_query(b"request\x00".as_ptr() as *mut c_char, qp);
         lp::LP_Alicequery = *qp;
         lp::LP_Alicemaxprice = (*qp).maxprice;
-        log!({"Alice max price: {}", lp::LP_Alicemaxprice});
+        log!({"lp_trade] Alice max price: {}", lp::LP_Alicemaxprice});
         lp::Alice_expiration = (*qp).timestamp + timeout as u32;
         lp::LP_Alicedestpubkey = (*qp).srchash;
         if (*qp).gtc == 0 {

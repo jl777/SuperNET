@@ -1013,8 +1013,10 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
         vec! [(format! ("5.9.253.{}", 195 + netid) .into(), true)]
     } else if netid == 0 { // Default production netid is 0.
         P2P_SEED_NODES.iter().map (|ip| (Cow::Borrowed (&ip[..]), false)) .collect()
-    } else if netid == 9999 { // MM2 testing netid is 999
+    } else if netid == 9999 { // MM2 testing netid is 9999.
         P2P_SEED_NODES_9999.iter().map (|ip| (Cow::Borrowed (&ip[..]), false)) .collect()
+    } else if netid == 9000 { // A public seed node helps NAT traversal on netid 9000.
+        vec![(Cow::Borrowed ("195.201.42.102"), false)]
     } else { // If we're using a non-default netid then we should skip adding the hardcoded seed nodes.
         Vec::new()
     };
@@ -1706,7 +1708,7 @@ pub fn lp_init (myport: u16, mypullport: u16, mypubport: u16, conf: Json, c_conf
         } else {
             log! ({"error getting pubsock {}", unsafe {lp::LP_mypubsock}});
         }
-        log! ({">>>>>>>>> myipaddr.({}) pubsock.{}", bindaddr, unsafe {lp::LP_mypubsock}});
+        log! ({"lp_init] Listening on {} (LP_mypubsock {})", bindaddr, unsafe {lp::LP_mypubsock}});
         let mut mypullport = mypullport;
         let mut pushaddr: [c_char; 256] = unsafe {zeroed()};
         let myipaddr_c = try_s! (CString::new (fomat! ((myipaddr))));

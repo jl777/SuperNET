@@ -523,7 +523,7 @@ int32_t LP_mypriceset(int32_t iambob,int32_t *changedp,char *base,char *rel,doub
         }
         return(0);
     }
-    printf("base.%s rel.%s %p %p price %.8f error case\n",base!=0?base:"",rel!=0?rel:"",basepp,relpp,price);
+    printf("LP_mypriceset] base.%s rel.%s %p %p price %.8f error case\n",base!=0?base:"",rel!=0?rel:"",basepp,relpp,price);
     return(-1);
 }
 

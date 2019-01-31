@@ -98,6 +98,8 @@ void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr)
     }
     if ( G.mpnet != 0 && sendflag != 0 && (coin= LP_coinfind("CHIPS")) != 0 && coin->inactive == 0 )
     {
+        // This code path is not usually active, so as a porting prop let's post a special notice when it is.
+        printf("LP_mpnet_send] Doing something!\n");
         len = MMJSON_encode(linebuf,msg);
         //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"withdraw\",\"coin\":\"CHIPS\",\"outputs\":[{\"RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj\":0.0001}],\"opreturn\":\"deadbeef\"}"
         if ( len > 0 )

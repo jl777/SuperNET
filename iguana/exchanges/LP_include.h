@@ -702,6 +702,7 @@ struct LP_globals
 } G;
 
 extern uint32_t LP_ORDERBOOK_DURATION;
+// Corresponds to the "time expired for Alice_request" timeout failures during the SWAP. Seconds.
 extern uint32_t LP_AUTOTRADE_TIMEOUT;
 extern uint32_t LP_RESERVETIME;
 extern uint32_t Alice_expiration;
@@ -727,6 +728,7 @@ extern bits256 LP_Alicedestpubkey;
 
 cJSON *LP_quotejson(struct LP_quoteinfo *qp);
 void LP_mpnet_send(int32_t localcopy,char *msg,int32_t sendflag,char *otheraddr);
+/// Converts the DB/SWAPS/list into a JSON.
 char *LP_recent_swaps(int32_t limit,char *uuidstr);
 struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr);

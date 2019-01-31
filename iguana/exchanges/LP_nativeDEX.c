@@ -369,6 +369,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     methodstr[0] = 0;
                     if ( recvjson != 0 )
                     {
+                        // AG: Uncomment to debug the ordermatch communications:
+                        //printf("LP_sock_check] from %i, %s: %s\n", sock, remoteaddr, cJSON_Print(recvjson));
                         safecopy(LP_methodstr,jstr(recvjson,"method"),sizeof(LP_methodstr));
                         free_json(recvjson);
                     }

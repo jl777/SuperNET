@@ -574,7 +574,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     // We want to give Bob a headstart in acquiring the port,
     // because Alice will then be able to directly reach it (thanks to "seednode").
     // Direct communication is not required in this test, but it's nice to have.
-    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port 47773 drill true")));
+    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port 43804 drill true")));
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
@@ -585,7 +585,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
             "coins": coins,
-            "seednode": fomat!((mm_bob.ip))
+            // We're using the open (non-NAT) netid 9000 seed instead, 195.201.42.102 // "seednode": fomat!((mm_bob.ip))
         }),
         alice_userpass,
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
@@ -605,8 +605,9 @@ fn trade_base_rel(base: &str, rel: &str) {
     // Enable coins on Alice side. Print the replies in case we need the "smartaddress".
     log! ({"enable_coins (alice): {:?}", enable_coins (&mm_alice)});
 
-    // wait until Alice recognize Bob node by importing it's pubkey
-    unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
+    // Both the Taker and the Maker should connect to the netid 9000 open (non-NAT) seed node.
+    unwrap! (mm_bob.wait_for_log (99., &|log| log.contains ("set pubkey for 195.201.42.102 <- ")));
+    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains ("set pubkey for 195.201.42.102 <- ")));
 
     // issue sell request on Bob side by setting base/rel price
     log!("Issue bob sell request");
@@ -633,7 +634,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
 
     // ensure the swap started
-    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("Entering the taker_swap_loop")));
+    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("Entering the taker_swap_loop")));
     unwrap! (mm_bob.wait_for_log (20., &|log| log.contains ("Entering the maker_swap_loop")));
 
     // wait for swap to complete on both sides
