@@ -23,7 +23,7 @@ use common::{jbits256, lp, rpc_response, HyRes, CJSON};
 use common::mm_ctx::MmArc;
 use libc::c_char;
 use serde_json::{self as json, Value as Json};
-use std::ffi::{CStr, CString};
+use std::ffi::{CString};
 
 /*
 struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector,int32_t fillflag,int32_t gtcflag)
