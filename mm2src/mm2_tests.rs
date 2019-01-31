@@ -569,12 +569,16 @@ fn trade_base_rel(base: &str, rel: &str) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
+    log!({"Bob log path: {}", mm_bob.log_path.display()});
+
     // Both Alice and Bob might try to bind on the "0.0.0.0:47773" DHT port in this test
     // (because the local "127.0.0.*:47773" addresses aren't that useful for DHT).
     // We want to give Bob a headstart in acquiring the port,
     // because Alice will then be able to directly reach it (thanks to "seednode").
     // Direct communication is not required in this test, but it's nice to have.
-    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port 47773 drill true")));
+    // The port differs for another netid, should be 43804 for 9000
+    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port 43804 drill true")));
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
@@ -591,9 +595,7 @@ fn trade_base_rel(base: &str, rel: &str) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
     ));
 
-    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
-    log!({"Bob log path: {}", mm_bob.log_path.display()});
     log!({"Alice log path: {}", mm_alice.log_path.display()});
 
     // wait until both nodes RPC API is active
