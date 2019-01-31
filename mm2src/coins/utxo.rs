@@ -973,7 +973,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
                     } else {
                         break;
                     }
-                    thread::sleep(Duration::from_secs(30));
+                    thread::sleep(Duration::from_secs(10));
                 }
             }));
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))
