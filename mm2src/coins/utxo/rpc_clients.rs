@@ -6,10 +6,10 @@ use common::jsonrpc_client::{JsonRpcClient, JsonRpcResponseFut, JsonRpcRequest, 
 use futures::{Async, Future, Poll, Sink, Stream};
 use futures::future::{Either, loop_fn, Loop, select_ok};
 use futures::sync::mpsc;
-use futures_timer::Delay;
-use futures_timer::FutureExt;
+use futures_timer::{Delay, Interval, FutureExt};
 use gstuff::now_ms;
 use hashbrown::HashMap;
+use hashbrown::hash_map::Entry;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::{AUTHORIZATION};
 use keys::Address;
@@ -21,9 +21,10 @@ use sha2::{Sha256, Digest};
 use std::{io, thread};
 use std::fmt::Debug;
 use std::cmp::Ordering;
-use std::net::{ToSocketAddrs, SocketAddr, TcpStream as TcpStreamStd};
+use std::net::{ToSocketAddrs, SocketAddr, TcpStream as TcpStreamStd, Shutdown};
 use std::ops::Deref;
 use std::sync::{Mutex, Arc};
+use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 use std::time::{Duration};
 use tokio::codec::{Encoder, Decoder};
 use tokio::net::TcpStream;
@@ -537,8 +538,22 @@ impl ElectrumClientImpl {
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-scripthash-listunspent
+    /// It can return duplicates sometimes: https://github.com/artemii235/SuperNET/issues/269
+    /// We should remove them to build valid transactions further
     fn scripthash_list_unspent(&self, hash: &str) -> RpcRes<Vec<ElectrumUnspent>> {
-        rpc_func!(self, "blockchain.scripthash.listunspent", hash)
+        Box::new(rpc_func!(self, "blockchain.scripthash.listunspent", hash).and_then(move |unspents: Vec<ElectrumUnspent>| {
+            let mut map: HashMap<(H256Json, u32), bool> = HashMap::new();
+            let unspents = unspents.into_iter().filter(|unspent| {
+                match map.entry((unspent.tx_hash.clone(), unspent.tx_pos)) {
+                    Entry::Occupied(_) => false,
+                    Entry::Vacant(e) => {
+                        e.insert(true);
+                        true
+                    },
+                }
+            }).collect();
+            Ok(unspents)
+        }))
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-scripthash-get-history
@@ -634,6 +649,18 @@ fn electrum_process_chunk(chunk: &[u8], arc: Arc<Mutex<HashMap<String, JsonRpcRe
     }
 }
 
+macro_rules! try_loop {
+    ($e:expr, $addr: ident, $rx: ident, $responses: ident) => {
+        match $e {
+            Ok(res) => res,
+            Err(e) => {
+                log!([$addr] " error " [e]);
+                return Box::new(futures::future::ok(Loop::Continue(($addr, $rx, $responses, 5))));
+            }
+        }
+    };
+}
+
 fn electrum_connect(
     addr: SocketAddr,
     responses: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
@@ -650,34 +677,39 @@ fn electrum_connect(
             Either::B(TcpStream::connect(&addr))
         };
         tcp.then(move |stream| -> Box<Future<Item=Loop<(), _>, Error=_> + Send> {
-            let stream = match stream {
-                Ok(s) => s,
-                Err(e) => {
-                    log!([addr] " connect error " [e]);
-                    return Box::new(futures::future::ok(Loop::Continue((addr, rx, responses, 5))));
-                },
-            };
+            let stream = try_loop!(stream, addr, rx, responses);
+            try_loop!(stream.set_nodelay(true), addr, rx, responses);
+            let stream_clone = try_loop!(stream.try_clone(), addr, rx, responses);
 
-            if let Err(e) = stream.set_nodelay(true) {
-                log!([addr] " set no delay error " [e]);
-                return Box::new(futures::future::ok(Loop::Continue((addr, rx, responses, 5))));
-            }
+            let last_chunk = Arc::new(AtomicUsize::new(now_ms() as usize / 1000));
+            let last_chunk2 = last_chunk.clone();
+            let interval = Interval::new(Duration::from_secs(15)).map_err(|e| { log!([e]); () });
+            CORE.spawn(move |_| {
+                interval.for_each(move |_| {
+                    let last = last_chunk.load(AtomicOrdering::Relaxed);
+                    if now_ms() as usize / 1000 - last > 15 {
+                        log!([addr] " Didn't receive any data since " (last) ". Shutting down the connection.");
+                        if let Err(e) = stream_clone.shutdown(Shutdown::Both) {
+                            log!([addr] " error shutting down the connection " [e]);
+                        }
+                        // return err to shutdown interval execution
+                        return futures::future::err(());
+                    };
+                    futures::future::ok(())
+                })
+            });
 
             let (sink, stream) = Bytes.framed(stream).split();
-
             let send_all = SendAll::new(sink, rx);
-
             let clone = responses.clone();
             CORE.spawn(|_| {
                 stream
                     .for_each(move |chunk| {
+                        last_chunk2.store(now_ms() as usize / 1000, AtomicOrdering::Relaxed);
                         electrum_process_chunk(&chunk, clone.clone());
                         futures::future::ok(())
                     })
-                    .map_err(|e| {
-                        log!([e]);
-                        ()
-                    })
+                    .map_err(|e| { log!([e]); () })
             });
 
             Box::new(send_all.then(move |result| {

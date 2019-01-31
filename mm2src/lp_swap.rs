@@ -61,7 +61,7 @@ use common::log::TagParam;
 use common::mm_ctx::MmArc;
 use coins::utxo::{random_compressed_key_pair};
 use crc::crc32;
-use futures::{Future, Stream};
+use futures::{Future};
 use gstuff::now_ms;
 use keys::KeyPair;
 use rand::Rng;
