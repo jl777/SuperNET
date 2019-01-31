@@ -9,6 +9,7 @@ use futures::sync::mpsc;
 use futures_timer::{Delay, Interval, FutureExt};
 use gstuff::now_ms;
 use hashbrown::HashMap;
+use hashbrown::hash_map::Entry;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::{AUTHORIZATION};
 use keys::Address;
@@ -537,8 +538,22 @@ impl ElectrumClientImpl {
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-scripthash-listunspent
+    /// It can return duplicates sometimes: https://github.com/artemii235/SuperNET/issues/269
+    /// We should remove them to build valid transactions further
     fn scripthash_list_unspent(&self, hash: &str) -> RpcRes<Vec<ElectrumUnspent>> {
-        rpc_func!(self, "blockchain.scripthash.listunspent", hash)
+        Box::new(rpc_func!(self, "blockchain.scripthash.listunspent", hash).and_then(move |unspents: Vec<ElectrumUnspent>| {
+            let mut map: HashMap<(H256Json, u32), bool> = HashMap::new();
+            let unspents = unspents.into_iter().filter(|unspent| {
+                match map.entry((unspent.tx_hash.clone(), unspent.tx_pos)) {
+                    Entry::Occupied(_) => false,
+                    Entry::Vacant(e) => {
+                        e.insert(true);
+                        true
+                    },
+                }
+            }).collect();
+            Ok(unspents)
+        }))
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-scripthash-get-history
