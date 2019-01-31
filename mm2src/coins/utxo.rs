@@ -487,32 +487,46 @@ impl UtxoCoin {
             _ => panic!(),
         };
 
-        let tx_from_rpc = try_s!(self.rpc_client.get_transaction(tx.transaction.hash().reversed().into()).wait());
-        if serialize(&tx.transaction).take() != tx_from_rpc.hex.0 {
-            return ERR!("Provided payment tx {:?} doesn't match tx data from rpc {:?}", tx, tx_from_rpc);
+        let mut attempts = 0;
+        loop {
+            let tx_from_rpc = match self.rpc_client.get_transaction(tx.transaction.hash().reversed().into()).wait() {
+                Ok(t) => t,
+                Err(e) => {
+                    if attempts > 2 {
+                        return ERR!("Got error {:?} after 3 attempts of getting tx {} from RPC", e, tx.tx_hash());
+                    };
+                    attempts += 1;
+                    log!("Error " [e] " getting the tx " (tx.tx_hash()) " from rpc");
+                    thread::sleep(Duration::from_secs(10));
+                    continue;
+                }
+            };
+            if serialize(&tx.transaction).take() != tx_from_rpc.hex.0 {
+                return ERR!("Provided payment tx {:?} doesn't match tx data from rpc {:?}", tx, tx_from_rpc);
+            }
+
+            let expected_redeem = try_s!(payment_script(
+                time_lock,
+                priv_bn_hash,
+                &try_s!(Public::from_slice(first_pub0)),
+                &try_s!(Public::from_slice(second_pub0)),
+            ));
+
+            let actual_redeem = tx.redeem_script.into();
+            if expected_redeem != actual_redeem {
+                return ERR!("Provided redeem script {} doesn't match expected {}", actual_redeem, expected_redeem);
+            }
+
+            let expected_output = TransactionOutput {
+                value: amount,
+                script_pubkey: Builder::build_p2sh(&dhash160(&expected_redeem)).into(),
+            };
+
+            if tx.transaction.outputs[0] != expected_output {
+                return ERR!("Provided payment tx output doesn't match expected {:?} {:?}", tx.transaction.outputs[0], expected_output);
+            }
+            return Ok(());
         }
-
-        let expected_redeem = try_s!(payment_script(
-            time_lock,
-            priv_bn_hash,
-            &try_s!(Public::from_slice(first_pub0)),
-            &try_s!(Public::from_slice(second_pub0)),
-        ));
-
-        let actual_redeem = tx.redeem_script.into();
-        if expected_redeem != actual_redeem {
-            return ERR!("Provided redeem script {} doesn't match expected {}", actual_redeem, expected_redeem);
-        }
-
-        let expected_output = TransactionOutput {
-            value: amount,
-            script_pubkey: Builder::build_p2sh(&dhash160(&expected_redeem)).into(),
-        };
-
-        if tx.transaction.outputs[0] != expected_output {
-            return ERR!("Provided payment tx output doesn't match expected {:?} {:?}", tx.transaction.outputs[0], expected_output);
-        }
-        Ok(())
     }
 }
 
@@ -959,7 +973,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
                     } else {
                         break;
                     }
-                    thread::sleep(Duration::from_secs(30));
+                    thread::sleep(Duration::from_secs(10));
                 }
             }));
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))

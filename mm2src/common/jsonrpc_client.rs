@@ -66,7 +66,11 @@ pub trait JsonRpcClient {
                 return ERR!("Rpc request {:?} failed with error, response: {:?}",
                         request, response);
             }
-            Ok(try_s!(json::from_value(response.result)))
+
+            match json::from_value(response.result.clone()) {
+                Ok(res) => Ok(res),
+                Err(e) => ERR!("Request {:?} error {:?} parsing result from response {:?}", request, e, response),
+            }
         }))
     }
 }
