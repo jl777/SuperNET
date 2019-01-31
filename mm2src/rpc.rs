@@ -189,6 +189,7 @@ pub enum DispatcherRes {
 /// 
 /// Returns `None` if the requested "method" wasn't found among the ported RPC methods and has to be handled elsewhere.
 pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> DispatcherRes {
+    //log! ("dispatcher] " (json::to_string (&req) .unwrap()));
     let method = match req["method"].clone() {
         Json::String (method) => method,
         _ => return DispatcherRes::NoMatch (req)

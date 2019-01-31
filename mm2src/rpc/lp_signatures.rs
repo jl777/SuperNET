@@ -22,7 +22,6 @@
 use common::{jbits256, lp, rpc_response, HyRes, CJSON};
 use common::mm_ctx::MmArc;
 use libc::c_char;
-use peers;
 use serde_json::{self as json, Value as Json};
 use std::ffi::{CStr, CString};
 
@@ -610,7 +609,6 @@ pub fn lp_notify_recv (ctx: MmArc, req: Json) -> HyRes {
         unsafe {lp::LP_pubkey_sigcheck (pubp, c_json.0)};
 
         if let Some (peer_ip) = req["isLP"].as_str() {
-            log! ("lp_notify_recv] hailed by peer: " (peer_ip));
             let peer_ip_c = try_h! (CString::new (peer_ip));
             let ismine = req["ismine"].as_i64().unwrap_or (0) as i32;
             unsafe {lp::LP_peer_recv (peer_ip_c.as_ptr() as *mut c_char, ismine, pubp)};
@@ -619,7 +617,9 @@ pub fn lp_notify_recv (ctx: MmArc, req: Json) -> HyRes {
                 log! ("lp_notify_recv] Got our IP from a peer (" (pubk) "). G.LP_IAMLP = 1.");
                 unsafe {lp::G.LP_IAMLP = 1}
             }
-            try_h! (peers::investigate_peer (&ctx, peer_ip, unsafe {lp::RPC_port + 20}));
+            // TODO: Figure out what kind of peers we're dealing with here (MM1, MM2, seeds, observers?)
+            //       and whether we want them added into the friendlist (to further talk with them through the `peers`).
+            //try_h! (peers::investigate_peer (&ctx, peer_ip, unsafe {lp::RPC_port + 20}));
             unsafe {lp::LP_addpeer (
                 lp::LP_mypeer,
                 lp::LP_mypubsock,

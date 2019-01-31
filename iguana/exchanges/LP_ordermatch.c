@@ -139,7 +139,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                 if ( LP_fixed_pairport != 0 )
                     r = LP_fixed_pairport;
                 nanomsg_transportname(0,pairstr,LP_myipaddr,r);
-                nanomsg_transportname(1,bindaddr,LP_myipaddr,r);
+                nanomsg_transportname(0,bindaddr,LP_myipaddr,r);
                 if ( nn_bind(pairsock,bindaddr) >= 0 )
                 {
                     //timeout = 1;

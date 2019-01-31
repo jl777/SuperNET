@@ -155,10 +155,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 extern char GLOBAL_DBDIR[512];
 
-/// I Am Liquidity Provider (that is, Bob, Maker).  
-/// `0` if the command-line configuration contains the `{"client": 1}` flag; `1` otherwise.  
-/// Rust code should use the (reversed) `MmCtx::am_client` instead.  
-/// Eventually this option should go away, in MM2 we're trying not to lock the daemon into the Alice or Bob modes.
+/// This flag translates as "I Am Liquidity Provider (that is, Bob, Maker)",
+/// With MM2 all users can be a Maker, to this flag must ALWAYS be 1.
 extern int32_t IAMLP;
 
 struct iguana_msgvin

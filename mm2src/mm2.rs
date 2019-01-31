@@ -123,6 +123,9 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
 }
 
 fn help() {
+    // Removed options:
+    // "client" - In MM2 anyone can be a Maker, the "client" option is no longer applicable.
+
     pintln! (
         "Command-line options.\n"
         "The first command-line argument is special and designates the mode.\n"
@@ -143,16 +146,6 @@ fn help() {
         "                     Default is 0x2896Db79fAF20ABC8776fc27D15719cf59b8138B (Mainnet).\n"
         "                     Set 0x105aFE60fDC8B5c021092b09E8a042135A4A976E for Ropsten testnet\n"
         "  canbind        ..  If > 1000 and < 65536, initializes the `LP_fixed_pairport`.\n"
-        // I'm not quite sure what the "client mode" is, should be clarified as soon as we learn it.
-        // Does it turn Electrum-only mode on?
-        // Does it turn us into the Alice (Buyer)?
-        // Prevents us from fully joining the peer-to-peer network (by affecting `LP_canbind`)?
-        // Anything else?
-        // In MM2 we want to make the peers equal, allowing everyone to swap with everyone,
-        // the client-server model doesn't make a lot of sense then.
-        // cf. `IAMLP`, `MmCtx::am_client`.
-        // ⇒ See also the "Order Matching with Full-Relay and Non-Relay Nodes" chapter in the Komodo Whitepaper.
-        "  client         ..  '1' to use the client mode.\n"
         // We don't want to break the existing RPC API,
         // so the "refrel=coinmarketcap" designator will act as autoselect,
         // using the CoinGecko behind the scenes unless the "cmc_key" is given.

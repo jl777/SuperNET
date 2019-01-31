@@ -130,6 +130,11 @@ impl fmt::Display for bits256 {
         f.write_str (hex)
 }   }
 
+impl fmt::Debug for bits256 {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        (self as &fmt::Display) .fmt (f)
+}   }
+
 impl std::cmp::PartialEq for bits256 {
     /// Should be preferred to `bits256_cmp`.
     fn eq (&self, other: &bits256) -> bool {

@@ -65,8 +65,10 @@ use futures::{Future, Stream};
 use gstuff::now_ms;
 use keys::KeyPair;
 use rand::Rng;
+use peers::SendHandler;
 use primitives::hash::{H160, H256, H264};
 use serialization::{deserialize, serialize};
+use std::sync::Arc;
 use std::time::Duration;
 
 /// Includes the grace time we add to the "normal" timeouts
@@ -202,13 +204,13 @@ macro_rules! recv_ {
 enum AtomicSwapState {
     Negotiation,
     SendTakerFee,
-    WaitTakerFee {sending_f: Box<Stream<Item=(), Error=String>>},
+    WaitTakerFee {sending_f: Arc<SendHandler>},
     SendMakerPayment,
-    WaitMakerPayment {sending_f: Box<Stream<Item=(), Error=String>>},
+    WaitMakerPayment {sending_f: Arc<SendHandler>},
     SendTakerPayment,
-    WaitTakerPayment {sending_f: Box<Stream<Item=(), Error=String>>},
+    WaitTakerPayment {sending_f: Arc<SendHandler>},
     SpendTakerPayment,
-    WaitTakerPaymentSpent {sending_f: Box<Stream<Item=(), Error=String>>},
+    WaitTakerPaymentSpent {sending_f: Arc<SendHandler>},
     SpendMakerPayment,
     RefundTakerPayment,
     RefundMakerPayment,
@@ -306,8 +308,11 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     //  in order to avoid premature throw-away design, cf. https://www.agilealliance.org/glossary/simple-design).
     let mut status = swap.ctx.log.status_handle();
     macro_rules! send {
-        ($subj: expr, $slice: expr) => {
-            send_! (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.session)), $slice)
+        ($ec: expr, $subj: expr, $slice: expr) => {
+            match send_! (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.session)), $slice) {
+                Ok(h) => h,
+                Err(err) => err!($ec, "send error: "(err))
+            }
     }   }
     macro_rules! recv {
         ($subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
@@ -356,7 +361,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         let next_state = match unwrap!(swap.state.take()) {
             AtomicSwapState::Negotiation => {
                 let bytes = serialize(&maker_negotiation_data);
-                let sending_f = send!("negotiation", bytes.as_slice());
+                let sending_f = send!(-2001, "negotiation", bytes.as_slice());
 
                 let data = recv!(sending_f, "negotiation-reply", "for Negotiation reply", 90, -2000, {|_: &[u8]| Ok(())});
                 let taker_data: SwapNegotiationData = match deserialize(data.as_slice()) {
@@ -369,7 +374,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 swap.other_persistent_pub = taker_data.persistent_pubkey;
 
                 let negotiated = serialize(&true);
-                let sending_f = send!("negotiated", negotiated.as_slice());
+                let sending_f = send!(-2001, "negotiated", negotiated.as_slice());
 
                 AtomicSwapState::WaitTakerFee { sending_f }
             },
@@ -406,7 +411,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     Err(err) => err!(-2006, "!send_maker_payment: "(err))
                 };
                 log!("Maker payment tx " (transaction.tx_hash()));
-                let sending_f = send!("maker-payment", transaction.to_raw_bytes());
+                let sending_f = send!(-2006, "maker-payment", transaction.to_raw_bytes());
                 swap.maker_payment = Some(transaction.clone());
 
                 AtomicSwapState::WaitTakerPayment {sending_f}
@@ -481,8 +486,11 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     let mut status = swap.ctx.log.status_handle();
 
     macro_rules! send {
-        ($subj: expr, $slice: expr) => {
-            send_! (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.session)), $slice)
+        ($ec: expr, $subj: expr, $slice: expr) => {
+            match send_! (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.session)), $slice) {
+                Ok(h) => h,
+                Err(err) => err!($ec, "send error: "(err))
+            }
     }   }
     macro_rules! recv {
         ($subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
@@ -541,7 +549,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     persistent_pubkey: swap.my_persistent_pub.clone(),
                 };
                 let bytes = serialize(&taker_data);
-                let sending_f = send!("negotiation-reply", bytes.as_slice());
+                let sending_f = send!(-1001, "negotiation-reply", bytes.as_slice());
                 let data = recv!(sending_f, "negotiated", "for Maker negotiated", 90, -1000, {|_: &[u8]| Ok(())});
                 let negotiated: bool = match deserialize(data.as_slice()) {
                     Ok(n) => n,
@@ -565,7 +573,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 };
 
                 log!("Taker fee tx hash " (transaction.tx_hash()));
-                let sending_f = send!("taker-fee", transaction.to_raw_bytes());
+                let sending_f = send!(-1004, "taker-fee", transaction.to_raw_bytes());
 
                 AtomicSwapState::WaitMakerPayment {sending_f}
             },
@@ -623,7 +631,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 log!("Taker payment tx hash " (transaction.tx_hash()));
                 let msg = transaction.to_raw_bytes();
 
-                let sending_f = send!("taker-payment", msg);
+                let sending_f = send!(-1006, "taker-payment", msg);
                 swap.taker_payment = Some(transaction.clone());
 
                 AtomicSwapState::WaitTakerPaymentSpent {sending_f}

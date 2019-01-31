@@ -262,7 +262,6 @@ pub fn mm_spat (local_start: LocalStart, conf_mod: &dyn Fn(Json)->Json) -> (&'st
     let mm = unwrap! (MarketMakerIt::start (
         conf_mod (json! ({
             "gui": "nogui",
-            "client": 1,
             "passphrase": passphrase,
             "rpccors": "http://localhost:4000",
             "coins": [
