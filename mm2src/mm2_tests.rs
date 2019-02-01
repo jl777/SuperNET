@@ -609,8 +609,8 @@ fn trade_base_rel(base: &str, rel: &str) {
 
     // Both the Taker and the Maker should connect to the netid 9000 open (non-NAT) seed node.
     // NB: Long wayt as there might be delays in the seed node from us reusing the 127.0.0.* IPs with different keys.
-    unwrap! (mm_bob.wait_for_log (999., &|log| log.contains ("set pubkey for 195.201.42.102 <- ")));
-    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("set pubkey for 195.201.42.102 <- ")));
+    unwrap! (mm_bob.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
+    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("set pubkey for ")));
 
     // issue sell request on Bob side by setting base/rel price
     log!("Issue bob sell request");
