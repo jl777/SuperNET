@@ -28,7 +28,8 @@
 // locktime claiming on sporadic assetchains
 // there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
-use common::{coins_iter, lp, slurp_url, CJSON, MM_VERSION, os};
+use common::{coins_iter, lp, slurp_url, os, CJSON, MM_VERSION};
+use common::log::TagParam;
 use common::mm_ctx::{MmCtx, MmArc};
 use common::nn::*;
 use crc::crc32;
@@ -1551,18 +1552,11 @@ pub unsafe fn lp_passphrase_init (ctx: &MmArc, passphrase: Option<&str>, gui: Op
 /// Returns `false` if the `ip` does not belong to a connected interface or if it is already taken.
 fn test_bind (ip: IpAddr, port: u16) -> bool {
     let bindaddr = fomat! ("tcp://" (ip) ':' (port));
-    log! ("test_bind] Testing " (bindaddr) '…');
     let sock = unsafe {nn_socket (AF_SP as i32, NN_PUB as i32)};
     let bindaddr_c = unwrap! (CString::new (&bindaddr[..]));
     let bind_rc = unsafe {nn_bind (sock, bindaddr_c.as_ptr())};
     unsafe {nn_close (sock)};  // 'Tis just an experiment, real bindings happen elsewhere.
-    if bind_rc >= 0 {
-        log! ("test_bind] nn_bind worked on " (ip));
-        true
-    } else {
-        log! ("test_bind] Couldn't bind on " (bindaddr));
-        false
-    }
+    bind_rc >= 0
 }
 
 pub fn lp_init (mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON) -> Result<(), String> {
@@ -1691,13 +1685,28 @@ pub fn lp_init (mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON) -> R
             // Try to bind on this IP.
             // If we're not behind a NAT then the bind will likely suceed.
             // If the bind fails then emit a user-visible warning and fall back to 0.0.0.0.
-            // TODO: HR log.
-            if test_bind (ip, mypubport) {break ip}
-            let ip = Ipv4Addr::new (0, 0, 0, 0) .into();
-            if test_bind (ip, mypubport) {break ip}
-            let ip = Ipv4Addr::new (127, 0, 0, 1) .into();
-            if test_bind (ip, mypubport) {break ip}
-            return ERR! ("Can't bind")
+            let tags: &[&TagParam] = &[&"myipaddr"];
+            if test_bind (ip, mypubport) {
+                ctx.log.log ("🙂", tags, &fomat! (
+                    "We've detected an external IP " (ip) " and we can bind on it (port " (mypubport) "), so probably a dedicated IP."));
+                break ip
+            }
+            let all_interfaces = Ipv4Addr::new (0, 0, 0, 0) .into();
+            if test_bind (all_interfaces, mypubport) {
+                ctx.log.log ("😅", tags, &fomat! (
+                    "We couldn't bind on the external IP " (ip) " (port " (mypubport) "), so NAT is likely to be present. We'll be okay though."));
+                break all_interfaces
+            }
+            let locahost = Ipv4Addr::new (127, 0, 0, 1) .into();
+            if test_bind (locahost, mypubport) {
+                ctx.log.log ("🤫", tags, &fomat! (
+                    "We couldn't bind on " (ip) " or 0.0.0.0 (port " (mypubport) "), is another MM2 instance running?"
+                    " Looks like we can bind on 127.0.0.1 as a workaround, but this is a temporary workaround so please don't tell anyone."));
+                break locahost
+            }
+            ctx.log.log ("🤒", tags, &fomat! (
+                "Couldn't bind on " (ip) ", 0.0.0.0 or 127.0.0.1 (port " (mypubport) ")."));
+            break all_interfaces  // Seems like a better default than 127.0.0.1, might still work for other ports.
         }
     };
 

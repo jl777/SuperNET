@@ -48,7 +48,6 @@ use std::env;
 use std::ffi::{CStr, CString, OsString};
 use std::io::{self, Write};
 use std::mem::{zeroed};
-use std::net::{SocketAddr, Ipv4Addr};
 use std::process::exit;
 use std::ptr::{null};
 use std::str::from_utf8_unchecked;
