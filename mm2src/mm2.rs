@@ -112,12 +112,9 @@ fn lp_main (c_conf: CJSON, conf: Json) -> Result<(), String> {
     if conf["passphrase"].is_string() {
         let profitmargin = conf["profitmargin"].as_f64();
         unsafe {lp::LP_profitratio += profitmargin.unwrap_or (0.)};
-        let port = conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
-        if port < 1000 {return ERR! ("port < 1000")}
-        if port > u16::max_value() as u64 {return ERR! ("port > u16")}
         let netid = conf["netid"].as_u64().unwrap_or (0) as u16;
         unsafe {lp::LP_ports (&mut pullport, &mut pubport, &mut busport, netid)};
-        try_s! (lp_init (port as u16, pullport, pubport, conf, c_conf));
+        try_s! (lp_init (pullport, pubport, conf, c_conf));
         Ok(())
     } else {ERR! ("!passphrase")}
 }
@@ -310,7 +307,7 @@ fn vanity (substring: &str) {
     let mut wifstr: [c_char; 128] = unsafe {zeroed()};
     let mut privkey: bits256 = unsafe {zeroed()};
     unsafe {lp::LP_mutex_init()};
-    let ctx = MmCtx::new (json! ({}), SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
+    let ctx = MmCtx::new (json! ({}));
     unwrap! (coins::lp_initcoins (&ctx));
     let timestamp = now_ms() / 1000;
     log! ({"start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp});

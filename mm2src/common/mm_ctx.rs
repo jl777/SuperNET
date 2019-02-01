@@ -3,7 +3,7 @@ use libc::{c_void};
 use rand::random;
 use serde_json::{Value as Json};
 use std::any::Any;
-use std::net::{SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::ops::Deref;
 use std::ptr::{null_mut};
 use std::sync::{Arc, Mutex, Weak};
@@ -44,8 +44,6 @@ pub struct MmCtx {
     pub initialized: AtomicBool,
     /// True if the MarketMaker instance needs to stop.
     stop: AtomicBool,
-    /// IP and port for the RPC server to listen on.
-    pub rpc_ip_port: SocketAddr,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
     ffi_handle: AtomicUsize,
@@ -63,10 +61,7 @@ pub struct MmCtx {
     pub prices_ctx: Mutex<Option<Arc<Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
-    // TODO: The `rpc_ip_port` is a part of the `conf`, we should refactor away the unnecessary constructor parameter
-    //       in order to keep the `MmCtx` constructor lean and in order to spread the `rpc_ip_port` logic less,
-    //       moving it closer to where it's actually used instead (encapsulating in rpc mod).
-    pub fn new (conf: Json, rpc_ip_port: SocketAddr) -> MmArc {
+    pub fn new (conf: Json) -> MmArc {
         let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {
             conf,
@@ -74,7 +69,6 @@ impl MmCtx {
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             stop: AtomicBool::new (false),
-            rpc_ip_port,
             ffi_handle: AtomicUsize::new (0),
             stop_listeners: Mutex::new (Vec::new()),
             portfolio_ctx: Mutex::new (None),
@@ -87,6 +81,21 @@ impl MmCtx {
 
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
+
+    pub fn rpc_ip_port (&self) -> Result<SocketAddr, String> {
+        let port = self.conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
+        if port < 1000 {return ERR! ("rpcport < 1000")}
+        if port > u16::max_value() as u64 {return ERR! ("rpcport > u16")}
+
+        let rpcip = if !self.conf["rpcip"].is_null() {
+            try_s! (self.conf["rpcip"].as_str().ok_or ("rpcip is not a string"))
+        } else {
+            "127.0.0.1"
+        } .to_string();
+        let ip: IpAddr = try_s! (rpcip.parse());
+        Ok (SocketAddr::new (ip, port as u16))
+    }
+
 
     pub fn stop (&self) {
         if self.stop.compare_and_swap (false, true, Ordering::Relaxed) == false {
