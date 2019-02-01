@@ -355,7 +355,10 @@ pub fn spawn_electrum(
     addr_str: &str,
     arc: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
 ) -> Result<mpsc::Sender<Vec<u8>>, String> {
-    let mut addr = try_s!(addr_str.to_socket_addrs());
+    let mut addr = match addr_str.to_socket_addrs() {
+        Ok(a) => a,
+        Err(e) => return ERR!("{} error {:?}", addr, e),
+    };
     let addr = match addr.next() {
         Some(a) => a,
         None => return ERR!("Socket addr from addr {} is None.", addr_str),
