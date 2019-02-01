@@ -357,7 +357,7 @@ pub fn spawn_electrum(
 ) -> Result<mpsc::Sender<Vec<u8>>, String> {
     let mut addr = match addr_str.to_socket_addrs() {
         Ok(a) => a,
-        Err(e) => return ERR!("{} error {:?}", addr, e),
+        Err(e) => return ERR!("{} error {:?}", addr_str, e),
     };
     let addr = match addr.next() {
         Some(a) => a,
