@@ -434,6 +434,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                 let maker_amount = (*qp).R.srcamount as u64;
                 let taker_amount = (*qp).R.destamount as u64;
                 let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&lp::G.LP_privkey.bytes));
+                let uuid = CStr::from_ptr ((*qp).uuidstr.as_ptr()) .to_string_lossy().into_owned();
                 log!("Seller loop");
                 move || {
                     let mut maker_swap = AtomicSwap::new(
@@ -446,10 +447,11 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, base: *mut c_char, rel: *mut c_char,
                         maker_amount,
                         taker_amount,
                         my_persistent_pub,
+                        uuid,
                     ).unwrap();
                     log!("Entering the maker_swap_loop");
                     match maker_swap_loop(&mut maker_swap) {
-                        Ok(_) => log!("Swap finished successfully"),
+                        Ok(_) => (),
                         Err(e) => log!("Swap finished with error " [e])
                     };
                 }
@@ -764,6 +766,7 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
             let maker_amount = (*qp).R.srcamount as u64;
             let taker_amount = (*qp).R.destamount as u64;
             let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&lp::G.LP_privkey.bytes));
+            let uuid = CStr::from_ptr ((*qp).uuidstr.as_ptr()) .to_string_lossy().into_owned();
             move || {
                 let mut taker_swap = AtomicSwap::new(
                     ctx,
@@ -774,11 +777,12 @@ unsafe fn lp_connected_alice(ctx_ffi_handle: u32, qp: *mut lp::LP_quoteinfo, pai
                     taker_coin,
                     maker_amount,
                     taker_amount,
-                    my_persistent_pub
+                    my_persistent_pub,
+                    uuid,
                 ).unwrap();
                 log!("Entering the taker_swap_loop");
                 match taker_swap_loop(&mut taker_swap) {
-                    Ok(_) => log!("Swap finished successfully"),
+                    Ok(_) => (),
                     Err(e) => log!("Swap finished with error "[e])
                 };
             }
