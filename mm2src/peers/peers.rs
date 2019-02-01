@@ -1150,7 +1150,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                         Ok (()) => {
                             drop (file);  // Close before renaming, just in case.
                             match fs::rename (&tmp_path, &dht_state_path) {
-                                Err (err) => log! ("Error renaming " [tmp_path] " to " [dht_state_path] ": " (err)),
+                                Err (err) => log! ("Warning, can't rename " [tmp_path] " to " [dht_state_path] ": " (err)),
                                 Ok (()) => log! ("DHT state saved to " [dht_state_path])
         }   }   }   }   }   }
     }

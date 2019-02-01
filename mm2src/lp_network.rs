@@ -447,6 +447,7 @@ struct LP_queuedcommand
 } *LP_commandQ;
 */
 
+#[derive(Debug)]
 struct QueuedCommand {
     response_sock: i32,
     stats_json_only: i32,

@@ -589,7 +589,7 @@ fn trade_base_rel(base: &str, rel: &str) {
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
             "coins": coins,
-            "seednode": fomat!((mm_bob.ip))
+            // We're using the open (non-NAT) netid 9000 seed instead, 195.201.42.102 // "seednode": fomat!((mm_bob.ip))
         }),
         alice_userpass,
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
@@ -607,8 +607,10 @@ fn trade_base_rel(base: &str, rel: &str) {
     // Enable coins on Alice side. Print the replies in case we need the "smartaddress".
     log! ({"enable_coins (alice): {:?}", enable_coins (&mm_alice)});
 
-    // wait until Alice recognize Bob node by importing it's pubkey
-    unwrap! (mm_alice.wait_for_log (33., &|log| log.contains ("set pubkey for")));
+    // Both the Taker and the Maker should connect to the netid 9000 open (non-NAT) seed node.
+    // NB: Long wayt as there might be delays in the seed node from us reusing the 127.0.0.* IPs with different keys.
+    unwrap! (mm_bob.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
+    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("set pubkey for ")));
 
     // issue sell request on Bob side by setting base/rel price
     log!("Issue bob sell request");
@@ -635,7 +637,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
 
     // ensure the swap started
-    unwrap! (mm_alice.wait_for_log (20., &|log| log.contains ("Entering the taker_swap_loop")));
+    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("Entering the taker_swap_loop")));
     unwrap! (mm_bob.wait_for_log (20., &|log| log.contains ("Entering the maker_swap_loop")));
 
     // wait for swap to complete on both sides

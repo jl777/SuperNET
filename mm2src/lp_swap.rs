@@ -542,7 +542,9 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
                 let time_dif = (started_at as i64 - maker_data.started_at as i64).abs();
                 if  time_dif > 60 {
-                    err!(-1002, "Started_at time_dif over 60: "(time_dif))
+                    // AG: I see this check failing with `LP_AUTOTRADE_TIMEOUT` bumped from 30 to 120.
+                    //err!(-1002, "Started_at time_dif over 60: "(time_dif))
+                    log!("Started_at time_dif over 60: "(time_dif));
                 }
                 swap.other_pub0 = maker_data.pub0;
                 swap.other_persistent_pub = maker_data.persistent_pubkey;
