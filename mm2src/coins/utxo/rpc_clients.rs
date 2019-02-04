@@ -315,8 +315,9 @@ struct ElectrumUnspent {
     value: u64,
 }
 
+/// The block header compatible with Electrum 1.2
 #[derive(Debug, Deserialize)]
-pub struct ElectrumBlockHeader {
+pub struct ElectrumBlockHeaderV12 {
     bits: u64,
     block_height: u64,
     merkle_root: H256Json,
@@ -324,6 +325,29 @@ pub struct ElectrumBlockHeader {
     prev_block_hash: H256Json,
     timestamp: u64,
     version: u64,
+}
+
+/// The block header compatible with Electrum 1.4
+#[derive(Debug, Deserialize)]
+pub struct ElectrumBlockHeaderV14 {
+    height: u64,
+    hex: BytesJson,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ElectrumBlockHeader {
+    V12(ElectrumBlockHeaderV12),
+    V14(ElectrumBlockHeaderV14),
+}
+
+impl ElectrumBlockHeader {
+    fn block_height(&self) -> u64 {
+        match self {
+            ElectrumBlockHeader::V12(h) => h.block_height,
+            ElectrumBlockHeader::V14(h) => h.height,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -469,7 +493,7 @@ impl UtxoRpcClientOps for ElectrumClient {
         match elem {
             Some(response) => {
                 let response: ElectrumBlockHeader = try_fus!(json::from_value(response.result.clone()));
-                Box::new(futures::future::ok(response.block_height))
+                Box::new(futures::future::ok(response.block_height()))
             },
             None => Box::new(futures::future::err(ERRL!("{} is not active", BLOCKCHAIN_HEADERS_SUB_ID)))
         }
@@ -995,16 +1019,13 @@ mod tests {
     #[test]
     #[ignore]
     fn test_wait_for_tx_spend_electrum() {
-        let mut client = ElectrumClient::new();
-        client.add_server("electrum1.cipig.net:10022").unwrap();
-        client.add_server("electrum2.cipig.net:10022").unwrap();
-        client.add_server("electrum3.cipig.net:10022").unwrap();
-
-        let res = client.get_transaction("f1c49150d561cae69607ae0c761d9cd6b69ca20dafa78158e8ae0b1a1c723381".into()).wait().unwrap();
-
-        let tx: UtxoTransaction = deserialize(res.hex.as_slice()).unwrap();
-        let wait = client.wait_for_payment_spend(&tx, 0, now_ms() / 1000 + 1000).unwrap();
-        log!([wait]);
+        let mut client = ElectrumClientImpl::new();
+        client.add_server("electrum1.cipig.net:10001").unwrap();
+        client.add_server("electrum2.cipig.net:10001").unwrap();
+        client.add_server("electrum3.cipig.net:10001").unwrap();
+        let client = ElectrumClient(Arc::new(client));
+        let res = client.blockchain_headers_subscribe().wait().unwrap();
+        log!([res]);
     }
 
     #[test]
