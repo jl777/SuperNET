@@ -10,7 +10,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::atomic::Ordering;
 
 fn peer (conf: Json, port: u16) -> MmArc {
-    let ctx = MmCtx::new (conf, SocketAddr::new (Ipv4Addr::new (127, 0, 0, 1) .into(), 123));
+    let ctx = MmCtx::new (conf);
     unwrap! (ctx.log.thread_gravity_on());
     let mut rng = rand::thread_rng();
 
