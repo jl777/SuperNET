@@ -593,6 +593,7 @@ impl ElectrumClientImpl {
         rpc_func!(self, "blockchain.scripthash.get_balance", hash)
     }
 
+    /*
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-headers-subscribe
     pub fn blockchain_headers_subscribe(&self) -> RpcRes<ElectrumBlockHeader> {
         Box::new(
@@ -611,7 +612,7 @@ impl ElectrumClientImpl {
             })
         )
     }
-
+    */
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-broadcast
     fn blockchain_transaction_broadcast(&self, tx: BytesJson) -> RpcRes<H256Json> {
         rpc_func!(self, "blockchain.transaction.broadcast", tx)
@@ -688,6 +689,8 @@ macro_rules! try_loop {
     };
 }
 
+const ELECTRUM_TIMEOUT: u64 = 60;
+
 fn electrum_connect(
     addr: SocketAddr,
     responses: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
@@ -710,11 +713,11 @@ fn electrum_connect(
 
             let last_chunk = Arc::new(AtomicUsize::new(now_ms() as usize / 1000));
             let last_chunk2 = last_chunk.clone();
-            let interval = Interval::new(Duration::from_secs(15)).map_err(|e| { log!([e]); () });
+            let interval = Interval::new(Duration::from_secs(ELECTRUM_TIMEOUT)).map_err(|e| { log!([e]); () });
             CORE.spawn(move |_| {
                 interval.for_each(move |_| {
                     let last = last_chunk.load(AtomicOrdering::Relaxed);
-                    if now_ms() as usize / 1000 - last > 15 {
+                    if now_ms() / 1000 - last as u64 > ELECTRUM_TIMEOUT {
                         log!([addr] " Didn't receive any data since " (last) ". Shutting down the connection.");
                         if let Err(e) = stream_clone.shutdown(Shutdown::Both) {
                             log!([addr] " error shutting down the connection " [e]);
@@ -867,7 +870,7 @@ fn electrum_request(
             }
         })
         .map_err(|e| StringError(e))
-        .timeout(Duration::from_secs(10));
+        .timeout(Duration::from_secs(ELECTRUM_TIMEOUT));
 
     Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
@@ -909,7 +912,7 @@ fn electrum_subscribe(
             }
         })
         .map_err(|e| StringError(e))
-        .timeout(Duration::from_secs(10));
+        .timeout(Duration::from_secs(ELECTRUM_TIMEOUT));
 
     Box::new(send_fut.map_err(|e| ERRL!("{}", e.0)))
 }
@@ -1017,14 +1020,13 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_wait_for_tx_spend_electrum() {
         let mut client = ElectrumClientImpl::new();
-        client.add_server("electrum1.cipig.net:10001").unwrap();
-        client.add_server("electrum2.cipig.net:10001").unwrap();
-        client.add_server("electrum3.cipig.net:10001").unwrap();
+        client.add_server("electrum1.cipig.net:10000").unwrap();
+        client.add_server("electrum2.cipig.net:10000").unwrap();
+        client.add_server("electrum3.cipig.net:10000").unwrap();
         let client = ElectrumClient(Arc::new(client));
-        let res = client.blockchain_headers_subscribe().wait().unwrap();
+        let res = client.get_transaction("2428ed3600a8823611ce11e3228189d60f1be4131e7cac2a0e6056ef456b147a".into()).wait().unwrap();
         log!([res]);
     }
 
