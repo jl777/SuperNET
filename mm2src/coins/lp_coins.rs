@@ -34,7 +34,7 @@ use futures::{Future};
 use gstuff::now_ms;
 use hashbrown::hash_map::{HashMap, RawEntryMut};
 use libc::{c_char, c_void};
-use serde_json::{self as json, Value as Json};
+use serde_json::{Value as Json};
 use std::borrow::Cow;
 use std::ffi::{CString};
 use std::fmt::Debug;
@@ -769,15 +769,72 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         try_s! (safecopy! (ii.etomic, "{}", etomic));
     }
 
-    let method = req["method"].as_str();
-    let utxo_mode = if method == Some ("electrum") {
-        let urls: Vec<String> = try_s!(json::from_value(req["urls"].clone()));
-        UtxoInitMode::Electrum(urls)
-    } else if method == Some ("enable") {
+    let electrum_urls: Vec<String> = loop {
+        // See if the Electrum servers are explicitly defined in the request.
+        if let Some (urls) = req["urls"].as_array() {
+            if !urls.is_empty() {
+                break try_s! (urls.iter()
+                    .map (|j| j.as_str().map (|s| s.to_string()) .ok_or ("electrum/urls member is not a string"))
+                    .collect())
+        }   }
+
+        // Check the coin configuration for the list of Electrum servers.
+        // Example: https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L20
+        if let Some (servers) = coins_en["electrumServers"].as_array() {
+            let mut urls = Vec::with_capacity (servers.len());
+            for server in servers {
+                let host = match server["host"].as_str() {
+                    Some (host) => host,
+                    None => return ERR! ("Found no string `host` field in `electrumServers` of coin {}", ticker)
+                };
+                let port = match server["port"].as_u64() {
+                    Some (port) => port,
+                    None => return ERR! ("Found no unsigned `port` field in `electrumServers` of coin {}", ticker)
+                };
+                urls.push (fomat! ((host) ':' (port)))
+            }
+            break urls
+        }
+
+        // Default servers for coins that are enabled by default.
+        // cf. https://github.com/artemii235/SuperNET/issues/281#issuecomment-460268221
+        if ticker == "KMD" {
+            break vec! [
+                "electrum1.cipig.net:10001".into(),
+                "electrum2.cipig.net:10001".into(),
+                "electrum3.cipig.net:10001".into()
+            ]
+        }
+        if ticker == "BTC" {
+            break vec! [
+                "electrum1.cipig.net:10000".into(),
+                "electrum2.cipig.net:10000".into(),
+                "electrum3.cipig.net:10000".into()
+            ]
+        }
+
+        break Vec::new()
+    };
+
+    let method: &str = loop {
+        // See if the method was explicitly picked (by an RPC call).
+        if let Some (method) = req["method"].as_str() {break method}
+
+        // Enable in the "native" mode if the port of the local wallet is configured and electrum is not.
+        if coins_en["rpcport"].as_u64().is_some() && coins_en["electrumServers"].as_array().is_none() {break "enable"}
+
+        // Enable in the "electrum" mode if we know of a list of electrum servers for that coin, default or otherwise.
+        if !electrum_urls.is_empty() {break "electrum"}
+
+        return ERR! ("lp_coininit ({}): no method", ticker);
+    };
+    let utxo_mode = if method == "electrum" {
+        UtxoInitMode::Electrum (electrum_urls)
+    } else if method == "enable" {
         if unsafe {!lp::LP_conflicts_find (ii) .is_null()} {return ERR! ("coin port conflicts with existing coin")}
         UtxoInitMode::Native
     } else {
-        return ERR! ("lp_coininit unknown method {:?}", method);
+        return ERR! ("lp_coininit ({}): unknown method {:?}", ticker, method);
     };
 
     // TODO: Should pick the correct coin implementation somehow.
@@ -882,7 +939,7 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     let default_coins = ["BTC", "KMD"];
 
     for &ticker in default_coins.iter() {
-        try_s! (lp_coininit (ctx, ticker, &json!({"method":"enable"})));
+        try_s! (lp_coininit (ctx, ticker, &json!({})));
     }
 
     Ok(())
