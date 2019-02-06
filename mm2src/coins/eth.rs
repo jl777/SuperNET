@@ -98,13 +98,11 @@ impl SwapOps for EthCoin {
     fn send_maker_payment(
         &self,
         time_lock: u32,
-        _pub_a0: &[u8],
-        _pub_b0: &[u8],
-        taker_addr: &[u8],
+        taker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64
     ) -> TransactionFut {
-        let taker_addr = try_fus!(addr_from_raw_pubkey(taker_addr));
+        let taker_addr = try_fus!(addr_from_raw_pubkey(taker_pub));
 
         Box::new(self.send_hash_time_locked_payment(
             u256_denominate_from_satoshis(amount, self.decimals),
@@ -117,13 +115,11 @@ impl SwapOps for EthCoin {
     fn send_taker_payment(
         &self,
         time_lock: u32,
-        _pub_a0: &[u8],
-        _pub_b0: &[u8],
-        maker_addr: &[u8],
+        maker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> TransactionFut {
-        let maker_addr = try_fus!(addr_from_raw_pubkey(maker_addr));
+        let maker_addr = try_fus!(addr_from_raw_pubkey(maker_pub));
 
         Box::new(self.send_hash_time_locked_payment(
             u256_denominate_from_satoshis(amount, self.decimals),
@@ -136,7 +132,6 @@ impl SwapOps for EthCoin {
     fn send_maker_spends_taker_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        _b_priv_0: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
         let tx = match taker_payment_tx {
@@ -150,7 +145,6 @@ impl SwapOps for EthCoin {
     fn send_taker_spends_maker_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        _a_priv_0: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
         let tx = match maker_payment_tx {
@@ -164,7 +158,6 @@ impl SwapOps for EthCoin {
     fn send_taker_refunds_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        _a_priv_0: &[u8],
     ) -> TransactionFut {
         let tx = match taker_payment_tx {
             TransactionEnum::SignedEthTransaction(t) => t,
@@ -177,7 +170,6 @@ impl SwapOps for EthCoin {
     fn send_maker_refunds_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        _b_priv_0: &[u8],
     ) -> TransactionFut {
         let tx = match maker_payment_tx {
             TransactionEnum::SignedEthTransaction(t) => t,
@@ -240,16 +232,14 @@ impl SwapOps for EthCoin {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        _pub_a0: &[u8],
-        _pub_b0: &[u8],
-        other_addr: &[u8],
+        maker_pub: &[u8],
         secret_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
         self.validate_payment(
             payment_tx,
             time_lock,
-            other_addr,
+            maker_pub,
             secret_hash,
             amount,
         )
@@ -259,16 +249,14 @@ impl SwapOps for EthCoin {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        _pub_a0: &[u8],
-        _pub_b0: &[u8],
-        other_addr: &[u8],
+        taker_pub: &[u8],
         secret_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
         self.validate_payment(
             payment_tx,
             time_lock,
-            other_addr,
+            taker_pub,
             secret_hash,
             amount,
         )

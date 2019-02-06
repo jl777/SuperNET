@@ -476,9 +476,8 @@ impl UtxoCoin {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        first_pub0: &[u8],
-        second_pub0: &[u8],
-        _other_addr: &[u8],
+        first_pub0: &Public,
+        second_pub0: &Public,
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
@@ -561,17 +560,15 @@ impl SwapOps for UtxoCoin {
     fn send_maker_payment(
         &self,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        _taker_addr: &[u8],
+        taker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> TransactionFut {
         let redeem_script = try_fus!(payment_script(
             time_lock,
             priv_bn_hash,
-            &try_fus!(Public::from_slice(pub_b0)),
-            &try_fus!(Public::from_slice(pub_a0)),
+            self.key_pair.public(),
+            &try_fus!(Public::from_slice(taker_pub)),
         ));
         let output = TransactionOutput {
             value: amount,
@@ -583,17 +580,15 @@ impl SwapOps for UtxoCoin {
     fn send_taker_payment(
         &self,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        _maker_addr: &[u8],
+        maker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> TransactionFut {
         let redeem_script = try_fus!(payment_script(
             time_lock,
             priv_bn_hash,
-            &try_fus!(Public::from_slice(pub_a0)),
-            &try_fus!(Public::from_slice(pub_b0)),
+            self.key_pair.public(),
+            &try_fus!(Public::from_slice(maker_pub)),
         ));
         let output = TransactionOutput {
             value: amount,
@@ -605,11 +600,9 @@ impl SwapOps for UtxoCoin {
     fn send_maker_spends_taker_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        b_priv_0: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
         let prev_tx = match taker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -622,7 +615,7 @@ impl SwapOps for UtxoCoin {
             prev_tx,
             vec![output],
             script_data,
-            &key_pair,
+            &self.key_pair,
             self.tx_version,
             self.overwintered,
             (now_ms() / 1000) as u32,
@@ -637,11 +630,9 @@ impl SwapOps for UtxoCoin {
     fn send_taker_spends_maker_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        a_priv_0: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
         let prev_tx = match maker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -654,7 +645,7 @@ impl SwapOps for UtxoCoin {
             prev_tx,
             vec![output],
             script_data,
-            &key_pair,
+            &self.key_pair,
             self.tx_version,
             self.overwintered,
             (now_ms() / 1000) as u32,
@@ -669,10 +660,8 @@ impl SwapOps for UtxoCoin {
     fn send_taker_refunds_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        a_priv_0: &[u8],
     ) -> TransactionFut {
         let prev_tx = match taker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(a_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -684,7 +673,7 @@ impl SwapOps for UtxoCoin {
             prev_tx,
             vec![output],
             script_data,
-            &key_pair,
+            &self.key_pair,
             self.tx_version,
             self.overwintered,
             (now_ms() / 1000) as u32,
@@ -699,10 +688,8 @@ impl SwapOps for UtxoCoin {
     fn send_maker_refunds_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        b_priv_0: &[u8],
     ) -> TransactionFut {
         let prev_tx = match maker_payment_tx {TransactionEnum::ExtendedUtxoTx(e) => e, _ => panic!()};
-        let key_pair = try_fus!(compressed_key_pair_from_bytes(b_priv_0, self.wif_prefix));
         let output = TransactionOutput {
             value: prev_tx.transaction.outputs[0].value - 1000,
             script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
@@ -714,7 +701,7 @@ impl SwapOps for UtxoCoin {
             prev_tx,
             vec![output],
             script_data,
-            &key_pair,
+            &self.key_pair,
             self.tx_version,
             self.overwintered,
             (now_ms() / 1000) as u32,
@@ -759,18 +746,15 @@ impl SwapOps for UtxoCoin {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        other_addr: &[u8],
+        maker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
         self.validate_payment(
             payment_tx,
             time_lock,
-            pub_b0,
-            pub_a0,
-            other_addr,
+            &try_s!(Public::from_slice(maker_pub)),
+            self.key_pair.public(),
             priv_bn_hash,
             amount
         )
@@ -780,18 +764,15 @@ impl SwapOps for UtxoCoin {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        other_addr: &[u8],
+        taker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String> {
         self.validate_payment(
             payment_tx,
             time_lock,
-            pub_a0,
-            pub_b0,
-            other_addr,
+            &try_s!(Public::from_slice(taker_pub)),
+            self.key_pair.public(),
             priv_bn_hash,
             amount
         )

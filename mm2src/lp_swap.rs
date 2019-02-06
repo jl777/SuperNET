@@ -23,16 +23,16 @@
 //!
 //! 2. BPayment:
 //! OP_IF
-//! <now + LOCKTIME*2> OP_CLTV OP_DROP <bob_pubB0> OP_CHECKSIG
+//! <now + LOCKTIME*2> OP_CLTV OP_DROP <bob_pub> OP_CHECKSIG
 //! OP_ELSE
-//! OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+//! OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <alice_pub> OP_CHECKSIG
 //! OP_ENDIF
 //! 
 //! 3. APayment:
 //! OP_IF
-//! <now + LOCKTIME> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+//! <now + LOCKTIME> OP_CLTV OP_DROP <alice_pub> OP_CHECKSIG
 //! OP_ELSE
-//! OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+//! OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pub> OP_CHECKSIG
 //! OP_ENDIF
 //! 
 
@@ -59,11 +59,9 @@ use coins::{MmCoinEnum, TransactionEnum};
 use common::{bits256, dstr, Timeout};
 use common::log::TagParam;
 use common::mm_ctx::MmArc;
-use coins::utxo::{random_compressed_key_pair};
 use crc::crc32;
 use futures::{Future};
 use gstuff::now_ms;
-use keys::KeyPair;
 use rand::Rng;
 use peers::SendHandler;
 use primitives::hash::{H160, H256, H264};
@@ -228,9 +226,7 @@ pub struct AtomicSwap {
     session: String,
     secret: H256,
     secret_hash: H160,
-    my_priv0: KeyPair,
     my_persistent_pub: H264,
-    other_pub0: H264,
     other_persistent_pub: H264,
     lock_duration: u64,
     maker_amount: u64,
@@ -271,8 +267,6 @@ impl AtomicSwap {
             session,
             secret: [0; 32].into(),
             secret_hash: H160::default(),
-            my_priv0: try_s!(random_compressed_key_pair(0)),
-            other_pub0: H264::default(),
             other_persistent_pub: H264::default(),
             lock_duration,
             maker_amount,
@@ -291,7 +285,6 @@ struct SwapNegotiationData {
     started_at: u64,
     payment_locktime: u64,
     secret_hash: H160,
-    pub0: H264,
     persistent_pubkey: H264,
 }
 
@@ -357,7 +350,6 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
         started_at,
         payment_locktime: swap.maker_payment_lock,
         secret_hash: swap.secret_hash.clone(),
-        pub0: H264::from(&**swap.my_priv0.public()),
         persistent_pubkey: swap.my_persistent_pub.clone(),
     };
 
@@ -374,7 +366,6 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 };
 
                 swap.taker_payment_lock = taker_data.payment_locktime;
-                swap.other_pub0 = taker_data.pub0;
                 swap.other_persistent_pub = taker_data.persistent_pubkey;
 
                 let negotiated = serialize(&true);
@@ -402,8 +393,6 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             AtomicSwapState::SendMakerPayment => {
                 let payment_fut = swap.maker_coin.send_maker_payment(
                     swap.maker_payment_lock as u32,
-                    &*swap.other_pub0,
-                    &**swap.my_priv0.public(),
                     &*swap.other_persistent_pub,
                     &*swap.secret_hash,
                     swap.maker_amount,
@@ -431,8 +420,6 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let validated = swap.taker_coin.validate_taker_payment(
                     taker_payment.clone(),
                     swap.taker_payment_lock as u32,
-                    &*swap.other_pub0,
-                    &**swap.my_priv0.public(),
                     &*swap.other_persistent_pub,
                     &*swap.secret_hash,
                     swap.taker_amount,
@@ -459,7 +446,6 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             AtomicSwapState::SpendTakerPayment => {
                 let spend_fut = swap.taker_coin.send_maker_spends_taker_payment(
                     swap.taker_payment.clone().unwrap(),
-                    &*swap.my_priv0.private().secret,
                     &*swap.secret,
                 );
 
@@ -546,7 +532,6 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     //err!(-1002, "Started_at time_dif over 60: "(time_dif))
                     log!("Started_at time_dif over 60: "(time_dif));
                 }
-                swap.other_pub0 = maker_data.pub0;
                 swap.other_persistent_pub = maker_data.persistent_pubkey;
                 swap.maker_payment_lock = maker_data.payment_locktime;
                 swap.secret_hash = maker_data.secret_hash.clone();
@@ -555,7 +540,6 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                     started_at,
                     secret_hash: maker_data.secret_hash,
                     payment_locktime: swap.taker_payment_lock,
-                    pub0: H264::from(&**swap.my_priv0.public()),
                     persistent_pubkey: swap.my_persistent_pub.clone(),
                 };
                 let bytes = serialize(&taker_data);
@@ -597,8 +581,6 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 let validated = swap.maker_coin.validate_maker_payment(
                     maker_payment.clone(),
                     swap.maker_payment_lock as u32,
-                    &**swap.my_priv0.public(),
-                    &*swap.other_pub0,
                     &*swap.other_persistent_pub,
                     &*swap.secret_hash,
                     swap.maker_amount,
@@ -625,8 +607,6 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
             AtomicSwapState::SendTakerPayment => {
                 let payment_fut = swap.taker_coin.send_taker_payment(
                     swap.taker_payment_lock as u32,
-                    &**swap.my_priv0.public(),
-                    &*swap.other_pub0,
                     &*swap.other_persistent_pub,
                     &*swap.secret_hash,
                     swap.taker_amount,
@@ -673,7 +653,6 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 status.status(swap_tags, "Spending maker payment…");
                 let spend_fut = swap.maker_coin.send_taker_spends_maker_payment(
                     swap.maker_payment.clone().unwrap(),
-                    &*swap.my_priv0.private().secret,
                     &*swap.secret,
                 );
 
@@ -696,7 +675,6 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
                 }
                 let refund_fut = swap.taker_coin.send_taker_refunds_payment(
                     swap.taker_payment.clone().unwrap(),
-                    &*swap.my_priv0.private().secret,
                 );
 
                 let transaction = match refund_fut.wait() {
