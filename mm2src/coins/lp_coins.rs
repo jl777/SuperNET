@@ -83,9 +83,7 @@ pub trait SwapOps {
     fn send_maker_payment(
         &self,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        taker_addr: &[u8],
+        taker_pub: &[u8],
         secret_hash: &[u8],
         amount: u64
     ) -> TransactionFut;
@@ -93,9 +91,7 @@ pub trait SwapOps {
     fn send_taker_payment(
         &self,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        maker_addr: &[u8],
+        maker_pub: &[u8],
         secret_hash: &[u8],
         amount: u64,
     ) -> TransactionFut;
@@ -103,27 +99,23 @@ pub trait SwapOps {
     fn send_maker_spends_taker_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        b_priv_0: &[u8],
         secret: &[u8],
     ) -> TransactionFut;
 
     fn send_taker_spends_maker_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        a_priv_0: &[u8],
         secret: &[u8],
     ) -> TransactionFut;
 
     fn send_taker_refunds_payment(
         &self,
         taker_payment_tx: TransactionEnum,
-        a_priv_0: &[u8],
     ) -> TransactionFut;
 
     fn send_maker_refunds_payment(
         &self,
         maker_payment_tx: TransactionEnum,
-        b_priv_0: &[u8],
     ) -> TransactionFut;
 
     fn validate_fee(
@@ -137,9 +129,7 @@ pub trait SwapOps {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        other_addr: &[u8],
+        maker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String>;
@@ -148,9 +138,7 @@ pub trait SwapOps {
         &self,
         payment_tx: TransactionEnum,
         time_lock: u32,
-        pub_a0: &[u8],
-        pub_b0: &[u8],
-        other_addr: &[u8],
+        taker_pub: &[u8],
         priv_bn_hash: &[u8],
         amount: u64,
     ) -> Result<(), String>;
