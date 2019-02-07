@@ -547,7 +547,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     let alice_passphrase = unwrap! (var ("ALICE_PASSPHRASE") .ok().or (alice_file_passphrase), "No ALICE_PASSPHRASE or .env.client/PASSPHRASE");
     let alice_userpass = unwrap! (var ("ALICE_USERPASS") .ok().or (alice_file_userpass), "No ALICE_USERPASS or .env.client/USERPASS");
 
-    let coins = json!([
+    let coins = json! ([
         {"coin":"BEER","asset":"BEER","rpcport":8923,"confpath":unwrap!(beer_cfp.to_str())},
         {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"confpath":unwrap!(pizza_cfp.to_str())},
         {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"confpath":unwrap!(etomic_cfp.to_str())},
@@ -570,7 +570,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     ));
 
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
-    log!({"Bob log path: {}", mm_bob.log_path.display()});
+    log! ({"Bob log path: {}", mm_bob.log_path.display()});
 
     // Both Alice and Bob might try to bind on the "0.0.0.0:47773" DHT port in this test
     // (because the local "127.0.0.*:47773" addresses aren't that useful for DHT).
@@ -596,7 +596,7 @@ fn trade_base_rel(base: &str, rel: &str) {
     ));
 
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
-    log!({"Alice log path: {}", mm_alice.log_path.display()});
+    log! ({"Alice log path: {}", mm_alice.log_path.display()});
 
     // wait until both nodes RPC API is active
     unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
@@ -610,10 +610,10 @@ fn trade_base_rel(base: &str, rel: &str) {
     // Both the Taker and the Maker should connect to the netid 9000 open (non-NAT) seed node.
     // NB: Long wayt as there might be delays in the seed node from us reusing the 127.0.0.* IPs with different keys.
     unwrap! (mm_bob.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
-    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("set pubkey for ")));
+    unwrap! (mm_alice.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
 
     // issue sell request on Bob side by setting base/rel price
-    log!("Issue bob sell request");
+    log! ("Issue bob sell request");
     let rc = unwrap! (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
         "method": "setprice",
@@ -624,8 +624,8 @@ fn trade_base_rel(base: &str, rel: &str) {
     assert! (rc.0.is_success(), "!setprice: {}", rc.1);
 
     // issue base/rel buy request from Alice side
-    thread::sleep(Duration::from_secs(2));
-    log!("Issue alice buy request");
+    thread::sleep (Duration::from_secs (2));
+    log! ("Issue alice buy request");
     let rc = unwrap! (mm_alice.rpc (json! ({
         "userpass": mm_alice.userpass,
         "method": "buy",

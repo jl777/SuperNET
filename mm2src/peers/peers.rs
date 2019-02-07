@@ -1,4 +1,4 @@
-#![feature (non_ascii_idents, integer_atomics, vec_resize_default)]
+#![feature (non_ascii_idents, integer_atomics, vec_resize_default, ip)]
 
 #[macro_use] extern crate arrayref;
 #[macro_use] extern crate common;
@@ -681,7 +681,10 @@ struct GetsEntry {
     /// A map from the index byte of the chunk salt to the ping payload received.
     direct_chunks: HashMap<u8, Vec<u8>>,
     /// Futures currently interested in this entry (waiting for it).
-    futures: HashMap<u64, Task>
+    futures: HashMap<u64, Task>,
+    /// The time when we first discovered that the `futures` is empty.  
+    /// Reset to `None` if there are `futures`.
+    idle_since: Option<f64>
 }
 impl GetsEntry {
     /// Invoked when the future `frid` is dropped.
@@ -713,7 +716,8 @@ fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: u64, task: Task, du
                 number_of_chunks: None,
                 chunks: vec! [ChunkGetsEntry {restarted: now_float(), direct: 0., seq_auth: 0, payload: None}],
                 direct_chunks: HashMap::new(),
-                futures: HashMap::from_iter (once ((frid, task)))
+                futures: HashMap::from_iter (once ((frid, task))),
+                idle_since: None
             });
             return
         },
@@ -727,6 +731,26 @@ fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: u64, task: Task, du
 }
 
 fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t, mut gets: OccupiedEntry<Vec<u8>, GetsEntry, DefaultHashBuilder>, pctx: &PeersContext) {
+    // Skip or GC the package if there are no clients still working on it.
+
+    let (skip, remove) = loop {
+        let gets = gets.get_mut();
+        if gets.futures.is_empty() {
+            if let Some (idle_since) = gets.idle_since {
+                let idle_for = now_float() - idle_since;
+                if idle_for > 600. {break (true, true)}
+            } else {
+                gets.idle_since = Some (now_float())
+            }
+            break (true, false)
+        } else {
+            gets.idle_since = None;
+            break (false, false)
+        }
+    };
+    if remove {gets.remove_entry(); return}
+    if skip {return}
+
     // See if the first chunk has arrived and the number of chunks with it.
 
     let now = now_float();
@@ -919,7 +943,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
     let listen_interfaces = (|| {
         if let Some (myipaddr) = myipaddr {
             let ip: IpAddr = unwrap! (myipaddr.parse());
-            if ip.is_loopback() || ip.is_multicast() {  // TODO: if ip.is_global()
+            if ip.is_loopback() || ip.is_multicast() || ip.is_global() {
                 log! ("Warning, myipaddr '" (myipaddr) "' does not appear globally routable, not using it for DHT");
             } else {
                 return fomat! ((myipaddr) ":" (preferred_port))
@@ -971,7 +995,6 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
     let mut bootstrapped = 0.;
     let mut last_state_save = 0.;
 
-    // TODO: Remove the outdated `gets` entries after a while.
     let mut gets = Gets::default();
 
     loop {
