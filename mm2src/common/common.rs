@@ -472,7 +472,8 @@ E: fmt::Display + Send + 'static {
 /// TODO: Use futures-timer instead.
 pub struct Timeout<R> {
     fut: Box<Future<Item=R, Error=String>>,
-    deadline: f64,
+    started: f64,
+    timeout: f64,
     monitor: Option<JoinHandle<()>>
 }
 impl<R> Future for Timeout<R> {
@@ -483,14 +484,15 @@ impl<R> Future for Timeout<R> {
             Err (err) => Err (err),
             Ok (Async::Ready (r)) => Ok (Async::Ready (r)),
             Ok (Async::NotReady) => {
-                if now_float() >= self.deadline {
-                    Err ("timeout".into())
+                let now = now_float();
+                if now >= self.started + self.timeout {
+                    Err (format! ("timeout ({:.1} > {:.1})", now - self.started, self.timeout))
                 } else {
                     // Start waking up this future until it has a chance to timeout.
                     // For now it's just a basic separate thread. Will probably optimize later.
                     if self.monitor.is_none() {
                         let task = futures::task::current();
-                        let deadline = self.deadline;
+                        let deadline = self.started + self.timeout;
                         self.monitor = Some (unwrap! (std::thread::Builder::new().name ("timeout monitor".into()) .spawn (move || {
                             loop {
                                 std::thread::sleep (Duration::from_secs (1));
@@ -505,7 +507,8 @@ impl<R> Timeout<R> {
     pub fn new (fut: Box<Future<Item=R, Error=String>>, timeout: Duration) -> Timeout<R> {
         Timeout {
             fut: fut,
-            deadline: now_float() + duration_to_float (timeout),
+            started: now_float(),
+            timeout: duration_to_float (timeout),
             monitor: None
 }   }   }
 

@@ -1734,6 +1734,7 @@ pub struct AutoBuyInput {
     #[serde(default = "zero_f")]
     dump: f64,
     timeout: Option<u32>,
+    /// Not used. Deprecated.
     duration: Option<u32>,
     // TODO: remove this field on API refactoring, method should be separated from params
     method: String,

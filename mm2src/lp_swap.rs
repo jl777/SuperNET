@@ -145,7 +145,7 @@ macro_rules! send_ {
 
 macro_rules! recv_ {
     ($swap: expr, $status: expr, $swap_tags: expr, $subj: expr, $desc: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
-        let recv_subject = fomat! (($subj) '@' ($swap.session));
+        let recv_subject = fomat! (($subj) '@' ($swap.uuid));
         $status.status ($swap_tags, &fomat! ("Waiting " ($desc) '…'));
         let validator = Box::new ($validator) as Box<Fn(&[u8]) -> Result<(), String> + Send>;
         let recv_f = peers::recv (&$swap.ctx, recv_subject.as_bytes(), Box::new ({
@@ -306,7 +306,7 @@ pub fn maker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
     let swap_tags: &[&TagParam] = &[&"swap", &("uuid", &uuid[..])];
     macro_rules! send {
         ($ec: expr, $subj: expr, $slice: expr) => {
-            match send_! (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.session)), $slice) {
+            match send_! (&swap.ctx, swap.taker, fomat!(($subj) '@' (swap.uuid)), $slice) {
                 Ok(h) => h,
                 Err(err) => err!($ec, "send error: "(err))
             }
@@ -481,7 +481,7 @@ pub fn taker_swap_loop(swap: &mut AtomicSwap) -> Result<(), (i32, String)> {
 
     macro_rules! send {
         ($ec: expr, $subj: expr, $slice: expr) => {
-            match send_! (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.session)), $slice) {
+            match send_! (&swap.ctx, swap.maker, fomat!(($subj) '@' (swap.uuid)), $slice) {
                 Ok(h) => h,
                 Err(err) => err!($ec, "send error: "(err))
             }

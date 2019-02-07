@@ -23,6 +23,7 @@ use common::{bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
+use crc::crc64::checksum_ecma;
 use crossbeam::channel;
 use either::Either;
 use futures::{future, Async, Future, Poll};
@@ -161,6 +162,22 @@ fn binprint (bin: &[u8], blank: u8) -> String {
     let mut bin: Vec<u8> = bin.into();
     for ch in bin.iter_mut() {if *ch < 0x20 || *ch >= 0x7F {*ch = blank}}
     unsafe {String::from_utf8_unchecked (bin)}
+}
+
+// https://stackoverflow.com/a/50278316/257568
+fn format_radix (mut x: u64, radix: u64) -> Vec<u8> {
+    let mut result = Vec::new();
+
+    loop {
+        let m = x % radix;
+        x = x / radix;
+
+        // will panic if you use a bad radix (< 2 or > 36).
+        result.push (unwrap! (std::char::from_digit (m as u32, radix as u32)) as u8);
+        if x == 0 {break}
+    }
+    result.reverse();
+    result
 }
 
 /// A command delivered to the `dht_thread` via the `PeersContext::cmd_tx`.
@@ -412,7 +429,7 @@ extern fn put_callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i
     assert! (!benload.is_null());
     assert! (!benlen.is_null());
     assert! (!seq.is_null());
-    //log! ("peers_send_compat] callback] " [=arg] ' ' [=have] ' ' [=havelen] ' ' [=benload] ' ' [=benlen] " seq " (unsafe {*seq}));
+    //pintln! ("peers_send_compat] callback] " [=arg] ' ' [=have] ' ' [=havelen] ' ' [=benload] ' ' [=benlen] " seq " (unsafe {*seq}));
     let shuttles = unwrap! (PUT_SHUTTLES.lock());
     let shuttle = match shuttles.get (&(arg as usize)) {
         Some ((created, shuttle)) if *created == arg2 => shuttle,
@@ -455,7 +472,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     if meta.pings == u8::max_value() {continue}  // A natural limit on the number of retries.
 
                     let pong = payload.pong == 1;
-                    //log! ("transmit] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
+                    //pintln! ("transmit] Sending " [payload.id] " " if pong {"pong"} else {"ping"} " to " [endpoint] "…");
                     if let Err (err) = ping (dugout, endpoint, payload) {
                         log! ("ping error: " (err))
                     } else {
@@ -480,7 +497,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                             if meta.pongs != 0 {continue}  // TODO: Should retransmit ponged packets, but later and less often.
                             if meta.pings == u8::max_value() {continue}  // Reached a natural retransmission limit.
                             if limops > 33. {continue}
-                            //log! ("transmit] Sending " [payload.id] " ping to " [endpoint] "…");
+                            //pintln! ("transmit] Sending " [payload.id] " ping to " [endpoint] "…");
                             if let Err (err) = ping (dugout, endpoint, payload) {
                                 log! ("ping error: " (err))
                             } else {
@@ -507,14 +524,13 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     let salt = if let Some (ref salt) = payload.salt {salt.clone()} else {continue};
                     let chunk = if let Some (ref chunk) = payload.chunk {chunk.clone()} else {continue};
                     let seed_bytes = unsafe {seed.bytes};
+                    let saltʲ = salt.clone();
                     let shuttle = Arc::new (PutShuttle {
-                        put_handler: Box::new (move |_have: &[u8]| -> Result<Vec<u8>, String> {
+                        put_handler: Box::new (move |have: &[u8]| -> Result<Vec<u8>, String> {
                             let benload = try_s! (serde_bencode::ser::to_bytes (&chunk));
-                            // log! (
-                            //     "chunk " (idx) ", existing bencoded is " (have.len()) " bytes, replacing with " (benload.len()) " bytes"
-                            //     //"\n  from " (binprint (have, b'.'))
-                            //     //"\n  to   " (binprint (&benload, b'.'))
-                            // );
+                            let _subject_salt = binprint (&saltʲ[0 .. saltʲ.len() - 1], b'.');
+                            let _idx = saltʲ.last().unwrap();
+                            log! ("transmit] chunk " (_subject_salt) '.' (_idx) " stored, " (have.len()) " → " (benload.len()));
                             with_ratelim (seed, |_lm, ops| *ops += 1.);
                             Ok (benload)
                         })
@@ -548,7 +564,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
     } else {
         (false, MmPayload::next_id (&mut trans))
     };
-    //log! ("Sending a " if pong {"pong"} else {"ping"} ' ' [id] " to " [endpoint] "…");
+    //pintln! ("Sending a " if pong {"pong"} else {"ping"} ' ' [id] " to " [endpoint] "…");
 
     let mm_payload = MmPayload {
         id,
@@ -644,6 +660,8 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
 struct ChunkGetsEntry {
     /// The time when we last issued a `dht_get` for the chunk.
     restarted: f64,
+    /// The time when the chunk was received via a direct DHT ping.
+    direct: f64,
     /// Version, seq * 2 + auth.
     seq_auth: u64,
     /// Checksum-verified chunk data obtained from libtorrent.
@@ -693,7 +711,7 @@ fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: u64, task: Task, du
                 pk: Some (pk),
                 reassembled_at: None,
                 number_of_chunks: None,
-                chunks: vec! [ChunkGetsEntry {restarted: now_float(), seq_auth: 0, payload: None}],
+                chunks: vec! [ChunkGetsEntry {restarted: now_float(), direct: 0., seq_auth: 0, payload: None}],
                 direct_chunks: HashMap::new(),
                 futures: HashMap::from_iter (once ((frid, task)))
             });
@@ -722,7 +740,7 @@ fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t, mut gets: Occu
     let salt = gets.key().clone();
     let mut pk: [u8; 32] = match gets.get().pk {
         Some (have) => have,
-        None => unsafe {zeroed()}  // Tells `dht_get` to fill it.
+        None => Default::default()  // Tells `dht_get` to fill it.
     };
     let mut limops = ratelim_maintenance (seed);  // DHT nodes will ban us if we ask for too much too soon.
     fn ordering (restarted_a: f64, restarted_b: f64, missing_a: bool, missing_b: bool) -> Ordering {
@@ -736,11 +754,13 @@ fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t, mut gets: Occu
     }
     for (idx, chunk) in (1..) .zip (gets.get_mut().chunks.iter_mut())
     .sorted_by (|(_, ca), (_, cb)| ordering (ca.restarted, cb.restarted, ca.payload.is_none(), cb.payload.is_none())) {
-        if now - chunk.restarted < 4. || limops > 10. {continue}
+        if now - chunk.restarted < 10. || now - chunk.direct < 10. || limops > 10. {continue}
 
         let mut chunk_salt = salt.clone();
         chunk_salt.push (idx);  // Identifies the chunk.
-        //pintln! ("Restarting chunk " (idx) ", missing? " (chunk.payload.is_none()) ", last restarted " (now - chunk.restarted) ", limops " (limops));
+        log! ("dht_get on" if chunk.payload.is_none() {" a missing"}  " chunk " (binprint (&salt, b'.')) '.' (idx)
+              " after " {"{:.1}", now - chunk.restarted}
+              if limops > 1. {" limops " (limops)});
         let seed_bytes = unsafe {seed.bytes};
         unsafe {dht_get (dugout,
             seed_bytes.as_ptr(), seed_bytes.len() as i32,
@@ -830,7 +850,8 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
     let from = bits256 {bytes: *array_ref! (from, 0, 32)};
 
     let ip: IpAddr = try_s! (unsafe {from_utf8_unchecked (ip)} .parse());
-    //log! ("incoming_ping] from " (ip) " port " (port) " key " (from) ' ' [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"});
+    //log! ("incoming_ping] from " (ip) " port " (port) " key " (from) ' ' [ping.a.mm.id] if ping.a.mm.pong == 1 {" pong"}
+    //      if let Some (ref salt) = ping.a.mm.salt {" salt " (binprint (salt, b'.'))});
     let pctx = try_s! (PeersContext::from_ctx (cbctx.ctx));
     pctx.direct_pings.fetch_add (1, AtomicOrdering::Relaxed);
 
@@ -879,7 +900,9 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
         let number_of_chunks = gets.number_of_chunks.unwrap_or (0);
         if chunk_idx > number_of_chunks {return ERR! ("ping chunk out of bounds")}
         gets.chunks.resize_default (number_of_chunks as usize);
-        gets.chunks[chunk_idx as usize - 1].payload = Some (payload);
+        let mut en = &mut gets.chunks[chunk_idx as usize - 1];
+        en.direct = now_float();
+        en.payload = Some (payload);
         pctx.direct_chunks.fetch_add (1, AtomicOrdering::Relaxed);
     }
 
@@ -905,7 +928,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         fomat! ("0.0.0.0:" (preferred_port) ",[::]:" (preferred_port))
     })();
     // TODO: Log the *actual* binding IP and port (when we get it from an alert). The actual port might be bumped up if the `preferred_port` binding fails.
-    //log! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
+    //pintln! ("preferred_port: " (preferred_port) "; listen_interfaces: " (listen_interfaces));
     let listen_interfaces = unwrap! (CString::new (listen_interfaces));
     let mut dugout = unsafe {dht_init (listen_interfaces.as_ptr(), read_only)};
     if let Some (err) = dugout.take_err() {
@@ -1053,7 +1076,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
             if !endpoint_cs.is_null() {
                 let _endpoint = unwrap! (unsafe {CStr::from_ptr (endpoint_cs)} .to_str());
                 // TODO: Listen on "myipaddr" if present.
-                //log! ("Listening on " (endpoint));
+                //pintln! ("Listening on " (_endpoint));
                 unsafe {libc::free (endpoint_cs as *mut c_void)}
                 return
             }
@@ -1222,7 +1245,7 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
 /// * `ip` - The public IP where the peer is supposedly listens for incoming connections.
 /// * `preferred_port` - The preferred port of the peer.
 pub fn investigate_peer (ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<(), String> {
-    //log! ("investigate_peer] ip " (ip) " preferred port " (preferred_port));
+    //pintln! ("investigate_peer] ip " (ip) " preferred port " (preferred_port));
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     let endpoint = SocketAddr::new (try_s! (ip.parse()), preferred_port);
     try_s! (pctx.cmd_tx.send (LtCommand::Ping {endpoint}));
@@ -1267,9 +1290,10 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], payload: Vec<u8>) -> Re
     }
 
     if !peer.nonz() {return ERR! ("peer key is empty")}
-    // TODO: Make `salt` a checksum of the subject, in order to limit the `salt` length and allow for any characters in the `subject`.
+
+    // Predictable salt size.
     // NB: There should be no zero bytes in the salt (due to `CStr::from_ptr` and the possibility of a similar problem abroad).
-    let salt = Vec::from (subject);
+    let salt = format_radix (checksum_ecma (subject), 36);
 
     let send_handler_arc = Arc::new (SendHandler);
     let send_handler = Arc::downgrade (&send_handler_arc);
@@ -1341,9 +1365,10 @@ pub fn recv (ctx: &MmArc, subject: &[u8], validator: Box<Fn(&[u8])->bool + Send>
         if !our_public_key.nonz() {return Box::new (future::err (ERRL! ("No public key")))}
         *our_public_key
     };
-    // TODO: Make `salt` a checksum of the subject, in order to limit the `salt` length and allow for any characters in the `subject`.
+
+    // Predictable salt size.
     // NB: There should be no zero bytes in the salt (due to `CStr::from_ptr` and the possibility of a similar problem abroad).
-    let salt = Vec::from (subject);
+    let salt = format_radix (checksum_ecma (subject), 36);
 
     Box::new (RecvFuture {pctx, seed, salt, validator, frid: None})
 }
