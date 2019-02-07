@@ -77,10 +77,13 @@ pub trait UtxoRpcClientOps: Debug + 'static {
                 return ERR!("Waited too long until {} for transaction {:?} to be confirmed {} times", wait_until, tx, confirmations);
             }
 
-            let tx: RpcTransaction = try_s!(self.get_transaction(tx.hash().reversed().into()).wait());
-
-            if tx.confirmations >= confirmations {
-                return Ok(());
+            match self.get_transaction(tx.hash().reversed().into()).wait() {
+                Ok(tx) => {
+                    if tx.confirmations >= confirmations {
+                        return Ok(());
+                    }
+                },
+                Err(e) => log!("Error " [e] " getting the transaction " [tx.hash().reversed()] ", retrying in 10 seconds"),
             }
 
             thread::sleep(Duration::from_secs(10));
