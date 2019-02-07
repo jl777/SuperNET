@@ -298,14 +298,28 @@ impl MarketCoinOps for EthCoin {
                 return ERR!("Waited too long until {} for transaction {:?} confirmation ", wait_until, tx);
             }
 
-            let web3_receipt = try_s!(self.web3.eth().transaction_receipt(tx.hash()).wait());
+            let web3_receipt = match self.web3.eth().transaction_receipt(tx.hash()).wait() {
+                Ok(r) => r,
+                Err(e) => {
+                    log!("Error " [e] " getting the " (self.ticker()) " transaction " [tx.tx_hash()] ", retrying in 15 seconds");
+                    thread::sleep(Duration::from_secs(15));
+                    continue;
+                }
+            };
             if let Some(receipt) = web3_receipt {
                 if receipt.status != Some(1.into()) {
-                    return ERR!("Tx receipt {:?} of tx {:?} status is failed", receipt, tx);
+                    return ERR!("Tx receipt {:?} status of {} tx {} is failed", receipt, self.ticker(), tx.tx_hash());
                 }
 
                 if let Some(confirmed_at) = receipt.block_number {
-                    let current_block = try_s!(self.web3.eth().block_number().wait());
+                    let current_block = match self.web3.eth().block_number().wait() {
+                        Ok(b) => b,
+                        Err(e) => {
+                            log!("Error " [e] " getting the " (self.ticker()) " block number retrying in 15 seconds");
+                            thread::sleep(Duration::from_secs(15));
+                            continue;
+                        }
+                    };
                     if current_block - confirmed_at + 1 >= required_confirms {
                         return Ok(());
                     }
