@@ -33,6 +33,24 @@ const unsigned char ZCASH_SIG_HASH_SAPLING_PERSONALIZATION[16] =
 const unsigned char ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION[16] =
 { 'Z','c','a','s','h','S','i','g','H','a','s','h', '\x19', '\x1B', '\xA8', '\x5B' };
 
+uint64_t amountfromvalue(double value) {
+
+// http://c-faq.com/fp/round.html
+
+/*		double frac = value - (uint64_t)value;
+		double whole = value - frac;
+		char frac_str[64], whole_str[64], *stopstring;
+		snprintf(frac_str, sizeof(frac_str), "%.8f", frac);
+		snprintf(whole_str, sizeof(whole_str), "%.8f", whole);
+		frac = strtod(frac_str, &stopstring);
+		whole = strtod(whole_str, &stopstring);
+		frac = frac * SATOSHIDEN;
+		whole = whole * SATOSHIDEN;
+		return (uint64_t)whole + (uint64_t)frac;
+*/
+
+return (uint64_t)(value * SATOSHIDEN + 0.5);
+}
 
 int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgjoinsplit *msg, uint32_t proof_size); // defined in iguana_msg.c
 
@@ -1033,7 +1051,8 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 
 				struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *jtxout = 0;
 				jtxout = dpow_gettxout(0, coin, msg->vins[i].prev_hash, msg->vins[i].prev_vout);
-				spendamount = jdouble(jtxout, "value") * SATOSHIDEN;
+				//spendamount = jdouble(jtxout, "value") * SATOSHIDEN;
+                                spendamount = amountfromvalue(jdouble(jtxout, "value"));
 				//printf("JSON (txout): %s\n", cJSON_Print(jtxout));
 				//printf("spendamount = %.8f\n", dstr(spendamount));
 				free(jtxout);
@@ -1355,7 +1374,8 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
 
 		struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *jtxout = 0;
 		jtxout = dpow_gettxout(0, coin, msgtx->vins[vini].prev_hash, msgtx->vins[vini].prev_vout);
-		spendamount = jdouble(jtxout, "value") * SATOSHIDEN;
+		//spendamount = jdouble(jtxout, "value") * SATOSHIDEN;
+                spendamount = amountfromvalue(jdouble(jtxout, "value"));
 		//printf("JSON (txout): %s\n", cJSON_Print(jtxout));
 		//printf("spendamount = %.8f\n", dstr(spendamount));
 		free(jtxout);
