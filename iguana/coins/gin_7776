@@ -1,3 +1,2 @@
 #!/bin/bash
 curl --url "http://127.0.0.1:7776" --data "{\"conf\":\"gincoin.conf\",\"path\":\"${HOME#"/"}/.gincoincore\",\"prefetchlag\":-1,\"poll\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"GIN\",\"startpend\":64,\"endpend\":64,\"services\":0,\"maxpeers\":512,\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":10111,\"minconfirms\":1,\"name\":\"gincoin\",\"netmagic\":\"bf0c6bbd\",\"p2p\":10111,\"rpc\":10211,\"pubval\":38,\"p2shval\":10,\"wifval\":198}"
-
