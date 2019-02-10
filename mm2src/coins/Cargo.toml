@@ -45,4 +45,5 @@ sha2 = "0.8"
 tokio-timer = "0.1"
 tokio = "0.1.13"
 unwrap = "1.2"
-web3 = { git = "https://github.com/artemii235/rust-web3" }
+# One of web3 dependencies is the old `tokio-uds 0.1.7` which fails cross-compiling to ARM.
+web3 = { git = "https://github.com/artemii235/rust-web3", default-features = false, features = ["http", "ws", "tls"] }
