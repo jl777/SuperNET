@@ -484,6 +484,7 @@ fn test_check_balance_on_order_post() {
 fn test_rpc_password_from_json() {
     let coins = json!([
         {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"txversion":4},
     ]);
 
     // do not allow empty password
@@ -547,6 +548,26 @@ fn test_rpc_password_from_json() {
 
     // electrum call must be successful with RPC password from config
     assert_eq! (electrum.0, StatusCode::OK, "RPC «electrum» failed with status «{}», response «{}»", electrum.0, electrum.1);
+
+    let electrum = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "electrum",
+        "coin": "PIZZA",
+        "urls": ["electrum1.cipig.net:10022"],
+    })));
+
+    // electrum call must be successful with RPC password from config
+    assert_eq! (electrum.0, StatusCode::OK, "RPC «electrum» failed with status «{}», response «{}»", electrum.0, electrum.1);
+
+    let orderbook = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "orderbook",
+        "base": "BEER",
+        "rel": "PIZZA",
+    })));
+
+    // orderbook call must be successful with RPC password from config
+    assert_eq! (orderbook.0, StatusCode::OK, "RPC «orderbook» failed with status «{}», response «{}»", orderbook.0, orderbook.1);
 }
 
 #[test]
