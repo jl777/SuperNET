@@ -3501,10 +3501,10 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
 
         uint8_t *outputs, hash_outputs[32];
         int32_t outputs_len = 0;
-        for (i = 0; i < dest.tx_out; i++) { // calc size for outputs buffer
-            outputs_len += sizeof(dest.vouts[i].value); outputs_len++;  outputs_len += dest.vouts[i].pk_scriptlen;
-        }
+
+        for (i = 0; i < dest.tx_out; i++) { outputs_len += sizeof(dest.vouts[i].value); outputs_len++;  outputs_len += dest.vouts[i].pk_scriptlen; } // calc size for outputs buffer
         outputs = malloc(outputs_len);
+
         outputs_len = 0;
         for (i = 0; i < dest.tx_out; i++) {
             outputs_len += iguana_rwnum(1, &outputs[outputs_len], sizeof(dest.vouts[i].value), &dest.vouts[i].value);

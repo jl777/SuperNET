@@ -403,7 +403,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
         //printf("%s is assetchain\n",symbol);
-        if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
+        // if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
             coin->isassetchain = 1;
     }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
@@ -543,11 +543,20 @@ struct iguana_info *LP_coincreate(cJSON *item)
         if (txversion == 0) {
             txversion = 1;
         }
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,txversion) < 0 )
-        {
-            coin = LP_coinadd(&cdata);
-            coin->inactive = (uint32_t)time(NULL);
-        } else coin = LP_coinadd(&cdata);
+
+        uint16_t port = LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,txversion);
+
+        coin = LP_coinadd(&cdata);
+        coin->inactive = (uint32_t)time(NULL);
+
+        // here we assume that any assetchain except OOT and ZILLA are sapling active with txversion=4,
+        // TODO: get "blocks" and "sapling" from daemon's "getinfo" rpc to make proper check
+
+        if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 )
+            coin->txversion = 4;
+
+        if (coin !=0) printf("[ Debug ] LP_coincreate: symbol.%s name.%s assetname.%s port.%d isassetchain.%d txversion.%d\n", symbol, name, assetname, port, coin->isassetchain, coin->txversion);
+
     } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
         printf("SKIP %s, missing rpcport field in coins array\n",symbol);
     if ( coin != 0 && item != 0 )
