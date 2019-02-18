@@ -93,7 +93,7 @@ struct RpcService {
     remote_addr: SocketAddr,
 }
 
-fn auth(json: &Json) -> Result<(), &'static str> {
+fn auth(json: &Json, ctx: &MmArc) -> Result<(), &'static str> {
     if !PUBLIC_METHODS.contains(&json["method"].as_str()) {
         if !json["userpass"].is_string() {
             return Err("Userpass is not set!");
@@ -102,7 +102,7 @@ fn auth(json: &Json) -> Result<(), &'static str> {
         let userpass = unsafe {unwrap! (CStr::from_ptr (lp::G.USERPASS.as_ptr()) .to_str())};
         let pass_hash = hex::encode(unsafe { lp::G.LP_passhash.bytes });
 
-        if json["userpass"].as_str() != Some(userpass) && json["userpass"].as_str() != Some(&pass_hash) {
+        if json["userpass"].as_str() != Some(userpass) && json["userpass"].as_str() != Some(&pass_hash) && json["userpass"] != ctx.conf["rpc_password"] {
             return Err("Userpass is invalid!");
         }
     }
@@ -250,7 +250,7 @@ impl Service for RpcService {
                     return rpc_err_response (400, "Selected method can be called from localhost only!")
                 }
             }
-            try_h! (auth (&req));
+            try_h! (auth (&req, &ctx));
 
             match dispatcher (req, Some (remote_addr), ctx.clone()) {
                 DispatcherRes::Match (handler) => handler,

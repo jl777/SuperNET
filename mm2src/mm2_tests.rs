@@ -480,6 +480,104 @@ fn test_check_balance_on_order_post() {
     assert! (rc.0.is_server_error(), "!sell success but should be error: {}", rc.1);
 }
 
+#[test]
+fn test_rpc_password_from_json() {
+    let coins = json!([
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+    ]);
+
+    // do not allow empty password
+    let mut err_mm1 = unwrap!(MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "rpc_password": "",
+        }),
+        "password".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    unwrap! (err_mm1.wait_for_log (5., &|log| log.contains ("rpc_password must not be empty")));
+
+    // do not allow empty password
+    let mut err_mm2 = unwrap!(MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "rpc_password": {"key":"value"},
+        }),
+        "password".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    unwrap! (err_mm2.wait_for_log (5., &|log| log.contains ("rpc_password must be string")));
+
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "rpc_password": "password",
+        }),
+        "password".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
+    log!({"Log path: {}", mm.log_path.display()});
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    let electrum_invalid = unwrap! (mm.rpc (json! ({
+        "userpass": "password1",
+        "method": "electrum",
+        "coin": "BEER",
+        "urls": ["electrum1.cipig.net:10022"],
+    })));
+
+    // electrum call must fail if invalid password is provided
+    assert! (electrum_invalid.0.is_server_error(),"RPC «electrum» should have failed with server error, but got «{}», response «{}»", electrum_invalid.0, electrum_invalid.1);
+
+    let electrum = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "electrum",
+        "coin": "BEER",
+        "urls": ["electrum1.cipig.net:10022"],
+    })));
+
+    // electrum call must be successful with RPC password from config
+    assert_eq! (electrum.0, StatusCode::OK, "RPC «electrum» failed with status «{}», response «{}»", electrum.0, electrum.1);
+}
+
+#[test]
+fn test_rpc_password_from_json_no_userpass() {
+    let coins = json!([
+        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+    ]);
+
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "passphrase": "bob passphrase",
+            "coins": coins,
+        }),
+        "password".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
+    log!({"Log path: {}", mm.log_path.display()});
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    let electrum = unwrap! (mm.rpc (json! ({
+        "method": "electrum",
+        "coin": "BEER",
+        "urls": ["electrum1.cipig.net:10022"],
+    })));
+
+    // electrum call must return 500 status code
+    assert! (electrum.0.is_server_error(), "RPC «electrum» should have failed with server error, but got «{}», response «{}»", electrum.0, electrum.1);
+}
+
 #[cfg(windows)]
 fn get_special_folder_path() -> PathBuf {
     use std::ffi::CStr;
@@ -532,13 +630,11 @@ fn komodo_conf_path (ac_name: Option<&'static str>) -> Result<PathBuf, String> {
 
 /// Trading test using coins in Electrum mode, it needs only ENV variables to be set, coins daemons are not required.
 fn trade_base_rel_electrum(base: &str, rel: &str) {
-    let (bob_file_passphrase, bob_file_userpass) = from_env_file (slurp (&".env.seed"));
-    let (alice_file_passphrase, alice_file_userpass) = from_env_file (slurp (&".env.client"));
+    let (bob_file_passphrase, _bob_file_userpass) = from_env_file (slurp (&".env.seed"));
+    let (alice_file_passphrase, _alice_file_userpass) = from_env_file (slurp (&".env.client"));
 
     let bob_passphrase = unwrap! (var ("BOB_PASSPHRASE") .ok().or (bob_file_passphrase), "No BOB_PASSPHRASE or .env.seed/PASSPHRASE");
-    let bob_userpass = unwrap! (var ("BOB_USERPASS") .ok().or (bob_file_userpass), "No BOB_USERPASS or .env.seed/USERPASS");
     let alice_passphrase = unwrap! (var ("ALICE_PASSPHRASE") .ok().or (alice_file_passphrase), "No ALICE_PASSPHRASE or .env.client/PASSPHRASE");
-    let alice_userpass = unwrap! (var ("ALICE_USERPASS") .ok().or (alice_file_userpass), "No ALICE_USERPASS or .env.client/USERPASS");
 
     let coins = json! ([
         {"coin":"BEER","asset":"BEER"},
@@ -557,8 +653,9 @@ fn trade_base_rel_electrum(base: &str, rel: &str) {
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
             "passphrase": bob_passphrase,
             "coins": coins,
+            "rpc_password": "password",
         }),
-        bob_userpass,
+        "password".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
@@ -582,9 +679,10 @@ fn trade_base_rel_electrum(base: &str, rel: &str) {
             "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
             "passphrase": alice_passphrase,
             "coins": coins,
-            "seednode": fomat!((mm_bob.ip))
+            "seednode": fomat!((mm_bob.ip)),
+            "rpc_password": "password",
         }),
-        alice_userpass,
+        "password".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
     ));
 
@@ -621,7 +719,7 @@ fn trade_base_rel_electrum(base: &str, rel: &str) {
         "method": "buy",
         "base": base,
         "rel": rel,
-        "relvolume": 0.1,  // Should be close enough to the existing UTXOs.
+        "relvolume": 0.1,
         "price": 1
     })));
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
@@ -744,7 +842,7 @@ fn trade_base_rel_native(base: &str, rel: &str) {
         "method": "buy",
         "base": base,
         "rel": rel,
-        "relvolume": 0.1,  // Should be close enough to the existing UTXOs.
+        "relvolume": 0.1,
         "price": 1
     })));
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
