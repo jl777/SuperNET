@@ -1378,7 +1378,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     //if ( strcmp(ipaddr,"88.99.251.101") == 0 || strcmp(ipaddr,"82.202.193.100") == 0 )
     //    return(-1);
 
-    #ifdef CHECKNODEIP
+#ifdef CHECKNODEIP
     // -B- [+] Decker ---
     // every new ip in BUS topology network goes to dead or white list forever, until iguana restart
     ip_pattern = (uint32_t)calc_ipbits(ipaddr);
@@ -1405,7 +1405,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     } else
         if (dead_or_alive[in_list_flag] == -1) return -1;
     // -E- [+] Decker ---
-    #endif
+#endif
 
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
@@ -2312,7 +2312,9 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                                 printf("received nnpacket for (%s)\n",np->symbol);
                             else
                             {
-                                dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
+                                // try to remove this adding fo IPs totally. instead we will need to add all IPs directly with add notary call.                                
+                                //dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
+                                
                                 if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
                                     //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
