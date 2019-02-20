@@ -2205,17 +2205,17 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     memcpy(np->packet,data,datalen);
     sentbytes = -1;
     // deadlocks! portable_mutex_lock(&myinfo->dpowmutex);
-    maxiters = 2;
+    maxiters = 100;
     for (i=0; i<maxiters; i++)
     {
         struct nn_pollfd pfd;
         pfd.fd = myinfo->dpowsock;
         pfd.events = NN_POLLOUT;
-        //if ( nn_poll(&pfd,1,10) > 0 )
-        //{
+        if ( nn_poll(&pfd,1,10) > 0 )
+        {
             sentbytes = signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
             break;
-        //}
+        }
         usleep(1000);
     }
     if ( i == maxiters )
