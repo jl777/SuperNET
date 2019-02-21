@@ -544,7 +544,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             txversion = 1;
         }
 
-        uint16_t port = LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,txversion);
+        LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,txversion);
 
         coin = LP_coinadd(&cdata);
         coin->inactive = (uint32_t)time(NULL);
