@@ -1663,9 +1663,9 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->bestmatches = bestmatches;
         bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
-        if ( bp->myind == 0 )
+        if ( 0 && bp->myind == 0 )
             printf("matches.%d bestmatches.%d recv.%llx (%d %llx)\n",matches,bestmatches,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
-        if ( 1 && bp->myind == 0 && strcmp("LABSTH",dp->symbol) == 0 )
+        if ( 0 && bp->myind == 0 && strcmp("LABS",dp->symbol) == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
                 printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>median?"*":"");
@@ -2063,7 +2063,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
                 bp->lastnanosend = now;
             }
-            if ( 1 && strcmp("KMD",dp->symbol) == 0 && bp->myind == 0 )
+            if ( 1 && strcmp("LABSTH",dp->symbol) == 0 && bp->myind == 0 )
                 printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d pend.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs,bp->pendingbestk);
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
@@ -2138,7 +2138,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
                 }
             }
         }
-        if ( 1 && bp->myind == 0 && dispflag != 0 )
+        if ( 0 && bp->myind == 0 && dispflag != 0 )
         {
             printf("%s.%d RECV.%-2d %llx (%2d %llx) %llx/%llx matches.%-2d best.%-2d %s\n",dp->symbol,bp->height,senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid,matches,bestmatches,Notaries_elected[senderind][0]);
         }
