@@ -1665,11 +1665,11 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
         if ( bp->myind == 0 )
             printf("matches.%d bestmatches.%d recv.%llx (%d %llx)\n",matches,bestmatches,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
-        if ( 1 && bp->myind == 0 && strcmp("KMD",dp->symbol) == 0 )
+        if ( 1 && bp->myind == 0 && strcmp("LABSTH",dp->symbol) == 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
                 printf("%d:%d%s ",wts[i],owts[i],wts[i]*owts[i]>median?"*":"");
-            printf("median.%d %s.%d set matches.%d best.%d to (%d %llx) recv.%llx topmask.%llx\n",sortbuf[bp->numnotaries/2],dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask,(long long)topmask);
+            printf("median.%d %s.%d set matches.%d best.%d to (%d %llx) recv.%llx topmask.%llx minsigs.%d\n",sortbuf[bp->numnotaries/2],dp->symbol,bp->height,bp->matches,bp->bestmatches,bp->bestk,(long long)bp->bestmask,(long long)recvmask,(long long)topmask,bp->minsigs);
             for (i=0; i<bp->numnotaries; i++)
                 if ( wts[i] == 0 || owts[i] == 0 )
                     printf("%s.%d:%d ",Notaries_elected[i][0],wts[i],owts[i]);
