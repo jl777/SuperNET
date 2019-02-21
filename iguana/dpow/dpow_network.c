@@ -2311,10 +2311,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                             if ( i == myinfo->numdpows )
                                 printf("received nnpacket for (%s)\n",np->symbol);
                             else
-                            {
-                                // try to remove this adding fo IPs totally. instead we will need to add all IPs directly with add notary call.                                
-                                //dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
-                                
+                            {                             
+                                dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
                                 if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
                                     //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
