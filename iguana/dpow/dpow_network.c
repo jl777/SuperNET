@@ -2063,7 +2063,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
                 bp->lastnanosend = now;
             }
-            if ( 1 && strcmp("LABSTH",dp->symbol) == 0 && bp->myind == 0 )
+            if ( 0N && strcmp("LABSTH",dp->symbol) == 0 && bp->myind == 0 )
                 printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d pend.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs,bp->pendingbestk);
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
@@ -2222,7 +2222,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         printf("maxiters expired for signed_nn_send dpowsock.%d\n",myinfo->dpowsock);
     //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    if ( 1 && bp->myind == 0 )
+    if ( 0 && bp->myind == 0 )
         printf("%d NANOSEND.%d %s.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,dp->symbol,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
