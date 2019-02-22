@@ -27,8 +27,10 @@ jobs:
           touch mm2src/common/build.rs
           cargo build -vv
         displayName: 'Build MM2'
+      # Cargo uses CPU threads count by default running only 2 concurrent tests on Linux.
+      # Explicit --test-threads=8 makes the process faster
       - bash: |
-          cargo test
+          cargo test -- --test-threads=8
         displayName: 'Test MM2'
         timeoutInMinutes: 22
         env:
