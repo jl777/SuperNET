@@ -11,7 +11,7 @@ matrix:
       osx_image: xcode9.2
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update && sudo apt-get install -y g++-7 libdw-dev; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod +x travis_cmake_linux.sh && ./travis_cmake_linux.sh; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then chmod +x travis_cmake_mac.sh && ./travis_cmake_mac.sh; fi
   - git submodule update --init --recursive
@@ -21,11 +21,15 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export THREAD_COUNT=`echo "$(nproc --all)"`; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export THREAD_COUNT=`echo "$(sysctl -n hw.physicalcpu)"`; fi
   - mkdir build && cd build
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DMM_VERSION="$VERSION" ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_BUILD_TYPE=Release -DMM_VERSION="$VERSION" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cmake -DCMAKE_BUILD_TYPE=Release -DMM_VERSION="$VERSION" ..; fi
   - echo "cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT"
   - cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT
   - cmake --build . --target marketmaker-testnet -j $THREAD_COUNT
+# Debug build on Linux, might help to troubleshoot some issues that are hard to reproduce
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ../ && mkdir build-debug && cd build-debug; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake -DCMAKE_BUILD_TYPE=Debug -DMM_VERSION="$VERSION-Debug" -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake --build . --target marketmaker-mainnet -j $THREAD_COUNT; fi
 
 cache:
   apt: true
@@ -33,11 +37,14 @@ cache:
    - $HOME/.hunter
 
 before_deploy:
+  - cd ../ && mkdir deploy
   - export TAG=`echo "$(git rev-parse --short HEAD)"`
-  - mkdir deploy
-  - strip iguana/exchanges/marketmaker-mainnet
-  - strip iguana/exchanges/marketmaker-testnet
-  - tar -cvzf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar.gz -C iguana/exchanges marketmaker-mainnet marketmaker-testnet
+  - strip build/iguana/exchanges/marketmaker-mainnet
+  - strip build/iguana/exchanges/marketmaker-testnet
+  - tar -cvf deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar -C build/iguana/exchanges marketmaker-mainnet marketmaker-testnet
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tar --append --file=deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar --transform='flags=r;s|net|net-debug|' -C build-debug/iguana/exchanges marketmaker-mainnet; fi
+  - gzip deploy/marketmaker-"$TRAVIS_OS_NAME"-"$TAG".tar
+
 deploy:
   provider: releases
   api_key:

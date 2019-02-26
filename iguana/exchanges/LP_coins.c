@@ -368,6 +368,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     portable_mutex_init(&coin->txmutex);
     portable_mutex_init(&coin->addrmutex);
     portable_mutex_init(&coin->addressutxo_mutex);
+    portable_mutex_init(&coin->tx_history_mutex);
     portable_mutex_lock(&LP_coinmutex);
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
     portable_mutex_unlock(&LP_coinmutex);
@@ -384,9 +385,6 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     char *name2; uint16_t origport = port;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
-    if ( strcmp(symbol,"PART") == 0 )
-        coin->txversion = 160;
-    else coin->txversion = txversion;
     coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
@@ -405,7 +403,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
         //printf("%s is assetchain\n",symbol);
-        if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
+        // if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
             coin->isassetchain = 1;
     }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
@@ -422,7 +420,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     if ( port != origport )
         printf("set curl path for %s to %s\n",symbol,coin->serverport);
-    if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
+    if ( strcmp(symbol,"KMD") == 0 || strcmp(symbol,"BEER") == 0 || strcmp(symbol,"PIZZA") == 0 || coin->isassetchain != 0 || taddr != 0 )
         coin->zcash = LP_IS_ZCASHPROTOCOL;
     else if ( strcmp(symbol,"BCH") == 0 )
     {
@@ -442,6 +440,15 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->curl_handle = curl_easy_init();
     portable_mutex_init(&coin->curl_mutex);
     coin->decimals = decimals;
+    if ( strcmp(symbol,"PART") == 0 ) {
+        coin->txversion = 160;
+    } else if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 ) {
+        coin->txversion = 4;
+    } else if ( strcmp(name,"BEER") == 0 || strcmp("PIZZA",name) == 0 || strcmp("KMD",name) == 0 ) {
+        coin->txversion = 4;
+    } else {
+        coin->txversion = txversion;
+    }
     return(port);
 }
 
@@ -536,13 +543,20 @@ struct iguana_info *LP_coincreate(cJSON *item)
         if (txversion == 0) {
             txversion = 1;
         }
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,txversion) < 0 )
-        {
-            coin = LP_coinadd(&cdata);
-            coin->inactive = (uint32_t)time(NULL);
-            if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 )
-                coin->txversion = 4;
-        } else coin = LP_coinadd(&cdata);
+
+        LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath"),decimals,txversion);
+
+        coin = LP_coinadd(&cdata);
+        coin->inactive = (uint32_t)time(NULL);
+
+        // here we assume that any assetchain except OOT and ZILLA are sapling active with txversion=4,
+        // TODO: get "blocks" and "sapling" from daemon's "getinfo" rpc to make proper check
+
+        if ( coin->isassetchain != 0 && strcmp(symbol,"OOT") != 0 && strcmp(symbol,"ZILLA") != 0 )
+            coin->txversion = 4;
+
+        if (coin !=0) printf("[ Debug ] LP_coincreate: symbol.%s name.%s assetname.%s port.%d isassetchain.%d txversion.%d\n", symbol, name, assetname, port, coin->isassetchain, coin->txversion);
+
     } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
         printf("SKIP %s, missing rpcport field in coins array\n",symbol);
     if ( coin != 0 && item != 0 )

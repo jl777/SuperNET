@@ -415,6 +415,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                      }*/
                     if ( validreq != 0 )
                     {
+#if !defined(NDEBUG) && !defined(NOTETOMIC) && defined(__linux__)
+                        printf("Msg from %s\n", remoteaddr);
+#endif
                         if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,msg,msglen,sock)) != 0 )
                             free(retstr);
                         
@@ -1429,6 +1432,10 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
             }
         }
     }
+#if !defined(NDEBUG) && !defined(NOTETOMIC) && defined(__linux__)
+    printf("Message %s\n", msg);
+    print_stack_trace();
+#endif
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs[priority] < sizeof(Reserved_msgs[priority])/sizeof(*Reserved_msgs[priority]) )
     {
