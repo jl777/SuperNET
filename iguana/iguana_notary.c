@@ -58,16 +58,18 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
-int is_STAKED(const char *chain_name) {
-  int STAKED = 0;
-  if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) )
-    STAKED = 1;
-  else if ( (strcmp(chain_name, "LAB") == 0) || (strncmp(chain_name, "LAB", 3) == 0) )
-    STAKED = 2;
-  else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
-    STAKED =  3;
-  //fprintf(stderr, "This chains is: %s which is: %d\n", chain_name,STAKED);
-  return(STAKED);
+int8_t is_STAKED(const char *chain_name) 
+{
+    int8_t STAKED;
+    if ( chain_name[0] == 0 )
+        return(0);
+    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) ) 
+        STAKED = 1; // These chains are allowed coin emissions.
+    else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
+        STAKED = 2; // These chains have no speical rules at all.
+    else if ( (strcmp(chain_name, "TEST") == 0) || (strncmp(chain_name, "TEST", 4) == 0) )
+        STAKED = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
+    return(STAKED);
 };
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
@@ -80,9 +82,8 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
         int supressfreq = DPOW_CHECKPOINTFREQ;
-        if ( is_STAKED(dp->symbol) != 0 ) {
+        if ( is_STAKED(dp->symbol) != 0 )
             supressfreq = 3;
-        }
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
               suppress = 1;
