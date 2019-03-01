@@ -639,7 +639,17 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         {
                             bp->desttxid = txid;
                             dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
-                        } else bp->srctxid = txid;
+                        } else 
+                        {
+                            bp->srctxid = txid;
+#ifdef LOGTX
+                            FILE * fptr;
+                            fptr = fopen("/home/node/complete_notarizations", "a+");
+                            // SRC SRC_TXID DEST DEST_TXID HEIGHT
+                            fprintf(fptr, "%s %s %s\n", bp->srccoin->symbol,bp->srctxid,bp->destcoin->symbol,bp->desttxid,bp->height);
+                            fclose(fptr);
+#endif
+                        }
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
                         for (j=0; j<sizeof(srchash); j++)
@@ -657,13 +667,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 {
                     bp->state = 0xffffffff;
                     printf("dpow_sigscheck: [src.%s] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bits256_str(str,txid),retstr);
-#ifdef LOGTX
-                    FILE * fptr;
-                    fptr = fopen("/home/node/failed_notarizations", "a+");
-                    unsigned long dwy_timestamp = time(NULL);
-                    fprintf(fptr, "%lu %s %s %d %s\n", dwy_timestamp, bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,bp->signedtx);
-                    fclose(fptr);
-#endif
                 }
                 free(retstr);
                 retstr = 0;
