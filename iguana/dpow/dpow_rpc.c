@@ -312,7 +312,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             }
             if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
-                if ( jstr(retjson,"error")) != 0 )
+                if ( jstr(retjson,"error") != 0 )
                 {
                     // bail out MoMoM is indeterminate
                     free_json(retjson);
