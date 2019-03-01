@@ -307,10 +307,10 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
             {
-                kmdheight = jint(infojson,"blocks");
+                kmdheight = jint(infojson,"notarized");
                 free_json(infojson);
             }
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-11,bp->CCid)) != 0 )
             {
                 if ( jstr(retjson,"error") != 0 )
                 {
