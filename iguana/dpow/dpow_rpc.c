@@ -295,7 +295,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,ui
 
 int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp)
 {
-    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson; int32_t kmdheight=0,hexlen=0,n=0; uint32_t paxwdcrc;
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson, *srcinfojson; int32_t kmdheight=0,hexlen=0,n=0,ppMoMheight=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
     if ( dpow_smallopreturn(bp->srccoin->symbol) == 0 || src_or_dest != 0 )
     {
@@ -305,16 +305,19 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         if ( dpow_CCid(myinfo,bp->srccoin) > 1 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
+            coin = bp->srccoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
             {
+                if ( (srcinfojson= dpow_getinfo(myinfo,coin)) != 0 && jint(srcinfojson,"ppMoMheight") != 0 ))
+                    ppMoMheight = jint(infojson,"ppMoMheight");
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
             if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
-                if ( jstr(retjson,"error") != 0 )
+                if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
-                    // bail out MoMoM is indeterminate
+                    // MoMoM returned NULL when after 2 MoM exist on the chain. 
                     free_json(retjson);
                     return(-1);
                 }
