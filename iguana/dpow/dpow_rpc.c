@@ -304,8 +304,8 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         if ( (srcinfojson= dpow_getinfo(myinfo,bp->srccoin)) != 0 )
         {
             CCid1 = juint(srcinfojson,"CCid");
-            if ( CCid1 > 1 && jint(srcinfojson,"ppMoMheight") != 0 )
-                ppMoMheight = jint(srcinfojson,"ppMoMheight");
+            if ( CCid1 > 1 )
+                ppMoMheight = juint(srcinfojson,"ppMoMheight");
             free_json(srcinfojson);
             printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
         }
