@@ -307,7 +307,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             if ( CCid > 1 )
                 ppMoMheight = jint(srcinfojson,"ppMoMheight");
             free_json(srcinfojson);
-            printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
+            //printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
         }
         if ( CCid > 1 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
