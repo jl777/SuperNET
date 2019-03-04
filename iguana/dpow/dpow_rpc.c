@@ -308,8 +308,12 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             coin = bp->srccoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
             {
-                if ( (srcinfojson= dpow_getinfo(myinfo,coin)) != 0 && jint(srcinfojson,"ppMoMheight") != 0 )
-                    ppMoMheight = jint(infojson,"ppMoMheight");
+                if ( (srcinfojson= dpow_getinfo(myinfo,coin)) != 0 )
+                {
+                    if ( jint(srcinfojson,"ppMoMheight") != 0 )
+                        ppMoMheight = jint(infojson,"ppMoMheight");
+                    free_json(srcinfojson);
+                }
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
