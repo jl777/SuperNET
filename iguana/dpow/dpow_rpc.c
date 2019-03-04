@@ -319,7 +319,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             }
             if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
-                printf("ppMoMheight%i\n", ppMoMheight);
+                printf("ppMoMheight.%i\n", ppMoMheight);
                 if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
                     // MoMoM returned NULL when after 2 MoM exist on the chain. 
