@@ -302,7 +302,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-        if ( dpow_CCid(myinfo,bp->srccoin) != 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
+        if ( dpow_CCid(myinfo,bp->srccoin) > 1 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -310,7 +310,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-5,bp->CCid)) != 0 )
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
                 if ( jstr(retjson,"error") != 0 )
                 {
