@@ -627,7 +627,7 @@ void dpow_statemachinestart(void *ptr)
         if ( bits256_cmp(bp->srctxid,zero) == 0 )
             break;
         // wait for approx one block before checking, gives some time to confirm, before rebroadcast.
-        sleep(60);
+        sleep((rand() % (240 - 30)) + 30);
         
         // get the confirms for desttxid 
         memset(rettx,0,sizeof(rettx)); // zero out rettx!
