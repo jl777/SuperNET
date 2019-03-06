@@ -614,19 +614,25 @@ void dpow_statemachinestart(void *ptr)
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
 
-    // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
-    // becasue the mempool is stupid after sapling update!
-    if ( bits256_cmp(bp->desttxid,zero) == 0 )
-        fprintf(stderr, "desttxid.%s\n", bits256_str(str,bp->desttxid));
-    else
-        fprintf(stderr, "dest tx was never sent!\n");
-    if (  bits256_cmp(bp->srctxid,zero) == 0 )
-        fprintf(stderr, "srctxid.%s\n", bits256_str(str,bp->srctxid));
-    else 
-        fprintf(stderr, "src tx was never sent!\n");
-    while ( 0 )
+    // becasue the mempool is stupid after the sapling update!
+    while ( 1 )
     {
+        // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
+        if ( bits256_cmp(bp->desttxid,zero) == 0 )
+        {
+            fprintf(stderr, "dest tx was never sent!\n");
+            break;
+        }
+        else
+            fprintf(stderr, "desttxid.%s\n", bits256_str(str,bp->desttxid));
+        if (  bits256_cmp(bp->srctxid,zero) == 0 )
+        {
+            fprintf(stderr, "src tx was never sent!\n");
+            break;
+        }
+        else 
+            fprintf(stderr, "srctxid.%s\n", bits256_str(str,bp->srctxid));
         // dpow_gettransaction will return confirms, unless its not confirmed. 
         // check here for confirms exists in return JSON, if no confirms, keep rebroadcasting every 60s 
         // if confirms > 2 exit loop.
@@ -635,6 +641,7 @@ void dpow_statemachinestart(void *ptr)
         
         // wait for approx one block before checking again.
         sleep(60);
+        break; // remove this later!
     }
     
     // unlock the dest utxo on KMD.
