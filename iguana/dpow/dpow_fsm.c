@@ -653,7 +653,6 @@ void dpow_statemachinestart(void *ptr)
                         send_dest = 1;
                 }
             } 
-            if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
             else if ( desttx[0] != 0 && is_hexstr(desttx,strlen(desttx)) != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
             {
                 fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->desttxid));
