@@ -631,15 +631,15 @@ void dpow_statemachinestart(void *ptr)
             if ( dest_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms.
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",bp->dest, bits256_str(str,bp->desttxid));
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",dp->dest, bits256_str(str,bp->desttxid));
                 destnotarized = 1;
             }
             else if ( dest_confs == 0 )
             {
                 // not confirmed, rebroadcast it.
-                fprintf(stderr, "[%s] txid.%s is not confirmed at all rebroadcasting.... \n",bp->dest, bits256_str(str,bp->desttxid));
+                fprintf(stderr, "[%s] txid.%s is not confirmed at all rebroadcasting.... \n",dp->dest, bits256_str(str,bp->desttxid));
             }
-        } else fprintf(stderr, "[%s] txid.%s returned error for txconfirms",bp->dest, bits256_str(str,bp->desttxid));
+        } else fprintf(stderr, "[%s] txid.%s returned error for txconfirms",dp->dest, bits256_str(str,bp->desttxid));
         
         // get the confirms for srctxid
         /*if ( (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid)) != -1 )
