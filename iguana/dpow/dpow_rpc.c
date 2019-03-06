@@ -548,9 +548,7 @@ int32_t dpow_txconfirms(struct supernet_info *myinfo,struct iguana_info *coin,bi
     {
         memcpy(rawtx, jstr(txobj, "hex"), strlen(jstr(txobj, "hex"))+1);
         if ( (confirms= juint(txobj, "confirmations")) != 0 )
-        {
             ret = confirms;
-        }
         else if ( confirms == 1 && juint(txobj, "rawconfirmations") > 100 ) 
             ret = 100;
         else

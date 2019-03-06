@@ -637,7 +637,7 @@ void dpow_statemachinestart(void *ptr)
             if ( dest_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n",dp->dest, bits256_str(str,bp->desttxid, dest_confs));
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid, dest_confs));
                 destnotarized = 1;
             }
             else if ( dest_confs == 0 )
@@ -652,7 +652,6 @@ void dpow_statemachinestart(void *ptr)
             send_dest = 1;
         if ( send_dest == 1 && dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
             fprintf(stderr, "rebroadcast failed!\n");
-        
         
         // get the confirms for srctxid
         
