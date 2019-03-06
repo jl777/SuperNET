@@ -616,32 +616,49 @@ void dpow_statemachinestart(void *ptr)
 
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // becasue the mempool is stupid after the sapling update!
+    int8_t dest_confs = 0, src_confs = 0;
+    bool destnotarized = false, srcnotarized = false;
     while ( 1 )
     {
         // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
         if ( bits256_cmp(bp->desttxid,zero) == 0 )
-        {
-            fprintf(stderr, "dest tx was never sent!\n");
             break;
-        }
-        else
-            fprintf(stderr, "desttxid.%s\n", bits256_str(str,bp->desttxid));
         if (  bits256_cmp(bp->srctxid,zero) == 0 )
-        {
-            fprintf(stderr, "src tx was never sent!\n");
             break;
-        }
-        else 
-            fprintf(stderr, "srctxid.%s\n", bits256_str(str,bp->srctxid));
-        // dpow_gettransaction will return confirms, unless its not confirmed. 
-        // check here for confirms exists in return JSON, if no confirms, keep rebroadcasting every 60s 
+        
+        // get the confirms for desttxid 
+        if ( !destnotarized && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid)) != -1 )
+        {
+            if ( dest_confs > 2 )
+            {
+                // tx is notarized. or it has 100+ raw confirms.
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",bp->dest, bits256_str(str,bp->desttxid));
+                destnotarized = true;
+            }
+            else if ( dest_confs = 0 )
+            {
+                // not confirmed, rebroadcast it.
+                fprintf(stderr, "[%s] txid.%s is not confirmed at all rebroadcasting.... \n",bp->dest, bits256_str(str,bp->desttxid));
+            }
+        } else fprintf(stderr, "[%s] txid.%s returned error for txconfirms",bp->dest, bits256_str(str,bp->desttxid));
+        
+        // get the confirms for srctxid
+        /*if ( (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid)) != -1 )
+        {
+            if ( dest_confs > 2 )
+            {
+                // tx is notarized. or it has 100+ raw confirms.
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",bp->symbol, bits256_str(str,bp->srctxid));
+            }
+        } */
+        // check here for confirms exists in return JSON, if no confirms, keep rebroadcasting.
         // if confirms > 2 exit loop.
         
         // as a safety, if rawconfirmations > 100 exit this loop.
         
         // wait for approx one block before checking again.
         sleep(60);
-        break; // remove this later!
+        if ( destnotarized == true ) break;
     }
     
     // unlock the dest utxo on KMD.

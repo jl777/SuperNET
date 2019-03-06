@@ -541,6 +541,23 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
     return(retstr);
 }
 
+int32_t dpow_txconfirms(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
+{
+    cJSON *txobj; int32_t confirms = 0;
+    if ( (txobj= dpow_gettransaction(myinfo, coin, txid)) != 0 )
+    {
+        if ( (confirms= juint(txobj, "confirmations")) != 0 )
+        {
+            return(confirms);
+        }
+        else if ( confirms == 1 && juint(txobj, "rawconfirmations") > 100 ) 
+            return(100);
+        else
+            return(0);
+    }
+    return(-1);
+}
+
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
     char buf[128],str[65],*retstr=0; cJSON *json = 0;
