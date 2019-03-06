@@ -617,11 +617,11 @@ void dpow_statemachinestart(void *ptr)
     // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // becasue the mempool is stupid after sapling update!
-    if ( bp->desttxid != 0 )
+    if ( bp->desttxid != zero )
         fprintf(stderr, "desttxid.%s\n", bits256_str(str,bp->desttxid));
     else
         fprintf(stderr, "dest tx was never sent!\n");
-    if ( bp->srctxid != 0 )
+    if ( bp->srctxid != zero )
         fprintf(stderr, "srctxid.%s\n", bits256_str(str,bp->srctxid));
     else 
         fprintf(stderr, "src tx was never sent!\n");
