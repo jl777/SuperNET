@@ -632,13 +632,13 @@ void dpow_statemachinestart(void *ptr)
             fprintf(stderr, "rettx.%s\n", rettx);
             if ( desttx[0] == 0 && rettx[0] != 0 )
             {
-                strcpy(rettx,desttx);
+                memcpy(desttx, rettx, strlen(rettx)+1);
                 fprintf(stderr, "desttx.%s\n", desttx);
             }
             if ( dest_confs > 2 )
             {
-                // tx is notarized. or it has 100+ raw confirms.
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms\n",dp->dest, bits256_str(str,bp->desttxid));
+                // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n",dp->dest, bits256_str(str,bp->desttxid, dest_confs));
                 destnotarized = 1;
             }
             else if ( dest_confs == 0 )
