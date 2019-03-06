@@ -638,7 +638,7 @@ void dpow_statemachinestart(void *ptr)
             if ( dest_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid, dest_confs));
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs));
                 destnotarized = 1;
             }
             else if ( dest_confs == 0 )
@@ -689,7 +689,7 @@ void dpow_statemachinestart(void *ptr)
         
         // wait for approx one block before checking again.
         sleep(30);
-        if ( destnotarized != 0 ) break;
+        if ( destnotarized != 0 && srcnotarized != 0 ) break;
     }
     
     // unlock the dest utxo on KMD.
