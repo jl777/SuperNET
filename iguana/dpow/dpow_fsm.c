@@ -638,7 +638,7 @@ void dpow_statemachinestart(void *ptr)
             else if ( dest_confs == 0 )
             {
                 // not confirmed, rebroadcast it.
-                fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting.... \n tx.%s",dp->dest, bits256_str(str,bp->desttxid), desttx);
+                fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting.... \n tx.%s",dp->dest, bits256_str(str,bp->desttxid), rettx);
                 if ( desttx[0] != 0 )
                 {
                     if ( dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
