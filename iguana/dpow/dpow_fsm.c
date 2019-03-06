@@ -616,8 +616,7 @@ void dpow_statemachinestart(void *ptr)
 
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // becasue the mempool is stupid after the sapling update!
-    int8_t dest_confs = 0, src_confs = 0;
-    bool destnotarized = false, srcnotarized = false;
+    int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
     while ( 1 )
     {
         // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
@@ -627,15 +626,15 @@ void dpow_statemachinestart(void *ptr)
             break;
         
         // get the confirms for desttxid 
-        if ( !destnotarized && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid)) != -1 )
+        if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid)) != -1 )
         {
             if ( dest_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms.
                 fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",bp->dest, bits256_str(str,bp->desttxid));
-                destnotarized = true;
+                destnotarized = 1;
             }
-            else if ( dest_confs = 0 )
+            else if ( dest_confs == 0 )
             {
                 // not confirmed, rebroadcast it.
                 fprintf(stderr, "[%s] txid.%s is not confirmed at all rebroadcasting.... \n",bp->dest, bits256_str(str,bp->desttxid));
@@ -658,7 +657,7 @@ void dpow_statemachinestart(void *ptr)
         
         // wait for approx one block before checking again.
         sleep(60);
-        if ( destnotarized == true ) break;
+        if ( destnotarized != 0 ) break;
     }
     
     // unlock the dest utxo on KMD.
