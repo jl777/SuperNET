@@ -626,8 +626,11 @@ void dpow_statemachinestart(void *ptr)
             break;
         if ( bits256_cmp(bp->srctxid,zero) == 0 )
             break;
+        // wait for approx one block before checking, gives some time to confirm, before rebroadcast.
+        sleep(60);
         
         // get the confirms for desttxid 
+        memset(rettx,0,sizeof(rettx)); // zero out rettx!
         if ( destnotarized == 0 )
         {
             if ( (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
@@ -692,8 +695,6 @@ void dpow_statemachinestart(void *ptr)
                 fprintf(stderr, "rebroadcast failed!\n");
         }
         
-        // wait for approx one block before checking again.
-        sleep(30);
         if ( destnotarized != 0 && srcnotarized != 0 ) 
             break;
     }
