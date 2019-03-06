@@ -630,7 +630,7 @@ void dpow_statemachinestart(void *ptr)
         // get the confirms for desttxid 
         if ( destnotarized == 0 )
         {
-            if (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
+            if ( (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
             {
                 if ( desttx[0] == 0 && rettx[0] != 0 )
                 {
