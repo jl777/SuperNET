@@ -629,6 +629,7 @@ void dpow_statemachinestart(void *ptr)
         // get the confirms for desttxid 
         if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
         {
+            fprintf(stderr, "rettx.%s\n", rettx);
             if ( desttx[0] == 0 && rettx[0] != 0 )
             {
                 strcpy(rettx,desttx);
