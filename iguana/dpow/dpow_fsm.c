@@ -628,69 +628,74 @@ void dpow_statemachinestart(void *ptr)
             break;
         
         // get the confirms for desttxid 
-        if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
+        if ( destnotarized == 0 )
         {
-            if ( desttx[0] == 0 && rettx[0] != 0 )
+            if (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
             {
-                memcpy(desttx, rettx, strlen(rettx)+1);
-                fprintf(stderr, "desttx.%s\n", desttx);
-            }
-            if ( dest_confs > 2 )
+                if ( desttx[0] == 0 && rettx[0] != 0 )
+                {
+                    memcpy(desttx, rettx, strlen(rettx)+1);
+                }
+                if ( dest_confs > 2 )
+                {
+                    // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
+                    fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs);
+                    destnotarized = 1;
+                }
+                else if ( dest_confs == 0 )
+                {
+                    // not confirmed, rebroadcast it.
+                    fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n",dp->dest, bits256_str(str,bp->desttxid));
+                    if ( desttx[0] != 0 )
+                        send_dest = 1;
+                }
+            } 
+            else if ( desttx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
             {
-                // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs);
-                destnotarized = 1;
+                fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->desttxid));
+                send_dest = 1;
             }
-            else if ( dest_confs == 0 )
-            {
-                // not confirmed, rebroadcast it.
-                fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n tx.%s",dp->dest, bits256_str(str,bp->desttxid), desttx);
-                if ( desttx[0] != 0 )
-                    send_dest = 1;
-            }
-        } 
-        else if ( desttx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
-        {
-            fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->desttxid));
-            send_dest = 1;
+            if ( send_dest == 1 && dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
+                fprintf(stderr, "rebroadcast failed!\n");
         }
-        if ( send_dest == 1 && dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
-            fprintf(stderr, "rebroadcast failed!\n");
         
         // get the confirms for srctxid
         memset(rettx,0,sizeof(rettx)); // zero out rettx!
-        if ( srcnotarized == 0 && (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid, rettx)) != -1 )
+        if ( srcnotarized == 0 )
         {
-            if ( srctx[0] == 0 && rettx[0] != 0 )
+            if ( (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid, rettx)) != -1 )
             {
-                memcpy(srctx, rettx, strlen(rettx)+1);
-                fprintf(stderr, "srctx.%s\n", srctx);
-            }
-            if ( src_confs > 2 )
+                if ( srctx[0] == 0 && rettx[0] != 0 )
+                {
+                    memcpy(srctx, rettx, strlen(rettx)+1);
+                }
+                if ( src_confs > 2 )
+                {
+                    // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
+                    fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs);
+                    srcnotarized = 1;
+                }
+                else if ( src_confs == 0 )
+                {
+                    // not confirmed, rebroadcast it.
+                    fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n", dp->symbol, bits256_str(str,bp->srctxid));
+                    if ( srctx[0] != 0 )
+                        send_src = 1;
+                }
+            } 
+            else if ( srctx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
             {
-                // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs);
-                srcnotarized = 1;
+                fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->srctxid));
+                send_src = 1;
             }
-            else if ( src_confs == 0 )
-            {
-                // not confirmed, rebroadcast it.
-                fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n tx.%s", dp->symbol, bits256_str(str,bp->srctxid), srctx);
-                if ( srctx[0] != 0 )
-                    send_src = 1;
-            }
-        } 
-        else if ( srctx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
-        {
-            fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->srctxid));
-            send_src = 1;
+            if ( send_src == 1 && dpow_sendrawtransaction(myinfo, bp->srccoin, srctx) == 0 )
+                fprintf(stderr, "rebroadcast failed!\n");
         }
-        if ( send_src == 1 && dpow_sendrawtransaction(myinfo, bp->srccoin, srctx) == 0 )
-            fprintf(stderr, "rebroadcast failed!\n");
         
         // wait for approx one block before checking again.
         sleep(30);
-        if ( destnotarized != 0 && srcnotarized != 0 ) break;
+        if ( destnotarized != 0 && srcnotarized != 0 ) 
+            break;
     }
     
     // unlock the dest utxo on KMD.
