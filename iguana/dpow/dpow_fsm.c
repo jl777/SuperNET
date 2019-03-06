@@ -638,7 +638,7 @@ void dpow_statemachinestart(void *ptr)
             if ( dest_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs));
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs);
                 destnotarized = 1;
             }
             else if ( dest_confs == 0 )
@@ -658,6 +658,7 @@ void dpow_statemachinestart(void *ptr)
             fprintf(stderr, "rebroadcast failed!\n");
         
         // get the confirms for srctxid
+        memset(rettx,0,sizeof(rettx)); // zero out rettx!
         if ( srcnotarized == 0 && (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid, rettx)) != -1 )
         {
             if ( srctx[0] == 0 && rettx[0] != 0 )
@@ -668,7 +669,7 @@ void dpow_statemachinestart(void *ptr)
             if ( src_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost!
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs));
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs);
                 srcnotarized = 1;
             }
             else if ( src_confs == 0 )
