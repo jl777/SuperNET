@@ -616,7 +616,7 @@ void dpow_statemachinestart(void *ptr)
 
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
-    int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
+    int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0, send_dest = 0, send_src = 0;
     char desttx[32768],srctx[32768],rettx[32768]; char *retstr=0;
     while ( 1 )
     {
@@ -629,7 +629,6 @@ void dpow_statemachinestart(void *ptr)
         // get the confirms for desttxid 
         if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
         {
-            fprintf(stderr, "rettx.%s\n", rettx);
             if ( desttx[0] == 0 && rettx[0] != 0 )
             {
                 memcpy(desttx, rettx, strlen(rettx)+1);
@@ -646,12 +645,14 @@ void dpow_statemachinestart(void *ptr)
                 // not confirmed, rebroadcast it.
                 fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n tx.%s",dp->dest, bits256_str(str,bp->desttxid), desttx);
                 if ( desttx[0] != 0 )
-                {
-                    if ( dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
-                        fprintf(stderr, "rebroadcast failed!\n");
-                }
+                    send_dest = 1;
             }
-        } else fprintf(stderr, "[%s] txid.%s returned error for dpow_txconfirms",dp->dest, bits256_str(str,bp->desttxid));
+        } 
+        else if ( desttx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
+            send_dest = 1;
+        if ( send_dest == 1 && dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
+            fprintf(stderr, "rebroadcast failed!\n");
+        
         
         // get the confirms for srctxid
         
