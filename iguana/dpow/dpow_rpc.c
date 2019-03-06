@@ -560,7 +560,7 @@ int32_t dpow_txconfirms(struct supernet_info *myinfo,struct iguana_info *coin,bi
     return(ret);
 }
 
-cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid, )
+cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
     char buf[128],str[65],*retstr=0; cJSON *json = 0;
     if ( coin->FULLNODE < 0 )
