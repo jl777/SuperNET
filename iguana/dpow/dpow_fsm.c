@@ -617,7 +617,7 @@ void dpow_statemachinestart(void *ptr)
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
     int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
-    char desttx[32768],srctx[32768]; char *retstr=0;
+    char desttx[32768],srctx[32768],rettx[32768]; char *retstr=0;
     while ( 1 )
     {
         // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
@@ -627,7 +627,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         
         // get the confirms for desttxid 
-        if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, &desttx)) != -1 )
+        if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
         {
             if ( dest_confs > 2 )
             {
