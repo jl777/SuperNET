@@ -629,33 +629,30 @@ void dpow_statemachinestart(void *ptr)
         // get the confirms for desttxid 
         if ( destnotarized == 0 && (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
         {
+            if ( desttx[0] == 0 )
+            {
+                strcpy(rettx,desttx);
+                fprintf(stderr, "desttx.%s\n", desttx);
+            }
             if ( dest_confs > 2 )
             {
                 // tx is notarized. or it has 100+ raw confirms.
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",dp->dest, bits256_str(str,bp->desttxid));
+                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms\n",dp->dest, bits256_str(str,bp->desttxid));
                 destnotarized = 1;
             }
             else if ( dest_confs == 0 )
             {
                 // not confirmed, rebroadcast it.
-                fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting.... \n tx.%s",dp->dest, bits256_str(str,bp->desttxid), rettx);
+                fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n tx.%s",dp->dest, bits256_str(str,bp->desttxid), desttx);
                 if ( desttx[0] != 0 )
                 {
                     if ( dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
                         fprintf(stderr, "rebroadcast failed!\n");
                 }
             }
-        } else fprintf(stderr, "[%s] txid.%s returned error for txconfirms",dp->dest, bits256_str(str,bp->desttxid));
+        } else fprintf(stderr, "[%s] txid.%s returned error for dpow_txconfirms",dp->dest, bits256_str(str,bp->desttxid));
         
         // get the confirms for srctxid
-        /*if ( (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid)) != -1 )
-        {
-            if ( dest_confs > 2 )
-            {
-                // tx is notarized. or it has 100+ raw confirms.
-                fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms \n",bp->symbol, bits256_str(str,bp->srctxid));
-            }
-        } */
         
         // wait for approx one block before checking again.
         sleep(30);
