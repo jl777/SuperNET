@@ -564,6 +564,7 @@ void dpow_statemachinestart(void *ptr)
             else src_or_dest = 1;
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
             // if MoMoM is not avalible yet, then stop this round and try again later. 
+            // This might no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks. 
             if ( extralen == -1 )
                 break;
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
@@ -613,6 +614,29 @@ void dpow_statemachinestart(void *ptr)
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
 
+    // If the round was sucessful and both notarizations were created successfully we will make sure they are in the chain.
+    // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
+    // becasue the mempool is stupid after sapling update!
+    if ( bp->desttxid != 0 )
+        fprintf(stderr, "desttxid.%s\n", bits256_str(str,bp->desttxid));
+    else
+        fprintf(stderr, "dest tx was never sent!\n");
+    if ( bp->srctxid != 0 )
+        fprintf(stderr, "srctxid.%s\n", bits256_str(str,bp->srctxid));
+    else 
+        fprintf(stderr, "src tx was never sent!\n");
+    while ( 0 )
+    {
+        // dpow_gettransaction will return confirms, unless its not confirmed. 
+        // check here for confirms exists in return JSON, if no confirms, keep rebroadcasting every 60s 
+        // if confirms > 2 exit loop.
+        
+        // as a safety, if rawconfirmations > 100 exit this loop.
+        
+        // wait for approx one block before checking again.
+        sleep(60);
+    }
+    
     // unlock the dest utxo on KMD.
     if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
     {
