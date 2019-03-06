@@ -546,7 +546,7 @@ int32_t dpow_txconfirms(struct supernet_info *myinfo,struct iguana_info *coin,bi
     cJSON *txobj; int32_t confirms = 0, ret = 0;
     if ( (txobj= dpow_gettransaction(myinfo, coin, txid)) != 0 )
     {
-        rawtx= jstr(txobj, "hex"));
+        rawtx= jstr(txobj, "hex");
         if ( (confirms= juint(txobj, "confirmations")) != 0 )
         {
             ret = confirms;
