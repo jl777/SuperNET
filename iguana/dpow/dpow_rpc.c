@@ -779,10 +779,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
-        if ( strcmp("KMD", coin->symbol) == 0 )
-            fprintf(stderr,">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n paramstr.%s\n tx.%s\n",coin->symbol,retstr, paramstr, signedtx);
-        else 
-            fprintf(stderr,">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
+        fprintf(stderr,">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
         free(paramstr);
         return(retstr);
     }
