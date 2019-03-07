@@ -618,7 +618,7 @@ void dpow_statemachinestart(void *ptr)
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
     int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
     char desttx[32768] = {0},srctx[32768] = {0};
-    while ( destnotarized == 0 && srcnotarized == 0 )
+    while ( 1 )
     {
         int8_t send_dest = 0, send_src = 0; char rettx[32768] = {0};
         // If the round was sucessful and both notarization transactions were created successfully we will make sure they are in the chain.
@@ -692,6 +692,8 @@ void dpow_statemachinestart(void *ptr)
             if ( send_src == 1 )
                 dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
         }
+        if ( destnotarized != 0 && srcnotarized != 0 )
+            break; // both notarized quit loop.
     }
     
     // unlock the dest utxo on KMD.
