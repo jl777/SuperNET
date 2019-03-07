@@ -642,7 +642,7 @@ void dpow_statemachinestart(void *ptr)
                 if ( dest_confs > 2 )
                 {
                     // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost, no longer need to check.
-                    fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%d\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs);
+                    fprintf(stderr, "[dest.%s] txid.%s is notarized. confirms.%d srcnotarized.%i\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs, srcnotarized);
                     destnotarized = 1;
                 }
                 else if ( dest_confs == 0 )
@@ -657,7 +657,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->dest, bits256_str(str,bp->desttxid));
                 send_dest = 1;
-            }
+            } else fprintf(stderr, "[KMD] get raw transaction error\n");
             if ( send_dest == 1 )
                 dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
         }
@@ -674,7 +674,7 @@ void dpow_statemachinestart(void *ptr)
                 }
                 if ( src_confs > 2 )
                 {
-                    fprintf(stderr, "[%s] txid.%s is notarized or has 100 confirms.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs);
+                    fprintf(stderr, "[src.%s] txid.%s is notarized. confirms.%i destnotarized.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs, destnotarized);
                     srcnotarized = 1;
                 }
                 else if ( src_confs == 0 )
@@ -688,7 +688,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->symbol, bits256_str(str,bp->srctxid));
                 send_src = 1;
-            }
+            } else fprintf(stderr, "[%s] get raw transaction error\n", dp->symbol);
             if ( send_src == 1 )
                 dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
         }
