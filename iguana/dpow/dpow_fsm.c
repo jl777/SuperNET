@@ -628,7 +628,7 @@ void dpow_statemachinestart(void *ptr)
         int8_t send_dest = 0, send_src = 0; char rettx[32768] = {0};
         if ( firstloop == 0 )
         {
-            sleep(60); // wait 60s on the first round, to prevent spamming transactions when not needed.
+            sleep((rand() % (120 - 60)) + 60); 
             firstloop = 1;
         }
         // random sleep here so all nodes are checking/rebroadcasting at diffrent times. 
