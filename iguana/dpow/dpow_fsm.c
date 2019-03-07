@@ -617,7 +617,7 @@ void dpow_statemachinestart(void *ptr)
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
     int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
-    char desttx[32768],srctx[32768],rettx[32768]; char *retstr=0;
+    char desttx[32768],srctx[32768]; char *retstr=0;
     while ( 1 )
     {
         int8_t send_dest = 0, send_src = 0;
@@ -630,7 +630,7 @@ void dpow_statemachinestart(void *ptr)
         //sleep((rand() % (240 - 30)) + 30);
         
         // get the confirms for desttxid 
-        memset(rettx,0,sizeof(rettx)); // zero out rettx!
+        char rettx[32768] = {0};
         if ( destnotarized == 0 )
         {
             if ( (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
@@ -639,6 +639,7 @@ void dpow_statemachinestart(void *ptr)
                 {
                     memset(desttx,0,sizeof(desttx)); // zero out desttx.
                     memcpy(desttx, rettx, strlen(rettx)+1);
+                    fprintf(stderr, ">>> after copy: desttx.%s\n",desttx);
                 }
                 if ( dest_confs > 2 )
                 {
@@ -659,8 +660,13 @@ void dpow_statemachinestart(void *ptr)
                 fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->desttxid));
                 send_dest = 1;
             }
-            if ( send_dest == 1 && dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
-                fprintf(stderr, "rebroadcast failed!\n");
+            if ( send_dest == 1 )
+            {
+                if ( dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) != 0 )
+                {
+                    fprintf(stderr, "desttx.%s\n", desttx);
+                }
+            }
         }
         
         // get the confirms for srctxid
