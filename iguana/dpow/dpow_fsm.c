@@ -617,7 +617,7 @@ void dpow_statemachinestart(void *ptr)
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
     int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
-    char desttx[32768],srctx[32768]; char *retstr=0;
+    char desttx[32768] = {0},srctx[32768] = {0}; char *retstr=0;
     while ( 1 )
     {
         int8_t send_dest = 0, send_src = 0;
@@ -637,9 +637,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 if ( desttx[0] == 0 && rettx[0] != 0 )
                 {
-                    memset(desttx,0,sizeof(desttx)); // zero out desttx.
                     memcpy(desttx, rettx, strlen(rettx)+1);
-                    fprintf(stderr, ">>> after copy: desttx.%s\n",desttx);
                 }
                 if ( dest_confs > 2 )
                 {
@@ -662,6 +660,7 @@ void dpow_statemachinestart(void *ptr)
             }
             if ( send_dest == 1 )
             {
+                fprintf(stderr, "<<<<<<<<<<<<<<<<<< before send: desttx.%s\n",desttx);
                 if ( dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) != 0 )
                 {
                     fprintf(stderr, "desttx.%s\n", desttx);
@@ -677,7 +676,6 @@ void dpow_statemachinestart(void *ptr)
             {
                 if ( srctx[0] == 0 && rettx[0] != 0 )
                 {
-                    memset(srctx,0,sizeof(srctx)); // zero out srctx.
                     memcpy(srctx, rettx, strlen(rettx)+1);
                 }
                 if ( src_confs > 2 )
