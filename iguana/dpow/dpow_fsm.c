@@ -705,6 +705,7 @@ void dpow_statemachinestart(void *ptr)
                 dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
         }
     }
+    bp->state = 0xffffffff;
 
 end: 
     // unlock the dest utxo on KMD.
@@ -722,7 +723,6 @@ end:
     }
 
     // dp->blocks[bp->height] = 0;
-    bp->state = 0xffffffff;
     bp->finished = 0xffffffff;
     free(ptr);
 }
