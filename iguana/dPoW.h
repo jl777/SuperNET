@@ -115,7 +115,7 @@ struct dpow_block
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
     struct dpow_recvdata recv[64];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
-    uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend;
+    uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend,finished;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk,matches,bestmatches;
     cJSON *ratified;

@@ -284,6 +284,7 @@ void dpow_statemachinestart(void *ptr)
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
+        bp->finished = 0xffffffff;
         free(ptr);
         return;
     }
@@ -322,6 +323,7 @@ void dpow_statemachinestart(void *ptr)
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
                     free(ptr);
                     free_json(ratified);
+                    bp->finished = 0xffffffff;
                     return;
                 }
                 for (i=0; i<numratified; i++)
@@ -381,6 +383,7 @@ void dpow_statemachinestart(void *ptr)
     if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
+        bp->finished = 0xffffffff;
         free(ptr);
         return;
     }
@@ -432,6 +435,7 @@ void dpow_statemachinestart(void *ptr)
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             free(ptr);
             dp->ratifying -= bp->isratify;
+            bp->finished = 0xffffffff;
             exit(-1);
             return;
         }
@@ -442,6 +446,7 @@ void dpow_statemachinestart(void *ptr)
         printf("statemachinestart no kmdheight.%d\n",kmdheight);
         free(ptr);
         dp->ratifying -= bp->isratify;
+        bp->finished = 0xffffffff;
         return;
     }
     bp->myind = myind;
@@ -455,6 +460,7 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dp->ratifying -= bp->isratify;
+        bp->finished = 0xffffffff;
         free(ptr);
         return;
     }
@@ -529,10 +535,9 @@ void dpow_statemachinestart(void *ptr)
         {
             //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
-            // set state to finished.
-            bp->state = 0xffffffff; 
-            free(ptr);
-            return;
+            goto end;
+            //free(ptr);
+            //return;
         }
         sleep(1);
     }
@@ -700,7 +705,8 @@ void dpow_statemachinestart(void *ptr)
                 dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
         }
     }
-    
+
+end: 
     // unlock the dest utxo on KMD.
     if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
     {
@@ -717,5 +723,6 @@ void dpow_statemachinestart(void *ptr)
 
     // dp->blocks[bp->height] = 0;
     bp->state = 0xffffffff;
+    bp->finished = 0xffffffff;
     free(ptr);
 }
