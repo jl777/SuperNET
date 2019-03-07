@@ -662,7 +662,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->dest, bits256_str(str,bp->desttxid));
                 send_dest = 1;
-            } else fprintf(stderr, "[KMD] get raw transaction error\n");
+            } else fprintf(stderr, "[%s] get raw transaction error\n", dp->dest);
             if ( send_dest == 1 )
                 dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
         }
