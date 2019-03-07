@@ -616,16 +616,21 @@ void dpow_statemachinestart(void *ptr)
 
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
-    int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0;
-    char desttx[32768] = {0},srctx[32768] = {0};
+    int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0, firstloop = 0;
+    char desttx[32768] = {0}, srctx[32768] = {0};
     while ( destnotarized == 0 || srcnotarized == 0 )
     {
-        int8_t send_dest = 0, send_src = 0; char rettx[32768] = {0};
         // If the round was sucessful and both notarization transactions were created successfully we will make sure they are in the chain.
         if ( bits256_cmp(bp->desttxid,zero) == 0 )
             break;
         if ( bits256_cmp(bp->srctxid,zero) == 0 )
             break;
+        int8_t send_dest = 0, send_src = 0; char rettx[32768] = {0};
+        if ( firstloop == 0 )
+        {
+            sleep(60); // wait 60s on the first round, to prevent spamming transactions when not needed.
+            firstloop = 1;
+        }
         // random sleep here so all nodes are checking/rebroadcasting at diffrent times. 
         sleep((rand() % (77 - 33)) + 33);
         
