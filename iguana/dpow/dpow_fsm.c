@@ -699,7 +699,7 @@ void dpow_statemachinestart(void *ptr)
         
         if ( destnotarized != 0 && srcnotarized != 0 ) 
             break;
-        sleep(30)
+        sleep(30);
     }
     
     // unlock the dest utxo on KMD.
