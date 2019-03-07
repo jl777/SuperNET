@@ -658,14 +658,8 @@ void dpow_statemachinestart(void *ptr)
                 fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->desttxid));
                 send_dest = 1;
             }
-            if ( send_dest == 1 )
-            {
-                fprintf(stderr, "<<<<<<<<<<<<<<<<<< before send: desttx.%s\n",desttx);
-                if ( dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) != 0 )
-                {
-                    fprintf(stderr, "desttx.%s\n", desttx);
-                }
-            }
+            if ( send_dest == 1 && dpow_sendrawtransaction(myinfo, bp->destcoin, desttx) == 0 )
+                fprintf(stderr, "rebroadcast failed!\n");
         }
         
         // get the confirms for srctxid
