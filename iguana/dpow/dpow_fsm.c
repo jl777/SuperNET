@@ -637,6 +637,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 if ( desttx[0] == 0 && rettx[0] != 0 )
                 {
+                    memset(desttx,0,sizeof(desttx)); // zero out desttx.
                     memcpy(desttx, rettx, strlen(rettx)+1);
                 }
                 if ( dest_confs > 2 )
@@ -653,7 +654,7 @@ void dpow_statemachinestart(void *ptr)
                         send_dest = 1;
                 }
             } 
-            else if ( desttx[0] != 0 && is_hexstr(desttx,strlen(desttx)) != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
+            else if ( desttx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
             {
                 fprintf(stderr, "cant find tx.%s rebroadcasting...\n", bits256_str(str,bp->desttxid));
                 send_dest = 1;
@@ -670,6 +671,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 if ( srctx[0] == 0 && rettx[0] != 0 )
                 {
+                    memset(srctx,0,sizeof(srctx)); // zero out srctx.
                     memcpy(srctx, rettx, strlen(rettx)+1);
                 }
                 if ( src_confs > 2 )
