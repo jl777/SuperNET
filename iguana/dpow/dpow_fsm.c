@@ -284,6 +284,7 @@ void dpow_statemachinestart(void *ptr)
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
+        bp->finished = 0xffffffff;
         free(ptr);
         return;
     }
@@ -320,6 +321,7 @@ void dpow_statemachinestart(void *ptr)
                 if ( numratified > 64 )
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
+                    bp->finished = 0xffffffff;
                     free(ptr);
                     free_json(ratified);
                     return;
@@ -381,6 +383,7 @@ void dpow_statemachinestart(void *ptr)
     if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
+        bp->finished = 0xffffffff;
         free(ptr);
         return;
     }
@@ -430,6 +433,7 @@ void dpow_statemachinestart(void *ptr)
             for (i=0; i<33; i++)
                 printf("%02x",dp->minerkey33[i]);
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
+            bp->finished = 0xffffffff;
             free(ptr);
             dp->ratifying -= bp->isratify;
             exit(-1);
@@ -440,6 +444,7 @@ void dpow_statemachinestart(void *ptr)
     else
     {
         printf("statemachinestart no kmdheight.%d\n",kmdheight);
+        bp->finished = 0xffffffff;
         free(ptr);
         dp->ratifying -= bp->isratify;
         return;
@@ -455,6 +460,7 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dp->ratifying -= bp->isratify;
+        bp->finished = 0xffffffff;
         free(ptr);
         return;
     }
@@ -529,8 +535,9 @@ void dpow_statemachinestart(void *ptr)
         {
             //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
-            free(ptr);
-            return;
+            goto end;
+            //free(ptr);
+            //return;
         }
         sleep(1);
     }
@@ -609,7 +616,9 @@ void dpow_statemachinestart(void *ptr)
     printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
+    bp->state = 0xffffffff;
 
+end:
     // unlock the dest utxo on KMD.
     if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
     {
@@ -625,6 +634,6 @@ void dpow_statemachinestart(void *ptr)
     }
 
     // dp->blocks[bp->height] = 0;
-    bp->state = 0xffffffff;
+    bp->finished = 0xffffffff;
     free(ptr);
 }
