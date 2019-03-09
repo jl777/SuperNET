@@ -112,6 +112,12 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define INSTANTDEX_LOCKTIME (3600*2 + 300*2)
 #define INSTANTDEX_INSURANCEDIV 777
 #define INSTANTDEX_PUBKEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
+#define INSTANTDEX_ETHADDR "0xd8997941dd1346e9231118d5685d866294f59e5b"
+// Artem Pikulin:
+// This is invalid address got from zero pubkey because of error in pubKey2Addr(char* pubKey)
+// Going to keep it for a while because some nodes might be not updated and still send fee to old address.
+// I think it's better to allow swap to continue even if fee sent to wrong address.
+#define INSTANTDEX_OLD_ETHADDR "0x3f17f1962B36e491b30A40b2405849e597Ba5FB5"
 #define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
 #define JUMBLR_RMD160 "5177f8b427e5f47342a4b8ab5dac770815d4389e"
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
@@ -319,15 +325,26 @@ struct LP_transaction
     struct LP_outpoint outpoints[];
 };
 
+struct LP_tx_history_item
+{
+    struct LP_tx_history_item *next,*prev;
+    char address[50],category[10],blockhash[70],txid[70];
+    double_t amount;
+    uint32_t vout,blockindex,blocktime,time;
+};
+
 struct iguana_info
 {
     UT_hash_handle hh;
-    portable_mutex_t txmutex,addrmutex,addressutxo_mutex; struct LP_transaction *transactions; struct LP_address *addresses;
+    portable_mutex_t txmutex,addrmutex,addressutxo_mutex,tx_history_mutex;
+    struct LP_transaction *transactions;
+    struct LP_address *addresses;
     uint64_t txfee,do_autofill_merge;
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
-    uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
+    uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms,cache_history;
     char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64],validateaddress[64];
+    struct LP_tx_history_item *tx_history;
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
@@ -612,5 +629,6 @@ int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
 void HashGroestl(void * buf, const void * pbegin, int len);
 bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
-
+cJSON *address_history_cached(struct iguana_info *coin);
+int history_item_cmp(struct LP_tx_history_item *item1, struct LP_tx_history_item *item2);
 #endif

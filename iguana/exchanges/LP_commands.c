@@ -634,6 +634,8 @@ version\n\
                             if (ptr->decimals == 0) {
                                 return(clonestr("{\"error\":\"Could not get token decimals or token has zero decimals which is not supported!\"}"));
                             }
+                        } else if (strcmp(coin, "ETH") == 0) {
+                            ptr->decimals = 18;
                         }
                     }
 #endif
@@ -641,6 +643,14 @@ version\n\
                     {
                         cJSON *array;
                         ptr->inactive = 0;
+#ifndef NOTETOMIC
+                        if (ptr->etomic[0] != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_etomic_txhistory_loop,(void *)ptr) != 0 )
+                        {
+                            printf("error launching LP_etomic_txhistory_loop %s\n",ptr->symbol);
+                            ptr->inactive = (uint32_t)time(NULL);
+                            return(clonestr("{\"error\":\"couldnt launch tx history thread\"}"));
+                        }
+#endif
                         LP_unspents_load(coin,ptr->smartaddr);
                         if ( strcmp(ptr->symbol,"KMD") == 0 )
                             LP_importaddress("KMD",BOTS_BONDADDRESS);
@@ -707,6 +717,7 @@ version\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     ptr->inactive = 0;
+                    ptr->cache_history = juint(argjson, "cache_history");
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }

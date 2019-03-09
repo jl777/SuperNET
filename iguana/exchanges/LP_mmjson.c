@@ -652,6 +652,9 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
             for (i=0; i<k; i++)
                 printf("%d ",linebuf[i]);
             printf(" k.%d error decoding (%s) -> (%s)\n",k,line,decodestr==0?"":decodestr);
+#if !defined(NDEBUG) && !defined(NOTETOMIC) && defined(__linux__)
+            print_stack_trace();
+#endif
             if ( decodestr != 0 )
                 free(decodestr);
             return(-1);

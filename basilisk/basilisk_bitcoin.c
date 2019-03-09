@@ -594,7 +594,6 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
 	uint32_t txversion = 1; // txversion = 1 for non-overwintered and non-sapling coins
 	if (coin->sapling != 0)
 		txversion = 4;
-	
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,txversion,0)) != 0 )
     {
 		if ( duplicates <= 0 )

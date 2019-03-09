@@ -1136,7 +1136,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
 	
-	coin->sapling = 0;
+	coin->sapling = (strcmp("KMD",coin->symbol) == 0);
 	if (jobj(json, "sapling") != 0)
 	{
 		coin->sapling = juint(json, "sapling");
