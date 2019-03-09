@@ -25,6 +25,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"82.202.193.98\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"82.202.193.100\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"54.95.68.31\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.149.173\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"142.54.164.114\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"103.6.12.111\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"155.254.17.21\"}"
@@ -49,10 +50,11 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"37.9.62.186\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"145.239.204.33\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"195.154.79.11\"}"
-curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"163.172.30.96\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.144.91\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.122.47\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"145.239.232.32\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"209.58.169.118\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"54.39.53.170\"}"
 
 #tests/addnotarys_7776
 coins/btc_7776
@@ -79,11 +81,9 @@ coins/wlc_7776
 coins/kv_7776
 coins/ceal_7776
 coins/mesh_7776
-coins/mnz_7776
 coins/axo_7776
 coins/etomic_7776
 coins/btch_7776
-#coins/vote2018_7776
 coins/ninja_7776
 coins/oot_7776
 coins/bntn_7776
@@ -99,7 +99,7 @@ coins/sec_7776
 coins/ccl_7776
 coins/hush_7776
 coins/pirate_7776
-coins/mgnx_7776
+#coins/mgnx_7776
 coins/pgt_7776
 coins/kmdice_7776
 coins/dion_7776
@@ -107,6 +107,7 @@ coins/zex_7776
 coins/ksb_7776
 coins/our_7776
 coins/gin_7776
+coins/iln_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 

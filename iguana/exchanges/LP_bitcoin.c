@@ -17,7 +17,12 @@
 //  LP_bitcoin.c
 //  marketmaker
 //
+#ifdef _WIN32
+#include "../../OSlibs/win/libsodium/include/sodium/crypto_generichash_blake2b.h"
+#else
 #include <sodium/crypto_generichash_blake2b.h>
+#endif
+
 const unsigned char ZCASH_PREVOUTS_HASH_PERSONALIZATION[16] =
         {'Z','c','a','s','h','P','r','e','v','o','u','t','H','a','s','h'};
 const unsigned char ZCASH_SEQUENCE_HASH_PERSONALIZATION[16] =
@@ -2861,7 +2866,7 @@ cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txv
 {
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
-    if (txversion >= 3) {
+    if (txversion == 3 || txversion == 4) {
         cJSON_AddBoolToObject(json,"overwintered",1);
         jaddnum(json,"expiryheight",0);
         if (txversion == 3) {
@@ -3494,8 +3499,13 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         memcpy(&for_sig_hash[len], sequence_hash, 32);
         len += 32;
 
-        uint8_t outputs[1000], hash_outputs[32];
+        uint8_t *outputs, hash_outputs[32];
         int32_t outputs_len = 0;
+
+        for (i = 0; i < dest.tx_out; i++) { outputs_len += sizeof(dest.vouts[i].value); outputs_len++;  outputs_len += dest.vouts[i].pk_scriptlen; } // calc size for outputs buffer
+        outputs = malloc(outputs_len);
+
+        outputs_len = 0;
         for (i = 0; i < dest.tx_out; i++) {
             outputs_len += iguana_rwnum(1, &outputs[outputs_len], sizeof(dest.vouts[i].value), &dest.vouts[i].value);
             outputs[outputs_len++] = (uint8_t) dest.vouts[i].pk_scriptlen;
@@ -3515,6 +3525,8 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         );
         memcpy(&for_sig_hash[len], hash_outputs, 32);
         len += 32;
+
+        free(outputs);
 
         // no join splits, fill the hashJoinSplits with 32 zeros
         memset(&for_sig_hash[len], 0, 32);
