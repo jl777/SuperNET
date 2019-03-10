@@ -301,14 +301,15 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-        if ( (srcinfojson= dpow_getinfo(myinfo,bp->srccoin)) != 0 )
+        /*if ( (srcinfojson= dpow_getinfo(myinfo,bp->srccoin)) != 0 )
         {
+            // not needed CCid is passed to this function already, and we dont need the ppmomheight anymore!
             CCid = juint(srcinfojson,"CCid");
             if ( CCid > 1 )
                 ppMoMheight = jint(srcinfojson,"ppMoMheight");
             free_json(srcinfojson);
             //printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
-        }
+        } */
         if ( CCid > 1 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
@@ -317,15 +318,16 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
-            // 5 is easily enough.. KMD is pretty safe 
+            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this, 
+            // the backup notary validation can be used to complete the import.
             if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-5,bp->CCid)) != 0 )
             {
-                if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
+                /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
                     // MoMoM returned NULL when after 2 MoM exist on the chain. 
                     free_json(retjson);
                     return(-1);
-                }
+                } */
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;

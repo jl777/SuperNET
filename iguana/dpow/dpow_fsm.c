@@ -570,10 +570,9 @@ void dpow_statemachinestart(void *ptr)
                 src_or_dest = 0;
             else src_or_dest = 1;
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
-            // if MoMoM is not avalible yet, then stop this round and try again later. 
-            // This might no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks. 
-            if ( extralen == -1 )
-                break;
+            // This is no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks. 
+            //if ( extralen == -1 )
+            //    break;
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
