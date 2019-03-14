@@ -1135,4 +1135,47 @@ fn test_withdraw_and_send() {
     withdraw_and_send(&mm_alice, "PIZZA", "R9o9xTocqr6CeEDGDH6mEYpwLoMz6jNjMW", &enable_res);
     withdraw_and_send(&mm_alice, "ETH", "0xbab36286672fbdc7b250804bf6d14be0df69fa29", &enable_res);
     withdraw_and_send(&mm_alice, "JST", "0xbab36286672fbdc7b250804bf6d14be0df69fa29", &enable_res);
+    unwrap!(mm_alice.stop());
+}
+
+/// Ensure that swap status return the 404 status code if swap is not found
+#[test]
+fn test_swap_status() {
+    let coins = json! ([{"coin":"BEER","asset":"BEER"},]);
+
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 8100,
+            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
+            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
+            "passphrase": "some passphrase",
+            "coins": coins,
+            "rpc_password": "password",
+        }),
+        "password".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
+    ));
+
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+
+    let my_swap = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "my_swap_status",
+        "params": {
+            "uuid":"random",
+        }
+    })));
+
+    assert_eq! (my_swap.0, StatusCode::NOT_FOUND, "!not found status code: {}", my_swap.1);
+
+    let stats_swap = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "stats_swap_status",
+        "params": {
+            "uuid":"random",
+        }
+    })));
+
+    assert_eq! (stats_swap.0, StatusCode::NOT_FOUND, "!not found status code: {}", stats_swap.1);
 }

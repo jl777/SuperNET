@@ -1273,6 +1273,11 @@ pub fn my_swap_status(req: Json) -> HyRes {
     let uuid = try_h!(req["params"]["uuid"].as_str().ok_or("uuid parameter is not set or is not string"));
     let path = my_swap_file_path(uuid);
     let content = slurp(&path);
+    if content.is_empty() {
+        return rpc_response(404, json!({
+            "error": "swap data is not found"
+        }).to_string());
+    }
     let status: SavedSwap = try_h!(json::from_slice(&content));
 
     rpc_response(200, json!({
@@ -1298,6 +1303,12 @@ pub fn stats_swap_status(req: Json) -> HyRes {
     } else {
         Some(try_h!(json::from_slice(&taker_content)))
     };
+
+    if maker_status.is_none() && taker_status.is_none() {
+        return rpc_response(404, json!({
+            "error": "swap data is not found"
+        }).to_string());
+    }
 
     rpc_response(200, json!({
         "result": {
