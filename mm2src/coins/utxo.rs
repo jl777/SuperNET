@@ -858,6 +858,10 @@ impl MmCoin for UtxoCoin {
         )
     }
 
+    fn can_i_spend_other_payment(&self) -> Box<Future<Item=(), Error=String> + Send> {
+        Box::new(futures::future::ok(()))
+    }
+
     fn withdraw(&self, to: &str, amount: f64) -> Box<Future<Item=TransactionDetails, Error=String> + Send> {
         let to: Address = try_fus!(Address::from_str(to));
         let value = (amount * SATOSHIDEN as f64) as u64;

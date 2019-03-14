@@ -252,6 +252,8 @@ pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
 
     fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send>;
 
+    fn can_i_spend_other_payment(&self) -> Box<Future<Item=(), Error=String> + Send>;
+
     fn withdraw(&self, to: &str, amount: f64) -> Box<Future<Item=TransactionDetails, Error=String> + Send>;
 
     /// Maximum number of digits after decimal point used to denominate integer coin units (satoshis, wei, etc.)

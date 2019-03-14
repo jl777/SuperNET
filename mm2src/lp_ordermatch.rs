@@ -20,7 +20,7 @@
 //
 use common::{lp, nn, free_c_ptr, c_char_to_string, sat_to_f, SATOSHIS, SMALLVAL, CJSON, dstr, rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
-use coins::lp_coinfind;
+use coins::{lp_coinfind, MmCoinEnum};
 use coins::utxo::compressed_pub_key_from_priv_raw;
 use futures::future::Future;
 use gstuff::now_ms;
@@ -1736,18 +1736,26 @@ pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
     let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
     let rel_coin = match rel_coin {Some(c) => c, None => return rpc_err_response(500, "Rel coin is not found or inactive")};
-    Box::new(rel_coin.check_i_have_enough_to_trade(input.rel_volume, false).and_then(move |_| {
-        rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
-    }))
+    let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
+    let base_coin: MmCoinEnum = match base_coin {Some(c) => c, None => return rpc_err_response(500, "Base coin is not found or inactive")};
+    Box::new(rel_coin.check_i_have_enough_to_trade(input.rel_volume, false).and_then(move |_|
+        base_coin.can_i_spend_other_payment().and_then(move |_|
+            rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
+        )
+    ))
 }
 
 pub fn sell(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
     let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
     let base_coin = match base_coin {Some(c) => c, None => return rpc_err_response(500, "Base coin is not found or inactive")};
-    Box::new(base_coin.check_i_have_enough_to_trade(input.base_volume, false).and_then(move |_| {
-        rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
-    }))
+    let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
+    let rel_coin = match rel_coin {Some(c) => c, None => return rpc_err_response(500, "Rel coin is not found or inactive")};
+    Box::new(rel_coin.check_i_have_enough_to_trade(input.base_volume, false).and_then(move |_|
+        base_coin.can_i_spend_other_payment().and_then(move |_|
+            rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
+        )
+    ))
 }
 
 pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
@@ -1788,19 +1796,9 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
     let base_ii = base.iguana_info();
     let rel_ii = rel.iguana_info();
 
-    let mut timeout = input.timeout.unwrap_or(unsafe { lp::LP_AUTOTRADE_TIMEOUT });
+    let timeout = input.timeout.unwrap_or(unsafe { lp::LP_AUTOTRADE_TIMEOUT });
 
     unsafe {
-        if (*base_ii).electrum != null_mut() && (*rel_ii).electrum != null_mut() {
-            if timeout < 2 * lp::LP_AUTOTRADE_TIMEOUT {
-                timeout = 2 * lp::LP_AUTOTRADE_TIMEOUT;
-            }
-        } else if (*base_ii).electrum != null_mut() || (*rel_ii).electrum != null_mut() {
-            if timeout < (1.5 * lp::LP_AUTOTRADE_TIMEOUT as f32) as u32 {
-                timeout = (1.5 * lp::LP_AUTOTRADE_TIMEOUT as f32) as u32;
-            }
-        }
-
         if now_ms() / 1000 < lp::Alice_expiration as u64 {
             return ERR!("Only 1 pending request at a time, wait {}",
                             lp::Alice_expiration as u64 - now_ms() / 1000);

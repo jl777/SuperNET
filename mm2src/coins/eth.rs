@@ -883,7 +883,7 @@ impl MmCoin for EthCoin {
                     } else {
                         // need to check ETH balance too, address should have some to cover gas fees
                         Box::new(arc.eth_balance().and_then(move |eth_balance| {
-                            let eth_balance_f64: f64 = try_s!(display_u256_with_decimal_point(eth_balance, decimals).parse());
+                            let eth_balance_f64: f64 = try_s!(display_u256_with_decimal_point(eth_balance, 18).parse());
                             if eth_balance_f64 < 0.0002 {
                                 ERR!("{} balance is enough, but base coin balance {} is too low to cover gas fee, required {}", ticker, eth_balance_f64, 0.0002)
                             } else {
@@ -892,6 +892,17 @@ impl MmCoin for EthCoin {
                         }))
                     }
                 }
+            }
+        }))
+    }
+
+    fn can_i_spend_other_payment(&self) -> Box<Future<Item=(), Error=String> + Send> {
+        Box::new(self.eth_balance().and_then(move |eth_balance| {
+            let eth_balance_f64: f64 = try_s!(display_u256_with_decimal_point(eth_balance, 18).parse());
+            if eth_balance_f64 < 0.0002 {
+                ERR!("Base coin balance {} is too low to cover gas fee, required {}", eth_balance_f64, 0.0002)
+            } else {
+                Ok(())
             }
         }))
     }

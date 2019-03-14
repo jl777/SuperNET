@@ -426,6 +426,41 @@ fn test_my_balance() {
     assert_eq!(my_address, "RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD");
 }
 
+fn check_set_price_fails(mm: &MarketMakerIt, base: &str, rel: &str) {
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "setprice",
+        "base": base,
+        "rel": rel,
+        "price": 0.9
+    })));
+    assert! (rc.0.is_server_error(), "!setprice success but should be error: {}", rc.1);
+}
+
+fn check_buy_fails(mm: &MarketMakerIt, base: &str, rel: &str) {
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "buy",
+        "base": base,
+        "rel": rel,
+        "relvolume": 0.1,
+        "price": 0.9
+    })));
+    assert! (rc.0.is_server_error(), "!buy success but should be error: {}", rc.1);
+}
+
+fn check_sell_fails(mm: &MarketMakerIt, base: &str, rel: &str) {
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "sell",
+        "base": base,
+        "rel": rel,
+        "basevolume": 0.1,
+        "price": 0.9
+    })));
+    assert! (rc.0.is_server_error(), "!buy success but should be error: {}", rc.1);
+}
+
 #[test]
 fn test_check_balance_on_order_post() {
     let coins = json!([
@@ -433,7 +468,7 @@ fn test_check_balance_on_order_post() {
         {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"txversion":4},
         {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"txversion":4},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80},
-        {"coin":"JST","name":"jst","etomic":"0xc0eb7AeD740E1796992A08962c15661bDEB58003"}
+        {"coin":"JST","name":"jst","etomic":"0x2b294f029fde858b2c62184e8390591755521d8e"}
     ]);
 
     // start bob and immediately place the order
@@ -454,41 +489,29 @@ fn test_check_balance_on_order_post() {
     log!({"Log path: {}", mm.log_path.display()});
     unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
     // Enable coins. Print the replies in case we need the "address".
-    log! ({"enable_coins (bob): {:?}", enable_coins_eth_electrum (&mm, vec!["http://195.201.0.6:8545"])});
+    log! ({"enable_coins (bob): {:?}", enable_coins_eth_electrum (&mm, vec!["http://195.201.0.6:8565"])});
     // issue sell request by setting base/rel price
-    let rc = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "setprice",
-        "base": "PIZZA",
-        "rel": "BEER",
-        "price": 0.9
-    })));
-    // Expect error as PIZZA balance is 0
-    assert! (rc.0.is_server_error(), "!setprice success but should be error: {}", rc.1);
 
-    // issue buy request
-    let rc = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "buy",
-        "base": "BEER",
-        "rel": "PIZZA",
-        "relvolume": 0.1,
-        "price": 0.9
-    })));
     // Expect error as PIZZA balance is 0
-    assert! (rc.0.is_server_error(), "!buy success but should be error: {}", rc.1);
+    check_set_price_fails(&mm, "PIZZA", "BEER");
+    // Address has enough BEER, but doesn't have ETH, so setprice call should fail because maker will not have gas to spend ETH taker payment.
+    check_set_price_fails(&mm, "BEER", "ETH");
+    // Address has enough BEER, but doesn't have ETH, so setprice call should fail because maker will not have gas to spend ERC20 taker payment.
+    check_set_price_fails(&mm, "BEER", "JST");
 
-    // issue sell request
-    let rc = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "sell",
-        "base": "PIZZA",
-        "rel": "BEER",
-        "basevolume": 0.1,
-        "price": 0.9
-    })));
     // Expect error as PIZZA balance is 0
-    assert! (rc.0.is_server_error(), "!sell success but should be error: {}", rc.1);
+    check_buy_fails(&mm, "BEER", "PIZZA");
+    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ETH maker payment.
+    check_buy_fails(&mm, "ETH", "BEER");
+    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ERC20 maker payment.
+    check_buy_fails(&mm, "JST", "BEER");
+
+    // Expect error as PIZZA balance is 0
+    check_sell_fails(&mm, "BEER", "PIZZA");
+    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ETH maker payment.
+    check_sell_fails(&mm, "ETH", "BEER");
+    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ERC20 maker payment.
+    check_sell_fails(&mm, "JST", "BEER");
 }
 
 #[test]

@@ -483,6 +483,13 @@ impl MakerSwap {
             ));
         };
 
+        if let Err(e) = self.taker_coin.can_i_spend_other_payment().wait() {
+            return Ok((
+                Some(MakerSwapCommand::Finish),
+                vec![MakerSwapEvent::StartFailed(ERRL!("!can_i_spend_other_payment {}", e))],
+            ));
+        };
+
         let lock_duration = lp_atomic_locktime(self.maker_coin.ticker(), self.taker_coin.ticker());
         let (maker_payment_confirmations, taker_payment_confirmations) = payment_confirmations(&self.maker_coin, &self.taker_coin);
         let mut rng = rand::thread_rng();
@@ -987,6 +994,13 @@ impl TakerSwap {
                 vec![TakerSwapEvent::StartFailed(ERRL!("{}", e))],
             ))
         }
+
+        if let Err(e) = self.maker_coin.can_i_spend_other_payment().wait() {
+            return Ok((
+                Some(TakerSwapCommand::Finish),
+                vec![TakerSwapEvent::StartFailed(ERRL!("!can_i_spend_other_payment {}", e))],
+            ));
+        };
 
         let lock_duration = lp_atomic_locktime(self.maker_coin.ticker(), self.taker_coin.ticker());
         let (maker_payment_confirmations, taker_payment_confirmations) = payment_confirmations(&self.maker_coin, &self.taker_coin);
