@@ -394,10 +394,10 @@ impl MarketCoinOps for EthCoin {
     }
 }
 
-/// We can use a shared nonce lock for all ETH coins.
-/// It's highly likely that we won't experience any issues with it as we won't need to send "a lot" of transactions concurrently.
-/// For ETH it makes even more sense because different ERC20 tokens can be running on same ETH blockchain.
-/// So we would need to handle shared locks anyway.
+// We can use a shared nonce lock for all ETH coins.
+// It's highly likely that we won't experience any issues with it as we won't need to send "a lot" of transactions concurrently.
+// For ETH it makes even more sense because different ERC20 tokens can be running on same ETH blockchain.
+// So we would need to handle shared locks anyway.
 lazy_static! {static ref NONCE_LOCK: Mutex<()> = Mutex::new(());}
 
 type EthTxFut = Box<Future<Item=SignedEthTx, Error=String> + Send + 'static>;

@@ -96,7 +96,6 @@ use tokio_core::reactor::Remote;
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
 pub use self::lp::{_bits256 as bits256};
-use crate::for_c::log_stacktrace;
 
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod os {include! ("c_headers/OS_portable.rs");}

@@ -687,6 +687,10 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
             &fomat! ("Warning, coin " (ticker) " is used without a corresponding configuration."));
     }
 
+    if coins_en["mm2"].is_null() && req["mm2"].is_null() {
+        return ERR!("mm2 param is not set neither in coins config nor enable request, assuming that coin is not supported");
+    }
+
     let c_ticker = try_s! (CString::new (ticker));
     let rpcport = match coins_en["rpcport"].as_u64() {
         Some (port) if port > 0 && port < u16::max_value() as u64 => port as u16,
@@ -992,7 +996,7 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     let default_coins = ["BTC", "KMD"];
 
     for &ticker in default_coins.iter() {
-        try_s! (lp_coininit (ctx, ticker, &json!({})));
+        try_s! (lp_coininit (ctx, ticker, &json!({"mm2":1})));
     }
 
     Ok(())

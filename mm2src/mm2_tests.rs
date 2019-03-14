@@ -26,6 +26,7 @@ fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> String {
         "urls": urls,
         // Dev chain swap contract address
         "swap_contract_address": "0xa09ad3cd7e96586ebd05a2607ee56b56fb2db8fd",
+        "mm2": 1,
     })));
     assert_eq! (native.0, StatusCode::OK, "'enable' failed: {}", native.1);
     native.1
@@ -544,6 +545,7 @@ fn test_rpc_password_from_json() {
         "method": "electrum",
         "coin": "BEER",
         "urls": ["electrum1.cipig.net:10022"],
+        "mm2": 1,
     })));
 
     // electrum call must fail if invalid password is provided
@@ -554,6 +556,7 @@ fn test_rpc_password_from_json() {
         "method": "electrum",
         "coin": "BEER",
         "urls": ["electrum1.cipig.net:10022"],
+        "mm2": 1,
     })));
 
     // electrum call must be successful with RPC password from config
@@ -564,6 +567,7 @@ fn test_rpc_password_from_json() {
         "method": "electrum",
         "coin": "PIZZA",
         "urls": ["electrum1.cipig.net:10022"],
+        "mm2": 1,
     })));
 
     // electrum call must be successful with RPC password from config

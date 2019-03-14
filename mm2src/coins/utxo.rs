@@ -38,7 +38,6 @@ use serde_json::{self as json, Value as Json};
 use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
 use std::borrow::Cow;
-use std::convert::AsMut;
 use std::ffi::CStr;
 use std::ops::Deref;
 use std::str::FromStr;
@@ -51,14 +50,6 @@ pub use chain::Transaction as UtxoTx;
 use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, ElectrumClient, ElectrumClientImpl, NativeClient};
 use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, Transaction, TransactionEnum, TransactionFut, TransactionDetails};
 use common::SATOSHIDEN;
-
-/// Clones slice into fixed size array
-/// https://stackoverflow.com/a/37682288/8707622
-fn clone_into_array<A: Default + AsMut<[T]>, T: Clone>(slice: &[T]) -> A {
-    let mut a = Default::default();
-    <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
-    a
-}
 
 impl Transaction for UtxoTx {
     fn tx_hex(&self) -> Vec<u8> {
@@ -370,7 +361,7 @@ macro_rules! true_or_err {
 }
 
 impl UtxoCoin {
-    fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>, redeem_script: Bytes) -> TransactionFut {
+    fn send_outputs_from_my_address(&self, outputs: Vec<TransactionOutput>) -> TransactionFut {
         let arc = self.clone();
         let utxo_lock = MutexGuardWrapper(try_fus!(UTXO_LOCK.lock()));
         let unspent_fut = self.rpc_client.list_unspent_ordered(&self.my_address);
@@ -534,7 +525,7 @@ impl SwapOps for UtxoCoin {
             value: amount,
             script_pubkey: Builder::build_p2pkh(&address.hash).to_bytes()
         };
-        self.send_outputs_from_my_address(vec![output], vec![].into())
+        self.send_outputs_from_my_address(vec![output])
     }
 
     fn send_maker_payment(
@@ -554,7 +545,7 @@ impl SwapOps for UtxoCoin {
             value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
         };
-        self.send_outputs_from_my_address(vec![output], redeem_script.into())
+        self.send_outputs_from_my_address(vec![output])
     }
 
     fn send_taker_payment(
@@ -574,7 +565,7 @@ impl SwapOps for UtxoCoin {
             value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
         };
-        self.send_outputs_from_my_address(vec![output], redeem_script.into())
+        self.send_outputs_from_my_address(vec![output])
     }
 
     fn send_maker_spends_taker_payment(

@@ -40,7 +40,7 @@ use crate::lp_swap::{MakerSwap, run_maker_swap, TakerSwap, run_taker_swap};
 /// Temporary kludge, improving readability of the not-yet-fully-ported code. Should be removed eventually.
 macro_rules! c2s {($cs: expr) => {unwrap!(CStr::from_ptr($cs.as_ptr()).to_str())}}
 
-#[link="c"]
+#[link(name="c")]
 extern {
     fn printf(_: *const libc::c_char, ...) -> libc::c_int;
 }
