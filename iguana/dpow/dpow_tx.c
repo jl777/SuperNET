@@ -176,21 +176,15 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     int32_t i; struct dpow_block *bp = 0;
     for (i = 0; i < dp->maxblocks; i++) 
     {
-        if ( dp->blocks[i] != 0 )
-        {
-            if ( height == dp->blocks[i]->height )
-            {
-                fprintf(stderr, "FOUND DP: symbol.%s height.%i dp_height.%i\n",dp->symbol, height, dp->blocks[i]->height);
-                return(bp);
-            }
-        }
+        if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
+            return(bp);
     }
     return(bp);
 }
 
 int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
 {
-    int32_t i; struct dpow_block *bp = 0;
+    int32_t i;
     for (i = 0; i < dp->maxblocks; i++) 
     {
         if ( dp->blocks[i] == 0 )
@@ -198,6 +192,20 @@ int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
     }
     return(0);
 }
+
+/* maybe this is better not sure... 
+int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i; uint32_t i,r;
+    while ( 1 )
+    {
+        OS_randombytes((uint8_t *)&r,sizeof(r));
+        i = r % dp->maxblocks;
+        if ( dp->blocks[i] == 0 )
+            break;
+    }
+    return(0);
+}*/
 
 int32_t dpow_voutstandard(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
