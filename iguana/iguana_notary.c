@@ -58,6 +58,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
+#if STAKED
 int8_t is_STAKED(const char *chain_name) 
 {
     int8_t ret;
@@ -71,6 +72,7 @@ int8_t is_STAKED(const char *chain_name)
         ret = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
     return(ret);
 };
+#endif
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
@@ -82,11 +84,13 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
         int supressfreq = DPOW_CHECKPOINTFREQ;
+#if STAKED
         if ( is_STAKED(dp->symbol) != 0 )
         {
             dp->minsigs = Notaries_minsigs;
             supressfreq = 3;
         }
+#endif        
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
