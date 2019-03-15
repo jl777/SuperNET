@@ -300,7 +300,7 @@ void dpow_statemachinestart(void *ptr)
         bp = calloc(1,sizeof(*bp));
         blockindex = dpow_blockfind(myinfo,dp);
         dp->blocks[blockindex] = bp;
-        //printf("allocate bp for %s ht.%d -> %s\n",src->symbol,checkpoint.blockhash.height,dest->symbol);
+        printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",src->symbol,checkpoint.blockhash.height,dest->symbol);
         //Numallocated++;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;

@@ -176,8 +176,12 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     int32_t i; struct dpow_block *bp = 0;
     for (i = 0; i < dp->maxblocks; i++) 
     {
-        if ( height == dp->blocks[i]->height )
-            return(bp);
+        if ( dp->blocks[i] != 0 )
+        {
+            fprintf(stderr, "symbol.%s height.%i dp_height.%i\n",dp->symbol, height, dp->blocks[i]->height);
+            if ( height == dp->blocks[i]->height )
+                return(bp);
+        }
     }
     return(0);
 }
