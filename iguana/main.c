@@ -797,7 +797,6 @@ void dpow_loop(void *arg)
             }
             else if ( myinfo->numdpows > 1 )
             {
-                fprintf(stderr, "doing coin.%i\n", counter % myinfo->numdpows);
                 iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
                 endmilli = startmilli + 30;
             }
