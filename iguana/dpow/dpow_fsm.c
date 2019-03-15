@@ -324,6 +324,7 @@ void dpow_statemachinestart(void *ptr)
                     bp->finished = 0xffffffff;
                     free(ptr);
                     free_json(ratified);
+                    bp->finished = 0xffffffff;
                     return;
                 }
                 for (i=0; i<numratified; i++)
@@ -436,6 +437,7 @@ void dpow_statemachinestart(void *ptr)
             bp->finished = 0xffffffff;
             free(ptr);
             dp->ratifying -= bp->isratify;
+            bp->finished = 0xffffffff;
             exit(-1);
             return;
         }
@@ -447,6 +449,7 @@ void dpow_statemachinestart(void *ptr)
         bp->finished = 0xffffffff;
         free(ptr);
         dp->ratifying -= bp->isratify;
+        bp->finished = 0xffffffff;
         return;
     }
     bp->myind = myind;
@@ -479,28 +482,28 @@ void dpow_statemachinestart(void *ptr)
     }
     else
     {
-      if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 )
-      {
-        if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
-          {
-            // lock the dest utxo if destination coin is KMD.
-            if (dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout) != 0)
-              printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-            else
-              printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
-          }
-      }
-      if ( dpow_haveutxo(myinfo,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") > 0 )
-      {
-        if ( ( strcmp("KMD",src->symbol) == 0 ) && (ep->src.prev_vout != -1) )
+        if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 )
         {
-          // lock the src coin selected utxo if the source coin is KMD.
-          if (dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
-            printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-          else
-            printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+            if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
+            {
+                // lock the dest utxo if destination coin is KMD.
+                if (dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout) != 0)
+                    printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+                else
+                    printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+             }
         }
-      }
+        if ( dpow_haveutxo(myinfo,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") > 0 )
+        {
+            if ( ( strcmp("KMD",src->symbol) == 0 ) && (ep->src.prev_vout != -1) )
+            {
+                // lock the src coin selected utxo if the source coin is KMD.
+                if (dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
+                    printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+                else
+                    printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+            }
+        }
         if ( bp->isratify != 0 )
         {
             bp->notaries[myind].ratifysrcutxo = ep->src.prev_hash;
@@ -570,6 +573,9 @@ void dpow_statemachinestart(void *ptr)
                 src_or_dest = 0;
             else src_or_dest = 1;
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
+            // This is no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks. 
+            //if ( extralen == -1 )
+            //    break;
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
@@ -616,9 +622,92 @@ void dpow_statemachinestart(void *ptr)
     printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
+    // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
+    // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
+    int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0, firstloop = 0;
+    char desttx[32768] = {0}, srctx[32768] = {0};
+    while ( destnotarized == 0 || srcnotarized == 0 )
+    {
+        // If the round was sucessful and both notarization transactions were created successfully we will make sure they are in the chain.
+        if ( bits256_cmp(bp->desttxid,zero) == 0 )
+            break;
+        if ( bits256_cmp(bp->srctxid,zero) == 0 )
+            break;
+        int8_t send_dest = 0, send_src = 0; char rettx[32768] = {0};
+        if ( firstloop == 0 )
+        {
+            sleep((rand() % (120 - 60)) + 60); 
+            firstloop = 1;
+        }
+        // random sleep here so all nodes are checking/rebroadcasting at diffrent times. 
+        sleep((rand() % (77 - 33)) + 33);
+        
+        // get the confirms for desttxid 
+        if ( destnotarized == 0 )
+        {
+            if ( (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
+            {
+                if ( desttx[0] == 0 && rettx[0] != 0 )
+                {
+                    // save the transaction once we fetch it once, as its possible we wil not be able to always see it.
+                    memcpy(desttx, rettx, strlen(rettx)+1);
+                }
+                if ( dest_confs > 2 )
+                {
+                    // tx is notarized. or it has 100+ raw confirms. Its now final and cannot be lost, no longer need to check.
+                    fprintf(stderr, "[dest.%s] txid.%s is notarized. confirms.%d srcnotarized.%i\n",dp->dest, bits256_str(str,bp->desttxid), dest_confs, srcnotarized);
+                    destnotarized = 1;
+                }
+                else if ( dest_confs == 0 )
+                {
+                    // not confirmed, rebroadcast it.
+                    fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n",dp->dest, bits256_str(str,bp->desttxid));
+                    if ( desttx[0] != 0 )
+                        send_dest = 1;
+                }
+            } 
+            else if ( desttx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
+            {
+                fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->dest, bits256_str(str,bp->desttxid));
+                send_dest = 1;
+            } else fprintf(stderr, "[%s] get raw transaction error\n", dp->dest);
+            if ( send_dest == 1 )
+                dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
+        }
+        
+        // get the confirms for srctxid
+        memset(rettx,0,sizeof(rettx)); // zero out rettx!
+        if ( srcnotarized == 0 )
+        {
+            if ( (src_confs= dpow_txconfirms(myinfo, bp->srccoin, bp->srctxid, rettx)) != -1 )
+            {
+                if ( srctx[0] == 0 && rettx[0] != 0 )
+                {
+                    memcpy(srctx, rettx, strlen(rettx)+1);
+                }
+                if ( src_confs > 2 )
+                {
+                    fprintf(stderr, "[src.%s] txid.%s is notarized. confirms.%i destnotarized.%i\n", dp->symbol, bits256_str(str,bp->srctxid), src_confs, destnotarized);
+                    srcnotarized = 1;
+                }
+                else if ( src_confs == 0 )
+                {
+                    fprintf(stderr, "[%s] txid.%s is not confirmed rebroadcasting....\n", dp->symbol, bits256_str(str,bp->srctxid));
+                    if ( srctx[0] != 0 )
+                        send_src = 1;
+                }
+            }
+            else if ( srctx[0] != 0 )
+            {
+                fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->symbol, bits256_str(str,bp->srctxid));
+                send_src = 1;
+            } else fprintf(stderr, "[%s] get raw transaction error\n", dp->symbol);
+            if ( send_src == 1 )
+                dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
+        }
+    }
     bp->state = 0xffffffff;
-
-end:
+end: 
     // unlock the dest utxo on KMD.
     if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
     {

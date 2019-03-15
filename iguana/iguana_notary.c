@@ -58,6 +58,20 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
+int8_t is_STAKED(const char *chain_name) 
+{
+    int8_t ret;
+    if ( chain_name[0] == 0 )
+        return(0);
+    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) ) 
+        ret = 1; // These chains are allowed coin emissions.
+    else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
+        ret = 2; // These chains have no speical rules at all.
+    else if ( (strcmp(chain_name, "TEST") == 0) || (strncmp(chain_name, "TEST", 4) == 0) )
+        ret = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
+    return(ret);
+};
+
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
@@ -67,10 +81,16 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+DPOW_CHECKPOINTFREQ )
+        int supressfreq = DPOW_CHECKPOINTFREQ;
+        if ( is_STAKED(dp->symbol) != 0 )
+        {
+            dp->minsigs = Notaries_minsigs;
+            supressfreq = 3;
+        }
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
-            //fprintf(stderr,"suppress %s -> KMD\n",dp->symbol);
+            //fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
