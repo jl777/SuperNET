@@ -778,6 +778,36 @@ void jumblr_loop(void *ptr)
     }
 }
 
+void dpow_loop(void *arg)
+{
+    struct supernet_info *myinfo = arg; double startmilli,endmilli;
+    int32_t counter = 0;
+    printf("start dpow loop\n");
+    while ( 1 )
+    {
+        counter++;
+        startmilli = OS_milliseconds();
+        endmilli = startmilli + 1000;
+        if ( myinfo->IAMNOTARY != 0 )
+        {
+            if ( myinfo->numdpows == 1 )
+            {
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
+                endmilli = startmilli + 100;
+            }
+            else if ( myinfo->numdpows > 1 )
+            {
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
+                endmilli = startmilli + 30;
+            }
+        }
+        if ( counter > 1000000 )
+            counter = 0;
+        while ( OS_milliseconds() < endmilli )
+            usleep(10000);
+    }
+}
+
 void iguana_launchdaemons(struct supernet_info *myinfo)
 {
     int32_t i; char *helperargs,helperstr[512];
@@ -2160,36 +2190,6 @@ void komodo_REVS_merge(char *str,char *str2)
         }
     }
     getchar();
-}
-
-void dpow_loop(void *arg)
-{
-    struct supernet_info *myinfo = arg; double startmilli,endmilli;
-    int32_t counter = 0;
-    printf("start dpow loop\n");
-    while ( 1 )
-    {
-        counter++;
-        startmilli = OS_milliseconds();
-        endmilli = startmilli + 1000;
-        if ( myinfo->IAMNOTARY != 0 )
-        {
-            if ( myinfo->numdpows == 1 )
-            {
-                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
-                endmilli = startmilli + 100;
-            }
-            else if ( myinfo->numdpows > 1 )
-            {
-                iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
-                endmilli = startmilli + 30;
-            }
-        }
-        if ( counter > 1000000 )
-            counter = 0;
-        while ( OS_milliseconds() < endmilli )
-            usleep(10000);
-    }
 }
 
 int32_t komodo_initjson(char *fname);
