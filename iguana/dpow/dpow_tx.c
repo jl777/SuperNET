@@ -177,7 +177,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     for (i = 0; i < dp->maxblocks; i++) 
     {
         if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
-            return(bp);
+            return(dp->blocks[i]);
     }
     return(bp);
 }
