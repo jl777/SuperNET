@@ -171,7 +171,7 @@ int32_t komodo_initjson2(char *fstr)
         free_json(argjson);
     }
     portable_mutex_unlock(&notaries_mutex);
-    return(retval)
+    return(retval);
 }
 
 int32_t komodo_initjson(char *fname)
