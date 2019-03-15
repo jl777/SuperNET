@@ -60,16 +60,16 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 int8_t is_STAKED(const char *chain_name) 
 {
-    int8_t STAKED;
+    int8_t ret;
     if ( chain_name[0] == 0 )
         return(0);
     if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) ) 
-        STAKED = 1; // These chains are allowed coin emissions.
+        ret = 1; // These chains are allowed coin emissions.
     else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
-        STAKED = 2; // These chains have no speical rules at all.
+        ret = 2; // These chains have no speical rules at all.
     else if ( (strcmp(chain_name, "TEST") == 0) || (strncmp(chain_name, "TEST", 4) == 0) )
-        STAKED = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
-    return(STAKED);
+        ret = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
+    return(ret);
 };
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
