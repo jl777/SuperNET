@@ -177,7 +177,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     for (i = 0; i < dp->maxblocks; i++) 
     {
         if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
-            return(bp);
+            return(dp->blocks[i]);
     }
     return(bp);
 }
@@ -190,7 +190,7 @@ int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( dp->blocks[i] == 0 )
             return(i);
     }
-    return(0);
+    return(-1);
 }
 
 /* maybe this is better not sure... 
@@ -204,7 +204,7 @@ int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( dp->blocks[i] == 0 )
             break;
     }
-    return(0);
+    return(-1);
 }*/
 
 int32_t dpow_voutstandard(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
