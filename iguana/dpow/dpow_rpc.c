@@ -113,118 +113,100 @@ char *Notaries_seeds[65];
 
 int32_t komodo_initjson(char *fname)
 {
-    char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; uint16_t port; int32_t i,n,num,retval = -1;
-    //for (i=0; i<Notaries_numseeds; i++)
-    //    Notaries_seeds[i] = seeds[i];
+    char *fstr; long fsize;  int32_t retval = -1;
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
-        if ( (argjson= cJSON_Parse(fstr)) != 0 )
-        {
-            if ( (port= juint(argjson,"port")) != 0 )
-                Notaries_port = port;
-            if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
-                Notaries_BTCminsigs = num;
-            Notaries_minsigs = juint(argjson,"minsigs");
-            if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
-            {
-                for (i=0; i<n&&i<64; i++)
-                {
-                    Notaries_seeds[i] = clonestr(jstri(array,i));
-                    printf("%s ",Notaries_seeds[i]);
-                }
-                Notaries_numseeds = i;
-                printf("Notaries_numseeds.%d\n",Notaries_numseeds);
-            }
-            if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
-            {
-                for (i=0; i<n&&i<64; i++)
-                {
-                    item = jitem(array,i);
-                    field = jfieldname(item);
-                    if ( (hexstr= jstr(item,field)) != 0 && is_hexstr(hexstr,0) == 66 )
-                    {
-                        Notaries_elected[i][0] = clonestr(field);
-                        Notaries_elected[i][1] = clonestr(hexstr);
-                        //printf("%d of %d: %s %s\n",i,n,field,hexstr);
-                    }
-                    else
-                    {
-                        printf("couldnt find (%s) in %s or non-hex (%s)\n",field,jprint(item,0),hexstr!=0?hexstr:"");
-                        break;
-                    }
-                }
-                if ( i == n )
-                {
-                    Notaries_num = n;
-                    retval = 0;
-                    printf("numnotaries %d, port.%d minsigs.%d BTCminsigs.%d\n",Notaries_num,Notaries_port,Notaries_BTCminsigs,Notaries_minsigs);
-                }
-            }
-            free_json(argjson);
-        }
+        retval= komodo_initjson2(fstr)
         free(fstr);
     }
     return(retval);
 }
 
+int32_t komodo_initjson2(char *fstr)
+{
+    static portable_mutex_t notaries_mutex; static int32_t initflag;
+    if ( initflag == 0 )
+    {
+        portable_mutex_init(&notaries_mutex);
+        initflag = 1;
+    }
+    portable_mutex_lock(&notaries_mutex);
+    char *field,*hexstr; cJSON *array,*item; uint16_t port; int32_t i,n,numretval = -1;;
+    if ( (argjson= cJSON_Parse(fstr)) != 0 )
+    {
+        // memset arrays to 0! 
+        memset(Notaries_seeds,0,sizeof(Notaries_seeds));
+        memset(Notaries_elected,0,sizeof(Notaries_elected));
+        
+        if ( (port= juint(argjson,"port")) != 0 )
+            Notaries_port = port;
+        if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
+            Notaries_BTCminsigs = num;
+        Notaries_minsigs = juint(argjson,"minsigs");
+        if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
+        {
+            for (i=0; i<n&&i<64; i++)
+            {
+                Notaries_seeds[i] = clonestr(jstri(array,i));
+                printf("%s ",Notaries_seeds[i]);
+            }
+            Notaries_numseeds = i;
+            printf("Notaries_numseeds.%d\n",Notaries_numseeds);
+        }
+        if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
+        {
+            for (i=0; i<n&&i<64; i++)
+            {
+                item = jitem(array,i);
+                field = jfieldname(item);
+                if ( (hexstr= jstr(item,field)) != 0 && is_hexstr(hexstr,0) == 66 )
+                {
+                    Notaries_elected[i][0] = clonestr(field);
+                    Notaries_elected[i][1] = clonestr(hexstr);
+                    //printf("%d of %d: %s %s\n",i,n,field,hexstr);
+                }
+                else
+                {
+                    printf("couldnt find (%s) in %s or non-hex (%s)\n",field,jprint(item,0),hexstr!=0?hexstr:"");
+                    break;
+                }
+            }
+            if ( i == n )
+            {
+                Notaries_num = n;
+                retval = 0;
+                printf("numnotaries %d, port.%d minsigs.%d BTCminsigs.%d\n",Notaries_num,Notaries_port,Notaries_BTCminsigs,Notaries_minsigs);
+            }
+        }
+        free_json(argjson);
+    }
+    portable_mutex_unlock(&notaries_mutex);
+}
+
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
-    int32_t i; //,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
+    int32_t i,num=-1, didinit=0; struct iguana_info *coin; char params[64],*retstr; cJSON *retjson;
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+    {
+        if ( coin->FULLNODE < 0 )
+        {
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getiguanajson","")) != 0 )
+            {
+                printf("NOTARIES retstr.%s\n", retstr);
+                if ( komodo_initjson2(retstr) < 0 )
+                    printf("init notaries failed!"\n");
+                free(retstr);
+            }
+        }
+    }
     if ( Notaries_num > 0 )
     {
         for (i=0; i<Notaries_num; i++)
             decode_hex(pubkeys[i],33,Notaries_elected[i][1]);
         return(Notaries_num);
     } else return(-1);
-    /*if ( (coin= iguana_coinfind(symbol)) != 0 )
-    {
-        if ( height < 0 )
-        {
-            if ( (retjson= dpow_getinfo(SuperNET_MYINFO(0),coin)) != 0 )
-            {
-                height = jint(retjson,"blocks") - 1;
-                free_json(retjson);
-//printf("komodo_notaries height.%d\n",height);
-            }
-        }
-        if ( height >= 180000 )
-        {
-            for (i=0; i<sizeof(Notaries_elected)/sizeof(*Notaries_elected); i++)
-                decode_hex(pubkeys[i],33,(char *)Notaries_elected[i][1]);
-            return(i);
-        }
-        if ( coin->FULLNODE < 0 )
-        {
-            sprintf(params,"[\"%d\"]",height);
-            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"notaries",params)) != 0 )
-            {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-//printf("%s\n",retstr);
-                    if ( (array= jarray(&num,retjson,"notaries")) != 0 )
-                    {
-                        if ( num > 64 )
-                        {
-                            printf("warning: numnotaries.%d? > 64?\n",num);
-                            num = 64;
-                        }
-                        for (i=0; i<num; i++)
-                        {
-                            item = jitem(array,i);
-                            if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 66 )
-                                decode_hex(pubkeys[i],33,pubkeystr);
-                            else printf("error i.%d of %d (%s)\n",i,num,pubkeystr!=0?pubkeystr:"");
-                        }
-                        //printf("notaries.[%d] <- ht.%d\n",num,height);
-                    }
-                    free_json(retjson);
-                }
-                free(retstr);
-            }
-        }
-    }
-    //printf("komodo_notaries returns.%d\n",num);
-    return(num);*/
+    printf("staked_notaries returns.%d\n",num);
+    return(num);
 }
 
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
