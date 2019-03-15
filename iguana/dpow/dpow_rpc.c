@@ -111,57 +111,75 @@ int32_t Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
 uint16_t Notaries_port = DPOW_SOCKPORT;
 char *Notaries_seeds[65];
 
+int32_t komodo_initjson2(char *fstr)
+{
+    char *field,*hexstr; cJSON *array,*item,*argjson; uint16_t port; int32_t i,n,num,retval = -1;
+    static portable_mutex_t notaries_mutex; static int32_t initflag;
+    if ( initflag == 0 )
+    {
+        portable_mutex_init(&notaries_mutex);
+        initflag = 1;
+    }
+    
+    portable_mutex_lock(&notaries_mutex);
+    if ( (argjson= cJSON_Parse(fstr)) != 0 )
+    {
+        // memset arrays to 0! 
+        memset(Notaries_seeds,0,sizeof(Notaries_seeds));
+        memset(Notaries_elected,0,sizeof(Notaries_elected));
+        
+        if ( (port= juint(argjson,"port")) != 0 )
+            Notaries_port = port;
+        if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
+            Notaries_BTCminsigs = num;
+        Notaries_minsigs = juint(argjson,"minsigs");
+        if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
+        {
+            for (i=0; i<n&&i<64; i++)
+            {
+                Notaries_seeds[i] = clonestr(jstri(array,i));
+                //printf("%s ",Notaries_seeds[i]);
+            }
+            Notaries_numseeds = i;
+            //printf("Notaries_numseeds.%d\n",Notaries_numseeds);
+        }
+        if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
+        {
+            for (i=0; i<n&&i<64; i++)
+            {
+                item = jitem(array,i);
+                field = jfieldname(item);
+                if ( (hexstr= jstr(item,field)) != 0 && is_hexstr(hexstr,0) == 66 )
+                {
+                    Notaries_elected[i][0] = clonestr(field);
+                    Notaries_elected[i][1] = clonestr(hexstr);
+                    //printf("%d of %d: %s %s\n",i,n,field,hexstr);
+                }
+                else
+                {
+                    printf("couldnt find (%s) in %s or non-hex (%s)\n",field,jprint(item,0),hexstr!=0?hexstr:"");
+                    break;
+                }
+            }
+            if ( i == n )
+            {
+                Notaries_num = n;
+                retval = 0;
+                //printf("numnotaries %d, port.%d minsigs.%d BTCminsigs.%d\n",Notaries_num,Notaries_port,Notaries_BTCminsigs,Notaries_minsigs);
+            }
+        }
+        free_json(argjson);
+    }
+    portable_mutex_unlock(&notaries_mutex);
+    return(retval);
+}
+
 int32_t komodo_initjson(char *fname)
 {
-    char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; uint16_t port; int32_t i,n,num,retval = -1;
-    //for (i=0; i<Notaries_numseeds; i++)
-    //    Notaries_seeds[i] = seeds[i];
+    char *fstr; long fsize;  int32_t retval = -1;
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
-        if ( (argjson= cJSON_Parse(fstr)) != 0 )
-        {
-            if ( (port= juint(argjson,"port")) != 0 )
-                Notaries_port = port;
-            if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
-                Notaries_BTCminsigs = num;
-            Notaries_minsigs = juint(argjson,"minsigs");
-            if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
-            {
-                for (i=0; i<n&&i<64; i++)
-                {
-                    Notaries_seeds[i] = clonestr(jstri(array,i));
-                    printf("%s ",Notaries_seeds[i]);
-                }
-                Notaries_numseeds = i;
-                printf("Notaries_numseeds.%d\n",Notaries_numseeds);
-            }
-            if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
-            {
-                for (i=0; i<n&&i<64; i++)
-                {
-                    item = jitem(array,i);
-                    field = jfieldname(item);
-                    if ( (hexstr= jstr(item,field)) != 0 && is_hexstr(hexstr,0) == 66 )
-                    {
-                        Notaries_elected[i][0] = clonestr(field);
-                        Notaries_elected[i][1] = clonestr(hexstr);
-                        //printf("%d of %d: %s %s\n",i,n,field,hexstr);
-                    }
-                    else
-                    {
-                        printf("couldnt find (%s) in %s or non-hex (%s)\n",field,jprint(item,0),hexstr!=0?hexstr:"");
-                        break;
-                    }
-                }
-                if ( i == n )
-                {
-                    Notaries_num = n;
-                    retval = 0;
-                    printf("numnotaries %d, port.%d minsigs.%d BTCminsigs.%d\n",Notaries_num,Notaries_port,Notaries_BTCminsigs,Notaries_minsigs);
-                }
-            }
-            free_json(argjson);
-        }
+        retval = komodo_initjson2(fstr);
         free(fstr);
     }
     return(retval);
@@ -169,62 +187,30 @@ int32_t komodo_initjson(char *fname)
 
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
-    int32_t i; //,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
+    int32_t i,num=-1, didinit=0; struct iguana_info *coin; char params[64],*retstr; cJSON *retjson;
+#if STAKED    
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+    {
+        if ( coin->FULLNODE < 0 )
+        {
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getiguanajson","")) != 0 )
+            {
+                //printf("NOTARIES retstr.%s\n", retstr);
+                if ( komodo_initjson2(retstr) < 0 )
+                    printf("init notaries failed!\n");
+                free(retstr);
+            }
+        }
+    }
+#endif
     if ( Notaries_num > 0 )
     {
         for (i=0; i<Notaries_num; i++)
             decode_hex(pubkeys[i],33,Notaries_elected[i][1]);
         return(Notaries_num);
     } else return(-1);
-    /*if ( (coin= iguana_coinfind(symbol)) != 0 )
-    {
-        if ( height < 0 )
-        {
-            if ( (retjson= dpow_getinfo(SuperNET_MYINFO(0),coin)) != 0 )
-            {
-                height = jint(retjson,"blocks") - 1;
-                free_json(retjson);
-//printf("komodo_notaries height.%d\n",height);
-            }
-        }
-        if ( height >= 180000 )
-        {
-            for (i=0; i<sizeof(Notaries_elected)/sizeof(*Notaries_elected); i++)
-                decode_hex(pubkeys[i],33,(char *)Notaries_elected[i][1]);
-            return(i);
-        }
-        if ( coin->FULLNODE < 0 )
-        {
-            sprintf(params,"[\"%d\"]",height);
-            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"notaries",params)) != 0 )
-            {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-//printf("%s\n",retstr);
-                    if ( (array= jarray(&num,retjson,"notaries")) != 0 )
-                    {
-                        if ( num > 64 )
-                        {
-                            printf("warning: numnotaries.%d? > 64?\n",num);
-                            num = 64;
-                        }
-                        for (i=0; i<num; i++)
-                        {
-                            item = jitem(array,i);
-                            if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 66 )
-                                decode_hex(pubkeys[i],33,pubkeystr);
-                            else printf("error i.%d of %d (%s)\n",i,num,pubkeystr!=0?pubkeystr:"");
-                        }
-                        //printf("notaries.[%d] <- ht.%d\n",num,height);
-                    }
-                    free_json(retjson);
-                }
-                free(retstr);
-            }
-        }
-    }
-    //printf("komodo_notaries returns.%d\n",num);
-    return(num);*/
+    //printf("staked_notaries returns.%d\n",num);
+    return(num);
 }
 
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
@@ -285,7 +271,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,ui
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"MoMoMdata",buf)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
-            printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
+            //printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
             free(retstr);
         }
         usleep(1000);
@@ -293,17 +279,24 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,ui
     return(retjson);
 }
 
-
 int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsize,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth,uint16_t CCid,int32_t src_or_dest,struct dpow_block *bp)
 {
-    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson; int32_t kmdheight=0,hexlen=0,n=0; uint32_t paxwdcrc;
-    paxwdcrc = 0;
+    struct iguana_info *coin,*kmdcoin=0; char *retstr,*hexstr; cJSON *retjson,*infojson, *srcinfojson; int32_t kmdheight=0,hexlen=0,n=0,ppMoMheight=0; uint32_t paxwdcrc=0;
     if ( dpow_smallopreturn(bp->srccoin->symbol) == 0 || src_or_dest != 0 )
     {
         n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
         MoMdepth = (MoMdepth & 0xffff) | ((uint32_t)CCid<<16);
         n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-        if ( dpow_CCid(myinfo,bp->srccoin) != 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
+        /*if ( (srcinfojson= dpow_getinfo(myinfo,bp->srccoin)) != 0 )
+        {
+            // not needed CCid is passed to this function already, and we dont need the ppmomheight anymore!
+            CCid = juint(srcinfojson,"CCid");
+            if ( CCid > 1 )
+                ppMoMheight = jint(srcinfojson,"ppMoMheight");
+            free_json(srcinfojson);
+            //printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
+        } */
+        if ( CCid > 1 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -311,8 +304,16 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
+            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this, 
+            // the backup notary validation can be used to complete the import.
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-5,bp->CCid)) != 0 )
             {
+                /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
+                {
+                    // MoMoM returned NULL when after 2 MoM exist on the chain. 
+                    free_json(retjson);
+                    return(-1);
+                } */
                 if ( (hexstr= jstr(retjson,"data")) != 0 && (hexlen= (int32_t)strlen(hexstr)) > 0 && n+hexlen/2 <= hexsize )
                 {
                     hexlen >>= 1;
@@ -324,8 +325,8 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         }
         paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
         paxwdcrc |= (n & 0xff);
-        if ( hexlen > 0 )
-            printf("%s.ht.%d opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",bp->srccoin->symbol,bp->height,n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?((kmdcoin->lastbestheight/10)*10 - 5):-1,paxwdcrc);
+        //if ( hexlen > 0 )
+            //printf("%s.ht.%d opretlen.%d src_or_dest.%d dest.(%s) lastbest.%d paxwdcrc.%x\n",bp->srccoin->symbol,bp->height,n,src_or_dest,bp->destcoin->symbol,kmdcoin!=0?((kmdcoin->lastbestheight/10)*10 - 5):-1,paxwdcrc);
     }
     *paxwdcrcp = paxwdcrc;
     return(n);
@@ -384,39 +385,6 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
     }
     return(blockhash);
 }
-
-int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
-{
-    char buf[128],*retstr;
-    if ( coin->FULLNODE < 0 )
-    {
-        sprintf(buf,"false, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
-        {
-            //printf("RESULT.(%s)\n",retstr);
-            free(retstr);
-            return(1);
-        } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
-    }
-    return(0);
-}
-
-int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
-{
-    char buf[128],*retstr;
-    if ( coin->FULLNODE < 0 )
-    {
-        sprintf(buf,"true, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
-        {
-            //printf("RESULT.(%s)\n",retstr);
-            free(retstr);
-            return(1);
-        } //else printf("%s null retstr from (%s)n",coin->symbol,buf);
-    }
-    return(0);
-}
-
 
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
 {
@@ -506,6 +474,38 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
+int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+{
+    char buf[128],*retstr;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"false, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
+        {
+            //printf("RESULT.(%s)\n",retstr);
+            free(retstr);
+            return(1);
+        } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
+}
+
+int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+{
+    char buf[128],*retstr;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"true, [{\"txid\":\"%s\",\"vout\":%d}]", txid, vout);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"lockunspent",buf)) != 0 )
+        {
+            //printf("RESULT.(%s)\n",retstr);
+            free(retstr);
+            return(1);
+        } //else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
+}
+
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
 {
     char *retstr,*paramstr; cJSON *array;
@@ -528,6 +528,23 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         return(0);
     }
     return(retstr);
+}
+
+int32_t dpow_txconfirms(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid, char *rawtx)
+{
+    cJSON *txobj; int32_t confirms = 0, ret = 0;
+    if ( (txobj= dpow_gettransaction(myinfo, coin, txid)) != 0 )
+    {
+        memcpy(rawtx, jstr(txobj, "hex"), strlen(jstr(txobj, "hex"))+1);
+        if ( (confirms= juint(txobj, "confirmations")) != 0 )
+            ret = confirms;
+        else if ( confirms == 1 && juint(txobj, "rawconfirmations") > 100 ) 
+            ret = 100;
+        else
+            ret = 0;
+    } else ret = -1;
+    free_json(txobj);
+    return(ret);
 }
 
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
@@ -655,7 +672,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
             free_json(retjson);
         }
         //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
-	
+
 	/*if (coin->sapling != 0)
 		printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);*/
         free(paramstr);
@@ -750,7 +767,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
-        printf(">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
+        fprintf(stderr,">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
         free(paramstr);
         return(retstr);
     }

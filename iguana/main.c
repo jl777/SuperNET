@@ -778,10 +778,40 @@ void jumblr_loop(void *ptr)
     }
 }
 
+void dpow_loop(void *arg)
+{
+    struct supernet_info *myinfo = arg; double startmilli,endmilli;
+    int32_t counter = 0;
+    printf("start dpow loop\n");
+    while ( 1 )
+    {
+        counter++;
+        startmilli = OS_milliseconds();
+        endmilli = startmilli + 1000;
+        if ( myinfo->IAMNOTARY != 0 )
+        {
+            if ( myinfo->numdpows == 1 )
+            {
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
+                endmilli = startmilli + 100;
+            }
+            else if ( myinfo->numdpows > 1 )
+            {
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
+                endmilli = startmilli + 30;
+            }
+        }
+        if ( counter > 1000000 )
+            counter = 0;
+        while ( OS_milliseconds() < endmilli )
+            usleep(10000);
+    }
+}
+
 void iguana_launchdaemons(struct supernet_info *myinfo)
 {
     int32_t i; char *helperargs,helperstr[512];
-    if ( IGUANA_NUMHELPERS == 0 )//|| COMMANDLINE_ARGFILE != 0 )
+    /*if ( IGUANA_NUMHELPERS == 0 )//|| COMMANDLINE_ARGFILE != 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
@@ -789,12 +819,12 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         helperargs = clonestr(helperstr);
         printf("helper launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(0,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
-    }
+    } */
     if ( COMMANDLINE_ARGFILE == 0 )
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     // disable basilisk: OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
-    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_loop,(void *)myinfo);
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_psockloop,(void *)myinfo);
     mainloop(myinfo);
 }
@@ -2231,6 +2261,7 @@ void iguana_main(void *arg)
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
             elected = (char *)arg;
+            myinfo->nosplit = 1;
         }
     }
     if ( komodo_initjson(elected) < 0 )
@@ -2250,7 +2281,7 @@ void iguana_main(void *arg)
         return;
     }
     strcpy(myinfo->rpcsymbol,"BTCD");
-    iguana_urlinit(myinfo,ismainnet,usessl);
+    //iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->pending_mutex);
     portable_mutex_init(&myinfo->MoM_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
@@ -2274,9 +2305,9 @@ void iguana_main(void *arg)
     {
         if ( iguana_commandline(myinfo,arg) == 0 )
         {
-            iguana_helpinit(myinfo);
+            //iguana_helpinit(myinfo);
             //iguana_relays_init(myinfo);
-            basilisks_init(myinfo);
+            //basilisks_init(myinfo);
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
@@ -2290,7 +2321,8 @@ void iguana_main(void *arg)
     }
     else
     {
-        basilisks_init(myinfo);
+        //basilisks_init(myinfo);
+        
     }
     iguana_launchdaemons(myinfo);
 }

@@ -351,7 +351,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
                     memcpy(&serialized[len],sig,siglen);
                     len += siglen;
                     numsigs++;
-                } else printf("%s -> %s src_or_dest.%d Missing sig from k.%d\n",bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,k);
+                } //else printf("%s -> %s src_or_dest.%d Missing sig from k.%d\n",bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,k);
             } else serialized[len++] = 0; // usesigs=0 -> insert scriptlen = 0
 
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
@@ -624,8 +624,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         dpow_notarytx(myinfo,bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,pubkeys,numratified); // setcrcval
         signedtxid = dpow_notarytx(myinfo,bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,1,src_or_dest,pubkeys,numratified);
-        //if ( strcmp("GAME",coin->symbol) == 0 || strcmp("EMC2",coin->symbol) == 0 )
-        //    printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {
@@ -641,7 +639,17 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         {
                             bp->desttxid = txid;
                             dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
-                        } else bp->srctxid = txid;
+                        } else 
+                        {
+                            bp->srctxid = txid;
+#ifdef LOGTX
+                            FILE * fptr;
+                            fptr = fopen("/home/node/complete_notarizations", "a+");
+                            // SRC SRC_TXID DEST DEST_TXID HEIGHT
+                            fprintf(fptr, "%s %s %s\n", bp->srccoin->symbol,bp->srctxid,bp->destcoin->symbol,bp->desttxid,bp->height);
+                            fclose(fptr);
+#endif
+                        }
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
                         for (j=0; j<sizeof(srchash); j++)
