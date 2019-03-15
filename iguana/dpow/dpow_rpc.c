@@ -188,6 +188,7 @@ int32_t komodo_initjson(char *fname)
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
     int32_t i,num=-1, didinit=0; struct iguana_info *coin; char params[64],*retstr; cJSON *retjson;
+#if STAKED    
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
         if ( coin->FULLNODE < 0 )
@@ -201,6 +202,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             }
         }
     }
+#endif
     if ( Notaries_num > 0 )
     {
         for (i=0; i<Notaries_num; i++)
