@@ -812,7 +812,7 @@ void dpow_loop(void *arg)
 void iguana_launchdaemons(struct supernet_info *myinfo)
 {
     int32_t i; char *helperargs,helperstr[512];
-    /*(if ( IGUANA_NUMHELPERS == 0 )//|| COMMANDLINE_ARGFILE != 0 )
+    (if ( IGUANA_NUMHELPERS == 0 )//|| COMMANDLINE_ARGFILE != 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
@@ -825,7 +825,6 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     // disable basilisk: OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
-    */
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_loop,(void *)myinfo);
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_psockloop,(void *)myinfo);
     mainloop(myinfo);
