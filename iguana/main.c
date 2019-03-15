@@ -794,7 +794,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     // disable basilisk: OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
-    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
+    //OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_psockloop,(void *)myinfo);
     mainloop(myinfo);
 }
