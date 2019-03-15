@@ -296,6 +296,7 @@ void dpow_statemachinestart(void *ptr)
         kmdheight = dest->longestchain;
     }
     if ( (bp= dpow_heightfind(myinfo,dp, checkpoint.blockhash.height)) == 0 )
+    {
         bp = calloc(1,sizeof(*bp));
         blockindex = dpow_blockfind(myinfo,dp);
         dp->blocks[blockindex] = bp;
