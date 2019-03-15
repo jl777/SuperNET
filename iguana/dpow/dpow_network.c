@@ -2313,10 +2313,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                             else
                             {                             
                                 dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);.
-                                bp = dpow_heightfind(myinfo,dp,np->height);
-                                if ( bp != 0 )
-                                    fprintf(stderr, "found bp in network receive!\n");
-                                if ( bp != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
+                                if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
                                     char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
                                     if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
