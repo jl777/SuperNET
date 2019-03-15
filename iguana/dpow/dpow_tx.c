@@ -173,31 +173,39 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height)
 {
-    int32_t r,h,incr = 100000; struct dpow_block *bp = 0;
-    if ( height > dp->maxblocks )
+    int32_t i; struct dpow_block *bp = 0;
+    for (i = 0; i < dp->maxblocks; i++) 
     {
-        if ( dp->maxblocks+incr < height+10000 )
-            incr = (height+10000) - dp->maxblocks;
-        dp->blocks = realloc(dp->blocks,sizeof(*dp->blocks) * (dp->maxblocks + incr));
-        memset(&dp->blocks[dp->maxblocks],0,sizeof(*dp->blocks) * incr);
-        dp->maxblocks += incr;
+        if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
+            return(bp);
     }
-    if ( height < dp->maxblocks )
-        bp = dp->blocks!=0 ? dp->blocks[height] : 0;
-    if ( bp == 0 && height < DPOW_FIRSTRATIFY )
-    {
-        r = (rand() % DPOW_FIRSTRATIFY);
-        for (h=0; h<DPOW_FIRSTRATIFY; h++)
-        {
-            height = (r + h) % DPOW_FIRSTRATIFY;
-            if ( (bp= dp->blocks[height]) != 0 )
-                return(bp);
-        }
-    }
-    if ( bp != 0 && bp->state == 0xffffffff )
-        bp = 0;
     return(bp);
 }
+
+int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i;
+    for (i = 0; i < dp->maxblocks; i++) 
+    {
+        if ( dp->blocks[i] == 0 )
+            return(i);
+    }
+    return(0);
+}
+
+/* maybe this is better not sure... 
+int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i; uint32_t i,r;
+    while ( 1 )
+    {
+        OS_randombytes((uint8_t *)&r,sizeof(r));
+        i = r % dp->maxblocks;
+        if ( dp->blocks[i] == 0 )
+            break;
+    }
+    return(0);
+}*/
 
 int32_t dpow_voutstandard(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
@@ -667,6 +675,13 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 {
                     bp->state = 0xffffffff;
                     printf("dpow_sigscheck: [src.%s] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bits256_str(str,txid),retstr);
+#ifdef LOGTX
+                    FILE * fptr;
+                    fptr = fopen("/home/node/failed_notarizations", "a+");
+                    unsigned long dwy_timestamp = time(NULL);
+                    fprintf(fptr, "%lu %s %s %d %s\n", dwy_timestamp, bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,bp->signedtx);
+                    fclose(fptr);
+#endif
                 }
                 free(retstr);
                 retstr = 0;

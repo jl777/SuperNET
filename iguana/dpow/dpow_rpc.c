@@ -24,7 +24,7 @@ uint64_t dpow_utxosize(char *symbol)
 
 int32_t dpow_smallopreturn(char *symbol)
 {
-    if ( strcmp(symbol,"GAME") == 0 || strcmp(symbol,"EMC2") == 0 || strcmp(symbol,"HUSH") == 0 )
+    if ( strcmp(symbol,"GAME") == 0 || strcmp(symbol,"GIN") == 0 || strcmp(symbol,"EMC2") == 0 || strcmp(symbol,"HUSH") == 0 )
         return(1);
     else return(0);
 }

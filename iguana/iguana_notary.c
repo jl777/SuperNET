@@ -58,6 +58,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
+#if STAKED
 int8_t is_STAKED(const char *chain_name) 
 {
     int8_t ret;
@@ -71,22 +72,25 @@ int8_t is_STAKED(const char *chain_name)
         ret = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
     return(ret);
 };
+#endif
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;  struct dpow_block *bp;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
         int supressfreq = DPOW_CHECKPOINTFREQ;
+#if STAKED
         if ( is_STAKED(dp->symbol) != 0 )
         {
             dp->minsigs = Notaries_minsigs;
             supressfreq = 3;
         }
+#endif        
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
@@ -139,40 +143,18 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         dp->freq = 1;
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
-        if ( (0) && strcmp("KMD",dp->symbol) == 0 )
-            printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d freq.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),dp->minsigs,dp->freq);
-        dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
+        //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         dp->prevDESTHEIGHT = dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)dp->minsigs;
-        //if ( strcmp(dp->dest,"KMD") != 0 )
-            ptrs[3] = (void *)DPOW_DURATION;
-        //else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
+        ptrs[3] = (void *)DPOW_DURATION;
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
         ht = checkpoint.blockhash.height;
-        if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
-        {
-        }
-        if ( ht > DPOW_MAXFREQ*5 )
-        {
-            if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
-                printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
-            for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
-            {
-                if ( (bp= dp->blocks[i]) != 0 && bp->finished == 0xffffffff ) //(i % DPOW_MAXFREQ) != 0 &&
-                {
-                    if ( dp->currentbp == dp->blocks[i] )
-                        dp->currentbp = 0;
-                    dp->blocks[i] = 0;
-                    Numallocated--;
-                    free(bp);
-                }
-            }
-        }
+        OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs);
     }
 }
 
@@ -449,7 +431,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     }
     if ( dp->blocks == 0 )
     {
-        dp->maxblocks = 10000;
+        dp->maxblocks = 100;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
     portable_mutex_init(&dp->paxmutex);
@@ -560,7 +542,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "ZEX", "KSB"
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "ZEX", "KSB", "OUR", "ILN"
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
