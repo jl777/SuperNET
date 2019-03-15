@@ -227,6 +227,7 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
+    printf("dPoW updated called!\n");
     int32_t height,num; uint32_t blocktime; bits256 blockhash,merkleroot; struct iguana_info *src,*dest;
     //if ( strcmp(dp->symbol,"KMD") == 0 )
     {

@@ -794,7 +794,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     // disable basilisk: OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
-    //OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_loop,(void *)myinfo);
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_psockloop,(void *)myinfo);
     mainloop(myinfo);
 }
@@ -2185,7 +2185,7 @@ void dpow_loop(void *arg)
                 endmilli = startmilli + 30;
             }
         }
-        if ( counter > 100000 )
+        if ( counter > 1000000 )
             counter = 0;
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
@@ -2308,7 +2308,6 @@ void iguana_main(void *arg)
             //iguana_helpinit(myinfo);
             //iguana_relays_init(myinfo);
             //basilisks_init(myinfo);
-            myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"dpow_loop",dpow_loop,myinfo,IGUANA_PERMTHREAD);
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
