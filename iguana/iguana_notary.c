@@ -77,7 +77,7 @@ int8_t is_STAKED(const char *chain_name)
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;  struct dpow_block *bp;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
@@ -163,17 +163,16 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         }
         if ( ht > DPOW_MAXFREQ*5 )
         {
-            if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
-                printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
             for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
             {
-                if ( (bp= dp->blocks[i]) != 0 && bp->finished == 0xffffffff ) //(i % DPOW_MAXFREQ) != 0 &&
+                if ( dp->blocks[i] != 0 && dp->blocks[i]->finished == 0xffffffff )
                 {
+                    fprintf(stderr, "dpow free i.%i\n",i);
                     if ( dp->currentbp == dp->blocks[i] )
                         dp->currentbp = 0;
                     dp->blocks[i] = 0;
                     Numallocated--;
-                    free(bp);
+                    free(dp->blocks[i]);
                 }
             }
         }
