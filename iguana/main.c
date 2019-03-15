@@ -2172,8 +2172,6 @@ void dpow_loop(void *arg)
         counter++;
         startmilli = OS_milliseconds();
         endmilli = startmilli + 1000;
-        if ( relay == 0 )
-            relay = iguana_coinfind("RELAY");
         if ( myinfo->IAMNOTARY != 0 )
         {
             if ( myinfo->numdpows == 1 )
