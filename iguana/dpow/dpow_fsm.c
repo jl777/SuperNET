@@ -625,6 +625,7 @@ void dpow_statemachinestart(void *ptr)
     printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
+#if STAKED  
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
     int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0, firstloop = 0;
@@ -709,7 +710,7 @@ void dpow_statemachinestart(void *ptr)
                 dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
         }
     }
-
+#endif
 end:
     // unlock the dest utxo on KMD.
     if ( ep != 0 && strcmp("KMD",dest->symbol) == 0  && ep->dest.prev_vout != -1 )
