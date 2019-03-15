@@ -143,39 +143,18 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         dp->freq = 1;
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
-        if ( (0) && strcmp("KMD",dp->symbol) == 0 )
-            printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d freq.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),dp->minsigs,dp->freq);
-        dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
+        //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         dp->prevDESTHEIGHT = dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)dp->minsigs;
-        //if ( strcmp(dp->dest,"KMD") != 0 )
-            ptrs[3] = (void *)DPOW_DURATION;
-        //else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
+        ptrs[3] = (void *)DPOW_DURATION;
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
         ht = checkpoint.blockhash.height;
-        if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
-        {
-        }
-        if ( ht > DPOW_MAXFREQ*5 )
-        {
-            for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
-            {
-                if ( dp->blocks[i] != 0 && dp->blocks[i]->finished == 0xffffffff )
-                {
-                    fprintf(stderr, "dpow free i.%i\n",i);
-                    if ( dp->currentbp == dp->blocks[i] )
-                        dp->currentbp = 0;
-                    dp->blocks[i] = 0;
-                    Numallocated--;
-                    free(dp->blocks[i]);
-                }
-            }
-        }
+        OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs)
     }
 }
 
@@ -452,7 +431,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     }
     if ( dp->blocks == 0 )
     {
-        dp->maxblocks = 10000;
+        dp->maxblocks = 100;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
     portable_mutex_init(&dp->paxmutex);
