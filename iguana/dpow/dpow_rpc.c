@@ -195,7 +195,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             {
                 printf("NOTARIES retstr.%s\n", retstr);
                 if ( komodo_initjson2(retstr) < 0 )
-                    printf("init notaries failed!"\n");
+                    printf("init notaries failed!\n");
                 free(retstr);
             }
         }
