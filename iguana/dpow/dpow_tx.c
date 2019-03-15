@@ -178,12 +178,14 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     {
         if ( dp->blocks[i] != 0 )
         {
-            fprintf(stderr, "symbol.%s height.%i dp_height.%i\n",dp->symbol, height, dp->blocks[i]->height);
             if ( height == dp->blocks[i]->height )
+            {
+                fprintf(stderr, "FOUND DP: symbol.%s height.%i dp_height.%i\n",dp->symbol, height, dp->blocks[i]->height);
                 return(bp);
+            }
         }
     }
-    return(0);
+    return(bp);
 }
 
 int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
