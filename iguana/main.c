@@ -2162,6 +2162,38 @@ void komodo_REVS_merge(char *str,char *str2)
     getchar();
 }
 
+void dpow_loop(void *arg)
+{
+    struct supernet_info *myinfo = arg; double startmilli,endmilli;
+    int32_t counter = 0;
+    printf("start dpow loop\n");
+    while ( 1 )
+    {
+        counter++;
+        startmilli = OS_milliseconds();
+        endmilli = startmilli + 1000;
+        if ( relay == 0 )
+            relay = iguana_coinfind("RELAY");
+        if ( myinfo->IAMNOTARY != 0 )
+        {
+            if ( myinfo->numdpows == 1 )
+            {
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
+                endmilli = startmilli + 100;
+            }
+            else if ( myinfo->numdpows > 1 )
+            {
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
+                endmilli = startmilli + 30;
+            }
+        }
+        if ( counter > 100000 )
+            counter = 0;
+        while ( OS_milliseconds() < endmilli )
+            usleep(10000);
+    }
+}
+
 int32_t komodo_initjson(char *fname);
 
 void iguana_main(void *arg)
@@ -2251,7 +2283,7 @@ void iguana_main(void *arg)
         return;
     }
     strcpy(myinfo->rpcsymbol,"BTCD");
-    iguana_urlinit(myinfo,ismainnet,usessl);
+    //iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->pending_mutex);
     portable_mutex_init(&myinfo->MoM_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
@@ -2275,9 +2307,10 @@ void iguana_main(void *arg)
     {
         if ( iguana_commandline(myinfo,arg) == 0 )
         {
-            iguana_helpinit(myinfo);
+            //iguana_helpinit(myinfo);
             //iguana_relays_init(myinfo);
-            basilisks_init(myinfo);
+            //basilisks_init(myinfo);
+            myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"dpow_loop",dpow_loop,myinfo,IGUANA_PERMTHREAD);
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
@@ -2291,7 +2324,8 @@ void iguana_main(void *arg)
     }
     else
     {
-        basilisks_init(myinfo);
+        //basilisks_init(myinfo);
+        
     }
     iguana_launchdaemons(myinfo);
 }

@@ -83,7 +83,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     {
         int supressfreq = DPOW_CHECKPOINTFREQ;
         if ( is_STAKED(dp->symbol) != 0 )
+        {
+            dp->minsigs = Notaries_minsigs;
             supressfreq = 3;
+        }
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
