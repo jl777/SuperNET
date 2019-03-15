@@ -111,27 +111,17 @@ int32_t Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
 uint16_t Notaries_port = DPOW_SOCKPORT;
 char *Notaries_seeds[65];
 
-int32_t komodo_initjson(char *fname)
-{
-    char *fstr; long fsize;  int32_t retval = -1;
-    if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
-    {
-        retval = komodo_initjson2(fstr);
-        free(fstr);
-    }
-    return(retval);
-}
-
 int32_t komodo_initjson2(char *fstr)
 {
+    char *field,*hexstr; cJSON *array,*item,*argjson; uint16_t port; int32_t i,n,num,retval = -1;
     static portable_mutex_t notaries_mutex; static int32_t initflag;
     if ( initflag == 0 )
     {
         portable_mutex_init(&notaries_mutex);
         initflag = 1;
     }
+    
     portable_mutex_lock(&notaries_mutex);
-    char *field,*hexstr; cJSON *array,*item,*argjson; uint16_t port; int32_t i,n,numretval = -1;
     if ( (argjson= cJSON_Parse(fstr)) != 0 )
     {
         // memset arrays to 0! 
@@ -181,6 +171,17 @@ int32_t komodo_initjson2(char *fstr)
         free_json(argjson);
     }
     portable_mutex_unlock(&notaries_mutex);
+}
+
+int32_t komodo_initjson(char *fname)
+{
+    char *fstr; long fsize;  int32_t retval = -1;
+    if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
+    {
+        retval = komodo_initjson2(fstr);
+        free(fstr);
+    }
+    return(retval);
 }
 
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
