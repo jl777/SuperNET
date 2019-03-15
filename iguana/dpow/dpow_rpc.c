@@ -116,7 +116,7 @@ int32_t komodo_initjson(char *fname)
     char *fstr; long fsize;  int32_t retval = -1;
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
-        retval= komodo_initjson2(fstr)
+        retval = komodo_initjson2(fstr);
         free(fstr);
     }
     return(retval);
@@ -131,7 +131,7 @@ int32_t komodo_initjson2(char *fstr)
         initflag = 1;
     }
     portable_mutex_lock(&notaries_mutex);
-    char *field,*hexstr; cJSON *array,*item; uint16_t port; int32_t i,n,numretval = -1;;
+    char *field,*hexstr; cJSON *array,*item,*argjson; uint16_t port; int32_t i,n,numretval = -1;
     if ( (argjson= cJSON_Parse(fstr)) != 0 )
     {
         // memset arrays to 0! 
