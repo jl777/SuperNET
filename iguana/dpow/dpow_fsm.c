@@ -284,7 +284,7 @@ void dpow_statemachinestart(void *ptr)
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
-        goto end;
+        return;
     }
     MoMdepth = 0;
     memset(&MoM,0,sizeof(MoM));
@@ -689,7 +689,7 @@ void dpow_statemachinestart(void *ptr)
         }
     }
 
-end: 
+end:
     // unlock the dest utxo on KMD.
     if ( ep != 0 && strcmp("KMD",dest->symbol) == 0  && ep->dest.prev_vout != -1 )
     {
