@@ -608,7 +608,7 @@ void dpow_statemachinestart(void *ptr)
         if ( bp->state != 0xffffffff )
         {
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
-            //dpow_nanomsg_update(myinfo,bp);
+            dpow_nanomsg_update(myinfo);
         }
         else
         {
