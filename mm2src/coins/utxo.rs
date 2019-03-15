@@ -49,7 +49,6 @@ pub use chain::Transaction as UtxoTx;
 
 use self::rpc_clients::{UtxoRpcClientEnum, UnspentInfo, ElectrumClient, ElectrumClientImpl, NativeClient};
 use super::{IguanaInfo, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, Transaction, TransactionEnum, TransactionFut, TransactionDetails};
-use common::SATOSHIDEN;
 
 impl Transaction for UtxoTx {
     fn tx_hex(&self) -> Vec<u8> {
@@ -146,7 +145,7 @@ impl UtxoCoinImpl {
     fn get_tx_fee(&self) -> Box<Future<Item=u64, Error=String> + Send> {
         match self.tx_fee {
             TxFee::Fixed(fee) => Box::new(futures::future::ok(fee)),
-            TxFee::Dynamic => self.rpc_client.estimate_fee_sat(),
+            TxFee::Dynamic => self.rpc_client.estimate_fee_sat(self.decimals),
         }
     }
 }
@@ -344,6 +343,18 @@ fn sign_tx(
     })
 }
 
+/// MM2 uses satoshis with 8 decimals as amounts, but some UTXO coins have less than 8 decimals.
+/// Have not seen UTXO coins with more than 8 decimals but it's ok to handle this too just in case.
+fn adjust_sat_by_decimals(satoshis: u64, decimals: u8) -> u64 {
+    if decimals < 8 {
+        satoshis / 10_u64.pow(8 - decimals as u32)
+    } else if decimals > 8 {
+        satoshis * 10_u64.pow(decimals as u32 - 8)
+    } else {
+        satoshis
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct UtxoCoin(Arc<UtxoCoinImpl>);
 impl Deref for UtxoCoin {type Target = UtxoCoinImpl; fn deref (&self) -> &UtxoCoinImpl {&*self.0}}
@@ -396,6 +407,8 @@ impl UtxoCoin {
             TransactionEnum::UtxoTx(tx) => tx,
             _ => panic!(),
         };
+
+        let amount = adjust_sat_by_decimals(amount, self.decimals);
 
         let mut attempts = 0;
         loop {
@@ -521,6 +534,7 @@ pub fn compressed_pub_key_from_priv_raw(raw_priv: &[u8]) -> Result<H264, String>
 impl SwapOps for UtxoCoin {
     fn send_taker_fee(&self, fee_pub_key: &[u8], amount: u64) -> TransactionFut {
         let address = try_fus!(address_from_raw_pubkey(fee_pub_key, self.pub_addr_prefix, self.pub_t_addr_prefix));
+        let amount = adjust_sat_by_decimals(amount, self.decimals);
         let output = TransactionOutput {
             value: amount,
             script_pubkey: Builder::build_p2pkh(&address.hash).to_bytes()
@@ -541,6 +555,7 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
             &try_fus!(Public::from_slice(taker_pub)),
         ));
+        let amount = adjust_sat_by_decimals(amount, self.decimals);
         let output = TransactionOutput {
             value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
@@ -561,6 +576,9 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
             &try_fus!(Public::from_slice(maker_pub)),
         ));
+
+        let amount = adjust_sat_by_decimals(amount, self.decimals);
+
         let output = TransactionOutput {
             value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
@@ -723,7 +741,7 @@ impl SwapOps for UtxoCoin {
             TransactionEnum::UtxoTx(tx) => tx,
             _ => panic!(),
         };
-
+        let amount = adjust_sat_by_decimals(amount, self.decimals);
         let tx_from_rpc = try_s!(self.rpc_client.get_transaction(tx.hash().reversed().into()).wait());
 
         if tx_from_rpc.hex.0 != serialize(&tx).take() {
@@ -785,7 +803,7 @@ impl MarketCoinOps for UtxoCoin {
     }
 
     fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send> {
-        self.rpc_client.display_balance(self.my_address.clone())
+        self.rpc_client.display_balance(self.my_address.clone(), self.decimals)
     }
 
     fn send_raw_tx(&self, tx: &str) -> Box<Future<Item=String, Error=String> + Send> {
@@ -842,7 +860,7 @@ impl MmCoin for UtxoCoin {
         let arc = self.clone();
         Box::new(
             fee_fut.and_then(move |fee| {
-                let fee_f64 = dstr(fee as i64);
+                let fee_f64 = dstr(fee as i64, arc.decimals);
                 arc.my_balance().and_then(move |balance| {
                     let required = if maker {
                         amount + fee_f64
@@ -864,7 +882,7 @@ impl MmCoin for UtxoCoin {
 
     fn withdraw(&self, to: &str, amount: f64) -> Box<Future<Item=TransactionDetails, Error=String> + Send> {
         let to: Address = try_fus!(Address::from_str(to));
-        let value = (amount * SATOSHIDEN as f64) as u64;
+        let value = (amount * 10.0_f64.powf(self.decimals as f64)) as u64;
         let script_pubkey = Builder::build_p2pkh(&to.hash).to_bytes();
         let outputs = vec![TransactionOutput {
             value,
@@ -883,7 +901,7 @@ impl MmCoin for UtxoCoin {
                 let prev_script = Builder::build_p2pkh(&arc.my_address.hash);
                 let signed = try_s!(sign_tx(unsigned, &arc.key_pair, prev_script));
                 let fee_details = UtxoFeeDetails {
-                    amount: dstr(tx_fee as i64),
+                    amount: dstr(tx_fee as i64, arc.decimals),
                 };
                 Ok(TransactionDetails {
                     from: arc.my_address().into(),
@@ -1007,9 +1025,15 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         0
     };
 
+    let decimals = if info.decimals > 0 {
+        info.decimals
+    } else {
+        8
+    };
+
     let coin = UtxoCoinImpl {
         ticker,
-        decimals: 8,
+        decimals,
         rpc_client,
         key_pair,
         is_pos: false,

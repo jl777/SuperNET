@@ -1001,7 +1001,7 @@ unsafe fn lp_trades_gotrequest(ctx: &MmArc, qp: *mut lp::LP_quoteinfo, newqp: *m
         unwrap!(safecopy!((*qp).gui, "{}", c2s!(lp::G.gui)));
         unwrap!(safecopy!((*qp).coinaddr, "{}", coin.my_address()));
         (*qp).srchash = lp::G.LP_mypub25519;
-        (*qp).satoshis = lp::LP_basesatoshis(dstr((*qp).destsatoshis as i64), price, (*qp).txfee, (*qp).desttxfee);
+        (*qp).satoshis = lp::LP_basesatoshis(dstr((*qp).destsatoshis as i64, 8), price, (*qp).txfee, (*qp).desttxfee);
         (*qp).quotetime = (now_ms() / 1000) as u32;
         /*
         if (*qp).fill != 0 {

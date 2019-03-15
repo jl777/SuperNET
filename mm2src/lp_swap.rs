@@ -476,7 +476,8 @@ impl MakerSwap {
     }
 
     fn start(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
-        if let Err(e) = self.maker_coin.check_i_have_enough_to_trade(dstr(self.maker_amount as i64), true).wait() {
+        let amount_f64 = dstr(self.maker_amount as i64, self.maker_coin.decimals());
+        if let Err(e) = self.maker_coin.check_i_have_enough_to_trade(amount_f64, true).wait() {
             return Ok((
                 Some(MakerSwapCommand::Finish),
                 vec![MakerSwapEvent::StartFailed(ERRL!("!check_i_have_enough_to_trade {}", e))],
@@ -988,7 +989,8 @@ impl TakerSwap {
     }
 
     fn start(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        if let Err(e) = self.taker_coin.check_i_have_enough_to_trade(dstr(self.taker_amount as i64), true).wait() {
+        let amount_f64 = dstr(self.taker_amount as i64, self.taker_coin.decimals());
+        if let Err(e) = self.taker_coin.check_i_have_enough_to_trade(amount_f64, true).wait() {
             return Ok((
                 Some(TakerSwapCommand::Finish),
                 vec![TakerSwapEvent::StartFailed(ERRL!("{}", e))],

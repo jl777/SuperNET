@@ -934,7 +934,8 @@ pub fn enable (ctx: MmArc, req: Json) -> HyRes {
         rpc_response(200, json!({
             "result": "success",
             "address": coin.my_address(),
-            "balance": balance
+            "balance": balance,
+            "coin": coin.ticker(),
         }).to_string())
     ))
 }
@@ -947,7 +948,8 @@ pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
         rpc_response(200, json!({
             "result": "success",
             "address": coin.my_address(),
-            "balance": balance
+            "balance": balance,
+            "coin": coin.ticker(),
         }).to_string())
     ))
 }

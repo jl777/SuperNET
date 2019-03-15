@@ -1690,11 +1690,11 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
                 holdings_res.push (FundvalueHoldingRes {
                     coin: en.coin.clone(),
                     balance: en.balance,
-                    KMD: Some (dstr (kmd_value)),
+                    KMD: Some (dstr (kmd_value, 8)),
                     ..Default::default()
                 });
                 fundvalue += kmd_value;
-                if en.coin == "KMD" {kmd_holdings += dstr (kmd_value)}
+                if en.coin == "KMD" {kmd_holdings += dstr (kmd_value, 8)}
                 continue
             }
         }
@@ -1845,7 +1845,7 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
                     //jaddnum(retjson,"NAV_USD",(usdprice * numKMD)/divisor);
                 }
             } else if let Some (divisor) = req.divisor {
-                let num_kmd = dstr (fundvalue);
+                let num_kmd = dstr (fundvalue, 8);
                 asset_nav_kmd = Some (num_kmd / divisor);
                 asset_nav_btc = Some ((btcprice * num_kmd) / divisor);
                 //jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
@@ -1857,7 +1857,7 @@ pub fn lp_fundvalue (ctx: MmArc, req: Json, immediate: bool) -> HyRes {
             KMDholdings: kmd_holdings,
             btc2kmd,
             btcsum,
-            fundvalue: dstr (fundvalue),
+            fundvalue: dstr (fundvalue, 8),
             holdings: holdings_res,
             missing,
             result: "success".into(),

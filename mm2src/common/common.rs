@@ -200,7 +200,7 @@ pub fn coins_iter (cb: &mut dyn FnMut (*mut lp::iguana_info) -> Result<(), Strin
 }
 
 pub const SATOSHIDEN: i64 = 100000000;
-pub fn dstr (x: i64) -> f64 {x as f64 / SATOSHIDEN as f64}
+pub fn dstr (x: i64, decimals: u8) -> f64 {x as f64 / 10.0_f64.powf(decimals as f64)}
 
 /// Apparently helps to workaround `double` fluctuations occuring on *certain* systems.
 /// cf. https://stackoverflow.com/questions/19804472/double-randomly-adds-0-000000000000001.
