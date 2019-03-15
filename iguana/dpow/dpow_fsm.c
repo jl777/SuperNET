@@ -320,7 +320,11 @@ void dpow_statemachinestart(void *ptr)
                 if ( numratified > 64 )
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
-                    goto end;
+                    dp->blocks[blockindex] = 0;
+                    bp->state = 0xffffffff;
+                    free(bp);
+                    free(ptr);
+                    return;
                 }
                 for (i=0; i<numratified; i++)
                 {
@@ -379,7 +383,11 @@ void dpow_statemachinestart(void *ptr)
     if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
-        goto end;
+        dp->blocks[blockindex] = 0;
+        bp->state = 0xffffffff;
+        free(bp);
+        free(ptr);
+        return;
     }
     dp->ratifying += bp->isratify;
 
@@ -428,7 +436,11 @@ void dpow_statemachinestart(void *ptr)
                 printf("%02x",dp->minerkey33[i]);
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             dp->ratifying -= bp->isratify;
-            goto end;
+            dp->blocks[blockindex] = 0;
+            bp->state = 0xffffffff;
+            free(bp);
+            free(ptr);
+            return;
         }
         //printf("myind.%d\n",myind);
     }
@@ -436,7 +448,11 @@ void dpow_statemachinestart(void *ptr)
     {
         printf("statemachinestart no kmdheight.%d\n",kmdheight);
         dp->ratifying -= bp->isratify;
-        goto end;
+        dp->blocks[blockindex] = 0;
+        bp->state = 0xffffffff;
+        free(bp);
+        free(ptr);
+        return;
     }
     bp->myind = myind;
     printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u MoM[%d] %s CCid.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp,bp->MoMdepth,bits256_str(str2,bp->MoM),bp->CCid);
@@ -449,7 +465,11 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dp->ratifying -= bp->isratify;
-        goto end;
+        dp->blocks[blockindex] = 0;
+        bp->state = 0xffffffff;
+        free(bp);
+        free(ptr);
+        return;
     }
     //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
     if ( myind == 0 && bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 && destprevvout0 >= 0 && srcprevvout0 >= 0 )
