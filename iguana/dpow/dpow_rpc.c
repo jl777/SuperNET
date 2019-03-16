@@ -153,6 +153,8 @@ int32_t komodo_initjson2(char *fstr)
                 {
                     Notaries_elected[i][0] = clonestr(field);
                     Notaries_elected[i][1] = clonestr(hexstr);
+                    free(feild);
+                    free(hexstr);
                     //printf("%d of %d: %s %s\n",i,n,field,hexstr);
                 }
                 else

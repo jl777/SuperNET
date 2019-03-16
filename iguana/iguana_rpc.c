@@ -1302,9 +1302,10 @@ void iguana_rpcloop(void *args)
                         printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
                 }
             }
-            if ( retstr != space)
-                free(retstr);
+            //if ( retstr != space)
+            //    free(retstr);
         }
+        free(retstr);
         closesocket(sock);
     }
 }

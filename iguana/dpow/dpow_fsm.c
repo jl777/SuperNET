@@ -669,8 +669,11 @@ void dpow_statemachinestart(void *ptr)
                 fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->dest, bits256_str(str,bp->desttxid));
                 send_dest = 1;
             } else fprintf(stderr, "[%s] get raw transaction error\n", dp->dest);
-            if ( send_dest == 1 )
-                dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
+            if ( send_src == 1 )
+            {
+                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
+                free(tempstr);
+            }    
         }
         
         // get the confirms for srctxid
@@ -701,7 +704,10 @@ void dpow_statemachinestart(void *ptr)
                 send_src = 1;
             } else fprintf(stderr, "[%s] get raw transaction error\n", dp->symbol);
             if ( send_src == 1 )
-                dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
+            {
+                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
+                free(tempstr);
+            }
         }
     }
 #endif

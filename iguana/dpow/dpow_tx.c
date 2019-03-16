@@ -531,7 +531,9 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                 }
                                 if ( valid != 0 )
                                 {
-                                    printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
+                                    char *txinfo = jprint(item,0);
+                                    printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,txinfo,j);
+                                    free(txinfo);
                                     cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                     if ( src_or_dest != 0 )
                                         bp->destsigsmasks[bestk] |= (1LL << myind);
