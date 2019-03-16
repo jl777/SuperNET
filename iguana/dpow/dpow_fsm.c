@@ -672,7 +672,7 @@ void dpow_statemachinestart(void *ptr)
             if ( send_src == 1 )
             {
                 char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
-                free(tempstr);
+                free(tmpstr);
             }    
         }
         
@@ -706,7 +706,7 @@ void dpow_statemachinestart(void *ptr)
             if ( send_src == 1 )
             {
                 char *tmpstr = dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
-                free(tempstr);
+                free(tmpstr);
             }
         }
     }
