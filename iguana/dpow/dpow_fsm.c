@@ -322,7 +322,6 @@ void dpow_statemachinestart(void *ptr)
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
                     dp->blocks[blockindex] = 0;
-                    bp->state = 0xffffffff;
                     free(bp);
                     free(ptr);
                     return;
@@ -385,7 +384,6 @@ void dpow_statemachinestart(void *ptr)
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
         dp->blocks[blockindex] = 0;
-        bp->state = 0xffffffff;
         free(bp);
         free(ptr);
         return;
@@ -438,7 +436,6 @@ void dpow_statemachinestart(void *ptr)
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             dp->ratifying -= bp->isratify;
             dp->blocks[blockindex] = 0;
-            bp->state = 0xffffffff;
             free(bp);
             free(ptr);
             return;
@@ -450,7 +447,6 @@ void dpow_statemachinestart(void *ptr)
         printf("statemachinestart no kmdheight.%d\n",kmdheight);
         dp->ratifying -= bp->isratify;
         dp->blocks[blockindex] = 0;
-        bp->state = 0xffffffff;
         free(bp);
         free(ptr);
         return;
@@ -467,7 +463,6 @@ void dpow_statemachinestart(void *ptr)
         printf(" new, cant change notary0\n");
         dp->ratifying -= bp->isratify;
         dp->blocks[blockindex] = 0;
-        bp->state = 0xffffffff;
         free(bp);
         free(ptr);
         return;
@@ -601,7 +596,6 @@ void dpow_statemachinestart(void *ptr)
             if ( bits256_cmp(checkhash,bp->hashmsg) != 0 )
             {
                 printf("%s ht.%d %s got reorged to %s, abort notarization\n",bp->srccoin->symbol,bp->height,bits256_str(str,bp->hashmsg),bits256_str(str2,checkhash));
-                bp->state = 0xffffffff;
                 break;
             }
         }
