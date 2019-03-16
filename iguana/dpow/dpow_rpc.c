@@ -151,10 +151,8 @@ int32_t komodo_initjson2(char *fstr)
                 field = jfieldname(item);
                 if ( (hexstr= jstr(item,field)) != 0 && is_hexstr(hexstr,0) == 66 )
                 {
-                    Notaries_elected[i][0] = clonestr(field);
-                    Notaries_elected[i][1] = clonestr(hexstr);
-                    free(field);
-                    free(hexstr);
+                    strcpy(Notaries_elected[i][0],field);
+                    strcpy(Notaries_elected[i][1],hexstr);
                     //printf("%d of %d: %s %s\n",i,n,field,hexstr);
                 }
                 else
@@ -162,6 +160,8 @@ int32_t komodo_initjson2(char *fstr)
                     printf("couldnt find (%s) in %s or non-hex (%s)\n",field,jprint(item,0),hexstr!=0?hexstr:"");
                     break;
                 }
+                free(field);
+                free(hexstr);
             }
             if ( i == n )
             {

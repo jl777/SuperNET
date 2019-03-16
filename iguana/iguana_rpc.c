@@ -1117,15 +1117,28 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 jaddstr(arg,"userpass",userpass);
             retstr = SuperNET_JSON(myinfo,coin,arg,remoteaddr,port);
         }
-        free_json(argjson);
-        free_json(json);
+        if ( tokens != 0)
+            free_json(tokens);
+        if ( argjson != 0 )
+            free_json(argjson);
+        if ( origargjson != 0 )
+            free_json(origargjson);
         if ( tmpjson != 0 )
-            free(tmpjson);
+            free_json(tmpjson);
+        if ( json != 0 )
+            free_json(json);
         return(retstr);
     }
-    free_json(argjson);
+    if ( tokens != 0)
+        free_json(tokens);
+    if ( argjson != 0 )
+        free_json(argjson);
+    if ( origargjson != 0 )
+        free_json(origargjson);
     if ( tmpjson != 0 )
-        free(tmpjson);
+        free_json(tmpjson);
+    if ( json != 0 )
+        free_json(json);
     *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
@@ -1302,10 +1315,9 @@ void iguana_rpcloop(void *args)
                         printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
                 }
             }
-            //if ( retstr != space)
-            //    free(retstr);
+            if ( retstr != space)
+                free(retstr);
         }
-        free(retstr);
         closesocket(sock);
     }
 }
