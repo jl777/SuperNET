@@ -1117,28 +1117,15 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 jaddstr(arg,"userpass",userpass);
             retstr = SuperNET_JSON(myinfo,coin,arg,remoteaddr,port);
         }
-        if ( tokens != 0)
-            free_json(tokens);
-        if ( argjson != 0 )
-            free_json(argjson);
-        if ( origargjson != 0 )
-            free_json(origargjson);
+        free_json(argjson);
+        free_json(json);
         if ( tmpjson != 0 )
-            free_json(tmpjson);
-        if ( json != 0 )
-            free_json(json);
+            free(tmpjson);
         return(retstr);
     }
-    if ( tokens != 0)
-        free_json(tokens);
-    if ( argjson != 0 )
-        free_json(argjson);
-    if ( origargjson != 0 )
-        free_json(origargjson);
+    free_json(argjson);
     if ( tmpjson != 0 )
-        free_json(tmpjson);
-    if ( json != 0 )
-        free_json(json);
+        free(tmpjson);
     *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
