@@ -403,6 +403,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
             printf("src validation error %s %s %s\n",src->symbol,srcaddr,retstr);
         }
         free(retstr);
+        free_json(json);
         retstr = 0;
     } else printf("%s %s didnt return anything\n",src->symbol,srcaddr);
     bitcoin_address(destaddr,destcoin->chain->pubtype,dp->minerkey33,33);
@@ -417,6 +418,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
             printf("dest validation error %s %s %s\n",src->symbol,srcaddr,retstr);
         }
         free(retstr);
+        free_json(json);
         retstr = 0;
     } else printf("%s %s didnt return anything\n",destcoin->symbol,destaddr);
     if ( srcvalid <= 0 || destvalid <= 0 )
