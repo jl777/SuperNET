@@ -211,6 +211,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             }
         }
     }
+    return(Notaries_num);
 #else
     int32_t i;
     if ( Notaries_num > 0 )
@@ -219,7 +220,6 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             decode_hex(pubkeys[i],33,Notaries_elected[i][1]);
         return(Notaries_num);
     } else return(-1);
-    return(-1);
 #endif
 }
 
