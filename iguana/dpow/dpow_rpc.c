@@ -194,9 +194,6 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
                             field = jfieldname(item);
                             if ( (hexstr= jstr(item,field)) != 0 && is_hexstr(hexstr,0) == 66 )
                                 decode_hex(pubkeys[i],33,hexstr);
-                            free(item);
-                            free(field);
-                            free(hexstr);
                         }
                         if ( i == n )
                         {
