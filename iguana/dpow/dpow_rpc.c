@@ -205,7 +205,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
                             portable_mutex_unlock(&notaries_mutex);
                         }
                     }
-                    free_json(argjson);
+                    free_json(retjson);
                 }
                 free(retstr);
             }
