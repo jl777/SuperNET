@@ -168,7 +168,9 @@ int32_t komodo_initjson2(char *fstr)
                 //printf("numnotaries %d, port.%d minsigs.%d BTCminsigs.%d\n",Notaries_num,Notaries_port,Notaries_BTCminsigs,Notaries_minsigs);
             }
         }
+        free_json(array);
         free_json(argjson);
+        free_json(item);
     }
     portable_mutex_unlock(&notaries_mutex);
     return(retval);
