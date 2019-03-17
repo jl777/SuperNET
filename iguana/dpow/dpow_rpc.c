@@ -783,6 +783,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
         fprintf(stderr,">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
         free(paramstr);
+        free_json(array);
         return(retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
