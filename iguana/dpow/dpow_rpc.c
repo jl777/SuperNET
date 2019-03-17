@@ -303,7 +303,14 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             free_json(srcinfojson);
             //printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
         } */
-        if ( CCid > 1 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
+#if STAKED
+        int8_t MoMoMdelay = 5;
+        int8_t ccid_ex = 1;
+#else 
+        int8_t MoMoMdelay = 0;
+        int8_t ccid_ex = 0;
+#endif
+        if ( CCid > ccid_ex && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -312,8 +319,8 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 free_json(infojson);
             }
             // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this, 
-            // the backup notary validation can be used to complete the import.
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-5,bp->CCid)) != 0 )
+            // the backup notary validation can be used to complete the import.            
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-MoMoMdelay,bp->CCid)) != 0 )
             {
                 /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
@@ -436,7 +443,7 @@ char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin
                 printf("autochange %s validateaddress -> getaddressinfo\n",coin->symbol);
                 strcpy(coin->validateaddress,"getaddressinfo");
                 free_json(retjson);
-                free(retjson);
+                free(retstr);
                 return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->validateaddress,buf));
             }
             free_json(retjson);
