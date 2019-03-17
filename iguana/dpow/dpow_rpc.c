@@ -779,7 +779,6 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     {
         array = cJSON_CreateArray();
         jaddistr(array,signedtx);
-        free(array);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
         fprintf(stderr,">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
