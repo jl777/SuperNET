@@ -1405,9 +1405,9 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
                 if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
                     destvalid = 1;
                 else destvalid = 0;
-                free(ismine);
+                free_json(ismine);
                 free(tmpstr);
-                free(retjson);
+                free_json(retjson);
                 tmpstr = 0;
             }
             if ( destvalid == 0 )
