@@ -302,7 +302,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 ppMoMheight = jint(srcinfojson,"ppMoMheight");
             free_json(srcinfojson);
             //printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
-        } */
+        } 
 #if STAKED
         int8_t MoMoMdelay = 5;
         int8_t ccid_ex = 1;
@@ -310,7 +310,8 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
         int8_t MoMoMdelay = 0;
         int8_t ccid_ex = 0;
 #endif
-        if ( CCid > ccid_ex && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
+*/
+        if ( CCid != 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) //strncmp(bp->srccoin->symbol,"TXSCL",5) == 0 &&
         {
             kmdcoin = bp->destcoin;
             if ( (infojson= dpow_getinfo(myinfo,kmdcoin)) != 0 )
@@ -320,7 +321,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
             }
             // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this, 
             // the backup notary validation can be used to complete the import.            
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-MoMoMdelay,bp->CCid)) != 0 )
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
                 /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
