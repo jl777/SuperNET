@@ -334,13 +334,20 @@ struct ElectrumUnspent {
     value: u64,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ElectrumNonce {
+    Number(u64),
+    Hash(H256Json),
+}
+
 /// The block header compatible with Electrum 1.2
 #[derive(Debug, Deserialize)]
 pub struct ElectrumBlockHeaderV12 {
     bits: u64,
     block_height: u64,
     merkle_root: H256Json,
-    nonce: H256Json,
+    nonce: ElectrumNonce,
     prev_block_hash: H256Json,
     timestamp: u64,
     version: u64,
@@ -626,7 +633,6 @@ impl ElectrumClientImpl {
         rpc_func!(self, "blockchain.scripthash.get_balance", hash)
     }
 
-    /*
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-headers-subscribe
     pub fn blockchain_headers_subscribe(&self) -> RpcRes<ElectrumBlockHeader> {
         Box::new(
@@ -645,7 +651,7 @@ impl ElectrumClientImpl {
             })
         )
     }
-    */
+
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-broadcast
     fn blockchain_transaction_broadcast(&self, tx: BytesJson) -> RpcRes<H256Json> {
         rpc_func!(self, "blockchain.transaction.broadcast", tx)

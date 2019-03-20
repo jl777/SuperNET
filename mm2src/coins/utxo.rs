@@ -987,6 +987,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
             }
 
             let client = Arc::new(client);
+            try_s!(client.blockchain_headers_subscribe().wait());
             // ping the electrum servers every 30 seconds to prevent them from disconnecting us.
             // according to docs server can do it if there are no messages in ~10 minutes.
             // https://electrumx.readthedocs.io/en/latest/protocol-methods.html?highlight=keep#server-ping
@@ -997,6 +998,10 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
                     if let Some(client) = weak_client.upgrade() {
                         if let Err(e) = client.server_ping().wait() {
                             log!("Electrum servers " [urls] " ping error " [e]);
+                        }
+
+                        if let Err(e) = client.blockchain_headers_subscribe().wait() {
+                            log!("Electrum servers " [urls] " subscribe error " [e]);
                         }
                     } else {
                         break;

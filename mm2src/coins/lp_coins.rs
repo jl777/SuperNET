@@ -905,10 +905,7 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         try_s! (eth_coin_from_iguana_info(ii, req)) .into()
     };
 
-    // TODO we should return the error here instead of using the default 0 value because coin
-    //      is not usable for sure in case of error on getting the block count.
-    //      We can't put try_s! here due to default BTC and KMD initialization which we should get rid of.
-    let block_count = coin.current_block().wait().unwrap_or(0);
+    let block_count = try_s!(coin.current_block().wait());
     // TODO, #156: Warn the user when we know that the wallet is under-initialized.
     log! ([=ticker] if !coins_en["etomic"].is_null() {", etomic"} ", " [=method] ", " [=block_count]);
     if block_count == 0 {
