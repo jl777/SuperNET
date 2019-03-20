@@ -45,10 +45,6 @@ struct LP_millistats
 extern int32_t IAMLP;
 char LP_methodstr[64];
 
-char LP_eth_node_url[2084];
-char LP_alice_contract[50];
-char LP_bob_contract[50];
-
 int32_t bits256_nonz(bits256 a) {
     return (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0);
 }
