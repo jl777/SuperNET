@@ -597,10 +597,6 @@ impl SwapOps for UtxoCoin {
         secret: &[u8],
     ) -> TransactionFut {
         let prev_tx: UtxoTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
-        let output = TransactionOutput {
-            value: prev_tx.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
         let script_data = Builder::default()
             .push_data(secret)
             .push_opcode(Opcode::OP_0)
@@ -608,21 +604,28 @@ impl SwapOps for UtxoCoin {
         let redeem_script = try_fus!(
             payment_script(time_lock, &*dhash160(secret), &try_fus!(Public::from_slice(taker_pub)), self.key_pair.public())
         );
-        let transaction = try_fus!(p2sh_spending_tx(
-            prev_tx,
-            redeem_script.into(),
-            vec![output],
-            script_data,
-            &self.key_pair,
-            self.tx_version,
-            self.overwintered,
-            (now_ms() / 1000) as u32,
-            SEQUENCE_FINAL,
-            self.version_group_id,
-        ));
-        Box::new(self.rpc_client.send_transaction(&transaction, self.my_address.clone()).map(move |_res|
-            transaction.into()
-        ))
+        let arc = self.clone();
+        Box::new(self.get_tx_fee().and_then(move |fee| -> TransactionFut {
+            let output = TransactionOutput {
+                value: prev_tx.outputs[0].value - fee,
+                script_pubkey: Builder::build_p2pkh(&arc.key_pair.public().address_hash()).to_bytes()
+            };
+            let transaction = try_fus!(p2sh_spending_tx(
+                prev_tx,
+                redeem_script.into(),
+                vec![output],
+                script_data,
+                &arc.key_pair,
+                arc.tx_version,
+                arc.overwintered,
+                (now_ms() / 1000) as u32,
+                SEQUENCE_FINAL,
+                arc.version_group_id,
+            ));
+            Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
+                transaction.into()
+            ))
+        }))
     }
 
     fn send_taker_spends_maker_payment(
@@ -633,10 +636,6 @@ impl SwapOps for UtxoCoin {
         secret: &[u8],
     ) -> TransactionFut {
         let prev_tx: UtxoTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
-        let output = TransactionOutput {
-            value: prev_tx.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
         let script_data = Builder::default()
             .push_data(secret)
             .push_opcode(Opcode::OP_0)
@@ -644,21 +643,28 @@ impl SwapOps for UtxoCoin {
         let redeem_script = try_fus!(
             payment_script(time_lock, &*dhash160(secret), &try_fus!(Public::from_slice(maker_pub)), self.key_pair.public())
         );
-        let transaction = try_fus!(p2sh_spending_tx(
-            prev_tx,
-            redeem_script.into(),
-            vec![output],
-            script_data,
-            &self.key_pair,
-            self.tx_version,
-            self.overwintered,
-            (now_ms() / 1000) as u32,
-            SEQUENCE_FINAL,
-            self.version_group_id,
-        ));
-        Box::new(self.rpc_client.send_transaction(&transaction, self.my_address.clone()).map(move |_res|
-            transaction.into()
-        ))
+        let arc = self.clone();
+        Box::new(self.get_tx_fee().and_then(move |fee| -> TransactionFut {
+            let output = TransactionOutput {
+                value: prev_tx.outputs[0].value - fee,
+                script_pubkey: Builder::build_p2pkh(&arc.key_pair.public().address_hash()).to_bytes()
+            };
+            let transaction = try_fus!(p2sh_spending_tx(
+                prev_tx,
+                redeem_script.into(),
+                vec![output],
+                script_data,
+                &arc.key_pair,
+                arc.tx_version,
+                arc.overwintered,
+                (now_ms() / 1000) as u32,
+                SEQUENCE_FINAL,
+                arc.version_group_id,
+            ));
+            Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
+                transaction.into()
+            ))
+        }))
     }
 
     fn send_taker_refunds_payment(
@@ -669,31 +675,34 @@ impl SwapOps for UtxoCoin {
         secret_hash: &[u8],
     ) -> TransactionFut {
         let prev_tx: UtxoTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
-        let output = TransactionOutput {
-            value: prev_tx.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
         let script_data = Builder::default()
             .push_opcode(Opcode::OP_1)
             .into_script();
         let redeem_script = try_fus!(
             payment_script(time_lock, secret_hash, self.key_pair.public(), &try_fus!(Public::from_slice(maker_pub)))
         );
-        let transaction = try_fus!(p2sh_spending_tx(
-            prev_tx,
-            redeem_script.into(),
-            vec![output],
-            script_data,
-            &self.key_pair,
-            self.tx_version,
-            self.overwintered,
-            (now_ms() / 1000) as u32,
-            SEQUENCE_FINAL - 1,
-            self.version_group_id,
-        ));
-        Box::new(self.rpc_client.send_transaction(&transaction, self.my_address.clone()).map(move |_res|
-            transaction.into()
-        ))
+        let arc = self.clone();
+        Box::new(self.get_tx_fee().and_then(move |fee| -> TransactionFut {
+            let output = TransactionOutput {
+                value: prev_tx.outputs[0].value - fee,
+                script_pubkey: Builder::build_p2pkh(&arc.key_pair.public().address_hash()).to_bytes()
+            };
+            let transaction = try_fus!(p2sh_spending_tx(
+                prev_tx,
+                redeem_script.into(),
+                vec![output],
+                script_data,
+                &arc.key_pair,
+                arc.tx_version,
+                arc.overwintered,
+                (now_ms() / 1000) as u32,
+                SEQUENCE_FINAL - 1,
+                arc.version_group_id,
+            ));
+            Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
+                transaction.into()
+            ))
+        }))
     }
 
     fn send_maker_refunds_payment(
@@ -704,10 +713,6 @@ impl SwapOps for UtxoCoin {
         secret_hash: &[u8],
     ) -> TransactionFut {
         let prev_tx: UtxoTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
-        let output = TransactionOutput {
-            value: prev_tx.outputs[0].value - 1000,
-            script_pubkey: Builder::build_p2pkh(&self.key_pair.public().address_hash()).to_bytes()
-        };
         let script_data = Builder::default()
             .push_opcode(Opcode::OP_1)
             .into_script();
@@ -717,21 +722,28 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
             &try_fus!(Public::from_slice(taker_pub)),
         ));
-        let transaction = try_fus!(p2sh_spending_tx(
-            prev_tx,
-            redeem_script.into(),
-            vec![output],
-            script_data,
-            &self.key_pair,
-            self.tx_version,
-            self.overwintered,
-            (now_ms() / 1000) as u32,
-            SEQUENCE_FINAL - 1,
-            self.version_group_id,
-        ));
-        Box::new(self.rpc_client.send_transaction(&transaction, self.my_address.clone()).map(move |_res|
-            transaction.into()
-        ))
+        let arc = self.clone();
+        Box::new(self.get_tx_fee().and_then(move |fee| -> TransactionFut {
+            let output = TransactionOutput {
+                value: prev_tx.outputs[0].value - fee,
+                script_pubkey: Builder::build_p2pkh(&arc.key_pair.public().address_hash()).to_bytes()
+            };
+            let transaction = try_fus!(p2sh_spending_tx(
+                prev_tx,
+                redeem_script.into(),
+                vec![output],
+                script_data,
+                &arc.key_pair,
+                arc.tx_version,
+                arc.overwintered,
+                (now_ms() / 1000) as u32,
+                SEQUENCE_FINAL - 1,
+                arc.version_group_id,
+            ));
+            Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
+                transaction.into()
+            ))
+        }))
     }
 
     fn validate_fee(
