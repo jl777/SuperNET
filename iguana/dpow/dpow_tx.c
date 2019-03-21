@@ -669,7 +669,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 else
                 {
                     bp->state = 0xffffffff;
-                    printf("dpow_sigscheck: [src.%s] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bits256_str(str,txid),retstr);
+                    printf("dpow_sigscheck: [src.%s blockindex.%i] mismatched txid.%s vs %s\n",bp->srccoin->symbol,dpow_heightfind(myinfo,dp,bp->height),bits256_str(str,txid),retstr);
 #ifdef LOGTX
                     FILE * fptr;
                     fptr = fopen("/home/node/failed_notarizations", "a+");
