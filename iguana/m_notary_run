@@ -109,6 +109,8 @@ coins/ksb_7776
 coins/our_7776
 coins/gin_7776
 coins/iln_7776
+coins/rick_7776
+coins/morty_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
