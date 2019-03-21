@@ -780,7 +780,7 @@ void jumblr_loop(void *ptr)
 
 void dpow_loop(void *arg)
 {
-    struct supernet_info *myinfo = arg; double startmilli,endmilli;
+    struct supernet_info *myinfo = arg; double startmilli,endmilli; 
     int32_t counter = 0;
     printf("start dpow loop\n");
     while ( 1 )
@@ -798,13 +798,14 @@ void dpow_loop(void *arg)
             else if ( myinfo->numdpows > 1 )
             {
                 iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
-                endmilli = startmilli + 30;
+                endmilli = startmilli + 20;
+                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
             }
         }
-        if ( counter > 1000000 )
-            counter = 0;
         while ( OS_milliseconds() < endmilli )
-            usleep(10000);
+            usleep(1000);
+        if ( counter > myinfo->numdpows+1 )
+            counter = 0;
     }
 }
 
