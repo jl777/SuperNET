@@ -652,13 +652,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         } else 
                         {
                             bp->srctxid = txid;
-#ifdef LOGTX
-                            FILE * fptr;
-                            fptr = fopen("/home/node/complete_notarizations", "a+");
-                            // SRC SRC_TXID DEST DEST_TXID HEIGHT
-                            fprintf(fptr, "%s %s %s\n", bp->srccoin->symbol,bp->srctxid,bp->destcoin->symbol,bp->desttxid,bp->height);
-                            fclose(fptr);
-#endif
                         }
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
