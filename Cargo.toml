@@ -10,6 +10,10 @@ edition = "2018"
 name = "mm2"
 path = "mm2src/mm2.rs"
 
+[lib]
+name = "mm2"
+path = "mm2src/mm2.rs"
+
 [profile.dev]
 # Enable light optimizations. We want a debuggable version but not a completely dumb one.
 # Can override this with "set CARGO_BUILD_RUSTFLAGS=-C opt-level=0".
