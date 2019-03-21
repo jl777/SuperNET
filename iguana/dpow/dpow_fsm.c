@@ -499,7 +499,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 // lock the src coin selected utxo if the source coin is KMD.
                 if (dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
-                    printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+                    printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
                 else
                     printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
             }
