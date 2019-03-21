@@ -182,6 +182,17 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     return(bp);
 }
 
+int32_t dpow_heightfind2(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height)
+{
+    int32_t i; struct dpow_block *bp = 0;
+    for (i = 0; i < dp->maxblocks; i++) 
+    {
+        if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
+            fprintf(stderr, "FOUND: blockindex.%i\n", i);
+    }
+    return(0);
+}
+
 int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t i;
@@ -652,13 +663,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         } else 
                         {
                             bp->srctxid = txid;
-#ifdef LOGTX
-                            FILE * fptr;
-                            fptr = fopen("/home/node/complete_notarizations", "a+");
-                            // SRC SRC_TXID DEST DEST_TXID HEIGHT
-                            fprintf(fptr, "%s %s %s\n", bp->srccoin->symbol,bp->srctxid,bp->destcoin->symbol,bp->desttxid,bp->height);
-                            fclose(fptr);
-#endif
                         }
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
@@ -676,7 +680,8 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 else
                 {
                     bp->state = 0xffffffff;
-                    printf("dpow_sigscheck: [src.%s] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bits256_str(str,txid),retstr);
+                    printf("dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
+                    dpow_heightfind2(myinfo,dp,bp->height);
 #ifdef LOGTX
                     FILE * fptr;
                     fptr = fopen("/home/node/failed_notarizations", "a+");

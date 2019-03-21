@@ -267,6 +267,8 @@ void dpow_statemachinestart(void *ptr)
     int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1,blockindex=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
+    static portable_mutex_t dpowT_mutex; 
+    portable_mutex_init(&dpowT_mutex);
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
     srcprevvout0 = destprevvout0 = -1;
@@ -299,8 +301,10 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( (blockindex= dpow_blockfind(myinfo,dp)) < 0 )
             return;
+        portable_mutex_lock(&dpowT_mutex);
         bp = calloc(1,sizeof(*bp));
         dp->blocks[blockindex] = bp;
+        portable_mutex_unlock(&dpowT_mutex);
         printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",blockindex,src->symbol,checkpoint.blockhash.height,dest->symbol);
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
@@ -321,8 +325,11 @@ void dpow_statemachinestart(void *ptr)
                 if ( numratified > 64 )
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
+                    portable_mutex_lock(&dpowT_mutex);
                     dp->blocks[blockindex] = 0;
+                    bp->state = 0xffffffff;
                     free(bp);
+                    portable_mutex_unlock(&dpowT_mutex);
                     free(ptr);
                     return;
                 }
@@ -383,8 +390,11 @@ void dpow_statemachinestart(void *ptr)
     if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
+        portable_mutex_lock(&dpowT_mutex);
         dp->blocks[blockindex] = 0;
+        bp->state = 0xffffffff;
         free(bp);
+        portable_mutex_unlock(&dpowT_mutex);
         free(ptr);
         return;
     }
@@ -435,8 +445,11 @@ void dpow_statemachinestart(void *ptr)
                 printf("%02x",dp->minerkey33[i]);
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             dp->ratifying -= bp->isratify;
+            portable_mutex_lock(&dpowT_mutex);
             dp->blocks[blockindex] = 0;
+            bp->state = 0xffffffff;
             free(bp);
+            portable_mutex_unlock(&dpowT_mutex);
             free(ptr);
             return;
         }
@@ -446,8 +459,11 @@ void dpow_statemachinestart(void *ptr)
     {
         printf("statemachinestart no kmdheight.%d\n",kmdheight);
         dp->ratifying -= bp->isratify;
+        portable_mutex_lock(&dpowT_mutex);
         dp->blocks[blockindex] = 0;
+        bp->state = 0xffffffff;
         free(bp);
+        portable_mutex_unlock(&dpowT_mutex);
         free(ptr);
         return;
     }
@@ -462,8 +478,11 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dp->ratifying -= bp->isratify;
+        portable_mutex_lock(&dpowT_mutex);
         dp->blocks[blockindex] = 0;
+        bp->state = 0xffffffff;
         free(bp);
+        portable_mutex_unlock(&dpowT_mutex);
         free(ptr);
         return;
     }
@@ -499,7 +518,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 // lock the src coin selected utxo if the source coin is KMD.
                 if (dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
-                    printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+                    printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
                 else
                     printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
             }
@@ -619,7 +638,7 @@ void dpow_statemachinestart(void *ptr)
     printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
-#if STAKED  
+#if STAKEDTEST
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
     int8_t dest_confs = 0, src_confs = 0, destnotarized = 0, srcnotarized = 0, firstloop = 0;
@@ -724,8 +743,10 @@ end:
       if ( dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
         printf(">>>> UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
     }
+    portable_mutex_lock(&dpowT_mutex);
     dp->blocks[blockindex] = 0;
     bp->state = 0xffffffff;
     free(bp);
+    portable_mutex_unlock(&dpowT_mutex);
     free(ptr);
 }

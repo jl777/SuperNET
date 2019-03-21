@@ -90,7 +90,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             dp->minsigs = Notaries_minsigs;
             supressfreq = 3;
         }
-#endif        
+#endif
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
