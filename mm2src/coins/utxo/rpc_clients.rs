@@ -306,6 +306,7 @@ impl NativeClient {
     pub fn output_amount(&self, txid: H256Json, index: usize) -> RpcRes<u64> {
         let fut = self.get_raw_transaction(txid);
         Box::new(fut.and_then(move |transaction| {
+            log!({"Before transaction {:?} deserialize", transaction});
             let tx: UtxoTransaction = try_s!(deserialize(transaction.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
             Ok(tx.outputs[index].value)
         }))
