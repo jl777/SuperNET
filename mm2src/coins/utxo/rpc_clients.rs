@@ -103,7 +103,7 @@ pub struct NativeUnspent {
     pub txid: H256Json,
     pub vout: u32,
     pub address: String,
-    pub account: String,
+    pub account: Option<String>,
     #[serde(rename = "scriptPubKey")]
     pub script_pub_key: BytesJson,
     pub amount: f64,
