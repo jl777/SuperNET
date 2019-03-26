@@ -1,14 +1,14 @@
 {
   "port": 17711,
   "BTCminsigs": 13,
-  "minsigs": 2,
+  "minsigs": 3,
   "seeds": [
     "195.201.137.5",
     "149.28.183.139",
     "178.63.53.110",
     "116.203.99.144",
     "174.94.134.49",
-    "127.0.0.1",
+    "172.104.151.177",
     "127.0.0.1",
     "127.0.0.1",
     "127.0.0.1"
@@ -19,6 +19,8 @@
     {"CHMEX": "0212828ad6c9a432a60e10aeb878cc9c1d2f80aed589c22d7f6a57a2e89f7e6887"},
     {"Strob": "03f5a12b153f4d29cd763105a5771042d9d8eb6f59c08c403e16acaf675d774a7b"},
     {"jorian": "036ea9e0a47b10a90ce3b8d13da75064d242360c0ff9485a32075ba18334b9babc"},
-    {"SHossain": "021866aed060e43de898478b9c63ba78666cb5dddcfd6f7c3216ee6b4f97a2cdcf"}
+    {"SHossain": "021866aed060e43de898478b9c63ba78666cb5dddcfd6f7c3216ee6b4f97a2cdcf"},
+	  {"PHBA2061": "0380dfabf272a34595515b5ac7c643a1e7f819cf41721080dc2106108c943cee8a"}
+
   ]
 }
