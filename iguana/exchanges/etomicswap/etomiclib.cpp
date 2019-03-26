@@ -10,6 +10,12 @@
 #include <cpp-ethereum/libethcore/TransactionBase.h>
 #include <inttypes.h>
 
+#ifndef NDEBUG
+#define BACKWARD_HAS_DW 1
+#include "backward.hpp"
+using namespace backward;
+#endif
+
 using namespace dev;
 using namespace dev::eth;
 
@@ -666,10 +672,13 @@ void satoshisToWei(char *dest, uint64_t input)
     strcat(dest, "0000000000");
 }
 
-uint64_t weiToSatoshi(char *wei)
+uint64_t weiToSatoshi(char *wei, uint8_t decimals)
 {
-    u256 satoshi = jsToU256(wei) / boost::multiprecision::pow(u256(10), 10);
-    return static_cast<uint64_t>(satoshi);
+    u256 satoshi = jsToU256(wei);
+    if (decimals < 18) {
+        satoshi = satoshi * boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
+    return static_cast<uint64_t>(satoshi / boost::multiprecision::pow(u256(10), 10));
 }
 
 char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr)
@@ -856,3 +865,10 @@ uint8_t isValidAddress(char *address)
     std::regex r("^(0x|0X)?[a-fA-F0-9]{40}$");
     return static_cast<uint8_t>(std::regex_match(address, r));
 }
+
+#if !defined(NDEBUG) && defined(__linux__)
+void print_stack_trace() {
+    StackTrace st; st.load_here(32);
+    Printer p; p.print(st);
+}
+#endif

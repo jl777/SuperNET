@@ -52,7 +52,7 @@ char *bitcoind_getinfo(char *symbol,char *serverport,char *userpass,char *getinf
             retstr = bitcoind_passthru(symbol,serverport,userpass,getinfostr,buf);
             printf("switch to getblockchaininfo -> (%s)\n",retstr);
         }
-        free(retjson);
+        free_json(retjson);
     }
     return(retstr);
 }

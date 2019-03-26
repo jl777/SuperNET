@@ -4,12 +4,13 @@ build_script:
 cache:
   - C:\.hunter
   - marketmaker_depends
-
+clone_depth: 5
 after_build:
   - '7z a mm-win.zip
      .\build_win64_release\iguana\exchanges\Release\marketmaker-mainnet.exe
      .\marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl.dll
      .\marketmaker_depends\nanomsg\build_msvc_2015_win64\Release\nanomsg.dll
+     .\OSlibs\win\libsodium\Release\v140\dynamic\libsodium.dll
      "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\redist\\x64\\Microsoft.VC140.CRT\\msvcp140.dll"
      "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\redist\\x64\\Microsoft.VC140.CRT\\vcruntime140.dll"'
 
