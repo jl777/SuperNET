@@ -33,7 +33,7 @@ Create a file named `pubkey.txt` at `~/2019NNtestnet/iguana/pubkey.txt`. Content
 pubkey=<pubkey>
 ```
 
-Create a file named `passphrase.txt` at `~/2019NNtestnet/iguana/pubkey.txt`. Contents should be
+Create a file named `passphrase.txt` at `~/2019NNtestnet/iguana/passphrase.txt`. Contents should be
 ```
 passphrase=<WIF>
 ```
