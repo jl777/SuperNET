@@ -26,6 +26,8 @@ Wait until the PR is merged.
 
 Start PIZZA, BEER and KMD daemons with `-pubkey=` 
 
+Open p2p ports for each coin. Open port 17711 for iguana. 
+
 Fund `-pubkey=` address on all 3 nodes. Import privkey to all 3 nodes. If you need PIZZA or BEER, ask in #notarynode channel. 
 
 Create a file named `pubkey.txt` at `~/2019NNtestnet/iguana/pubkey.txt`. Contents should be 
