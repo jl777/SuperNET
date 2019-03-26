@@ -21,7 +21,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"174.94.134.49\"}"
 
 . passphrase.txt
-curl --url "http://127.0.0.1:7776/" --data "{"method":"walletpassphrase","params":["$passphrase", 9999999]}"
+curl --url "http://127.0.0.1:7776/" --data "{\"method\":\"walletpassphrase\",\"params\":[\"$passphrase\", 9999999]}"
 
 coins/kmd_7776
 
