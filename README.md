@@ -22,8 +22,6 @@ sudo apt-get install build-essential pkg-config libc6-dev m4 \
 
 You must install nanomsg as well. See https://github.com/KomodoPlatform/komodo/wiki/Installing-Komodo-Manually#install-nanomsg
 
-Wait until the PR is merged. 
-
 Start PIZZA, BEER and KMD daemons with `-pubkey=` 
 
 Open p2p ports for each coin. Open port 17711 for iguana. 
@@ -40,10 +38,12 @@ Create a file named `passphrase.txt` at `~/2019NNtestnet/iguana/pubkey.txt`. Con
 passphrase=<WIF>
 ```
 
+Wait until the PR is merged. 
+
 do 
 ```
 cd ~/2019NNtestnet/iguana
-./m_notary_run
+./m_notary_testnet
 ```
 
 # How to restart when new participants are added 
