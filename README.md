@@ -1,14 +1,16 @@
 # How to partcipate
 Fork this repo.
 
-Edit the `iguana/m_notary_testnet` file. Add a line with your IP address. 
+Edit the `iguana/m_notary_testnet` file in `2019testnet` branch. Add a line with your IP address. 
 
-Edit the `iguana/testnet.json` file. If you're one of the first 8 to do this, replace one of the `127.0.0.1` lines with your IP. 
+Edit the `iguana/testnet.json` file in `2019testnet` branch. If you're one of the first 8 to do this, replace one of the `127.0.0.1` lines with your IP. 
 Add your pubkey and name. Edit minsigs value to `#_of_pubkeys / 2`. If it's an odd amount, round down. 
 
 Make a PR with edits to this repo. 
 
 # How to start the notary
+
+Clone this repo. Use `2019testnet` branch. 
 
 Install the dependencies
 ```
