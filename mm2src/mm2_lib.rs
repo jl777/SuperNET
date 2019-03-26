@@ -96,8 +96,17 @@ pub extern fn mm2_main (
 /// 2 .. context, but no RPC yet.  
 /// 3 .. RPC is up.
 #[no_mangle]
-pub extern fn mm2_main() {
-    mm2::mm2_main()
+pub extern fn mm2_main_status() -> i8 {
+    if LP_MAIN_RUNNING.load (Ordering::Relaxed) {
+        let ctx = CTX.load (Ordering::Relaxed);
+        if ctx != 0 {
+            if let Ok (ctx) = MmArc::from_ffi_handle (ctx) {
+                if ctx.rpc_started.load (Ordering::Relaxed) {
+                    3
+                } else {2}
+            } else {2}
+        } else {1}
+    } else {0}
 }
 
 #[no_mangle]
