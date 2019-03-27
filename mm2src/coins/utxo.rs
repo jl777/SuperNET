@@ -139,6 +139,8 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     tx_fee: TxFee,
     /// Version group id for Zcash transactions since Overwinter: https://github.com/zcash/zips/blob/master/zip-0202.rst
     version_group_id: u32,
+    /// Defines if coin uses Zcash transaction format
+    zcash: bool,
 }
 
 impl UtxoCoinImpl {
@@ -264,6 +266,7 @@ fn p2sh_spending_tx(
     lock_time: u32,
     sequence: u32,
     version_group_id: u32,
+    zcash: bool,
 ) -> Result<UtxoTx, String> {
     let unsigned = TransactionInputSigner {
         lock_time,
@@ -284,6 +287,7 @@ fn p2sh_spending_tx(
         shielded_outputs: vec![],
         value_balance: 0,
         version_group_id,
+        zcash,
     };
     let signed_input = try_s!(
         p2sh_spend(&unsigned, 0, key_pair, script_data, redeem_script.into())
@@ -303,6 +307,7 @@ fn p2sh_spending_tx(
         binding_sig: H512::default(),
         join_split_sig: H512::default(),
         join_split_pubkey: H256::default(),
+        zcash,
     })
 }
 
@@ -340,6 +345,7 @@ fn sign_tx(
         binding_sig: H512::default(),
         join_split_sig: H512::default(),
         join_split_pubkey: H256::default(),
+        zcash: unsigned.zcash,
     })
 }
 
@@ -510,6 +516,7 @@ impl UtxoCoin {
                 shielded_outputs: vec![],
                 value_balance: 0,
                 version_group_id: arc.version_group_id,
+                zcash: arc.zcash,
             };
             Ok((tx, tx_fee))
         }))
@@ -621,6 +628,7 @@ impl SwapOps for UtxoCoin {
                 (now_ms() / 1000) as u32,
                 SEQUENCE_FINAL,
                 arc.version_group_id,
+                arc.zcash,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -660,6 +668,7 @@ impl SwapOps for UtxoCoin {
                 (now_ms() / 1000) as u32,
                 SEQUENCE_FINAL,
                 arc.version_group_id,
+                arc.zcash,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -698,6 +707,7 @@ impl SwapOps for UtxoCoin {
                 (now_ms() / 1000) as u32,
                 SEQUENCE_FINAL - 1,
                 arc.version_group_id,
+                arc.zcash,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -739,6 +749,7 @@ impl SwapOps for UtxoCoin {
                 (now_ms() / 1000) as u32,
                 SEQUENCE_FINAL - 1,
                 arc.version_group_id,
+                arc.zcash,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -1047,7 +1058,8 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
     } else {
         8
     };
-
+    // should be sufficient to detect zcash by overwintered flag
+    let zcash = overwintered;
     let coin = UtxoCoinImpl {
         ticker,
         decimals,
@@ -1070,6 +1082,7 @@ pub fn utxo_coin_from_iguana_info(info: *mut lp::iguana_info, mode: UtxoInitMode
         asset_chain: info.isassetchain == 1,
         tx_fee,
         version_group_id,
+        zcash,
     };
     Ok(UtxoCoin(Arc::new(coin)).into())
 }
@@ -1110,7 +1123,8 @@ mod tests {
             ticker: "ETOMIC".into(),
             wif_prefix: 0,
             tx_fee: TxFee::Fixed(1000),
-            version_group_id: 0x892f2085
+            version_group_id: 0x892f2085,
+            zcash: true,
         };
 
         UtxoCoin(Arc::new(coin))
