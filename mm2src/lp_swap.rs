@@ -208,6 +208,14 @@ fn save_my_maker_swap_event(uuid: &str, event: MakerSavedEvent) -> Result<(), St
         SavedSwap::Maker(MakerSavedSwap {
             uuid: uuid.to_owned(),
             events: vec![],
+            success_events: vec!["Started".into(), "Negotiated".into(), "TakerFeeValidated".into(),
+                                 "MakerPaymentSent".into(), "TakerPaymentReceived".into(),
+                                 "TakerPaymentWaitConfirmStarted".into(), "TakerPaymentValidatedAndConfirmed".into(),
+                                 "TakerPaymentSpent".into(), "Finished".into()],
+            error_events: vec!["StartFailed".into(), "NegotiateFailed".into(), "TakerFeeValidateFailed".into(),
+                               "MakerPaymentTransactionFailed".into(), "MakerPaymentDataSendFailed".into(),
+                               "TakerPaymentValidateFailed".into(), "TakerPaymentSpendFailed".into(), "MakerPaymentRefunded".into(),
+                               "MakerPaymentRefundFailed".into()],
         })
     } else {
         try_s!(json::from_slice(&content))
@@ -231,7 +239,16 @@ fn save_my_taker_swap_event(uuid: &str, event: TakerSavedEvent) -> Result<(), St
     let swap: SavedSwap = if content.is_empty() {
         SavedSwap::Taker(TakerSavedSwap {
             uuid: uuid.to_owned(),
-            events: vec![]
+            events: vec![],
+            success_events: vec!["Started".into(), "Negotiated".into(), "TakerFeeSent".into(),
+                                 "MakerPaymentReceived".into(), "MakerPaymentWaitConfirmStarted".into(),
+                                 "MakerPaymentValidatedAndConfirmed".into(), "TakerPaymentSent".into(),
+                                 "TakerPaymentSpent".into(), "MakerPaymentSpent".into(), "Finished".into()],
+            error_events: vec!["StartFailed".into(), "NegotiateFailed".into(), "TakerFeeSendFailed".into(),
+                               "MakerPaymentValidateFailed".into(), "TakerPaymentTransactionFailed".into(),
+                               "TakerPaymentDataSendFailed".into(), "TakerPaymentWaitForSpendFailed".into(),
+                               "MakerPaymentSpendFailed".into(), "TakerPaymentRefunded".into(),
+                               "TakerPaymentRefundFailed".into()],
         })
     } else {
         try_s!(json::from_slice(&content))
@@ -375,12 +392,16 @@ struct TakerSavedEvent {
 struct MakerSavedSwap {
     uuid: String,
     events: Vec<MakerSavedEvent>,
+    success_events: Vec<String>,
+    error_events: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TakerSavedSwap {
     uuid: String,
     events: Vec<TakerSavedEvent>,
+    success_events: Vec<String>,
+    error_events: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
