@@ -842,8 +842,8 @@ fn trade_base_rel_electrum(pairs: Vec<(&str, &str)>) {
         unwrap!(mm_bob.wait_for_log (20., &|log| log.contains (&format!("Entering the maker_swap_loop {}/{}", base, rel))));
     }
 
-    let maker_events = vec!["Started", "Negotiated", "TakerFeeValidated", "MakerPaymentSent", "TakerPaymentValidatedAndConfirmed", "TakerPaymentSpent", "Finished"];
-    let taker_events = vec!["Started", "Negotiated", "TakerFeeSent", "MakerPaymentValidatedAndConfirmed", "TakerPaymentSent", "TakerPaymentSpent", "MakerPaymentSpent", "Finished"];
+    let maker_events = vec!["Started", "Negotiated", "TakerFeeValidated", "MakerPaymentSent", "TakerPaymentReceived", "TakerPaymentWaitConfirmStarted", "TakerPaymentValidatedAndConfirmed", "TakerPaymentSpent", "Finished"];
+    let taker_events = vec!["Started", "Negotiated", "TakerFeeSent", "MakerPaymentReceived", "MakerPaymentWaitConfirmStarted", "MakerPaymentValidatedAndConfirmed", "TakerPaymentSent", "TakerPaymentSpent", "MakerPaymentSpent", "Finished"];
 
     for uuid in uuids.iter() {
         unwrap!(mm_bob.wait_for_log (600., &|log| log.contains (&format!("[swap uuid={}] Finished", uuid))));
