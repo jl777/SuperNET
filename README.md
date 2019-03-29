@@ -43,7 +43,7 @@ passphrase=<WIF>
 
 Wait until the PR is merged. 
 
-do 
+Then use the following to start notarization.
 ```
 cd ~/2019NNtestnet/iguana
 ./m_notary_testnet
