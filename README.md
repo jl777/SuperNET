@@ -3,7 +3,7 @@ Fork this repo.
 
 Edit the `iguana/m_notary_testnet` file. Add a line with your IP address. 
 
-Edit the `iguana/testnet.json` file. Add your pubkey and name. Edit minsigs value to `#_of_pubkeys / 2`. If it's an odd amount, round down. 
+Edit the `iguana/testnet.json` file. Add your pubkey and name.
 
 Make a PR with edits to this repo. 
 
