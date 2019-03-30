@@ -2200,6 +2200,7 @@ void iguana_main(void *arg)
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
     myinfo->psockport = 30000;
+    //myinfo->nosplit = 1; // uncomment for testnet nosplit
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
