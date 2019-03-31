@@ -23,13 +23,13 @@ sudo apt-get install build-essential pkg-config libc6-dev m4 \
 
 You must install nanomsg as well. See https://github.com/KomodoPlatform/komodo/wiki/Installing-Komodo-Manually#install-nanomsg
 
-Start PIZZA, BEER and KMD daemons with `-pubkey=` 
+Start PIZZA, BEER, TXSCLCC and KMD daemons with `-pubkey=` 
 
 Open p2p ports for each coin. Open port 17711 for iguana. 
 
 Fund `-pubkey=` address on all 3 nodes. Import privkey to all 3 nodes. 
 
-If you need PIZZA or BEER, use the faucets at https://www.atomicexplorer.com/#/faucet/beer and https://www.atomicexplorer.com/#/faucet/pizza or ask in #notarynode channel. 
+If you need PIZZA or BEER, use the faucets at https://www.atomicexplorer.com/#/faucet/beer and https://www.atomicexplorer.com/#/faucet/pizza or ask in #notarynode channel. For TXSCLCC chain, please mine 1 block using 1 CPU thread to use for notarization and after mining a block you can stop mining TXSCLCC.
 
 Create a file named `pubkey.txt` at `~/2019NNtestnet/iguana/pubkey.txt`. Contents should be 
 ```
@@ -52,6 +52,5 @@ cd ~/2019NNtestnet/iguana
 # How to restart when new participants are added 
 
 ```
-pkill -15 iguana
 ./m_notary_testnet
 ```
