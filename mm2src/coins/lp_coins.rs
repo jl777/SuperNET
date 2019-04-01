@@ -697,7 +697,7 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
     let ii = Box::leak (ii);
     common::for_c::LP_coinadd (ii);
 
-    let rpcport = unsafe {
+    let rpc_port = unsafe {
         let rpcportₒ = match coins_en["rpcport"].as_u64() {
             Some (port) if port > 0 && port < u16::max_value() as u64 => port as u16,
             // NB: 0 for anything that's not "BTC" or "KMD".
@@ -705,6 +705,7 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         };
 
         let confpathᵖ = try_s! (confpath (coins_en));
+        log! ([=confpathᵖ]);
         let confpathˢ = try_s! (confpathᵖ.to_str().ok_or ("Malformed confpath"));
         let confpathᶜ = try_s! (CString::new (confpathˢ));
 
@@ -721,10 +722,10 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
             rpcportₒ                             // origport
         )
     };
-    if rpcport == 0 {
+    if rpc_port == 0 {
         log! ("Warning, coin " (ticker) " doesn't have the 'rpcport' configured")
     } else {
-        try_s! (safecopy! (ii.serverport, "127.0.0.1:{}", rpcport))
+        try_s! (safecopy! (ii.serverport, "127.0.0.1:{}", rpc_port))
     }
 
     // TODO: Move the private key into `MmCtx`. Initialize it before `lp_coininit`.
@@ -823,10 +824,8 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         return ERR! ("lp_coininit ({}): unknown method {:?}", ticker, method);
     };
 
-    // TODO: Should pick the correct coin implementation somehow.
-    //       Consider changing the config format to set the coin type `explicitly`.
     let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
-        try_s! (utxo_coin_from_iguana_info (ii, utxo_mode)) .into()
+        try_s! (utxo_coin_from_iguana_info (ii, utxo_mode, rpc_port)) .into()
     } else {
         try_s! (eth_coin_from_iguana_info(ii, req)) .into()
     };
