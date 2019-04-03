@@ -212,11 +212,9 @@ pub fn mm2_main() {
     if first_arg == Some ("--help") || first_arg == Some ("-h") || first_arg == Some ("help") {help(); return}
     if cfg! (windows) && first_arg == Some ("/?") {help(); return}
 
-    if let Some (conf) = first_arg {
-        if let Err (err) = run_lp_main (conf) {
-            log! ((err));
-            exit (1);
-        }
+    if let Err (err) = run_lp_main (first_arg) {
+        log! ((err));
+        exit (1);
     }
 }
 
@@ -320,8 +318,20 @@ fn vanity (substring: &str) {
     log! ({"done vanitygen.({}) done {} elapsed {}\n", substring, now_ms() / 1000, now_ms() / 1000 - timestamp});
 }
 
-/// Parses the `first_argument` as JSON and starts LP_main.
-fn run_lp_main (conf: &str) -> Result<(), String> {
+/// Parses the `first_arg` as JSON and starts LP_main.
+/// Attempts to load the config from `MM2.json` file if `first_arg` is None
+fn run_lp_main (first_arg: Option<&str>) -> Result<(), String> {
+    let conf_from_file = slurp(&"MM2.json");
+    let conf = match first_arg {
+        Some(s) => s,
+        None => {
+            if conf_from_file.is_empty() {
+                return ERR!("Config is not set from command line arg and MM2.json file doesn't exist.");
+            }
+            try_s!(std::str::from_utf8(&conf_from_file))
+        }
+    };
+
     let c_conf = match CJSON::from_str (conf) {
         Ok (json) => json,
         Err (err) => return ERR! ("couldnt parse.({}).{}", conf, err)
