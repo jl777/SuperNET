@@ -45,17 +45,24 @@ use std::str;
 pub mod crash_reports;
 use self::crash_reports::init_crash_reports;
 
+#[path = "lp_native_dex.rs"]
 mod lp_native_dex;
 use self::lp_native_dex::{lp_init};
 
+#[path = "lp_network.rs"]
 pub mod lp_network;
 pub use self::lp_network::lp_queue_command;
 
+#[path = "lp_ordermatch.rs"]
 pub mod lp_ordermatch;
+
+#[path = "lp_swap.rs"]
 pub mod lp_swap;
+#[path = "rpc.rs"]
 pub mod rpc;
 
 #[cfg(test)]
+#[path = "mm2_tests.rs"]
 mod mm2_tests;
 /*
 #include "LP_nativeDEX.c"
@@ -155,7 +162,9 @@ fn help() {
         "                     Default is currently 'http://localhost:3000'\n"
         "  rpcip          ..  IP address to bind to for RPC server. Overrides the 127.0.0.1 default\n"
         "  rpc_password   ..  RPC password used to authorize non-public RPC calls\n"
-        "                     MM generates password from passphrase is this field is not set\n"
+        "                     MM generates password from passphrase if this field is not set\n"
+        "  rpc_local_only ..  MM forbids some RPC requests from not loopback (localhost) IPs as additional security measure.\n"
+        "                     Defaults to `true`, set `false` to disable. `Use with caution`.\n"
         "  rpcport        ..  If > 1000 overrides the 7783 default.\n"
         "  userhome       ..  System home directory of a user ('/root' by default).\n"
         "  wif            ..  `1` to add WIFs to the information we provide about a coin.\n"
