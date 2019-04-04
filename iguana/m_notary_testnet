@@ -1,5 +1,4 @@
 #!/bin/bash
-echo "stealing all your money.... don't run scripts without looking at them"
 pkill -15 iguana
 rm -f ../agents/iguana *.o
 git pull
