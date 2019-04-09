@@ -18,7 +18,7 @@ use bzip2::read::BzDecoder;
 use duct::cmd;
 use futures::{Future, Stream};
 use futures_cpupool::CpuPool;
-use glob::{glob};
+use glob::{glob, Paths, PatternError};
 use gstuff::{last_modified_sec, now_float, slurp};
 use hyper_rustls::HttpsConnector;
 use libflate::gzip::Decoder;
@@ -312,20 +312,15 @@ fn generate_bindings() {
     );
 }
 
-/// The build script will usually help us by putting the MarketMaker version
-/// into the "MM_VERSION" environment or the "MM_VERSION" file.
-/// If neither is there then we're probably in a non-released, local development branch
-/// (we're using the "UNKNOWN" version designator then).
+/// The build script will usually help us by putting the MarketMaker version into the "MM_VERSION" file
+/// (environment variable isn't as useful because we can't `rerun-if-changed` on it).
+/// We're using the "UNKNOWN" version designator if the file isn't there or is empty.
+/// For the nightly builds the version contains the short commit hash.
 /// This function ensures that we have the "MM_VERSION" variable during the build.
 fn mm_version() -> String {
-    if let Some(have) = option_env!("MM_VERSION") {
-        // The variable is already there.
-        return have.into();
-    }
-
     // Try to load the variable from the file.
     let mut buf;
-    let version = if let Ok(mut file) = fs::File::open("../../MM_VERSION") {
+    let version = if let Ok(mut file) = fs::File::open(root().join("MM_VERSION")) {
         buf = String::new();
         unwrap!(file.read_to_string(&mut buf), "Can't read from MM_VERSION");
         buf.trim()
@@ -1065,22 +1060,31 @@ fn build_c_code(mm_version: &str) {
     }
 }
 
+/// Find shell-matching paths with the pattern relative to the `root`.
+fn globʳ(root_glob: &str) -> Result<Paths, PatternError> {
+    let full_glob = root().join(root_glob);
+    let full_glob = unwrap!(full_glob.to_str());
+    glob(full_glob)
+}
+
+fn rerun_if_changed(root_glob: &str) {
+    for path in unwrap!(globʳ(root_glob)) {
+        let path = unwrap!(path);
+        println!("cargo:rerun-if-changed={}", path2s(path));
+    }
+}
+
 fn main() {
     // NB: `rerun-if-changed` will ALWAYS invoke the build.rs if the target does not exists.
     // cf. https://github.com/rust-lang/cargo/issues/4514#issuecomment-330976605
     //     https://github.com/rust-lang/cargo/issues/4213#issuecomment-310697337
     // `RUST_LOG=cargo::core::compiler::fingerprint cargo build` shows the fingerprit files used.
 
-    // Rebuild when we work with C files.
-    println!(
-        "rerun-if-changed={}",
-        path2s(rabs("iguana/exchanges/etomicswap"))
-    );
-    println!("rerun-if-changed={}", path2s(rabs("iguana/exchanges")));
-    println!("rerun-if-changed={}", path2s(rabs("crypto777")));
-    println!("rerun-if-changed={}", path2s(rabs("crypto777/jpeg")));
-    println!("rerun-if-changed={}", path2s(rabs("OSlibs/win")));
-    println!("rerun-if-changed={}", path2s(rabs("CMakeLists.txt")));
+    rerun_if_changed("iguana/exchanges/*.c");
+    rerun_if_changed("crypto777/*.c");
+    rerun_if_changed("crypto777/jpeg/*.c");
+    println!("cargo:rerun-if-changed={}", path2s(rabs("CMakeLists.txt")));
+    println!("cargo:rerun-if-changed={}", path2s(rabs("MM_VERSION")));
 
     // NB: Using `rerun-if-env-changed` disables the default dependency heuristics.
     // cf. https://github.com/rust-lang/cargo/issues/4587
