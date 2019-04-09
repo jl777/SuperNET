@@ -137,14 +137,12 @@ fn generate_bindings() {
             "LPinit",
             "LP_addpeer",
             "LP_peer_recv",
-            "LP_initpublicaddr",
             "LP_ports",
             "LP_rpcport",
             "unbuffered_output_support",
             "calc_crc32",
             "LP_userpass",
             "LP_mutex_init",
-            "LP_tradebots_timeslice",
             "stats_JSON",
             "LP_priceinfofind",
             "prices_loop",
@@ -181,7 +179,6 @@ fn generate_bindings() {
             "LP_mpnet_send",
             "LP_recent_swaps",
             "LP_address",
-            "LP_address_utxo_ptrs",
             "LP_command_process",
             "LP_balances",
             "LP_KMDvalue",
@@ -210,7 +207,6 @@ fn generate_bindings() {
             "LP_failedmsg",
             "LP_quote_validate",
             "LP_availableset",
-            "LP_closepeers",
             "LP_tradebot_pauseall",
             "LP_portfolio_reset",
             "LP_priceinfos_clear",
@@ -218,10 +214,7 @@ fn generate_bindings() {
             "LP_privkey_updates",
             "LP_privkey_init",
             "LP_privkey",
-            "LP_importaddress",
-            "LP_otheraddress",
             "LP_swapsfp_update",
-            "LP_reserved_msg",
             "LP_unavailableset",
             "LP_trades_pricevalidate",
             "LP_allocated",
@@ -230,11 +223,11 @@ fn generate_bindings() {
             "LP_RTmetrics_blacklisted",
             "LP_getheight",
             "LP_reservation_check",
-            "LP_nanobind",
             "LP_instantdex_txids",
             "LP_pendswap_add",
             "LP_price_sig",
             "LP_coin_curl_init",
+            "LP_postprice_recv",
         ]
         .iter(),
         // types
@@ -316,25 +309,6 @@ fn generate_bindings() {
         .iter(),
         empty(), // types
         empty(), // defines
-    );
-    bindgen(
-        vec!["../../crypto777/nanosrc/nn.h".into()],
-        "c_headers/nn.rs",
-        [
-            "nn_bind",
-            "nn_connect",
-            "nn_close",
-            "nn_errno",
-            "nn_freemsg",
-            "nn_recv",
-            "nn_setsockopt",
-            "nn_send",
-            "nn_socket",
-            "nn_strerror",
-        ]
-        .iter(),
-        empty(),
-        ["AF_SP", "NN_PAIR", "NN_PUB", "NN_SOL_SOCKET", "NN_SNDTIMEO", "NN_MSG",].iter(),
     );
 }
 
@@ -1004,7 +978,6 @@ fn build_c_code(mm_version: &str) {
         cmake_prep_args.push("-G".into());
         cmake_prep_args.push("Visual Studio 15 2017 Win64".into());
     }
-    cmake_prep_args.push("-DETOMIC=ON".into());
     cmake_prep_args.push(format!("-DMM_VERSION={}", mm_version));
     cmake_prep_args.push("-DCMAKE_BUILD_TYPE=Debug".into());
     cmake_prep_args.push("..".into());
@@ -1074,22 +1047,12 @@ fn build_c_code(mm_version: &str) {
             "cargo:rustc-link-search=native={}",
             path2s(rabs("build/crypto777/jpeg"))
         );
-        println!(
-            "cargo:rustc-link-search=native={}",
-            path2s(rabs("build/nanomsg-build"))
-        );
     }
 
-    println!(
-        "cargo:rustc-link-lib={}",
-        if cfg!(windows) { "libcurl" } else { "curl" }
-    );
     if cfg!(windows) {
         // https://sourceware.org/pthreads-win32/
         // ftp://sourceware.org/pub/pthreads-win32/prebuilt-dll-2-9-1-release/
         println!("cargo:rustc-link-lib=pthreadVC2");
-        println!("cargo:rustc-link-lib=static=nanomsg");
-        println!("cargo:rustc-link-lib=mswsock"); // For nanomsg.
         unwrap!(
             fs::copy(
                 root().join("x64/pthreadVC2.dll"),
@@ -1097,16 +1060,8 @@ fn build_c_code(mm_version: &str) {
             ),
             "Can't copy pthreadVC2.dll"
         );
-        unwrap!(
-            fs::copy(
-                root().join("x64/libcurl.dll"),
-                root().join("target/debug/libcurl.dll")
-            ),
-            "Can't copy libcurl.dll"
-        );
     } else {
         println!("cargo:rustc-link-lib=crypto");
-        println!("cargo:rustc-link-lib=static=nanomsg");
     }
 }
 
@@ -1132,7 +1087,6 @@ fn main() {
     // We should avoid using it for now.
 
     // Rebuild when we change certain features.
-    //println!("rerun-if-env-changed=CARGO_FEATURE_ETOMIC");
     //println!("rerun-if-env-changed=CARGO_FEATURE_NOP");
 
     windows_requirements();

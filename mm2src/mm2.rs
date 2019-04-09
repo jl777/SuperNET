@@ -25,7 +25,7 @@ use common::mm_ctx::MmCtx;
 
 use gstuff::{now_ms, slurp};
 
-use libc::{c_char, c_int, c_void};
+use libc::{c_char};
 
 use rand::random;
 
@@ -33,7 +33,6 @@ use serde_json::{self as json, Value as Json};
 
 use std::env;
 use std::ffi::{CStr, CString, OsString};
-use std::io::{self, Write};
 use std::mem::{zeroed};
 use std::process::exit;
 use std::ptr::{null};
@@ -51,11 +50,9 @@ use self::lp_native_dex::{lp_init};
 
 #[path = "lp_network.rs"]
 pub mod lp_network;
-pub use self::lp_network::lp_queue_command;
 
 #[path = "lp_ordermatch.rs"]
 pub mod lp_ordermatch;
-
 #[path = "lp_swap.rs"]
 pub mod lp_swap;
 #[path = "rpc.rs"]
@@ -166,6 +163,9 @@ fn help() {
         "  rpc_local_only ..  MM forbids some RPC requests from not loopback (localhost) IPs as additional security measure.\n"
         "                     Defaults to `true`, set `false` to disable. `Use with caution`.\n"
         "  rpcport        ..  If > 1000 overrides the 7783 default.\n"
+        "  i_am_seed      ..  Notify MM that it should run in seednode mode (acting as message relayer/broadcaster for others).\n"
+        "                     Defaults to `false`.\n"
+        "  seednodes      ..  Seednode IPs that node will use. At least 1 seed IP be set if the node is not seed itself.\n"
         "  userhome       ..  System home directory of a user ('/root' by default).\n"
         "  wif            ..  `1` to add WIFs to the information we provide about a coin.\n"
         "\n"
@@ -203,8 +203,6 @@ pub fn mm2_main() {
         }
         return
     }
-
-    if let Err (err) = events (&args_os) {log! ({"events error] {}", err}); return}
 
     let second_arg = args_os.get (2) .and_then (|arg| arg.to_str());
     if first_arg == Some ("vanity") && second_arg.is_some() {vanity (unwrap! (second_arg)); return}
@@ -256,34 +254,6 @@ fn btc2kmd (wif_or_btc: &str) -> Result<String, String> {
         if retstr == null() {return ERR! ("LP_convaddress")}
         Ok (unwrap! (unsafe {CStr::from_ptr (retstr)} .to_str()) .into())
     }
-}
-
-/// Implements the `mm2 events` mode.  
-/// If the command-line arguments match the events mode and everything else works then this function will never return.
-fn events (args_os: &[OsString]) -> Result<(), String> {
-    use common::nn::*;
-
-    /*
-    else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
-    */
-    if args_os.get (1) .and_then (|arg| arg.to_str()) .unwrap_or ("") == "events" {
-        let ipc_endpoint = unsafe {nn_socket (AF_SP as c_int, NN_PAIR as c_int)};
-        if ipc_endpoint < 0 {return ERR! ("!nn_socket")}
-        let rc = unsafe {nn_connect (ipc_endpoint, "ws://127.0.0.1:5555\0".as_ptr() as *const c_char)};
-        if rc < 0 {return ERR! ("!nn_connect")}
-        loop {
-            let mut buf: [u8; 1000000] = unsafe {zeroed()};
-            let len = unsafe {nn_recv (ipc_endpoint, buf.as_mut_ptr() as *mut c_void, buf.len() - 1, 0)};
-            if len >= 0 {
-                let len = len as usize;
-                assert! (len < buf.len());
-                let stdout = io::stdout();
-                let mut stdout = stdout.lock();
-                try_s! (stdout.write_all (&buf[0..len]));
-            }
-        }
-    }
-    Ok(())
 }
 
 fn vanity (substring: &str) {
