@@ -38,7 +38,7 @@ use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
 use std::cmp::Ordering;
-use std::env::temp_dir;
+use std::env::{temp_dir, var};
 use std::fs;
 use std::ffi::{CStr, CString};
 use std::fmt::Write as FmtWrite;
@@ -55,8 +55,13 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::thread;
 use std::time::Duration;
 
-/// Any unprocessed libtorrent alers are logged if this knob is set to "true".
-const LOG_UNHANDLED_ALERTS: Option<&'static str> = option_env! ("LOG_UNHANDLED_ALERTS");
+lazy_static! {
+    /// Any unprocessed libtorrent alers are logged if this knob is set to "true".
+    static ref LOG_UNHANDLED_ALERTS: bool = match var ("LOG_UNHANDLED_ALERTS") {
+        Ok (ev) => ev == "true",
+        Err (_) => false
+    };
+}
 
 // NB: C++ structures and functions are defined in "dht.cc".
 
@@ -1112,7 +1117,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 return
             }
 
-            if LOG_UNHANDLED_ALERTS == Some ("true") {
+            if *LOG_UNHANDLED_ALERTS {
                 // TODO: Use `buf`.
                 let cs = unsafe {alert_message (alert)};
                 if let Ok (alert_message) = unsafe {CStr::from_ptr (cs)} .to_str() {
