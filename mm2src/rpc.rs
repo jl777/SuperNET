@@ -222,9 +222,9 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "send_raw_transaction" => send_raw_transaction (ctx, req),
         "setprice" => set_price (ctx, req),
         "stop" => stop (ctx),
-        "my_recent_swaps" => my_recent_swaps(req),
-        "my_swap_status" => my_swap_status(req),
-        "stats_swap_status" => stats_swap_status(req),
+        "my_recent_swaps" => my_recent_swaps(ctx, req),
+        "my_swap_status" => my_swap_status(ctx, req),
+        "stats_swap_status" => stats_swap_status(ctx, req),
         "version" => version(),
         "withdraw" => withdraw(ctx, req),
         _ => return DispatcherRes::NoMatch (req)
