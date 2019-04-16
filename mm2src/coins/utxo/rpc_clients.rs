@@ -27,7 +27,7 @@ use std::sync::{Mutex, Arc};
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::time::{Duration};
 use tokio::codec::{Encoder, Decoder};
-use tokio::net::TcpStream;
+use tokio_tcp::TcpStream;
 
 #[derive(Debug)]
 pub enum UtxoRpcClientEnum {
@@ -777,6 +777,7 @@ fn electrum_connect(
             });
 
             let (sink, stream) = Bytes.framed(stream).split();
+            // this forwards the messages from rx to sink (write) part of tcp stream
             let send_all = SendAll::new(sink, rx);
             let clone = responses.clone();
             CORE.spawn(|_| {
