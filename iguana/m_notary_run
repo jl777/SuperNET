@@ -114,6 +114,7 @@ coins/rick_7776
 coins/morty_7776
 coins/vote2019_7776
 coins/hush3_7776
+coins/koin_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
