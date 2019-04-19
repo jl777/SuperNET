@@ -184,7 +184,7 @@ uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress, uint8
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
-uint64_t weiToSatoshi(char *wei);
+uint64_t weiToSatoshi(char *wei, uint8_t decimals);
 
 char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm, int64_t gas, int64_t gasPrice, uint8_t defaultGasOnErr);
 char *sendErc20(
@@ -216,6 +216,10 @@ uint64_t estimate_erc20_gas(
 uint8_t compareAddresses(char *address1, char *address2);
 uint8_t isValidAddress(char *address);
 uint8_t getErc20DecimalsZeroOnError(char *tokenAddress);
+
+#if !defined(NDEBUG) && defined(__linux__)
+void print_stack_trace();
+#endif
 
 #ifdef __cplusplus
 }
