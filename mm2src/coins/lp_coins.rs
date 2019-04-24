@@ -205,6 +205,7 @@ pub trait IguanaInfo {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct WithdrawRequest {
     coin: String,
