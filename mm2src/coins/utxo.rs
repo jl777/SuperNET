@@ -1438,11 +1438,4 @@ mod tests {
         let actual_addr = unwrap!(coin.addresses_from_script(&script));
         assert_eq!(expected_addr, actual_addr);
     }
-
-    #[test]
-    fn test_tx_details_from_hash() {
-        let coin = utxo_coin_for_test();
-        let details = coin.tx_details_by_hash("c659d1618d1b851ad066ca1a916ab3c66ac2839079dd6056c204ec55c8bb9eb1".into()).unwrap();
-        log!([details]);
-    }
 }
