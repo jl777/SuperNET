@@ -966,7 +966,7 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     let default_coins = ["BTC", "KMD"];
 
     for &ticker in default_coins.iter() {
-        try_s! (lp_coininit (ctx, ticker, &json!({"mm2":1})));
+        try_s! (lp_coininit (ctx, ticker, &json!({"mm2":1,"tx_history":true})));
     }
 
     Ok(())
