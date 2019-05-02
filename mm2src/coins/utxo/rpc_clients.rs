@@ -311,7 +311,13 @@ impl UtxoRpcClientOps for NativeClient {
     }
 
     fn estimate_fee_sat(&self, decimals: u8) -> RpcRes<u64> {
-        Box::new(self.estimate_fee().map(move |fee| (fee * 10.0_f64.powf(decimals as f64)) as u64))
+        Box::new(self.estimate_fee().map(move |fee|
+            if fee > 0.00001 {
+                (fee * 10.0_f64.powf(decimals as f64)) as u64
+            } else {
+                1000
+            }
+        ))
     }
 
     /// https://bitcoin.org/en/developer-reference#sendrawtransaction
