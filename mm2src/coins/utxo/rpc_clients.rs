@@ -144,7 +144,7 @@ pub struct ListTransactionsItem {
     #[serde(default)]
     pub fee: f64,
     #[serde(default)]
-    pub confirmations: u64,
+    pub confirmations: i64,
     #[serde(default)]
     pub blockhash: H256Json,
     #[serde(default)]

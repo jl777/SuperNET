@@ -1015,7 +1015,7 @@ impl MmCoin for UtxoCoin {
                     let mut from = 0;
                     let mut all_transactions = vec![];
                     loop {
-                        let transactions = match client.list_transactions(1000, from).wait() {
+                        let transactions = match client.list_transactions(100, from).wait() {
                             Ok(value) => value,
                             Err(e) => {
                                 ctx.log.log("", &[&"tx_history", &self.ticker], &ERRL!("Error {} on list transactions, retrying", e));
@@ -1026,7 +1026,7 @@ impl MmCoin for UtxoCoin {
                         if transactions.is_empty() {
                             break;
                         }
-                        from += 1000;
+                        from += 100;
                         all_transactions.extend(transactions);
                     }
                     all_transactions.into_iter().filter_map(|item| {
