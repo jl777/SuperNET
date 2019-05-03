@@ -1639,6 +1639,9 @@ pub struct AutoBuyInput {
 
 pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
+    if input.base == input.rel {
+        return rpc_err_response(500, "Base and rel must be different coins");
+    }
     let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
     let rel_coin = match rel_coin {Some(c) => c, None => return rpc_err_response(500, "Rel coin is not found or inactive")};
     let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
@@ -1652,6 +1655,9 @@ pub fn buy(ctx: MmArc, json: Json) -> HyRes {
 
 pub fn sell(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
+    if input.base == input.rel {
+        return rpc_err_response(500, "Base and rel must be different coins");
+    }
     let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
     let base_coin = match base_coin {Some(c) => c, None => return rpc_err_response(500, "Base coin is not found or inactive")};
     let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
