@@ -312,6 +312,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
                 exit(-1);
             }
             conv_NXTpassword(userpass.bytes,pubkeyp->bytes,(uint8_t *)G.USERPASS_WIFSTR,(int32_t)strlen(G.USERPASS_WIFSTR));
+            userpub = curve25519(userpass,curve25519_basepoint9());
+            bits256_str(G.USERPASS,userpub);
             printf("userpass.(userpass is deprecated, set the rpc_password in MM2 JSON config instead: https://github.com/artemii235/developer-docs/blob/mm/docs/basic-docs/atomic-swap-dex/dex-walkthrough.md#initiate-marketmaker-20)\n");
         }
     }
