@@ -1639,6 +1639,9 @@ pub struct AutoBuyInput {
 
 pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
+    if input.base == input.rel {
+        return rpc_err_response(500, "Base and rel must be different coins");
+    }
     let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
     let rel_coin = match rel_coin {Some(c) => c, None => return rpc_err_response(500, "Rel coin is not found or inactive")};
     let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
@@ -1652,6 +1655,9 @@ pub fn buy(ctx: MmArc, json: Json) -> HyRes {
 
 pub fn sell(ctx: MmArc, json: Json) -> HyRes {
     let input : AutoBuyInput = try_h!(json::from_value(json.clone()));
+    if input.base == input.rel {
+        return rpc_err_response(500, "Base and rel must be different coins");
+    }
     let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
     let base_coin = match base_coin {Some(c) => c, None => return rpc_err_response(500, "Base coin is not found or inactive")};
     let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
@@ -1737,10 +1743,6 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
         let dest_satoshis = (SATOSHIS as f64 * volume) as u64;
         let mut b = lp::LP_utxoinfo::default();
         let fill_flag = input.fill.unwrap_or(0);
-
-        if dest_satoshis < dest_tx_fee * 10 {
-            return ERR!("cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade");
-        }
 
         let best_satoshis = lp_base_satoshis(sat_to_f(dest_satoshis), price, dest_tx_fee);
         strcpy(b.coin.as_ptr() as *mut c_char, base_str.as_ptr());

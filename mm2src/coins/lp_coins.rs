@@ -18,8 +18,8 @@
 //  marketmaker
 //
 
-#![feature(non_ascii_idents)]
 #![feature(integer_atomics)]
+#![feature(non_ascii_idents)]
 
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
@@ -29,7 +29,7 @@
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
 
-use common::{bitcoin_ctx, bits256, lp, rpc_response, rpc_err_response, HyRes};
+use common::{bitcoin_ctx, lp, rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use dirs::home_dir;
 use futures::{Future};
@@ -234,6 +234,8 @@ pub struct TransactionDetails {
     my_balance_change: f64,
     /// Block height
     block_height: u64,
+    /// Transaction timestamp
+    timestamp: u64,
     /// Every coin can has specific fee details:
     /// When you send UTXO tx you pay fee with the coin itself (e.g. 1 BTC and 0.0001 BTC fee).
     /// But for ERC20 token transfer you pay fee with another coin: ETH, because it's ETH smart contract function call that requires gas to be burnt.
@@ -241,6 +243,8 @@ pub struct TransactionDetails {
     fee_details: Json,
     /// The coin transaction belongs to
     coin: String,
+    /// Internal MM2 id used for internal transaction identification, for some coins it might be equal to transaction hash
+    internal_id: BytesJson,
 }
 
 /// NB: Implementations are expected to follow the pImpl idiom, providing cheap reference-counted cloning and garbage collection.
@@ -268,6 +272,31 @@ pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
     /// Path to tx history file
     fn tx_history_path(&self, ctx: &MmArc) -> PathBuf {
         ctx.dbdir().join("TRANSACTIONS").join(format!("{}_{}.json", self.ticker(), self.my_address()))
+    }
+
+    /// Loads existing tx history from file, returns empty vector if file is not found
+    /// Cleans the existing file if deserialization fails
+    fn load_history_from_file(&self, ctx: &MmArc) -> Vec<TransactionDetails> {
+        let content = slurp(&self.tx_history_path(&ctx));
+        let history: Vec<TransactionDetails> = if content.is_empty() {
+            vec![]
+        } else {
+            match json::from_slice(&content) {
+                Ok(c) => c,
+                Err(e) => {
+                    ctx.log.log("", &[&"tx_history", &self.ticker().to_string()], &ERRL!("Error {} on history deserialization, resetting the cache", e));
+                    unwrap!(std::fs::remove_file(&self.tx_history_path(&ctx)));
+                    vec![]
+                }
+            }
+        };
+        history
+    }
+
+    fn save_history_to_file(&self, content: &[u8], ctx: &MmArc) {
+        let tmp_file = format!("{}.tmp", self.tx_history_path(&ctx).display());
+        unwrap!(std::fs::write(&tmp_file, content));
+        unwrap!(std::fs::rename(tmp_file, self.tx_history_path(&ctx)));
     }
 
     /// Gets tx details by hash requesting the coin RPC if required
@@ -739,24 +768,6 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         try_s! (safecopy! (ii.serverport, "127.0.0.1:{}", rpc_port))
     }
 
-    // TODO: Move the private key into `MmCtx`. Initialize it before `lp_coininit`.
-    let passphrase = try_s! (ctx.conf["passphrase"].as_str().ok_or ("!passphrase"));
-    let c_passphrase = try_s! (CString::new (&passphrase[..]));
-    unsafe {
-        let mut pubkey33: [u8; 33] = zeroed();
-        let mut pubkey: bits256 = zeroed();
-        let pk = lp::LP_privkeycalc (
-            ctx.btc_ctx() as *mut c_void,          // void *ctx
-            pubkey33.as_mut_ptr(),                 // uint8_t *pubkey33
-            &mut pubkey,                           // bits256 *pubkeyp
-            ii,                                    // struct iguana_info *coin
-            c_passphrase.as_ptr() as *mut c_char,  // char *passphrase
-            b"\0".as_ptr() as *mut c_char          // char *wifstr
-        );
-        if !pk.nonz() {return ERR! ("!LP_privkeycalc")}
-        if !lp::G.LP_privkey.nonz() {return ERR! ("Error initializing the global private key (G.LP_privkey)")}
-    }
-
     let c_ticker = try_s! (CString::new (ticker));
     let c_ticker = c_ticker.as_ptr() as *mut c_char;
 
@@ -793,24 +804,6 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
             }
             break urls
         }
-
-        // Default servers for coins that are enabled by default.
-        // cf. https://github.com/artemii235/SuperNET/issues/281#issuecomment-460268221
-        if ticker == "KMD" {
-            break vec! [
-                "electrum1.cipig.net:10001".into(),
-                "electrum2.cipig.net:10001".into(),
-                "electrum3.cipig.net:10001".into()
-            ]
-        }
-        if ticker == "BTC" {
-            break vec! [
-                "electrum1.cipig.net:10000".into(),
-                "electrum2.cipig.net:10000".into(),
-                "electrum3.cipig.net:10000".into()
-            ]
-        }
-
         break Vec::new()
     };
 
@@ -841,6 +834,7 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
         try_s! (eth_coin_from_iguana_info(ii, req)) .into()
     };
 
+    try_s! (safecopy! (ii.smartaddr, "{}", coin.my_address()));
     let block_count = try_s!(coin.current_block().wait());
     // TODO, #156: Warn the user when we know that the wallet is under-initialized.
     log! ([=ticker] if !coins_en["etomic"].is_null() {", etomic"} ", " [=method] ", " [=block_count]);
@@ -934,12 +928,6 @@ pub fn lp_initcoins (ctx: &MmArc) -> Result<(), String> {
     //     But we currently need to initialize at least one coin here, in `fn lp_initcoins`,
     //     in order to set the global key pair with `LP_privkeycalc`.
     //     We also need the "KMD" initialized [and enabled] since it is currently used in `LP_pricepings` [etc].
-    let default_coins = ["BTC", "KMD"];
-
-    for &ticker in default_coins.iter() {
-        try_s! (lp_coininit (ctx, ticker, &json!({"mm2":1})));
-    }
-
     Ok(())
 }
 
@@ -998,20 +986,26 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
         Err (err) => return rpc_err_response (500, &fomat! ("!lp_coinfind(" (ticker) "): " (err)))
     };
     let limit = req["limit"].as_u64().unwrap_or(10);
-    let from_tx_hash: Option<BytesJson> = try_h!(json::from_value(req["from_tx_hash"].clone()));
+    let from_id: Option<BytesJson> = try_h!(json::from_value(req["from_id"].clone()));
     let file_path = coin.tx_history_path(&ctx);
     let content = slurp(&file_path);
     if content.is_empty() {
         rpc_response(200, json!({
-            "result": [],
+            "result": {
+                "transactions": [],
+                "limit": limit,
+                "skipped": 0,
+                "from_id": from_id,
+                "total": 0,
+            }
         }).to_string())
     } else {
         let history: Vec<TransactionDetails> = try_h!(json::from_slice(&content));
         let total_records = history.len();
         Box::new(coin.current_block().and_then(move |block_number| {
-            let skip = match &from_tx_hash {
-                Some(hash) => {
-                    try_h!(history.iter().position(|item| item.tx_hash == *hash).ok_or(format!("from_tx_hash {:02x} is not found", hash))) + 1
+            let skip = match &from_id {
+                Some(id) => {
+                    try_h!(history.iter().position(|item| item.internal_id == *id).ok_or(format!("from_id {:02x} is not found", id))) + 1
                 },
                 None => 0,
             };
@@ -1030,8 +1024,8 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
                 "result": {
                     "transactions": history,
                     "limit": limit,
-                    "skipped":skip,
-                    "from_tx_hash": from_tx_hash,
+                    "skipped": skip,
+                    "from_id": from_id,
                     "total": total_records,
                 }
             }).to_string())
