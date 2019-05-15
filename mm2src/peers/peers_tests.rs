@@ -88,6 +88,12 @@ pub fn peers_dht() {
 }
 
 pub fn peers_direct_send() {
+    // Unstable results on our MacOS CI server,
+    // which isn't a problem in general (direct UDP communication is a best effort optimization)
+    // but is bad for the CI tests.
+    // Might experiment more with MacOS in the future.
+    if cfg! (target_os = "macos") {return}
+
     // NB: Still need the DHT enabled in order for the pings to work.
     let alice = peer (json! ({"dht": "on"}), 2121);
     let bob = peer (json! ({"dht": "on"}), 2122);

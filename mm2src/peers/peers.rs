@@ -417,7 +417,7 @@ struct PayloadOutMeta {
 }
 
 /// A group of ping packets (one or more) that we want to deliver.  
-/// TODO: This groups is cancellable, like when we `drop` a `Future` returned by `send`.  
+/// Cancellable: transmission is stopped when the `Arc<SendHandler>` returned by `send` is dropped.  
 /// The target is either a specific endpoint (when we're trying to discover a peer)
 /// or a friend's public key (when we're `send`ing data to that friend).
 struct Package {
@@ -486,9 +486,14 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
             },
             // Recipient is a `LP_mypub25519` key of a peer.
             Either::Left ((seed, ref send_handler)) => {
-                // Skip the transmission if the `SendHandler` arc was dropped.
-                // TODO: Should eventually remove the transmission from `packages`.
-                let _send_handler = match send_handler.upgrade() {Some (arc) => arc, None => continue};
+                // Skip the transmission if the `Arc<SendHandler>` was dropped.
+                let _send_handler = match send_handler.upgrade() {
+                    Some (arc) => arc,
+                    None => {
+                        package.payloads.clear();  // Marks the package for removal.
+                        continue
+                    }
+                };
 
                 let mut limops = ratelim_maintenance (seed);
 
@@ -627,7 +632,7 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
         assert! (chunk.len() <= 996);
     }
 
-    // Submit the chunks to libtorrent, appending the chunk number (1-based) to salt.
+    // Submit the chunks into delivery queue, appending the chunk number (1-based) to salt.
 
     let now = now_float();
     unwrap! (PUT_SHUTTLES.lock()) .retain (|_, (created, _)| now as u64 - *created < 600 * 1000);
@@ -876,6 +881,8 @@ struct CbCtx<'a, 'b, 'c> {
     bootstrapped: &'c mut f64
 }
 
+/// Process the incoming DHT pings,
+/// some of which are used for direct NAT-traversing communication between peers.
 fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result<(), String> {
     let ping = match bdecode::<Ping<MmPayload>> (pkt) {Ok (p) => p, Err (_) => return Ok(())};
 
@@ -944,6 +951,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
         en.direct = now_float();
         en.payload = Some (payload);
         pctx.direct_chunks.fetch_add (1, AtomicOrdering::Relaxed);
+        log! ("incoming_ping] Chunk " (chunk_idx) " received directly");
     }
 
     Ok(())
