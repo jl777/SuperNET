@@ -49,6 +49,7 @@ use std::io::{Cursor, Write};
 use std::iter::{once, FromIterator};
 use std::mem::{uninitialized, zeroed};
 use std::net::{IpAddr, SocketAddr};
+use std::num::{NonZeroU8, NonZeroU64};
 use std::path::Path;
 use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
@@ -178,33 +179,39 @@ fn format_radix (mut x: u64, radix: u64) -> Vec<u8> {
 /// A command delivered to the `dht_thread` via the `PeersContext::cmd_tx`.
 enum LtCommand {
     Put {
-        // The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
-        // The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
+        /// The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
+        /// The public key of the pair is also a pointer into the DHT space: nodes closest to it will be asked to store the value.
         seed: bits256,
-        // Identifies the value without affecting its DHT location (need to double-check this). Can be empty.  
-        // Should not be too large (BEP 44 mentions error code 207 "salt too big").  
-        // Must not contain zero bytes (we're passing it as a zero-terminated string sometimes).  
-        // NB: If the `data` is large then `dht_thread` will append chunk number to `salt` for every extra DHT chunk.
+        /// Identifies the value without affecting its DHT location (need to double-check this). Can be empty.  
+        /// Should not be too large (BEP 44 mentions error code 207 "salt too big").  
+        /// Must not contain zero bytes (we're passing it as a zero-terminated string sometimes).  
+        /// NB: If the `data` is large then `dht_thread` will append chunk number to `salt` for every extra DHT chunk.
         salt: Vec<u8>,
         payload: Vec<u8>,
-        send_handler: Weak<SendHandler>
+        send_handler: Weak<SendHandler>,
+        /// Send the value to the HTTP fallback server
+        /// if the delivery isn't terminated after the given number of seconds.
+        fallback: NonZeroU8
     },
-    // Starts a new get operation, unless it is already in progress.
+    /// Starts a new get operation, unless it is already in progress.
     Get {
         seed: bits256,
         salt: Vec<u8>,
-        // Identifies the `Future` responsible for this get operation.
-        frid: u64,
-        // The `Future` to wake when the payload is reassembled.
-        task: Task
+        /// Identifies the `Future` responsible for this get operation.
+        frid: NonZeroU64,
+        /// The `Future` to wake when the payload is reassembled.
+        task: Task,
+        /// Start checking the HTTP fallback server for the value
+        /// if it doesn't come through other channels in the given number of seconds.
+        fallback: NonZeroU8
     },
-    // Stops a get operation when a corresponding `Future` handler is dropped.
+    /// Stops a get operation when a corresponding `Future` handler is dropped.
     DropGet {
         salt: Vec<u8>,
-        // Identifies the `Future` responsible for this get operation.
-        frid: u64
+        /// Identifies the `Future` responsible for this get operation.
+        frid: NonZeroU64
     },
-    // Direct communication. Sends a DHT ping packet to a given endpoint.
+    /// Direct communication. Sends a DHT ping packet to a given endpoint.
     Ping {
         endpoint: SocketAddr
     }
@@ -579,7 +586,8 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
 
 /// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
-fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>, send_handler: Weak<SendHandler>) {
+fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>,
+                  send_handler: Weak<SendHandler>, fallback: NonZeroU8) {
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
     // chunk 3 {{piece of data} crc32}
@@ -670,20 +678,20 @@ struct GetsEntry {
     /// In some APIs we only get this derived public key and not the `seed`.
     pk: Option<[u8; 32]>,
     reassembled_at: Option<f64>,
-    number_of_chunks: Option<u8>,
+    number_of_chunks: Option<NonZeroU8>,
     /// Chunks we're getting from DHT.
     chunks: Vec<ChunkGetsEntry>,
     /// A map from the index byte of the chunk salt to the ping payload received.
     direct_chunks: HashMap<u8, Vec<u8>>,
     /// Futures currently interested in this entry (waiting for it).
-    futures: HashMap<u64, Task>,
+    futures: HashMap<NonZeroU64, Task>,
     /// The time when we first discovered that the `futures` is empty.  
     /// Reset to `None` if there are `futures`.
     idle_since: Option<f64>
 }
 impl GetsEntry {
     /// Invoked when the future `frid` is dropped.
-    fn drop_get (&mut self, frid: u64) {
+    fn drop_get (&mut self, frid: NonZeroU64) {
         self.futures.remove (&frid);
     }
 }
@@ -695,7 +703,8 @@ type Gets = HashMap<Vec<u8>, GetsEntry>;
 /// Invoked whenever we see continued interest for the value
 /// (note that the fetching should be dropped if the interest vanishes)
 /// or when after one of the fetched pieces arrives.
-fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: u64, task: Task, dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
+fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: NonZeroU64, task: Task, fallback: NonZeroU8,
+                         dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
     let gets = match gets.entry (salt) {
         Entry::Vacant (ve) => {
             // Fetch the first chunk.
@@ -725,7 +734,9 @@ fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: u64, task: Task, du
     get_pieces_scheduler_en (seed, dugout, gets, pctx)
 }
 
-fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t, mut gets: OccupiedEntry<Vec<u8>, GetsEntry, DefaultHashBuilder>, pctx: &PeersContext) {
+fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t,
+                            mut gets: OccupiedEntry<Vec<u8>, GetsEntry, DefaultHashBuilder>,
+                            pctx: &PeersContext) {
     // Skip or GC the package if there are no clients still working on it.
 
     let (skip, remove) = loop {
@@ -751,7 +762,7 @@ fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t, mut gets: Occu
     let now = now_float();
     if let Some (number_of_chunks) = gets.get().number_of_chunks {
         // We'll never reassemble the right value while having extra chunks.
-        gets.get_mut().chunks.resize_with (number_of_chunks as usize, Default::default)
+        gets.get_mut().chunks.resize_with (number_of_chunks.get() as usize, Default::default)
     }
 
     // Go over the chunks and see if it's time to maybe retry fetching some of them.
@@ -915,10 +926,16 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
 
         let (_, gets) = cbctx.gets.raw_entry_mut().from_key (subject_salt)
             .or_insert (subject_salt.to_vec(), GetsEntry::default());
-        if chunk_idx == 1 {gets.number_of_chunks = Some (payload.remove (0))}
-        let number_of_chunks = gets.number_of_chunks.unwrap_or (0);
-        if chunk_idx > number_of_chunks {return ERR! ("ping chunk out of bounds")}
-        gets.chunks.resize_with (number_of_chunks as usize, Default::default);
+        if chunk_idx == 1 {
+            let number_of_chunks = try_s! (NonZeroU8::new (payload.remove (0)) .ok_or ("zero chunks"));
+            gets.number_of_chunks = Some (number_of_chunks)
+        }
+        let number_of_chunks = match gets.number_of_chunks {
+            Some (n) => n,
+            None => return ERR! ("no number_of_chunks")  // Out of order delivery?
+        };
+        if chunk_idx > number_of_chunks.get() {return ERR! ("ping chunk out of bounds")}
+        gets.chunks.resize_with (number_of_chunks.get() as usize, Default::default);
         let mut en = &mut gets.chunks[chunk_idx as usize - 1];
         en.direct = now_float();
         en.payload = Some (payload);
@@ -1053,7 +1070,12 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 crc = update (crc, &IEEE_TABLE, &salt);
                 if incoming_checksum != crc {return}
 
-                let number_of_chunks = if idx == 1 {Some (payload.remove (0))} else {None};
+                let number_of_chunks = if idx == 1 {
+                    match NonZeroU8::new (payload.remove (0)) {
+                        Some (nz) => Some (nz),
+                        None => return  // Invalid ping, number_of_chunks can not be zero.
+                    }
+                } else {None};
                 let seq_auth = unsafe {read_volatile (&seq) as u64 * 2 + if read_volatile (&auth) {1} else {0}};
                 let chunk = &mut gets.chunks[idx-1];
                 if chunk.payload.is_none() || seq_auth > chunk.seq_auth {
@@ -1133,10 +1155,11 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
         };
 
         match pctx.cmd_rx.recv_timeout (Duration::from_millis (100)) {
-            Ok (LtCommand::Put {seed, salt, payload, send_handler}) => split_and_put (&ctx, our_public_key, seed, salt, payload, send_handler),
-            Ok (LtCommand::Get {seed, salt, frid, task}) => {
+            Ok (LtCommand::Put {seed, salt, payload, send_handler, fallback}) =>
+                split_and_put (&ctx, our_public_key, seed, salt, payload, send_handler, fallback),
+            Ok (LtCommand::Get {seed, salt, frid, task, fallback}) => {
                 assert_eq! (seed, our_public_key);
-                get_pieces_scheduler (seed, salt, frid, task, &mut dugout, &mut gets, &*pctx)},
+                get_pieces_scheduler (seed, salt, frid, task, fallback, &mut dugout, &mut gets, &*pctx)},
             Ok (LtCommand::DropGet {salt, frid}) => {
                 if let Some (en) = gets.get_mut (&salt) {en.drop_get (frid)}},
             Ok (LtCommand::Ping {endpoint}) => pingʹ (&ctx, our_public_key, endpoint, None),
@@ -1286,7 +1309,7 @@ pub struct SendHandler;
 /// Think of it as a radio-signal set on a loop.
 pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: Vec<u8>)
 -> Result<Arc<SendHandler>, String> {
-    if fallback == 0 {return ERR! ("fallback is 0")}
+    let fallback = try_s! (NonZeroU8::new (fallback) .ok_or ("fallback is 0"));
 
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
 
@@ -1305,7 +1328,7 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: 
     let send_handler = Arc::downgrade (&send_handler_arc);
 
     // Tell `dht_thread` to save the data.
-    try_s! (pctx.cmd_tx.send (LtCommand::Put {seed: peer, salt, payload, send_handler}));
+    try_s! (pctx.cmd_tx.send (LtCommand::Put {seed: peer, salt, payload, send_handler, fallback}));
 
     Ok (send_handler_arc)
 }
@@ -1315,20 +1338,29 @@ struct RecvFuture {
     seed: bits256,
     salt: Vec<u8>,
     validator: Box<Fn(&[u8])->bool + Send>,
-    frid: Option<u64>
+    frid: Option<NonZeroU64>,
+    /// Start checking the HTTP fallback server for the value
+    /// if it doesn't come through other channels in the given number of seconds.
+    fallback: NonZeroU8
 }
 impl Future for RecvFuture {
     type Item = Vec<u8>;
     type Error = String;
     fn poll (&mut self) -> Poll<Vec<u8>, String> {
         if self.frid.is_none() {
-            let frid = thread_rng().gen();
+            let frid = loop {
+                match NonZeroU64::new (thread_rng().gen()) {Some (nz) => break nz, None => continue}
+            };
 
             // Ask the `dht_thread` to fetch the data.
-            let task = futures::task::current();
-            if let Err (err) = self.pctx.cmd_tx.send (LtCommand::Get {seed: self.seed, salt: self.salt.clone(), task, frid}) {
-                return Err (ERRL! ("!send: {}", err))
-            }
+            let get = LtCommand::Get {
+                seed: self.seed,
+                salt: self.salt.clone(),
+                frid,
+                task: futures::task::current(),
+                fallback: self.fallback
+            };
+            if let Err (err) = self.pctx.cmd_tx.send (get) {return Err (ERRL! ("!send: {}", err))}
 
             self.frid = Some (frid)
         }
@@ -1364,8 +1396,9 @@ impl Drop for RecvFuture {
 /// Returned `Future` represents our effort to receive the transmission.
 /// As of now doesn't need a reactor.
 /// Should be `drop`ped soon as we no longer need the transmission.
-pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<Fn(&[u8])->bool + Send>) -> Box<Future<Item=Vec<u8>, Error=String> + Send> {
-    if fallback == 0 {return Box::new (future::err (ERRL! ("fallback is 0")))}
+pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<Fn(&[u8])->bool + Send>)
+-> Box<Future<Item=Vec<u8>, Error=String> + Send> {
+    let fallback = try_fus! (NonZeroU8::new (fallback) .ok_or ("fallback is 0"));
 
     let pctx = try_fus! (PeersContext::from_ctx (&ctx));
 
@@ -1379,7 +1412,7 @@ pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<Fn(&[u8])
     // NB: There should be no zero bytes in the salt (due to `CStr::from_ptr` and the possibility of a similar problem abroad).
     let salt = format_radix (checksum_ecma (subject), 36);
 
-    Box::new (RecvFuture {pctx, seed, salt, validator, frid: None})
+    Box::new (RecvFuture {pctx, seed, salt, validator, frid: None, fallback})
 }
 
 pub fn key (ctx: &MmArc) -> Result<bits256, String> {
