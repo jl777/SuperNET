@@ -176,7 +176,7 @@ fn format_radix (mut x: u64, radix: u64) -> Vec<u8> {
     result
 }
 
-/// A command delivered to the `dht_thread` via the `PeersContext::cmd_tx`.
+/// A command delivered to the `peers_thread` via the `PeersContext::cmd_tx`.
 enum LtCommand {
     Put {
         /// The 32-byte seed which is given to `ed25519_create_keypair` in order to generate the key pair.
@@ -185,7 +185,7 @@ enum LtCommand {
         /// Identifies the value without affecting its DHT location (need to double-check this). Can be empty.  
         /// Should not be too large (BEP 44 mentions error code 207 "salt too big").  
         /// Must not contain zero bytes (we're passing it as a zero-terminated string sometimes).  
-        /// NB: If the `data` is large then `dht_thread` will append chunk number to `salt` for every extra DHT chunk.
+        /// NB: If the `data` is large then `peers_thread` will append chunk number to `salt` for every extra DHT chunk.
         salt: Vec<u8>,
         payload: Vec<u8>,
         send_handler: Weak<SendHandler>,
@@ -248,9 +248,9 @@ impl TransMeta {
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     our_public_key: Mutex<bits256>,
-    dht_thread: Mutex<Option<thread::JoinHandle<()>>>,
+    peers_thread: Mutex<Option<thread::JoinHandle<()>>>,
     cmd_tx: channel::Sender<LtCommand>,
-    /// Should only be used by the `dht_thread`.
+    /// Should only be used by the `peers_thread`.
     cmd_rx: channel::Receiver<LtCommand>,
     // TODO: Remove the outdated `recently_fetched` entries after a while.
     /// Salt -> last-modified, value.
@@ -271,7 +271,7 @@ impl PeersContext {
             let (cmd_tx, cmd_rx) = channel::unbounded::<LtCommand>();
             Ok (PeersContext {
                 our_public_key: Mutex::new (unsafe {zeroed()}),
-                dht_thread: Mutex::new (None),
+                peers_thread: Mutex::new (None),
                 cmd_tx,
                 cmd_rx,
                 recently_fetched: Mutex::new (HashMap::new()),
@@ -341,7 +341,7 @@ struct PingArgs<P> {
 
 /// Tells libtorrent to send a ping DHT packet with extra payload.
 /// 
-/// Should preferably be run from under the `dht_thread`
+/// Should preferably be run from under the `peers_thread`
 /// in order to minimize the chance of synchronization issues in the unsafe C code.
 /// 
 /// DHT packets larger than 1500 bytes are dropped. Experimenting with payload size shows
@@ -453,7 +453,7 @@ extern fn put_callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i
     }
 }
 
-/// Invoked periodically from the `dht_thread` in order to manage and retransmit the outgoing ping packets.
+/// Invoked periodically from the `peers_thread` in order to manage and retransmit the outgoing ping packets.
 fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
     // AG: Instead of the current random RATELIM skipping
     //     we might consider *ordering* the packets according to the endpoint freshness, etc.
@@ -584,7 +584,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
     trans.packages.push (direct_package);
 }
 
-/// Invoked from the `dht_thread`, implementing the `LtCommand::Put` op.  
+/// Invoked from the `peers_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
 fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>,
                   send_handler: Weak<SendHandler>, fallback: NonZeroU8) {
@@ -823,6 +823,10 @@ fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t,
 
 const BOOTSTRAP_STATUS: &[&TagParam] = &[&"dht-boot"];
 
+/// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
+/// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
+/// Delaying the libtorrent bootstrap allows us to skip the libtorrent code altogether
+/// in some of the short-lived unit tests where the DHT isn't actually used.
 struct DhtDelayed {until: f64}
 impl DhtDelayed {
     fn init (ctx: &MmArc, seconds: f64) -> DhtDelayed {
@@ -945,11 +949,8 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
     Ok(())
 }
 
-/// I've noticed that if we create a libtorrent session (`lt::session`) and destroy it right away
-/// then it will often crash. Apparently we're catching it unawares during some initalization procedures.
-/// This seems like a good enough reason to use a separate thread for managing the libtorrent,
-/// allowing it to initialize and then stop at its own pace.
-fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool, delay_dht: f64) {
+/// The loop driving the peers crate.
+fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool, delay_dht: f64) {
     if let Err (err) = ctx.log.register_my_thread() {log! ((err))}
     let myipaddr = ctx.conf["myipaddr"].as_str();
     let listen_interfaces = (|| {
@@ -1048,7 +1049,7 @@ fn dht_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port:
                 let payload: ByteBuf = if bencoded == b"0:" {ByteBuf::new()} else {
                     match serde_bencode::de::from_bytes (bencoded) {
                         Ok (payload) => payload,
-                        Err (err) => {log! ("dht_thread] Can not decode the received payload: " (err)); return}
+                        Err (err) => {log! ("peers_thread] Can not decode the received payload: " (err)); return}
                     }
                 };
                 let mut payload = payload.to_vec();
@@ -1232,24 +1233,24 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
 
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     *try_s! (pctx.our_public_key.lock()) = our_public_key;
-    *try_s! (pctx.dht_thread.lock()) =
+    *try_s! (pctx.peers_thread.lock()) =
         Some (try_s! (thread::Builder::new().name ("dht".into()) .spawn ({
             let ctx = ctx.clone();
-            move || dht_thread (ctx, netid, our_public_key, preferred_port, read_only, delay_dht)
+            move || peers_thread (ctx, netid, our_public_key, preferred_port, read_only, delay_dht)
         })));
     ctx.on_stop ({
         let ctx = ctx.clone();
         let pctx = pctx.clone();
         Box::new (move || -> Result<(), String> {
-            assert! (ctx.is_stopping());  // Check that the `dht_thread` can see the flag.
-            if let Ok (mut dht_thread) = pctx.dht_thread.lock() {
-                if let Some (dht_thread) = dht_thread.take() {
-                    let join_status = ctx.log.status (&[&"dht-stop"], "Waiting for the dht_thread to stop...");
+            assert! (ctx.is_stopping());  // Check that the `peers_thread` can see the flag.
+            if let Ok (mut peers_thread) = pctx.peers_thread.lock() {
+                if let Some (peers_thread) = peers_thread.take() {
+                    let join_status = ctx.log.status (&[&"dht-stop"], "Waiting for the peers_thread to stop...");
                     // We want to shutdown libtorrent and stuff gracefully,
                     // but the `join` might sometimes hang when we're stopping libtorrent, so we implement a timeout.
                     let (tx, rx) = channel::bounded (1);
                     try_s! (thread::Builder::new().name ("dht-stop".into()) .spawn (move || {
-                        let _ = dht_thread.join();
+                        let _ = peers_thread.join();
                         let _ = tx.send (());
                     }));
                     match rx.recv_timeout (Duration::from_secs (3)) {
@@ -1327,7 +1328,7 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: 
     let send_handler_arc = Arc::new (SendHandler);
     let send_handler = Arc::downgrade (&send_handler_arc);
 
-    // Tell `dht_thread` to save the data.
+    // Tell `peers_thread` to save the data.
     try_s! (pctx.cmd_tx.send (LtCommand::Put {seed: peer, salt, payload, send_handler, fallback}));
 
     Ok (send_handler_arc)
@@ -1352,7 +1353,7 @@ impl Future for RecvFuture {
                 match NonZeroU64::new (thread_rng().gen()) {Some (nz) => break nz, None => continue}
             };
 
-            // Ask the `dht_thread` to fetch the data.
+            // Ask the `peers_thread` to fetch the data.
             let get = LtCommand::Get {
                 seed: self.seed,
                 salt: self.salt.clone(),
