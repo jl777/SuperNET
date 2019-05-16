@@ -422,7 +422,11 @@ struct PayloadOutMeta {
 /// or a friend's public key (when we're `send`ing data to that friend).
 struct Package {
     payloads: Vec<(MmPayload, PayloadOutMeta)>,
-    to: Either<(bits256, Weak<SendHandler>), SocketAddr>
+    to: Either<(bits256, Weak<SendHandler>), SocketAddr>,
+    /// Time (in seconds since UNIX epoch) when the package was scheduled.
+    scheduled_at: f64,
+    /// The number of seconds after which we should start sharing the data via the HTTP fallback.
+    fallback: Option<NonZeroU8>
 }
 
 extern fn put_callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i32, benload: *mut *mut u8, benlen: *mut i32, seq: *mut i64) {
@@ -515,9 +519,10 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     }
                 }
 
-                // TODO: Delay the `dht_put` a bit (skipping for a few loops) if we're trying direct communication.
                 let now = now_float();
                 for (payload, meta) in package.payloads.iter_mut() {
+                    // Delay the `dht_put` a bit (skipping for a few loops) if we're trying direct communication.
+                    if meta.pings > 0 && now - package.scheduled_at < 1. {continue}
                     // NB: `dht_put` is usually reliable, but not 100% so.
                     //     In particular, invoking `dht_put` during DHT initialization might have no effect.
                     //     And DHT might reboot when the external IP changes, adding a chance of some `dht_put` calls being skipped.
@@ -549,6 +554,12 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     with_ratelim (seed, |_lm, ops| {*ops += 1.; limops = *ops});
                     unsafe {dht_put (dugout, seed_bytes.as_ptr(), seed_bytes.len() as i32, salt.as_ptr(), salt.len() as i32, put_callback, shuttle_ptr, now as u64)}
                     meta.dht_put_invoked = now
+                }
+
+                for (payload, meta) in package.payloads.iter_mut() {
+                    let fallback = match package.fallback {Some (sec) => sec, None => continue};
+                    if now - package.scheduled_at < fallback.get() as f64 {continue}
+log! ("transmit] TBD, time to use the HTTP fallback...")
                 }
             }
         }
@@ -583,7 +594,9 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
 
     let direct_package = Package {
         payloads: vec! [(mm_payload.clone(), PayloadOutMeta::default())],
-        to: Either::Right (endpoint)
+        to: Either::Right (endpoint),
+        scheduled_at: now_float(),
+        fallback: None
     };
 
     trans.packages.push (direct_package);
@@ -641,7 +654,9 @@ fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, 
     let salt_base_len = salt.len();
     let mut package = Package {
         payloads: Vec::new(),
-        to: Either::Left ((seed, send_handler))
+        to: Either::Left ((seed, send_handler)),
+        scheduled_at: now,
+        fallback: Some (fallback)
     };
 
     let mut trans = unwrap! (pctx.trans_meta.lock());

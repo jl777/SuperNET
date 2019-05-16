@@ -52,9 +52,12 @@ fn destruction_check (mm: MmArc) {
     }
 }
 
-pub fn peers_dht() {
-    let alice = peer (json! ({"dht": "on"}), 2111);
-    let bob = peer (json! ({"dht": "on"}), 2112);
+fn peers_exchange (conf: Json) {
+    let fallback_on = conf["http-fallback"] == "on";
+    let fallback = if fallback_on {1} else {255};
+
+    let alice = peer (conf.clone(), 2111);
+    let bob = peer (conf, 2112);
 
     unwrap! (wait_for_log (&alice.log, 99., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
     unwrap! (wait_for_log (&bob.log, 33., &|en| en.contains ("[dht-boot] DHT bootstrap ... Done.")));
@@ -71,21 +74,32 @@ pub fn peers_dht() {
         let message: Vec<u8> = (0..*message_len) .map (|_| rng.gen()) .collect();
 
         println! ("Sending {} bytes …", message.len());
-        let _sending_f = super::send (&alice, unwrap! (super::key (&bob)), b"test_dht", 255, message.clone());
+        let _sending_f = super::send (&alice, unwrap! (super::key (&bob)), b"test_dht", fallback, message.clone());
 
         // Get that message from Alice.
 
-        let receiving_f = super::recv (&bob, b"test_dht", 255, Box::new ({
+        let receiving_f = super::recv (&bob, b"test_dht", fallback, Box::new ({
             let message = message.clone();
             move |payload| payload == &message[..]
         }));
         let received = unwrap! (receiving_f.wait());
         assert_eq! (received, message);
+
+        if fallback_on {
+            unwrap! (wait_for_log (&alice.log, 0.1, &|en| en.contains (
+                "transmit] TBD, time to use the HTTP fallback...")))
+        }
     }
 
     destruction_check (alice);
     destruction_check (bob);
 }
+
+/// Send and receive messages of various length and chunking via the DHT.
+pub fn peers_dht() {peers_exchange (json! ({"dht": "on"}))}
+
+/// Using a minimal one second HTTP fallback which should happen before the DHT kicks in.
+pub fn peers_fallback() {peers_exchange (json! ({"http-fallback": "on"}))}
 
 pub fn peers_direct_send() {
     // Unstable results on our MacOS CI server,
