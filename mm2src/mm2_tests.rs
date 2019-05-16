@@ -330,13 +330,10 @@ fn test_status() {common::log::tests::test_status()}
 fn peers_dht() {peers::peers_tests::peers_dht()}
 
 #[test]
-fn peers_fallback() {peers::peers_tests::peers_fallback()}
-
-#[test]
 fn peers_direct_send() {peers::peers_tests::peers_direct_send()}
 
 #[test]
-fn peers_http_fallback() {peers::peers_tests::peers_http_fallback()}
+fn peers_http_fallback_recv() {peers::peers_tests::peers_http_fallback_recv()}
 
 #[test]
 fn peers_http_fallback_kv() {peers::peers_tests::peers_http_fallback_kv()}

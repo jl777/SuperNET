@@ -20,13 +20,16 @@
 pub mod peers_tests;
 
 pub mod http_fallback;
+use http_fallback::RepStrMap;
 
+use base64;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
 use crc::crc64::checksum_ecma;
+use crdts::CmRDT;
 use crossbeam::channel;
 use either::Either;
 use futures::{future, Async, Future, Poll};
@@ -261,7 +264,11 @@ pub struct PeersContext {
     direct_pings: AtomicU64,
     /// The number of data chunks delivered directly via the DHT pings.  
     /// (direct_pings - discovery pings - pongs - invalid).
-    direct_chunks: AtomicU64
+    direct_chunks: AtomicU64,
+    /// Keeping the previous versions of the HTTP fallback maps
+    /// in order for the consequent map updates to maintain the total ordering of our clock.
+    /// cf. https://github.com/rust-crdt/rust-crdt/blob/86c7c5601b6b4c4451e1c6840dc1481716ae1433/src/traits.rs#L16
+    http_fallback_maps: Mutex<HashMap<bits256, RepStrMap>>
 }
 
 impl PeersContext {
@@ -277,7 +284,8 @@ impl PeersContext {
                 recently_fetched: Mutex::new (HashMap::new()),
                 trans_meta: Mutex::new (TransMeta::default()),
                 direct_pings: AtomicU64::new (0),
-                direct_chunks: AtomicU64::new (0)
+                direct_chunks: AtomicU64::new (0),
+                http_fallback_maps: Mutex::new (HashMap::new())
             })
         })))
     }
@@ -465,6 +473,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
     //     (we want to repeat a `dht_put` more often, relative to others, if we haven't heard from it).
 
     let pctx = try_s! (PeersContext::from_ctx (ctx));
+    let our_public_key = try_s! (pctx.our_public_key.lock()) .clone();
     let mut trans = try_s! (pctx.trans_meta.lock());
     let (friends, packages) = trans.split_borrow();
     for pix in (0 .. packages.len()) .rev() {
@@ -559,7 +568,51 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                 for (payload, meta) in package.payloads.iter_mut() {
                     let fallback = match package.fallback {Some (sec) => sec, None => continue};
                     if now - package.scheduled_at < fallback.get() as f64 {continue}
-log! ("transmit] TBD, time to use the HTTP fallback...")
+                    let salt = if let Some (ref salt) = payload.salt {salt.clone()} else {continue};
+                    let chunk = if let Some (ref chunk) = payload.chunk {chunk.clone()} else {continue};
+
+// WIP
+
+// TODO: Consider gathering all packages geared towards a given seed into a single map,
+// in order to send them with one round-trip.
+
+// TODO: Consider keeping the returned merged map and using it later to remove the finished packages.
+// E.g. we're sending B and we know that the map still contains A, so we remove A if it's finished.
+
+let ip = {
+    let seeds = try_s! (ctx.seeds.lock());
+    if seeds.is_empty() {continue}
+    seeds[0].clone()
+};
+let port = ctx.conf["http-fallback-port"].as_u64().unwrap_or (80) as u16;
+let addr = SocketAddr::new (ip, port);
+
+log! ("transmit] TBD, time to use the HTTP fallback...");
+let unique_actor_id = unsafe {checksum_ecma (&our_public_key.bytes)};
+let salt = base64::encode_config (&salt, base64::STANDARD_NO_PAD);
+let chunk = base64::encode_config (&chunk, base64::STANDARD_NO_PAD);
+//pintln! ([=salt] ", " [=unique_actor_id]);
+let mut http_fallback_maps = try_s! (pctx.http_fallback_maps.lock());
+let mut hf_map = http_fallback_maps.entry (seed) .or_insert (RepStrMap::new());
+let read_ctx = hf_map.len();
+hf_map.apply (
+    hf_map.update (
+        salt,
+        read_ctx.derive_add_ctx (unique_actor_id),
+        |set, ctx| set.add (chunk, ctx)
+    )
+);
+// TODO: Consider adding `our_public_key` or `unique_actor_id` to the end of the id
+// in order to isolate communications of different peers.
+// We can probably use a fixed unique_actor_id then.
+// Or assign a different logic to unique_actor_id.
+let f = http_fallback::merge_map (&addr, unsafe {Vec::from (&seed.bytes[..])}, hf_map);
+// TODO: Figure what to do with the `Future`.
+// Keep it in an `Option` field somewhere?
+let r = try_s! (f.wait());
+// TODO: Should probably save the fresh map into http_fallback_maps, but 
+//pintln! ([=r]);
+
                 }
             }
         }
@@ -586,7 +639,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
 
     let mm_payload = MmPayload {
         id,
-        from: unsafe {&from.bytes[..]} .to_vec().into(),
+        from: ByteBuf::from (unsafe {&from.bytes[..]} .to_vec()),
         pong: if pong {1} else {0},
         salt: None,
         chunk: None
@@ -1234,8 +1287,7 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 /// * `preferred_port` - We'll try to open an UDP endpoint on this port,
 ///                      which might help if the user configured this port in firewall and forwarding rules.
 ///                      We're not limited to this port though and might try other ports as well.
-/// * `session_id` - Identifies our incarnation, allowing other peers to know if they're talking with the same instance.
-pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16, _session_id: u32) -> Result<(), String> {
+pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
     let drill = is_a_test_drill();
 
     // NB: From the `fn test_trade` logs it looks like the `session_id` isn't shared with the peers currently.

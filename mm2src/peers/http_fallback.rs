@@ -17,7 +17,7 @@ use crate::common::mm_ctx::{from_ctx, MmArc, MmWeak};
 
 /// Data belonging to this module and owned by the MM2 instance.
 pub struct HttpFallbackContext {
-    maps: Mutex<HashMap<Vec<u8>, BytesMap>>
+    maps: Mutex<HashMap<Vec<u8>, RepStrMap>>
 }
 
 impl HttpFallbackContext {
@@ -43,7 +43,7 @@ fn fetch_map_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
             let mapʳ = try_fus! (json::to_string (&mapʰ));
             rpc_response (200, mapʳ)
         } else {
-            let map = BytesMap::new();
+            let map = RepStrMap::new();
             let map = try_fus! (json::to_string (&map));
             rpc_response (200, map)
         }
@@ -56,12 +56,14 @@ fn merge_map_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
         let body = try_fus! (body);
         let buf = body.to_vec();
         let (id, mapˢ) = try_fus! (netstring (&buf));
-        let map: BytesMap = try_fus! (json::from_slice (mapˢ));
+        let map: RepStrMap = try_fus! (json::from_slice (mapˢ));
 
         let ctx = try_fus! (MmArc::from_weak (&ctx) .ok_or ("MM stopping"));
         let hfctx = try_fus! (HttpFallbackContext::from_ctx (&ctx));
         let mut maps = try_fus! (hfctx.maps.lock());
         if let Some (mapʰ) = maps.get_mut (id) {
+            // NB: Diverging clocks coming from the same actor might lead to an empty map.
+            // cf. https://github.com/rust-crdt/rust-crdt/blob/86c7c5601b6b4c4451e1c6840dc1481716ae1433/src/traits.rs#L14
             mapʰ.merge (map);
             let mapʳ = try_fus! (json::to_string (&mapʰ));
             rpc_response (200, mapʳ)
@@ -110,9 +112,9 @@ pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr) -> Result<Box<Future<It
 /// then one of the change sets might be ignored due to the clock being in the past.
 pub type UniqueActorId = u64;
 
-/// CRDT map from bytes to bytes.  
-/// NB: The keys and values must be strings in order for the JSON seriazliation to work.
-pub type BytesMap = Map<String, Orswot<String, UniqueActorId>, UniqueActorId>;
+/// CRDT map from string to string.  
+/// (The keys and values must be strings in order for the JSON seriazliation to work).
+pub type RepStrMap = Map<String, Orswot<String, UniqueActorId>, UniqueActorId>;
 
 fn fallback_url (addr: &SocketAddr, method: &str) -> String {
     fomat! (
@@ -128,16 +130,16 @@ fn fallback_url (addr: &SocketAddr, method: &str) -> String {
 /// * `addr` - The address of the HTTP fallback server.
 ///            The port should be 80 or 443 as this should help the server to function
 ///            even with the most restrictive internet operators.
-pub fn fetch_map (addr: &SocketAddr, id: Vec<u8>) -> Box<Future<Item=BytesMap, Error=String> + Send> {
+pub fn fetch_map (addr: &SocketAddr, id: Vec<u8>) -> Box<Future<Item=RepStrMap, Error=String> + Send> {
     let url = fallback_url (addr, "fetch_map");
     let request = try_fus! (Request::builder()
         .method("POST")
         .uri (url)
         .body (Body::from (id)));
     let f = slurp_req (request);
-    let f = f.and_then (|(status, _headers, body)| -> Result<BytesMap, String> {
+    let f = f.and_then (|(status, _headers, body)| -> Result<RepStrMap, String> {
         if status.as_u16() != 200 {return ERR! ("fetch_map not 200")}
-        let map: BytesMap = try_s! (json::from_slice (&body));
+        let map: RepStrMap = try_s! (json::from_slice (&body));
         Ok (map)
     });
     Box::new (f)
@@ -150,10 +152,10 @@ pub fn fetch_map (addr: &SocketAddr, id: Vec<u8>) -> Box<Future<Item=BytesMap, E
 ///            even with the most restrictive internet operators.
 /// 
 /// Returns a fresh version of the map which is provided by the server after the merge.
-pub fn merge_map (addr: &SocketAddr, id: Vec<u8>, map: BytesMap)
--> Box<Future<Item=BytesMap, Error=String> + Send> {
+pub fn merge_map (addr: &SocketAddr, id: Vec<u8>, map: &RepStrMap)
+-> Box<Future<Item=RepStrMap, Error=String> + Send> {
     let url = fallback_url (addr, "merge_map");
-    let mut map = try_fus! (json::to_vec (&map));
+    let mut map = try_fus! (json::to_vec (map));
 
     let mut buf = Vec::with_capacity (id.len() + map.len() + 9);
     try_fus! (write! (&mut buf, "{}:{},", id.len(), unsafe {from_utf8_unchecked (&id)}));
@@ -164,9 +166,9 @@ pub fn merge_map (addr: &SocketAddr, id: Vec<u8>, map: BytesMap)
         .uri (url)
         .body (Body::from (buf)));
     let f = slurp_req (request);
-    let f = f.and_then (|(status, _headers, body)| -> Result<BytesMap, String> {
+    let f = f.and_then (|(status, _headers, body)| -> Result<RepStrMap, String> {
         if status.as_u16() != 200 {return ERR! ("merge_map not 200")}
-        let map: BytesMap = try_s! (json::from_slice (&body));
+        let map: RepStrMap = try_s! (json::from_slice (&body));
         Ok (map)
     });
     Box::new (f)
