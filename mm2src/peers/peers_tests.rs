@@ -93,8 +93,10 @@ fn peers_exchange (conf: Json) {
         assert_eq! (received, message);
 
         if fallback_on {
+            // TODO: Refine the log test.
             unwrap! (wait_for_log (&alice.log, 0.1, &|en| en.contains (
                 "transmit] TBD, time to use the HTTP fallback...")))
+            // TODO: Check the time delta, with fallback 1 the delivery shouldn't take long.
         }
     }
 
