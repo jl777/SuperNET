@@ -89,11 +89,11 @@ impl MmCtx {
         // Semantically they share the interface.
         // To keep things uniform the initialization should happen *after* the allocation of the context.
         // 
-        // Note that if we want the OOP initialization of MM then
+        // Note that if we want the OOP initialization of MM
         // then it should probably be incapsulated in a separate object
         // (`impl Mm {fn initialize (conf: Json) -> Result<…, String>}`)
         // because most of the intialization code resides in the root crate
-        // and is not accessible from the context subcrate.
+        // and is not accessible from the `common` subcrate.
 
         let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {

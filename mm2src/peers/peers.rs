@@ -20,7 +20,7 @@
 pub mod peers_tests;
 
 pub mod http_fallback;
-use http_fallback::RepStrMap;
+use crate::http_fallback::RepStrMap;
 
 use base64;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
@@ -43,6 +43,7 @@ use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
+use serde_json::{self as json, Value as Json};
 use std::cmp::Ordering;
 use std::env::{temp_dir, var};
 use std::fs;
@@ -248,6 +249,17 @@ impl TransMeta {
     }
 }
 
+/// Several things should be tracked whenever we are using HTTP fallback to reach a target node.
+#[derive(Default)]
+struct HttpFallbackTargetTrack {
+    /// Keeping the previous versions of the HTTP fallback maps
+    /// in order for the consequent map updates to maintain the total ordering of our clock.
+    /// cf. https://github.com/rust-crdt/rust-crdt/blob/86c7c5601b6b4c4451e1c6840dc1481716ae1433/src/traits.rs#L16
+    rep_map: RepStrMap,
+    /// Ongoing store operations.
+    store_ops: Vec<()>
+}
+
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     our_public_key: Mutex<bits256>,
@@ -265,10 +277,7 @@ pub struct PeersContext {
     /// The number of data chunks delivered directly via the DHT pings.  
     /// (direct_pings - discovery pings - pongs - invalid).
     direct_chunks: AtomicU64,
-    /// Keeping the previous versions of the HTTP fallback maps
-    /// in order for the consequent map updates to maintain the total ordering of our clock.
-    /// cf. https://github.com/rust-crdt/rust-crdt/blob/86c7c5601b6b4c4451e1c6840dc1481716ae1433/src/traits.rs#L16
-    http_fallback_maps: Mutex<HashMap<bits256, RepStrMap>>
+    http_fallback_maps: Mutex<HashMap<bits256, HttpFallbackTargetTrack>>
 }
 
 impl PeersContext {
@@ -472,8 +481,17 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
     //     For `dht_put` the ordering might take into account the presense or absence of the corresponding `dht_put` callback
     //     (we want to repeat a `dht_put` more often, relative to others, if we haven't heard from it).
 
+    let hf_addr = loop {
+        let ip = {
+            let seeds = try_s! (ctx.seeds.lock());
+            if seeds.is_empty() {break None}
+            seeds[0].clone()
+        };
+        let port = ctx.conf["http-fallback-port"].as_u64().unwrap_or (80) as u16;
+        break Some (SocketAddr::new (ip, port))
+    };
+
     let pctx = try_s! (PeersContext::from_ctx (ctx));
-    let our_public_key = try_s! (pctx.our_public_key.lock()) .clone();
     let mut trans = try_s! (pctx.trans_meta.lock());
     let (friends, packages) = trans.split_borrow();
     for pix in (0 .. packages.len()) .rev() {
@@ -565,55 +583,93 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     meta.dht_put_invoked = now
                 }
 
+                let mut deliver_to_seed = HashMap::new();  // Things we want delivered as of now.
                 for (payload, meta) in package.payloads.iter_mut() {
                     let fallback = match package.fallback {Some (sec) => sec, None => continue};
                     if now - package.scheduled_at < fallback.get() as f64 {continue}
                     let salt = if let Some (ref salt) = payload.salt {salt.clone()} else {continue};
-                    let chunk = if let Some (ref chunk) = payload.chunk {chunk.clone()} else {continue};
+                    if payload.chunk.is_none() {continue}
+                    deliver_to_seed.insert (salt, (payload, meta));
+                }
+                let mut http_fallback_maps = try_s! (pctx.http_fallback_maps.lock());
+                match http_fallback_maps.entry (seed) {
+                    Entry::Occupied (mut oe) => {
+                        try_s! (manage_http_fallback (hf_addr, seed, oe.get_mut(), deliver_to_seed))
+                    },
+                    Entry::Vacant (ve) => {
+                        if !deliver_to_seed.is_empty() {
+                            let track = ve.insert (HttpFallbackTargetTrack::default());
+                            try_s! (manage_http_fallback (hf_addr, seed, track, deliver_to_seed));
+                        }
+                    }
+                };
 
 // WIP
 
-// TODO: Consider gathering all packages geared towards a given seed into a single map,
-// in order to send them with one round-trip.
+fn rep_keys (rep_map: &RepStrMap) -> Result<Vec<String>, String> {
+    // As of today the replicated map doesn't provide an entries API,
+    // but we can get the list of entries from the JSON representation.
+    let jsmap = try_s! (json::to_string (rep_map));
+    let jsmap: Json = try_s! (json::from_str (&jsmap));
+    if let Some (entries) = jsmap["entries"].as_object() {
+        Ok (entries.keys().cloned().collect())
+    } else {Ok (Vec::new())}
+}
 
-// TODO: Consider keeping the returned merged map and using it later to remove the finished packages.
-// E.g. we're sending B and we know that the map still contains A, so we remove A if it's finished.
+fn manage_http_fallback (hf_addr: Option<SocketAddr>, seed: bits256, track: &mut HttpFallbackTargetTrack,
+                         deliver_to_seed: HashMap<ByteBuf, (&mut MmPayload, &mut PayloadOutMeta)>)
+-> Result<(), String> {
+    log! ("transmit] TBD, time to use the HTTP fallback...");
 
-let ip = {
-    let seeds = try_s! (ctx.seeds.lock());
-    if seeds.is_empty() {continue}
-    seeds[0].clone()
-};
-let port = ctx.conf["http-fallback-port"].as_u64().unwrap_or (80) as u16;
-let addr = SocketAddr::new (ip, port);
+    // Synchronize the replicated map with the `deliver_to_seed`.
 
-log! ("transmit] TBD, time to use the HTTP fallback...");
-let unique_actor_id = unsafe {checksum_ecma (&our_public_key.bytes)};
-let salt = base64::encode_config (&salt, base64::STANDARD_NO_PAD);
-let chunk = base64::encode_config (&chunk, base64::STANDARD_NO_PAD);
-//pintln! ([=salt] ", " [=unique_actor_id]);
-let mut http_fallback_maps = try_s! (pctx.http_fallback_maps.lock());
-let mut hf_map = http_fallback_maps.entry (seed) .or_insert (RepStrMap::new());
-let read_ctx = hf_map.len();
-hf_map.apply (
-    hf_map.update (
-        salt,
-        read_ctx.derive_add_ctx (unique_actor_id),
-        |set, ctx| set.add (chunk, ctx)
-    )
-);
-// TODO: Consider adding `our_public_key` or `unique_actor_id` to the end of the id
-// in order to isolate communications of different peers.
-// We can probably use a fixed unique_actor_id then.
-// Or assign a different logic to unique_actor_id.
-let f = http_fallback::merge_map (&addr, unsafe {Vec::from (&seed.bytes[..])}, hf_map);
-// TODO: Figure what to do with the `Future`.
-// Keep it in an `Option` field somewhere?
-let r = try_s! (f.wait());
-// TODO: Should probably save the fresh map into http_fallback_maps, but 
-//pintln! ([=r]);
+    let unique_actor_id = 1;
+    let mut changed = false;
 
-                }
+    let rep_keys = try_s! (rep_keys (&track.rep_map));
+    let read_ctx = track.rep_map.len();
+    for key in rep_keys {
+        let salt = ByteBuf::from (try_s! (base64::decode_config (&key, base64::STANDARD_NO_PAD)));
+        if !deliver_to_seed.contains_key (&salt) {
+            track.rep_map.rm (key, read_ctx.derive_rm_ctx());
+            changed = true;
+        }
+    }
+
+    for (salt, (payload, _meta)) in deliver_to_seed {
+        let salt = base64::encode_config (&salt, base64::STANDARD_NO_PAD);
+        if track.rep_map.get (&salt) .val.is_none() {
+            let chunk = if let Some (ref chunk) = payload.chunk {
+                base64::encode_config (chunk, base64::STANDARD_NO_PAD)
+            } else {continue};
+            track.rep_map.apply (
+                track.rep_map.update (
+                    salt,
+                    read_ctx.derive_add_ctx (unique_actor_id),
+                    |set, ctx| set.add (chunk, ctx)
+                )
+            );
+            changed = true
+        }
+    }
+
+    /*
+    let unique_actor_id = unsafe {checksum_ecma (&payload.from)};
+    // TODO: Consider adding `our_public_key` or `unique_actor_id` to the end of the id
+    // in order to isolate communications of different peers.
+    // We can probably use a fixed unique_actor_id then.
+    // Or assign a different logic to unique_actor_id.
+    let f = http_fallback::merge_map (&addr, unsafe {Vec::from (&seed.bytes[..])}, hf_map);
+    // TODO: Figure what to do with the `Future`.
+    // Keep it in an `Option` field somewhere?
+    let r = try_s! (f.wait());
+    // TODO: Should probably save the fresh map into http_fallback_maps, but 
+    //pintln! ([=r]);
+    */
+
+    Ok(())
+}
+
             }
         }
         for ix in finished.into_iter().rev() {
