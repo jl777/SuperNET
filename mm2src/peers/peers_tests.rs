@@ -94,6 +94,7 @@ fn peers_exchange (conf: Json) {
 
         if fallback_on {
             // TODO: Refine the log test.
+            // TODO: Check that the HTTP fallback was NOT used if `!fallback_on`.
             unwrap! (wait_for_log (&alice.log, 0.1, &|en| en.contains (
                 "transmit] TBD, time to use the HTTP fallback...")))
             // TODO: Check the time delta, with fallback 1 the delivery shouldn't take long.

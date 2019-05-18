@@ -20,16 +20,14 @@
 pub mod peers_tests;
 
 pub mod http_fallback;
-use crate::http_fallback::RepStrMap;
+use crate::http_fallback::{hf_transmit, HttpFallbackTargetTrack};
 
-use base64;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
-use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm, CORE};
+use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
 use crc::crc64::checksum_ecma;
-use crdts::CmRDT;
 use crossbeam::channel;
 use either::Either;
 use futures::{future, Async, Future, Poll};
@@ -43,7 +41,6 @@ use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
-use serde_json::{self as json, Value as Json};
 use std::cmp::Ordering;
 use std::env::{temp_dir, var};
 use std::fs;
@@ -249,17 +246,6 @@ impl TransMeta {
     }
 }
 
-/// Several things should be tracked whenever we are using HTTP fallback to reach a target node.
-#[derive(Default)]
-struct HttpFallbackTargetTrack {
-    /// Keeping the previous versions of the HTTP fallback maps
-    /// in order for the consequent map updates to maintain the total ordering of our clock.
-    /// cf. https://github.com/rust-crdt/rust-crdt/blob/86c7c5601b6b4c4451e1c6840dc1481716ae1433/src/traits.rs#L16
-    rep_map: RepStrMap,
-    /// Time when the latest store operation started.
-    last_store: f64
-}
-
 /// The peer-to-peer and connectivity information local to the MM2 instance.
 pub struct PeersContext {
     our_public_key: Mutex<bits256>,
@@ -437,7 +423,7 @@ struct PayloadOutMeta {
 /// Cancellable: transmission is stopped when the `Arc<SendHandler>` returned by `send` is dropped.  
 /// The target is either a specific endpoint (when we're trying to discover a peer)
 /// or a friend's public key (when we're `send`ing data to that friend).
-struct Package {
+pub struct Package {
     payloads: Vec<(MmPayload, PayloadOutMeta)>,
     to: Either<(bits256, Weak<SendHandler>), SocketAddr>,
     /// Time (in seconds since UNIX epoch) when the package was scheduled.
@@ -584,109 +570,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     meta.dht_put_invoked = now
                 }
 
-                let mut deliver_to_seed = HashMap::new();  // Things we want delivered as of now.
-                for (payload, meta) in package.payloads.iter_mut() {
-                    let fallback = match package.fallback {Some (sec) => sec, None => continue};
-                    if now - package.scheduled_at < fallback.get() as f64 {continue}
-                    let salt = if let Some (ref salt) = payload.salt {salt.clone()} else {continue};
-                    if payload.chunk.is_none() {continue}
-                    deliver_to_seed.insert (salt, (payload, meta));
-                }
-                let mut http_fallback_maps = try_s! (pctx.http_fallback_maps.lock());
-                match http_fallback_maps.entry (seed) {
-                    Entry::Occupied (mut oe) => try_s! (manage_http_fallback (
-                        hf_addr, our_public_key, seed, oe.get_mut(), deliver_to_seed)),
-                    Entry::Vacant (ve) => {
-                        if !deliver_to_seed.is_empty() {
-                            let track = ve.insert (HttpFallbackTargetTrack::default());
-                            try_s! (manage_http_fallback (
-                                hf_addr, our_public_key, seed, track, deliver_to_seed))
-                        }
-                    }
-                };
-
-// WIP
-
-fn rep_keys (rep_map: &RepStrMap) -> Result<Vec<String>, String> {
-    // As of today the replicated map doesn't provide an entries API,
-    // but we can get the list of entries from the JSON representation.
-    let jsmap = try_s! (json::to_string (rep_map));
-    let jsmap: Json = try_s! (json::from_str (&jsmap));
-    if let Some (entries) = jsmap["entries"].as_object() {
-        Ok (entries.keys().cloned().collect())
-    } else {Ok (Vec::new())}
-}
-
-fn manage_http_fallback (hf_addr: Option<SocketAddr>, our_public_key: bits256, seed: bits256,
-                         track: &mut HttpFallbackTargetTrack,
-                         deliver_to_seed: HashMap<ByteBuf, (&mut MmPayload, &mut PayloadOutMeta)>)
--> Result<(), String> {
-    let hf_addr = match hf_addr {Some (a) => a, None => return Ok(())};
-
-    // Synchronize the replicated map with the `deliver_to_seed`.
-
-    let unique_actor_id = 1;
-    let mut changed = false;
-
-    let rep_keys = try_s! (rep_keys (&track.rep_map));
-    for key in rep_keys {
-        let salt = ByteBuf::from (try_s! (base64::decode_config (&key, base64::STANDARD_NO_PAD)));
-        if !deliver_to_seed.contains_key (&salt) {
-            track.rep_map.apply (track.rep_map.rm (key, track.rep_map.len().derive_rm_ctx()));
-            changed = true;
-        }
-    }
-
-    for (salt, (payload, _meta)) in deliver_to_seed {
-        // We're only sending our own packages here.
-        assert_eq! (&payload.from[..], unsafe {&our_public_key.bytes[..]});
-
-        let salt = base64::encode_config (&salt, base64::STANDARD_NO_PAD);
-        let chunk = if let Some (ref chunk) = payload.chunk {
-            base64::encode_config (chunk, base64::STANDARD_NO_PAD)
-        } else {continue};
-        let has_chunk = match track.rep_map.get (&salt) .val.map (|v| v.read().val) {
-            None => false,
-            Some (set) => set.contains (&chunk)
-        };
-
-        if !has_chunk {
-            track.rep_map.apply (
-                track.rep_map.update (
-                    salt,
-                    track.rep_map.len().derive_add_ctx (unique_actor_id),
-                    |set, ctx| set.add (chunk, ctx)
-                )
-            );
-            changed = true
-        }
-    }
-
-    // We should keep storing the map even if we have stored it before, to account for server restarts.
-    let now = now_float();
-    let refresh = if track.last_store > 0. {now - track.last_store > 10.} else {false};
-    if !changed && !refresh {return Ok(())}
-
-log! ("transmit] TBD, time to use the HTTP fallback...");
-
-    let mut hf_id = Vec::with_capacity (unsafe {seed.bytes.len() + 1 + our_public_key.bytes.len()});
-    hf_id.extend_from_slice (unsafe {&seed.bytes});
-    hf_id.push (b'<');
-    hf_id.extend_from_slice (unsafe {&our_public_key.bytes});
-    let merge_f = http_fallback::merge_map (&hf_addr, hf_id, &track.rep_map);
-    let merge_f = merge_f.then (|r| -> Result<(), ()> {
-        let _merged_rep_map = match r {
-            Ok (r) => r,
-            Err (err) => {log! ("manage_http_fallback] merge_map error: " (err)); return Err(())}
-        };
-        Ok(())
-    });
-    CORE.spawn (|_| merge_f);
-    track.last_store = now;
-
-    Ok(())
-}
-
+                try_s! (hf_transmit (&pctx, hf_addr, our_public_key, seed, package));
             }
         }
         for ix in finished.into_iter().rev() {
