@@ -708,23 +708,34 @@ struct ChunkGetsEntry {
     payload: Option<Vec<u8>>
 }
 
-/// Tracks the get operations currently in progress in libtorrent.
+/// For each salt being sought, tracks the get operations currently in progress.
 #[derive(Debug, Default)]
 struct GetsEntry {
     /// Libtorrent's public key derived from `seed`.  
     /// In some APIs we only get this derived public key and not the `seed`.
     pk: Option<[u8; 32]>,
+    /// Last time (in seconds since UNIX epoch) when we had all the chunks
+    /// necessary to reassemble the value which corresponds to the salt.
+    /// We can have several reassembly attempts, each bumping this field.
     reassembled_at: Option<f64>,
+    /// How many chunks were used by the sender to upload the value.  
+    /// Retrieved from the first chunk.
     number_of_chunks: Option<NonZeroU8>,
     /// Chunks we're getting from DHT.
     chunks: Vec<ChunkGetsEntry>,
-    /// A map from the index byte of the chunk salt to the ping payload received.
-    direct_chunks: HashMap<u8, Vec<u8>>,
     /// Futures currently interested in this entry (waiting for it).
     futures: HashMap<NonZeroU64, Task>,
     /// The time when we first discovered that the `futures` is empty.  
     /// Reset to `None` if there are `futures`.
-    idle_since: Option<f64>
+    idle_since: Option<f64>,
+    /// The time (in seconds since UNIX epoch) when this `GetsEntry` was created.  
+    /// Might be `None` if the entry was created beforehand.
+    created_at: Option<f64>,
+    /// The time in seconds after which we begin to suspect that the entry was unduly delayed,
+    /// like when there's a connectivity problem. (If there are delayed entries then we might want
+    /// to contact the HTTP fallback service for extra reliability).  
+    /// Might be `None` if the value wasn't known when this entry was created.
+    fallback: Option<NonZeroU8>
 }
 impl GetsEntry {
     /// Invoked when the future `frid` is dropped.
@@ -756,14 +767,20 @@ fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: NonZeroU64, task: T
                 reassembled_at: None,
                 number_of_chunks: None,
                 chunks: vec! [ChunkGetsEntry {restarted: now_float(), direct: 0., seq_auth: 0, payload: None}],
-                direct_chunks: HashMap::new(),
                 futures: HashMap::from_iter (once ((frid, task))),
-                idle_since: None
+                idle_since: None,
+                created_at: Some (now_float()),
+                fallback: Some (fallback)
             });
             return
         },
         Entry::Occupied (mut oe) => {
-            oe.get_mut().futures.insert (frid, task);
+            let gets_en = oe.get_mut();
+            gets_en.futures.insert (frid, task);
+            // Entries might be created before they are requested
+            // (like when we're getting a direct DHT ping from a C callback),
+            // so we should store the correct `fallback` value afterwards.
+            gets_en.fallback = Some (fallback);
             oe
         }
     };
@@ -1210,13 +1227,23 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 
         if let Err (err) = transmit (&mut dugout, &ctx) {log! ("send_pings error: " (err))}
 
+        // Cloning the keys allows `get_pieces_scheduler_en` to remove the `gets_oe` entry.
         let gets_keys: Vec<_> = gets.keys().map (|k| k.clone()) .collect();
+        let now = now_float();
         for key in gets_keys {
-            let entry = match gets.entry (key) {Entry::Vacant (_) => panic!(), Entry::Occupied (oe) => oe};
-            get_pieces_scheduler_en (our_public_key, &mut dugout, entry, &*pctx)
+            let gets_oe = if let Entry::Occupied (oe) = gets.entry (key) {oe} else {panic!()};
+
+            if let Some (created_at) = gets_oe.get().created_at {
+                if let Some (fallback) = gets_oe.get().fallback {
+                    if now - created_at > fallback.get() as f64 {
+//pintln! ("There are delayed entries, time to check HTTP fallback server XXX")
+                    }
+                }
+            }
+
+            get_pieces_scheduler_en (our_public_key, &mut dugout, gets_oe, &*pctx);
         }
 
-        let now = now_float();
         let after_boot_sec = 20.;  // In order not to loose some potentially good but not yet checked nodes from a previous state.
         if bootstrapped != 0. && now - bootstrapped > after_boot_sec && now - last_state_save > 600. {
             // TODO, should: Only save the DHT state if we see some recent DHT traffic (via the counters).
