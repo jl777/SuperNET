@@ -198,8 +198,8 @@ pub struct HttpFallbackTargetTrack {
 }
 
 /// Plugged into `fn transmit` to send the chunks via HTTP fallback when necessary.
-pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: Option<SocketAddr>, our_public_key: bits256,
-                    seed: bits256, package: &mut super::Package) -> Result<(), String> {
+pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: Option<SocketAddr>, our_public_key: &bits256,
+                    seed: &bits256, package: &mut super::Package) -> Result<(), String> {
     let hf_addr = match hf_addr {Some (a) => a, None => return Ok(())};
 
     let mut deliver_to_seed = HashMap::new();  // Things we want delivered as of now.
@@ -212,7 +212,7 @@ pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: Option<SocketAddr>, our
         deliver_to_seed.insert (salt, (payload, meta));
     }
     let mut http_fallback_maps = try_s! (pctx.http_fallback_maps.lock());
-    let mut trackⁱ = http_fallback_maps.entry (seed);
+    let mut trackⁱ = http_fallback_maps.entry (*seed);
     let track = match trackⁱ {
         Entry::Occupied (ref mut oe) => oe.get_mut(),
         Entry::Vacant (ve) => {
@@ -284,6 +284,13 @@ log! ("transmit] TBD, time to use the HTTP fallback...");
     });
     CORE.spawn (|_| merge_f);
     track.last_store = now;
+
+    Ok(())
+}
+
+/// Manage HTTP fallback retrievals.  
+/// Invoked from the peers loop whenever there are delayed gets.
+pub fn hf_poll (our_public_key: &bits256) -> Result<(), String> {
 
     Ok(())
 }

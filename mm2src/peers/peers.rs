@@ -20,7 +20,7 @@
 pub mod peers_tests;
 
 pub mod http_fallback;
-use crate::http_fallback::{hf_transmit, HttpFallbackTargetTrack};
+use crate::http_fallback::{hf_poll, hf_transmit, HttpFallbackTargetTrack};
 
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
@@ -302,16 +302,16 @@ lazy_static! {
     static ref RATELIM: Mutex<HashMap<bits256, (f64, f32)>> = Mutex::new (HashMap::default());
 }
 
-fn with_ratelim<F> (seed: bits256, cb: F) where F: FnOnce (&mut f64, &mut f32) {
+fn with_ratelim<F> (seed: &bits256, cb: F) where F: FnOnce (&mut f64, &mut f32) {
     if let Ok (mut ratelim) = RATELIM.lock() {
-        let mut lim_entry = ratelim.entry (seed) .or_default();
+        let mut lim_entry = ratelim.entry (*seed) .or_default();
         if lim_entry.0 == 0. {lim_entry.0 = now_float() - 0.01}
         cb (&mut lim_entry.0, &mut lim_entry.1)
     } else {log! ("Can't lock RATELIM")}
 }
 
 /// Burn away ~10 ops per second.
-fn ratelim_maintenance (seed: bits256) -> f32 {
+fn ratelim_maintenance (seed: &bits256) -> f32 {
     let mut limops = 0f32;
     with_ratelim (seed, |lm, ops| {
         *ops = 0f32 .max (*ops - (now_float() - *lm) as f32 * 10.);
@@ -513,7 +513,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     }
                 };
 
-                let mut limops = ratelim_maintenance (seed);
+                let mut limops = ratelim_maintenance (&seed);
 
                 // See if the seed is a friend with directly-reachable endpoints.
                 if let Some (friend) = friends.get_mut (&seed) {
@@ -526,7 +526,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                             if let Err (err) = ping (dugout, endpoint, payload) {
                                 log! ("ping error: " (err))
                             } else {
-                                with_ratelim (seed, |_lm, ops| {*ops += 1.; limops = *ops});
+                                with_ratelim (&seed, |_lm, ops| {*ops += 1.; limops = *ops});
                                 meta.pings += 1
                             }
                         }
@@ -557,7 +557,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                             let _subject_salt = binprint (&saltʲ[0 .. saltʲ.len() - 1], b'.');
                             let _idx = saltʲ.last().unwrap();
                             //log! ("transmit] chunk " (_subject_salt) '.' (_idx) " stored, " (_have.len()) " → " (benload.len()));
-                            with_ratelim (seed, |_lm, ops| *ops += 1.);
+                            with_ratelim (&seed, |_lm, ops| *ops += 1.);
                             Ok (benload)
                         })
                     });
@@ -565,12 +565,12 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
                     let shuttle_ptr = (&*shuttle) as *const PutShuttle as *const c_void;
                     shuttles.insert (shuttle_ptr as usize, (now as u64, shuttle));
 
-                    with_ratelim (seed, |_lm, ops| {*ops += 1.; limops = *ops});
+                    with_ratelim (&seed, |_lm, ops| {*ops += 1.; limops = *ops});
                     unsafe {dht_put (dugout, seed_bytes.as_ptr(), seed_bytes.len() as i32, salt.as_ptr(), salt.len() as i32, put_callback, shuttle_ptr, now as u64)}
                     meta.dht_put_invoked = now
                 }
 
-                try_s! (hf_transmit (&pctx, hf_addr, our_public_key, seed, package));
+                try_s! (hf_transmit (&pctx, hf_addr, &our_public_key, &seed, package));
             }
         }
         for ix in finished.into_iter().rev() {
@@ -591,7 +591,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
     Ok(())
 }
 
-fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBuf>) {
+fn pingʹ (ctx: &MmArc, from: &bits256, endpoint: &SocketAddr, pong: Option<ByteBuf>) {
     let pctx = match PeersContext::from_ctx (ctx) {Ok (c) => c, Err (err) => {log! ((err)); return}};
     let mut trans = unwrap! (pctx.trans_meta.lock());
     let (pong, id) = if let Some (original_id) = pong {
@@ -611,7 +611,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
 
     let direct_package = Package {
         payloads: vec! [(mm_payload.clone(), PayloadOutMeta::default())],
-        to: Either::Right (endpoint),
+        to: Either::Right (*endpoint),
         scheduled_at: now_float(),
         fallback: None
     };
@@ -621,7 +621,7 @@ fn pingʹ (ctx: &MmArc, from: bits256, endpoint: SocketAddr, pong: Option<ByteBu
 
 /// Invoked from the `peers_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
-fn split_and_put (ctx: &MmArc, from: bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>,
+fn split_and_put (ctx: &MmArc, from: &bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>,
                   send_handler: Weak<SendHandler>, fallback: NonZeroU8) {
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
@@ -751,7 +751,7 @@ type Gets = HashMap<Vec<u8>, GetsEntry>;
 /// Invoked whenever we see continued interest for the value
 /// (note that the fetching should be dropped if the interest vanishes)
 /// or when after one of the fetched pieces arrives.
-fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: NonZeroU64, task: Task, fallback: NonZeroU8,
+fn get_pieces_scheduler (seed: &bits256, salt: Vec<u8>, frid: NonZeroU64, task: Task, fallback: NonZeroU8,
                          dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
     let gets = match gets.entry (salt) {
         Entry::Vacant (ve) => {
@@ -788,7 +788,7 @@ fn get_pieces_scheduler (seed: bits256, salt: Vec<u8>, frid: NonZeroU64, task: T
     get_pieces_scheduler_en (seed, dugout, gets, pctx)
 }
 
-fn get_pieces_scheduler_en (seed: bits256, dugout: &mut dugout_t,
+fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
                             mut gets: OccupiedEntry<Vec<u8>, GetsEntry, DefaultHashBuilder>,
                             pctx: &PeersContext) {
     // Skip or GC the package if there are no clients still working on it.
@@ -947,7 +947,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
 
     let endpoint = SocketAddr::new (ip, port);
     if ping.a.mm.pong == 0 {
-        pingʹ (cbctx.ctx, cbctx.our_public_key, endpoint, Some (ping.a.mm.id.clone()))  // Pong.
+        pingʹ (cbctx.ctx, &cbctx.our_public_key, &endpoint, Some (ping.a.mm.id.clone()))  // Pong.
     }
     let pctx = try_s! (PeersContext::from_ctx (cbctx.ctx));
     // Now that we've got a direct ping from a friend, see if we can update the endpoints we have on record.
@@ -1179,6 +1179,9 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
                 unsafe {libc::free (cs as *mut c_void)}
             }
         }
+
+        if ctx.is_stopping() {break}
+
         // Invoke the `cb` on the libtorrent alerts.
         {
             let mut cbctx = CbCtx {
@@ -1190,9 +1193,12 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
             unsafe {dht_alerts (&mut dugout, cb, &mut cbctx as *mut CbCtx as *mut c_void)};
         }
         if let Some (err) = dugout.take_err() {
-            // TODO: User-friendly log message (`LogState::log`).
             log! ("dht_alerts error: " (err));
-            return
+            // Try again and see if the error would go away.  
+            // (Given that libtorrent is not our only protocol we could also ignore the unexpected lt error,
+            //  but we should avoid spamming the log then, maybe use a dashboard condition instead).
+            thread::sleep (Duration::from_secs (2));
+            continue
         }
 
         if ctx.is_stopping() {break}
@@ -1214,35 +1220,41 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 
         match pctx.cmd_rx.recv_timeout (Duration::from_millis (100)) {
             Ok (LtCommand::Put {seed, salt, payload, send_handler, fallback}) =>
-                split_and_put (&ctx, our_public_key, seed, salt, payload, send_handler, fallback),
+                split_and_put (&ctx, &our_public_key, seed, salt, payload, send_handler, fallback),
             Ok (LtCommand::Get {seed, salt, frid, task, fallback}) => {
                 assert_eq! (seed, our_public_key);
-                get_pieces_scheduler (seed, salt, frid, task, fallback, &mut dugout, &mut gets, &*pctx)},
+                get_pieces_scheduler (&seed, salt, frid, task, fallback, &mut dugout, &mut gets, &*pctx)},
             Ok (LtCommand::DropGet {salt, frid}) => {
                 if let Some (en) = gets.get_mut (&salt) {en.drop_get (frid)}},
-            Ok (LtCommand::Ping {endpoint}) => pingʹ (&ctx, our_public_key, endpoint, None),
+            Ok (LtCommand::Ping {endpoint}) => pingʹ (&ctx, &our_public_key, &endpoint, None),
             Err (channel::RecvTimeoutError::Timeout) => {},
             Err (channel::RecvTimeoutError::Disconnected) => break
         };
+
+        if ctx.is_stopping() {break}
 
         if let Err (err) = transmit (&mut dugout, &ctx) {log! ("send_pings error: " (err))}
 
         // Cloning the keys allows `get_pieces_scheduler_en` to remove the `gets_oe` entry.
         let gets_keys: Vec<_> = gets.keys().map (|k| k.clone()) .collect();
         let now = now_float();
+        let mut delayed_gets = false;
         for key in gets_keys {
             let gets_oe = if let Entry::Occupied (oe) = gets.entry (key) {oe} else {panic!()};
 
             if let Some (created_at) = gets_oe.get().created_at {
                 if let Some (fallback) = gets_oe.get().fallback {
                     if now - created_at > fallback.get() as f64 {
-//pintln! ("There are delayed entries, time to check HTTP fallback server XXX")
-                    }
-                }
-            }
+                        delayed_gets = true
+            }   }   }
 
-            get_pieces_scheduler_en (our_public_key, &mut dugout, gets_oe, &*pctx);
+            get_pieces_scheduler_en (&our_public_key, &mut dugout, gets_oe, &*pctx);
         }
+
+        if delayed_gets {
+            if let Err (err) = hf_poll (&our_public_key) {
+                log! ("hf_poll error: " (err))
+        }   }
 
         let after_boot_sec = 20.;  // In order not to loose some potentially good but not yet checked nodes from a previous state.
         if bootstrapped != 0. && now - bootstrapped > after_boot_sec && now - last_state_save > 600. {
