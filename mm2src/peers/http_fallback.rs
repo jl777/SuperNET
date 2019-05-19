@@ -2,7 +2,7 @@ use base64;
 use crdts::{CvRDT, CmRDT, Map, Orswot};
 use futures::{self, Future};
 use gstuff::{netstring, now_float};
-use hashbrown::hash_map::{Entry, HashMap};
+use hashbrown::hash_map::{Entry, HashMap, RawEntryMut};
 use hyper::{Request, Body};
 use hyper::rt::{Stream};
 use hyper::service::Service;
@@ -288,9 +288,37 @@ log! ("transmit] TBD, time to use the HTTP fallback...");
     Ok(())
 }
 
+/// Invoked when a delayed retrieval is detected by the peers loop.
+/// 
+/// * `salt` - The subject salt (checksum of the `subject` passed to `fn recv`).
+pub fn hf_delayed_get (pctx: &super::PeersContext, salt: &Vec<u8>) {
+    let mut delayed_salts = match pctx.delayed_salts.lock() {
+        Ok (set) => set,
+        Err (err) => {log! ("Can't lock `delayed_salts`: " (err)); return}
+    };
+    if let RawEntryMut::Vacant (ve) = delayed_salts.raw_entry_mut().from_key (salt) {
+        ve.insert (salt.clone(), ());
+    }
+}
+
 /// Manage HTTP fallback retrievals.  
-/// Invoked from the peers loop whenever there are delayed gets.
-pub fn hf_poll (our_public_key: &bits256) -> Result<(), String> {
+/// Invoked periodically from the peers loop.
+pub fn hf_poll (pctx: &Arc<super::PeersContext>) -> Result<(), String> {
+    {
+        let delayed_salts = try_s! (pctx.delayed_salts.lock());
+        if delayed_salts.is_empty() {return Ok(())}
+    }
 
     Ok(())
+}
+
+/// Invoked when the client terminates a retrieval attempt.
+/// 
+/// * `salt` - The subject salt (checksum of the `subject` passed to `fn recv`).
+pub fn hf_drop_get (pctx: &super::PeersContext, salt: &Vec<u8>) {
+    let mut delayed_salts = match pctx.delayed_salts.lock() {
+        Ok (set) => set,
+        Err (err) => {log! ("Can't lock `delayed_salts`: " (err)); return}
+    };
+    delayed_salts.remove (salt);
 }
