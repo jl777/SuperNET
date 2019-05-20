@@ -23,7 +23,7 @@ pub mod http_fallback;
 use crate::http_fallback::{hf_delayed_get, hf_drop_get, hf_poll, hf_transmit, HttpFallbackTargetTrack};
 
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
-use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm};
+use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm, SlurpFut};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
@@ -263,9 +263,13 @@ pub struct PeersContext {
     /// (direct_pings - discovery pings - pongs - invalid).
     direct_chunks: AtomicU64,
     /// Recent attempts at reaching targets via HTTP fallback. seed -> track
-    http_fallback_maps: Mutex<HashMap<bits256, HttpFallbackTargetTrack>>,
+    hf_maps: Mutex<HashMap<bits256, HttpFallbackTargetTrack>>,
     /// Subject salts we're trying to get for longer than their `fallback` timeout.
-    delayed_salts: Mutex<HashMap<Vec<u8>, ()>>
+    hf_delayed_salts: Mutex<HashMap<Vec<u8>, ()>>,
+    /// Long polling from HTTP fallback server.
+    hf_poll: Mutex<Option<SlurpFut>>,
+    /// The version of the HTTP fallback response that we already have.
+    hf_last_poll_id: AtomicU64
 }
 
 impl PeersContext {
@@ -282,8 +286,10 @@ impl PeersContext {
                 trans_meta: Mutex::new (TransMeta::default()),
                 direct_pings: AtomicU64::new (0),
                 direct_chunks: AtomicU64::new (0),
-                http_fallback_maps: Mutex::new (HashMap::new()),
-                delayed_salts: Mutex::new (HashMap::new())
+                hf_maps: Mutex::new (HashMap::new()),
+                hf_delayed_salts: Mutex::new (HashMap::new()),
+                hf_poll: Mutex::new (None),
+                hf_last_poll_id: AtomicU64::new (0)
             })
         })))
     }
@@ -464,21 +470,11 @@ extern fn put_callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i
 }
 
 /// Invoked periodically from the `peers_thread` in order to manage and retransmit the outgoing ping packets.
-fn transmit (dugout: &mut dugout_t, ctx: &MmArc) -> Result<(), String> {
+fn transmit (dugout: &mut dugout_t, ctx: &MmArc, hf_addr: &Option<SocketAddr>) -> Result<(), String> {
     // AG: Instead of the current random RATELIM skipping
     //     we might consider *ordering* the packets according to the endpoint freshness, etc.
     //     For `dht_put` the ordering might take into account the presense or absence of the corresponding `dht_put` callback
     //     (we want to repeat a `dht_put` more often, relative to others, if we haven't heard from it).
-
-    let hf_addr = loop {
-        let ip = {
-            let seeds = try_s! (ctx.seeds.lock());
-            if seeds.is_empty() {break None}
-            seeds[0].clone()
-        };
-        let port = ctx.conf["http-fallback-port"].as_u64().unwrap_or (80) as u16;
-        break Some (SocketAddr::new (ip, port))
-    };
 
     let pctx = try_s! (PeersContext::from_ctx (ctx));
     let our_public_key = try_s! (pctx.our_public_key.lock()) .clone();
@@ -1050,6 +1046,16 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 
     let mut gets = Gets::default();
 
+    let hf_addr = loop {
+        let ip = {
+            let seeds = unwrap! (ctx.seeds.lock());
+            if seeds.is_empty() {break None}
+            seeds[0].clone()
+        };
+        let port = ctx.conf["http-fallback-port"].as_u64().unwrap_or (80) as u16;
+        break Some (SocketAddr::new (ip, port))
+    };
+
     loop {
         extern fn cb (_dugout: *mut dugout_t, cbctx: *mut c_void, alert: *mut Alert) {
             //let dugout: &mut dugout_t = unsafe {&mut *dugout};
@@ -1234,7 +1240,7 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 
         if ctx.is_stopping() {break}
 
-        if let Err (err) = transmit (&mut dugout, &ctx) {log! ("send_pings error: " (err))}
+        if let Err (err) = transmit (&mut dugout, &ctx, &hf_addr) {log! ("transmit error: " (err))}
 
         // Cloning the keys allows `get_pieces_scheduler_en` to remove the `gets_oe` entry.
         let get_salts: Vec<_> = gets.keys().map (|k| k.clone()) .collect();
@@ -1251,13 +1257,13 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
             get_pieces_scheduler_en (&our_public_key, &mut dugout, gets_oe, &*pctx);
         }
 
-        if let Err (err) = hf_poll (&pctx) {
+        if let Err (err) = hf_poll (&pctx, &hf_addr) {
             log! ("hf_poll error: " (err))
         }
 
-        // Remove old entries from `http_fallback_maps`.
-        if let Ok (mut http_fallback_maps) = pctx.http_fallback_maps.lock() {
-            http_fallback_maps.retain (|_seed, track| now - track.last_store < 600.)
+        // Remove old entries from `hf_maps`.
+        if let Ok (mut hf_maps) = pctx.hf_maps.lock() {
+            hf_maps.retain (|_seed, track| now - track.last_store < 600.)
         }
         if let Ok (mut recently_fetched) = pctx.recently_fetched.lock() {
             recently_fetched.retain (|_, (lm, _)| now - *lm < 600.)
@@ -1319,7 +1325,7 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
     *try_s! (pctx.our_public_key.lock()) = our_public_key;
     *try_s! (pctx.peers_thread.lock()) =
-        Some (try_s! (thread::Builder::new().name ("dht".into()) .spawn ({
+        Some (try_s! (thread::Builder::new().name ("peers".into()) .spawn ({
             let ctx = ctx.clone();
             move || peers_thread (ctx, netid, our_public_key, preferred_port, read_only, delay_dht)
         })));

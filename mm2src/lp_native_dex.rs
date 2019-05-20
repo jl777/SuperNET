@@ -1707,8 +1707,8 @@ pub fn lp_init (mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON, ctx_
     let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
     let netid = ctx.netid();
 
-    let mut http_fallback_shutdown = None;
-    let mut http_fallback_port = None;
+    // Keeps HTTP fallback server alive until `lp_init` exits.
+    let mut _hf_shutdown;
 
     let myipaddr: IpAddr = if Path::new ("myipaddr") .exists() {
         match fs::File::open ("myipaddr") {
@@ -1774,14 +1774,11 @@ pub fn lp_init (mypullport: u16, mypubport: u16, conf: Json, c_conf: CJSON, ctx_
             // If the bind fails then emit a user-visible warning and fall back to 0.0.0.0.
             let tags: &[&TagParam] = &[&"myipaddr"];
             match test_ip (&ctx, ip) {
-                Ok ((hf_shutdown, hf_port)) => {
+                Ok ((hf_shutdown, _hf_port)) => {
                     ctx.log.log ("🙂", tags, &fomat! (
                         "We've detected an external IP " (ip) " and we can bind on it (port " (mypubport) ")"
                         ", so probably a dedicated IP."));
-                    if i_am_seed {
-                        http_fallback_shutdown = Some (hf_shutdown);
-                        http_fallback_port = Some (hf_port);
-                    }
+                    if i_am_seed {_hf_shutdown = hf_shutdown}
                     break ip
                 },
                 Err (err) => log! ("IP " (ip) " doesn't check: " (err))

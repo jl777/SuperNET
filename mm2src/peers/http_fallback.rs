@@ -1,6 +1,7 @@
 use base64;
+use byteorder::{BigEndian, WriteBytesExt};
 use crdts::{CvRDT, CmRDT, Map, Orswot};
-use futures::{self, Future};
+use futures::{future, self, Async, Future};
 use gstuff::{netstring, now_float};
 use hashbrown::hash_map::{Entry, HashMap, RawEntryMut};
 use hyper::{Request, Body};
@@ -11,6 +12,7 @@ use serde_json::{self as json, Value as Json};
 use std::io::Write;
 use std::net::{SocketAddr};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::Ordering;
 use std::str::from_utf8_unchecked;
 use tokio_core::net::TcpListener;
 
@@ -128,11 +130,11 @@ pub fn rep_keys (rep_map: &RepStrMap) -> Result<Vec<String>, String> {
     } else {Ok (Vec::new())}
 }
 
-fn fallback_url (addr: &SocketAddr, method: &str) -> String {
+fn fallback_url (hf_addr: &SocketAddr, method: &str) -> String {
     fomat! (
-        "http" if addr.port() == 443 {'s'} "://"
-        (addr.ip())
-        if addr.port() != 80 && addr.port() != 443 {':' (addr.port())}
+        "http" if hf_addr.port() == 443 {'s'} "://"
+        (hf_addr.ip())
+        if hf_addr.port() != 80 && hf_addr.port() != 443 {':' (hf_addr.port())}
         "/fallback/" (method)
     )
 }
@@ -143,10 +145,10 @@ fn fallback_url (addr: &SocketAddr, method: &str) -> String {
 ///            The port should be 80 or 443 as this should help the server to function
 ///            even with the most restrictive internet operators.
 pub fn fetch_map (addr: &SocketAddr, id: Vec<u8>) -> Box<Future<Item=RepStrMap, Error=String> + Send> {
-    let url = fallback_url (addr, "fetch_map");
+    let hf_url = fallback_url (addr, "fetch_map");
     let request = try_fus! (Request::builder()
         .method("POST")
-        .uri (url)
+        .uri (hf_url)
         .body (Body::from (id)));
     let f = slurp_req (request);
     let f = f.and_then (|(status, _headers, body)| -> Result<RepStrMap, String> {
@@ -198,7 +200,7 @@ pub struct HttpFallbackTargetTrack {
 }
 
 /// Plugged into `fn transmit` to send the chunks via HTTP fallback when necessary.
-pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: Option<SocketAddr>, our_public_key: &bits256,
+pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: &Option<SocketAddr>, our_public_key: &bits256,
                     seed: &bits256, package: &mut super::Package) -> Result<(), String> {
     let hf_addr = match hf_addr {Some (a) => a, None => return Ok(())};
 
@@ -211,7 +213,7 @@ pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: Option<SocketAddr>, our
         if payload.chunk.is_none() {continue}
         deliver_to_seed.insert (salt, (payload, meta));
     }
-    let mut http_fallback_maps = try_s! (pctx.http_fallback_maps.lock());
+    let mut http_fallback_maps = try_s! (pctx.hf_maps.lock());
     let mut trackⁱ = http_fallback_maps.entry (*seed);
     let track = match trackⁱ {
         Entry::Occupied (ref mut oe) => oe.get_mut(),
@@ -292,7 +294,7 @@ log! ("transmit] TBD, time to use the HTTP fallback...");
 /// 
 /// * `salt` - The subject salt (checksum of the `subject` passed to `fn recv`).
 pub fn hf_delayed_get (pctx: &super::PeersContext, salt: &Vec<u8>) {
-    let mut delayed_salts = match pctx.delayed_salts.lock() {
+    let mut delayed_salts = match pctx.hf_delayed_salts.lock() {
         Ok (set) => set,
         Err (err) => {log! ("Can't lock `delayed_salts`: " (err)); return}
     };
@@ -303,11 +305,56 @@ pub fn hf_delayed_get (pctx: &super::PeersContext, salt: &Vec<u8>) {
 
 /// Manage HTTP fallback retrievals.  
 /// Invoked periodically from the peers loop.
-pub fn hf_poll (pctx: &Arc<super::PeersContext>) -> Result<(), String> {
+pub fn hf_poll (pctx: &Arc<super::PeersContext>, hf_addr: &Option<SocketAddr>) -> Result<(), String> {
+    let hf_addr = match hf_addr {Some (ref a) => a, None => return Ok(())};
+
     {
-        let delayed_salts = try_s! (pctx.delayed_salts.lock());
+        let delayed_salts = try_s! (pctx.hf_delayed_salts.lock());
         if delayed_salts.is_empty() {return Ok(())}
     }
+
+    let mut hf_pollₒ = try_s! (pctx.hf_poll.lock());
+    // NB: Futures can only be polled from other futures, see https://stackoverflow.com/a/41813881.
+    let skip = try_s! (future::lazy (|| -> Result<bool, String> {
+        if let Some (ref mut hf_poll) = *hf_pollₒ {
+            match hf_poll.poll() {
+                Err (err) => {
+                    log! ("hf_poll error: " (err));
+                    // Try again next iteration.
+                    *hf_pollₒ = None;
+                    return Ok (true)
+                },
+                Ok (Async::NotReady) => {
+                    // Retrieval already in progress.
+                    return Ok (true)
+                },
+                Ok (Async::Ready (r)) => {
+                    // TODO: Process the retrieved maps.
+    //pintln! ("hf_poll] got " [=r]);
+                    // Keep polling on next iteration.
+                    *hf_pollₒ = None;
+                    return Ok (true)
+                }
+            }
+        }
+        Ok (false)
+    }) .wait());
+    if skip {return Ok(())}
+
+//pintln! ("hf_poll] polling, at id " (pctx.hf_last_poll_id.load (Ordering::Relaxed)));
+
+    let mut hf_id_prefix = Vec::with_capacity (1 + 4 + 32 + 1);
+    hf_id_prefix.push (1);  // Version of the query protocol.
+    try_s! (hf_id_prefix.write_u64::<BigEndian> (pctx.hf_last_poll_id.load (Ordering::Relaxed)));
+    hf_id_prefix.extend_from_slice (&unsafe {try_s! (pctx.our_public_key.lock()) .bytes} [..]);
+    hf_id_prefix.push (b'<');
+
+    let hf_url = fallback_url (hf_addr, "fetch_maps_by_prefix");
+    let request = try_s! (Request::builder()
+        .method("POST")
+        .uri (hf_url)
+        .body (Body::from (hf_id_prefix)));
+    *hf_pollₒ = Some (slurp_req (request));
 
     Ok(())
 }
@@ -316,7 +363,7 @@ pub fn hf_poll (pctx: &Arc<super::PeersContext>) -> Result<(), String> {
 /// 
 /// * `salt` - The subject salt (checksum of the `subject` passed to `fn recv`).
 pub fn hf_drop_get (pctx: &super::PeersContext, salt: &Vec<u8>) {
-    let mut delayed_salts = match pctx.delayed_salts.lock() {
+    let mut delayed_salts = match pctx.hf_delayed_salts.lock() {
         Ok (set) => set,
         Err (err) => {log! ("Can't lock `delayed_salts`: " (err)); return}
     };
