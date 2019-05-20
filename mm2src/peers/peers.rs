@@ -269,7 +269,9 @@ pub struct PeersContext {
     /// Long polling from HTTP fallback server.
     hf_poll: Mutex<Option<SlurpFut>>,
     /// The version of the HTTP fallback response that we already have.
-    hf_last_poll_id: AtomicU64
+    hf_last_poll_id: AtomicU64,
+    /// Time (in seconds since UNIX epoch) util which we should skip polling the HTTP fallback server.
+    hf_skip_poll_till: AtomicU64
 }
 
 impl PeersContext {
@@ -289,7 +291,8 @@ impl PeersContext {
                 hf_maps: Mutex::new (HashMap::new()),
                 hf_delayed_salts: Mutex::new (HashMap::new()),
                 hf_poll: Mutex::new (None),
-                hf_last_poll_id: AtomicU64::new (0)
+                hf_last_poll_id: AtomicU64::new (0),
+                hf_skip_poll_till: AtomicU64::new (0)
             })
         })))
     }

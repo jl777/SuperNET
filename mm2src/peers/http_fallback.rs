@@ -1,5 +1,6 @@
 use base64;
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use crc::crc64::checksum_ecma;
 use crdts::{CvRDT, CmRDT, Map, Orswot};
 use futures::{future, self, Async, Future};
 use gstuff::{netstring, now_float};
@@ -9,7 +10,8 @@ use hyper::rt::{Stream};
 use hyper::service::Service;
 use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
-use std::io::Write;
+use std::collections::btree_map::BTreeMap;
+use std::io::{Cursor, Read, Write};
 use std::net::{SocketAddr};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
@@ -19,9 +21,12 @@ use tokio_core::net::TcpListener;
 use crate::common::{bits256, rpc_response, slurp_req, HyRes, CORE, HTTP};
 use crate::common::mm_ctx::{from_ctx, MmArc, MmWeak};
 
-/// Data belonging to this module and owned by the MM2 instance.
+/// Data belonging to the server side of this module and owned by the MM2 instance.  
+/// NB: The client side uses the `hf_*` fields in `PeersContext`.
 pub struct HttpFallbackContext {
-    maps: Mutex<HashMap<Vec<u8>, RepStrMap>>
+    // CRDT maps stored in the HTTP fallback server.  
+    // `BTreeMap` is used for reproducible ordering and prefix search.
+    maps: Mutex<BTreeMap<Vec<u8>, RepStrMap>>
 }
 
 impl HttpFallbackContext {
@@ -29,7 +34,7 @@ impl HttpFallbackContext {
     pub fn from_ctx (ctx: &MmArc) -> Result<Arc<HttpFallbackContext>, String> {
         Ok (try_s! (from_ctx (&ctx.http_fallback_ctx, move || {
             Ok (HttpFallbackContext {
-                maps: Mutex::new (HashMap::new())
+                maps: Mutex::new (BTreeMap::new())
             })
         })))
     }
@@ -50,6 +55,58 @@ fn fetch_map_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
             let map = RepStrMap::new();
             let map = try_fus! (json::to_string (&map));
             rpc_response (200, map)
+        }
+    });
+    Box::new (f)
+}
+
+fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
+    let f = req.into_body().concat2().then (move |body| -> HyRes {
+        let body = try_fus! (body);
+        let body = body.to_vec();
+        let mut cur = Cursor::new (&body[..]);
+        let ver = try_fus! (cur.read_u8());
+        if ver != 1 {return Box::new (future::err (ERRL! ("Unknown request version: {}", ver)))}
+        let hf_last_poll_id = try_fus! (cur.read_u64::<BigEndian>());
+        let mut prefix = Vec::with_capacity (33);
+        try_fus! (cur.read_to_end (&mut prefix));
+        if prefix.len() < 1 {return Box::new (future::err (ERRL! ("No prefix")))}
+//pintln! ("fetch_maps_by_prefix_impl] " [=hf_last_poll_id] ", prefix: " (common::binprint (&prefix, b'.')));
+
+        let ctx = try_fus! (MmArc::from_weak (&ctx) .ok_or ("MM stopping"));
+        let hfctx = try_fus! (HttpFallbackContext::from_ctx (&ctx));
+        let maps = try_fus! (hfctx.maps.lock());
+
+        // Prefix search.
+        // TODO: Limit the number of entries.
+        // TODO: Limit the size of the returned payload.
+        // TODO: See if we can make the client prove having rights to the prefix.
+        let mut prefixⱼ = prefix.clone();
+        let last_byte = &mut prefixⱼ[prefix.len() - 1];
+        if *last_byte == u8::max_value() {
+            prefixⱼ.push (0)
+        } else {
+            *last_byte += 1
+        };
+
+        // TODO: Compress the reply.
+        let mut buf = Vec::new();
+        try_fus! (buf.write_u8 (1));  // Reply protocol version.
+        try_fus! (buf.write_u64::<BigEndian> (0));  // 8 bytes space for the checksum.
+        for (k, map) in maps.range (prefix .. prefixⱼ) {
+            try_fus! (write! (&mut buf, "{}:{},", k.len(), unsafe {from_utf8_unchecked (k)}));
+            let js = try_fus! (json::to_string (map));
+            try_fus! (write! (&mut buf, "{}:{},", js.len(), js));
+        }
+        let crc = checksum_ecma (&buf[9..]);
+        try_fus! ((&mut buf[1..9]).write_u64::<BigEndian> (crc));
+//pintln! ("crc " (crc) "; " (common::binprint (&buf, b'.')));
+
+        if crc == hf_last_poll_id {
+            // TODO: Implement HTTP long polling, returning the reply when it changes or upon a timeout.
+            rpc_response (200, "not modified")
+        } else {
+            rpc_response (500, "TBD")
         }
     });
     Box::new (f)
@@ -90,6 +147,8 @@ pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr) -> Result<Box<Future<It
             let path = req.uri().path();
             if path == "/fallback/fetch_map" {
                 fetch_map_impl (self.ctx.clone(), req)
+            } else if path == "/fallback/fetch_maps_by_prefix" {
+                fetch_maps_by_prefix_impl (self.ctx.clone(), req)
             } else if path == "/fallback/merge_map" {
                 merge_map_impl (self.ctx.clone(), req)
             } else if path == "/test_ip" {  // Helps `fn test_ip` to check the IP availability.
@@ -313,6 +372,9 @@ pub fn hf_poll (pctx: &Arc<super::PeersContext>, hf_addr: &Option<SocketAddr>) -
         if delayed_salts.is_empty() {return Ok(())}
     }
 
+    let now = now_float();
+    if now < pctx.hf_skip_poll_till.load (Ordering::Relaxed) as f64 {return Ok(())}
+
     let mut hf_pollₒ = try_s! (pctx.hf_poll.lock());
     // NB: Futures can only be polled from other futures, see https://stackoverflow.com/a/41813881.
     let skip = try_s! (future::lazy (|| -> Result<bool, String> {
@@ -320,7 +382,7 @@ pub fn hf_poll (pctx: &Arc<super::PeersContext>, hf_addr: &Option<SocketAddr>) -
             match hf_poll.poll() {
                 Err (err) => {
                     log! ("hf_poll error: " (err));
-                    // Try again next iteration.
+                    pctx.hf_skip_poll_till.store ((now + 10.) as u64, Ordering::Relaxed);
                     *hf_pollₒ = None;
                     return Ok (true)
                 },
@@ -330,8 +392,10 @@ pub fn hf_poll (pctx: &Arc<super::PeersContext>, hf_addr: &Option<SocketAddr>) -
                 },
                 Ok (Async::Ready (r)) => {
                     // TODO: Process the retrieved maps.
-    //pintln! ("hf_poll] got " [=r]);
-                    // Keep polling on next iteration.
+//pintln! ("hf_poll] got " [=r]);
+                    // Should reduce the pause when HTTP long polling is implemented server-side
+                    // (but only after checking that the server response is valid).
+                    pctx.hf_skip_poll_till.store ((now + 10.) as u64, Ordering::Relaxed);
                     *hf_pollₒ = None;
                     return Ok (true)
                 }
