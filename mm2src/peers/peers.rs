@@ -8,13 +8,6 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
-// As of now the large payloads are not compressable,
-// 01 13:30:15, peers:617] peers_send_compat] Compression from 16046 to 16056
-// 01 13:30:16, peers:617] peers_send_compat] Compression from 32084 to 32094
-// but we're going to refactor these payloads in the future,
-// and there might be different other payloads as we go through the port.
-// TODO: See if compression works for CRDT type(s).
-//extern crate zstd_safe;  // https://github.com/facebook/zstd/blob/dev/lib/zstd.h
 
 #[doc(hidden)]
 pub mod peers_tests;

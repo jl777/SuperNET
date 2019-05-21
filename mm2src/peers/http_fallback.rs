@@ -8,6 +8,7 @@ use hashbrown::hash_map::{Entry, HashMap, RawEntryMut};
 use hyper::{Request, Body};
 use hyper::rt::{Stream};
 use hyper::service::Service;
+use libc::c_void;
 use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::collections::btree_map::BTreeMap;
@@ -17,6 +18,8 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
 use std::str::from_utf8_unchecked;
 use tokio_core::net::TcpListener;
+use zstd_sys::{ZSTD_CDict, ZSTD_createCDict_byReference, ZSTD_compress_usingCDict,
+    ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_isError, ZSTD_compressBound};
 
 use crate::common::{bits256, rpc_response, slurp_req, HyRes, CORE, HTTP};
 use crate::common::mm_ctx::{from_ctx, MmArc, MmWeak};
@@ -24,8 +27,8 @@ use crate::common::mm_ctx::{from_ctx, MmArc, MmWeak};
 /// Data belonging to the server side of this module and owned by the MM2 instance.  
 /// NB: The client side uses the `hf_*` fields in `PeersContext`.
 pub struct HttpFallbackContext {
-    // CRDT maps stored in the HTTP fallback server.  
-    // `BTreeMap` is used for reproducible ordering and prefix search.
+    /// CRDT maps stored in the HTTP fallback server.  
+    /// `BTreeMap` is used for reproducible ordering and prefix search.
     maps: Mutex<BTreeMap<Vec<u8>, RepStrMap>>
 }
 
@@ -38,6 +41,27 @@ impl HttpFallbackContext {
             })
         })))
     }
+}
+
+/// Must be the same for the dictionary and the payloads.
+/// cf. https://github.com/facebook/zstd/commit/b633377d0e6e2857e2ad2ffaa57f3015b7bc0b8f?short_path=e180ef2#diff-e180ef2189a1472b04a07b61bee5b50b
+const COMPRESSION_LEVEL: i32 = 3;
+/// "A dictionary can be any arbitrary data segment (also called a prefix)"
+const DICT_PREFIX: &'static str = concat! (
+    r#","val":{"clock":{"dots":{"1":1}},"entries":{""#,
+    r#","deferred":{}"#
+);
+
+struct StaticDict (*mut ZSTD_CDict);
+unsafe impl Sync for StaticDict {}
+
+lazy_static! {
+    // https://facebook.github.io/zstd/zstd_manual.html#Chapter26
+    static ref DICT: StaticDict = StaticDict (unsafe {ZSTD_createCDict_byReference (
+        DICT_PREFIX.as_ptr() as *const c_void,
+        DICT_PREFIX.len(),
+        COMPRESSION_LEVEL
+    )});
 }
 
 fn fetch_map_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
@@ -89,24 +113,40 @@ fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
             *last_byte += 1
         };
 
-        // TODO: Compress the reply.
         let mut buf = Vec::new();
-        try_fus! (buf.write_u8 (1));  // Reply protocol version.
-        try_fus! (buf.write_u64::<BigEndian> (0));  // 8 bytes space for the checksum.
         for (k, map) in maps.range (prefix .. prefixⱼ) {
             try_fus! (write! (&mut buf, "{}:{},", k.len(), unsafe {from_utf8_unchecked (k)}));
             let js = try_fus! (json::to_string (map));
             try_fus! (write! (&mut buf, "{}:{},", js.len(), js));
         }
-        let crc = checksum_ecma (&buf[9..]);
-        try_fus! ((&mut buf[1..9]).write_u64::<BigEndian> (crc));
-//pintln! ("crc " (crc) "; " (common::binprint (&buf, b'.')));
+        let crc = checksum_ecma (&buf);
+
+        // CRDT JSON and base64 have good compression ratios.
+        let mut dst: Vec<u8> = Vec::new();
+        if !buf.is_empty() {
+            dst.reserve (unsafe {ZSTD_compressBound (buf.len())} + 32);
+            let cctx = unsafe {ZSTD_createCCtx()};  // TODO: Reuse (we already have a lock).
+            assert! (!cctx.is_null());
+            let len = unsafe {ZSTD_compress_usingCDict (cctx,
+                dst.as_mut_ptr() as *mut c_void, dst.capacity(),
+                buf.as_ptr() as *const c_void, buf.len(),
+                DICT.0
+            )};
+            if unsafe {ZSTD_isError (len)} != 0 {return Box::new (future::err (ERRL! ("Can't compress")))}
+            unsafe {ZSTD_freeCCtx (cctx)};  // TODO: RAII
+            unsafe {dst.set_len (len)};
+        }
+
+        buf.clear();
+        try_fus! (buf.write_u8 (1));  // Reply protocol version.
+        try_fus! (buf.write_u64::<BigEndian> (crc));
+        buf.extend_from_slice (&dst[..]);
 
         if crc == hf_last_poll_id {
             // TODO: Implement HTTP long polling, returning the reply when it changes or upon a timeout.
             rpc_response (200, "not modified")
         } else {
-            rpc_response (500, "TBD")
+            rpc_response (200, buf)
         }
     });
     Box::new (f)
