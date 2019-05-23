@@ -6,6 +6,7 @@ use futures::{future, self, Async, Future};
 use gstuff::{netstring, now_float};
 use hashbrown::hash_map::{Entry, HashMap, RawEntryMut};
 use hyper::{Request, Body};
+use hyper::body::Payload;
 use hyper::rt::{Stream};
 use hyper::service::Service;
 use libc::c_void;
@@ -13,13 +14,16 @@ use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::collections::btree_map::BTreeMap;
 use std::io::{Cursor, Read, Write};
-use std::net::{SocketAddr};
+use std::mem::uninitialized;
+use std::net::SocketAddr;
+use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
 use std::str::from_utf8_unchecked;
 use tokio_core::net::TcpListener;
-use zstd_sys::{ZSTD_CDict, ZSTD_createCDict_byReference, ZSTD_compress_usingCDict,
-    ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_isError, ZSTD_compressBound};
+use zstd_sys::{ZSTD_CDict, ZSTD_createCDict_byReference, ZSTD_freeCDict, ZSTD_compress_usingCDict_advanced,
+    ZSTD_frameParameters, ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_isError, ZSTD_compressBound,
+    ZSTD_createDCtx, ZSTD_freeDCtx, ZSTD_DDict, ZSTD_createDDict, ZSTD_freeDDict, ZSTD_decompress_usingDDict};
 
 use crate::common::{bits256, rpc_response, slurp_req, HyRes, CORE, HTTP};
 use crate::common::mm_ctx::{from_ctx, MmArc, MmWeak};
@@ -52,15 +56,40 @@ const DICT_PREFIX: &'static str = concat! (
     r#","deferred":{}"#
 );
 
-struct StaticDict (*mut ZSTD_CDict);
-unsafe impl Sync for StaticDict {}
+struct StaticCDict (*mut ZSTD_CDict);
+unsafe impl Sync for StaticCDict {}
+impl Drop for StaticCDict {
+    fn drop (&mut self) {
+        // cf. https://github.com/facebook/zstd/blob/a880ca239b447968493dd2fed3850e766d6305cc/contrib/linux-kernel/lib/zstd/compress.c#L2897
+        unsafe {ZSTD_freeCDict (self.0)};
+        self.0 = null_mut()
+}   }
 
 lazy_static! {
     // https://facebook.github.io/zstd/zstd_manual.html#Chapter26
-    static ref DICT: StaticDict = StaticDict (unsafe {ZSTD_createCDict_byReference (
+    // cf. https://github.com/facebook/zstd/blob/a880ca239b447968493dd2fed3850e766d6305cc/lib/compress/zstd_compress.c#L3626
+    //     https://github.com/facebook/zstd/blob/a880ca239b447968493dd2fed3850e766d6305cc/lib/compress/zstd_compress.c#L3586
+    static ref CDICT: StaticCDict = StaticCDict (unsafe {ZSTD_createCDict_byReference (
         DICT_PREFIX.as_ptr() as *const c_void,
         DICT_PREFIX.len(),
         COMPRESSION_LEVEL
+    )});
+}
+
+struct DDict (*mut ZSTD_DDict);
+unsafe impl Sync for DDict {}
+impl Drop for DDict {
+    fn drop (&mut self) {
+        // cf. https://github.com/facebook/zstd/blob/a940e78f1687edf970c75f6b9381de9e0ec493e8/lib/decompress/zstd_ddict.c#L208
+        unsafe {ZSTD_freeDDict (self.0)};
+        self.0 = null_mut()
+}   }
+
+lazy_static! {
+    // https://facebook.github.io/zstd/zstd_manual.html#Chapter18
+    static ref DDICT: DDict = DDict (unsafe {ZSTD_createDDict (
+        DICT_PREFIX.as_ptr() as *const c_void,
+        DICT_PREFIX.len()
     )});
 }
 
@@ -119,7 +148,9 @@ fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
             let js = try_fus! (json::to_string (map));
             try_fus! (write! (&mut buf, "{}:{},", js.len(), js));
         }
-        let crc = checksum_ecma (&buf);
+        let crc = if buf.is_empty() {0} else {checksum_ecma (&buf)};
+        // HTTP fallback is not intended for large payloads; if we see some then something is likely wrong.
+        if buf.len() > u16::max_value() as usize {return Box::new (future::err (ERRL! ("Payload too big")))}
 
         // CRDT JSON and base64 have good compression ratios.
         let mut dst: Vec<u8> = Vec::new();
@@ -127,10 +158,11 @@ fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
             dst.reserve (unsafe {ZSTD_compressBound (buf.len())} + 32);
             let cctx = unsafe {ZSTD_createCCtx()};  // TODO: Reuse (we already have a lock).
             assert! (!cctx.is_null());
-            let len = unsafe {ZSTD_compress_usingCDict (cctx,
+            let len = unsafe {ZSTD_compress_usingCDict_advanced (cctx,
                 dst.as_mut_ptr() as *mut c_void, dst.capacity(),
                 buf.as_ptr() as *const c_void, buf.len(),
-                DICT.0
+                CDICT.0,
+                ZSTD_frameParameters {contentSizeFlag: 0, checksumFlag: 0, noDictIDFlag: 1}
             )};
             if unsafe {ZSTD_isError (len)} != 0 {return Box::new (future::err (ERRL! ("Can't compress")))}
             unsafe {ZSTD_freeCCtx (cctx)};  // TODO: RAII
@@ -139,7 +171,7 @@ fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
 
         buf.clear();
         try_fus! (buf.write_u8 (1));  // Reply protocol version.
-        try_fus! (buf.write_u64::<BigEndian> (crc));
+        try_fus! (buf.write_u64::<BigEndian> (crc));  // 8 bytes crc, aka `hf_last_poll_id`.
         buf.extend_from_slice (&dst[..]);
 
         if crc == hf_last_poll_id {
@@ -153,9 +185,14 @@ fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
 }
 
 fn merge_map_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
+    if let Some (cl) = req.body().content_length() {
+        // Guard against abuse, HTTP fallback is only intended for small payloads.
+        if cl > u16::max_value() as u64 {return rpc_response (500, "Payload too big")}
+    }
     let f = req.into_body().concat2().then (move |body| -> HyRes {
         let body = try_fus! (body);
         let buf = body.to_vec();
+        if body.len() > u16::max_value() as usize {return rpc_response (500, "Payload too big")}
         let (id, mapˢ) = try_fus! (netstring (&buf));
         let map: RepStrMap = try_fus! (json::from_slice (mapˢ));
 
@@ -402,6 +439,47 @@ pub fn hf_delayed_get (pctx: &super::PeersContext, salt: &Vec<u8>) {
     }
 }
 
+use hyper::{HeaderMap, StatusCode};
+
+/// Process the prefix search results obtained
+/// when we query the HTTP fallback server for maps addressed to our public key.
+fn process_pulled_maps (pctx: &Arc<super::PeersContext>, status: StatusCode, _headers: HeaderMap, body: Vec<u8>)
+-> Result<(), String> {
+    if !status.is_success() {return ERR! ("HTTP status {}", status)}
+    if body == &b"not modified"[..] {return Ok(())}
+
+    let mut cur = Cursor::new (&body);
+    let ver = try_s! (cur.read_u8());
+    if ver != 1 {return ERR! ("Unknown protocol version: {}", ver)}
+    let crc = try_s! (cur.read_u64::<BigEndian>());
+pintln! ([=ver] ", " [=crc]);
+
+    let compressed = &body[9..];
+    // NB: We know the payload will not be bigger than this.
+    let mut buf: [u8; 65536] = unsafe {uninitialized()};
+    let dctx = unsafe {ZSTD_createDCtx()};  // TODO: Reuse a locked one.
+    let len = unsafe {ZSTD_decompress_usingDDict (
+        dctx,
+        buf.as_mut_ptr() as *mut c_void, buf.len(),
+        compressed.as_ptr() as *const c_void, compressed.len(),
+        DDICT.0
+    )};
+    unsafe {ZSTD_freeDCtx (dctx)};
+    if unsafe {ZSTD_isError (len)} != 0 {return ERR! ("Can't decompress")}
+
+    let mut tail = &buf[0..len];
+    while !tail.is_empty() {
+        let (key, tailⁱ) = try_s! (netstring (tail));
+        let (map, tailⱼ) = try_s! (netstring (tailⁱ));
+//pintln! ("key: " (common::binprint (key, b'.')));
+//pintln! ("map: " (common::binprint (map, b'.')));
+        tail = tailⱼ
+    }
+
+    pctx.hf_last_poll_id.store (crc, Ordering::Relaxed);
+    Ok(())
+}
+
 /// Manage HTTP fallback retrievals.  
 /// Invoked periodically from the peers loop.
 pub fn hf_poll (pctx: &Arc<super::PeersContext>, hf_addr: &Option<SocketAddr>) -> Result<(), String> {
@@ -430,12 +508,12 @@ pub fn hf_poll (pctx: &Arc<super::PeersContext>, hf_addr: &Option<SocketAddr>) -
                     // Retrieval already in progress.
                     return Ok (true)
                 },
-                Ok (Async::Ready (r)) => {
-                    // TODO: Process the retrieved maps.
-//pintln! ("hf_poll] got " [=r]);
-                    // Should reduce the pause when HTTP long polling is implemented server-side
-                    // (but only after checking that the server response is valid).
-                    pctx.hf_skip_poll_till.store ((now + 10.) as u64, Ordering::Relaxed);
+                Ok (Async::Ready ((status, headers, body))) => {
+                    let rc = process_pulled_maps (pctx, status, headers, body);
+                    // Should reduce the pause when HTTP long polling is implemented server-side.
+                    let pause = if rc.is_ok() {7.} else {10.};
+                    pctx.hf_skip_poll_till.store ((now + pause) as u64, Ordering::Relaxed);
+                    try_s! (rc);
                     *hf_pollₒ = None;
                     return Ok (true)
                 }
