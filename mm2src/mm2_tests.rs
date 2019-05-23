@@ -60,9 +60,11 @@ fn addr_from_enable(enable_response: &Json) -> Json {
     enable_response["address"].clone()
 }
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_autoprice_coingecko() {portfolio::portfolio_tests::test_autoprice_coingecko (local_start())}
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_autoprice_coinmarketcap() {portfolio::portfolio_tests::test_autoprice_coinmarketcap (local_start())}
 
@@ -209,6 +211,7 @@ fn test_notify() {
 }
 
 /// https://github.com/artemii235/SuperNET/issues/241
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn alice_can_see_the_active_order_after_connection() {
     let coins = json!([
@@ -338,6 +341,7 @@ fn peers_http_fallback_recv() {peers::peers_tests::peers_http_fallback_recv()}
 #[test]
 fn peers_http_fallback_kv() {peers::peers_tests::peers_http_fallback_kv()}
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_my_balance() {
     let coins = json!([
@@ -413,6 +417,7 @@ fn check_sell_fails(mm: &MarketMakerIt, base: &str, rel: &str, vol: f64) {
     assert! (rc.0.is_server_error(), "!sell success but should be error: {}", rc.1);
 }
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_check_balance_on_order_post() {
     let coins = json!([
@@ -471,6 +476,7 @@ fn test_check_balance_on_order_post() {
     check_sell_fails(&mm, "JST", "BEER", 0.1);
 }
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_rpc_password_from_json() {
     let coins = json!([
@@ -886,6 +892,7 @@ fn trade_base_rel_electrum(pairs: Vec<(&str, &str)>) {
     unwrap! (mm_alice.stop());
 }
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn trade_test_electrum_and_eth_coins() {
     trade_base_rel_electrum(vec![("BEER", "ETOMIC"), ("ETH", "JST")]);
@@ -1127,6 +1134,7 @@ fn withdraw_and_send(mm: &MarketMakerIt, coin: &str, to: &str, enable_res: &Hash
     assert_eq! (withdraw_json["tx_hash"], send_json["tx_hash"]);
 }
 
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_withdraw_and_send() {
     let (alice_file_passphrase, _alice_file_userpass) = from_env_file (slurp (&".env.client"));
@@ -1217,6 +1225,7 @@ fn test_swap_status() {
 
 /// Ensure that setprice/buy/sell calls deny base == rel
 /// https://github.com/artemii235/SuperNET/issues/363
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_order_errors_when_base_equal_rel() {
     let coins = json!([
@@ -1304,6 +1313,7 @@ fn startup_passphrase(passphrase: &str, expected_address: &str) {
 
 /// MM2 should detect if passphrase is WIF or 0x-prefixed hex encoded privkey and parse it properly.
 /// https://github.com/artemii235/SuperNET/issues/396
+#[ignore]  // Electrum servers temporary on maintenance
 #[test]
 fn test_startup_passphrase() {
     // seed phrase
