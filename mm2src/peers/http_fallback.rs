@@ -25,7 +25,7 @@ use zstd_sys::{ZSTD_CDict, ZSTD_createCDict_byReference, ZSTD_freeCDict, ZSTD_co
     ZSTD_frameParameters, ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_isError, ZSTD_compressBound,
     ZSTD_createDCtx, ZSTD_freeDCtx, ZSTD_DDict, ZSTD_createDDict, ZSTD_freeDDict, ZSTD_decompress_usingDDict};
 
-use crate::common::{bits256, rpc_response, slurp_req, HyRes, CORE, HTTP};
+use crate::common::{bits256, binprint, rpc_response, slurp_req, HyRes, CORE, HTTP};
 use crate::common::mm_ctx::{from_ctx, MmArc, MmWeak};
 
 /// Data belonging to the server side of this module and owned by the MM2 instance.  
@@ -124,7 +124,7 @@ fn fetch_maps_by_prefix_impl (ctx: MmWeak, req: Request<Body>) -> HyRes {
         let mut prefix = Vec::with_capacity (33);
         try_fus! (cur.read_to_end (&mut prefix));
         if prefix.len() < 1 {return Box::new (future::err (ERRL! ("No prefix")))}
-//pintln! ("fetch_maps_by_prefix_impl] " [=hf_last_poll_id] ", prefix: " (common::binprint (&prefix, b'.')));
+//pintln! ("fetch_maps_by_prefix_impl] " [=hf_last_poll_id] ", prefix: " (binprint (&prefix, b'.')));
 
         let ctx = try_fus! (MmArc::from_weak (&ctx) .ok_or ("MM stopping"));
         let hfctx = try_fus! (HttpFallbackContext::from_ctx (&ctx));
@@ -452,7 +452,6 @@ fn process_pulled_maps (pctx: &Arc<super::PeersContext>, status: StatusCode, _he
     let ver = try_s! (cur.read_u8());
     if ver != 1 {return ERR! ("Unknown protocol version: {}", ver)}
     let crc = try_s! (cur.read_u64::<BigEndian>());
-pintln! ([=ver] ", " [=crc]);
 
     let compressed = &body[9..];
     // NB: We know the payload will not be bigger than this.
@@ -467,16 +466,40 @@ pintln! ([=ver] ", " [=crc]);
     unsafe {ZSTD_freeDCtx (dctx)};
     if unsafe {ZSTD_isError (len)} != 0 {return ERR! ("Can't decompress")}
 
+    let our_public_key = try_s! (pctx.our_public_key.lock()) .clone();
+    let mut chunks = BTreeMap::new();
+
     let mut tail = &buf[0..len];
     while !tail.is_empty() {
-        let (key, tailⁱ) = try_s! (netstring (tail));
-        let (map, tailⱼ) = try_s! (netstring (tailⁱ));
-//pintln! ("key: " (common::binprint (key, b'.')));
-//pintln! ("map: " (common::binprint (map, b'.')));
+        let (hf_id, tailⁱ) = try_s! (netstring (tail));
+        let (rep_map, tailⱼ) = try_s! (netstring (tailⁱ));
+
+        if hf_id.len() != 65 || hf_id[32] != b'<' {return ERR! ("Bad hf_id: {}", binprint (hf_id, b'.'))}
+        let to = &hf_id[0..32];
+        if unsafe {to != &our_public_key.bytes[..]} {return ERR! ("Bad to: {}", binprint (to, b'.'))}
+        let from = &hf_id[33..];  // The public key of the sender.
+        let from = bits256 {bytes: *array_ref! (from, 0, 32)};
+        // TODO: See if we can verify that payload is coming from `from`.
+
+        let rep_map: RepStrMap = try_s! (json::from_slice (rep_map));
+        for salt in try_s! (rep_keys (&rep_map)) {
+            let set = try_s! (rep_map.get (&salt) .val.map (|v| v.read().val) .ok_or ("A key with no value"));
+            if set.len() != 1 {return ERR! ("Value set of length {}", set.len())}
+            let chunk = unwrap! (set.into_iter().next());
+
+            let salt = try_s! (base64::decode_config (&salt, base64::STANDARD_NO_PAD));
+            let chunk = try_s! (base64::decode_config (&chunk, base64::STANDARD_NO_PAD));
+            chunks.insert (salt, (from, chunk));
+        }
+
         tail = tailⱼ
     }
 
-    pctx.hf_last_poll_id.store (crc, Ordering::Relaxed);
+    {
+        let mut hf_inbox = try_s! (pctx.hf_inbox.lock());
+        *hf_inbox = chunks;
+        pctx.hf_last_poll_id.store (crc, Ordering::Relaxed);
+    }
     Ok(())
 }
 

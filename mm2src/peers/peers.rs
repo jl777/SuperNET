@@ -34,6 +34,7 @@ use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
+use std::collections::btree_map::BTreeMap;
 use std::cmp::Ordering;
 use std::env::{temp_dir, var};
 use std::fs;
@@ -170,6 +171,9 @@ fn format_radix (mut x: u64, radix: u64) -> Vec<u8> {
     result
 }
 
+// TODO: Maybe use an array instead.
+pub type Salt = Vec<u8>;
+
 /// A command delivered to the `peers_thread` via the `PeersContext::cmd_tx`.
 enum LtCommand {
     Put {
@@ -180,7 +184,7 @@ enum LtCommand {
         /// Should not be too large (BEP 44 mentions error code 207 "salt too big").  
         /// Must not contain zero bytes (we're passing it as a zero-terminated string sometimes).  
         /// NB: If the `data` is large then `peers_thread` will append chunk number to `salt` for every extra DHT chunk.
-        salt: Vec<u8>,
+        salt: Salt,
         payload: Vec<u8>,
         send_handler: Weak<SendHandler>,
         /// Send the value to the HTTP fallback server
@@ -190,7 +194,7 @@ enum LtCommand {
     /// Starts a new get operation, unless it is already in progress.
     Get {
         seed: bits256,
-        salt: Vec<u8>,
+        salt: Salt,
         /// Identifies the `Future` responsible for this get operation.
         frid: NonZeroU64,
         /// The `Future` to wake when the payload is reassembled.
@@ -201,7 +205,7 @@ enum LtCommand {
     },
     /// Stops a get operation when a corresponding `Future` handler is dropped.
     DropGet {
-        salt: Vec<u8>,
+        salt: Salt,
         /// Identifies the `Future` responsible for this get operation.
         frid: NonZeroU64
     },
@@ -247,7 +251,7 @@ pub struct PeersContext {
     /// Should only be used by the `peers_thread`.
     cmd_rx: channel::Receiver<LtCommand>,
     /// Salt -> last-modified, value.
-    recently_fetched: Mutex<HashMap<Vec<u8>, (f64, Vec<u8>)>>,
+    recently_fetched: Mutex<HashMap<Salt, (f64, Vec<u8>)>>,
     /// Of retransmission subsystem.
     trans_meta: Mutex<TransMeta>,
     /// The number of enhanced DHT pings received from MMs.
@@ -258,13 +262,16 @@ pub struct PeersContext {
     /// Recent attempts at reaching targets via HTTP fallback. seed -> track
     hf_maps: Mutex<HashMap<bits256, HttpFallbackTargetTrack>>,
     /// Subject salts we're trying to get for longer than their `fallback` timeout.
-    hf_delayed_salts: Mutex<HashMap<Vec<u8>, ()>>,
+    hf_delayed_salts: Mutex<HashMap<Salt, ()>>,
     /// Long polling from HTTP fallback server.
     hf_poll: Mutex<Option<SlurpFut>>,
     /// The version of the HTTP fallback response that we already have.
     hf_last_poll_id: AtomicU64,
     /// Time (in seconds since UNIX epoch) util which we should skip polling the HTTP fallback server.
-    hf_skip_poll_till: AtomicU64
+    hf_skip_poll_till: AtomicU64,
+    /// Snapshot of chunks received through the HTTP fallback server.  
+    /// Using `BTreeMap` in order for `hf_to_gets` to get the first chunk (with the number of chunks) first.
+    hf_inbox: Mutex<BTreeMap<Salt, (bits256, Vec<u8>)>>
 }
 
 impl PeersContext {
@@ -285,7 +292,8 @@ impl PeersContext {
                 hf_delayed_salts: Mutex::new (HashMap::new()),
                 hf_poll: Mutex::new (None),
                 hf_last_poll_id: AtomicU64::new (0),
-                hf_skip_poll_till: AtomicU64::new (0)
+                hf_skip_poll_till: AtomicU64::new (0),
+                hf_inbox: Mutex::new (BTreeMap::new())
             })
         })))
     }
@@ -610,7 +618,7 @@ fn pingʹ (ctx: &MmArc, from: &bits256, endpoint: &SocketAddr, pong: Option<Byte
 
 /// Invoked from the `peers_thread`, implementing the `LtCommand::Put` op.  
 /// NB: If the `data` is large then we block to rate-limit.
-fn split_and_put (ctx: &MmArc, from: &bits256, seed: bits256, mut salt: Vec<u8>, mut data: Vec<u8>,
+fn split_and_put (ctx: &MmArc, from: &bits256, seed: bits256, mut salt: Salt, mut data: Vec<u8>,
                   send_handler: Weak<SendHandler>, fallback: NonZeroU8) {
     // chunk 1 {{number of chunks, 1 byte; piece of data} crc32}
     // chunk 2 {{piece of data} crc32}
@@ -734,24 +742,81 @@ impl GetsEntry {
 }
 
 /// A map from a subject salt (e.g. without chunk suffix) to GetsEntry.
-type Gets = HashMap<Vec<u8>, GetsEntry>;
+type Gets = HashMap<Salt, GetsEntry>;
+
+/// Unpack and check the incoming chunk, then add it to `Gets`.  
+/// Update the `GetsEntry::number_of_chunks` if the incoming chunk is the chunk number one.
+fn chunk_to_gets (i_salt: &Salt, i_chunk: &Vec<u8>, our_public_key: &bits256, gets: &mut Gets)
+-> Result<u8, String> {
+    if i_salt.len() < 2 {return ERR! ("short ping salt")}
+    let subject_salt = &i_salt[0 .. i_salt.len() - 1];
+    let chunk_idx = i_salt[i_salt.len() - 1];
+    if chunk_idx == 0 {return ERR! ("bad chunk index")}
+
+    // Reject the chunk if there is a checksum mismatch.
+    let mut payload = i_chunk.to_vec();
+    if payload.len() < 5 {return ERR! ("short ping chunk")}
+    let incoming_checksum = try_s! ((&payload[payload.len() - 4 ..]) .read_u32::<BigEndian>());
+    for _ in 0..4 {payload.pop();}  // Drain the checksum.
+    let mut crc = update (chunk_idx as u32, &IEEE_TABLE, &payload);
+    crc = update (crc, &IEEE_TABLE, unsafe {&our_public_key.bytes[..]});
+    crc = update (crc, &IEEE_TABLE, &subject_salt);
+    if incoming_checksum != crc {return ERR! ("bad ping chunk")}
+
+    let mut gets_en = gets.raw_entry_mut().from_key (subject_salt);
+    let (_, gets) = match gets_en {
+        RawEntryMut::Occupied (ref mut oe) => oe.get_key_value_mut(),
+        RawEntryMut::Vacant (ve) => ve.insert (subject_salt.to_vec(), GetsEntry::default())
+    };
+    if chunk_idx == 1 {
+        let number_of_chunks = try_s! (NonZeroU8::new (payload.remove (0)) .ok_or ("zero chunks"));
+        gets.number_of_chunks = Some (number_of_chunks)
+    }
+    let number_of_chunks = match gets.number_of_chunks {
+        Some (n) => n,
+        None => return ERR! ("no number_of_chunks")  // Out of order delivery?
+    };
+    if chunk_idx > number_of_chunks.get() {return ERR! ("ping chunk out of bounds")}
+    gets.chunks.resize_with (number_of_chunks.get() as usize, Default::default);
+    let mut en = &mut gets.chunks[chunk_idx as usize - 1];
+    en.direct = now_float();
+    en.payload = Some (payload);
+
+    Ok (chunk_idx)
+}
+
+/// Copy chunks obtained via HTTP fallback into `Gets`.
+fn hf_to_gets (our_public_key: &bits256, pctx: &PeersContext, gets: &mut Gets) -> Result<(), String> {
+    if pctx.hf_last_poll_id.load (AtomicOrdering::Relaxed) != 0 {
+        let hf_inbox = try_s! (pctx.hf_inbox.lock());
+        for (i_salt, (_from, chunk)) in hf_inbox.iter() {
+            let subject_salt = &i_salt[0 .. i_salt.len() - 1];
+            if !gets.contains_key (subject_salt) {continue}  // We're not currently getting that subject.
+            let _chunk_idx = try_s! (chunk_to_gets (i_salt, chunk, our_public_key, gets));
+        }
+    }
+    Ok(())
+}
 
 /// Responsible for reassembling all the DHT pieces stored for a potentially large value.
 /// Invoked whenever we see continued interest for the value
 /// (note that the fetching should be dropped if the interest vanishes)
 /// or when after one of the fetched pieces arrives.
-fn get_pieces_scheduler (seed: &bits256, salt: Vec<u8>, frid: NonZeroU64, task: Task, fallback: NonZeroU8,
+/// 
+/// * `seed` - The public key we're getting the data for (usually equals `our_public_key`).
+/// * `salt` - The subject salt of the payload we're interested in.
+fn get_pieces_scheduler (seed: &bits256, salt: Salt, frid: NonZeroU64, task: Task, fallback: NonZeroU8,
                          dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
-    let gets = match gets.entry (salt) {
-        Entry::Vacant (ve) => {
+    let getsᵉ = match gets.entry (salt) {
+        Entry::Vacant (getsᵉ) => {
             // Fetch the first chunk.
             // Having it we'll know the number of chunks necessary to reassemble the entire value.
-            let mut chunk_salt = ve.key().clone();
+            let mut chunk_salt = getsᵉ.key().clone();
             chunk_salt.push (1);  // Identifies the first chunk.
             let mut pk: [u8; 32] = unsafe {zeroed()};
             let seed = unsafe {seed.bytes};
             unsafe {dht_get (dugout, seed.as_ptr(), seed.len() as i32, chunk_salt.as_ptr(), chunk_salt.len() as i32, pk.as_mut_ptr(), pk.len() as i32)}
-            ve.insert (GetsEntry {
+            getsᵉ.insert (GetsEntry {
                 pk: Some (pk),
                 reassembled_at: None,
                 number_of_chunks: None,
@@ -764,26 +829,26 @@ fn get_pieces_scheduler (seed: &bits256, salt: Vec<u8>, frid: NonZeroU64, task: 
             return
         },
         Entry::Occupied (mut oe) => {
-            let gets_en = oe.get_mut();
-            gets_en.futures.insert (frid, task);
+            let getsᵉ = oe.get_mut();
+            getsᵉ.futures.insert (frid, task);
             // Entries might be created before they are requested
             // (like when we're getting a direct DHT ping from a C callback),
             // so we should store the correct `fallback` value afterwards.
-            gets_en.fallback = Some (fallback);
+            getsᵉ.fallback = Some (fallback);
             oe
         }
     };
 
-    get_pieces_scheduler_en (seed, dugout, gets, pctx)
+    get_pieces_scheduler_en (seed, dugout, getsᵉ, pctx)
 }
 
 fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
-                            mut gets: OccupiedEntry<Vec<u8>, GetsEntry, DefaultHashBuilder>,
+                            mut getsᵉ: OccupiedEntry<Salt, GetsEntry, DefaultHashBuilder>,
                             pctx: &PeersContext) {
     // Skip or GC the package if there are no clients still working on it.
 
     let (skip, remove) = loop {
-        let gets = gets.get_mut();
+        let gets = getsᵉ.get_mut();
         if gets.futures.is_empty() {
             if let Some (idle_since) = gets.idle_since {
                 let idle_for = now_float() - idle_since;
@@ -797,21 +862,21 @@ fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
             break (false, false)
         }
     };
-    if remove {gets.remove_entry(); return}
+    if remove {getsᵉ.remove_entry(); return}
     if skip {return}
 
     // See if the first chunk has arrived and the number of chunks with it.
 
     let now = now_float();
-    if let Some (number_of_chunks) = gets.get().number_of_chunks {
+    if let Some (number_of_chunks) = getsᵉ.get().number_of_chunks {
         // We'll never reassemble the right value while having extra chunks.
-        gets.get_mut().chunks.resize_with (number_of_chunks.get() as usize, Default::default)
+        getsᵉ.get_mut().chunks.resize_with (number_of_chunks.get() as usize, Default::default)
     }
 
     // Go over the chunks and see if it's time to maybe retry fetching some of them.
 
-    let salt = gets.key().clone();
-    let mut pk: [u8; 32] = match gets.get().pk {
+    let salt = getsᵉ.key().clone();
+    let mut pk: [u8; 32] = match getsᵉ.get().pk {
         Some (have) => have,
         None => Default::default()  // Tells `dht_get` to fill it.
     };
@@ -825,7 +890,7 @@ fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
             Ordering::Equal
         }
     }
-    for (idx, chunk) in (1..) .zip (gets.get_mut().chunks.iter_mut())
+    for (idx, chunk) in (1..) .zip (getsᵉ.get_mut().chunks.iter_mut())
     .sorted_by (|(_, ca), (_, cb)| ordering (ca.restarted, cb.restarted, ca.payload.is_none(), cb.payload.is_none())) {
         if now - chunk.restarted < 10. || now - chunk.direct < 10. || limops > 10. {continue}
 
@@ -842,26 +907,26 @@ fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
         chunk.restarted = now;
         with_ratelim (seed, |_lm, ops| {*ops += 1.; limops = *ops})
     }
-    gets.get_mut().pk = Some (pk);  // In case it was initialized by `dht_get`.
+    getsᵉ.get_mut().pk = Some (pk);  // In case it was initialized by `dht_get`.
 
     // Reassemble the value.
     // We're doing it every time because the version of a chunk payload (and the number of chunks) might have been changed since the last time.
 
-    let missing_chunks = gets.get().chunks.iter().any (|chunk| chunk.payload.is_none());
+    let missing_chunks = getsᵉ.get().chunks.iter().any (|chunk| chunk.payload.is_none());
     if missing_chunks {return}
-    let mut buf = Vec::with_capacity (gets.get().chunks.len() * 992);
-    for chunk in &gets.get().chunks {for &byte in unwrap! (chunk.payload.as_ref()) {buf.push (byte)}}
-    if gets.get_mut().reassembled_at.is_none() {gets.get_mut().reassembled_at = Some (now)}
+    let mut buf = Vec::with_capacity (getsᵉ.get().chunks.len() * 992);
+    for chunk in &getsᵉ.get().chunks {for &byte in unwrap! (chunk.payload.as_ref()) {buf.push (byte)}}
+    if getsᵉ.get_mut().reassembled_at.is_none() {getsᵉ.get_mut().reassembled_at = Some (now)}
 
     let mut fetched = match pctx.recently_fetched.lock() {
         Ok (gets) => gets,
         Err (err) => {log! ("get_pieces_scheduler] Can't lock the `PeersContext::recently_fetched`: " (err)); return}
     };
-    match fetched.entry (gets.key().clone()) {
+    match fetched.entry (getsᵉ.key().clone()) {
         Entry::Vacant (ve) => {ve.insert ((now_float(), buf));},
         Entry::Occupied (oe) => *oe.into_mut() = (now_float(), buf)
     }
-    for task in gets.get().futures.values() {task.notify()}
+    for task in getsᵉ.get().futures.values() {task.notify()}
 }
 
 const BOOTSTRAP_STATUS: &[&TagParam] = &[&"dht-boot"];
@@ -958,39 +1023,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
     // Copy the chunk into `gets` where the `get_pieces_scheduler` will see it.
     let mm: MmPayload = ping.a.mm;
     if let (Some (i_salt), Some (i_chunk)) = (mm.salt.as_ref(), mm.chunk.as_ref()) {
-        if i_salt.len() < 2 {return ERR! ("short ping salt")}
-        let subject_salt = &i_salt[0 .. i_salt.len() - 1];
-        let chunk_idx = i_salt[i_salt.len() - 1];
-        if chunk_idx == 0 {return ERR! ("bad chunk index")}
-
-        // Reject the chunk if there is a checksum mismatch.
-        let mut payload = i_chunk.to_vec();
-        if payload.len() < 5 {return ERR! ("short ping chunk")}
-        let incoming_checksum = try_s! ((&payload[payload.len() - 4 ..]) .read_u32::<BigEndian>());
-        for _ in 0..4 {payload.pop();}  // Drain the checksum.
-        let mut crc = update (chunk_idx as u32, &IEEE_TABLE, &payload);
-        crc = update (crc, &IEEE_TABLE, unsafe {&cbctx.our_public_key.bytes[..]});
-        crc = update (crc, &IEEE_TABLE, &subject_salt);
-        if incoming_checksum != crc {return ERR! ("bad ping chunk")}
-
-        let mut gets_en = cbctx.gets.raw_entry_mut().from_key (subject_salt);
-        let (_, gets) = match gets_en {
-            RawEntryMut::Occupied (ref mut oe) => oe.get_key_value_mut(),
-            RawEntryMut::Vacant (ve) => ve.insert (subject_salt.to_vec(), GetsEntry::default())
-        };
-        if chunk_idx == 1 {
-            let number_of_chunks = try_s! (NonZeroU8::new (payload.remove (0)) .ok_or ("zero chunks"));
-            gets.number_of_chunks = Some (number_of_chunks)
-        }
-        let number_of_chunks = match gets.number_of_chunks {
-            Some (n) => n,
-            None => return ERR! ("no number_of_chunks")  // Out of order delivery?
-        };
-        if chunk_idx > number_of_chunks.get() {return ERR! ("ping chunk out of bounds")}
-        gets.chunks.resize_with (number_of_chunks.get() as usize, Default::default);
-        let mut en = &mut gets.chunks[chunk_idx as usize - 1];
-        en.direct = now_float();
-        en.payload = Some (payload);
+        let chunk_idx = try_s! (chunk_to_gets (i_salt, i_chunk, &cbctx.our_public_key, &mut cbctx.gets));
         pctx.direct_chunks.fetch_add (1, AtomicOrdering::Relaxed);
         log! ("incoming_ping] Chunk " (chunk_idx) " received directly");
     }
@@ -1113,7 +1146,7 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
                 };
                 let mut payload = payload.to_vec();
 
-                let salt: Vec<u8> = (&chunk_salt[0 .. chunk_salt.len() - 1]) .into();  // Without the chunk number suffix.
+                let salt: Salt = (&chunk_salt[0 .. chunk_salt.len() - 1]) .into();  // Without the chunk number suffix.
 
                 let gets = match cbctx.gets.iter_mut().find (|en| &en.0[..] == &salt[..] && en.1.pk == Some (keybuf)) {
                     Some (gets_entry) => gets_entry.1,
@@ -1255,6 +1288,8 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 
         if let Err (err) = hf_poll (&pctx, &hf_addr) {
             log! ("hf_poll error: " (err))
+        } else if let Err (err) = hf_to_gets (&our_public_key, &pctx, &mut gets) {
+            log! ("hf_to_gets error: " (err))
         }
 
         // Remove old entries from `hf_maps`.
@@ -1424,7 +1459,7 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: 
 struct RecvFuture {
     pctx: Arc<PeersContext>,
     seed: bits256,
-    salt: Vec<u8>,
+    salt: Salt,
     validator: Box<Fn(&[u8])->bool + Send>,
     frid: Option<NonZeroU64>,
     /// Start checking the HTTP fallback server for the value
