@@ -44,9 +44,9 @@ fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, Json)> {
 
 fn enable_coins_eth_electrum(mm: &MarketMakerIt, eth_urls: Vec<&str>) -> HashMap<&'static str, Json> {
     let mut replies = HashMap::new();
-    replies.insert ("BEER", enable_electrum (mm, "BEER", vec!["electrum1.cipig.net:10022","electrum2.cipig.net:10022","electrum3.cipig.net:10022"]));
+    replies.insert ("BEER", enable_electrum (mm, "BEER", vec!["electrum2.cipig.net:10022","electrum3.cipig.net:10022"]));
     replies.insert ("PIZZA", enable_electrum (mm, "PIZZA", vec!["electrum1.cipig.net:10024","electrum2.cipig.net:10024","electrum3.cipig.net:10024"]));
-    replies.insert ("ETOMIC", enable_electrum (mm, "ETOMIC", vec!["electrum1.cipig.net:10025","electrum2.cipig.net:10025","electrum3.cipig.net:10025"]));
+    replies.insert ("ETOMIC", enable_electrum (mm, "ETOMIC", vec!["electrum1.cipig.net:10025"]));
     replies.insert ("ETH", enable_native (mm, "ETH", eth_urls.clone()));
     replies.insert ("JST", enable_native (mm, "JST", eth_urls));
     replies
@@ -358,7 +358,7 @@ fn test_my_balance() {
     log!({"log path: {}", mm.log_path.display()});
     unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
     // Enable BEER.
-    let json = enable_electrum(&mm, "BEER", vec!["electrum1.cipig.net:10022","electrum2.cipig.net:10022","electrum3.cipig.net:10022"]);
+    let json = enable_electrum(&mm, "BEER", vec!["electrum2.cipig.net:10022","electrum3.cipig.net:10022"]);
     let balance_on_enable = unwrap!(json["balance"].as_f64());
     assert_eq!(balance_on_enable, 1.0);
 
@@ -524,7 +524,7 @@ fn test_rpc_password_from_json() {
         "userpass": "password1",
         "method": "electrum",
         "coin": "BEER",
-        "urls": ["electrum1.cipig.net:10022"],
+        "urls": ["electrum2.cipig.net:10022"],
         "mm2": 1,
     })));
 
@@ -535,7 +535,7 @@ fn test_rpc_password_from_json() {
         "userpass": mm.userpass,
         "method": "electrum",
         "coin": "BEER",
-        "urls": ["electrum1.cipig.net:10022"],
+        "urls": ["electrum2.cipig.net:10022"],
         "mm2": 1,
     })));
 
@@ -546,7 +546,7 @@ fn test_rpc_password_from_json() {
         "userpass": mm.userpass,
         "method": "electrum",
         "coin": "PIZZA",
-        "urls": ["electrum1.cipig.net:10022"],
+        "urls": ["electrum1.cipig.net:10024"],
         "mm2": 1,
     })));
 
@@ -587,7 +587,7 @@ fn test_rpc_password_from_json_no_userpass() {
     let electrum = unwrap! (mm.rpc (json! ({
         "method": "electrum",
         "coin": "BEER",
-        "urls": ["electrum1.cipig.net:10022"],
+        "urls": ["electrum2.cipig.net:10022"],
     })));
 
     // electrum call must return 500 status code
@@ -1238,7 +1238,7 @@ fn test_order_errors_when_base_equal_rel() {
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
     unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    enable_electrum (&mm, "BEER", vec!["electrum1.cipig.net:10022"]);
+    enable_electrum (&mm, "BEER", vec!["electrum2.cipig.net:10022"]);
 
     let rc = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
@@ -1272,7 +1272,7 @@ fn test_order_errors_when_base_equal_rel() {
 
 fn startup_passphrase(passphrase: &str, expected_address: &str) {
     let coins = json!([
-        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
+        {"coin":"KMD","rpcport":8923,"txversion":4},
     ]);
 
     let mut mm = unwrap! (MarketMakerIt::start (
@@ -1293,7 +1293,7 @@ fn startup_passphrase(passphrase: &str, expected_address: &str) {
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
     unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    let enable = enable_electrum (&mm, "BEER", vec!["electrum1.cipig.net:10022"]);
+    let enable = enable_electrum (&mm, "KMD", vec!["electrum1.cipig.net:10001"]);
     let addr = addr_from_enable(&enable);
     assert_eq!(Json::from(expected_address), addr);
     unwrap!(mm.stop());
