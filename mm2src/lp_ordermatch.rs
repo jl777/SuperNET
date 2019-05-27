@@ -289,8 +289,8 @@ pub fn lp_trades_loop(ctx: MmArc) {
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
         let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
         let mut my_maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
-        // move the timed out (5 seconds) taker orders to maker
-        *my_taker_orders = my_taker_orders.drain().filter_map(|(uuid, order)| if order.created_at + 5000 < now_ms() {
+        // move the timed out (10 seconds) taker orders to maker
+        *my_taker_orders = my_taker_orders.drain().filter_map(|(uuid, order)| if order.created_at + 10000 < now_ms() {
             if order.matches.is_empty() {
                 my_maker_orders.insert(uuid, order.into());
             }
@@ -298,10 +298,10 @@ pub fn lp_trades_loop(ctx: MmArc) {
         } else {
             Some((uuid, order))
         }).collect();
-        // remove timed out (5 seconds) unfinished matches to unlock the reserved amount
+        // remove timed out (10 seconds) unfinished matches to unlock the reserved amount
         my_maker_orders.iter_mut().for_each(|(_, order)| {
             order.matches = order.matches.drain().filter(
-                |(_, order_match)| order_match.last_updated + 5000 < now_ms() || order_match.connected.is_some()
+                |(_, order_match)| order_match.last_updated + 10000 < now_ms() || order_match.connected.is_some()
             ).collect();
         });
         drop(my_taker_orders);
