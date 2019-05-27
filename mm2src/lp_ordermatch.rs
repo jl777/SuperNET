@@ -571,17 +571,16 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
         action,
     };
     ctx.broadcast_p2p_msg(&unwrap!(json::to_string(&request)));
+    let result = json!({
+        "result": request
+    }).to_string();
     my_taker_orders.insert(uuid, TakerOrder {
         created_at: now_ms(),
         matches: HashMap::new(),
         request,
     });
     drop(my_taker_orders);
-    Ok(json!({
-        "result": {
-            "uuid": uuid,
-        }
-    }).to_string())
+    Ok(result)
 }
 
 #[derive(Serialize)]
