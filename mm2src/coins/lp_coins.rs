@@ -29,6 +29,7 @@
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate unwrap;
 
+use bigdecimal::BigDecimal;
 use common::{bitcoin_ctx, lp, rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use dirs::home_dir;
@@ -92,14 +93,14 @@ pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
 
 /// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
 pub trait SwapOps {
-    fn send_taker_fee(&self, fee_addr: &[u8], amount: u64) -> TransactionFut;
+    fn send_taker_fee(&self, fee_addr: &[u8], amount: BigDecimal) -> TransactionFut;
 
     fn send_maker_payment(
         &self,
         time_lock: u32,
         taker_pub: &[u8],
         secret_hash: &[u8],
-        amount: u64
+        amount: BigDecimal,
     ) -> TransactionFut;
 
     fn send_taker_payment(
@@ -107,7 +108,7 @@ pub trait SwapOps {
         time_lock: u32,
         maker_pub: &[u8],
         secret_hash: &[u8],
-        amount: u64,
+        amount: BigDecimal,
     ) -> TransactionFut;
 
     fn send_maker_spends_taker_payment(
@@ -146,7 +147,7 @@ pub trait SwapOps {
         &self,
         fee_tx: TransactionEnum,
         fee_addr: &[u8],
-        amount: u64
+        amount: BigDecimal,
     ) -> Result<(), String>;
 
     fn validate_maker_payment(
@@ -155,7 +156,7 @@ pub trait SwapOps {
         time_lock: u32,
         maker_pub: &[u8],
         priv_bn_hash: &[u8],
-        amount: u64,
+        amount: BigDecimal,
     ) -> Result<(), String>;
 
     fn validate_taker_payment(
@@ -164,7 +165,7 @@ pub trait SwapOps {
         time_lock: u32,
         taker_pub: &[u8],
         priv_bn_hash: &[u8],
-        amount: u64,
+        amount: BigDecimal,
     ) -> Result<(), String>;
 }
 
@@ -173,7 +174,7 @@ pub trait SwapOps {
 pub trait MarketCoinOps {
     fn my_address(&self) -> Cow<str>;
 
-    fn my_balance(&self) -> Box<Future<Item=f64, Error=String> + Send>;
+    fn my_balance(&self) -> Box<Future<Item=BigDecimal, Error=String> + Send>;
 
     /// Receives raw transaction bytes in hexadecimal format as input and returns tx hash in hexadecimal format
     fn send_raw_tx(&self, tx: &str) -> Box<Future<Item=String, Error=String> + Send>;
@@ -211,7 +212,7 @@ struct WithdrawRequest {
     coin: String,
     to: String,
     #[serde(default)]
-    amount: f64,
+    amount: BigDecimal,
     #[serde(default)]
     max: bool
 }
@@ -264,7 +265,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + IguanaInfo + Debug + 'static {
 
     fn can_i_spend_other_payment(&self) -> Box<Future<Item=(), Error=String> + Send>;
 
-    fn withdraw(&self, to: &str, amount: f64, max: bool) -> Box<Future<Item=TransactionDetails, Error=String> + Send>;
+    fn withdraw(&self, to: &str, amount: BigDecimal, max: bool) -> Box<Future<Item=TransactionDetails, Error=String> + Send>;
 
     /// Maximum number of digits after decimal point used to denominate integer coin units (satoshis, wei, etc.)
     fn decimals(&self) -> u8;

@@ -56,9 +56,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     jaddnum(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
-    jaddstr(retjson,"etomicsrc",qp->etomicsrc);
     jaddstr(retjson,"rel",qp->destcoin);
-    jaddstr(retjson,"etomicdest",qp->etomicdest);
     if ( qp->coinaddr[0] != 0 )
         jaddstr(retjson,"address",qp->coinaddr);
     if ( qp->timestamp != 0 )
@@ -103,10 +101,8 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->uuidstr,jstr(argjson,"uuid"),sizeof(qp->uuidstr));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
-    safecopy(qp->etomicsrc,jstr(argjson,"etomicsrc"),sizeof(qp->etomicsrc));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
-    safecopy(qp->etomicdest,jstr(argjson,"etomicdest"),sizeof(qp->etomicdest));
     qp->aliceid = (uint64_t)juint(argjson,"aliceid");
     qp->tradeid = juint(argjson,"tradeid");
     qp->timestamp = juint(argjson,"timestamp");
@@ -167,7 +163,6 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     }
     safecopy(qp->srccoin,utxo->coin,sizeof(qp->srccoin));
     safecopy(qp->coinaddr,utxo->coinaddr,sizeof(qp->coinaddr));
-    qp->srchash = utxo->pubkey;
     return(0);
 }
 
@@ -177,19 +172,6 @@ int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desthash,char *destaddr
     qp->desthash = desthash;
     safecopy(qp->destaddr,destaddr,sizeof(qp->destaddr));
     return(0);
-}
-
-char *LP_quotereceived(struct LP_quoteinfo *qp)
-{
-    struct LP_cacheinfo *ptr; double price;
-    //LP_quoteparse(&Q,argjson);
-    price = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
-    //if ( (ptr= LP_cacheadd(qp->srccoin,qp->destcoin,qp->txid,qp->vout,price,qp)) != 0 )
-    //{
-      //  ptr->Q = *qp;
-        printf(">>>>>>>>>> received quote %s/%s %.8f\n",qp->srccoin,qp->destcoin,price);
-        return(clonestr("{\"result\":\"updated\"}"));
-    //} else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
 char *LP_bitcoinsig_str(bits256 priv,uint8_t *pubsecp,bits256 sighash)
@@ -303,9 +285,10 @@ char *LP_pricepings(char *base,char *rel,double price)
 
 char *LP_postprice_recv(cJSON *argjson)
 {
-    bits256 pubkey; double price; uint8_t pubkey33[33]; char *base,*rel,*argstr,coinaddr[64];
+    bits256 pubkey; uint8_t pubkey33[33]; char *base,*rel,*argstr,coinaddr[64];
     //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
-    if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
+    double price = jdouble(argjson,"price");
+    if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
     {
         pubkey = jbits256(argjson,"pubkey");
         if ( bits256_nonz(pubkey) != 0 )
@@ -435,24 +418,10 @@ void LP_notify_pubkeys(uint32_t ctx_h)
     broadcast_p2p_msg_for_c(zero,jprint(reqjson,1), ctx_h);
 }
 
-char *LP_uitem_recv(cJSON *argjson)
-{
-    bits256 txid; int32_t vout,height; uint64_t value; struct iguana_info *coin; char *coinaddr,*symbol;
-printf("LP_uitem_recv deprecated\n");
-    txid = jbits256(argjson,"txid");
-    vout = jint(argjson,"vout");
-    height = jint(argjson,"ht");
-    value = j64bits(argjson,"value");
-    coinaddr = jstr(argjson,"coinaddr");
-    return(clonestr("{\"result\":\"success\"}"));
-}
-
 void LP_query(char *method,struct LP_quoteinfo *qp, uint32_t ctx_h)
 {
     cJSON *reqjson; bits256 zero; char *msg; struct iguana_info *coin; int32_t flag = 0;
     reqjson = LP_quotejson(qp);
-    if ( bits256_nonz(qp->desthash) != 0 )
-        flag = 1;
     jaddbits256(reqjson,"pubkey",qp->srchash);
     jaddstr(reqjson,"method",method);
     if ( jobj(reqjson,"timestamp") == 0 )
