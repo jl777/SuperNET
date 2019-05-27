@@ -61,7 +61,7 @@ struct TakerRequest {
     dest_pub_key: H256Json,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 struct TakerOrder {
     created_at: u64,
     request: TakerRequest,
@@ -96,7 +96,7 @@ impl TakerOrder {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 /// Market maker order
 /// The "action" is missing here because it's easier to always consider maker order as "sell"
 /// So upon ordermatch with request we have only 2 combinations "sell":"sell" and "sell":"buy"
@@ -108,7 +108,8 @@ pub struct MakerOrder {
     pub created_at: u64,
     pub base: String,
     pub rel: String,
-    matches: HashMap<Uuid, MakerMatch>
+    matches: HashMap<Uuid, MakerMatch>,
+    started_swaps: Vec<Uuid>,
 }
 
 impl MakerOrder {
@@ -132,6 +133,7 @@ impl Into<MakerOrder> for TakerOrder {
                 base: self.request.base,
                 rel: self.request.rel,
                 matches: HashMap::new(),
+                started_swaps: Vec::new(),
             },
             // The "buy" taker order is recreated with reversed pair as Maker order is always considered as "sell"
             TakerAction::Buy => MakerOrder {
@@ -142,6 +144,7 @@ impl Into<MakerOrder> for TakerOrder {
                 base: self.request.rel,
                 rel: self.request.base,
                 matches: HashMap::new(),
+                started_swaps: Vec::new(),
             },
         };
         order
@@ -466,6 +469,7 @@ pub unsafe fn lp_trade_command(
             ctx.broadcast_p2p_msg(&unwrap!(json::to_string(&connected)));
             order_match.connect = Some(connect_msg);
             order_match.connected = Some(connected);
+            my_order.started_swaps.push(order_match.request.uuid);
             lp_connect_start_bob(&ctx, order_match);
         }
         return 1;
@@ -523,7 +527,7 @@ pub fn sell(ctx: MmArc, json: Json) -> HyRes {
 }
 
 /// Created when maker order is matched with taker request
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct MakerMatch {
     request: TakerRequest,
     reserved: MakerReserved,
@@ -533,7 +537,7 @@ struct MakerMatch {
 }
 
 /// Created upon taker request broadcast
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 struct TakerMatch {
     reserved: MakerReserved,
     connect: TakerConnect,
@@ -691,21 +695,22 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
 
     Box::new(base_coin.check_i_have_enough_to_trade(req.volume.to_f64().unwrap(), true).and_then(move |_|
         rel_coin.can_i_spend_other_payment().and_then(move |_| {
-            if req.broadcast == 1 {
-                let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
-                let mut my_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());
-                let uuid = Uuid::new_v4();
-                my_orders.insert(uuid, MakerOrder {
-                    max_base_vol: req.volume,
-                    min_base_vol: 0.into(),
-                    price: req.price,
-                    created_at: now_ms(),
-                    base: req.base,
-                    rel: req.rel,
-                    matches: HashMap::new(),
-                });
-            }
-            rpc_response(200, json!({"result":"success"}).to_string())
+            let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
+            let mut my_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());
+            let uuid = Uuid::new_v4();
+            let order = MakerOrder {
+                max_base_vol: req.volume,
+                min_base_vol: 0.into(),
+                price: req.price,
+                created_at: now_ms(),
+                base: req.base,
+                rel: req.rel,
+                matches: HashMap::new(),
+                started_swaps: Vec::new(),
+            };
+            let response = json!({"result":order}).to_string();
+            my_orders.insert(uuid, order);
+            rpc_response(200, response)
         }))
     )
 }
@@ -768,4 +773,35 @@ fn match_order_and_request(maker: &MakerOrder, taker: &TakerRequest) -> OrderMat
             }
         },
     }
+}
+
+#[derive(Deserialize, Serialize)]
+struct OrderStatusReq {
+    uuid: Uuid,
+}
+
+pub fn order_status(ctx: MmArc, req: Json) -> HyRes {
+    let req: OrderStatusReq = try_h!(json::from_value(req));
+
+    let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
+    let maker_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());
+    if let Some(order) = maker_orders.get(&req.uuid) {
+        return rpc_response(200, json!({
+            "type": "Maker",
+            "order": order,
+            "available_amount": order.available_amount(),
+        }).to_string());
+    }
+
+    let taker_orders = try_h!(ordermatch_ctx.my_taker_orders.lock());
+    if let Some(order) = taker_orders.get(&req.uuid) {
+        return rpc_response(200, json!({
+            "type": "Taker",
+            "order": order,
+        }).to_string());
+    }
+
+    rpc_err_response(400, &json!({
+        "error": format!("Order with uuid {} is not found", req.uuid)
+    }).to_string())
 }

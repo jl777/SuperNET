@@ -38,7 +38,7 @@ use std::sync::atomic::Ordering;
 use tokio_core::net::TcpListener;
 use hex;
 
-use crate::mm2::lp_ordermatch::{buy, sell, set_price};
+use crate::mm2::lp_ordermatch::{buy, order_status, sell, set_price};
 use crate::mm2::lp_swap::{my_swap_status, stats_swap_status, my_recent_swaps};
 use crate::mm2::CJSON;
 
@@ -210,6 +210,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
         "my_balance" => my_balance (ctx, req),
         "my_tx_history" => my_tx_history(ctx, req),
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
+        "order_status" => order_status (ctx, req),
         "passphrase" => passphrase (ctx, req),
         "sell" => sell (ctx, req),
         "send_raw_transaction" => send_raw_transaction (ctx, req),
