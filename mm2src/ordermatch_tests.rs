@@ -11,6 +11,7 @@ fn test_match_maker_order_and_taker_request() {
         price: 1.into(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
 
     let request = TakerRequest {
@@ -38,6 +39,7 @@ fn test_match_maker_order_and_taker_request() {
         price: "0.5".parse().unwrap(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
 
     let request = TakerRequest {
@@ -65,6 +67,7 @@ fn test_match_maker_order_and_taker_request() {
         price: "0.5".parse().unwrap(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
 
     let request = TakerRequest {
@@ -92,6 +95,7 @@ fn test_match_maker_order_and_taker_request() {
         price: "0.5".parse().unwrap(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
 
     let request = TakerRequest {
@@ -119,6 +123,7 @@ fn test_match_maker_order_and_taker_request() {
         price: "0.5".parse().unwrap(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
 
     let request = TakerRequest {
@@ -146,6 +151,7 @@ fn test_match_maker_order_and_taker_request() {
         price: "1".parse().unwrap(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
 
     let request = TakerRequest {
@@ -176,6 +182,7 @@ fn test_maker_order_available_amount() {
         price: 1.into(),
         matches: HashMap::new(),
         started_swaps: Vec::new(),
+        uuid: Uuid::new_v4(),
     };
     maker.matches.insert(Uuid::new_v4(), MakerMatch {
         request: TakerRequest {

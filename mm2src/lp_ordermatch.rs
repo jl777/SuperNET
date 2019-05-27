@@ -110,6 +110,7 @@ pub struct MakerOrder {
     pub rel: String,
     matches: HashMap<Uuid, MakerMatch>,
     started_swaps: Vec<Uuid>,
+    uuid: Uuid,
 }
 
 impl MakerOrder {
@@ -134,6 +135,7 @@ impl Into<MakerOrder> for TakerOrder {
                 rel: self.request.rel,
                 matches: HashMap::new(),
                 started_swaps: Vec::new(),
+                uuid: self.request.uuid,
             },
             // The "buy" taker order is recreated with reversed pair as Maker order is always considered as "sell"
             TakerAction::Buy => MakerOrder {
@@ -145,6 +147,7 @@ impl Into<MakerOrder> for TakerOrder {
                 rel: self.request.base,
                 matches: HashMap::new(),
                 started_swaps: Vec::new(),
+                uuid: self.request.uuid,
             },
         };
         order
@@ -707,6 +710,7 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
                 rel: req.rel,
                 matches: HashMap::new(),
                 started_swaps: Vec::new(),
+                uuid,
             };
             let response = json!({"result":order}).to_string();
             my_orders.insert(uuid, order);
