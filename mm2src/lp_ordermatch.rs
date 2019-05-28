@@ -188,6 +188,7 @@ struct MakerConnected {
 struct OrdermatchContext {
     pub my_maker_orders: Mutex<HashMap<Uuid, MakerOrder>>,
     pub my_taker_orders: Mutex<HashMap<Uuid, TakerOrder>>,
+    pub cancelled_orders: Mutex<HashMap<Uuid, MakerOrder>>,
 }
 
 impl OrdermatchContext {
@@ -197,6 +198,7 @@ impl OrdermatchContext {
             Ok (OrdermatchContext {
                 my_taker_orders: Mutex::new (HashMap::default()),
                 my_maker_orders: Mutex::new (HashMap::default()),
+                cancelled_orders: Mutex::new (HashMap::default()),
             })
         })))
     }
@@ -634,12 +636,16 @@ impl PricePingRequest {
             sig_str
         };
 
-        let my_balance = try_s!(base_coin.my_balance().wait());
         let available_amount = order.available_amount();
-        let max_volume = if available_amount <= my_balance {
-            available_amount
+        let max_volume = if available_amount > 0.into() {
+            let my_balance = try_s!(base_coin.my_balance().wait());
+            if available_amount <= my_balance && available_amount > 0.into() {
+                available_amount
+            } else {
+                my_balance
+            }
         } else {
-            my_balance
+            0.into()
         };
 
         Ok(PricePingRequest {
@@ -743,6 +749,24 @@ pub fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
             continue;
         }
     }
+    // the difference of cancelled orders from maker orders that we broadcast the cancel request only once
+    // cancelled record can be just dropped then
+    let cancelled_orders: HashMap<_, _> = try_s!(ordermatch_ctx.cancelled_orders.lock()).drain().collect();
+    for (_, order) in cancelled_orders {
+        let ping = match PricePingRequest::new(ctx, &order) {
+            Ok(p) => p,
+            Err(e) => {
+                ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));
+                continue;
+            },
+        };
+
+        if let Err(e) = lp_send_price_ping(&ping, ctx) {
+            ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request send failed {}", e));
+            continue;
+        }
+    }
+
     Ok(())
 }
 
@@ -785,7 +809,7 @@ fn match_order_and_request(maker: &MakerOrder, taker: &TakerRequest) -> OrderMat
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 struct OrderStatusReq {
     uuid: Uuid,
 }
@@ -814,4 +838,31 @@ pub fn order_status(ctx: MmArc, req: Json) -> HyRes {
     rpc_err_response(400, &json!({
         "error": format!("Order with uuid {} is not found", req.uuid)
     }).to_string())
+}
+
+#[derive(Deserialize)]
+struct CancelOrderReq {
+    uuid: Uuid,
+}
+
+pub fn cancel_order(ctx: MmArc, req: Json) -> HyRes {
+    let req: CancelOrderReq = try_h!(json::from_value(req));
+
+    let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
+    let mut maker_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());
+    match maker_orders.remove(&req.uuid) {
+        Some(mut order) => {
+            let mut cancelled_orders = try_h!(ordermatch_ctx.cancelled_orders.lock());
+            // TODO cancel means setting the volume to 0 as of now, should refactor
+            order.max_base_vol = 0.into();
+            cancelled_orders.insert(req.uuid, order);
+            rpc_response(200, json!({
+                "result": "success"
+            }).to_string())
+        },
+        // return error if order is not found
+        None => rpc_err_response(400, &json!({
+                    "error": format!("Order with uuid {} is not found", req.uuid)
+                }).to_string())
+    }
 }
