@@ -802,8 +802,8 @@ fn trade_base_rel_electrum(pairs: Vec<(&str, &str)>) {
         })));
         assert!(rc.0.is_success(), "!setprice: {}", rc.1);
     }
-    // allow order to be converted to maker if it's not matched in 10 seconds
-    thread::sleep(Duration::from_secs(12));
+    // allow order to be converted to maker if it's not matched in 30 seconds
+    thread::sleep(Duration::from_secs(32));
     for (base, rel) in pairs.iter() {
         log!("Issue alice " (base) "/" (rel) " buy request");
         let rc = unwrap!(mm_alice.rpc (json! ({
@@ -1387,7 +1387,7 @@ fn test_multiple_buy_sell_no_delay() {
         "volume": 0.1,
     })));
     assert! (rc.0.is_success(), "buy should have succeed, but got {:?}", rc);
-    thread::sleep(Duration::from_secs(20));
+    thread::sleep(Duration::from_secs(40));
 
     log!("Get BEER/PIZZA orderbook");
     let rc = unwrap! (mm.rpc (json! ({
