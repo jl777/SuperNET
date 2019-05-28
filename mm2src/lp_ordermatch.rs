@@ -838,9 +838,7 @@ pub fn order_status(ctx: MmArc, req: Json) -> HyRes {
         }).to_string());
     }
 
-    rpc_err_response(400, &json!({
-        "error": format!("Order with uuid {} is not found", req.uuid)
-    }).to_string())
+    rpc_err_response(404, &format!("Order with uuid {} is not found", req.uuid))
 }
 
 #[derive(Deserialize)]
@@ -864,8 +862,6 @@ pub fn cancel_order(ctx: MmArc, req: Json) -> HyRes {
             }).to_string())
         },
         // return error if order is not found
-        None => rpc_err_response(400, &json!({
-                    "error": format!("Order with uuid {} is not found", req.uuid)
-                }).to_string())
+        None => rpc_err_response(404, &format!("Order with uuid {} is not found", req.uuid))
     }
 }
