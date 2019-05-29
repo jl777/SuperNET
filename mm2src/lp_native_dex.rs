@@ -23,8 +23,8 @@ use futures::sync::oneshot::Sender;
 use gstuff::now_ms;
 use hex;
 use hyper::StatusCode;
+use keys::KeyPair;
 use libc::{self, c_char, c_void};
-use primitives::hash::H160;
 use rand::{random, Rng, SeedableRng};
 use rand::rngs::SmallRng;
 use serde_json::{self as json, Value as Json};
@@ -1239,7 +1239,7 @@ fn fix_directories(ctx: &MmCtx) -> Result<(), String> {
 ///     in order to avoid the possibility of invalid state.
 /// AP: Totally agree, moreover maybe we even `must` deny calling this on a working MM as it's being refactored
 #[allow(unused_unsafe)]
-pub unsafe fn lp_passphrase_init (passphrase: Option<&str>, gui: Option<&str>) -> Result<H160, String> {
+pub unsafe fn lp_passphrase_init (passphrase: Option<&str>, gui: Option<&str>) -> Result<KeyPair, String> {
     let passphrase = match passphrase {
         None | Some ("") => return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree"),
         Some (s) => s.to_string()
@@ -1286,7 +1286,7 @@ pub unsafe fn lp_passphrase_init (passphrase: Option<&str>, gui: Option<&str>) -
     lp::G.USERPASS_COUNTER = userpass_counter;
 
     lp::G.initializing = 0;
-    Ok(rmd_160)
+    Ok(global_key_pair)
 }
 
 /// Tries to serve on the given IP to check if it's available.  
@@ -1397,9 +1397,9 @@ pub fn lp_init (mypubport: u16, conf: Json, ctx_cb: &Fn (u32))
         }
     }
     unsafe {lp::LP_mutex_init()};
-    let rmd_160 = unsafe {try_s! (lp_passphrase_init (conf["passphrase"].as_str(), conf["gui"].as_str()))};
+    let key_pair = unsafe {try_s! (lp_passphrase_init (conf["passphrase"].as_str(), conf["gui"].as_str()))};
 
-    let ctx = MmCtx::new (conf, rmd_160);
+    let ctx = MmCtx::new (conf, key_pair);
     let global: &mut [c_char] = unsafe {&mut lp::GLOBAL_DBDIR[..]};
     let global: &mut [u8] = unsafe {transmute (global)};
     let mut cur = Cursor::new (global);

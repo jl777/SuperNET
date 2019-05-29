@@ -19,18 +19,21 @@
 //  marketmaker
 //
 use bigdecimal::BigDecimal;
-use common::{CJSON, free_c_ptr, lp, SMALLVAL, rpc_response, rpc_err_response, HyRes};
+use bitcrypto::sha256;
+use common::{lp, SMALLVAL, rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use coins::{lp_coinfind, MmCoinEnum};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
 use futures::future::Future;
 use gstuff::now_ms;
 use hashbrown::hash_map::{Entry, HashMap};
-use libc::{self, c_char, c_void};
+use keys::{Public, Signature};
+use libc::c_char;
 use num_traits::cast::ToPrimitive;
+use primitives::hash::H256;
 use rpc::v1::types::{H256 as H256Json};
 use serde_json::{self as json, Value as Json};
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread;
@@ -595,9 +598,20 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
     Ok(result)
 }
 
-#[derive(Serialize)]
+fn price_ping_sig_hash(timestamp: u32, pubsecp: &[u8], pubkey: &[u8], base: &[u8], rel: &[u8], price64: u64) -> H256 {
+    let mut input = vec![];
+    input.extend_from_slice(&timestamp.to_le_bytes());
+    input.extend_from_slice(pubsecp);
+    input.extend_from_slice(pubkey);
+    input.extend_from_slice(base);
+    input.extend_from_slice(rel);
+    input.extend_from_slice(&price64.to_le_bytes());
+    sha256(&input)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct PricePingRequest {
-    method: &'static str,
+    method: String,
     pubkey: String,
     base: String,
     rel: String,
@@ -623,21 +637,18 @@ impl PricePingRequest {
             None => return ERR!("Rel coin {} is not found", order.rel),
         };
 
-        let price64 = (&order.price * BigDecimal::from(100000000.0)).to_u64().unwrap();
+        let price64 = (&order.price * BigDecimal::from(100000000)).to_u64().unwrap();
         let timestamp = now_ms() / 1000;
-        let base_c: CString = try_s!(CString::new(order.base.clone()));
-        let rel_c: CString = try_s!(CString::new(order.rel.clone()));
+        let sig_hash = price_ping_sig_hash(
+            timestamp as u32,
+            &**ctx.secp256k1_key_pair.public(),
+            unsafe { &lp::G.LP_mypub25519.bytes },
+            order.base.as_bytes(),
+            order.rel.as_bytes(),
+            price64,
+        );
 
-        let sig = unsafe {
-            let sig_c = lp::LP_price_sig(timestamp as u32, lp::G.LP_privkey, lp::G.LP_pubsecp.as_mut_ptr(), lp::G.LP_mypub25519,
-                                         base_c.as_ptr() as *mut c_char, rel_c.as_ptr() as *mut c_char, price64);
-            if sig_c.is_null() {
-                return ERR!("Price request signature is null");
-            }
-            let sig_str = try_s!(CStr::from_ptr(sig_c).to_str()).into();
-            free_c_ptr(sig_c as *mut c_void);
-            sig_str
-        };
+        let sig = try_s!(ctx.secp256k1_key_pair.private().sign(&sig_hash));
 
         let available_amount = order.available_amount();
         let max_volume = if available_amount > 0.into() {
@@ -652,7 +663,7 @@ impl PricePingRequest {
         };
 
         Ok(PricePingRequest {
-            method: "postprice",
+            method: "postprice".into(),
             pubkey: unsafe { hex::encode(&lp::G.LP_mypub25519.bytes) },
             base: order.base.clone(),
             rel: order.rel.clone(),
@@ -660,9 +671,44 @@ impl PricePingRequest {
             price: order.price.clone(),
             timestamp,
             pubsecp: unsafe { hex::encode(&lp::G.LP_pubsecp.to_vec()) },
-            sig,
+            sig: hex::encode(&*sig),
             balance: max_volume,
         })
+    }
+}
+
+pub fn lp_post_price_recv(ctx: &MmArc, req: Json) -> HyRes {
+    let req: PricePingRequest = try_h!(json::from_value(req));
+    let signature: Signature = try_h!(req.sig.parse());
+    let pub_secp = try_h!(Public::from_slice(&try_h!(hex::decode(&req.pubsecp))));
+    let pubkey = try_h!(hex::decode(&req.pubkey));
+    let sig_hash = price_ping_sig_hash(
+        req.timestamp as u32,
+        &*pub_secp,
+        &pubkey,
+        req.base.as_bytes(),
+        req.rel.as_bytes(),
+        try_h!(req.price64.parse()),
+    );
+    let sig_check = try_h!(pub_secp.verify(&sig_hash, &signature));
+    if sig_check {
+        unsafe {
+            let mut pubkey_bits = lp::bits256::default();
+            pubkey_bits.bytes.copy_from_slice(&pubkey);
+            let base = try_h!(CString::new(req.base));
+            let rel = try_h!(CString::new(req.rel));
+            lp::LP_pricefeedupdate(
+                pubkey_bits,
+                base.as_ptr() as *mut c_char,
+                rel.as_ptr() as *mut c_char,
+                req.price.to_f64().unwrap(),
+                req.balance.to_f64().unwrap(),
+                0,
+            );
+        }
+        rpc_response(200, r#"{"result":"success"}"#)
+    } else {
+        rpc_err_response(400, "price ping invalid signature")
     }
 }
 
@@ -670,9 +716,7 @@ fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String>
     let req_string = try_s!(json::to_string(req));
     // TODO this is required to process the set price message on our own node, it's the easiest way now
     //      there might be a better way of doing this so we should consider refactoring
-    let c_json = try_s!(CJSON::from_str(&req_string));
-    let post_price_res = unsafe { lp::LP_postprice_recv(c_json.0) };
-    free_c_ptr(post_price_res as *mut c_void);
+    lp_post_price_recv(ctx, try_s!(json::to_value(req)));
     ctx.broadcast_p2p_msg(&req_string);
     Ok(())
 }

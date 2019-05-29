@@ -283,49 +283,6 @@ char *LP_pricepings(char *base,char *rel,double price)
     } else return(clonestr("{\"error\":\"electrum node cant post bob asks\"}"));
 }
 
-char *LP_postprice_recv(cJSON *argjson)
-{
-    bits256 pubkey; uint8_t pubkey33[33]; char *base,*rel,*argstr,coinaddr[64];
-    //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
-    double price = jdouble(argjson,"price");
-    if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
-    {
-        pubkey = jbits256(argjson,"pubkey");
-        if ( bits256_nonz(pubkey) != 0 )
-        {
-            if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
-            {
-                if ( IPC_ENDPOINT >= 0 )
-                {
-                    if ( (argstr= jprint(argjson,0)) != 0 )
-                    {
-                        LP_QUEUE_COMMAND(0,argstr,IPC_ENDPOINT,-1,0);
-                        free(argstr);
-                    }
-                }
-                LP_pricefeedupdate(pubkey,base,rel,price,jdouble(argjson,"bal"),jdouble(argjson,"credits")*SATOSHIDEN);
-                return(clonestr("{\"result\":\"success\"}"));
-            }
-            else
-            {
-                if ( jstr(argjson,"pubsecp") != 0 )
-                {
-                    static char lasterror[64];
-                    decode_hex(pubkey33,33,jstr(argjson,"pubsecp"));
-                    bitcoin_address("KMD",coinaddr,0,60,pubkey33,33);
-                    if ( strcmp(coinaddr,lasterror) != 0 )
-                    {
-                        printf("sig failure.(%s) %s\n",jprint(argjson,0),coinaddr);
-                        strcpy(lasterror,coinaddr);
-                    }
-                }
-                return(clonestr("{\"error\":\"sig failure\"}"));
-            }
-        }
-    }
-    return(clonestr("{\"error\":\"missing fields in posted price\"}"));
-}
-
 int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,uint32_t timestamp,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
 {
     static void *ctx; uint8_t pub33[33]; bits256 sighash;
