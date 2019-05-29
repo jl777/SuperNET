@@ -47,7 +47,7 @@ mod lp_commands;
 use self::lp_commands::*;
 
 #[path = "rpc/lp_signatures.rs"]
-mod lp_signatures;
+pub mod lp_signatures;
 
 lazy_static! {
     /// Shared CPU pool to run intensive/sleeping requests on separate thread
