@@ -954,7 +954,6 @@ struct AutopriceReq {
 /// Handles the "autoprice" RPC call.
 pub fn lp_autoprice (ctx: MmArc, req: Json) -> HyRes {
     use self::lp::LP_priceinfo;
-    use std::ffi::CString;
 
     let req: AutopriceReq = try_h! (json::from_value (req));
     match lp_coinfind (&ctx, "KMD") {

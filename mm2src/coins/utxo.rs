@@ -334,8 +334,19 @@ fn p2sh_spending_tx(
     sequence: u32,
     version_group_id: u32,
     zcash: bool,
+    ticker: &str,
 ) -> Result<UtxoTx, String> {
-    let lock_time = (now_ms() / 1000) as u32;
+    // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
+    // Implication for users: GetMedianTimePast() always trails behind the current time,
+    // so a transaction locktime set to the present time will be rejected by nodes running this
+    // release until the median time moves forward.
+    // To compensate, subtract one hour (3,600 seconds) from your locktimes to allow those
+    // transactions to be included in mempools at approximately the expected time.
+    let lock_time = if ticker == "KMD" {
+         (now_ms() / 1000) as u32 - 3600 + 2 * 777
+    } else {
+        (now_ms() / 1000) as u32 - 3600
+    };
     let unsigned = TransactionInputSigner {
         lock_time,
         version,
@@ -781,6 +792,7 @@ impl SwapOps for UtxoCoin {
                 SEQUENCE_FINAL,
                 arc.version_group_id,
                 arc.zcash,
+                &arc.ticker
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -826,6 +838,7 @@ impl SwapOps for UtxoCoin {
                 SEQUENCE_FINAL,
                 arc.version_group_id,
                 arc.zcash,
+                &arc.ticker,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -870,6 +883,7 @@ impl SwapOps for UtxoCoin {
                 SEQUENCE_FINAL - 1,
                 arc.version_group_id,
                 arc.zcash,
+                &arc.ticker,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()
@@ -917,6 +931,7 @@ impl SwapOps for UtxoCoin {
                 SEQUENCE_FINAL - 1,
                 arc.version_group_id,
                 arc.zcash,
+                &arc.ticker,
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map(move |_res|
                 transaction.into()

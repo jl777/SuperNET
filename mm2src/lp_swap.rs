@@ -763,7 +763,9 @@ impl MakerSwap {
     }
 
     fn refund_maker_payment(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
-        while now_ms() / 1000 < self.data.maker_payment_lock {
+        // have to wait for 1 hour more due as some coins have BIP113 activated so these will reject transactions with locktime == present time
+        // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
+        while now_ms() / 1000 < self.data.maker_payment_lock + 3700 {
             std::thread::sleep(Duration::from_secs(10));
         }
 
@@ -1363,7 +1365,9 @@ impl TakerSwap {
 
     fn refund_taker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         loop {
-            if now_ms() / 1000 > self.data.taker_payment_lock + 10 {
+            // have to wait for 1 hour more because some coins have BIP113 activated so these will reject transactions with locktime == present time
+            // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
+            if now_ms() / 1000 > self.data.taker_payment_lock + 3700 {
                 break;
             }
             std::thread::sleep(Duration::from_secs(10));
