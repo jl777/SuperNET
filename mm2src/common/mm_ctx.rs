@@ -1,5 +1,6 @@
 use crossbeam::{channel, Sender, Receiver};
 use hashbrown::hash_map::{Entry, HashMap};
+use keys::KeyPair;
 use libc::{c_void};
 use primitives::hash::H160;
 use rand::random;
@@ -71,11 +72,14 @@ pub struct MmCtx {
     /// Standard node P2P message bus channel
     pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
     /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase
-    /// The replacement of lp::G.LP_myrmd160
-    pub rmd160: H160
+    /// The future replacement of lp::G.LP_myrmd160
+    pub rmd160: H160,
+    /// secp256k1 key pair derived from passphrase
+    /// future replacement of lp::G.LP_privkey
+    pub secp256k1_key_pair: KeyPair,
 }
 impl MmCtx {
-    pub fn new (conf: Json, rmd160: H160) -> MmArc {
+    pub fn new (conf: Json, key_pair: KeyPair) -> MmArc {
         let log = log::LogState::mm (&conf);
         MmArc (Arc::new (MmCtx {
             conf,
@@ -94,7 +98,8 @@ impl MmCtx {
             prices_ctx: Mutex::new (None),
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
-            rmd160,
+            rmd160: key_pair.public().address_hash(),
+            secp256k1_key_pair: key_pair,
         }))
     }
 

@@ -23,6 +23,7 @@ use common::{free_c_ptr, HyRes, CJSON, CORE, QueuedCommand, COMMAND_QUEUE, lp_qu
 use common::mm_ctx::MmArc;
 use crossbeam::channel;
 use futures::{future, Future, Stream};
+use gstuff::now_ms;
 use hashbrown::hash_map::{HashMap, Entry};
 use libc::{c_void};
 use primitives::hash::H160;
@@ -33,9 +34,9 @@ use std::net::{TcpListener, TcpStream};
 use std::time::Duration;
 
 use crate::mm2::lp_native_dex::lp_command_process;
-use crate::mm2::rpc::lp_signatures::lp_notify_recv;
+use crate::mm2::lp_ordermatch::lp_post_price_recv;
 use crate::mm2::lp_swap::save_stats_swap_status;
-use gstuff::now_ms;
+use crate::mm2::rpc::lp_signatures::lp_notify_recv;
 
 /// Result of `fn dispatcher`.
 pub enum DispatcherRes {
@@ -60,6 +61,7 @@ fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
     };
     DispatcherRes::Match (match &method[..] {  // Sorted alphanumerically (on the first latter) for readability.
         "notify" => lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
+        "postprice" => lp_post_price_recv (&ctx, req),
         _ => return DispatcherRes::NoMatch (req)
     })
 }

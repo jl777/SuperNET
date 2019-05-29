@@ -722,8 +722,8 @@ int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey);
 int32_t LP_nanobind(void *ctx,char *pairstr);
 extern uint32_t LP_swap_critical;
 extern uint32_t LP_swap_endcritical;
-char *LP_postprice_recv(cJSON *argjson);
 char *LP_price_sig(uint32_t timestamp,bits256 priv,uint8_t *pubsecp,bits256 pubkey,char *base,char *rel,uint64_t price64);
+void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,double_t balance,int64_t unconfcredits);
 #endif
 
 // ---
