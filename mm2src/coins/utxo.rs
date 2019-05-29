@@ -662,7 +662,7 @@ impl UtxoCoin {
                 };
             } else {
                 // if interest is zero attempt to set the lowest possible lock_time to claim it later
-                unsigned.lock_time = (now_ms() / 1000) as u32 - 3000;
+                unsigned.lock_time = (now_ms() / 1000) as u32 - 3600 + 777 * 2;
             }
             (unsigned, data)
         }))
