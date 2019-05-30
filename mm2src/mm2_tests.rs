@@ -1364,9 +1364,9 @@ fn test_multiple_buy_sell_no_delay() {
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
     unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    enable_electrum (&mm, "BEER", vec!["electrum1.cipig.net:10022"]);
-    enable_electrum (&mm, "PIZZA", vec!["electrum1.cipig.net:10024"]);
-    enable_electrum (&mm, "ETOMIC", vec!["electrum1.cipig.net:10025"]);
+    enable_electrum (&mm, "BEER", vec!["electrum1.cipig.net:10022", "electrum2.cipig.net:10022", "electrum3.cipig.net:10022"]);
+    enable_electrum (&mm, "PIZZA", vec!["electrum1.cipig.net:10024", "electrum2.cipig.net:10024", "electrum3.cipig.net:10024"]);
+    enable_electrum (&mm, "ETOMIC", vec!["electrum1.cipig.net:10025", "electrum2.cipig.net:10025", "electrum3.cipig.net:10025"]);
 
     let rc = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
@@ -1552,4 +1552,51 @@ fn test_cancel_order() {
     log!("Alice orderbook " [alice_orderbook]);
     let asks = alice_orderbook["asks"].as_array().unwrap();
     assert_eq!(asks.len(), 0, "Alice BEER/PIZZA asks are not empty");
+}
+
+/// https://github.com/artemii235/SuperNET/issues/367
+/// Electrum requests should success if at least 1 server successfully connected,
+/// all others might end up with DNS resolution errors, TCP connection errors, etc.
+#[test]
+fn test_electrum_enable_conn_errors() {
+    let coins = json!([
+        {"coin":"RICK","asset":"RICK"},
+        {"coin":"MORTY","asset":"MORTY"},
+    ]);
+
+    // start bob and immediately place the order
+    let mut mm_bob = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "i_am_seed": true,
+        }),
+        "db4be27033b636c6644c356ded97b0ad08914fcb8a1e2a1efc915b833c2cbd19".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
+    log!({"Bob log path: {}", mm_bob.log_path.display()});
+    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    // Using working servers and few else with random ports to trigger "connection refused"
+    enable_electrum(&mm_bob, "RICK", vec![
+        "electrum3.cipig.net:10017",
+        "electrum2.cipig.net:10017",
+        "electrum1.cipig.net:10017",
+        "electrum1.cipig.net:60017",
+        "electrum1.cipig.net:60018",
+    ]);
+    // use random domain name to trigger name is not resolved
+    enable_electrum(&mm_bob, "MORTY", vec![
+        "electrum3.cipig.net:10018",
+        "electrum2.cipig.net:10018",
+        "electrum1.cipig.net:10018",
+        "random-electrum-domain-name1.net:60017",
+        "random-electrum-domain-name2.net:60017",
+    ]);
 }

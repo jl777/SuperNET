@@ -1397,11 +1397,23 @@ pub fn utxo_coin_from_iguana_info(
             urls.as_mut_slice().shuffle(&mut rng);
             let mut client = ElectrumClientImpl::new();
             for url in urls.iter() {
-                try_s!(client.add_server(url));
+                match client.add_server(url) {
+                    Ok(_) => (),
+                    Err(e) => log!("Error " (e) " connecting to " (url) ". Address won't be used")
+                };
+            }
+
+            let mut attempts = 0;
+            while !client.is_connected() {
+                if attempts >= 10 {
+                    return ERR!("Failed to connect to at least 1 of {:?} in 5 seconds.", urls);
+                }
+
+                thread::sleep(Duration::from_millis(500));
+                attempts += 1;
             }
 
             let client = Arc::new(client);
-            try_s!(client.blockchain_headers_subscribe().wait());
             // ping the electrum servers every 30 seconds to prevent them from disconnecting us.
             // according to docs server can do it if there are no messages in ~10 minutes.
             // https://electrumx.readthedocs.io/en/latest/protocol-methods.html?highlight=keep#server-ping
@@ -1412,10 +1424,6 @@ pub fn utxo_coin_from_iguana_info(
                     if let Some(client) = weak_client.upgrade() {
                         if let Err(e) = client.server_ping().wait() {
                             log!("Electrum servers " [urls] " ping error " [e]);
-                        }
-
-                        if let Err(e) = client.blockchain_headers_subscribe().wait() {
-                            log!("Electrum servers " [urls] " subscribe error " [e]);
                         }
                     } else {
                         break;
