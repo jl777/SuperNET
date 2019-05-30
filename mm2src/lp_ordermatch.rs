@@ -24,7 +24,7 @@ use common::{lp, SMALLVAL, rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use coins::{lp_coinfind, MmCoinEnum};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use futures::future::Future;
+use futures::future::{Either, Future};
 use gstuff::now_ms;
 use hashbrown::hash_map::{Entry, HashMap};
 use keys::{Public, Signature};
@@ -728,9 +728,12 @@ struct SetPriceReq {
     base: String,
     rel: String,
     price: BigDecimal,
-    volume: BigDecimal,
+    #[serde(default)]
+    max: bool,
     #[serde(default = "one")]
     broadcast: u8,
+    #[serde(default)]
+    volume: BigDecimal,
 }
 
 pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
@@ -739,7 +742,7 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
         return rpc_err_response(500, "Base and rel must be different coins");
     }
 
-    let base_coin = match try_h!(lp_coinfind(&ctx, &req.base)) {
+    let base_coin: MmCoinEnum = match try_h!(lp_coinfind(&ctx, &req.base)) {
         Some(coin) => coin,
         None => return rpc_err_response(500, &format!("Base coin {} is not found", req.base)),
     };
@@ -749,32 +752,43 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
         None => return rpc_err_response(500, &format!("Rel coin {} is not found", req.rel)),
     };
 
-    Box::new(base_coin.check_i_have_enough_to_trade(req.volume.to_f64().unwrap(), true).and_then(move |_|
-        rel_coin.can_i_spend_other_payment().and_then(move |_| {
-            let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
-            let mut my_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());
-            // remove the previous order if there's one to allow multiple setprice call per pair
-            // it's common use case now as `autoprice` doesn't work with new ordermatching and
-            // MM2 users request the coins price from aggregators by their own scripts issuing
-            // repetitive setprice calls with new price
-            *my_orders = my_orders.drain().filter(|(_, order)| !(order.base == req.base && order.rel == req.rel)).collect();
+    let volume_f = if req.max {
+        // entire balance deducted by 0.001 to reserve for tx fees
+        Either::A(base_coin.my_balance().map(|balance| balance - "0.001".parse::<BigDecimal>().unwrap()))
+    } else {
+        Either::B(futures::future::ok(req.volume.clone()))
+    };
 
-            let uuid = Uuid::new_v4();
-            let order = MakerOrder {
-                max_base_vol: req.volume,
-                min_base_vol: 0.into(),
-                price: req.price,
-                created_at: now_ms(),
-                base: req.base,
-                rel: req.rel,
-                matches: HashMap::new(),
-                started_swaps: Vec::new(),
-                uuid,
-            };
-            let response = json!({"result":order}).to_string();
-            my_orders.insert(uuid, order);
-            rpc_response(200, response)
-        }))
+    Box::new(
+        volume_f.and_then(move |volume| {
+            base_coin.check_i_have_enough_to_trade(volume.to_f64().unwrap(), true).and_then(move |_|
+                rel_coin.can_i_spend_other_payment().and_then(move |_| {
+                    let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
+                    let mut my_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());
+                    // remove the previous order if there's one to allow multiple setprice call per pair
+                    // it's common use case now as `autoprice` doesn't work with new ordermatching and
+                    // MM2 users request the coins price from aggregators by their own scripts issuing
+                    // repetitive setprice calls with new price
+                    *my_orders = my_orders.drain().filter(|(_, order)| !(order.base == req.base && order.rel == req.rel)).collect();
+
+                    let uuid = Uuid::new_v4();
+                    let order = MakerOrder {
+                        max_base_vol: volume,
+                        min_base_vol: 0.into(),
+                        price: req.price,
+                        created_at: now_ms(),
+                        base: req.base,
+                        rel: req.rel,
+                        matches: HashMap::new(),
+                        started_swaps: Vec::new(),
+                        uuid,
+                    };
+                    let response = json!({"result":order}).to_string();
+                    my_orders.insert(uuid, order);
+                    rpc_response(200, response)
+                })
+            )
+        })
     )
 }
 
