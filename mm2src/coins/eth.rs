@@ -1344,35 +1344,35 @@ impl EthTxFeeDetails {
 impl MmCoin for EthCoin {
     fn is_asset_chain(&self) -> bool { false }
 
-    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
+    fn check_i_have_enough_to_trade(&self, amount: BigDecimal, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
         let arc = self.clone();
         let decimals = self.decimals;
         let ticker = self.ticker.clone();
         let required = if maker {
             amount
         } else {
-            amount + amount / 777.0
+            &amount + &amount / BigDecimal::from(777)
         };
         Box::new(self.my_balance().and_then(move |balance| -> Box<Future<Item=(), Error=String> + Send> {
-            let balance_f64: f64 = try_fus!(display_u256_with_decimal_point(balance, decimals).parse());
+            let balance_decimal = try_fus!(u256_to_big_decimal(balance, decimals));
             match arc.coin_type {
                 EthCoinType::Eth => {
-                    let required = required + 0.0002;
-                    if balance_f64 < required {
-                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_f64, required)))
+                    let required = required + BigDecimal::from_str("0.0002").unwrap();
+                    if balance_decimal < required {
+                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_decimal, required)))
                     } else {
                         Box::new(futures::future::ok(()))
                     }
                 },
                 EthCoinType::Erc20(_addr) => {
-                    if balance_f64 < required {
-                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_f64, amount)))
+                    if balance_decimal < required {
+                        Box::new(futures::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance_decimal, required)))
                     } else {
                         // need to check ETH balance too, address should have some to cover gas fees
                         Box::new(arc.eth_balance().and_then(move |eth_balance| {
-                            let eth_balance_f64: f64 = try_s!(display_u256_with_decimal_point(eth_balance, 18).parse());
-                            if eth_balance_f64 < 0.0002 {
-                                ERR!("{} balance is enough, but base coin balance {} is too low to cover gas fee, required {}", ticker, eth_balance_f64, 0.0002)
+                            let eth_balance_decimal = try_s!(u256_to_big_decimal(eth_balance, 18));
+                            if eth_balance_decimal < "0.0002".parse().unwrap() {
+                                ERR!("{} balance is enough, but base coin balance {} is too low to cover gas fee, required 0.0002", ticker, eth_balance_decimal)
                             } else {
                                 Ok(())
                             }

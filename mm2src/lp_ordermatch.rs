@@ -514,7 +514,7 @@ pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     let rel_coin = match rel_coin {Some(c) => c, None => return rpc_err_response(500, "Rel coin is not found or inactive")};
     let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
     let base_coin: MmCoinEnum = match base_coin {Some(c) => c, None => return rpc_err_response(500, "Base coin is not found or inactive")};
-    Box::new(rel_coin.check_i_have_enough_to_trade((&input.volume * &input.price).to_f64().unwrap(), false).and_then(move |_|
+    Box::new(rel_coin.check_i_have_enough_to_trade(&input.volume * &input.price, false).and_then(move |_|
         base_coin.can_i_spend_other_payment().and_then(move |_|
             rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
         )
@@ -530,7 +530,7 @@ pub fn sell(ctx: MmArc, json: Json) -> HyRes {
     let base_coin = match base_coin {Some(c) => c, None => return rpc_err_response(500, "Base coin is not found or inactive")};
     let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
     let rel_coin = match rel_coin {Some(c) => c, None => return rpc_err_response(500, "Rel coin is not found or inactive")};
-    Box::new(base_coin.check_i_have_enough_to_trade(input.volume.to_f64().unwrap(), false).and_then(move |_|
+    Box::new(base_coin.check_i_have_enough_to_trade(input.volume.clone(), false).and_then(move |_|
         rel_coin.can_i_spend_other_payment().and_then(move |_|
             rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
         )
@@ -761,7 +761,7 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
 
     Box::new(
         volume_f.and_then(move |volume| {
-            base_coin.check_i_have_enough_to_trade(volume.to_f64().unwrap(), true).and_then(move |_|
+            base_coin.check_i_have_enough_to_trade(volume.clone(), true).and_then(move |_|
                 rel_coin.can_i_spend_other_payment().and_then(move |_| {
                     let ordermatch_ctx = try_h!(OrdermatchContext::from_ctx(&ctx));
                     let mut my_orders = try_h!(ordermatch_ctx.my_maker_orders.lock());

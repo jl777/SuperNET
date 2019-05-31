@@ -1063,10 +1063,9 @@ struct UtxoFeeDetails {
 impl MmCoin for UtxoCoin {
     fn is_asset_chain(&self) -> bool { self.asset_chain }
 
-    fn check_i_have_enough_to_trade(&self, amount: f64, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
-        const DUST_F64: f64 = 0.00001;
-        if amount / 777.0 < DUST_F64 {
-            return Box::new(futures::future::err(ERRL!("Amount {} is too low, it'll result to dust error, at least {} is required", amount, 0.00777)));
+    fn check_i_have_enough_to_trade(&self, amount: BigDecimal, maker: bool) -> Box<Future<Item=(), Error=String> + Send> {
+        if &amount / BigDecimal::from(777) < "0.00001".parse().unwrap() {
+            return Box::new(futures::future::err(ERRL!("Amount {} is too low, it'll result to dust error, at least 0.00777 is required", amount)));
         }
         let fee_fut = self.get_tx_fee();
         let arc = self.clone();
@@ -1076,14 +1075,14 @@ impl MmCoin for UtxoCoin {
                     ActualTxFee::Fixed(f) => f,
                     ActualTxFee::Dynamic(f) => f,
                 };
-                let fee_f64 = dstr(fee as i64, arc.decimals);
                 arc.my_balance().and_then(move |balance| {
+                    let fee_decimal = BigDecimal::from(fee) / BigDecimal::from(10u64.pow(arc.decimals as u32));
                     let required = if maker {
-                        amount + fee_f64
+                        amount + fee_decimal
                     } else {
-                        amount + amount / 777.0 + 2.0 * fee_f64
+                        &amount + &amount / 777 + BigDecimal::from(2) * fee_decimal
                     };
-                    if balance < required.into() {
+                    if balance < required {
                         return ERR!("{} balance {} is too low, required {:.8}", arc.ticker(), balance, required);
                     }
                     Ok(())

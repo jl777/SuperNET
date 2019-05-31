@@ -75,7 +75,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use bigdecimal::BigDecimal;
-use num_traits::cast::ToPrimitive;
 
 /// Includes the grace time we add to the "normal" timeouts
 /// in order to give different and/or heavy communication channels a chance.
@@ -512,7 +511,7 @@ impl MakerSwap {
 
     fn start(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
         // maker and taker amounts are always in 10^-8 of coin units
-        if let Err(e) = self.maker_coin.check_i_have_enough_to_trade(self.maker_amount.to_f64().unwrap(), true).wait() {
+        if let Err(e) = self.maker_coin.check_i_have_enough_to_trade(self.maker_amount.clone(), true).wait() {
             return Ok((
                 Some(MakerSwapCommand::Finish),
                 vec![MakerSwapEvent::StartFailed(ERRL!("!check_i_have_enough_to_trade {}", e).into())],
@@ -1082,7 +1081,7 @@ impl TakerSwap {
 
     fn start(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         // maker and taker amounts are always in 10^-8 of coin units
-        if let Err(e) = self.taker_coin.check_i_have_enough_to_trade(self.taker_amount.to_f64().unwrap(), true).wait() {
+        if let Err(e) = self.taker_coin.check_i_have_enough_to_trade(self.taker_amount.clone(), true).wait() {
             return Ok((
                 Some(TakerSwapCommand::Finish),
                 vec![TakerSwapEvent::StartFailed(ERRL!("{}", e).into())],
