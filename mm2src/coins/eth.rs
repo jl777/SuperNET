@@ -484,7 +484,7 @@ impl MarketCoinOps for EthCoin {
     }
 
     fn current_block(&self) -> Box<Future<Item=u64, Error=String> + Send> {
-        Box::new(self.web3.eth().block_number().map(|res| res.into()).map_err(|e| ERRL!("{:?}", e)))
+        Box::new(self.web3.eth().block_number().map(|res| res.into()).map_err(|e| ERRL!("{}", e)))
     }
 }
 
@@ -735,7 +735,7 @@ impl EthCoin {
 
     fn my_balance(&self) -> Box<Future<Item=U256, Error=String> + Send> {
         match self.coin_type {
-            EthCoinType::Eth => Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e))),
+            EthCoinType::Eth => Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{}", e))),
             EthCoinType::Erc20(token_addr) => {
                 let function = try_fus!(ERC20_CONTRACT.function("balanceOf"));
                 let data = try_fus!(function.encode_input(&[
@@ -757,7 +757,7 @@ impl EthCoin {
     }
 
     fn eth_balance(&self) -> Box<Future<Item=U256, Error=String> + Send> {
-        Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e)))
+        Box::new(self.web3.eth().balance(self.my_address, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{}", e)))
     }
 
     fn call_request(&self, to: Address, value: Option<U256>, data: Option<Bytes>) -> impl Future<Item=Bytes, Error=String> {
@@ -770,7 +770,7 @@ impl EthCoin {
             data
         };
 
-        self.web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e))
+        self.web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{}", e))
     }
 
     fn allowance(&self, spender: Address) -> Box<Future<Item=U256, Error=String> + Send + 'static> {
@@ -821,7 +821,7 @@ impl EthCoin {
             .address(vec![self.swap_contract_address])
             .build();
 
-        Box::new(self.web3.eth().logs(filter).map_err(|e| ERRL!("{:?}", e)))
+        Box::new(self.web3.eth().logs(filter).map_err(|e| ERRL!("{}", e)))
     }
 
     fn validate_payment(
@@ -1702,7 +1702,7 @@ fn get_token_decimals(web3: &Web3<Web3Transport>, token_addr: Address) -> Result
         data: Some(data.into())
     };
 
-    let f = web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{:?}", e));
+    let f = web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{}", e));
     let res = try_s!(f.wait());
     let tokens = try_s!(function.decode_output(&res.0));
     let decimals: u64 = match tokens[0] {
