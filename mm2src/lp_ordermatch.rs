@@ -753,8 +753,8 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
     };
 
     let volume_f = if req.max {
-        // entire balance deducted by 0.001 to reserve for tx fees
-        Either::A(base_coin.my_balance().map(|balance| balance - "0.001".parse::<BigDecimal>().unwrap()))
+        // entire balance deducted by 0.1 to reserve for tx fees
+        Either::A(base_coin.my_balance().map(|balance| balance - "0.1".parse::<BigDecimal>().unwrap()))
     } else {
         Either::B(futures::future::ok(req.volume.clone()))
     };
