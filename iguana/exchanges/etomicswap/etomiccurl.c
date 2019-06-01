@@ -54,7 +54,7 @@ cJSON *parseEthRpcResponse(char *requestResult)
     return result;
 }
 
-char* sendRequest(char *request, char *url)
+char *send_post_json_request(char *request, char *url)
 {
     CURL *curl;
     CURLcode res;
@@ -89,16 +89,51 @@ char* sendRequest(char *request, char *url)
     }
 }
 
+char *send_get_json_request(char *url)
+{
+    CURL *curl;
+    CURLcode res;
+    struct curl_slist *headers = NULL;
+    curl = curl_easy_init();
+    if (curl) {
+        struct string s;
+        init_eth_string(&s);
+
+        headers = curl_slist_append(headers, "Accept: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        /* Perform the request, res will get the return code */
+        res = curl_easy_perform(curl);
+        /* Check for errors */
+        if (res != CURLE_OK) {
+            printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            curl_easy_cleanup(curl);
+            return NULL;
+        }
+
+        /* always cleanup */
+        curl_easy_cleanup(curl);
+        return s.ptr;
+    } else {
+        printf("Couldn't init the curl\n");
+        return NULL;
+    }
+}
+
 cJSON *sendRpcRequest(char *method, cJSON *params)
 {
     char* string;
     cJSON *request = cJSON_CreateObject();
     cJSON_AddStringToObject(request, "jsonrpc", "2.0");
     cJSON_AddStringToObject(request, "method", method);
-    cJSON_AddItemToObject(request, "params", cJSON_Duplicate(params, 1));
+    if (params) {
+        cJSON_AddItemToObject(request, "params", cJSON_Duplicate(params, 1));
+    }
     cJSON_AddNumberToObject(request, "id", 1);
     string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string, ETOMIC_URL);
+    char* requestResult = send_post_json_request(string, ETOMIC_URL);
     free(string);
     cJSON_Delete(request);
     cJSON *result = parseEthRpcResponse(requestResult);
@@ -350,7 +385,7 @@ int32_t waitForConfirmation(char *txId)
             if (txData.exists == 0) {
                 retries++;
                 if (retries >= 30) {
-                    printf("Have not found ETH tx %s after 10 checks, aborting\n", txId);
+                    printf("Have not found ETH tx %s after 30 checks, aborting\n", txId);
                     return (-1);
                 }
             }
@@ -380,7 +415,7 @@ uint8_t get_etomic_from_faucet(char *etomic_addr)
     cJSON *request = cJSON_CreateObject();
     cJSON_AddStringToObject(request, "etomicAddress", etomic_addr);
     string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string, FAUCET_URL);
+    char* requestResult = send_post_json_request(string, FAUCET_URL);
     free(string);
     cJSON_Delete(request);
 
@@ -404,4 +439,25 @@ uint8_t get_etomic_from_faucet(char *etomic_addr)
     }
     cJSON_Delete(json);
     return result;
+}
+
+char *eth_tx_history_etherscan(char *addr)
+{
+    char resulting_url[4097];
+    sprintf(resulting_url, "%s?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&sort=asc", ETHERSCAN_API, addr);
+    return send_get_json_request(resulting_url);
+}
+
+char *internal_eth_tx_history_etherscan(char *addr)
+{
+    char resulting_url[4097];
+    sprintf(resulting_url, "%s?module=account&action=txlistinternal&address=%s&startblock=0&endblock=99999999&sort=asc", ETHERSCAN_API, addr);
+    return send_get_json_request(resulting_url);
+}
+
+char *erc20_tx_history_etherscan(char *addr, char *token_address)
+{
+    char resulting_url[4097];
+    sprintf(resulting_url, "%s?module=account&action=tokentx&address=%s&contractaddress=%s&startblock=0&endblock=99999999&sort=asc", ETHERSCAN_API, addr, token_address);
+    return send_get_json_request(resulting_url);
 }

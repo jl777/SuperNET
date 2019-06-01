@@ -53,4 +53,6 @@ uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *er
 
 void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output);
 
+void LP_etomic_txhistory_loop(void *_coin);
+
 #endif //SUPERNET_LP_ETOMIC_H
