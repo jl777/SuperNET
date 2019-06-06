@@ -376,7 +376,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                         up->U.suppress = 1;
                         //printf("suppress %s\n",jprint(sobj,0));
                     }
-                    if ( LP_value_extract(txout,0,up->U.txid) == 0 )
+                    if ( LP_value_extract(txout,1,up->U.txid) == 0 )
                     {
 //char str[65]; printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
                         free_json(txout);
