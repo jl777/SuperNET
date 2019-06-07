@@ -167,6 +167,14 @@ pub trait SwapOps {
         priv_bn_hash: &[u8],
         amount: BigDecimal,
     ) -> Result<(), String>;
+
+    fn check_if_my_payment_sent(
+        &self,
+        time_lock: u32,
+        other_pub: &[u8],
+        secret_hash: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<TransactionEnum>, String>;
 }
 
 /// Operations that coins have independently from the MarketMaker.
@@ -186,7 +194,7 @@ pub trait MarketCoinOps {
         wait_until: u64,
     ) -> Result<(), String>;
 
-    fn wait_for_tx_spend(&self, transaction: &[u8], wait_until: u64) -> Result<TransactionEnum, String>;
+    fn wait_for_tx_spend(&self, transaction: &[u8], wait_until: u64, from_block: u64) -> Result<TransactionEnum, String>;
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String>;
 
@@ -218,7 +226,7 @@ struct WithdrawRequest {
 }
 
 /// Transaction details
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct TransactionDetails {
     /// Raw bytes of signed transaction in hexadecimal string, this should be sent as is to send_raw_transaction RPC to broadcast the transaction
     pub tx_hex: BytesJson,
