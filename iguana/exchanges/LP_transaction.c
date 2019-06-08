@@ -1231,7 +1231,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
-char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,int32_t onevin,uint32_t locktime,char *opretstr,char *passphrase)
+char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,bits256 utxotxid2,int32_t utxovout2,int32_t onevin,uint32_t locktime,char *opretstr,char *passphrase)
 {
     static void *ctx;
     cJSON *txobj,*item; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t origspendlen=0,i,offset,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
@@ -1298,10 +1298,23 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             utxos[0] = &U;
             utxos[0]->U.txid = utxotxid;
             utxos[0]->U.vout = utxovout;
-            utxos[0]->U.value = LP_value_extract(txobj,0,utxotxid);
+            utxos[0]->U.value = LP_value_extract(txobj,1,utxotxid);
             free_json(txobj);
             //char str[65]; printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0]->U.value));
             numutxos = 1;
+            if ( onevin == 2 )
+            {
+                if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,utxotxid2,utxovout2)) != 0 )
+                {
+                    memset(&U,0,sizeof(U));
+                    utxos[1] = &U;
+                    utxos[1]->U.txid = utxotxid2;
+                    utxos[1]->U.vout = utxovout2;
+                    utxos[1]->U.value = LP_value_extract(txobj,1,utxotxid2);
+                    numutxos++;
+                    free_json(txobj);
+                }
+            }
         }
         else
         {
@@ -1863,7 +1876,7 @@ char *LP_txblast(struct iguana_info *coin,cJSON *argjson)
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t broadcast,allocated_outputs=0,iter,i,num,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],wifstr[64],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee=0,newtxfee=10000;
+    int32_t broadcast,allocated_outputs=0,iter,i,num,utxovout,utxovout2,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],wifstr[64],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,utxotxid2,signedtxid; uint64_t txfee=0,newtxfee=10000;
 //printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
@@ -1892,6 +1905,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
     utxotxid = jbits256(argjson,"utxotxid");
     utxovout = jint(argjson,"utxovout");
+    utxotxid2 = jbits256(argjson,"utxotxid2");
+    utxovout2 = jint(argjson,"utxovout2");
     locktime = juint(argjson,"locktime");
     txfee = juint(argjson,"txfee");
     autofee = (strcmp(coin->symbol,"BTC") == 0);
@@ -1917,7 +1932,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
         numvins = 0;
-        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,jint(argjson,"onevin"),locktime,jstr(argjson,"opreturn"),jstr(argjson,"passphrase"))) != 0 )
+        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,utxotxid2,utxovout2,jint(argjson,"onevin"),locktime,jstr(argjson,"opreturn"),jstr(argjson,"passphrase"))) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
