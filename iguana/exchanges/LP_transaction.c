@@ -1059,7 +1059,7 @@ int64_t LP_komodo_interest(bits256 txid,int64_t value)
     return(interest);
 }
 
-int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_t amount,struct vin_info *V,struct LP_address_utxo **utxos,int32_t numunspents,int32_t suppress_pubkeys,int32_t ignore_cltverr,bits256 privkey,cJSON *privkeys,cJSON *vins,uint8_t *script,int32_t scriptlen,bits256 utxotxid,int32_t utxovout,int32_t dustcombine)
+int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_t amount,struct vin_info *V,struct LP_address_utxo **utxos,int32_t numunspents,int32_t suppress_pubkeys,int32_t ignore_cltverr,bits256 privkey,cJSON *privkeys,cJSON *vins,uint8_t *script,int32_t scriptlen,bits256 utxotxid,int32_t utxovout,bits256 utxotxid2,int32_t utxovout2,int32_t dustcombine)
 {
     char wifstr[128],spendscriptstr[128],str[65]; int32_t i,j,maxiters,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj,*sobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; int64_t value,interest,interestsum,above,below,remains = amount,total = 0;
     *totalp = 0;
@@ -1073,6 +1073,13 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     {
         up = utxos[j];
         if ( utxovout == up->U.vout && bits256_cmp(utxotxid,up->U.txid) == 0 )
+        {
+            preselected[numpre++] = up;
+            //printf("found utxotxid in slot.%d\n",j);
+            utxos[j] = 0;
+            continue;
+        }
+        if ( utxovout2 == up->U.vout && bits256_cmp(utxotxid2,up->U.txid) == 0 )
         {
             preselected[numpre++] = up;
             //printf("found utxotxid in slot.%d\n",j);
@@ -1288,6 +1295,8 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         return(0);
     }
     memset(utxos,0,sizeof(utxos));
+    memset(&utxoxid,0,sizeof(utxoxid));
+    memset(&utxoxid2,0,sizeof(utxoxid2));
     //char str[65];
     if ( onevin != 0 )
     {
@@ -1336,7 +1345,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     ignore_cltverr = 0;
     suppress_pubkeys = 1;
     scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
-    numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,dustcombine);
+    numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,utxotxid2,utxovout2,dustcombine);
     if ( numvins <= 0 || total < amount )
     {
         printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d, txfee %.8f\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts,dstr(txfee));
