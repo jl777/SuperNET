@@ -1295,8 +1295,8 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         return(0);
     }
     memset(utxos,0,sizeof(utxos));
-    memset(&utxoxid,0,sizeof(utxoxid));
-    memset(&utxoxid2,0,sizeof(utxoxid2));
+    memset(&utxotxid,0,sizeof(utxotxid));
+    memset(&utxotxid2,0,sizeof(utxotxid2));
     //char str[65];
     if ( onevin != 0 )
     {
