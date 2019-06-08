@@ -641,14 +641,14 @@ impl PricePingRequest {
         let timestamp = now_ms() / 1000;
         let sig_hash = price_ping_sig_hash(
             timestamp as u32,
-            &**ctx.secp256k1_key_pair.public(),
+            &**ctx.secp256k1_key_pair().public(),
             unsafe { &lp::G.LP_mypub25519.bytes },
             order.base.as_bytes(),
             order.rel.as_bytes(),
             price64,
         );
 
-        let sig = try_s!(ctx.secp256k1_key_pair.private().sign(&sig_hash));
+        let sig = try_s!(ctx.secp256k1_key_pair().private().sign(&sig_hash));
 
         let available_amount = order.available_amount();
         let max_volume = if available_amount > 0.into() {

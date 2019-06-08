@@ -55,6 +55,7 @@ use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, client_p2p_loop};
 use crate::mm2::lp_ordermatch::{lp_trade_command, lp_trades_loop};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{self, SINGLE_THREADED_C_LOCK};
+use common::mm_ctx::MmCtxBuilder;
 
 /*
 #include <stdio.h>
@@ -1400,7 +1401,7 @@ pub fn lp_init (mypubport: u16, conf: Json, ctx_cb: &Fn (u32))
     unsafe {lp::LP_mutex_init()};
     let key_pair = unsafe {try_s! (lp_passphrase_init (conf["passphrase"].as_str(), conf["gui"].as_str()))};
 
-    let ctx = MmCtx::new (conf, key_pair);
+    let ctx = MmCtxBuilder::new().with_conf(conf).with_secp256k1_key_pair(key_pair).into_mm_arc();
     let global: &mut [c_char] = unsafe {&mut lp::GLOBAL_DBDIR[..]};
     let global: &mut [u8] = unsafe {transmute (global)};
     let mut cur = Cursor::new (global);
