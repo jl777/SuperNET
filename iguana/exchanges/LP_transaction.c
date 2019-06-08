@@ -1296,8 +1296,6 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         return(0);
     }
     memset(utxos,0,sizeof(utxos));
-    memset(&utxotxid,0,sizeof(utxotxid));
-    memset(&utxotxid2,0,sizeof(utxotxid2));
     //char str[65];
     if ( onevin != 0 )
     {
@@ -1918,7 +1916,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     locktime = juint(argjson,"locktime");
     txfee = juint(argjson,"txfee");
     autofee = (strcmp(coin->symbol,"BTC") == 0);
-printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid),utxovout,jprint(outputs,0));
+//printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid),utxovout,jprint(outputs,0));
     if ( txfee == 0 )
     {
         autofee = 1;
