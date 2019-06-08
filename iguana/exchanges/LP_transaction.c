@@ -2023,20 +2023,20 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
             {
                 printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
                 free(signret);
-            }
-        }
-    }
-    if ( jint(argjson,"onevin") != 0 )
-    {
-        sleep(3);
-        while ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,signedtxid,utxovout2)) == 0 )
-        {
-            printf("wait for %s/v%d\n",bits256_str(str,signedtxid),utxovout2);
-            sleep(3);
-            if (  broadcast != 0 && (signret= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
-            {
-                printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
-                free(signret);
+                if ( jint(argjson,"onevin") != 0 )
+                {
+                    sleep(3);
+                    while ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,signedtxid,utxovout2)) == 0 )
+                    {
+                        printf("wait for %s/v%d\n",bits256_str(str,signedtxid),utxovout2);
+                        sleep(3);
+                        if (  broadcast != 0 && (signret= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
+                        {
+                            printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
+                            free(signret);
+                        }
+                    }
+                }
             }
         }
     }
