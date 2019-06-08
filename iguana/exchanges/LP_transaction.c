@@ -1241,6 +1241,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
 char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,bits256 utxotxid2,int32_t utxovout2,int32_t onevin,uint32_t locktime,char *opretstr,char *passphrase)
 {
     static void *ctx;
+    struct LP_address_utxo U,U2;
     cJSON *txobj,*item; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t origspendlen=0,i,offset,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
@@ -1302,25 +1303,22 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     {
         if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,utxotxid,utxovout)) != 0 )
         {
-            struct LP_address_utxo U;
             memset(&U,0,sizeof(U));
-            utxos[0] = &U;
-            utxos[0]->U.txid = utxotxid;
-            utxos[0]->U.vout = utxovout;
-            utxos[0]->U.value = LP_value_extract(txobj,1,utxotxid);
+            U.txid = utxotxid;
+            U.vout = utxovout;
+            U.value = LP_value_extract(txobj,1,utxotxid);
+            utxos[numutxos++] = &U;
             free_json(txobj);
             //char str[65]; printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0]->U.value));
-            numutxos = 1;
             if ( onevin == 2 )
             {
                 if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,utxotxid2,utxovout2)) != 0 )
                 {
-                    memset(&U,0,sizeof(U));
-                    utxos[1] = &U;
-                    utxos[1]->U.txid = utxotxid2;
-                    utxos[1]->U.vout = utxovout2;
-                    utxos[1]->U.value = LP_value_extract(txobj,1,utxotxid2);
-                    numutxos++;
+                    memset(&U2,0,sizeof(U2));
+                    U2.txid = utxotxid2;
+                    U2.vout = utxovout2;
+                    U2.value = LP_value_extract(txobj,1,utxotxid2);
+                    utxos[numutxos++] = &U2;
                     free_json(txobj);
                 }
             }
