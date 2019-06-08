@@ -1920,7 +1920,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     locktime = juint(argjson,"locktime");
     txfee = juint(argjson,"txfee");
     autofee = (strcmp(coin->symbol,"BTC") == 0);
-//printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid),utxovout,jprint(outputs,0));
+printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(outputs,0));
     if ( txfee == 0 )
     {
         autofee = 1;
@@ -2030,8 +2030,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     if ( txobj != 0 )
         jadd(retjson,"tx",txobj);
     jaddbits256(retjson,"txid",signedtxid);
-    if ( jint(argjson,"onevin") != 0 )
-        SECONDUTXO = signedtxid;
+    SECONDUTXO = signedtxid;
     jaddnum(retjson,"txfee",txfee);
     jadd(retjson,"complete",completed!=0?jtrue():jfalse());
     if ( allocated_outputs != 0 )
