@@ -1884,7 +1884,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static bits256 SECONDUTXO;
     static void *ctx;
-    int32_t broadcast,allocated_outputs=0,iter,i,num,utxovout,utxovout2,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],wifstr[64],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,utxotxid2,signedtxid; uint64_t txfee=0,newtxfee=10000;
+    int32_t broadcast,allocated_outputs=0,iter,i,num,utxovout=0,utxovout2=0,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],wifstr[64],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,utxotxid2,signedtxid; uint64_t txfee=0,newtxfee=10000;
 //printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
@@ -2025,7 +2025,20 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
                 free(signret);
             }
         }
-        free(signedtx);
+    }
+    if ( jint(argjson,"onevin") != 0 )
+    {
+        sleep(3);
+        while ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,signedtxid,utxovout2)) == 0 )
+        {
+            printf("wait for %s/v%d\n",bits256_str(str,signedtxid),utxovout2);
+            sleep(3);
+            if (  broadcast != 0 && (signret= LP_sendrawtransaction(coin->symbol,signedtx,0)) != 0 )
+            {
+                printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
+                free(signret);
+            }
+        }
     }
     if ( txobj != 0 )
         jadd(retjson,"tx",txobj);
@@ -2035,6 +2048,8 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
     jadd(retjson,"complete",completed!=0?jtrue():jfalse());
     if ( allocated_outputs != 0 )
         free_json(outputs);
+    if ( signedtx != 0 )
+        free(signedtx);
     return(jprint(retjson,1));
 }
 
