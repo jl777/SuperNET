@@ -777,12 +777,18 @@ impl MakerSwap {
 
         let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
         let fee_amount = self.taker_amount.clone() / 777;
-        let fee_details = unwrap!(self.taker_coin.tx_details_by_hash(&hash));
         match self.taker_coin.validate_fee(taker_fee, &fee_addr_pub_key, fee_amount) {
             Ok(_) => (),
             Err(err) => return Ok((
                 Some(MakerSwapCommand::Finish),
                 vec![MakerSwapEvent::TakerFeeValidateFailed(ERRL!("{}", err).into())]
+            ))
+        };
+        let fee_details = match self.taker_coin.tx_details_by_hash(&hash) {
+            Ok(details) => details,
+            Err(err) => return Ok((
+                Some(MakerSwapCommand::Finish),
+                vec![MakerSwapEvent::TakerFeeValidateFailed(ERRL!("Taker fee tx_details_by_hash failed {}", err).into())]
             ))
         };
         Ok((
@@ -834,7 +840,18 @@ impl MakerSwap {
 
         let hash = transaction.tx_hash();
         log!({ "Maker payment tx {:02x}", hash });
-        let tx_details = unwrap!(self.maker_coin.tx_details_by_hash(&hash));
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.maker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
 
         Ok((
             Some(MakerSwapCommand::WaitForTakerPayment),
@@ -871,7 +888,13 @@ impl MakerSwap {
 
         let hash = taker_payment.tx_hash();
         log!({ "Taker payment tx {:02x}", hash });
-        let tx_details = unwrap!(self.taker_coin.tx_details_by_hash(&hash));
+        let tx_details = match self.taker_coin.tx_details_by_hash(&hash) {
+            Ok(details) => details,
+            Err(err) => return Ok((
+                Some(MakerSwapCommand::RefundMakerPayment),
+                vec![MakerSwapEvent::TakerPaymentValidateFailed(ERRL!("!taker_coin.tx_details_by_hash: {}", err).into())]
+            )),
+        };
 
         Ok((
             Some(MakerSwapCommand::ValidateTakerPayment),
@@ -936,7 +959,18 @@ impl MakerSwap {
         let hash = transaction.tx_hash();
         log!({ "Taker payment spend tx {:02x}", hash });
 
-        let tx_details = unwrap!(self.taker_coin.tx_details_by_hash(&hash));
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.taker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
         Ok((
             Some(MakerSwapCommand::Finish),
             vec![MakerSwapEvent::TakerPaymentSpent(tx_details)]
@@ -967,7 +1001,18 @@ impl MakerSwap {
         let hash = transaction.tx_hash();
         log!({ "Maker payment refund tx {:02x}", hash });
 
-        let tx_details = unwrap!(self.maker_coin.tx_details_by_hash(&hash));
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.maker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
         Ok((
             Some(MakerSwapCommand::Finish),
             vec![MakerSwapEvent::MakerPaymentRefunded(tx_details)],
@@ -1455,10 +1500,22 @@ impl TakerSwap {
         };
 
         let hash = transaction.tx_hash();
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.taker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
         log!({"Taker fee tx hash {:02x}", hash});
         Ok((
             Some(TakerSwapCommand::WaitForMakerPayment),
-            vec![TakerSwapEvent::TakerFeeSent(self.taker_coin.tx_details_by_hash(&hash).unwrap())],
+            vec![TakerSwapEvent::TakerFeeSent(tx_details)],
         ))
     }
 
@@ -1489,7 +1546,13 @@ impl TakerSwap {
 
         let hash = maker_payment.tx_hash();
         log!({"Got maker payment {:02x}", hash});
-        let tx_details = self.maker_coin.tx_details_by_hash(&hash).unwrap();
+        let tx_details = match self.maker_coin.tx_details_by_hash(&hash) {
+            Ok(details) => details,
+            Err(e) => return Ok((
+                Some(TakerSwapCommand::Finish),
+                vec![TakerSwapEvent::MakerPaymentValidateFailed(ERRL!("!maker_coin.tx_details_by_hash: {}", e).into())]
+            )),
+        };
 
         Ok((
             Some(TakerSwapCommand::ValidateMakerPayment),
@@ -1574,7 +1637,18 @@ impl TakerSwap {
 
         let hash = transaction.tx_hash();
         log!({"Taker payment tx hash {:02x}", hash});
-        let tx_details = self.taker_coin.tx_details_by_hash(&hash).unwrap();
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.taker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
 
         Ok((
             Some(TakerSwapCommand::WaitForTakerPaymentSpend),
@@ -1602,7 +1676,18 @@ impl TakerSwap {
         drop(sending_f);
         let hash = tx.tx_hash();
         log!({"Taker payment spend tx {:02x}", hash});
-        let tx_details = self.taker_coin.tx_details_by_hash(&hash).unwrap();
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.taker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
         let secret = match tx.extract_secret() {
             Ok(bytes) => H256Json::from(bytes.as_slice()),
             Err(e) => return Ok((
@@ -1638,7 +1723,18 @@ impl TakerSwap {
 
         let hash = transaction.tx_hash();
         log!({"Maker payment spend tx {:02x}", hash});
-        let tx_details = self.maker_coin.tx_details_by_hash(&hash).unwrap();
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.maker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
         Ok((
             Some(TakerSwapCommand::Finish),
             vec![TakerSwapEvent::MakerPaymentSpent(tx_details)],
@@ -1671,7 +1767,18 @@ impl TakerSwap {
 
         let hash = transaction.tx_hash();
         log!({"Taker refund tx hash {:02x}", hash});
-        let tx_details = self.taker_coin.tx_details_by_hash(&hash).unwrap();
+        // we can attempt to get the details in loop here as transaction was already sent and
+        // is present on blockchain so only transport errors are expected to happen
+        let tx_details = loop {
+            match self.taker_coin.tx_details_by_hash(&hash) {
+                Ok(details) => break details,
+                Err(e) => {
+                    log!({"Error {} getting tx details of {:02x}", e, hash});
+                    thread::sleep(Duration::from_secs(30));
+                    continue;
+                }
+            }
+        };
         Ok((
             Some(TakerSwapCommand::Finish),
             vec![TakerSwapEvent::TakerPaymentRefunded(tx_details)],
