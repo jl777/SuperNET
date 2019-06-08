@@ -1075,14 +1075,14 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         if ( utxovout == up->U.vout && bits256_cmp(utxotxid,up->U.txid) == 0 )
         {
             preselected[numpre++] = up;
-            printf("found utxotxid in slot.%d\n",j);
+            printf("found utxotxid.%s in slot.%d\n",bits256_str(str,utxotxid),j);
             utxos[j] = 0;
             continue;
         }
         if ( utxovout2 == up->U.vout && bits256_cmp(utxotxid2,up->U.txid) == 0 )
         {
             preselected[numpre++] = up;
-            printf("found utxotxid2 in slot.%d\n",j);
+            printf("found utxotxid2.%s in slot.%d\n",bits256_str(str,utxotxid2),j);
             utxos[j] = 0;
             continue;
         }
