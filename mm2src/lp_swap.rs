@@ -1948,11 +1948,11 @@ pub fn my_recent_swaps(ctx: MmArc, req: Json) -> HyRes {
     };
 
     // iterate over file entries trying to parse the file contents and add to result vector
-    let swaps: Vec<Json> = entries.iter().skip(skip).take(limit as usize).map(|(_, entry)|
+    let swaps: Vec<Option<SavedSwap>> = entries.iter().skip(skip).take(limit as usize).map(|(_, entry)|
         json::from_slice(&slurp(&entry.path())).map_err(|e| {
             log!("Error " (e) " parsing JSON from " (entry.path().display()));
             e
-        }).unwrap_or(Json::Null)
+        }).unwrap_or(None)
     ).collect();
 
     rpc_response(200, json!({
