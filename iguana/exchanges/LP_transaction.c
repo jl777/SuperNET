@@ -2023,7 +2023,7 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
             {
                 printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
                 free(signret);
-                if ( jint(argjson,"onevin") != 0 )
+                /*if ( jint(argjson,"onevin") != 0 )
                 {
                     while ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,signedtxid,utxovout2)) == 0 )
                     {
@@ -2036,7 +2036,7 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
                         }
                     }
                     free_json(txobj);
-                }
+                }*/
             }
         }
     }
