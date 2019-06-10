@@ -1,9 +1,11 @@
 use crossbeam::{channel, Sender, Receiver};
+use hashbrown::HashSet;
 use hashbrown::hash_map::{Entry, HashMap};
+use keys::KeyPair;
 use libc::{c_void};
 use primitives::hash::H160;
 use rand::random;
-use serde_json::{Value as Json};
+use serde_json::{self as json, Value as Json};
 use std::any::Any;
 use std::net::{IpAddr, SocketAddr};
 use std::ops::Deref;
@@ -70,35 +72,22 @@ pub struct MmCtx {
     pub seednode_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
     /// Standard node P2P message bus channel
     pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
-    /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.  
-    /// The replacement of `lp::G.LP_myrmd160`.  
-    /// Used as the `dbdir` suffix in order to support switching the passphrase.
-    pub rmd160: Mutex<Option<H160>>,
+    /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase
+    /// The future replacement of lp::G.LP_myrmd160
+    pub rmd160: H160,
     /// Seed node IPs, initialized in `fn lp_initpeers`.
-    pub seeds: Mutex<Vec<IpAddr>>
+    pub seeds: Mutex<Vec<IpAddr>>,
+    /// secp256k1 key pair derived from passphrase
+    /// future replacement of lp::G.LP_privkey
+    pub secp256k1_key_pair: Option<KeyPair>,
+    /// Coins that should be enabled to kick start the interrupted swaps
+    pub coins_needed_for_kick_start: Mutex<HashSet<String>>,
 }
 impl MmCtx {
-    pub fn new (conf: Json) -> MmArc {
-        // ^^ The arguments should be limited to the JSON configuration.
-        // 
-        // The way MM is currently designed it is *not* an OOP object but rather a set of threads.
-        // The context is a mutable memory shared between these various threads.
-        // This memory is intially empty.
-        // When we start MM from the command line we're passing a single argument - JSON configuration.
-        // Similarly, creation of the MM context takes a single argument - JSON configuration.
-        // Semantically they share the interface.
-        // To keep things uniform the initialization should happen *after* the allocation of the context.
-        // 
-        // Note that if we want the OOP initialization of MM
-        // then it should probably be incapsulated in a separate object
-        // (`impl Mm {fn initialize (conf: Json) -> Result<…, String>}`)
-        // because most of the intialization code resides in the root crate
-        // and is not accessible from the `common` subcrate.
-
-        let log = log::LogState::mm (&conf);
-        MmArc (Arc::new (MmCtx {
-            conf,
-            log,
+    pub fn new () -> MmCtx {
+        MmCtx {
+            conf: Json::Object (json::Map::new()),
+            log: log::LogState::in_memory(),
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             rpc_started: AtomicBool::new (false),
@@ -113,9 +102,11 @@ impl MmCtx {
             prices_ctx: Mutex::new (None),
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
-            rmd160: Mutex::new (None),
-            seeds: Mutex::new (Vec::new())
-        }))
+            rmd160: [0; 20].into(),
+            seeds: Mutex::new (Vec::new()),
+            secp256k1_key_pair: None,
+            coins_needed_for_kick_start: Mutex::new(HashSet::new()),
+        }
     }
 
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
@@ -154,9 +145,7 @@ impl MmCtx {
         } else {
             Path::new ("DB")
         };
-        let rmd160 = unwrap! (self.rmd160.lock());
-        let rmd160 = rmd160.clone().unwrap_or ([0; 20].into());
-        path.join (hex::encode (&*rmd160))
+        path.join (hex::encode (&*self.rmd160) )
     }
 
     pub fn netid (&self) -> u16 {
@@ -206,6 +195,11 @@ impl MmCtx {
         } else {
             unwrap!(self.client_p2p_channel.0.send(msg.to_owned().into_bytes()));
         }
+    }
+
+    /// Get the reference to secp256k1 key pair
+    pub fn secp256k1_key_pair(&self) -> &KeyPair {
+        unwrap!(self.secp256k1_key_pair.as_ref())
     }
 }
 impl Drop for MmCtx {
@@ -314,4 +308,32 @@ where C: FnOnce()->Result<T, String>, T: 'static + Send + Sync {
     let arc = Arc::new (try_s! (constructor()));
     *ctx_field = Some (arc.clone());
     return Ok (arc)
+}
+
+pub struct MmCtxBuilder {
+    ctx: MmCtx,
+}
+
+impl MmCtxBuilder {
+    pub fn new() -> Self {
+        MmCtxBuilder {
+            ctx: MmCtx::new(),
+        }
+    }
+
+    pub fn with_conf(mut self, conf: Json) -> Self {
+        self.ctx.log = log::LogState::mm(&conf);
+        self.ctx.conf = conf;
+        self
+    }
+
+    pub fn with_secp256k1_key_pair(mut self, key_pair: KeyPair) -> Self {
+        self.ctx.rmd160 = key_pair.public().address_hash();
+        self.ctx.secp256k1_key_pair = Some(key_pair);
+        self
+    }
+
+    pub fn into_mm_arc(self) -> MmArc {
+        MmArc(Arc::new(self.ctx))
+    }
 }

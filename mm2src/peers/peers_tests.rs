@@ -1,6 +1,6 @@
 use common::{bits256, drive, CORE};
 use common::for_tests::wait_for_log;
-use common::mm_ctx::{MmArc, MmCtx};
+use common::mm_ctx::{MmArc, MmCtxBuilder};
 use crdts::CmRDT;
 use futures::Future;
 use gstuff::now_float;
@@ -33,7 +33,7 @@ fn peer (conf: Json, port: u16) -> MmArc {
       assert! (n > 2000, "`ulimit -n` is too low: {}", n)
     }
 
-    let ctx = MmCtx::new (conf);
+    let ctx = MmCtxBuilder::new().with_conf (conf).into_mm_arc();
     unwrap! (ctx.log.thread_gravity_on());
 
     if let Some (seednodes) = ctx.conf["seednodes"].as_array() {
@@ -110,7 +110,7 @@ pub fn peers_dht() {peers_exchange (json! ({"dht": "on"}))}
 
 /// Using a minimal one second HTTP fallback which should happen before the DHT kicks in.
 pub fn peers_http_fallback_recv() {
-    let ctx = MmCtx::new (json! ({}));
+    let ctx = MmCtxBuilder::new().into_mm_arc();
     let addr = SocketAddr::new (unwrap! ("127.0.0.1".parse()), 30204);
     let server = unwrap! (super::http_fallback::new_http_fallback (ctx.weak(), addr));
     CORE.spawn (move |_| server);
@@ -190,7 +190,7 @@ pub fn peers_direct_send() {
 // where a truly distributed no-single-point-of failure operation is not necessary,
 // like when we're using the fallback server to drive a tested mm2 instance.
 pub fn peers_http_fallback_kv() {
-    let ctx = MmCtx::new (json! ({}));
+    let ctx = MmCtxBuilder::new().into_mm_arc();
     let addr = SocketAddr::new (unwrap! ("127.0.0.1".parse()), 30205);
     let server = unwrap! (super::http_fallback::new_http_fallback (ctx.weak(), addr));
     CORE.spawn (move |_| server);
