@@ -516,6 +516,17 @@ enum SavedSwap {
     Taker(TakerSavedSwap),
 }
 
+/// The helper structure that makes easier to parse the response for GUI devs
+/// They won't have to parse the events themselves handling possible errors, index out of bounds etc.
+#[derive(Debug, Serialize, Deserialize)]
+struct MySwapInfo {
+    my_coin: String,
+    other_coin: String,
+    my_amount: BigDecimal,
+    other_amount: BigDecimal,
+    started_at: u64,
+}
+
 impl SavedSwap {
     fn is_finished(&self) -> bool {
         match self {
@@ -548,6 +559,43 @@ impl SavedSwap {
         match self {
             SavedSwap::Maker(swap) => swap.taker_coin(),
             SavedSwap::Taker(swap) => swap.taker_coin(),
+        }
+    }
+
+    fn get_my_info(&self) -> Result<MySwapInfo, String> {
+        match self {
+            SavedSwap::Maker(swap) => {
+                match swap.events.first() {
+                    Some(event) => match &event.event {
+                        MakerSwapEvent::Started(data) => {
+                            Ok(MySwapInfo {
+                                my_coin: data.maker_coin.clone(),
+                                other_coin: data.taker_coin.clone(),
+                                my_amount: data.maker_amount.clone(),
+                                other_amount: data.taker_amount.clone(),
+                                started_at: data.started_at,
+                            })
+                        },
+                        _ => ERR!("Swap first event is not `Started`"),
+                    },
+                    None => ERR!("Swap events are empty"),
+                }
+            },
+            SavedSwap::Taker(swap) => match swap.events.first() {
+                Some(event) => match &event.event {
+                    TakerSwapEvent::Started(data) => {
+                        Ok(MySwapInfo {
+                            my_coin: data.taker_coin.clone(),
+                            other_coin: data.maker_coin.clone(),
+                            my_amount: data.taker_amount.clone(),
+                            other_amount: data.maker_amount.clone(),
+                            started_at: data.started_at,
+                        })
+                    },
+                    _ => ERR!("Swap first event is not `Started`"),
+                },
+                None => ERR!("Swap events are empty"),
+            },
         }
     }
 }
@@ -1841,9 +1889,12 @@ pub fn my_swap_status(ctx: MmArc, req: Json) -> HyRes {
         }).to_string());
     }
     let status: SavedSwap = try_h!(json::from_slice(&content));
+    let my_info = try_h!(status.get_my_info());
+    let mut json = try_h!(json::to_value(status));
+    json["my_info"] = try_h!(json::to_value(my_info));
 
     rpc_response(200, json!({
-        "result": status
+        "result": json
     }).to_string())
 }
 
@@ -1948,11 +1999,24 @@ pub fn my_recent_swaps(ctx: MmArc, req: Json) -> HyRes {
     };
 
     // iterate over file entries trying to parse the file contents and add to result vector
-    let swaps: Vec<Option<SavedSwap>> = entries.iter().skip(skip).take(limit as usize).map(|(_, entry)|
-        json::from_slice(&slurp(&entry.path())).map_err(|e| {
-            log!("Error " (e) " parsing JSON from " (entry.path().display()));
-            e
-        }).unwrap_or(None)
+    let swaps: Vec<Json> = entries.iter().skip(skip).take(limit as usize).map(|(_, entry)|
+        match json::from_slice::<SavedSwap>(&slurp(&entry.path())) {
+            Ok(swap) => match swap.get_my_info() {
+                Ok(info) => {
+                    let mut json = unwrap!(json::to_value(swap));
+                    json["my_info"] = unwrap!(json::to_value(info));
+                    json
+                },
+                Err(e) => {
+                    log!("Error " (e) " getting my_swap_info of swap " (swap.uuid()));
+                    Json::Null
+                },
+            },
+            Err(e) => {
+                log!("Error " (e) " parsing JSON from " (entry.path().display()));
+                Json::Null
+            },
+        },
     ).collect();
 
     rpc_response(200, json!({
