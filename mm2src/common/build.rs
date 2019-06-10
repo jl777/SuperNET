@@ -22,6 +22,8 @@ use glob::{glob, Paths, PatternError};
 use gstuff::{last_modified_sec, now_float, slurp};
 use hyper_rustls::HttpsConnector;
 use libflate::gzip::Decoder;
+use shell_escape::escape;
+use std::cmp::max;
 use std::env::{self, var};
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
@@ -806,6 +808,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     //  - https://github.com/arvidn/libtorrent/issues/26#issuecomment-121478708
 
     let boostˢ = unwrap!(boost.to_str());
+    let boostᵉ = escape(boostˢ.into());
     // NB: The common compiler flags go to the "cxxflags=" here
     // and the platform-specific flags go to the jam files or to conditionals below.
     let mut b2 = fomat!(
@@ -815,7 +818,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
         " cxxflags=-DBOOST_ERROR_CODE_HEADER_ONLY=1"
         " cxxflags=-std=c++11"
         " cxxflags=-fPIC"
-        " include="(boostˢ)
+        " include="(boostᵉ)
     );
 
     if cfg!(windows) {
@@ -823,11 +826,11 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     }
 
     let boost_build_path = boost.join("tools").join("build");
-    let boost_build_pathˢ = unwrap!(boost_build_path.to_str());
+    let boost_build_pathᵉ = escape(unwrap!(boost_build_path.to_str()).into());
     let export = if cfg!(windows) { "SET" } else { "export" };
     epintln!("build_libtorrent]\n"
-      "  $ "(export)" PATH="(boostˢ) if cfg!(windows) {";%PATH%"} else {":$PATH"} "\n"
-      "  $ "(export)" BOOST_BUILD_PATH="(boost_build_pathˢ) "\n"
+      "  $ "(export)" PATH="(boostᵉ) if cfg!(windows) {";%PATH%"} else {":$PATH"} "\n"
+      "  $ "(export)" BOOST_BUILD_PATH="(boost_build_pathᵉ) "\n"
       "  $ "(b2));
     if cfg!(windows) {
         unwrap!(cmd!("cmd", "/c", b2)
