@@ -1305,7 +1305,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             memset(&U,0,sizeof(U));
             U.U.txid = utxotxid;
             U.U.vout = utxovout;
-            U.U.value = LP_value_extract(txobj,1,utxotxid);
+            U.U.value = LP_value_extract(txobj,0,utxotxid);
             utxos[numutxos++] = &U;
             free_json(txobj);
             //char str[65]; printf("add onevin %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(utxos[0]->U.value));
@@ -1317,7 +1317,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                     memset(&U2,0,sizeof(U2));
                     U2.U.txid = utxotxid2;
                     U2.U.vout = utxovout2;
-                    U2.U.value = LP_value_extract(txobj,1,utxotxid2);
+                    U2.U.value = LP_value_extract(txobj,0,utxotxid2);
                     utxos[numutxos++] = &U2;
                     free_json(txobj);
                 }
@@ -2025,7 +2025,6 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
                 free(signret);
                 if ( jint(argjson,"onevin") != 0 )
                 {
-                    sleep(3);
                     while ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,signedtxid,utxovout2)) == 0 )
                     {
                         printf("wait for %s/v%d\n",bits256_str(str,signedtxid),utxovout2);
@@ -2036,6 +2035,7 @@ printf("LP_withdraw: %s/v%d %s\n",bits256_str(str,utxotxid2),utxovout2,jprint(ou
                             free(signret);
                         }
                     }
+                    free_json(txobj);
                 }
             }
         }
