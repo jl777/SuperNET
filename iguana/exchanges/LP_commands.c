@@ -421,6 +421,10 @@ version\n\
                     bitcoin_wif2priv("KMD",188,&tmptype,&privkey,passphrase);
                     bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                     jaddstr(retjson,"convwif",wifstr);
+                    bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
+                    init_hexbytes_noT(pubsecp,pubkey33,33);
+                    jaddstr(retjson,"convpubsecp",pubsecp);
+                    jaddstr(retjson,"convcoinaddr",coinaddr);
                 }
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
