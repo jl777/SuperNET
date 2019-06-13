@@ -1156,7 +1156,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         uint64_t value; char str[65];
         if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) != 0 )
         {
-            value = LP_value_extract(txobj,0,txid);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
+            value = LP_value_extract(txobj,1,txid);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr != 0 )
                 LP_destaddr(coinaddr,txobj);
             //printf("LP_txvalue %s tx %s/v%d value %.8f (%s)\n",coin->symbol,bits256_str(str,txid),vout,dstr(value),jprint(txobj,0));
