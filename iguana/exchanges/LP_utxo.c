@@ -390,7 +390,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     }
                     if ( val > up->U.value && strcmp(coin->symbol,"KMD") == 0 )
                     {
-                        fprintf(stderr,"adjust Uvalue by %.8f\n",dstr(up->U.value - value));
+                        fprintf(stderr,"adjust Uvalue by %.8f\n",dstr(up->U.value - val));
                         up->U.value = val;
                     }
                     free_json(txout);
