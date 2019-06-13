@@ -373,7 +373,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
-                    //printf("check sobj.hex %s\n",jprint(txout,0));
+printf("check sobj.hex %s\n",jprint(txout,0));
                     if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && jstr(sobj,"hex") != 0 && strlen(jstr(sobj,"hex")) == 35*2 )
                     {
                         up->U.suppress = 1;
