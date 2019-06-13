@@ -1201,7 +1201,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         total += up->U.value;
         remains -= up->U.value;
         interest = 0;
-        if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
+        /*if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
             if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
             {
@@ -1209,7 +1209,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
-        else if ( strcmp(coin->symbol,"HODLC") == 0 )
+        else*/ if ( strcmp(coin->symbol,"HODLC") == 0 )
         {
             if ( (interest= LP_hodlcoin_interest(coin->height,up->U.height,up->U.txid,up->U.value)) > 0 )
             {
