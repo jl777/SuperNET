@@ -53,7 +53,7 @@ jobs:
           ALICE_PASSPHRASE: $(${{ parameters.alice_passphrase }})
           ALICE_USERPASS: $(${{ parameters.alice_userpass }})
       - powershell: |
-          cargo test --all -- --test-threads=8
+          $env:RUST_BACKTRACE=1; cargo test --all -- --test-threads=8
         displayName: 'Test MM2 Windows'
         condition: eq( variables['Agent.OS'], 'Windows_NT' )
         timeoutInMinutes: 22
