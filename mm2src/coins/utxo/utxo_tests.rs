@@ -156,47 +156,47 @@ fn test_kmd_interest() {
 #[test]
 fn test_sat_from_big_decimal() {
     let amount = "0.000001".parse().unwrap();
-    let sat = sat_from_big_decimal(amount, 18).unwrap();
+    let sat = sat_from_big_decimal(&amount, 18).unwrap();
     let expected_sat = 1000000000000;
     assert_eq!(expected_sat, sat);
 
     let amount = "0.12345678".parse().unwrap();
-    let sat = sat_from_big_decimal(amount, 8).unwrap();
+    let sat = sat_from_big_decimal(&amount, 8).unwrap();
     let expected_sat = 12345678;
     assert_eq!(expected_sat, sat);
 
     let amount = "1.000001".parse().unwrap();
-    let sat = sat_from_big_decimal(amount, 18).unwrap();
+    let sat = sat_from_big_decimal(&amount, 18).unwrap();
     let expected_sat = 1000001000000000000;
     assert_eq!(expected_sat, sat);
 
     let amount = 1.into();
-    let sat = sat_from_big_decimal(amount, 18).unwrap();
+    let sat = sat_from_big_decimal(&amount, 18).unwrap();
     let expected_sat = 1000000000000000000;
     assert_eq!(expected_sat, sat);
 
     let amount = "0.000000000000000001".parse().unwrap();
-    let sat = sat_from_big_decimal(amount, 18).unwrap();
+    let sat = sat_from_big_decimal(&amount, 18).unwrap();
     let expected_sat = 1u64;
     assert_eq!(expected_sat, sat);
 
     let amount = 1234.into();
-    let sat = sat_from_big_decimal(amount, 9).unwrap();
+    let sat = sat_from_big_decimal(&amount, 9).unwrap();
     let expected_sat = 1234000000000;
     assert_eq!(expected_sat, sat);
 
     let amount = 1234.into();
-    let sat = sat_from_big_decimal(amount, 0).unwrap();
+    let sat = sat_from_big_decimal(&amount, 0).unwrap();
     let expected_sat = 1234;
     assert_eq!(expected_sat, sat);
 
     let amount = 1234.into();
-    let sat = sat_from_big_decimal(amount, 1).unwrap();
+    let sat = sat_from_big_decimal(&amount, 1).unwrap();
     let expected_sat = 12340;
     assert_eq!(expected_sat, sat);
 
     let amount = "1234.12345".parse().unwrap();
-    let sat = sat_from_big_decimal(amount, 1).unwrap();
+    let sat = sat_from_big_decimal(&amount, 1).unwrap();
     let expected_sat = 12341;
     assert_eq!(expected_sat, sat);
 }

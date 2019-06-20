@@ -145,9 +145,9 @@ pub trait SwapOps {
 
     fn validate_fee(
         &self,
-        fee_tx: TransactionEnum,
+        fee_tx: &TransactionEnum,
         fee_addr: &[u8],
-        amount: BigDecimal,
+        amount: &BigDecimal,
     ) -> Result<(), String>;
 
     fn validate_maker_payment(
