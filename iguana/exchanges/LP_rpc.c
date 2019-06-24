@@ -538,7 +538,7 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
     if (coinaddr == NULL) {
         coinaddr = coin->smartaddr;
     }
-    if ( coin->electrum == 0 && (coin->etomic == 0 || coin->etomic[0] == 0))
+    if ( coin->electrum == 0 && coin->etomic[0] == 0 )
     {
         if ( count == 0 )
             count = 10;
