@@ -410,8 +410,9 @@ version\n\
                 else 
                 {
                     conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+                    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
                 }
-                privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+                
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"passphrase",passphrase);
                 bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
