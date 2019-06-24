@@ -15,6 +15,6 @@ coins/btc_7776
     $coin
 done
 
-# Add VRSC/HUSH3 manually as its not listed in the assetchains.json
+# Add KMD source code forks here manually as its not listed in the assetchains.json
 coins/vrsc_7776
 coins/hush3_7776
