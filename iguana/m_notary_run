@@ -19,6 +19,7 @@ source pubkey.txt
 sleep 4
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
 sleep 3
+# Need to collect seed ips from OPs! 
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"167.99.67.33\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"78.47.196.146\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"95.213.238.98\"}"
@@ -64,9 +65,10 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 coins/btc_7776
 #coins/ltc_7776
 coins/kmd_7776
-coins/chips_7776
-coins/game_7776
-coins/emc2_7776
+#coins/chips_7776
+#coins/game_7776
+#coins/emc2_7776
+#coins/gin_7776
 ./wp_7776
 
 coins/revs_7776
@@ -80,7 +82,7 @@ coins/jumblr_7776
 coins/crypto_7776
 coins/pangea_7776
 coins/mgw_7776
-coins/coqui_7776
+#coins/coqui_7776
 coins/wlc_7776
 coins/kv_7776
 coins/ceal_7776
@@ -110,7 +112,6 @@ coins/dion_7776
 #coins/zex_7776
 coins/ksb_7776
 coins/our_7776
-coins/gin_7776
 coins/iln_7776
 coins/rick_7776
 coins/morty_7776
