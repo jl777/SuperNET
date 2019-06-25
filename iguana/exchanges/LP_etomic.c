@@ -31,26 +31,18 @@ int32_t LP_etomic_wait_for_confirmation(char *txId)
     return(waitForConfirmation(txId));
 }
 
-void LP_etomic_pubkeystr_to_addr(char *pubkey, char *output)
-{
-    char *address = pubKey2Addr(pubkey);
-    strcpy(output, address);
-    free(address);
-}
-
 char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 {
-    char amount[100], secretKey[70], dexaddr[50];
+    char amount[100], secretKey[70];
     satoshisToWei(amount, LP_DEXFEE(swap->I.alicerealsat));
     swap->myfee.I.eth_amount = LP_DEXFEE(swap->I.alicerealsat);
     uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
-    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(sendEth(dexaddr, amount, secretKey, 1, 0, 0, 1));
+        return(sendEth(INSTANTDEX_ETHADDR, amount, secretKey, 1, 0, 0, 1));
     } else {
         struct iguana_info *alicecoin = LP_coinfind(swap->I.alicestr);
 
-        return(sendErc20(swap->I.alicetomic, dexaddr, amount, secretKey, 1, 0, 0, 1, alicecoin->decimals));
+        return(sendErc20(swap->I.alicetomic, INSTANTDEX_ETHADDR, amount, secretKey, 1, 0, 0, 1, alicecoin->decimals));
     }
 }
 
@@ -66,14 +58,12 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         return(0);
     }
 
-    char dexaddr[50];
-    LP_etomic_pubkeystr_to_addr(INSTANTDEX_PUBKEY, dexaddr);
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        if (compareAddresses(data.to, dexaddr) == 0) {
+        if (compareAddresses(data.to, INSTANTDEX_ETHADDR) == 0 && compareAddresses(data.to, INSTANTDEX_OLD_ETHADDR) == 0) {
             printf("Alice fee %s was sent to wrong address %s\n", swap->otherfee.I.ethTxid, data.to);
             return(0);
         }
-        uint64_t txValue = weiToSatoshi(data.valueHex);
+        uint64_t txValue = weiToSatoshi(data.valueHex, 18);
         if (txValue != LP_DEXFEE(swap->I.alicerealsat)) {
             printf("Alice fee %s amount %" PRIu64 " is not equal to expected %" PRId64 "\n", swap->otherfee.I.ethTxid, txValue, LP_DEXFEE(swap->I.alicerealsat));
             return(0);
@@ -88,7 +78,9 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         }
         char weiAmount[70];
         satoshisToWei(weiAmount, LP_DEXFEE(swap->I.alicerealsat));
-        return(verifyAliceErc20FeeData(swap->I.alicetomic, dexaddr, weiAmount, data.input, alicecoin->decimals));
+        uint8_t verify_new = verifyAliceErc20FeeData(swap->I.alicetomic, INSTANTDEX_ETHADDR, weiAmount, data.input, alicecoin->decimals);
+        uint8_t verify_old = verifyAliceErc20FeeData(swap->I.alicetomic, INSTANTDEX_OLD_ETHADDR, weiAmount, data.input, alicecoin->decimals);
+        return((uint8_t)(verify_new || verify_old));
     }
 }
 
@@ -170,7 +162,7 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
     }
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20;
     if ( strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        uint64_t paymentAmount = weiToSatoshi(data.valueHex);
+        uint64_t paymentAmount = weiToSatoshi(data.valueHex, 18);
         if (paymentAmount != swap->I.alicerealsat) {
             printf("Alice payment amount %" PRIu64 " does not match expected %" PRIu64 "\n", paymentAmount, swap->I.alicerealsat);
             return(0);
@@ -380,7 +372,7 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
-        uint64_t depositAmount = weiToSatoshi(data.valueHex);
+        uint64_t depositAmount = weiToSatoshi(data.valueHex, 18);
         if (depositAmount != LP_DEPOSITSATOSHIS(swap->I.bobrealsat)) {
             printf("Bob deposit %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, depositAmount, LP_DEPOSITSATOSHIS(swap->I.bobrealsat));
             return(0);
@@ -534,7 +526,7 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
     memset(&input,0,sizeof(input));
     memset(&input20,0,sizeof(input20));
     if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
-        uint64_t paymentAmount = weiToSatoshi(data.valueHex);
+        uint64_t paymentAmount = weiToSatoshi(data.valueHex, 18);
         if (paymentAmount != swap->I.bobrealsat) {
             printf("Bob payment %s amount %" PRIu64 " != expected %" PRIu64 "\n", txId, paymentAmount, swap->I.bobrealsat);
             return(0);
@@ -783,5 +775,107 @@ uint64_t LP_etomic_get_balance(struct iguana_info *coin, char *coinaddr, int *er
         return getEthBalance(coinaddr, error);
     } else {
         return getErc20BalanceSatoshi(coinaddr, coin->etomic, coin->decimals, error);
+    }
+}
+
+void LP_etomic_process_tx_history_json(struct iguana_info *coin, cJSON *transactions) {
+    int history_size = cJSON_GetArraySize(transactions);
+    struct LP_tx_history_item *iter;
+    for (int i = history_size - 1; i >= 0; i--) {
+        cJSON *transaction = jitem(transactions, i);
+        char *tx_hash = jstr(transaction, "hash");
+        int found = 0;
+        portable_mutex_lock(&coin->tx_history_mutex);
+        DL_FOREACH(coin->tx_history, iter) {
+            if (strcmp(iter->txid, tx_hash) == 0) {
+                found = 1;
+                break;
+            }
+        }
+        portable_mutex_unlock(&coin->tx_history_mutex);
+        if (found || juint(transaction, "confirmations") == 0) {
+            continue;
+        }
+        struct LP_tx_history_item *item = malloc(sizeof(struct LP_tx_history_item));
+        memset(item, 0, sizeof(struct LP_tx_history_item));;
+
+        strcpy(item->txid, jstr(transaction, "hash"));
+        strcpy(item->category, "receive");
+        if (compareAddresses(coin->smartaddr, jstr(transaction, "from"))) {
+            strcpy(item->category, "send");
+        }
+        if (strcmp(item->category, "receive") == 0) {
+            item->amount = dstr(weiToSatoshi(jstr(transaction, "value"), coin->decimals));
+        } else {
+            item->amount = 0. - dstr(weiToSatoshi(jstr(transaction, "value"), coin->decimals));
+        }
+        item->time = juint(transaction, "timestamp");
+        strcpy(item->blockhash, jstr(transaction, "blockHash"));
+        item->blockindex = juint(transaction, "blockNumber");
+        item->blocktime = juint(transaction, "timestamp");
+        portable_mutex_lock(&coin->tx_history_mutex);
+        DL_APPEND(coin->tx_history, item);
+        portable_mutex_unlock(&coin->tx_history_mutex);
+    }
+}
+
+void LP_etomic_txhistory_loop(void *_coin)
+{
+    struct iguana_info *coin = _coin;
+    if (coin->etomic[0] == 0) {
+        printf("Calling ETOMIC tx history loop for non-ETOMIC coin %s\n", coin->symbol);
+        return;
+    }
+
+    while (coin != NULL && coin->inactive == 0) {
+        coin->height = (int32_t) getEthBlockNumber();
+        char *result;
+        cJSON *json;
+        if (strcmp(coin->symbol, "ETH") == 0) {
+            // process standard transfers
+            result = eth_tx_history_etherscan(coin->smartaddr);
+            if (result) {
+                json = cJSON_Parse(result);
+                if (json) {
+                    if (is_cJSON_Array(jobj(json, "result"))) {
+                        LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                    }
+                    free_json(json);
+                }
+                free(result);
+            }
+
+            // process "internal" transactions - transactions received during smart contract executions
+            // these are not added to standard list to extra processing is required
+            result = internal_eth_tx_history_etherscan(coin->smartaddr);
+            if (result) {
+                json = cJSON_Parse(result);
+                if (json) {
+                    if (is_cJSON_Array(jobj(json, "result"))) {
+                        LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                    }
+                    free_json(json);
+                }
+                free(result);
+            }
+        } else {
+            result = erc20_tx_history_etherscan(coin->smartaddr, coin->etomic);
+            if (result) {
+                json = cJSON_Parse(result);
+                if (json) {
+                    if (is_cJSON_Array(jobj(json, "result"))) {
+                        LP_etomic_process_tx_history_json(coin, jobj(json, "result"));
+                    }
+                    free_json(json);
+                }
+                free(result);
+            }
+        }
+        int (*ptr)(struct LP_tx_history_item*, struct LP_tx_history_item*) = &history_item_cmp;
+        struct LP_tx_history_item *_tmp;
+        portable_mutex_lock(&coin->tx_history_mutex);
+        DL_SORT(coin->tx_history, ptr);
+        portable_mutex_unlock(&coin->tx_history_mutex);
+        sleep(30);
     }
 }

@@ -50,7 +50,7 @@ MSBuild pthread.2015.sln /t:Rebuild /p:Configuration=Release /p:Platform=Win32
 MSBuild pthread.2015.sln /t:Rebuild /p:Configuration=Release /p:Platform=x64
 cd ../..
 )
-copy marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib OSlibs\win\x64\pthread_lib.lib 
+copy marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread_lib.lib marketmaker_depends\pthread-win32\bin\x64_MSVC2015.Release\pthread.lib
 
 rem --- nanomsg ---
 :compile_nanomsg
@@ -96,6 +96,6 @@ if not exist marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_
 		)
 	)
 )
-copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.lib OSlibs\win\x64\release\libcurl.lib
-copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.exp OSlibs\win\x64\release\libcurl.exp
+copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.lib marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\curl.lib
+copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl_imp.exp marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\curl.exp
 copy marketmaker_depends\curl\build_msvc_2015_win64\lib\Release\libcurl.dll x64\Release\libcurl.dll

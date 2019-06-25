@@ -172,6 +172,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);
 void komodo_assetcoins(int32_t fullnode,uint64_t mask);
 int32_t iguana_isnotarychain(char *symbol);
+int32_t dpow_smallopreturn(char *symbol);
 
 cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);

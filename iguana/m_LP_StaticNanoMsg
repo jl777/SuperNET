@@ -10,4 +10,4 @@ clang -g -DNOTETOMIC -Wno-deprecated -c -O2 -DLIQUIDITY_PROVIDER=1 -DUSE_STATIC_
 clang -g -DNOTETOMIC -Wno-deprecated -c -DLIQUIDITY_PROVIDER=1 -DUSE_STATIC_NANOMSG  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c iguana_ramchain.c
 
 
-clang -g -o ../agents/iguana *.o ../agents/libcrypto777.a ../OSlibs/linux/$(uname -m)/libnanomsg-static.a -lcurl -lssl -lcrypto -lpthread -lz -lm -lanl -lrt -lnsl
+clang -g -o ../agents/iguana *.o ../agents/libcrypto777.a ../OSlibs/linux/$(uname -m)/libnanomsg-static.a -lcurl -lssl -lcrypto -lpthread -lz -lm -lanl -lrt -lnsl -lsodium

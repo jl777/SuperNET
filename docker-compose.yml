@@ -7,6 +7,7 @@ services:
     volumes:
       - ~/.zcash-params:/home/jenkins/.zcash-params
       - ~/.komodo:/home/jenkins/.komodo
+      - ~/.zcash:/home/jenkins/.zcash
       - .:/usr/mm
     env_file:
       - .env.seed
@@ -22,6 +23,7 @@ services:
     volumes:
       - ~/.zcash-params:/home/jenkins/.zcash-params
       - ~/.komodo:/home/jenkins/.komodo
+      - ~/.zcash:/home/jenkins/.zcash
       - .:/usr/mm
     links:
       - seednode
