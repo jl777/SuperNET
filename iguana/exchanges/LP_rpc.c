@@ -482,7 +482,11 @@ printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
                     txid = jbits256(item,"txid");
                     if ( addrflag == 0 )
                         vout = jint(item,"vout");
-                    else vout = jint(item,"outputIndex");
+                    else
+                    {
+                        vout = jint(item,"outputIndex");
+                        printf("%s\n",jprint(item,0));
+                    }
                     if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
                     {
                         jaddi(array,jduplicate(item));
