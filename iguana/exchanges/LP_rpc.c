@@ -483,11 +483,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                     txid = jbits256(item,"txid");
                     if ( addrflag == 0 )
                         vout = jint(item,"vout");
-                    else
-                    {
-                        vout = jint(item,"outputIndex");
-                        jaddnum(item,"vout",vout);
-                    }
+                    else vout = jint(item,"outputIndex");
                     if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
                     {
                         //printf("%s\n",jprint(txjson,0));
@@ -495,7 +491,13 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                         {
                             jaddi(array,jduplicate(item));
                             free_json(txjson);
-                        } else jaddi(array,txjson);
+                        }
+                        else
+                        {
+                            jaddbits256(txjson,"txid",txid);
+                            jaddnum(txjson,"vout",vout);
+                            jaddi(array,txjson);
+                        }
                     } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
