@@ -493,7 +493,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                     {
                         jaddi(array,jduplicate(item));
                         free_json(txjson);
-                    } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
