@@ -613,7 +613,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
                 else
                 {
                     m++;
-                    printf("%.8f ",dstr(value));
+                    //printf("%.8f ",dstr(value));
                     total += value;
                 }
             }
