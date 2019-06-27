@@ -568,7 +568,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        printf("%s array.%s\n",coin->symbol,jprint(array,0));
+        //printf("%s array.%s\n",coin->symbol,jprint(array,0));
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -587,8 +587,8 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
             for (i=m=0; i<n; i++)
             {
                 item = jitem(array,i);
-                printf("%s\n",jprint(item,0));
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
+                printf("%s -> %s/v%d %.8f\n",jprint(item,0),bits256_str(str,txid),vout,dstr(value));
                 if ( bits256_nonz(txid) == 0 )
                     continue;
                 if ( 1 )
@@ -613,7 +613,7 @@ printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,h
                 else
                 {
                     m++;
-                    //printf("%.8f ",dstr(value));
+                    printf("%.8f ",dstr(value));
                 }
             }
             printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
