@@ -588,7 +588,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
             {
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
-                //printf("%s -> %s/v%d %.8f\n",jprint(item,0),bits256_str(str,txid),vout,dstr(value));
+                printf("%s -> %s/v%d %.8f\n",jprint(item,0),bits256_str(str,txid),vout,dstr(value));
                 if ( bits256_nonz(txid) == 0 )
                     continue;
                 if ( 1 )
