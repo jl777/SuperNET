@@ -260,12 +260,13 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         {
             if ( tx->outpoints[vout].spendheight > 0 )
             {
-                //fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
+                fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
                 return(0);
             }
             //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
         }
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
+        printf("issue (%s)\n",buf);
         return(bitcoin_json(coin,"gettxout",buf));
     }
     else
@@ -464,12 +465,12 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
 //printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
-            if ( (n= cJSON_GetArraySize(retjson)) == 0 )
+            if ( (n= cJSON_GetArraySize(retjson)) == 0 && strcmp(coin->symbol,"BTC") != 0 )
             {
                 free_json(retjson);
                 sprintf(buf,"[{\"addresses\":[\"%s\"]}]",coinaddr);
                 retjson = bitcoin_json(coin,"getaddressutxos",buf);
-printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+//printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
                 addrflag = 1;
             }
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
@@ -491,7 +492,7 @@ printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
                     {
                         jaddi(array,jduplicate(item));
                         free_json(txjson);
-                    } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
