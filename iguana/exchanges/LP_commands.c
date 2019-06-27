@@ -422,7 +422,7 @@ version\n\
                     privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,passphrase,"");
 
                     //bitcoin_wif2priv("KMD",188,&tmptype,&privkey,passphrase);
-                    //bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
+                    bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                     jaddstr(retjson,"convwif",wifstr);
                     bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
                     init_hexbytes_noT(pubsecp,pubkey33,33);
