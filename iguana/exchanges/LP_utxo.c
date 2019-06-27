@@ -568,7 +568,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        //printf("%s array.%s\n",coin->symbol,jprint(array,0));
+        printf("%s array.%s\n",coin->symbol,jprint(array,0));
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -587,6 +587,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
             for (i=m=0; i<n; i++)
             {
                 item = jitem(array,i);
+                printf("%s\n",jprint(item,0));
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 if ( bits256_nonz(txid) == 0 )
                     continue;
@@ -594,20 +595,20 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
                     {
-//printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
+printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
                         continue;
                     }
                     else free_json(txobj);
                     if ( (numconfs= LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0)) <= 0 )
                     {
-//printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
+printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
                         continue;
                     }
                 }
                 LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                 {
-//printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
+printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 }
                 else
                 {

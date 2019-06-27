@@ -266,7 +266,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
         }
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
-        printf("issue (%s)\n",buf);
+        //printf("issue (%s)\n",buf);
         return(bitcoin_json(coin,"gettxout",buf));
     }
     else
@@ -490,13 +490,13 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                     }
                     if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
                     {
-                        printf("%s\n",jprint(txjson,0));
+                        //printf("%s\n",jprint(txjson,0));
                         if ( addrflag == 0 )
                         {
                             jaddi(array,jduplicate(item));
                             free_json(txjson);
                         } else jaddi(array,txjson);
-                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
