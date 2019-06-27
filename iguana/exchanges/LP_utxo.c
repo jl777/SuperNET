@@ -550,7 +550,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
 
 struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
 {
-    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value,total=0; bits256 txid; uint32_t now;
     *nump = 0;
     if ( coin == 0 )
         return(0);
@@ -588,7 +588,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
             {
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
-                printf("%s -> %s/v%d %.8f\n",jprint(item,0),bits256_str(str,txid),vout,dstr(value));
+                //printf("%s -> %s/v%d %.8f\n",jprint(item,0),bits256_str(str,txid),vout,dstr(value));
                 if ( bits256_nonz(txid) == 0 )
                     continue;
                 if ( 1 )
@@ -614,9 +614,10 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
                 {
                     m++;
                     printf("%.8f ",dstr(value));
+                    total += value;
                 }
             }
-            printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
+            printf("added %d of %d from %s listunspents %.8f\n",m,n,coin->symbol,dstr(total));
         }
         free_json(array);
     }
