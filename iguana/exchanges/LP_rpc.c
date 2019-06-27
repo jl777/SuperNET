@@ -430,7 +430,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxid2)
 {
-    char buf[128],*retstr; bits256 txid; struct LP_address *ap; cJSON *retjson,*txjson,*array,*item; int32_t i,n,numconfs,vout,usecache=1; struct iguana_info *coin;
+    char buf[128],*retstr; bits256 txid; struct LP_address *ap; cJSON *retjson,*txjson,*array,*item; int32_t i,n,numconfs,vout,addrflag=0,usecache=1; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -464,6 +464,14 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
 //printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+            if ( (n= cJSON_GetArraySize(retjson)) == 0 )
+            {
+                free_json(retjson);
+                sprintf(buf,"[{\"addresses\":[\"%s\"]}]",coinaddr);
+                retjson = bitcoin_json(coin,"getaddressutxos",buf);
+printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+                addrflag = 1;
+            }
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
                 char str[65];
@@ -472,7 +480,9 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 {
                     item = jitem(retjson,i);
                     txid = jbits256(item,"txid");
-                    vout = jint(item,"vout");
+                    if ( addrflag == 0 )
+                        vout = jint(item,"vout");
+                    else vout = jint(item,"outputIndex");
                     if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
                     {
                         jaddi(array,jduplicate(item));
