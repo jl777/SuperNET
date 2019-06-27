@@ -417,6 +417,7 @@ version\n\
                 jaddbits256(retjson,"privkey",privkey);
                 bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
+                if ( passphrase[0] == 'U' )
                 {
                     uint8_t tmptype; bits256 pubkey;
                     privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,passphrase,"");
