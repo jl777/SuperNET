@@ -464,13 +464,13 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             else numconfs = 1;
             if ( strcmp(coin->symbol,"BTC") != 0 )
             {
-                free_json(retjson);
                 sprintf(buf,"[{\"addresses\":[\"%s\"]}]",coinaddr);
                 retjson = bitcoin_json(coin,"getaddressutxos",buf);
 //printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
             }
             if ( (n= cJSON_GetArraySize(retjson)) == 0 )
             {
+                free_json(retjson);
                 sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
                 retjson = bitcoin_json(coin,"listunspent",buf);
                 //printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
@@ -497,10 +497,10 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                         {
                             jaddbits256(txjson,"txid",txid);
                             jaddnum(txjson,"vout",vout);
-                            printf("%s\n",jprint(txjson,0));
+                            //printf("%s\n",jprint(txjson,0));
                             jaddi(array,txjson);
                         }
-                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
