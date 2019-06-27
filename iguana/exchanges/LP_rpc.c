@@ -486,13 +486,14 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                     else
                     {
                         vout = jint(item,"outputIndex");
+                        jaddnum(item,"vout",vout);
                         printf("%s\n",jprint(item,0));
                     }
                     if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
                     {
                         jaddi(array,jduplicate(item));
                         free_json(txjson);
-                    } else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                    } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
                 retjson = array;
