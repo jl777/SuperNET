@@ -1,4 +1,6 @@
-use common::{bits256, drive, CORE};
+use common::bits256;
+#[cfg(feature = "native")]
+use common::wio::{drive, CORE};
 use common::for_tests::wait_for_log;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
 use crdts::CmRDT;
@@ -124,6 +126,10 @@ pub fn peers_http_fallback_recv() {
     }))
 }
 
+// TODO: delme
+/// Temporarily helps with running the peers test independently from the MM crate.
+#[test] fn test_peers_http_fallback_recv() {peers_http_fallback_recv()}
+
 pub fn peers_direct_send() {
     // Unstable results on our MacOS CI server,
     // which isn't a problem in general (direct UDP communication is a best effort optimization)
@@ -236,3 +242,7 @@ pub fn peers_http_fallback_kv() {
     // TODO: Shut down the HTTP server as well.
     drop (ctx)
 }
+
+// TODO: delme
+/// Temporarily helps with running the peers test independently from the MM crate.
+#[test] fn test_peers_http_fallback_kv() {peers_http_fallback_kv()}
