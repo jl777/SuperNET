@@ -768,9 +768,13 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
 
 cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
 {
-    //if ( strcmp(symbol,"BCH") == 0 )
+    struct iguana_info *coin = iguana_coinfind(symbol);
+    if ( coin != 0 )
+    {
+        //if ( strcmp(symbol,"BCH") == 0 )
         return(electrum_scripthash_cmd(symbol,0,ep,retjsonp,"get_balance",coin->scriptstrs[0]));
-    //else return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT));
+        //else return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT));
+    } else return(clonestr("{}"));
 }
 
 cJSON *electrum_addpeer(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *endpoint) { return(electrum_strarg(symbol,ep,retjsonp,"server.add_peer",endpoint,ELECTRUM_TIMEOUT)); }
