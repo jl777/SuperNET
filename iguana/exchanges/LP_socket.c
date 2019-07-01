@@ -623,16 +623,16 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
     return(retjson);
 }
 
-cJSON *electrum_scripthash_cmd(char *symbol,uint8_t taddr,struct electrum_info *ep,cJSON **retjsonp,char *cmd,char *coinaddr)
+cJSON *electrum_scripthash_cmd(char *symbol,uint8_t taddr,struct electrum_info *ep,cJSON **retjsonp,char *cmd,char *scriptstr)
 {
-    uint8_t addrtype,rmd160[20]; char btcaddr[64],cmdbuf[128]; //char scripthash[51],rmdstr[41],;
-    bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
-    bitcoin_address("BTC",btcaddr,0,addrtype,rmd160,20);
+    //uint8_t addrtype,rmd160[20]; char btcaddr[64],cmdbuf[128]; //char scripthash[51],rmdstr[41],;
+   // bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
+    //bitcoin_address("BTC",btcaddr,0,addrtype,rmd160,20);
     //init_hexbytes_noT(rmdstr,rmd160,20);
     //sprintf(scripthash,"%s",rmdstr);
     sprintf(cmdbuf,"blockchain.scripthash.%s",cmd);
     //sprintf(cmdbuf,"blockchain.address.%s",cmd);
-    return(electrum_strarg(symbol,ep,retjsonp,cmdbuf,btcaddr,ELECTRUM_TIMEOUT));
+    return(electrum_strarg(symbol,ep,retjsonp,cmdbuf,scriptstr,ELECTRUM_TIMEOUT));
 }
 
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,bits256 reftxid)
