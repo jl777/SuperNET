@@ -461,11 +461,11 @@ void electrum_initial_requests(struct electrum_info *ep)
 {
     cJSON *retjson; char stratumreq[1024];
     retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.headers.subscribe","[]");
-    electrum_sitem(ep,stratumreq,3,&retjson);
+    //sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.headers.subscribe","[]");
+    //electrum_sitem(ep,stratumreq,3,&retjson);
     
     retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"barterDEX\", [\"1.1\", \"1.1\"]]");
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"iguana\", [\"1.4\", \"1.4\"]]");
     electrum_sitem(ep,stratumreq,3,&retjson);
     
     retjson = 0;
@@ -630,8 +630,8 @@ cJSON *electrum_scripthash_cmd(char *symbol,uint8_t taddr,struct electrum_info *
     bitcoin_address("BTC",btcaddr,0,addrtype,rmd160,20);
     //init_hexbytes_noT(rmdstr,rmd160,20);
     //sprintf(scripthash,"%s",rmdstr);
-    //sprintf(cmdbuf,"blockchain.scripthash.%s",cmd);
-    sprintf(cmdbuf,"blockchain.address.%s",cmd);
+    sprintf(cmdbuf,"blockchain.scripthash.%s",cmd);
+    //sprintf(cmdbuf,"blockchain.address.%s",cmd);
     return(electrum_strarg(symbol,ep,retjsonp,cmdbuf,btcaddr,ELECTRUM_TIMEOUT));
 }
 
@@ -640,9 +640,9 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
     char str[65]; struct LP_transaction *tx; cJSON *retjson,*txobj,*item; int32_t i,n,height; bits256 txid; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(0);
-    if ( strcmp(symbol,"BCH") == 0 )
+    //if ( strcmp(symbol,"BCH") == 0 )
         retjson = electrum_scripthash_cmd(symbol,coin->taddr,ep,retjsonp,"get_history",addr);
-    else retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT);
+    //else retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT);
     //printf("history.(%s)\n",jprint(retjson,0));
     if ( retjson != 0 && (n= cJSON_GetArraySize(retjson)) > 0 )
     {
@@ -690,9 +690,9 @@ cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON *
     cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(0);
-    if ( strcmp(symbol,"BCH") == 0 )
+    //if ( strcmp(symbol,"BCH") == 0 )
         retjson = electrum_scripthash_cmd(symbol,coin->taddr,ep,retjsonp,"get_mempool",addr);
-    else retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT);
+    //else retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT);
     //printf("MEMPOOL.(%s)\n",jprint(retjson,0));
     electrum_process_array(coin,ep,addr,retjson,1,reftxid,reftxid2);
     return(retjson);
@@ -724,9 +724,9 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     //usecache = 0; // disable unspents cache
     if ( usecache == 0 || electrumflag > 1 )
     {
-        if ( strcmp(symbol,"BCH") == 0 )
+        //if ( strcmp(symbol,"BCH") == 0 )
             retjson = electrum_scripthash_cmd(symbol,coin->taddr,ep,retjsonp,"listunspent",addr);
-        else retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT);
+        //else retjson = //electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT);
         if ( retjson != 0 )
         {
             if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
@@ -768,9 +768,9 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
 
 cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
 {
-    if ( strcmp(symbol,"BCH") == 0 )
+    //if ( strcmp(symbol,"BCH") == 0 )
         return(electrum_scripthash_cmd(symbol,0,ep,retjsonp,"get_balance",addr));
-    else return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT));
+    //else return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT));
 }
 
 cJSON *electrum_addpeer(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *endpoint) { return(electrum_strarg(symbol,ep,retjsonp,"server.add_peer",endpoint,ELECTRUM_TIMEOUT)); }
@@ -1042,7 +1042,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     {
         //printf("%s RECV.(%ld) id.%d (%s)\n",ep->symbol,strlen(str),jint(strjson,"id"),jint(strjson,"id")==0?str:"");
         resultjson = jobj(strjson,"result");
-        //printf("strjson.(%s)\n",jprint(strjson,0));
+        printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
         {
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
@@ -1284,13 +1284,13 @@ void LP_electrum_txhistory_loop(void *_coin)
     }
     while (coin != NULL && coin->electrum != NULL && coin->inactive == 0) {
         cJSON *history = cJSON_CreateObject();
-        if (strcmp(coin->symbol, "BCH") == 0) {
+        //if (strcmp(coin->symbol, "BCH") == 0)
             electrum_scripthash_cmd(coin->symbol, coin->taddr, coin->electrum, &history, "get_history",
                                     coin->smartaddr);
-        } else {
-            electrum_strarg(coin->symbol, coin->electrum, &history, "blockchain.address.get_history", coin->smartaddr,
+        //else
+        //    electrum_strarg(coin->symbol, coin->electrum, &history, "blockchain.address.get_history", coin->smartaddr,
                             ELECTRUM_TIMEOUT);
-        }
+    
         if (jobj(history, "error") != NULL) {
             char *msg = jprint(history, 1);
             printf("Error getting electrum history of coin %s %s\n", coin->symbol, msg);
