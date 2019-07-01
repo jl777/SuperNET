@@ -509,7 +509,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("timeout.%d exp.%d %s %s",timeout,(int32_t)(expiration-time(NULL)),symbol,stratumreq);
+//printf("timeout.%d exp.%d %s %s",timeout,(int32_t)(expiration-time(NULL)),symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
             portable_mutex_lock(&ep->mutex); // this helps performance!
@@ -1057,7 +1057,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     {
         //printf("%s RECV.(%ld) id.%d (%s)\n",ep->symbol,strlen(str),jint(strjson,"id"),jint(strjson,"id")==0?str:"");
         resultjson = jobj(strjson,"result");
-        printf("strjson.(%s)\n",jprint(strjson,0));
+        //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
         {
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
