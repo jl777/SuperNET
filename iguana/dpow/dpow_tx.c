@@ -173,31 +173,50 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height)
 {
-    int32_t r,h,incr = 100000; struct dpow_block *bp = 0;
-    if ( height > dp->maxblocks )
+    int32_t i; struct dpow_block *bp = 0;
+    for (i = 0; i < dp->maxblocks; i++) 
     {
-        if ( dp->maxblocks+incr < height+10000 )
-            incr = (height+10000) - dp->maxblocks;
-        dp->blocks = realloc(dp->blocks,sizeof(*dp->blocks) * (dp->maxblocks + incr));
-        memset(&dp->blocks[dp->maxblocks],0,sizeof(*dp->blocks) * incr);
-        dp->maxblocks += incr;
+        if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
+            return(dp->blocks[i]);
     }
-    if ( height < dp->maxblocks )
-        bp = dp->blocks!=0 ? dp->blocks[height] : 0;
-    if ( bp == 0 && height < DPOW_FIRSTRATIFY )
-    {
-        r = (rand() % DPOW_FIRSTRATIFY);
-        for (h=0; h<DPOW_FIRSTRATIFY; h++)
-        {
-            height = (r + h) % DPOW_FIRSTRATIFY;
-            if ( (bp= dp->blocks[height]) != 0 )
-                return(bp);
-        }
-    }
-    if ( bp != 0 && bp->state == 0xffffffff )
-        bp = 0;
     return(bp);
 }
+
+int32_t dpow_heightfind2(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height)
+{
+    int32_t i; struct dpow_block *bp = 0;
+    for (i = 0; i < dp->maxblocks; i++) 
+    {
+        if ( dp->blocks[i] != 0 && height == dp->blocks[i]->height )
+            fprintf(stderr, "FOUND: blockindex.%i\n", i);
+    }
+    return(0);
+}
+
+int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i;
+    for (i = 0; i < dp->maxblocks; i++) 
+    {
+        if ( dp->blocks[i] == 0 )
+            return(i);
+    }
+    return(-1);
+}
+
+/* maybe this is better not sure... 
+int32_t dpow_blockfind(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i; uint32_t i,r;
+    while ( 1 )
+    {
+        OS_randombytes((uint8_t *)&r,sizeof(r));
+        i = r % dp->maxblocks;
+        if ( dp->blocks[i] == 0 )
+            break;
+    }
+    return(-1);
+}*/
 
 int32_t dpow_voutstandard(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
@@ -271,25 +290,25 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
 
 	struct iguana_info *coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
 	//printf("[Decker] dpow_notarytx: src.(%s) dst.(%s) src_or_dest.(%d) usesigs.(%d)\n", bp->srccoin->symbol, bp->destcoin->symbol, src_or_dest, usesigs);
-	
+
 	signedtx[0] = 0;
     *numsigsp = 0;
     memset(zero.bytes,0,sizeof(zero));
     len = numsigs = 0;
     version = 1;
-	
+
 	if (coin->sapling != 0) {
 		version = 4;
 		version = 1 << 31 | version; // overwintered
 	}
-	
+
 	len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
-	
+
 	if (coin->sapling != 0) {
 		uint32_t versiongroupid = 0x892f2085; // sapling
 		len += iguana_rwnum(1, &serialized[len], sizeof(versiongroupid), &versiongroupid);
 	}
-	
+
 	if ( isPoS != 0 )
         len += iguana_rwnum(1,&serialized[len],sizeof(bp->timestamp),&bp->timestamp);
     m = bp->minsigs;
@@ -308,14 +327,14 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
                 {
                     txid = bp->notaries[k].ratifydestutxo;
                     vout = bp->notaries[k].ratifydestvout;
-                } 
+                }
                 else
                 {
                     txid = bp->notaries[k].ratifysrcutxo;
                     vout = bp->notaries[k].ratifysrcvout;
                 }
-                
-				if ( bestk >= 0 ) // 
+
+				if ( bestk >= 0 ) //
                 {
                     siglen = bp->notaries[k].ratifysiglens[src_or_dest];
                     sig = bp->notaries[k].ratifysigs[src_or_dest];
@@ -342,7 +361,7 @@ bits256 dpow_notarytx(struct supernet_info *myinfo,char *signedtx,int32_t *numsi
             }
             len += iguana_rwbignum(1,&serialized[len],sizeof(txid),txid.bytes);
             len += iguana_rwnum(1,&serialized[len],sizeof(vout),&vout);
-            
+
 			if ( usesigs != 0 && bestk >= 0 ) // usesigs=1 -> insert signature
             {
                 len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&siglen);
@@ -523,7 +542,9 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                 }
                                 if ( valid != 0 )
                                 {
-                                    printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
+                                    char *txinfo = jprint(item,0);
+                                    printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,txinfo,j);
+                                    free(txinfo);
                                     cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                     if ( src_or_dest != 0 )
                                         bp->destsigsmasks[bestk] |= (1LL << myind);
@@ -639,7 +660,10 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         {
                             bp->desttxid = txid;
                             dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
-                        } else bp->srctxid = txid;
+                        } else 
+                        {
+                            bp->srctxid = txid;
+                        }
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
                         for (j=0; j<sizeof(srchash); j++)
@@ -656,7 +680,15 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 else
                 {
                     bp->state = 0xffffffff;
-                    printf("dpow_sigscheck.(%s): mismatched txid.%s vs %s\n",bp->signedtx,bits256_str(str,txid),retstr);
+                    printf("dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
+                    dpow_heightfind2(myinfo,dp,bp->height);
+#ifdef LOGTX
+                    FILE * fptr;
+                    fptr = fopen("/home/node/failed_notarizations", "a+");
+                    unsigned long dwy_timestamp = time(NULL);
+                    fprintf(fptr, "%lu %s %s %d %s\n", dwy_timestamp, bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,bp->signedtx);
+                    fclose(fptr);
+#endif
                 }
                 free(retstr);
                 retstr = 0;
@@ -666,7 +698,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 printf("NULL return from sendrawtransaction. abort\n");
                 bp->state = 0xffffffff;
             }
-        } else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
+        } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
 }
-

@@ -58,19 +58,43 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
+#if STAKED
+int8_t is_STAKED(const char *chain_name) 
+{
+    int8_t ret;
+    if ( chain_name[0] == 0 )
+        return(0);
+    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) ) 
+        ret = 1; // These chains are allowed coin emissions.
+    else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
+        ret = 2; // These chains have no speical rules at all.
+    else if ( (strcmp(chain_name, "TEST") == 0) || (strncmp(chain_name, "TEST", 4) == 0) )
+        ret = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
+    return(ret);
+};
+#endif
+
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;  struct dpow_block *bp;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+DPOW_CHECKPOINTFREQ )
+        int supressfreq = DPOW_CHECKPOINTFREQ;
+#if STAKED
+        if ( is_STAKED(dp->symbol) != 0 )
+        {
+            dp->minsigs = Notaries_minsigs;
+            supressfreq = 3;
+        }
+#endif
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
-            //fprintf(stderr,"suppress %s -> KMD\n",dp->symbol);
+            //fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
@@ -119,40 +143,18 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         dp->freq = 1;
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
-        if ( (0) && strcmp("KMD",dp->symbol) == 0 )
-            printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d freq.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),dp->minsigs,dp->freq);
-        dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
+        //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         dp->prevDESTHEIGHT = dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)dp->minsigs;
-        //if ( strcmp(dp->dest,"KMD") != 0 )
-            ptrs[3] = (void *)DPOW_DURATION;
-        //else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
+        ptrs[3] = (void *)DPOW_DURATION;
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
         ht = checkpoint.blockhash.height;
-        if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
-        {
-        }
-        if ( ht > DPOW_MAXFREQ*5 )
-        {
-            if ( (0) && strcmp("CHIPS",dp->symbol) == 0 )
-                printf("ht.%d maxblocks.%d\n",ht,dp->maxblocks);
-            for (i=ht-DPOW_MAXFREQ*5; i>ht-DPOW_MAXFREQ*100&&i>DPOW_MAXFREQ; i--)
-            {
-                if ( (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff ) //(i % DPOW_MAXFREQ) != 0 &&
-                {
-                    if ( dp->currentbp == dp->blocks[i] )
-                        dp->currentbp = 0;
-                    dp->blocks[i] = 0;
-                    Numallocated--;
-                    free(bp);
-                }
-            }
-        }
+        OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs);
     }
 }
 
@@ -222,8 +224,8 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( (height= dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
             char str[65];
-            if ( (0) && strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
-                printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
+            //if ( (0) && strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
+            //    printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
                 printf("iguana_dPoWupdate dest.%s reorg detected %d vs %d\n",dp->dest,height,dp->destchaintip.blockhash.height);
@@ -242,7 +244,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         {
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
-            char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->lastheight);
+            char str[65]; //printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->lastheight);
             dp->SRCHEIGHT = height;
             if ( height < dp->last.blockhash.height )
             {
@@ -401,6 +403,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
             printf("src validation error %s %s %s\n",src->symbol,srcaddr,retstr);
         }
         free(retstr);
+        free_json(json);
         retstr = 0;
     } else printf("%s %s didnt return anything\n",src->symbol,srcaddr);
     bitcoin_address(destaddr,destcoin->chain->pubtype,dp->minerkey33,33);
@@ -415,6 +418,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
             printf("dest validation error %s %s %s\n",src->symbol,srcaddr,retstr);
         }
         free(retstr);
+        free_json(json);
         retstr = 0;
     } else printf("%s %s didnt return anything\n",destcoin->symbol,destaddr);
     if ( srcvalid <= 0 || destvalid <= 0 )
@@ -429,12 +433,12 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     }
     if ( dp->blocks == 0 )
     {
-        dp->maxblocks = 10000;
+        dp->maxblocks = 100;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
-    portable_mutex_init(&dp->paxmutex);
-    portable_mutex_init(&dp->dexmutex);
-    PAX_init();
+    //portable_mutex_init(&dp->paxmutex);
+    //portable_mutex_init(&dp->dexmutex);
+    //PAX_init();
     dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
     for (i=0; i<33; i++)

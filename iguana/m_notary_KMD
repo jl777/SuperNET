@@ -1,0 +1,24 @@
+#!/bin/bash
+# manually kill the iguana you need to restart first!
+# unlock any locked utxos. This will unlock utxos for both iguans, need a filter for address to only unlock the pubkey you need to restart. 
+komodo-cli lockunspent true `komodo-cli listlockunspent | jq -c .` 
+
+# Start normally, no split is default on this branch. 
+stdbuf -oL $1 ../agents/iguana notary & #> iguana.log 2> error.log  &
+
+myip=`curl -s4 checkip.amazonaws.com`
+source pubkey.txt
+
+sleep 4
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
+sleep 3
+
+# TODO: Need to get some seeds for both networks. 
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"103.6.12.105\"}"
+
+# This will add all KMD assetchains from assetchains.json.
+./add_coins
+
+sleep 30
+# dpow for KMD-> BTC.
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
