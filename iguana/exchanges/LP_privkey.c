@@ -444,9 +444,11 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             len = (int32_t)strlen(coin->scriptstrs[i]) >> 1;
             decode_hex(rawhex,len,coin->scriptstrs[i]);
             vcalc_sha256(0,hash.bytes,rawhex,len);
+            /*
             for (j=0; j<32; j++)
                 sprintf(&coin->scriptstrs[i][j<<1],"%02x",hash.bytes[31-j]);
-            coin->scriptstrs[i][64] = 0;
+            coin->scriptstrs[i][64] = 0;*/
+            bits256_str(coin->scriptstrs[i],hash);
         }
         //printf("scripts: %s and %s\n",coin->scriptstrs[0],coin->scriptstrs[1]);
         LP_privkeyadd(privkey,rmd160);

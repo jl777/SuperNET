@@ -582,6 +582,15 @@ cJSON *electrum_intarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
+cJSON *electrum_intarg2(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,int32_t arg,int32_t arg2,int32_t timeout)
+{
+    char params[64]; cJSON *retjson;
+    if ( retjsonp == 0 )
+        retjsonp = &retjson;
+    sprintf(params,"[\"%d\",\"%d\"]",arg,arg2);
+    return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
+}
+
 cJSON *electrum_hasharg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,bits256 arg,int32_t timeout)
 {
     char params[128],str[65]; cJSON *retjson;
@@ -790,7 +799,7 @@ cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,
 
 cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n)
 {
-    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_header",n,ELECTRUM_TIMEOUT));
+    return(electrum_intarg2(symbol,ep,retjsonp,"blockchain.block.header",n,1,ELECTRUM_TIMEOUT));
 }
 
 cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
