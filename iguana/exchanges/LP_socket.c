@@ -465,7 +465,7 @@ void electrum_initial_requests(struct electrum_info *ep)
     //electrum_sitem(ep,stratumreq,3,&retjson);
     
     retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"iguana\", [\"1.4\", \"1.4\"]]");
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"iguana\", [\"1.1\", \"1.4\"]]");
     electrum_sitem(ep,stratumreq,3,&retjson);
     
     retjson = 0;
