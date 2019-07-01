@@ -36,7 +36,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dp
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"CHIPS\",\"pubkey\":\"$pubkey\"}"
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"GAME\",\"freq\":5,\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"RFOX\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
-curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
+#curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"SEC\",\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"CCL\",\"pubkey\":\"$pubkey\"}"
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"HUSH\",\"pubkey\":\"$pubkey\"}"
