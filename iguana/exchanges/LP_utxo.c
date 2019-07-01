@@ -223,7 +223,7 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest,bits256 utxotxid)
             if ( jobj(obj,"interest") != 0 )
             {
                 value += (jdouble(obj,"interest") * SATOSHIDEN);
-                char str[65]; printf("(%s) txid.%s %.8f + %.8f\n",jprint(obj,0),bits256_str(str,utxotxid),dstr(value),dstr(jdouble(obj,"interest") * SATOSHIDEN));
+                //char str[65]; printf("(%s) txid.%s %.8f + %.8f\n",jprint(obj,0),bits256_str(str,utxotxid),dstr(value),dstr(jdouble(obj,"interest") * SATOSHIDEN));
             }
             else
             {
