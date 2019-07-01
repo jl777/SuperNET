@@ -1557,3 +1557,13 @@ pub fn key (ctx: &MmArc) -> Result<bits256, String> {
     let pk = try_s! (pctx.our_public_key.lock());
     Ok (pk.clone())
 }
+
+/*
+  The `main` function might be useful now and then for trying the Emscripten build of the peers crate.
+
+#[cfg(not(feature = "native"))]
+pub fn main() {
+    extern "C" {fn emscripten_exit_with_live_runtime();}
+    unsafe {emscripten_exit_with_live_runtime()}
+}
+*/

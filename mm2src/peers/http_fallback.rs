@@ -280,7 +280,7 @@ pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr)
 }
 
 #[cfg(not(feature = "native"))]
-pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr)
+pub fn new_http_fallback (_ctx: MmWeak, _addr: SocketAddr)
 -> Result<Box<dyn Future<Item=(), Error=()>+Send>, String> {
     unimplemented!()
 }
@@ -374,6 +374,7 @@ pub struct HttpFallbackTargetTrack {
 }
 
 /// Plugged into `fn transmit` to send the chunks via HTTP fallback when necessary.
+#[cfg(feature = "native")]
 pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: &Option<SocketAddr>, our_public_key: &bits256,
                     packages: &mut Vec<super::Package>) -> Result<(), String> {
     let hf_addr = match hf_addr {Some (a) => a, None => return Ok(())};
@@ -456,7 +457,8 @@ pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: &Option<SocketAddr>, ou
         let refresh = if track.last_store > 0. {now - track.last_store > 10.} else {false};
         if !changed && !refresh {return Ok(())}
 
-    log! ("transmit] TBD, time to use the HTTP fallback...");
+// TODO: Patch the integration test to use an alternative method of checking if the fallback has worked.
+log! ("transmit] TBD, time to use the HTTP fallback...");
 
         let mut hf_id = Vec::with_capacity (unsafe {seed.bytes.len() + 1 + our_public_key.bytes.len()});
         hf_id.extend_from_slice (unsafe {&seed.bytes});
@@ -476,6 +478,10 @@ pub fn hf_transmit (pctx: &super::PeersContext, hf_addr: &Option<SocketAddr>, ou
 
     Ok(())
 }
+
+#[cfg(not(feature = "native"))]
+pub fn hf_transmit (_pctx: &super::PeersContext, _hf_addr: &Option<SocketAddr>, _our_public_key: &bits256,
+                    _packages: &mut Vec<super::Package>) -> Result<(), String> {ERR! ("not implemented")}
 
 /// Invoked when a delayed retrieval is detected by the peers loop.
 /// 

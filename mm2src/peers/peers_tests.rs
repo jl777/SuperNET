@@ -113,6 +113,7 @@ fn peers_exchange (conf: Json) {
 pub fn peers_dht() {peers_exchange (json! ({"dht": "on"}))}
 
 /// Using a minimal one second HTTP fallback which should happen before the DHT kicks in.
+#[cfg(feature = "native")]
 pub fn peers_http_fallback_recv() {
     let ctx = MmCtxBuilder::new().into_mm_arc();
     let addr = SocketAddr::new (unwrap! ("127.0.0.1".parse()), 30204);
@@ -125,6 +126,9 @@ pub fn peers_http_fallback_recv() {
         "http-fallback-port": 30204
     }))
 }
+
+#[cfg(not(feature = "native"))]
+pub fn peers_http_fallback_recv() {}
 
 // TODO: delme
 /// Temporarily helps with running the peers test independently from the MM crate.
@@ -193,10 +197,11 @@ pub fn peers_direct_send() {
     destruction_check (bob);
 }
 
-// Check the primitives used to communicate with the HTTP fallback server.  
-// These are useful in implementing NAT traversal in situations
-// where a truly distributed no-single-point-of failure operation is not necessary,
-// like when we're using the fallback server to drive a tested mm2 instance.
+/// Check the primitives used to communicate with the HTTP fallback server.  
+/// These are useful in implementing NAT traversal in situations
+/// where a truly distributed no-single-point-of failure operation is not necessary,
+/// like when we're using the fallback server to drive a tested mm2 instance.
+#[cfg(feature = "native")]
 pub fn peers_http_fallback_kv() {
     let ctx = MmCtxBuilder::new().into_mm_arc();
     let addr = SocketAddr::new (unwrap! ("127.0.0.1".parse()), 30205);
@@ -242,6 +247,9 @@ pub fn peers_http_fallback_kv() {
     // TODO: Shut down the HTTP server as well.
     drop (ctx)
 }
+
+#[cfg(not(feature = "native"))]
+pub fn peers_http_fallback_kv() {}
 
 // TODO: delme
 /// Temporarily helps with running the peers test independently from the MM crate.
