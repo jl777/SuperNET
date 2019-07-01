@@ -625,6 +625,7 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
 
 cJSON *electrum_scripthash_cmd(char *symbol,uint8_t taddr,struct electrum_info *ep,cJSON **retjsonp,char *cmd,char *scriptstr)
 {
+    char cmdbuf[256];
     //uint8_t addrtype,rmd160[20]; char btcaddr[64],cmdbuf[128]; //char scripthash[51],rmdstr[41],;
    // bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
     //bitcoin_address("BTC",btcaddr,0,addrtype,rmd160,20);
