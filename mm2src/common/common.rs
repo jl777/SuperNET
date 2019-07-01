@@ -390,6 +390,9 @@ pub fn binprint (bin: &[u8], blank: u8) -> String {
 /// For instance, DHT might take unknown time to initialize, and by delaying this initialization in the tests
 /// we can avoid the unnecessary overhead of DHT initializaion and destruction while maintaining the contract.
 pub fn is_a_test_drill() -> bool {
+    // Stack tracing would sometimes crash on Windows, doesn't worth the risk here.
+    if cfg! (windows) {return false}
+
     let mut trace = String::with_capacity (1024);
     stack_trace (
         &mut |mut fwr, sym| {if let Some (name) = sym.name() {let _ = witeln! (fwr, (name));}},
