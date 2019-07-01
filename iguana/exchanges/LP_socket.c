@@ -1288,8 +1288,7 @@ void LP_electrum_txhistory_loop(void *_coin)
             electrum_scripthash_cmd(coin->symbol, coin->taddr, coin->electrum, &history, "get_history",
                                     coin->smartaddr);
         //else
-        //    electrum_strarg(coin->symbol, coin->electrum, &history, "blockchain.address.get_history", coin->smartaddr,
-                            ELECTRUM_TIMEOUT);
+        //    electrum_strarg(coin->symbol, coin->electrum, &history, "blockchain.address.get_history", coin->smartaddr,ELECTRUM_TIMEOUT);
     
         if (jobj(history, "error") != NULL) {
             char *msg = jprint(history, 1);
