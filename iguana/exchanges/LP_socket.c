@@ -799,7 +799,7 @@ cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,
 
 cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n)
 {
-    return(electrum_intarg2(symbol,ep,retjsonp,"blockchain.block.header",n,1,ELECTRUM_TIMEOUT));
+    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.header",n,ELECTRUM_TIMEOUT));
 }
 
 cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
