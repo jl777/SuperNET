@@ -465,7 +465,7 @@ void electrum_initial_requests(struct electrum_info *ep)
     //electrum_sitem(ep,stratumreq,3,&retjson);
     
     retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"iguana\", [\"1.1\", \"1.4\"]]");
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"iguana\", [\"1.4\", \"1.4\"]]");
     electrum_sitem(ep,stratumreq,3,&retjson);
     
     retjson = 0;
@@ -579,6 +579,15 @@ cJSON *electrum_intarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     if ( retjsonp == 0 )
         retjsonp = &retjson;
     sprintf(params,"[\"%d\"]",arg);
+    return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
+}
+
+cJSON *electrum_intarg2(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,int32_t arg,int32_t arg2,int32_t timeout)
+{
+    char params[64]; cJSON *retjson;
+    if ( retjsonp == 0 )
+        retjsonp = &retjson;
+    sprintf(params,"[\"%d\",\"%d\"]",arg,arg2);
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
@@ -773,6 +782,7 @@ cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON *
     if ( coin != 0 )
     {
         //if ( strcmp(symbol,"BCH") == 0 )
+        electrum_scripthash_cmd(symbol,0,ep,retjsonp,"get_balance",coin->scriptstrs[1]);
         return(electrum_scripthash_cmd(symbol,0,ep,retjsonp,"get_balance",coin->scriptstrs[0]));
         //else return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT));
     } else return(cJSON_Parse("{}"));
@@ -790,7 +800,7 @@ cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,
 
 cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n)
 {
-    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_header",n,ELECTRUM_TIMEOUT));
+    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.header",n,ELECTRUM_TIMEOUT));
 }
 
 cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
