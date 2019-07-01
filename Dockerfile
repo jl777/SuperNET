@@ -39,8 +39,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # This allows us to more easily play with later Dockerfile steps by adding the `COPY` there.
 RUN git clone --depth=1 -b mm2 https://github.com/artemii235/SuperNET.git /mm2
 
-# Or with the "etomic" branch:
-#RUN git clone --depth=1 -b etomic https://github.com/artemii235/SuperNET.git /mm2
 
 # The number of Docker layers is limited AFAIK,
 # so here we have a couple of configuration actions packed into a single step.
@@ -63,7 +61,8 @@ COPY . /mm2
 RUN cd /mm2 &&\
     cargo build --features native -vv &&\
     mv target/debug/mm2 /usr/local/bin/marketmaker-mainnet &&\
-    cargo test --features native &&\
+    # We currently need BOB_PASSPHRASE, BOB_USERPASS, ALICE_PASSPHRASE and ALICE_USERPASS for the tests…
+    #cargo test --features native &&\
     cargo clean
 
 CMD marketmaker-testnet
