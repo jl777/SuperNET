@@ -27,6 +27,7 @@ coins/chips_7779
 coins/game_7779
 coins/emc2_7779
 coins/gin_7779
+coins/vrsc_7779
 
 sleep 30
 
@@ -38,3 +39,4 @@ curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dp
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"GAME\",\"freq\":5,\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"EMC2\",\"freq\":5,\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"GIN\",\"pubkey\":\"$pubkey\"}"
+curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
