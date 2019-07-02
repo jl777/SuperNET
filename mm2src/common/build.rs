@@ -1041,7 +1041,7 @@ fn build_c_code(mm_version: &str) {
     eprintln!("$ cmake{}", show_args(&cmake_prep_args));
     run!(ecmd!("cmake", i cmake_prep_args).current_dir(root().join("build")));
 
-    let mut cmake_args: Vec<String> = vec![
+    let cmake_args: Vec<String> = vec![
         "--build".into(),
         ".".into(),
         "--target".into(),
