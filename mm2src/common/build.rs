@@ -863,9 +863,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
         "b2 -j4 -d+2 release"
         " link=static deprecated-functions=off debug-symbols=off"
         " dht=on encryption=on crypto=built-in iconv=off i2p=off"
-        if !cfg!(windows) {
-          " cxxflags=-DBOOST_ERROR_CODE_HEADER_ONLY=1"
-        }
+        " cxxflags=-DBOOST_ERROR_CODE_HEADER_ONLY=1"
         " cxxflags=-std=c++11"
         " cxxflags=-fPIC"
         " include="(boostᵉ)
@@ -974,13 +972,9 @@ fn libtorrent() {
             cc.flag("-fvisibility-inlines-hidden");
         }
 
-        if !cfg!(windows) {
-            // Fixes the «Undefined symbols… "boost::system::detail::generic_category_ncx()"».
-            // The header [works](https://github.com/boostorg/system/issues/42#issuecomment-486362606)
-            // and is needed on Linux, but it isn't required on Windows and should be avoided there
-            // in order to try and avoid the `error_code` crashes.
-            cc.flag("-DBOOST_ERROR_CODE_HEADER_ONLY=1");
-        }
+        // Fixes the «Undefined symbols… "boost::system::detail::generic_category_ncx()"».
+        cc.flag("-DBOOST_ERROR_CODE_HEADER_ONLY=1");
+
         cc.file("dht.cc")
             .warnings(true)
             .opt_level(2)
