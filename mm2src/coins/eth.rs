@@ -20,7 +20,7 @@
 //
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
-use common::{lp, MutexGuardWrapper};
+use common::{HyRes, lp, MutexGuardWrapper, rpc_response};
 use common::wio::slurp_url;
 use common::mm_ctx::MmArc;
 use secp256k1::key::PublicKey;
@@ -241,6 +241,15 @@ impl EthCoinImpl {
         input.extend_from_slice(&time_lock.to_le_bytes());
         input.extend_from_slice(secret_hash);
         sha256(&input).to_vec()
+    }
+
+    /// Get gas price
+    fn get_gas_price(&self) -> impl Future<Item=U256, Error=String> {
+        if let Some(url) = &self.gas_station_url {
+            Either::A(GasStationData::get_gas_price(&url))
+        } else {
+            Either::B(self.web3.eth().gas_price().map_err(|e| ERRL!("{}", e)))
+        }
     }
 }
 
@@ -596,12 +605,7 @@ impl EthCoin {
         let nonce_fut = get_addr_nonce(self.my_address, &self.web3_instances);
         Box::new(nonce_fut.then(move |nonce| -> EthTxFut {
             let nonce = try_fus!(nonce);
-            let gas_price_fut = if let Some(url) = &arc.gas_station_url {
-                GasStationData::get_gas_price(&url.clone())
-            } else {
-                Box::new(arc.web3.eth().gas_price().map_err(|e| ERRL!("{}", e)))
-            };
-            Box::new(gas_price_fut.then(move |gas_price| -> EthTxFut {
+            Box::new(arc.get_gas_price().then(move |gas_price| -> EthTxFut {
                 let gas_price = try_fus!(gas_price);
                 let tx = UnSignedEthTx {
                     nonce,
@@ -1563,12 +1567,7 @@ impl MmCoin for EthCoin {
             let nonce_lock = MutexGuardWrapper(try_fus!(NONCE_LOCK.lock()));
             let nonce_fut = get_addr_nonce(arc.my_address, &arc.web3_instances);
             Box::new(nonce_fut.and_then(move |nonce| {
-                let gas_price_fut = if let Some(url) = &arc.gas_station_url {
-                    Either::A(GasStationData::get_gas_price(&url.clone()))
-                } else {
-                    Either::B(arc.web3.eth().gas_price().map_err(|e| ERRL!("{}", e)))
-                };
-                gas_price_fut.and_then(move |gas_price| {
+                arc.get_gas_price().and_then(move |gas_price| {
                     let estimate_gas_req = CallRequest {
                         value: Some(value),
                         data: Some(data.clone().into()),
@@ -1699,6 +1698,19 @@ impl MmCoin for EthCoin {
     fn history_sync_status(&self) -> HistorySyncState {
         unwrap!(self.history_sync_state.lock()).clone()
     }
+
+    fn get_trade_fee(&self) -> HyRes {
+        Box::new(self.get_gas_price().then(|res| {
+            let gas_price = try_h!(res);
+            let fee = gas_price * U256::from(150000);
+            rpc_response(200, json!({
+                "result": {
+                    "coin": "ETH",
+                    "amount": try_h!(u256_to_big_decimal(fee, 18))
+                }
+            }).to_string())
+        }))
+    }
 }
 
 fn addr_from_raw_pubkey(pubkey: &[u8]) -> Result<Address, String> {
@@ -1825,6 +1837,7 @@ struct GasStationData {
 
 impl GasStationData {
     fn average_gwei(&self) -> U256 {
+        // Ethgasstation API returns response in 10^8 wei units. So 10 from their API mean 1 gwei
         U256::from(self.average as u64 + 10) * U256::exp10(8)
     }
 
