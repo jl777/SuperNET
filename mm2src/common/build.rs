@@ -187,7 +187,6 @@ fn generate_bindings() {
             "LP_quoteparse",
             "LP_requestinit",
             "LP_tradecommand_log",
-            "bits256_str", // cf. `impl fmt::Display for bits256`
             "vcalc_sha256",
             "calc_rmd160_sha256",
             "bitcoin_address",
@@ -229,7 +228,6 @@ fn generate_bindings() {
         .iter(),
         // types
         [
-            "_bits256",
             "cJSON",
             "iguana_info",
             "LP_utxoinfo",
