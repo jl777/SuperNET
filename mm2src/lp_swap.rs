@@ -889,7 +889,22 @@ impl MakerSwap {
                 vec![MakerSwapEvent::NegotiateFailed(ERRL!("{:?}", e).into())],
             )),
         };
-        // TODO add taker negotiation data validation
+        let time_dif = (self.data.started_at as i64 - taker_data.started_at as i64).abs();
+        if  time_dif > 60 {
+            return Ok((
+                Some(MakerSwapCommand::Finish),
+                vec![MakerSwapEvent::NegotiateFailed(ERRL!("Started_at time_dif over 60 {}", time_dif).into())]
+            ))
+        }
+
+        let expected_lock_time = taker_data.started_at + self.data.lock_duration;
+        if taker_data.payment_locktime != expected_lock_time {
+            return Ok((
+                Some(MakerSwapCommand::Finish),
+                vec![MakerSwapEvent::NegotiateFailed(ERRL!("taker_data.payment_locktime {} not equal to expected {}", taker_data.payment_locktime, expected_lock_time).into())]
+            ))
+        }
+
         Ok((
             Some(MakerSwapCommand::WaitForTakerFee),
             vec![MakerSwapEvent::Negotiated(
@@ -1644,9 +1659,18 @@ impl TakerSwap {
 
         let time_dif = (self.data.started_at as i64 - maker_data.started_at as i64).abs();
         if  time_dif > 60 {
-            // AG: I see this check failing with `LP_AUTOTRADE_TIMEOUT` bumped from 30 to 120.
-            //err!(-1002, "Started_at time_dif over 60: "(time_dif))
-            log!("Started_at time_dif over 60: "(time_dif));
+            return Ok((
+                Some(TakerSwapCommand::Finish),
+                vec![TakerSwapEvent::NegotiateFailed(ERRL!("Started_at time_dif over 60 {}", time_dif).into())]
+            ))
+        }
+
+        let expected_lock_time = maker_data.started_at + self.data.lock_duration * 2;
+        if maker_data.payment_locktime != expected_lock_time {
+            return Ok((
+                Some(TakerSwapCommand::Finish),
+                vec![TakerSwapEvent::NegotiateFailed(ERRL!("maker_data.payment_locktime {} not equal to expected {}", maker_data.payment_locktime, expected_lock_time).into())]
+            ))
         }
 
         let taker_data = SwapNegotiationData {
