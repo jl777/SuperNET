@@ -8,7 +8,9 @@ native = [
   "rustls", "tokio", "tokio-timer", "tokio-io", "tokio-rustls", "tokio-tcp", "webpki-roots",
   "common/native",
   # rustc-serialize
-  "bitcrypto", "chain", "dirs", "keys", "rpc", "serialization", "script"
+  "bitcrypto", "chain", "dirs", "keys", "primitives", "rpc", "serialization", "script",
+  # parity-wordlist using OsRng
+  "ethkey", "ethcore-transaction"
 ]
 
 [lib]
@@ -27,9 +29,9 @@ chain = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = t
 common = { path = "../common" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
 eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
-ethcore-transaction = { git = "https://github.com/artemii235/parity-ethereum.git" }
+ethcore-transaction = { git = "https://github.com/artemii235/parity-ethereum.git", optional = true }
 ethereum-types = { version = "0.4", default-features = false, features = ["std", "serialize"] }
-ethkey = { git = "https://github.com/artemii235/parity-ethereum.git" }
+ethkey = { git = "https://github.com/artemii235/parity-ethereum.git", optional = true }
 # Waiting for https://github.com/rust-lang/rust/issues/54725 to use on Stable.
 #enum_dispatch = "0.1"
 fomat-macros = "0.2"
