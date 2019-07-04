@@ -15,7 +15,9 @@ edition = "2018"
 [features]
 native = [
   "hyper", "tokio-core", "dirs",
-  "common/native", "peers/native", "coins/native", "portfolio/native"
+  "common/native", "peers/native", "coins/native", "portfolio/native",
+  # rustc-serialize
+  "bitcrypto", "keys", "primitives", "rpc", "serialization", "serialization_derive"
 ]
 
 [[bin]]
@@ -41,7 +43,7 @@ opt-level = 1
 
 [dependencies]
 bigdecimal = { version = "0.1.0", features = ["serde"] }
-bitcrypto = { git = "https://github.com/artemii235/parity-bitcoin.git" }
+bitcrypto = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
 coins = { path = "mm2src/coins" }
 common = { path = "mm2src/common" }
 crc = "1.8"
@@ -59,21 +61,21 @@ hashbrown = {version = "0.1.8", features = ["serde", "nightly"]}
 hex = "0.3.2"
 http = "0.1"
 hyper = { version = "0.12", optional = true }
-keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
+keys = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
 lazy_static = "1.3"
 libc = "0.2"
 num-traits = "0.2"
-rpc = { git = "https://github.com/artemii235/parity-bitcoin.git" }
+rpc = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
 peers = { path = "mm2src/peers" }
 portfolio = { path = "mm2src/portfolio" }
-primitives = { git = "https://github.com/artemii235/parity-bitcoin.git" }
+primitives = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
 rand = "0.6"
 regex = "1"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-serialization = { git = "https://github.com/artemii235/parity-bitcoin.git" }
-serialization_derive = { git = "https://github.com/artemii235/parity-bitcoin.git" }
+serialization = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
+serialization_derive = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
 tokio-core = { version = "0.1", optional = true }
 unwrap = "1.2"
 uuid = { version = "0.7", features = ["serde", "v4"] }
