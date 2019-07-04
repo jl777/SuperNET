@@ -7,7 +7,6 @@ use futures::Future;
 use gstuff::now_float;
 use rand::{self, Rng};
 use serde_json::Value as Json;
-use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::atomic::Ordering;
 use std::thread;
@@ -17,6 +16,8 @@ use super::http_fallback::UniqueActorId;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn ulimit_n() -> Option<u32> {
+    use std::mem::zeroed;
+
     let mut lim: libc::rlimit = unsafe {zeroed()};
     let rc = unsafe {libc::getrlimit (libc::RLIMIT_NOFILE, &mut lim)};
     if rc == 0 {

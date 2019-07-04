@@ -5,7 +5,10 @@ version = "0.1.0"
 edition = "2018"
 
 [features]
-native = ["hyper", "tokio-core", "common/native"]
+native = [
+  "hyper", "tokio-core", "dirs",
+  "common/native"
+]
 
 [lib]
 name = "peers"
@@ -21,7 +24,7 @@ common = { path = "../common" }
 crc = "1.8"
 crdts = {git = "https://github.com/rust-crdt/rust-crdt"}
 crossbeam = "0.6"
-dirs = "1"
+dirs = { version = "1", optional = true }
 either = "1.5"
 fomat-macros = "0.2"
 futures = "0.1"
