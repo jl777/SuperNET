@@ -5,12 +5,12 @@ edition = "2018"
 
 [features]
 native = [
-  "rustls", "tokio", "tokio-timer", "tokio-io", "tokio-rustls", "tokio-tcp", "webpki-roots",
+  "eth-secp256k1", "rustls", "tokio", "tokio-timer", "tokio-io", "tokio-rustls", "tokio-tcp", "webpki-roots",
   "common/native",
   # rustc-serialize
   "bitcrypto", "chain", "dirs", "keys", "primitives", "rpc", "serialization", "script",
   # parity-wordlist using OsRng
-  "ethkey", "ethcore-transaction"
+  "ethkey", "ethcore-transaction",
 ]
 
 [lib]
@@ -28,7 +28,7 @@ bytes = "0.4"
 chain = { git = "https://github.com/artemii235/parity-bitcoin.git", optional = true }
 common = { path = "../common" }
 ethabi = { git = "https://github.com/artemii235/ethabi" }
-eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", optional = true }
 ethcore-transaction = { git = "https://github.com/artemii235/parity-ethereum.git", optional = true }
 ethereum-types = { version = "0.4", default-features = false, features = ["std", "serialize"] }
 ethkey = { git = "https://github.com/artemii235/parity-ethereum.git", optional = true }
