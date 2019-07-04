@@ -285,6 +285,7 @@ iguana/exchanges/manychains
 /mm2src/peers/.vscode/tasks.json
 /.vscode/settings.json
 /.vscode/tasks.json
+/.vscode/c_cpp_properties.json
 
 # IDE artefacts
 /.vscode/ipch
