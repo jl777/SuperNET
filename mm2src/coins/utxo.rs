@@ -559,7 +559,9 @@ impl UtxoCoin {
             true_or_err!(!outputs.is_empty(), "Couldn't generate tx from empty outputs set");
             let mut tx_fee = match &coin_tx_fee {
                 ActualTxFee::Fixed(f) => *f,
-                ActualTxFee::Dynamic(f) => (f * 20) / 1024, // every tx has version, locktime and maybe other fields depending on coin, using 20 bytes as default value for this
+                // every tx has version, locktime and maybe other fields depending on coin, using 20 bytes as default value for this
+                // change output size is also included here
+                ActualTxFee::Dynamic(f) => (f * (20 + 8 + 1 + 25)) / 1024,
             };
 
             let mut target_value = 0;
