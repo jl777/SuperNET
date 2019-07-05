@@ -4,7 +4,7 @@ source pubkey.txt
 echo $pubkey
 sleep 3
 
-# add non default assetchains here, VRSC and HUSH because not in assetchains.json, and RFOX because its freq=10. 
+# add non default assetchains here, HUSH because not in assetchains.json, and RFOX because its freq=10. 
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"RFOX\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"HUSH3\",\"pubkey\":\"$pubkey\"}"
 
