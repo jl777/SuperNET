@@ -20,7 +20,4 @@ rsync -av --delete \
 
 cd /tmp/supernet-wasm/
 
-# Plug in the Emscripten
-. ~/emsdk/emsdk_env.sh
-
-cargo build --target=wasm32-unknown-emscripten 2>&1 | tee $ORIGINAL/wasm-build.log
+cargo build --target=wasm32-unknown-unknown 2>&1 | tee $ORIGINAL/wasm-build.log
