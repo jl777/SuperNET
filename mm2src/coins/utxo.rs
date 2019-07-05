@@ -34,7 +34,6 @@ use gstuff::{now_ms};
 use hashbrown::hash_map::{HashMap, Entry};
 use keys::{Error as KeysError, KeyPair, Private, Public, Address, Secret, Type};
 use keys::bytes::Bytes;
-use keys::generator::{Random, Generator};
 use num_traits::cast::ToPrimitive;
 use primitives::hash::{H256, H264, H512};
 use rand::{thread_rng};
@@ -1459,17 +1458,6 @@ impl MmCoin for UtxoCoin {
             }).to_string())
         }))
     }
-}
-
-pub fn random_compressed_key_pair(prefix: u8, checksum_type: ChecksumType) -> Result<KeyPair, String> {
-    let random_key = try_s!(Random::new(prefix).generate());
-
-    Ok(try_s!(KeyPair::from_private(Private {
-        prefix,
-        secret: random_key.private().secret.clone(),
-        compressed: true,
-        checksum_type,
-    })))
 }
 
 fn private_from_seed(seed: &str) -> Result<Private, String> {
