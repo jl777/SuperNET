@@ -6,7 +6,7 @@ edition = "2018"
 
 [features]
 native = [
-  "eth-secp256k1", "hyper", "hyper-rustls", "ring", "tokio-core"
+  "eth-secp256k1", "hyper", "hyper-rustls", "libc", "ring", "tokio-core"
 ]
 
 [lib]
@@ -29,7 +29,7 @@ http = "0.1"
 http-body = "0.1"
 keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 lazy_static = "1.2"
-libc = "0.2"
+libc = { version = "0.2", optional = true }
 hyper = { version = "0.12", optional = true }
 hyper-rustls = { version = "0.16", optional = true }
 primitives = { git = "https://github.com/artemii235/parity-bitcoin.git" }

@@ -8,6 +8,7 @@ use chrono::format::DelayedFormat;
 use chrono::format::strftime::StrftimeItems;
 use crossbeam::queue::SegQueue;
 use gstuff::now_ms;
+#[cfg(feature = "native")]
 use libc::{c_char, c_int};
 use regex::Regex;
 use serde_json::{Value as Json};

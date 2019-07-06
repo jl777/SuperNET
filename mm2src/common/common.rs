@@ -70,10 +70,11 @@ use gstuff::{now_float};
 use hex::FromHex;
 use http::{Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
+#[cfg(feature = "native")]
 use libc::{c_char, c_void, malloc, free};
 use serde_json::{self as json, Value as Json};
 use std::env::args;
-use std::fmt;
+use std::fmt::{self, Write as FmtWrite};
 use std::fs;
 use std::ffi::{CStr, CString};
 use std::intrinsics::copy;
@@ -86,13 +87,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::str;
 
 // Make sure we're linking the eth-secp256k1 in for it is used in the MM1 C code.
+#[cfg(feature = "native")]
 use secp256k1::Secp256k1;
+#[cfg(feature = "native")]
 pub extern fn _we_are_using_secp256k1() -> Secp256k1 {Secp256k1::new()}
 
+#[cfg(feature = "native")]
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
-pub use self::lp::{_bits256 as bits256};
 
+#[cfg(feature = "native")]
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod os {include! ("c_headers/OS_portable.rs");}
 
@@ -109,16 +113,28 @@ pub enum BitcoinCtx {}
 extern "C" {
     pub fn bitcoin_ctx() -> *mut BitcoinCtx;
     fn bitcoin_ctx_destroy (ctx: *mut BitcoinCtx);
+    #[cfg(feature = "native")]
     pub fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: bits256, addrtype: u8) -> i32;
+    #[cfg(feature = "native")]
     fn bits256_str (hexstr: *mut u8, x: bits256) -> *const c_char;
 }
 
+#[cfg(feature = "native")]
+pub use self::lp::{_bits256 as bits256};
+#[cfg(not(feature = "native"))]
+#[allow(non_camel_case_types)]
+#[derive(PartialEq, Hash)]
+pub struct bits256 ([u8; 32]);
+
 impl fmt::Display for bits256 {
-    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut buf: [u8; 65] = unsafe {zeroed()};
-        let cs = unsafe {bits256_str (buf.as_mut_ptr(), *self)};
-        let hex = unwrap! (unsafe {CStr::from_ptr (cs)} .to_str());
-        f.write_str (hex)
+    fn fmt (&self, fm: &mut fmt::Formatter) -> fmt::Result {
+        for ch in self.to_bytes().into_iter() {
+            fn hex_from_digit (num: u8) -> char {
+                if num < 10 {(b'0' + num) as char} else {(b'A' + num - 10) as char}}
+            fm.write_char (hex_from_digit (ch / 16)) ?;
+            fm.write_char (hex_from_digit (ch / 16)) ?;
+        }
+        Ok(())
 }   }
 
 impl fmt::Debug for bits256 {
@@ -126,6 +142,7 @@ impl fmt::Debug for bits256 {
         (self as &dyn fmt::Display) .fmt (f)
 }   }
 
+#[cfg(feature = "native")]
 impl std::cmp::PartialEq for bits256 {
     /// Should be preferred to `bits256_cmp`.
     fn eq (&self, other: &bits256) -> bool {
@@ -137,6 +154,7 @@ impl std::cmp::PartialEq for bits256 {
 }   }   }
 impl std::cmp::Eq for bits256 {}
 
+#[cfg(feature = "native")]
 impl std::hash::Hash for bits256 {
     fn hash<H: std::hash::Hasher> (&self, state: &mut H) {
         unsafe {
@@ -147,8 +165,15 @@ impl std::hash::Hash for bits256 {
 }   }   }
 
 impl bits256 {
+    #[cfg(feature = "native")]
+    fn to_bytes (&self) -> [u8; 32] {self.bytes}
+
+    #[cfg(not(feature = "native"))]
+    fn to_bytes (&self) -> [u8; 32] {self.0}
+
     /// Returns true if the hash is not zero.  
     /// Port of `#define bits256_nonz`.
+    #[cfg(feature = "native")]
     pub fn nonz (&self) -> bool {
         unsafe {self.ulongs[0] != 0 || self.ulongs[1] != 0 || self.ulongs[2] != 0 || self.ulongs[3] != 0}
     }

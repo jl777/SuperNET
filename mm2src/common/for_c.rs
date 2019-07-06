@@ -1,4 +1,5 @@
 use hashbrown::HashMap;
+#[cfg(feature = "native")]
 use libc::{c_char, c_void};
 use std::ffi::CStr;
 use std::mem::size_of;
