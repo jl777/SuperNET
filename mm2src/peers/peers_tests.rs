@@ -1,3 +1,4 @@
+use common::bits256;
 #[cfg(feature = "native")]
 use common::wio::{drive, CORE};
 use common::for_tests::wait_for_log;
@@ -46,8 +47,8 @@ fn peer (conf: Json, port: u16) -> MmArc {
     }
 
     let mut rng = rand::thread_rng();
-    let mut alice_key = [0; 32];
-    rng.fill (&mut alice_key);
+    let mut alice_key: bits256 = unsafe {zeroed()};
+    unsafe {rng.fill (&mut alice_key.bytes[..])}
     unwrap! (super::initialize (&ctx, 9999, alice_key, port));
 
     ctx
