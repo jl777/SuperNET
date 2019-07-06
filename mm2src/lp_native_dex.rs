@@ -46,8 +46,7 @@ use coins::utxo::{key_pair_from_seed};
 use peers::http_fallback::new_http_fallback;
 use portfolio::prices_loop;
 
-use crate::common::{
-    bits256, coins_iter, lp, lp_queue_command_for_c, os, CJSON, MM_VERSION};
+use crate::common::{coins_iter, lp, lp_queue_command_for_c, nonz, os, CJSON, MM_VERSION};
 use crate::common::wio::{slurp_url, CORE};
 use crate::common::log::TagParam;
 use crate::common::mm_ctx::{MmCtx, MmArc};
@@ -1053,7 +1052,7 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, pubsock: i32, mut mypeer: *mut lp::LP_p
     }
     *try_s! (ctx.seeds.lock()) = seed_ips;
 
-    try_s! (peers::initialize (ctx, netid, lp::G.LP_mypub25519, pubport + 1));
+    try_s! (peers::initialize (ctx, netid, lp::G.LP_mypub25519.into(), pubport + 1));
 
     Ok(())
 }
@@ -1284,10 +1283,10 @@ pub unsafe fn lp_passphrase_init (passphrase: Option<&str>, gui: Option<&str>) -
     try_s! (safecopy! (lp::G.gui, "{}", gui));
     lp::G.LP_privkey.bytes.clone_from_slice(&*global_key_pair.private().secret);
     lp::G.LP_pubsecp.clone_from_slice(&**global_key_pair.public());
-    let mut pubkey: bits256 = zeroed();
+    let mut pubkey: lp::_bits256 = zeroed();
     let pk = lp::LP_privkeycalc (&mut pubkey);
-    if !pk.nonz() {return ERR! ("!LP_privkeycalc")}
-    if !lp::G.LP_privkey.nonz() {return ERR! ("Error initializing the global private key (G.LP_privkey)")}
+    if !nonz(pk.bytes) {return ERR! ("!LP_privkeycalc")}
+    if !nonz(lp::G.LP_privkey.bytes) {return ERR! ("Error initializing the global private key (G.LP_privkey)")}
 
     lp::LP_tradebot_pauseall();
     lp::LP_portfolio_reset();

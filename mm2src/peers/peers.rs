@@ -23,7 +23,9 @@ use crate::http_fallback::{hf_delayed_get, hf_drop_get, hf_poll, hf_transmit, Ht
 
 use atomic::Atomic;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
-use common::{binprint, bits256, is_a_test_drill, slice_to_malloc, RaiiRm, SlurpFut};
+use common::{binprint, bits256, is_a_test_drill, RaiiRm, SlurpFut};
+#[cfg(feature = "native")]
+use common::{slice_to_malloc};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
@@ -559,7 +561,6 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc, hf_addr: &Option<SocketAddr>) -
 
                     let salt = if let Some (ref salt) = payload.salt {salt.clone()} else {continue};
                     let chunk = if let Some (ref chunk) = payload.chunk {chunk.clone()} else {continue};
-                    let seed_bytes = unsafe {seed.bytes};
                     let saltʲ = salt.clone();
                     let shuttle = Arc::new (PutShuttle {
                         put_handler: Box::new (move |_have: &[u8]| -> Result<Vec<u8>, String> {
@@ -576,7 +577,7 @@ fn transmit (dugout: &mut dugout_t, ctx: &MmArc, hf_addr: &Option<SocketAddr>) -
                     shuttles.insert (shuttle_ptr as usize, (now as u64, shuttle));
 
                     with_ratelim (&seed, |_lm, ops| {*ops += 1.; limops = *ops});
-                    unsafe {dht_put (dugout, seed_bytes.as_ptr(), seed_bytes.len() as i32, salt.as_ptr(), salt.len() as i32, put_callback, shuttle_ptr, now as u64)}
+                    unsafe {dht_put (dugout, seed.bytes.as_ptr(), seed.bytes.len() as i32, salt.as_ptr(), salt.len() as i32, put_callback, shuttle_ptr, now as u64)}
                     meta.dht_put_invoked = now
                 }
             }
@@ -606,7 +607,7 @@ fn pingʹ (ctx: &MmArc, from: &bits256, endpoint: &SocketAddr, pong: Option<Byte
 
     let mm_payload = MmPayload {
         id,
-        from: ByteBuf::from (unsafe {&from.bytes[..]} .to_vec()),
+        from: ByteBuf::from ((&from.bytes[..]) .to_vec()),
         pong: if pong {1} else {0},
         salt: None,
         chunk: None
@@ -658,8 +659,7 @@ fn split_and_put (ctx: &MmArc, from: &bits256, seed: bits256, mut salt: Salt, mu
 
     for (idx, chunk) in (1..) .zip (chunks.iter_mut()) {
         let mut crc = update (idx, &IEEE_TABLE, &chunk);
-        let seed = unsafe {seed.bytes};
-        crc = update (crc, &IEEE_TABLE, &seed[..]);
+        crc = update (crc, &IEEE_TABLE, &seed.bytes[..]);
         crc = update (crc, &IEEE_TABLE, &salt);
         unwrap! (chunk.write_u32::<BigEndian> (crc));
         assert! (chunk.len() <= 996);
@@ -687,7 +687,7 @@ fn split_and_put (ctx: &MmArc, from: &bits256, seed: bits256, mut salt: Salt, mu
 
         package.payloads.push ((MmPayload {
             id: MmPayload::next_id (&mut trans),
-            from: ByteBuf::from (unsafe {&from.bytes[..]}),
+            from: ByteBuf::from (&from.bytes[..]),
             pong: 0,
             salt: Some (ByteBuf::from (&salt[..])),
             chunk: Some (ByteBuf::from (&chunk[..]))
@@ -765,7 +765,7 @@ fn chunk_to_gets (i_salt: &Salt, i_chunk: &Vec<u8>, our_public_key: &bits256, ge
     let incoming_checksum = try_s! ((&payload[payload.len() - 4 ..]) .read_u32::<BigEndian>());
     for _ in 0..4 {payload.pop();}  // Drain the checksum.
     let mut crc = update (chunk_idx as u32, &IEEE_TABLE, &payload);
-    crc = update (crc, &IEEE_TABLE, unsafe {&our_public_key.bytes[..]});
+    crc = update (crc, &IEEE_TABLE, &our_public_key.bytes[..]);
     crc = update (crc, &IEEE_TABLE, &subject_salt);
     if incoming_checksum != crc {return ERR! ("bad ping chunk")}
 
@@ -820,9 +820,8 @@ fn get_pieces_scheduler (seed: &bits256, salt: Salt, frid: NonZeroU64, task: Tas
             let mut chunk_salt = getsᵉ.key().clone();
             chunk_salt.push (1);  // Identifies the first chunk.
             let mut pk: [u8; 32] = unsafe {zeroed()};
-            let seed = unsafe {seed.bytes};
             if option_env! ("MM2_DHT_GET") != Some ("f") {unsafe {
-                dht_get (dugout, seed.as_ptr(), seed.len() as i32,
+                dht_get (dugout, seed.bytes.as_ptr(), seed.bytes.len() as i32,
                     chunk_salt.as_ptr(), chunk_salt.len() as i32, pk.as_mut_ptr(), pk.len() as i32)
             }}
             getsᵉ.insert (GetsEntry {
@@ -908,10 +907,9 @@ fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
         //log! ("dht_get on" if chunk.payload.is_none() {" a missing"}  " chunk " (binprint (&salt, b'.')) '.' (idx)
         //      " after " {"{:.1}", now - chunk.restarted}
         //      if limops > 1. {" limops " (limops)});
-        let seed_bytes = unsafe {seed.bytes};
         if option_env! ("MM2_DHT_GET") != Some ("f") {unsafe {
             dht_get (dugout,
-                seed_bytes.as_ptr(), seed_bytes.len() as i32,
+                seed.bytes.as_ptr(), seed.bytes.len() as i32,
                 chunk_salt.as_ptr(), chunk_salt.len() as i32,
                 pk.as_mut_ptr(), pk.len() as i32)
         }}
@@ -1171,7 +1169,7 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
                 let incoming_checksum = match (&payload[payload.len() - 4 ..]) .read_u32::<BigEndian>() {Ok (c) => c, Err (_err) => return};
                 for _ in 0..4 {payload.pop();}  // Drain the checksum.
                 let mut crc = update (idx as u32, &IEEE_TABLE, &payload);
-                crc = update (crc, &IEEE_TABLE, unsafe {&cbctx.our_public_key.bytes[..]});
+                crc = update (crc, &IEEE_TABLE, &cbctx.our_public_key.bytes[..]);
                 crc = update (crc, &IEEE_TABLE, &salt);
                 if incoming_checksum != crc {return}
 

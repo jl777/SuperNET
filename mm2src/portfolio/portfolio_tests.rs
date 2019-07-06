@@ -1,8 +1,8 @@
-use common::identity;
 use common::for_tests::{enable_electrum, mm_spat, LocalStart};
 use http::StatusCode;
 use regex::Regex;
 use serde_json::{self as json, Value as Json};
+use std::convert::identity;
 
 /// Integration test for the "autoprice" mode.
 /// Starts MM in background and files a buy request with it, in the "autoprice" mode,

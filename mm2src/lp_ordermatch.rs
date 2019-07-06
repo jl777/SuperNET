@@ -274,7 +274,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
             log!("Entering the maker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
             let maker_swap = MakerSwap::new(
                 ctx,
-                alice,
+                alice.into(),
                 maker_coin,
                 taker_coin,
                 maker_amount,
@@ -333,7 +333,7 @@ unsafe fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
             log!("Entering the taker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
             let taker_swap = TakerSwap::new(
                 ctx,
-                maker,
+                maker.into(),
                 maker_coin,
                 taker_coin,
                 maker_amount,

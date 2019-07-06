@@ -17,7 +17,7 @@
 //  rpc_commands.rs
 //  marketmaker
 //
-use common::{bitcoin_address, bits256, coins_iter, lp, rpc_response, rpc_err_response, HyRes, MM_VERSION};
+use common::{bitcoin_address, bits256, coins_iter, lp, nonz, rpc_response, rpc_err_response, HyRes, MM_VERSION};
 use common::wio::CORE;
 use common::mm_ctx::MmArc;
 use coins::lp_coinfind;
@@ -170,14 +170,13 @@ pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
 
     let mut passhash: bits256 = unsafe {zeroed()};
     unsafe {lp::vcalc_sha256 (null_mut(), passhash.bytes.as_mut_ptr(), req.passphrase.as_ptr() as *mut u8, req.passphrase.len() as i32)};
-    let matching_passphrase = unsafe {passhash == lp::G.LP_passhash};
+    let matching_passphrase = unsafe {passhash.bytes == lp::G.LP_passhash.bytes};
     if !matching_passphrase {
-        log! ({"passphrase] passhash {} != G {}", passhash, unsafe {lp::G.LP_passhash}});
+        log! ({"passphrase] passhash {} != G {}", passhash, unsafe {bits256::from (lp::G.LP_passhash)}});
         if !matching_userpass {return rpc_err_response (500, "authentication error")}
     }
 
     unsafe {lp::G.USERPASS_COUNTER = 1}
-
 
     unsafe {try_h! (lp_passphrase_init (Some (&req.passphrase), req.gui.as_ref().map (|s| &s[..])))};
 
@@ -196,7 +195,7 @@ pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
     let retjson = json! ({
         "result": "success",
         "userpass": try_h! (unsafe {CStr::from_ptr (lp::G.USERPASS.as_ptr())} .to_str()),
-        "mypubkey": fomat! ((unsafe {lp::G.LP_mypub25519})),
+        "mypubkey": fomat! ((unsafe {bits256::from (lp::G.LP_mypub25519.bytes)})),
         "pubsecp": hex::encode (unsafe {&lp::G.LP_pubsecp[..]}),
         "KMD": try_h! (bitcoin_address ("KMD", 60, unsafe {lp::G.LP_myrmd160})),
         "BTC": try_h! (bitcoin_address ("BTC", 0, unsafe {lp::G.LP_myrmd160})),
@@ -697,7 +696,7 @@ pub fn inventory (ctx: MmArc, req: Json) -> HyRes {
     let ii = coin.iguana_info();
 
     unsafe {lp::LP_address (ii, (*ii).smartaddr.as_mut_ptr())};
-    if unsafe {lp::G.LP_privkey.nonz()} {
+    if unsafe {nonz (lp::G.LP_privkey.bytes)} {
         unsafe {lp::LP_privkey_init (-1, ii, lp::G.LP_privkey, lp::G.LP_mypub25519)};
     } else {
         log! ("inventory] no LP_privkey");

@@ -1,4 +1,3 @@
-use common::identity;
 use common::for_tests::{enable_electrum, from_env_file, mm_dump, mm_spat, LocalStart, MarketMakerIt};
 use dirs;
 use gstuff::{slurp};
@@ -8,6 +7,7 @@ use peers;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::convert::identity;
 use std::env::{self, var};
 use std::path::{Path, PathBuf};
 use std::thread;

@@ -840,7 +840,7 @@ impl MakerSwap {
         let data = MakerSwapData {
             taker_coin: self.taker_coin.ticker().to_owned(),
             maker_coin: self.maker_coin.ticker().to_owned(),
-            taker: unsafe { self.taker.bytes.into() },
+            taker: self.taker.bytes.into(),
             secret: secret.into(),
             started_at,
             lock_duration,
@@ -1241,7 +1241,7 @@ impl MakerSwap {
 
                 let mut swap = MakerSwap::new(
                     ctx,
-                    taker,
+                    taker.into(),
                     maker_coin.unwrap(),
                     taker_coin.unwrap(),
                     data.maker_amount.clone(),
@@ -1623,7 +1623,7 @@ impl TakerSwap {
         let data = TakerSwapData {
             taker_coin: self.taker_coin.ticker().to_owned(),
             maker_coin: self.maker_coin.ticker().to_owned(),
-            maker: unsafe { self.maker.bytes.into() },
+            maker: self.maker.bytes.into(),
             started_at,
             lock_duration,
             maker_amount: self.maker_amount.clone(),
@@ -2060,7 +2060,7 @@ impl TakerSwap {
 
                 let mut swap = TakerSwap::new(
                     ctx,
-                    maker,
+                    maker.into(),
                     maker_coin.unwrap(),
                     taker_coin.unwrap(),
                     data.maker_amount.clone(),

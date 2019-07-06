@@ -187,7 +187,6 @@ fn generate_bindings() {
             "LP_quoteparse",
             "LP_requestinit",
             "LP_tradecommand_log",
-            "bits256_str", // cf. `impl fmt::Display for bits256`
             "vcalc_sha256",
             "calc_rmd160_sha256",
             "bitcoin_address",
@@ -422,7 +421,6 @@ fn windows_requirements() {
     use std::ffi::OsString;
     use std::mem::uninitialized;
     use std::os::windows::ffi::OsStringExt;
-    use std::path::Path;
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724373(v=vs.85).aspx
     use winapi::um::sysinfoapi::GetSystemDirectoryW;
 
