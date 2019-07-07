@@ -5,6 +5,10 @@
 // MM2_FALLBACK=$, build time, override fallback timeouts.
 
 #![feature (non_ascii_idents, vec_resize_default, ip, weak_counts)]
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+#![cfg_attr(not(feature = "native"), allow(unused_variables))]
+#![cfg_attr(not(feature = "native"), allow(unused_macros))]
+#![cfg_attr(not(feature = "native"), allow(unused_imports))]
 
 #[macro_use] extern crate arrayref;
 #[macro_use] extern crate common;
@@ -18,14 +22,20 @@
 #[doc(hidden)]
 pub mod peers_tests;
 
+#[cfg(feature = "native")]
 pub mod http_fallback;
-use crate::http_fallback::{hf_delayed_get, hf_drop_get, hf_poll, hf_transmit, HttpFallbackTargetTrack};
+#[cfg(feature = "native")]
+use crate::http_fallback::HttpFallbackTargetTrack;
+#[cfg(not(feature = "native"))]
+pub struct HttpFallbackTargetTrack;
+#[cfg(feature = "native")]
+use crate::http_fallback::{hf_delayed_get, hf_drop_get, hf_poll, hf_transmit};
 
 use atomic::Atomic;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
-use common::{binprint, bits256, is_a_test_drill, RaiiRm, SlurpFut};
+use common::{bits256, SlurpFut};
 #[cfg(feature = "native")]
-use common::{slice_to_malloc};
+use common::{binprint, slice_to_malloc, is_a_test_drill, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
@@ -37,6 +47,7 @@ use futures::task::Task;
 use gstuff::{now_float, slurp};
 use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry, RawEntryMut};
 use itertools::Itertools;
+#[cfg(feature = "native")]
 use libc::{c_char, c_void};
 use rand::{thread_rng, Rng, RngCore};
 use serde::Serialize;
@@ -73,11 +84,13 @@ lazy_static! {
 
 // NB: C++ structures and functions are defined in "dht.cc".
 
+#[cfg(feature = "native")]
 #[repr(C)]
 struct dugout_t {
     session: *mut c_void,  // `lt::session*` (from C++ `new`).
     err: *const c_char  // `strdup` of a C++ exception `what`.
 }
+#[cfg(feature = "native")]
 impl dugout_t {
     fn take_err (&mut self) -> Option<String> {
         if !self.err.is_null() {unsafe {
@@ -90,6 +103,7 @@ impl dugout_t {
         }
     }
 }
+#[cfg(feature = "native")]
 impl Drop for dugout_t {
     fn drop (&mut self) {
         let err = unsafe {delete_dugout (self)};
@@ -103,6 +117,7 @@ impl Drop for dugout_t {
 
 enum Alert {}
 
+#[cfg(feature = "native")]
 extern "C" {
     fn delete_dugout (dugout: *mut dugout_t) -> *const c_char;
     fn dht_init (listen_interfaces: *const c_char, read_only: bool) -> dugout_t;
@@ -382,6 +397,7 @@ struct PingArgs<P> {
 /// 
 /// * `endpoint` - The open (and possibly hole-punched) address of the peer.
 /// * `extra_payload` - Carries the extra information in the "mm" ping argument.
+#[cfg(feature = "native")]
 fn ping<P> (dugout: &mut dugout_t, endpoint: &SocketAddr, extra_payload: P) -> Result<(), String>
 where P: Serialize {
     let ping = Ping {
@@ -454,6 +470,7 @@ pub struct Package {
     fallback: Option<NonZeroU8>
 }
 
+#[cfg(feature = "native")]
 extern fn put_callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i32, benload: *mut *mut u8, benlen: *mut i32, seq: *mut i64) {
     assert! (!arg.is_null());
     assert! (!have.is_null());
@@ -483,6 +500,7 @@ extern fn put_callback (arg: *mut c_void, arg2: u64, have: *const u8, havelen: i
 }
 
 /// Invoked periodically from the `peers_thread` in order to manage and retransmit the outgoing ping packets.
+#[cfg(feature = "native")]
 fn transmit (dugout: &mut dugout_t, ctx: &MmArc, hf_addr: &Option<SocketAddr>) -> Result<(), String> {
     // AG: Instead of the current random RATELIM skipping
     //     we might consider *ordering* the packets according to the endpoint freshness, etc.
@@ -811,6 +829,7 @@ fn hf_to_gets (our_public_key: &bits256, pctx: &PeersContext, gets: &mut Gets) -
 /// 
 /// * `seed` - The public key we're getting the data for (usually equals `our_public_key`).
 /// * `salt` - The subject salt of the payload we're interested in.
+#[cfg(feature = "native")]
 fn get_pieces_scheduler (seed: &bits256, salt: Salt, frid: NonZeroU64, task: Task, fallback: NonZeroU8,
                          dugout: &mut dugout_t, gets: &mut Gets, pctx: &PeersContext) {
     let getsᵉ = match gets.entry (salt) {
@@ -850,6 +869,7 @@ fn get_pieces_scheduler (seed: &bits256, salt: Salt, frid: NonZeroU64, task: Tas
     get_pieces_scheduler_en (seed, dugout, getsᵉ, pctx)
 }
 
+#[cfg(feature = "native")]
 fn get_pieces_scheduler_en (seed: &bits256, dugout: &mut dugout_t,
                             mut getsᵉ: OccupiedEntry<Salt, GetsEntry, DefaultHashBuilder>,
                             pctx: &PeersContext) {
@@ -945,6 +965,7 @@ const BOOTSTRAP_STATUS: &[&dyn TagParam] = &[&"dht-boot"];
 /// Delaying the libtorrent bootstrap allows us to skip the libtorrent code altogether
 /// in some of the short-lived unit tests where the DHT isn't actually used.
 struct DhtDelayed {until: f64}
+#[cfg(feature = "native")]
 impl DhtDelayed {
     fn init (ctx: &MmArc, seconds: f64) -> DhtDelayed {
         if seconds > 0. {
@@ -962,6 +983,7 @@ impl DhtDelayed {
             Either::Left (self)
 }   }   }
 struct DhtBootstrapping;
+#[cfg(feature = "native")]
 impl DhtBootstrapping {
     fn bootstrap (ctx: &MmArc, dugout: &mut dugout_t) -> Result<DhtBootstrapping, String> {
         ctx.log.status (BOOTSTRAP_STATUS, "DHT bootstrap ...") .detach();
@@ -1042,6 +1064,7 @@ fn incoming_ping (cbctx: &mut CbCtx, pkt: &[u8], ip: &[u8], port: u16) -> Result
 }
 
 /// The loop driving the peers crate.
+#[cfg(feature = "native")]
 fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_port: u16, read_only: bool, delay_dht: f64) {
     if let Err (err) = ctx.log.register_my_thread() {log! ((err))}
     let myipaddr = ctx.conf["myipaddr"].as_str();
@@ -1344,6 +1367,7 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
 /// * `preferred_port` - We'll try to open an UDP endpoint on this port,
 ///                      which might help if the user configured this port in firewall and forwarding rules.
 ///                      We're not limited to this port though and might try other ports as well.
+#[cfg(feature = "native")]
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
     let drill = is_a_test_drill();
 
@@ -1398,6 +1422,11 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
     Ok(())
 }
 
+#[cfg(not(feature = "native"))]
+pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
+    unimplemented!()
+}
+
 /// Try to reach a peer and establish connectivity with it while knowing no more than its port and IP.
 /// 
 /// * `ip` - The public IP where the peer is supposedly listens for incoming connections.
@@ -1440,6 +1469,7 @@ pub struct SendHandler;
 /// so stopping the UDP transmissions after a superficial confirmation or lack of it might be suboptimal,
 /// hence the manual control of when the transmission should stop.
 /// Think of it as a radio-signal set on a loop.
+#[cfg(feature = "native")]
 pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: Vec<u8>)
 -> Result<Arc<SendHandler>, String> {
     let fallback = match option_env! ("MM2_FALLBACK") {Some (n) => try_s! (n.parse()), None => fallback};
@@ -1466,6 +1496,10 @@ pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: 
 
     Ok (send_handler_arc)
 }
+
+#[cfg(not(feature = "native"))]
+pub fn send (ctx: &MmArc, peer: bits256, subject: &[u8], fallback: u8, payload: Vec<u8>)
+-> Result<Arc<SendHandler>, String> {unimplemented!()}
 
 struct RecvFuture {
     pctx: Arc<PeersContext>,
@@ -1530,6 +1564,7 @@ impl Drop for RecvFuture {
 /// Returned `Future` represents our effort to receive the transmission.
 /// As of now doesn't need a reactor.
 /// Should be `drop`ped soon as we no longer need the transmission.
+#[cfg(feature = "native")]
 pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<dyn Fn(&[u8])->bool + Send>)
 -> Box<dyn Future<Item=Vec<u8>, Error=String> + Send> {
     let fallback = match option_env! ("MM2_FALLBACK") {Some (n) => try_fus! (n.parse()), None => fallback};
@@ -1549,6 +1584,10 @@ pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<dyn Fn(&[
 
     Box::new (RecvFuture {pctx, seed, salt, validator, frid: None, fallback})
 }
+
+#[cfg(not(feature = "native"))]
+pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<dyn Fn(&[u8])->bool + Send>)
+-> Box<dyn Future<Item=Vec<u8>, Error=String> + Send> {unimplemented!()}
 
 pub fn key (ctx: &MmArc) -> Result<bits256, String> {
     let pctx = try_s! (PeersContext::from_ctx (&ctx));

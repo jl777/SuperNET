@@ -20,4 +20,4 @@ rsync -av --delete \
 
 cd /tmp/supernet-wasm/
 
-cargo build --target=wasm32-unknown-unknown 2>&1 | tee $ORIGINAL/wasm-build.log
+cargo build --target=wasm32-unknown-unknown --release --package=peers 2>&1 | tee $ORIGINAL/wasm-build.log

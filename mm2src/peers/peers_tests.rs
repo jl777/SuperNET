@@ -14,6 +14,7 @@ use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
 
+#[cfg(feature = "native")]
 use super::http_fallback::UniqueActorId;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

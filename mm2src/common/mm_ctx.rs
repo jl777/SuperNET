@@ -6,11 +6,15 @@ use primitives::hash::H160;
 use rand::random;
 use serde_json::{self as json, Value as Json};
 use std::any::Any;
-use std::net::{IpAddr, SocketAddr};
+use std::net::IpAddr;
+#[cfg(feature = "native")]
+use std::net::SocketAddr;
 use std::ops::Deref;
 use std::os::raw::{c_void};
 use std::path::{Path, PathBuf};
-use std::ptr::{null_mut, read_volatile};
+use std::ptr::null_mut;
+#[cfg(feature = "native")]
+use std::ptr::read_volatile;
 use std::sync::{Arc, Mutex, Weak};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use super::{bitcoin_ctx, bitcoin_ctx_destroy, log, BitcoinCtx};
