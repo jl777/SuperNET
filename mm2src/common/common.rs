@@ -10,8 +10,9 @@
 //!                     |
 //!                   binary
 
-#![feature(non_ascii_idents, integer_atomics)]
+#![feature(non_ascii_idents, integer_atomics, panic_info_message)]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
@@ -68,7 +69,6 @@ pub mod lift_body;
 use crossbeam::{channel};
 use futures::{future, Future};
 use futures::task::Task;
-use gstuff::{now_float};
 use hex::FromHex;
 use http::{Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
@@ -944,4 +944,64 @@ pub fn lp_queue_command (msg: String) -> () {
         stats_json_only: 0,
     };
     unwrap! ((*COMMAND_QUEUE).0.send (cmd))
+}
+
+#[cfg(feature = "native")]
+pub use gstuff::{now_ms, now_float};
+#[cfg(not(feature = "native"))]
+pub fn now_ms() -> u64 {
+    extern "C" {pub fn date_now() -> f64;}
+    unsafe {date_now() as u64}
+}
+#[cfg(not(feature = "native"))]
+pub fn now_float() -> f64 {
+    use gstuff::duration_to_float;
+    use std::time::Duration;
+    duration_to_float (Duration::from_millis (now_ms()))
+}
+
+#[cfg(feature = "native")]
+pub fn writeln (line: &str) {
+    use std::panic::catch_unwind;
+
+    // `catch_unwind` protects the tests from error
+    // 
+    //     thread 'CORE' panicked at 'cannot access stdout during shutdown'
+    // 
+    // (which might be related to https://github.com/rust-lang/rust/issues/29488).
+    let _ = catch_unwind (|| {
+        println! ("{}", line);
+    });
+}
+#[cfg(not(feature = "native"))]
+pub fn writeln (line: &str) {
+    use std::os::raw::c_char;
+    extern "C" {pub fn console_log (ptr: *const c_char, len: i32);}
+    let lineᶜ = unwrap! (CString::new (line));
+    unsafe {console_log (lineᶜ.as_ptr(), line.len() as i32)}
+}
+
+/// Set up a panic hook that prints the panic location and the message.  
+/// (The default Rust handler doesn't have the means to print the message.
+///  Note that we're also getting the stack trace from Node.js and rustfilt).
+#[cfg(not(feature = "native"))]
+#[no_mangle]
+pub extern fn set_panic_hook() {
+    use gstuff::filename;
+    use std::panic::{set_hook, PanicInfo};
+
+    set_hook (Box::new (|info: &PanicInfo| {
+        let mut msg = String::new();
+        if let Some (loc) = info.location() {
+            let _ = wite! (&mut msg, (filename (loc.file())) ':' (loc.line()) "] ");
+        } else {
+            msg.push_str ("?] ");
+        }
+        if let Some (message) = info.message() {
+            let _ = wite! (&mut msg, "panick: " (message));
+        } else {
+            msg.push_str ("panick!")
+        }
+        writeln (&msg)
+    }))
 }

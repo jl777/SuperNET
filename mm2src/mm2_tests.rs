@@ -59,9 +59,11 @@ fn addr_from_enable(enable_response: &Json) -> Json {
 }
 
 #[test]
+#[ignore]
 fn test_autoprice_coingecko() {portfolio::portfolio_tests::test_autoprice_coingecko (local_start())}
 
 #[test]
+#[ignore]
 fn test_autoprice_coinmarketcap() {portfolio::portfolio_tests::test_autoprice_coinmarketcap (local_start())}
 
 #[test]

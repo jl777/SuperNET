@@ -16,6 +16,7 @@ rsync -av --delete \
   --exclude=/.git \
   --exclude=/.vscode \
   --exclude=/DB \
+  --exclude=/js/node_modules \
   --exclude=/wasm-build.log
 
 cd /tmp/supernet-wasm/

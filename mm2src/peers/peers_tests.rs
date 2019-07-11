@@ -36,7 +36,7 @@ fn peer (conf: Json, port: u16) -> MmArc {
       assert! (n > 2000, "`ulimit -n` is too low: {}", n)
     }
 
-    let ctx = MmCtxBuilder::new().with_conf (conf).into_mm_arc();
+    let ctx = MmCtxBuilder::new().with_conf (conf) .into_mm_arc();
     unwrap! (ctx.log.thread_gravity_on());
 
     if let Some (seednodes) = ctx.conf["seednodes"].as_array() {
@@ -63,6 +63,7 @@ fn destruction_check (mm: MmArc) {
 }
 
 fn peers_exchange (conf: Json) {
+    log! ("Entering peers_exchange…");  // Added temporarily to test portable logging.
     let fallback_on = conf["http-fallback"] == "on";
     let fallback = if fallback_on {1} else {255};
 
@@ -112,6 +113,10 @@ fn peers_exchange (conf: Json) {
 
 /// Send and receive messages of various length and chunking via the DHT.
 pub fn peers_dht() {peers_exchange (json! ({"dht": "on"}))}
+
+// Temporarily exposed in order to experiment with portability helpers.
+#[no_mangle]
+pub extern fn test_peers_dht() {peers_dht()}
 
 /// Using a minimal one second HTTP fallback which should happen before the DHT kicks in.
 #[cfg(feature = "native")]
