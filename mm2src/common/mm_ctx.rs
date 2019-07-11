@@ -17,9 +17,11 @@ use std::ptr::null_mut;
 use std::ptr::read_volatile;
 use std::sync::{Arc, Mutex, Weak};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use super::{bitcoin_ctx, bitcoin_ctx_destroy, log, BitcoinCtx};
+
+use crate::{bitcoin_ctx, bitcoin_ctx_destroy, log, BitcoinCtx};
+use crate::log::LogState;
 #[cfg(feature = "native")]
-use super::lp;
+use crate::lp;
 
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///
@@ -44,7 +46,7 @@ pub struct MmCtx {
     /// MM command-line configuration.
     pub conf: Json,
     /// Human-readable log and status dashboard.
-    pub log: log::LogState,
+    pub log: LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
     btc_ctx: *mut BitcoinCtx,
     /// Set to true after `lp_passphrase_init`, indicating that we have a usable state.
@@ -92,10 +94,10 @@ pub struct MmCtx {
     pub swaps_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
-    pub fn new () -> MmCtx {
+    fn with_log_state (log: LogState) -> MmCtx {
         MmCtx {
             conf: Json::Object (json::Map::new()),
-            log: log::LogState::in_memory(),
+            log,
             btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             rpc_started: AtomicBool::new (false),
@@ -116,6 +118,10 @@ impl MmCtx {
             coins_needed_for_kick_start: Mutex::new(HashSet::new()),
             swaps_ctx: Mutex::new (None),
         }
+    }
+
+    pub fn new() -> MmCtx {
+        Self::with_log_state (LogState::in_memory())
     }
 
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
@@ -327,30 +333,41 @@ where C: FnOnce()->Result<T, String>, T: 'static + Send + Sync {
     return Ok (arc)
 }
 
+#[derive(Default)]
 pub struct MmCtxBuilder {
-    ctx: MmCtx,
+    conf: Option<Json>,
+    key_pair: Option<KeyPair>
 }
 
 impl MmCtxBuilder {
     pub fn new() -> Self {
-        MmCtxBuilder {
-            ctx: MmCtx::new(),
-        }
+        MmCtxBuilder::default()
     }
 
     pub fn with_conf(mut self, conf: Json) -> Self {
-        self.ctx.log = log::LogState::mm(&conf);
-        self.ctx.conf = conf;
+        self.conf = Some (conf);
         self
     }
 
     pub fn with_secp256k1_key_pair(mut self, key_pair: KeyPair) -> Self {
-        self.ctx.rmd160 = key_pair.public().address_hash();
-        self.ctx.secp256k1_key_pair = Some(key_pair);
+        self.key_pair = Some (key_pair);
         self
     }
 
     pub fn into_mm_arc(self) -> MmArc {
-        MmArc(Arc::new(self.ctx))
+        // NB: We avoid recreating LogState
+        // in order not to interfere with the integration tests checking LogState drop on shutdown.
+        let log = if let Some (ref conf) = self.conf {LogState::mm (conf)} else {LogState::in_memory()};
+        let mut ctx = MmCtx::with_log_state (log);
+        if let Some (conf) = self.conf {
+            ctx.conf = conf
+        }
+
+        if let Some (key_pair) = self.key_pair {
+            ctx.rmd160 = key_pair.public().address_hash();
+            ctx.secp256k1_key_pair = Some (key_pair);
+        }
+
+        MmArc (Arc::new (ctx))
     }
 }
