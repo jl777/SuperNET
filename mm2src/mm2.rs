@@ -249,7 +249,7 @@ fn vanity (substring: &str) {
     let mut wifstr: [c_char; 128] = unsafe {zeroed()};
     let mut privkey: _bits256 = unsafe {zeroed()};
     unsafe {lp::LP_mutex_init()};
-    let ctx = MmCtx::new();
+    let ctx = MmCtx::default();
     let timestamp = now_ms() / 1000;
     log! ({"start vanitygen ({}).{} t.{}", substring, substring.len(), timestamp});
     for i in 0..1000000000 {

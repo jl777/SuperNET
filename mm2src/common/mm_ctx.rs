@@ -120,10 +120,6 @@ impl MmCtx {
         }
     }
 
-    pub fn new() -> MmCtx {
-        Self::with_log_state (LogState::in_memory())
-    }
-
     /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
     pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
 
@@ -225,11 +221,14 @@ impl MmCtx {
         unwrap!(self.secp256k1_key_pair.as_ref())
     }
 }
+impl Default for MmCtx {
+    fn default() -> Self {
+        Self::with_log_state (LogState::in_memory())
+}   }
 impl Drop for MmCtx {
     fn drop (&mut self) {
         unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
-    }
-}
+}   }
 
 // We don't want to send `MmCtx` across threads, it will only obstruct the normal use case
 // (and might result in undefined behavior if there's a C struct or value in the context that is aliased from the various MM threads).
