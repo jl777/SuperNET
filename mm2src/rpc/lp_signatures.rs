@@ -593,7 +593,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 */
 
-pub fn lp_notify_recv (_ctx: MmArc, req: Json) -> HyRes {
+pub fn lp_notify_recv (_ctx: MmArc, _req: Json) -> HyRes {
     // AP: we don't need to maintain list of peers for MM2 to work, so this function is doing nothing
     // until we have the necessity to store the peers list locally
 
