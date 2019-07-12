@@ -78,3 +78,38 @@
     {"patchkez_SH": "03d7c187689bf829ca076a30bbf36d2e67bb74e16a3290d8a55df21d6cb15c80c1" },
     {"decker_AR": "02a85540db8d41c7e60bf0d33d1364b4151cad883dd032878ea4c037f67b769635" }
 ]}
+
+if ( arg != 0 )
+{
+    if ( strcmp((char *)arg,"OStests") == 0 )
+        do_OStests = 1;
+    else if ( strcmp((char *)arg,"stats") == 0 )
+    {
+        void iguana_notarystats(int32_t totals[64],int32_t dispflag);
+        int32_t totals[64];
+        memset(totals,0,sizeof(totals));
+        iguana_notarystats(totals,1);
+        exit(0);
+    }
+    else if ( strncmp((char *)arg,"-port=",6) == 0 )
+    {
+        myinfo->rpcport = atoi(&((char *)arg)[6]);
+        printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
+    }
+    else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
+    {
+        myinfo->rpcport = IGUANA_NOTARYPORT;
+        myinfo->nosplit = 1;
+        myinfo->IAMNOTARY = 1;
+        myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+    }
+    else
+    {
+        // this means that an elected file was specified for 3rd party network, so use diffrent RPC port. 
+        myinfo->rpcport = IGUANA_NOTARYPORT2;
+        myinfo->IAMNOTARY = 1;
+        myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+        elected = (char *)arg;
+        myinfo->nosplit = 1;
+    }
+}
