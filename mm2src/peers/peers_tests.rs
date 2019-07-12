@@ -1,11 +1,10 @@
-use common::bits256;
+use common::{bits256, now_float, small_rng};
 #[cfg(feature = "native")]
 use common::wio::{drive, CORE};
 use common::for_tests::wait_for_log;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
 use crdts::CmRDT;
 use futures::Future;
-use gstuff::now_float;
 use rand::{self, Rng};
 use serde_json::Value as Json;
 use std::mem::zeroed;
@@ -15,7 +14,7 @@ use std::thread;
 use std::time::Duration;
 
 #[cfg(feature = "native")]
-use super::http_fallback::UniqueActorId;
+use crate::http_fallback::UniqueActorId;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn ulimit_n() -> Option<u32> {
@@ -46,9 +45,8 @@ fn peer (conf: Json, port: u16) -> MmArc {
         seeds.push (unwrap! (unwrap! (seednodes[0].as_str()) .parse()))
     }
 
-    let mut rng = rand::thread_rng();
     let mut alice_key: bits256 = unsafe {zeroed()};
-    rng.fill (&mut alice_key.bytes[..]);
+    small_rng().fill (&mut alice_key.bytes[..]);
     unwrap! (super::initialize (&ctx, 9999, alice_key, port));
 
     ctx

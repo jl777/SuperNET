@@ -3,7 +3,7 @@ use hashbrown::HashSet;
 use hashbrown::hash_map::{Entry, HashMap};
 use keys::KeyPair;
 use primitives::hash::H160;
-use rand::random;
+use rand::Rng;
 use serde_json::{self as json, Value as Json};
 use std::any::Any;
 use std::net::IpAddr;
@@ -18,7 +18,7 @@ use std::ptr::read_volatile;
 use std::sync::{Arc, Mutex, Weak};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-use crate::{bitcoin_ctx, bitcoin_ctx_destroy, log, BitcoinCtx};
+use crate::{bitcoin_ctx, log, small_rng, BitcoinCtx};
 use crate::log::LogState;
 #[cfg(feature = "native")]
 use crate::lp;
@@ -48,7 +48,7 @@ pub struct MmCtx {
     /// Human-readable log and status dashboard.
     pub log: LogState,
     /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
-    btc_ctx: *mut BitcoinCtx,
+    pub btc_ctx: *mut BitcoinCtx,
     /// Set to true after `lp_passphrase_init`, indicating that we have a usable state.
     /// 
     /// Should be refactored away in the future. State should always be valid.
@@ -58,12 +58,12 @@ pub struct MmCtx {
     /// True if the RPC HTTP server was started.
     pub rpc_started: AtomicBool,
     /// True if the MarketMaker instance needs to stop.
-    stop: AtomicBool,
+    pub stop: AtomicBool,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
-    ffi_handle: AtomicU32,
+    pub ffi_handle: AtomicU32,
     /// Callbacks to invoke from `fn stop`.
-    stop_listeners: Mutex<Vec<Box<dyn FnMut()->Result<(), String>>>>,
+    pub stop_listeners: Mutex<Vec<Box<dyn FnMut()->Result<(), String>>>>,
     /// The context belonging to the `portfolio` crate: `PortfolioContext`.
     pub portfolio_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
     /// The context belonging to the `ordermatch` mod: `OrdermatchContext`.
@@ -94,7 +94,7 @@ pub struct MmCtx {
     pub swaps_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
-    fn with_log_state (log: LogState) -> MmCtx {
+    pub fn with_log_state (log: LogState) -> MmCtx {
         MmCtx {
             conf: Json::Object (json::Map::new()),
             log,
@@ -225,10 +225,6 @@ impl Default for MmCtx {
     fn default() -> Self {
         Self::with_log_state (LogState::in_memory())
 }   }
-impl Drop for MmCtx {
-    fn drop (&mut self) {
-        unsafe {bitcoin_ctx_destroy (self.btc_ctx)}
-}   }
 
 // We don't want to send `MmCtx` across threads, it will only obstruct the normal use case
 // (and might result in undefined behavior if there's a C struct or value in the context that is aliased from the various MM threads).
@@ -237,7 +233,7 @@ impl Drop for MmCtx {
 // which will likely come useful during the gradual port.
 //not-implemented-on-stable// impl !Send for MmCtx {}
 
-pub struct MmArc (Arc<MmCtx>);
+pub struct MmArc (pub Arc<MmCtx>);
 // NB: Explicit `Send` and `Sync` marks here should become unnecessary later,
 // after we finish the initial port and replace the C values with the corresponding Rust alternatives.
 unsafe impl Send for MmArc {}
@@ -264,9 +260,10 @@ impl MmArc {
         let have = self.ffi_handle.load (Ordering::Relaxed);
         if have != 0 {return Ok (have)}
         let mut tries = 0;
+        let mut rng = small_rng();
         loop {
             if tries > 999 {panic! ("MmArc] out of RIDs")} else {tries += 1}
-            let rid: u32 = random();
+            let rid: u32 = rng.gen();
             if rid == 0 {continue}
             match mm_ctx_ffi.entry (rid) {
                 Entry::Occupied (_) => continue,  // Try another ID.
@@ -277,6 +274,22 @@ impl MmArc {
                 }
             }
         }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub fn send_to_helpers (&self) -> Result<(), String> {
+        use serde_json::Map;
+
+        // For now we only need to share the `conf` and the `ffi_handle`.
+        let mut ctxʲ = Map::new();
+        // TODO: Use a zero-copy `Serialize`.
+        ctxʲ.insert ("conf".into(), self.conf.clone());
+        ctxʲ.insert ("ffi_handle".into(), Json::Number (try_s! (self.ffi_handle()) .into()));
+        let ctxˢ = try_s! (json::to_vec (&ctxʲ));
+
+        extern "C" {pub fn ctx2helpers (ptr: *const u8, len: u32);}
+        unsafe {ctx2helpers (ctxˢ.as_ptr(), ctxˢ.len() as u32)}
+        Ok(())
     }
 
     /// Tries getting access to the MM context.  
@@ -301,6 +314,39 @@ impl MmArc {
     /// Tries to obtain the MM context from the weak link.  
     pub fn from_weak (weak: &MmWeak) -> Option<MmArc> {
         weak.0.upgrade().map (|arc| MmArc (arc))
+    }
+}
+
+/// Receives a subset of a portable context in order to recreate a native copy of it.  
+/// Can be invoked with the same context multiple times, synchronizing some of the fields.  
+/// As of now we're expecting a one-to-one pairing between the portable and the native versions of MM
+/// so the uniqueness of the `ffi_handle` is not a concern yet.
+#[cfg(feature = "native")]
+#[no_mangle]
+pub extern fn ctx2helpers (ptr: *const u8, len: u32) {
+    use std::slice::from_raw_parts;
+
+    log! ("Native ctx2helpers invoked! ptr is " [ptr] "; len is " (len));
+    let ctxˢ = unsafe {from_raw_parts (ptr, len as usize)};
+    let ctxʲ: Json = unwrap! (json::from_slice (ctxˢ), "!json::from_slice");
+
+    let ffi_handle = unwrap! (ctxʲ["ffi_handle"].as_u64(), "!ffi_handle") as u32;
+    log! ("ffi_handle: " (ffi_handle));
+
+    if let Ok (_ctx) = MmArc::from_ffi_handle (ffi_handle) {
+        log! ("ffi_handle " (ffi_handle) " already exists");
+    } else {
+        log! ("ffi_handle " (ffi_handle) " is new, creating");
+        let ctx = MmCtx {
+            // TODO: Move from a `Deserialize`.
+            conf: ctxʲ["conf"].clone(),
+            ffi_handle: ffi_handle.into(),
+            ..MmCtx::with_log_state (LogState::in_memory())
+        };
+        let ctx = MmArc (Arc::new (ctx));
+        let mut ctx_ffi = unwrap! (MM_CTX_FFI.lock());
+        ctx_ffi.insert (ffi_handle, ctx.weak());
+        Arc::into_raw (ctx.0);  // Leak.
     }
 }
 

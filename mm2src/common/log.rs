@@ -193,7 +193,8 @@ macro_rules! log {
         // though it doesn't worth the trouble at the moment.
         let mut buf = String::new();
         unwrap! (wite! (&mut buf,
-            ($crate::log::short_log_time()) ", "
+            ($crate::log::short_log_time())
+            if cfg! (feature = "native") {", "} else {"ʷ "}
             (::gstuff::filename (file!())) ':' (line!()) "] "
             $($args)+)
         );
@@ -682,6 +683,7 @@ impl LogState {
     /// Useful for unit tests, since they can only capture the output made from the initial test thread
     /// (https://github.com/rust-lang/rust/issues/12309,
     ///  https://github.com/rust-lang/rust/issues/50297#issuecomment-388988381).
+    #[cfg(feature = "native")]
     pub fn thread_gravity_on (&self) -> Result<(), String> {
         let mut gravity = try_s! (self.gravity.lock());
         if let Some (ref gravity) = *gravity {
@@ -699,8 +701,11 @@ impl LogState {
             Ok(())
         }
     }
+    #[cfg(not(feature = "native"))]
+    pub fn thread_gravity_on (&self) -> Result<(), String> {Ok(())}
 
     /// Start intercepting the `log!` invocations happening on the current thread.
+    #[cfg(feature = "native")]
     pub fn register_my_thread (&self) -> Result<(), String> {
         let gravity = try_s! (self.gravity.lock());
         if let Some (ref gravity) = *gravity {
@@ -714,6 +719,8 @@ impl LogState {
         }
         Ok(())
     }
+    #[cfg(not(feature = "native"))]
+    pub fn register_my_thread (&self) -> Result<(), String> {Ok(())}
 }
 
 #[cfg(feature = "native")]

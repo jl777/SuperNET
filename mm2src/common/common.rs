@@ -74,6 +74,7 @@ use http::{Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
 #[cfg(feature = "native")]
 use libc::{c_char, c_void, malloc, free};
+use rand::{SeedableRng, rngs::SmallRng};
 use serde_json::{self as json, Value as Json};
 use std::env::args;
 use std::fmt::{self, Write as FmtWrite};
@@ -114,7 +115,6 @@ pub enum BitcoinCtx {}
 
 extern "C" {
     pub fn bitcoin_ctx() -> *mut BitcoinCtx;
-    fn bitcoin_ctx_destroy (ctx: *mut BitcoinCtx);
     #[cfg(feature = "native")]
     pub fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: _bits256, addrtype: u8) -> i32;
 }
@@ -1004,4 +1004,8 @@ pub extern fn set_panic_hook() {
         }
         writeln (&msg)
     }))
+}
+
+pub fn small_rng() -> SmallRng {
+    SmallRng::seed_from_u64 (now_ms())
 }

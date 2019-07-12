@@ -1424,6 +1424,9 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
 
 #[cfg(not(feature = "native"))]
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
+    try_s! (ctx.send_to_helpers());
+
+    //extern "C" {pub fn peers_initialize (ctx: ...) -> x;}
     unimplemented!()
 }
 

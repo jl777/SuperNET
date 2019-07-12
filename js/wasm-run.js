@@ -9,17 +9,20 @@ const fs = require ('fs');
 // cf. https://github.com/node-ffi/node-ffi/pull/544
 // npm install --save lxe/node-ffi#node-12
 const ffi = require ('ffi');
+// https://github.com/TooTallNate/ref; http://tootallnate.github.io/ref/
 const ref = require ('ref');
+const { Buffer } = require ('buffer');
 
 // Preparing the library:
 // 
 //     cargo build --features native --package peers --release
-//     cp target/release/peers.dll ./
-//     cp x64/pthreadVC2.dll ./
+//     cp target/release/peers.dll js/
+//     cp x64/pthreadVC2.dll js/
 // 
 // cf. https://github.com/node-ffi/node-ffi/wiki/Node-FFI-Tutorial
 const libpeers = ffi.Library ('peers', {
-  'is_loopback_ip': [ref.types.uint8, ['string']]
+  'is_loopback_ip': [ref.types.uint8, ['string']],
+  'ctx2helpers': [ref.types.void, [ref.refType (ref.types.uint8), ref.types.uint32]]
 });
 const ili_127_0_0_1 = libpeers.is_loopback_ip ('127.0.0.1');
 //console.log ('is_loopback_ip (127.0.0.1) = ' + ili_127_0_0_1);
@@ -43,9 +46,13 @@ async function runWasm() {
     console_log: function (ptr, len) {
       const decoded = from_utf8 (wasmShared.memory, ptr, len);
       console.log (decoded)},
+    ctx2helpers: function (ptr, len) {
+      const ctx_s = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
+      libpeers.ctx2helpers (ctx_s, ctx_s.byteLength)},
     date_now: function() {return Date.now()}};
   const wasmInstantiated = await WebAssembly.instantiate (wasmBytes, {env: wasmEnv});
   const exports = wasmInstantiated.instance.exports;
+  /** @type {WebAssembly.Memory} */
   wasmShared.memory = exports.memory;
 
   exports.set_panic_hook();
