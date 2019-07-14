@@ -8,6 +8,7 @@
 // On build.rs: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
 #![feature(non_ascii_idents)]
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 #[macro_use]
 extern crate fomat_macros;
@@ -26,7 +27,6 @@ use std::env::{self, var};
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
 use std::io::{Read, Write};
-use std::iter::empty;
 use std::path::{Component, Path, PathBuf};
 use std::process::{ChildStdout, Command, Stdio};
 use std::str::from_utf8_unchecked;
@@ -110,198 +110,26 @@ fn bindgen<
 fn generate_bindings() {
     let _ = fs::create_dir("c_headers");
 
-    // NB: curve25519.h and cJSON.h are needed to parse LP_include.h.
     bindgen(
         vec![
-            "../../includes/curve25519.h".into(),
-            "../../includes/cJSON.h".into(),
             "../../iguana/exchanges/LP_include.h".into(),
         ],
         "c_headers/LP_include.rs",
         [
             // functions
-            "cJSON_Parse",
-            "cJSON_GetErrorPtr",
-            "cJSON_Delete",
-            "cJSON_GetArraySize",
-            "j64bits",
-            "jadd",
-            "jarray",
-            "jitem",
-            "jint",
-            "juint",
-            "jstr",
-            "jdouble",
-            "jobj",
-            "jprint",
-            "free_json",
-            "jaddstr",
-            "unstringify",
-            "jaddnum",
-            "LP_NXT_redeems",
-            "LPinit",
-            "LP_addpeer",
-            "LP_peer_recv",
-            "LP_ports",
-            "LP_rpcport",
-            "unbuffered_output_support",
-            "calc_crc32",
-            "LP_userpass",
-            "LP_mutex_init",
-            "stats_JSON",
-            "LP_priceinfofind",
-            "prices_loop",
-            "LP_portfolio",
-            "LP_coinadd_",
-            "LP_priceinfoadd",
-            "LP_dPoW_request",
-            "LP_conflicts_find",
-            "LP_coinjson",
-            "LP_portfolio_trade",
-            "LP_portfolio_order",
-            "LP_pricesparse",
-            "LP_ticker",
-            "LP_queuecommand",
-            "LP_CMCbtcprice",
-            "LP_fundvalue",
-            "LP_coinsearch",
-            "LP_instantdex_deposit",
-            "LP_mypriceset",
-            "LP_pricepings",
-            "LP_autopriceset",
-            "LP_txfees",
-            "LP_address_minmax",
-            "LP_fomoprice",
-            "LP_quoteinfoinit",
-            "LP_quotedestinfo",
-            "decode_hex",
-            "LP_aliceid_calc",
-            "LP_rand",
-            "LP_query",
-            "LP_quotejson",
-            "LP_mpnet_send",
-            "LP_address",
-            "LP_command_process",
-            "LP_balances",
-            "LP_KMDvalue",
-            "LP_quoteparse",
-            "LP_requestinit",
-            "LP_tradecommand_log",
-            "vcalc_sha256",
-            "calc_rmd160_sha256",
-            "bitcoin_address",
-            "bitcoin_pubkey33",
-            "LP_instantdex_proofcheck",
-            "LP_myprice",
-            "LP_pricecache",
-            "LP_pricevalid",
-            "LP_pubkeyadd",
-            "LP_pubkeyfind",
-            "LP_pubkey_sigcheck",
-            "LP_aliceid",
-            "LP_dynamictrust",
-            "LP_kmdvalue",
-            "LP_trades_alicevalidate",
-            "LP_failedmsg",
-            "LP_quote_validate",
-            "LP_availableset",
-            "LP_tradebot_pauseall",
-            "LP_portfolio_reset",
-            "LP_priceinfos_clear",
-            "LP_privkeycalc",
-            "LP_privkey_updates",
-            "LP_privkey_init",
-            "LP_privkey",
-            "LP_swapsfp_update",
-            "LP_unavailableset",
-            "LP_trades_pricevalidate",
-            "LP_allocated",
-            "LP_basesatoshis",
-            "LP_RTmetrics_blacklisted",
-            "LP_getheight",
-            "LP_reservation_check",
-            "LP_instantdex_txids",
-            "LP_price_sig",
-            "LP_coin_curl_init",
-            "LP_pricefeedupdate",
+            "OS_ensure_directory"
         ]
         .iter(),
         // types
         [
-            "_bits256",
-            "cJSON",
-            "iguana_info",
-            "LP_utxoinfo",
-            "electrum_info",
-            "LP_trade",
-            "LP_swap_remember",
         ]
         .iter(),
         [
             // defines
-            "bitcoind_RPC_inittime",
-            "GLOBAL_DBDIR",
-            "DOCKERFLAG",
-            "USERHOME",
-            "LP_profitratio",
-            "LP_RPCPORT",
-            "LP_MAXPRICEINFOS",
-            "LP_showwif",
-            "LP_coins",
-            "LP_IS_ZCASHPROTOCOL",
-            "LP_IS_BITCOINCASH",
-            "LP_IS_BITCOINGOLD",
-            "BOTS_BONDADDRESS",
-            "LP_MIN_TXFEE",
-            "IAMLP",
-            "LP_gui",
-            "LP_canbind",
-            "LP_fixed_pairport",
-            "LP_myipaddr",
-            "LP_myipaddr_from_command_line",
-            "LP_autoprices",
-            "num_LP_autorefs",
-            "LP_STOP_RECEIVED",
-            "IPC_ENDPOINT",
-            "SPAWN_RPC",
-            "LP_autorefs",
             "G",
-            "LP_mypubsock",
-            "LP_mypullsock",
-            "LP_mypeer",
-            "RPC_port",
-            "LP_ORDERBOOK_DURATION",
-            "LP_AUTOTRADE_TIMEOUT",
-            "LP_RESERVETIME",
-            "LP_Alicequery",
-            "LP_Alicedestpubkey",
-            "GTCorders",
-            "LP_QUEUE_COMMAND",
-            "LP_RTcount",
-            "LP_swapscount",
-            "LP_REQUEST",
-            "LP_RESERVED",
-            "LP_CONNECT",
-            "LP_CONNECTED",
-            "dstr",
-            "INSTANTDEX_PUBKEY",
+            "GLOBAL_DBDIR",
         ]
         .iter(),
-    );
-
-    bindgen(
-        vec!["../../crypto777/OS_portable.h".into()],
-        "c_headers/OS_portable.rs",
-        [
-            // functions
-            "OS_init",
-            "OS_ensure_directory",
-            "OS_compatible_path",
-            "calc_ipbits",
-        ]
-        .iter(),
-        empty(), // types
-        empty(), // defines
     );
 }
 
@@ -1044,11 +872,6 @@ fn build_c_code(mm_version: &str) {
 
     println!("cargo:rustc-link-lib=static=marketmaker-lib");
 
-    // Link in the libraries needed for MM1.
-
-    println!("cargo:rustc-link-lib=static=libcrypto777");
-    println!("cargo:rustc-link-lib=static=libjpeg");
-
     if cfg!(windows) {
         println!("cargo:rustc-link-search=native={}", path2s(rabs("x64")));
         // When building locally with CMake 3.12.0 on Windows the artefacts are created in the "Debug" folders:
@@ -1056,28 +879,12 @@ fn build_c_code(mm_version: &str) {
             "cargo:rustc-link-search=native={}",
             path2s(rabs("build/iguana/exchanges/Debug"))
         );
-        println!(
-            "cargo:rustc-link-search=native={}",
-            path2s(rabs("build/crypto777/Debug"))
-        );
-        println!(
-            "cargo:rustc-link-search=native={}",
-            path2s(rabs("build/crypto777/jpeg/Debug"))
-        );
     // https://stackoverflow.com/a/10234077/257568
     //println!(r"cargo:rustc-link-search=native=c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.14.26428\lib\x64");
     } else {
         println!(
             "cargo:rustc-link-search=native={}",
             path2s(rabs("build/iguana/exchanges"))
-        );
-        println!(
-            "cargo:rustc-link-search=native={}",
-            path2s(rabs("build/crypto777"))
-        );
-        println!(
-            "cargo:rustc-link-search=native={}",
-            path2s(rabs("build/crypto777/jpeg"))
         );
     }
 

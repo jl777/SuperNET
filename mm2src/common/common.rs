@@ -79,7 +79,7 @@ use serde_json::{self as json, Value as Json};
 use std::env::args;
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr};
 use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
@@ -89,19 +89,9 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::str;
 
-// Make sure we're linking the eth-secp256k1 in for it is used in the MM1 C code.
-#[cfg(feature = "native")]
-use secp256k1::Secp256k1;
-#[cfg(feature = "native")]
-pub extern fn _we_are_using_secp256k1() -> Secp256k1 {Secp256k1::new()}
-
 #[cfg(feature = "native")]
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
 pub mod lp {include! ("c_headers/LP_include.rs");}
-
-#[cfg(feature = "native")]
-#[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
-pub mod os {include! ("c_headers/OS_portable.rs");}
 
 pub const MM_VERSION: &'static str = env! ("MM_VERSION");
 
@@ -109,18 +99,6 @@ pub const SATOSHIS: u64 = 100000000;
 
 /// Converts u64 satoshis to f64
 pub fn sat_to_f(sat: u64) -> f64 { sat as f64 / SATOSHIS as f64 }
-
-/// Created by `void *bitcoin_ctx()`.
-pub enum BitcoinCtx {}
-
-extern "C" {
-    pub fn bitcoin_ctx() -> *mut BitcoinCtx;
-    #[cfg(feature = "native")]
-    pub fn bitcoin_priv2wif (symbol: *const u8, wiftaddr: u8, wifstr: *mut c_char, privkey: _bits256, addrtype: u8) -> i32;
-}
-
-#[cfg(feature = "native")]
-pub use self::lp::_bits256;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
@@ -153,9 +131,9 @@ impl From<lp::_bits256> for bits256 {
 }
 
 #[cfg(feature = "native")]
-impl From<bits256> for _bits256 {
-    fn from (k: bits256) -> _bits256 {unsafe {
-        let mut bits: _bits256 = zeroed();
+impl From<bits256> for lp::_bits256 {
+    fn from (k: bits256) -> lp::_bits256 {unsafe {
+        let mut bits: lp::_bits256 = zeroed();
         bits.bytes.copy_from_slice (&k.bytes[..]);
         bits
     }}
@@ -187,27 +165,6 @@ pub fn jbits256 (json: &Json) -> Result<bits256, String> {
     Ok (unsafe {zeroed()})
 }
 
-#[cfg(feature = "native")]
-pub fn bitcoin_address (coin: &str, addrtype: u8, rmd160: [u8; 20usize]) -> Result<String, String> {
-    let coinaddr: [u8; 64] = unsafe {zeroed()};
-    let coin = try_s! (CString::new (coin));
-    unsafe {lp::bitcoin_address (coin.as_ptr() as *mut c_char, coinaddr.as_ptr() as *mut c_char, 0, addrtype, rmd160.as_ptr() as *mut u8, 20)};
-    Ok (try_s! (try_s! (CStr::from_bytes_with_nul (&coinaddr[..])) .to_str()) .to_string())
-}
-
-/// A safer version of `HASH_ITER` over `iguana_info` coins from `for_c::COINS`.
-#[cfg(feature = "native")]
-pub fn coins_iter (cb: &mut dyn FnMut (*mut lp::iguana_info) -> Result<(), String>) -> Result<(), String> {
-    let coins = try_s! (for_c::COINS.lock());
-    let mut iis = Vec::with_capacity (coins.len());
-    for (_ticker, ii) in coins.iter() {iis.push (ii.0)}
-    drop (coins);  // Unlock before callbacks, avoiding possibility of deadlocks and poisoning.
-
-    for ii in iis {try_s! (cb (ii))}
-
-    Ok(())
-}
-
 pub const SATOSHIDEN: i64 = 100000000;
 pub fn dstr (x: i64, decimals: u8) -> f64 {x as f64 / 10.0_f64.powf(decimals as f64)}
 
@@ -216,41 +173,6 @@ pub fn dstr (x: i64, decimals: u8) -> f64 {x as f64 / 10.0_f64.powf(decimals as 
 /// Not sure it's needed in Rust, the floating point operations should be determenistic here,
 /// but better safe than sorry.
 pub const SMALLVAL: f64 = 0.000000000000001;  // 1e-15f64
-
-/// RAII and MT wrapper for `cJSON`.
-#[cfg(feature = "native")]
-pub struct CJSON (pub *mut lp::cJSON);
-#[cfg(feature = "native")]
-impl CJSON {
-    pub fn from_zero_terminated (json: *const c_char) -> Result<CJSON, String> {
-        lazy_static! {static ref LOCK: Mutex<()> = Mutex::new(());}
-        let _lock = try_s! (LOCK.lock());  // Probably need a lock to access the error singleton.
-        let c_json = unsafe {lp::cJSON_Parse (json)};
-        if c_json == null_mut() {
-            let err = unsafe {lp::cJSON_GetErrorPtr()};
-            let err = try_s! (unsafe {CStr::from_ptr (err)} .to_str());
-            ERR! ("Can't parse JSON, error: {}", err)
-        } else {
-            Ok (CJSON (c_json))
-        }
-    }
-    pub fn from_str (json: &str) -> Result<CJSON, String> {
-        let cs = try_s! (CString::new (json));
-        CJSON::from_zero_terminated (cs.as_ptr())
-    }
-    pub fn new () -> CJSON {
-        unwrap! (CJSON::from_str (""))
-    }
-}
-#[cfg(feature = "native")]
-impl Drop for CJSON {
-    fn drop (&mut self) {
-        unsafe {lp::cJSON_Delete (self.0)}
-        self.0 = null_mut()
-    }
-}
-#[cfg(feature = "native")]
-unsafe impl Send for CJSON {}
 
 /// Helps sharing a string slice with C code by allocating a zero-terminated string with the C standard library allocator.
 /// 
@@ -681,9 +603,10 @@ pub mod wio {
     }
 
     #[test]
+    #[ignore]
     fn test_slurp_req() {
-        let (status, _headers, _body) = unwrap! (slurp_url ("https://httpbin.org/get") .wait());
-        assert! (status.is_success());
+        let (status, headers, body) = unwrap! (slurp_url ("https://httpbin.org/get") .wait());
+        assert! (status.is_success(), format!("{:?} {:?} {:?}", status, headers, body));
     }
 
     /// Fetch URL by HTTPS and parse JSON response
@@ -975,7 +898,9 @@ pub fn writeln (line: &str) {
 }
 #[cfg(not(feature = "native"))]
 pub fn writeln (line: &str) {
+    use std::ffi::CString;
     use std::os::raw::c_char;
+
     extern "C" {pub fn console_log (ptr: *const c_char, len: i32);}
     let lineᶜ = unwrap! (CString::new (line));
     unsafe {console_log (lineᶜ.as_ptr(), line.len() as i32)}

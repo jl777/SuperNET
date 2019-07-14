@@ -10,18 +10,12 @@ use std::net::IpAddr;
 #[cfg(feature = "native")]
 use std::net::SocketAddr;
 use std::ops::Deref;
-use std::os::raw::{c_void};
 use std::path::{Path, PathBuf};
-use std::ptr::null_mut;
-#[cfg(feature = "native")]
-use std::ptr::read_volatile;
 use std::sync::{Arc, Mutex, Weak};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-use crate::{bitcoin_ctx, log, small_rng, BitcoinCtx};
+use crate::{log, small_rng};
 use crate::log::LogState;
-#[cfg(feature = "native")]
-use crate::lp;
 
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///
@@ -46,9 +40,7 @@ pub struct MmCtx {
     /// MM command-line configuration.
     pub conf: Json,
     /// Human-readable log and status dashboard.
-    pub log: LogState,
-    /// Bitcoin elliptic curve context, obtained from the C library linked with "eth-secp256k1".
-    pub btc_ctx: *mut BitcoinCtx,
+    pub log: log::LogState,
     /// Set to true after `lp_passphrase_init`, indicating that we have a usable state.
     /// 
     /// Should be refactored away in the future. State should always be valid.
@@ -98,7 +90,6 @@ impl MmCtx {
         MmCtx {
             conf: Json::Object (json::Map::new()),
             log,
-            btc_ctx: unsafe {bitcoin_ctx()},
             initialized: AtomicBool::new (false),
             rpc_started: AtomicBool::new (false),
             stop: AtomicBool::new (false),
@@ -120,12 +111,9 @@ impl MmCtx {
         }
     }
 
-    /// This field is freed when `MmCtx` is dropped, make sure `MmCtx` stays around while it's used.
-    pub unsafe fn btc_ctx (&self) -> *mut BitcoinCtx {self.btc_ctx}
-
     #[cfg(feature = "native")]
     pub fn rpc_ip_port (&self) -> Result<SocketAddr, String> {
-        let port = self.conf["rpcport"].as_u64().unwrap_or (lp::LP_RPCPORT as u64);
+        let port = self.conf["rpcport"].as_u64().unwrap_or (7783);
         if port < 1000 {return ERR! ("rpcport < 1000")}
         if port > u16::max_value() as u64 {return ERR! ("rpcport > u16")}
 
@@ -183,7 +171,6 @@ impl MmCtx {
     /// True if the MarketMaker instance needs to stop.
     #[cfg(feature = "native")]
     pub fn is_stopping (&self) -> bool {
-        if unsafe {read_volatile (&lp::LP_STOP_RECEIVED) != 0} {return true}
         self.stop.load (Ordering::Relaxed)
     }
 
@@ -347,15 +334,6 @@ pub extern fn ctx2helpers (ptr: *const u8, len: u32) {
         let mut ctx_ffi = unwrap! (MM_CTX_FFI.lock());
         ctx_ffi.insert (ffi_handle, ctx.weak());
         Arc::into_raw (ctx.0);  // Leak.
-    }
-}
-
-#[no_mangle]
-pub fn r_btc_ctx (mm_ctx_id: u32) -> *mut c_void {
-    if let Ok (ctx) = MmArc::from_ffi_handle (mm_ctx_id) {
-        unsafe {ctx.btc_ctx() as *mut c_void}
-    } else {
-        null_mut()
     }
 }
 
