@@ -22,7 +22,9 @@ const { Buffer } = require ('buffer');
 // cf. https://github.com/node-ffi/node-ffi/wiki/Node-FFI-Tutorial
 const libpeers = ffi.Library ('peers', {
   'is_loopback_ip': [ref.types.uint8, ['string']],
-  'ctx2helpers': [ref.types.void, [ref.refType (ref.types.uint8), ref.types.uint32]]
+  'ctx2helpers': [ref.types.void, [ref.refType (ref.types.uint8), ref.types.uint32]],
+  'peers_initialize': [ref.types.void, [
+    ref.refType (ref.types.uint8), ref.types.uint32, ref.refType (ref.types.uint8), ref.refType (ref.types.uint32)]]
 });
 const ili_127_0_0_1 = libpeers.is_loopback_ip ('127.0.0.1');
 //console.log ('is_loopback_ip (127.0.0.1) = ' + ili_127_0_0_1);
@@ -49,7 +51,19 @@ async function runWasm() {
     ctx2helpers: function (ptr, len) {
       const ctx_s = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
       libpeers.ctx2helpers (ctx_s, ctx_s.byteLength)},
-    date_now: function() {return Date.now()}};
+    date_now: function() {return Date.now()},
+    peers_initialize: function (ptr, len, rbuf, rlen) {
+      const to_helper = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
+      const rlen_slice = new Uint32Array (wasmShared.memory.buffer, rlen, 4);
+      const rbuf_capacity = rlen_slice[0];
+      const rbuf_slice = new Uint8Array (wasmShared.memory.buffer, rbuf, rbuf_capacity);
+      const node_rbuf = Buffer.alloc (rbuf_capacity);  // `ffi` only understands Node arrays.
+      const node_rlen = ref.alloc (ref.types.uint32, rbuf_capacity);
+      libpeers.peers_initialize (to_helper, to_helper.byteLength, node_rbuf, node_rlen);
+      const rbuf_len = ref.deref (node_rlen);
+      if (rbuf_len >= rbuf_capacity) throw new Error ('Bad rbuf_len');
+      node_rbuf.copy (rbuf_slice, 0, 0, rbuf_len);
+      rlen_slice[0] = rbuf_len}};
   const wasmInstantiated = await WebAssembly.instantiate (wasmBytes, {env: wasmEnv});
   const exports = wasmInstantiated.instance.exports;
   /** @type {WebAssembly.Memory} */
