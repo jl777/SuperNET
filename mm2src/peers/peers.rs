@@ -54,6 +54,7 @@ use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
+use serde_json::{self as json, Value as Json};
 use std::collections::btree_map::BTreeMap;
 use std::cmp::Ordering;
 use std::env::{temp_dir, var};
@@ -1422,10 +1423,12 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
     Ok(())
 }
 
+#[cfg(not(feature = "native"))]
+extern "C" {pub fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32);}
+
 #[cfg(feature = "native")]
 #[no_mangle]
 pub extern fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32) {
-    use serde_json::{self as json, Value as Json};
     use std::slice::from_raw_parts_mut;
 
     log! ("Native peers_initialize invoked! ptr is " [ptr] "; len is " (len));
@@ -1454,27 +1457,8 @@ pub extern fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
     try_s! (ctx.send_to_helpers());
 
-    // TODO: Consider using a macros reducing the boilerplate.
-    extern "C" {pub fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32);}
-    unsafe {
-        use serde_json::{self as json};
-        use std::ptr::read_volatile;
-
-        let mut buf: [u8; 4096] = uninitialized();
-        log! ("Invoking peers_initialize ...");
-        let mut rlen = buf.len() as u32;
-        peers_initialize (
-            b"{}".as_ptr(), 2,
-            buf.as_mut_ptr(), &mut rlen
-        );
-        let rlen = read_volatile (&rlen) as usize;
-        log! ("peers_initialize returned rlen " [rlen]);
-        // Checks that `rlen` has changed
-        // (`rlen` staying the same might indicate that the helper was not invoked).
-        assert! (rlen < buf.len());
-        let rc: Result<(), String> = try_s! (json::from_slice (&buf[0..rlen]));
-        log! ("Decoded result: " [rc]);
-    }
+    let rc: Result<(), String> = io_buf_proxy! (peers_initialize, &Json::Null, 4096);
+    try_s! (rc);
 
     unimplemented!()
 }

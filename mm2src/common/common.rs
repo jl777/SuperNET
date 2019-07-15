@@ -934,3 +934,24 @@ pub extern fn set_panic_hook() {
 pub fn small_rng() -> SmallRng {
     SmallRng::seed_from_u64 (now_ms())
 }
+
+/// Proxy invoking a helper function which takes the (ptr, len) input and fills the (rbuf, rlen) output.
+#[macro_export]
+macro_rules! io_buf_proxy {
+    ($helper: ident, $to: expr, $rlen: literal) => {
+        unsafe {
+            let to = try_s! (json::to_vec ($to));
+            let mut buf: [u8; $rlen] = uninitialized();
+            let mut rlen = buf.len() as u32;
+            $helper (
+                to.as_ptr(), to.len() as u32,
+                buf.as_mut_ptr(), &mut rlen
+            );
+            let rlen = rlen as usize;
+            // Checks that `rlen` has changed
+            // (`rlen` staying the same might indicate that the helper was not invoked).
+            if rlen >= buf.len() {return ERR! ("Bad rlen: {}", rlen)}
+            try_s! (json::from_slice (&buf[0..rlen]))
+        }
+    };
+}

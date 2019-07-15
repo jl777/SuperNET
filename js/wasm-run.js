@@ -36,6 +36,20 @@ function from_utf8 (memory, ptr, len) {
   const utf8dec = new TextDecoder ('utf-8');
   return utf8dec.decode (view)}
 
+/** Proxy invoking a helper function which takes the (ptr, len) input and fills the (rbuf, rlen) output. */
+function io_buf_proxy (wasmShared, helper, ptr, len, rbuf, rlen) {
+  const to_helper = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
+  const rlen_slice = new Uint32Array (wasmShared.memory.buffer, rlen, 4);
+  const rbuf_capacity = rlen_slice[0];
+  const rbuf_slice = new Uint8Array (wasmShared.memory.buffer, rbuf, rbuf_capacity);
+  const node_rbuf = Buffer.alloc (rbuf_capacity);  // `ffi` only understands Node arrays.
+  const node_rlen = ref.alloc (ref.types.uint32, rbuf_capacity);
+  helper (to_helper, to_helper.byteLength, node_rbuf, node_rlen);
+  const rbuf_len = ref.deref (node_rlen);
+  if (rbuf_len >= rbuf_capacity) throw new Error ('Bad rbuf_len');
+  node_rbuf.copy (rbuf_slice, 0, 0, rbuf_len);
+  rlen_slice[0] = rbuf_len}
+
 async function runWasm() {
   const wasmPath = process.env.WASM_PATH;
   if (!wasmPath) throw new Error ('No WASM_PATH');
@@ -53,17 +67,7 @@ async function runWasm() {
       libpeers.ctx2helpers (ctx_s, ctx_s.byteLength)},
     date_now: function() {return Date.now()},
     peers_initialize: function (ptr, len, rbuf, rlen) {
-      const to_helper = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
-      const rlen_slice = new Uint32Array (wasmShared.memory.buffer, rlen, 4);
-      const rbuf_capacity = rlen_slice[0];
-      const rbuf_slice = new Uint8Array (wasmShared.memory.buffer, rbuf, rbuf_capacity);
-      const node_rbuf = Buffer.alloc (rbuf_capacity);  // `ffi` only understands Node arrays.
-      const node_rlen = ref.alloc (ref.types.uint32, rbuf_capacity);
-      libpeers.peers_initialize (to_helper, to_helper.byteLength, node_rbuf, node_rlen);
-      const rbuf_len = ref.deref (node_rlen);
-      if (rbuf_len >= rbuf_capacity) throw new Error ('Bad rbuf_len');
-      node_rbuf.copy (rbuf_slice, 0, 0, rbuf_len);
-      rlen_slice[0] = rbuf_len}};
+      io_buf_proxy (wasmShared, libpeers.peers_initialize, ptr, len, rbuf, rlen)}};
   const wasmInstantiated = await WebAssembly.instantiate (wasmBytes, {env: wasmEnv});
   const exports = wasmInstantiated.instance.exports;
   /** @type {WebAssembly.Memory} */
