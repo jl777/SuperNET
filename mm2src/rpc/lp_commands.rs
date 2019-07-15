@@ -42,7 +42,7 @@ pub fn help() -> HyRes {
     ")
 }
 
-pub fn version() -> HyRes { rpc_response(200, MM_VERSION) }
+pub fn version() -> HyRes { rpc_response(200, json!({"result": MM_VERSION}).to_string()) }
 
 /*
 AP: Passphrase call is not documented and not used as of now, commented out
