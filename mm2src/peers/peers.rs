@@ -67,7 +67,7 @@ use std::mem::{uninitialized, zeroed};
 use std::net::{IpAddr, SocketAddr};
 use std::num::{NonZeroU8, NonZeroU64};
 use std::path::Path;
-use std::ptr::{null, null_mut, read_volatile};
+use std::ptr::{null, null_mut, read_volatile, read_unaligned, write_unaligned};
 use std::slice::from_raw_parts;
 use std::str::from_utf8_unchecked;
 use std::sync::{Arc, Mutex, Weak};
@@ -1431,50 +1431,69 @@ struct ToPeersInitialize {
     preferred_port: u16
 }
 
-#[cfg(not(feature = "native"))]
-extern "C" {pub fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32);}
-
-#[cfg(feature = "native")]
-#[no_mangle]
-pub extern fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32) {
+fn serialize_to_rbuf<T: Serialize> (line: u32, rc: Result<T, String>, rbuf: *mut u8, rlen: *mut u32) {
     use std::slice::from_raw_parts_mut;
-
-    // TODO: Replace `unwrap!` with `try_s`.
-    // TODO: Tuck more of the boilerplate behind a macros.
-    // TODO: Try using bencode instead of JSON.
-
-    let payloadˢ = unsafe {from_raw_parts (ptr, len as usize)};
-    log! ("payloadˢ: " (common::binprint (payloadˢ, b'.')));
-    let payload: ToPeersInitialize = unwrap! (json::from_slice (payloadˢ), "!json::from_slice");
-    log! ("payload: " [payload]);
-
-    let ctx = unwrap! (MmArc::from_ffi_handle (payload.ctx));
-    let rc = initialize (&ctx, payload.netid, payload.our_public_key, payload.preferred_port);
-
-    // TODO: Consider using a macros reducing the boilerplate.
     unsafe {
-        let rbuf_capacity = read_volatile (rlen) as usize;
-        let rbuf: &mut [u8] = from_raw_parts_mut (rbuf, rbuf_capacity);
-        let mut cur = Cursor::new (rbuf);
-        unwrap! (json::to_writer (&mut cur, &rc), "Error serializing response");
+        let rbuf_capacity = read_unaligned (rlen) as usize;
+        let rbufˢ: &mut [u8] = from_raw_parts_mut (rbuf, rbuf_capacity);
+        let mut cur = Cursor::new (rbufˢ);
+        if let Err (err) = json::to_writer (&mut cur, &rc) {
+            let rbufˢ: &mut [u8] = from_raw_parts_mut (rbuf, rbuf_capacity);
+            cur = Cursor::new (rbufˢ);
+            let rc: Result<T, String> = Err (fomat! ((line) "] Error serializing response: " (err)));
+            unwrap! (json::to_writer (&mut cur, &rc), "Error serializing an error");
+        }
         let seralized_len = cur.position();
         assert! (seralized_len <= rbuf_capacity as u64);
-        *rlen = seralized_len as u32
+        write_unaligned (rlen, seralized_len as u32)
     }
 }
 
-#[cfg(not(feature = "native"))]
-pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
-    try_s! (ctx.send_to_helpers());
+macro_rules! helper {
+    ($helper_name: ident, $front_name: ident) => {
+        #[cfg(not(feature = "native"))]
+        extern "C" {pub fn $helper_name (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32);}
 
-    let to = ToPeersInitialize {
-        ctx: try_s! (ctx.ffi_handle()),
-        netid,
-        our_public_key,
-        preferred_port
-    };
-    io_buf_proxy! (peers_initialize, &to, 4096)
+        #[cfg(feature = "native")]
+        #[no_mangle]
+        pub extern fn $helper_name (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32) {
+            // TODO: Tuck more of the boilerplate behind a macros.
+            // TODO: Try using bencode instead of JSON.
+
+            let rc;
+            let payloadˢ = unsafe {from_raw_parts (ptr, len as usize)};
+            log! ("payloadˢ: " (common::binprint (payloadˢ, b'.')));
+            match json::from_slice::<ToPeersInitialize> (payloadˢ) {
+                Err (err) => rc = ERR! (concat! (stringify! ($helper_name), "] error deserializing: {}"), err),
+                Ok (payload) => {
+                    log! ("payload: " [payload]);
+                    match MmArc::from_ffi_handle (payload.ctx) {
+                        Err (err) => rc = ERR! (concat! (stringify! ($helper_name), "] !from_ffi_handle: {}"), err),
+                        Ok (ctx) => {
+                            rc = initialize (&ctx, payload.netid, payload.our_public_key, payload.preferred_port);
+                        }
+                    }
+                }
+            }
+            serialize_to_rbuf (line!(), rc, rbuf, rlen)
+        }
+
+        #[cfg(not(feature = "native"))]
+        pub fn $front_name (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
+            try_s! (ctx.send_to_helpers());
+
+            let to = ToPeersInitialize {
+                ctx: try_s! (ctx.ffi_handle()),
+                netid,
+                our_public_key,
+                preferred_port
+            };
+            io_buf_proxy! (peers_initialize, &to, 4096)
+        }
+    }
 }
+
+helper! (peers_initialize, initialize);
 
 /// Try to reach a peer and establish connectivity with it while knowing no more than its port and IP.
 /// 

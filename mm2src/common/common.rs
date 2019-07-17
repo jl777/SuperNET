@@ -1000,5 +1000,5 @@ macro_rules! io_buf_proxy {
             if rlen >= rbuf.len() {return ERR! ("Bad rlen: {}", rlen)}
             try_s! (json::from_slice (&rbuf[0..rlen]))
         }
-    };
+    }
 }
