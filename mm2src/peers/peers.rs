@@ -54,7 +54,7 @@ use serde::Serialize;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
-use serde_json::{self as json, Value as Json};
+use serde_json::{self as json};
 use std::collections::btree_map::BTreeMap;
 use std::cmp::Ordering;
 use std::env::{temp_dir, var};
@@ -1423,6 +1423,14 @@ pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_p
     Ok(())
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ToPeersInitialize {
+    ctx: u32,
+    netid: u16,
+    our_public_key: bits256,
+    preferred_port: u16
+}
+
 #[cfg(not(feature = "native"))]
 extern "C" {pub fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32);}
 
@@ -1431,19 +1439,21 @@ extern "C" {pub fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rl
 pub extern fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32) {
     use std::slice::from_raw_parts_mut;
 
-    log! ("Native peers_initialize invoked! ptr is " [ptr] "; len is " (len));
-    let inˢ = unsafe {from_raw_parts (ptr, len as usize)};
-    let inʲ: Json = unwrap! (json::from_slice (inˢ), "!json::from_slice");
-    log! ("in: " [inʲ]);
+    // TODO: Replace `unwrap!` with `try_s`.
+    // TODO: Tuck more of the boilerplate behind a macros.
+    // TODO: Try using bencode instead of JSON.
 
-    // TODO: let rc = initialize (...);
-    let rc: Result<(), String> = ERR! ("TBD");
+    let payloadˢ = unsafe {from_raw_parts (ptr, len as usize)};
+    log! ("payloadˢ: " (common::binprint (payloadˢ, b'.')));
+    let payload: ToPeersInitialize = unwrap! (json::from_slice (payloadˢ), "!json::from_slice");
+    log! ("payload: " [payload]);
+
+    let ctx = unwrap! (MmArc::from_ffi_handle (payload.ctx));
+    let rc = initialize (&ctx, payload.netid, payload.our_public_key, payload.preferred_port);
 
     // TODO: Consider using a macros reducing the boilerplate.
     unsafe {
-        log! ("here");
         let rbuf_capacity = read_volatile (rlen) as usize;
-        log! ([=rbuf_capacity]);
         let rbuf: &mut [u8] = from_raw_parts_mut (rbuf, rbuf_capacity);
         let mut cur = Cursor::new (rbuf);
         unwrap! (json::to_writer (&mut cur, &rc), "Error serializing response");
@@ -1457,10 +1467,13 @@ pub extern fn peers_initialize (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *
 pub fn initialize (ctx: &MmArc, netid: u16, our_public_key: bits256, preferred_port: u16) -> Result<(), String> {
     try_s! (ctx.send_to_helpers());
 
-    let rc: Result<(), String> = io_buf_proxy! (peers_initialize, &Json::Null, 4096);
-    try_s! (rc);
-
-    unimplemented!()
+    let to = ToPeersInitialize {
+        ctx: try_s! (ctx.ffi_handle()),
+        netid,
+        our_public_key,
+        preferred_port
+    };
+    io_buf_proxy! (peers_initialize, &to, 4096)
 }
 
 /// Try to reach a peer and establish connectivity with it while knowing no more than its port and IP.

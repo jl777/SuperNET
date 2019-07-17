@@ -38,13 +38,13 @@ function from_utf8 (memory, ptr, len) {
 
 /** Proxy invoking a helper function which takes the (ptr, len) input and fills the (rbuf, rlen) output. */
 function io_buf_proxy (wasmShared, helper, ptr, len, rbuf, rlen) {
-  const to_helper = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
+  const payload = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
   const rlen_slice = new Uint32Array (wasmShared.memory.buffer, rlen, 4);
   const rbuf_capacity = rlen_slice[0];
   const rbuf_slice = new Uint8Array (wasmShared.memory.buffer, rbuf, rbuf_capacity);
   const node_rbuf = Buffer.alloc (rbuf_capacity);  // `ffi` only understands Node arrays.
   const node_rlen = ref.alloc (ref.types.uint32, rbuf_capacity);
-  helper (to_helper, to_helper.byteLength, node_rbuf, node_rlen);
+  helper (payload, payload.byteLength, node_rbuf, node_rlen);
   const rbuf_len = ref.deref (node_rlen);
   if (rbuf_len >= rbuf_capacity) throw new Error ('Bad rbuf_len');
   node_rbuf.copy (rbuf_slice, 0, 0, rbuf_len);

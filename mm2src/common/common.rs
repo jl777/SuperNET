@@ -14,6 +14,7 @@
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
+#[macro_use] extern crate arrayref;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
 #[macro_use] extern crate lazy_static;
@@ -62,7 +63,7 @@ pub mod custom_futures;
 pub mod iguana_utils;
 pub mod lp_privkey;
 pub mod mm_ctx;
-pub mod ser;
+pub mod seri;
 #[cfg(feature = "native")]
 pub mod lift_body;
 
@@ -75,6 +76,7 @@ use http::header::{HeaderValue, CONTENT_TYPE};
 #[cfg(feature = "native")]
 use libc::{c_char, c_void, malloc, free};
 use rand::{SeedableRng, rngs::SmallRng};
+use serde::{ser, de};
 use serde_json::{self as json, Value as Json};
 use std::env::args;
 use std::fmt::{self, Write as FmtWrite};
@@ -114,6 +116,34 @@ impl fmt::Display for bits256 {
             fm.write_char (hex_from_digit (ch % 16)) ?;
         }
         Ok(())
+}   }
+
+impl ser::Serialize for bits256 {
+    fn serialize<S> (&self, se: S) -> Result<S::Ok, S::Error> where S: ser::Serializer {
+        se.serialize_bytes (&self.bytes[..])
+}   }
+
+impl<'de> de::Deserialize<'de> for bits256 {
+    fn deserialize<D> (deserializer: D) -> Result<bits256, D::Error> where D: de::Deserializer<'de> {
+        struct Bits256Visitor;
+        impl<'de> de::Visitor<'de> for Bits256Visitor {
+            type Value = bits256;
+            fn expecting (&self, fm: &mut fmt::Formatter) -> fmt::Result {fm.write_str ("a byte array")}
+            fn visit_seq<S> (self, mut seq: S) -> Result<bits256, S::Error> where S: de::SeqAccess<'de> {
+                let mut bytes: [u8; 32] = [0; 32];
+                let mut pos = 0;
+                while let Some (byte) = seq.next_element()? {
+                    if pos >= bytes.len() {return Err (de::Error::custom ("bytes length > 32"))}
+                    bytes[pos] = byte;
+                    pos += 1;
+                }
+                Ok (bits256 {bytes})
+            }
+            fn visit_bytes<E> (self, v: &[u8]) -> Result<Self::Value, E> where E: de::Error {
+                if v.len() != 32 {return Err (de::Error::custom ("bytes length <> 32"))}
+                Ok (bits256 {bytes: *array_ref! [v, 0, 32]})
+        }   }
+        deserializer.deserialize_bytes (Bits256Visitor)
 }   }
 
 impl fmt::Debug for bits256 {
@@ -938,20 +968,20 @@ pub fn small_rng() -> SmallRng {
 /// Proxy invoking a helper function which takes the (ptr, len) input and fills the (rbuf, rlen) output.
 #[macro_export]
 macro_rules! io_buf_proxy {
-    ($helper: ident, $to: expr, $rlen: literal) => {
+    ($helper: ident, $payload: expr, $rlen: literal) => {
         unsafe {
-            let to = try_s! (json::to_vec ($to));
-            let mut buf: [u8; $rlen] = uninitialized();
-            let mut rlen = buf.len() as u32;
+            let payload = try_s! (json::to_vec ($payload));
+            let mut rbuf: [u8; $rlen] = uninitialized();
+            let mut rlen = rbuf.len() as u32;
             $helper (
-                to.as_ptr(), to.len() as u32,
-                buf.as_mut_ptr(), &mut rlen
+                payload.as_ptr(), payload.len() as u32,
+                rbuf.as_mut_ptr(), &mut rlen
             );
             let rlen = rlen as usize;
             // Checks that `rlen` has changed
             // (`rlen` staying the same might indicate that the helper was not invoked).
-            if rlen >= buf.len() {return ERR! ("Bad rlen: {}", rlen)}
-            try_s! (json::from_slice (&buf[0..rlen]))
+            if rlen >= rbuf.len() {return ERR! ("Bad rlen: {}", rlen)}
+            try_s! (json::from_slice (&rbuf[0..rlen]))
         }
     };
 }
