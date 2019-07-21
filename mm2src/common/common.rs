@@ -58,7 +58,6 @@ pub mod log;
 
 #[cfg(feature = "native")]
 pub mod for_c;
-pub mod for_tests;
 pub mod custom_futures;
 pub mod iguana_utils;
 pub mod lp_privkey;
@@ -985,10 +984,10 @@ pub fn small_rng() -> SmallRng {
 /// Proxy invoking a helper function which takes the (ptr, len) input and fills the (rbuf, rlen) output.
 #[macro_export]
 macro_rules! io_buf_proxy {
-    ($helper: ident, $payload: expr, $rlen: literal) => {
+    ($helper:ident, $payload:expr, $rlen:literal) => {
         unsafe {
             let payload = try_s! (json::to_vec ($payload));
-            let mut rbuf: [u8; $rlen] = uninitialized();
+            let mut rbuf: [u8; $rlen] = std::mem::uninitialized();
             let mut rlen = rbuf.len() as u32;
             $helper (
                 payload.as_ptr(), payload.len() as u32,
@@ -999,6 +998,48 @@ macro_rules! io_buf_proxy {
             // (`rlen` staying the same might indicate that the helper was not invoked).
             if rlen >= rbuf.len() {return ERR! ("Bad rlen: {}", rlen)}
             try_s! (json::from_slice (&rbuf[0..rlen]))
+}   }   }
+
+#[doc(hidden)]
+pub fn serialize_to_rbuf<T: ser::Serialize> (line: u32, rc: Result<T, String>, rbuf: *mut u8, rlen: *mut u32) {
+    use std::io::Cursor;
+    use std::ptr::{read_unaligned, write_unaligned};
+    use std::slice::from_raw_parts_mut;
+    unsafe {
+        let rbuf_capacity = read_unaligned (rlen) as usize;
+        let rbufˢ: &mut [u8] = from_raw_parts_mut (rbuf, rbuf_capacity);
+        let mut cur = Cursor::new (rbufˢ);
+        if let Err (err) = json::to_writer (&mut cur, &rc) {
+            let rbufˢ: &mut [u8] = from_raw_parts_mut (rbuf, rbuf_capacity);
+            cur = Cursor::new (rbufˢ);
+            let rc: Result<T, String> = Err (fomat! ((line) "] Error serializing response: " (err)));
+            unwrap! (json::to_writer (&mut cur, &rc), "Error serializing an error");
         }
-    }
-}
+        let seralized_len = cur.position();
+        assert! (seralized_len <= rbuf_capacity as u64);
+        write_unaligned (rlen, seralized_len as u32)
+}   }
+
+#[macro_export]
+macro_rules! helper {
+    ($helperⁱ:ident, $encoded_argsⁱ:ident: $encoded_argsᵗ:ty, $body:block) => {
+        #[cfg(not(feature = "native"))]
+        extern "C" {pub fn $helperⁱ (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32);}
+
+        #[cfg(feature = "native")]
+        #[no_mangle]
+        pub extern fn $helperⁱ (ptr: *const u8, len: u32, rbuf: *mut u8, rlen: *mut u32) {
+            use std::slice::from_raw_parts;
+            // TODO: Try using bencode instead of JSON.
+
+            let rc: Result<_, String>;
+            let encoded_argsˢ = unsafe {from_raw_parts (ptr, len as usize)};
+            match json::from_slice::<$encoded_argsᵗ> (encoded_argsˢ) {
+                Err (err) => rc = ERR! (concat! (stringify! ($helperⁱ), "] error deserializing: {}"), err),
+                Ok ($encoded_argsⁱ) => {
+                    rc = (|| $body)();
+            }   }
+            $crate::serialize_to_rbuf (line!(), rc, rbuf, rlen)
+}   }   }
+
+pub mod for_tests;
