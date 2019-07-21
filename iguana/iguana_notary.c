@@ -540,7 +540,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "ZEX", "KSB", "OUR"
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "KSB", "OUR", "ILN", "RICK", "MORTY", "VOTE2019", "HUSH3", "KOIN", "ZEXO", "K64"
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
@@ -905,6 +905,8 @@ STRING_ARG(dpow,active,maskhex)
         free_json(infojson);
     } else return(clonestr("{\"error\":\"cant get current height\"}"));
     n = komodo_notaries("KMD",pubkeys,current);
+    if ( myinfo->DPOWS[0]->currentbp == 0 )
+        return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0],myinfo->DPOWS[0]->currentbp),1));
