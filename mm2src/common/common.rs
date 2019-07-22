@@ -1036,9 +1036,8 @@ macro_rules! helper {
             let encoded_argsˢ = unsafe {from_raw_parts (ptr, len as usize)};
             match json::from_slice::<$encoded_argsᵗ> (encoded_argsˢ) {
                 Err (err) => rc = ERR! (concat! (stringify! ($helperⁱ), "] error deserializing: {}"), err),
-                Ok ($encoded_argsⁱ) => {
-                    rc = (|| $body)();
-            }   }
+                Ok ($encoded_argsⁱ) => rc = (|| $body)()
+            }
             $crate::serialize_to_rbuf (line!(), rc, rbuf, rlen)
 }   }   }
 

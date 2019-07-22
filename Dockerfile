@@ -35,23 +35,22 @@ RUN \
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Unlike the `COPY` command, the `RUN git clone` remains cached by Docker even if we change something locally.
-# This allows us to more easily play with later Dockerfile steps by adding the `COPY` there.
-RUN git clone --depth=1 -b mm2 https://github.com/artemii235/SuperNET.git /mm2
+# First 7 characters of the commit ID.
+ENV MM_VERSION="f236ad1"
 
-RUN cd /mm2 &&\
-    # Put the version into the file, allowing us to easily use it from different Docker steps and from Rust.
-    export MM_VERSION=`echo "$(git tag -l --points-at HEAD)"` &&\
-    # If we're not in a CI-release environment then set the version to "UNKNOWN".
-    if [ -z "$MM_VERSION" ]; then export MM_VERSION=UNKNOWN; fi &&\
-    echo "MM_VERSION is $MM_VERSION" &&\
-    echo -n "$MM_VERSION" > MM_VERSION
+RUN cd /tmp &&\
+    wget https://api.github.com/repos/KomodoPlatform/atomicDEX-API/tarball/$MM_VERSION &&\
+    tar -xzf $MM_VERSION &&\
+    ls &&\
+    mv KomodoPlatform-atomicDEX-API-$MM_VERSION /mm2 &&\
+    rm $MM_VERSION &&\
+    echo $MM_VERSION > /mm2/MM_VERSION
 
 RUN cd /mm2 && cargo fetch
 
 # This will overwrite the Git version with the local one.
 # Only needed when we're developing or changing something locally.
-COPY . /mm2
+#COPY . /mm2
 
 # Build MM1 and MM2.
 # Increased verbosity here allows us to see the MM1 CMake logs.

@@ -1466,7 +1466,7 @@ pub fn investigate_peer (ctx: &MmArc, ip: &str, preferred_port: u16) -> Result<(
     Ok(())
 }
 
-// I had trouble with Arc::into_raw in some builds (Rust2019-06-25, pointers are correct, no double frees)
+// AG: I had trouble with Arc::into_raw in some builds (Rust 2019-06-25, pointers are correct, no double frees)
 // hence using a map to keep the arcs around.
 lazy_static! {static ref SEND_HANDLERS: Mutex<HashMap<u64, Arc<SendHandler>>> = Mutex::new (HashMap::new());}
 
