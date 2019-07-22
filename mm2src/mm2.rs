@@ -194,7 +194,10 @@ pub fn run_lp_main (first_arg: Option<&str>, ctx_cb: &dyn Fn (u32)) -> Result<()
         if coins_from_file.is_empty() {
             return ERR!("No coins are set in JSON config and 'coins' file doesn't exist");
         }
-        conf["coins"] = try_s!(json::from_slice(&coins_from_file));
+        conf["coins"] = match json::from_slice(&coins_from_file) {
+            Ok(j) => j,
+            Err(e) => return ERR!("Error {} parsing the coins file, please ensure it contains valid json", e),
+        }
     }
 
     try_s! (lp_main (conf, ctx_cb));
