@@ -22,7 +22,6 @@ use glob::{glob, Paths, PatternError};
 use gstuff::{last_modified_sec, now_float, slurp};
 use hyper_rustls::HttpsConnector;
 use libflate::gzip::Decoder;
-use shell_escape::escape;
 use std::env::{self, var};
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
@@ -36,6 +35,19 @@ use tar::Archive;
 
 /// Ongoing (RLS) builds might interfere with a precise time comparison.
 const SLIDE: f64 = 60.;
+
+/// Quote spaces, in case the project is on a path with them.
+fn escape_some (path: &str) -> String {
+    // AG: I've tried using the shell_escape crate for this,
+    // but it adds the single quotes, breaking the variable and argument assignments on Windows.
+
+    let mut esc = String::with_capacity (path.len());
+    for ch in path.chars() {
+        if ch == ' ' {esc.push ('\\')}
+        esc.push (ch)
+    }
+    esc
+}
 
 fn bindgen<
     'a,
@@ -682,7 +694,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     //  - https://github.com/arvidn/libtorrent/issues/26#issuecomment-121478708
 
     let boostˢ = unwrap!(boost.to_str());
-    let boostᵉ = escape(boostˢ.into());
+    let boostᵉ = escape_some(boostˢ.into());
     // NB: The common compiler flags go to the "cxxflags=" here
     // and the platform-specific flags go to the jam files or to conditionals below.
     let mut b2 = fomat!(
@@ -700,11 +712,11 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     }
 
     let boost_build_path = boost.join("tools").join("build");
-    let boost_build_pathᵉ = escape(unwrap!(boost_build_path.to_str()).into());
+    let boost_build_pathˢ = unwrap!(boost_build_path.to_str());
     let export = if cfg!(windows) { "SET" } else { "export" };
     epintln!("build_libtorrent]\n"
       "  $ "(export)" PATH="(boostᵉ) if cfg!(windows) {";%PATH%"} else {":$PATH"} "\n"
-      "  $ "(export)" BOOST_BUILD_PATH="(boost_build_pathᵉ) "\n"
+      "  $ "(export)" BOOST_BUILD_PATH="(escape_some(boost_build_pathˢ)) "\n"
       "  $ "(b2));
     if cfg!(windows) {
         run!(ecmd!("cmd", "/c", b2)
