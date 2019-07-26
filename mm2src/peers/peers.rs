@@ -1157,7 +1157,7 @@ fn peers_thread (ctx: MmArc, _netid: u16, our_public_key: bits256, preferred_por
             }
 
             let mut keybuf: [u8; 32] = unsafe {uninitialized()};
-            let mut saltbuf: [i8; 256] = unsafe {uninitialized()};
+            let mut saltbuf: [c_char; 256] = unsafe {uninitialized()};
             let mut seq: i64 = 0;
             let mut auth: bool = false;
             let rc = unsafe {as_dht_mutable_item_alert (alert,
