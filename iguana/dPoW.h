@@ -29,7 +29,7 @@
 #define DPOW_VERSION 0x1782
 #define DPOW_UTXOSIZE dpow_utxosize(coin->symbol) //10000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 1200
+#define DPOW_DURATION 300
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
