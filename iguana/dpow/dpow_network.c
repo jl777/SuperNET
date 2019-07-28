@@ -2006,7 +2006,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             if ( bp->destht_start == bp->destcoin->longestchain )
                 return;
-            else fprintf(stderr, "%s->KMD: checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol bp->destht_start, bp->destcoin->longestchain);
+            else fprintf(stderr, "%s->KMD: checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol, bp->destht_start, bp->destcoin->longestchain);
         }
         else 
         {
