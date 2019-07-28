@@ -1999,6 +1999,21 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         }
+        
+        // check that block has advanced by 1 on KMD before allowing bestmask to be calculated 
+        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        {
+            fprintf(stderr, "X->KMD: checkpoint ht.%i vs longestchain.%i\n", bp->height, bp->srccoin->longestchain);
+            if ( bp->height == bp->srccoin->longestchain )
+                return;
+        }
+        else 
+        {
+            fprintf(stderr, "KMD->BTC: checkpoint ht.%i vs longestchain.%i\n", bp->height, bp->destcoin->longestchain);
+            if ( bp->height == bp->destcoin->longestchain )
+                return;
+        }        
+        
         dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
@@ -2065,6 +2080,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             }
             if ( 1 && strcmp("KMD",dp->symbol) == 0 && bp->myind == 0 )
                 printf("%s recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d state.%d minsigs.%d pend.%d\n",dp->symbol,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches,bp->state,bp->minsigs,bp->pendingbestk);
+            
             if ( bestmatches == bp->minsigs && paxbestmatches == bp->minsigs && bp->bestk >= 0 && bp->bestmask != 0 )
             {
                 if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
