@@ -2004,15 +2004,15 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         // check that block has advanced by 1 on KMD before allowing bestmask to be calculated 
         if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
         {
-            fprintf(stderr, "X->KMD: checkpoint ht.%i vs longestchain.%i\n", bp->destht_start, bp->destcoin->longestchain);
             if ( bp->destht_start == bp->destcoin->longestchain )
                 return;
+            else fprintf(stderr, "%s->KMD: checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol bp->destht_start, bp->destcoin->longestchain);
         }
         else 
         {
-            fprintf(stderr, "KMD->BTC: checkpoint ht.%i vs longestchain.%i\n", bp->height , bp->srccoin->longestchain);
             if ( bp->height == bp->srccoin->longestchain )
                 return;
+            else fprintf(stderr, "KMD->BTC: checkpoint ht.%i vs longestchain.%i\n", bp->height , bp->srccoin->longestchain);
         }  
         
         dpow_bestconsensus(dp,bp);
