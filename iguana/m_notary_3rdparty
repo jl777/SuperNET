@@ -18,6 +18,8 @@ curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"SuperNET\",\"method\":\"
 sleep 3
 
 # TODO: Need to get some more seeds for both networks. 
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"157.230.47.150\"}"   # lukechilds_AR
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"167.71.178.51\"}"    # lukechilds_NA
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"103.6.12.117\"}"
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"185.137.233.199\"}"
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"151.80.108.76\"}"
