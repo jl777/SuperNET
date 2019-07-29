@@ -2011,7 +2011,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             if ( bp->height == bp->srccoin->longestchain )
                 return;
         }  
-        fprintf(stderr, "[%s] checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol, bp->destht_start, bp->destcoin->longestchain);
+        //fprintf(stderr, "[%s] checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol, bp->destht_start, bp->destcoin->longestchain);
         
         dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )
