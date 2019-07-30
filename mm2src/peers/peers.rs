@@ -138,7 +138,7 @@ extern "C" {
     fn as_listen_failed_alert (alert: *const Alert) -> *const c_char;
     fn as_dht_mutable_item_alert (alert: *const Alert,
         pkbuf: *mut u8, pkbuflen: i32,
-        saltbuf: *mut i8, saltbuflen: i32,
+        saltbuf: *mut c_char, saltbuflen: i32,
         buf: *mut u8, buflen: i32,
         seq: *mut i64, auth: *mut bool) -> i32;
     fn as_external_ip_alert (alert: *const Alert, ipbuf: *mut u8, ipbuflen: *mut i32) -> i32;
