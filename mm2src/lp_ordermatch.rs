@@ -1411,7 +1411,7 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.base.clone(),
                     address: try_h!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
-                    price: ask.price.clone(),
+                    price: ask.price.with_scale(base_coin.decimals() as i64),
                     askprice: None,
                     num_utxos: 0,
                     ave_volume: 0.,
@@ -1433,7 +1433,9 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.rel.clone(),
                     address: try_h!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
-                    price: BigDecimal::from (1.) / &ask.price,
+                    // The number of digits is increased by one to keep a lid on the 1/x rounding error,
+                    // cf. https://github.com/KomodoPlatform/atomicDEX-API/issues/495#issuecomment-516365682
+                    price: (BigDecimal::from (1.) / &ask.price).with_scale(rel_coin.decimals() as i64 + 1),
                     askprice: Some (ask.price.clone()),
                     num_utxos: 0,
                     ave_volume: 0.,
