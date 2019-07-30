@@ -1052,6 +1052,7 @@ fn without_trailing_zeroes (decimal: &str, dot: usize) -> &str {
     }
 }
 
+/// Round half away from zero (aka commercial rounding).
 pub fn round_to (bd: &BigDecimal, places: u8) -> String {
     // Normally we'd do
     // 
@@ -1091,8 +1092,7 @@ pub fn round_to (bd: &BigDecimal, places: u8) -> String {
 
         if pos == dot + places as usize && rounded < 10 {
             //println! ("{}, stopping at pos {}", bds, pos);
-            let full = format! ("{}{}", &bds[0..pos], rounded);
-            break unwrap! (full.parse())
+            break format! ("{}{}", &bds[0..pos], rounded)
         }
 
         pos -= 1;
