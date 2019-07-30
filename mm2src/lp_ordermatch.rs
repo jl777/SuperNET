@@ -1349,6 +1349,8 @@ pub struct OrderbookEntry {
     coin: String,
     address: String,
     price: BigDecimal,
+    /// Original `ask.price` printed for bids in order to sidestep the decimal rounding (#495).
+    askprice: Option<BigDecimal>,
     #[serde(rename="numutxos")]
     num_utxos: u32,
     #[serde(rename="avevolume")]
@@ -1410,6 +1412,7 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                     coin: req.base.clone(),
                     address: try_h!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
                     price: ask.price.clone(),
+                    askprice: None,
                     num_utxos: 0,
                     ave_volume: 0.,
                     max_volume: unwrap!(ask.balance.to_f64()),
@@ -1431,6 +1434,7 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                     coin: req.rel.clone(),
                     address: try_h!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
                     price: BigDecimal::from (1.) / &ask.price,
+                    askprice: Some (ask.price.clone()),
                     num_utxos: 0,
                     ave_volume: 0.,
                     max_volume: unwrap!(ask.balance.to_f64()),
