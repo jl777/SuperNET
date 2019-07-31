@@ -1350,6 +1350,7 @@ pub struct OrderbookEntry {
     address: String,
     price: String,
     /// Original `ask.price` printed for bids in order to sidestep the decimal rounding (#495).
+    #[serde(skip_serializing_if = "Option::is_none")]
     askprice: Option<String>,
     #[serde(rename="numutxos")]
     num_utxos: u32,
