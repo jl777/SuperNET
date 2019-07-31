@@ -309,13 +309,16 @@ pub fn stack_trace_frame (buf: &mut dyn Write, symbol: &backtrace::Symbol) {
     // Alphanumerically sorted on first letter.
     if name.starts_with ("alloc::") {return}
     if name.starts_with ("backtrace::") {return}
+    if name.starts_with ("common::set_panic_hook") {return}
     if name.starts_with ("common::stack_trace") {return}
+    if name.starts_with ("core::ops::") {return}
     if name.starts_with ("futures::") {return}
     if name.starts_with ("hyper::") {return}
     if name.starts_with ("mm2::crash_reports::signal_handler") {return}
     if name.starts_with ("panic_unwind::") {return}
     if name.starts_with ("std::") {return}
     if name.starts_with ("scoped_tls::") {return}
+    if name.starts_with ("test::run_test::") {return}
     if name.starts_with ("tokio::") {return}
     if name.starts_with ("tokio_core::") {return}
     if name.starts_with ("tokio_reactor::") {return}
