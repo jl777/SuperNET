@@ -224,17 +224,19 @@ impl Service for RpcService {
 
         let f = hyres_into_rpcres (f);
 
-        let f = f.map (|mut res| {
+        let f = f.then (|res| -> Self::Future {
+            // even if future returns error we need to map it to JSON response and send to client
+            let mut res = match res {
+                Ok (res) => res,
+                Err (err) => {
+                    let ebody = err_to_rpc_json_string (&err);
+                    unwrap! (Response::builder().status (500) .body (LiftBody::from (Vec::from (ebody))))
+                }
+            };
             res.headers_mut().insert(
                 ACCESS_CONTROL_ALLOW_ORIGIN,
                 rpc_cors
             );
-            res
-        });
-
-        let f = f.then (|res| -> Self::Future {
-            // even if future returns error we need to map it to JSON response and send to client
-            let res = try_sf! (res);
             Box::new (futures::future::ok (res))
         });
 
