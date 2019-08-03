@@ -1748,6 +1748,7 @@ pub extern fn start_helpers() -> i32 {
         let port = rng.gen_range (1025, u16::max_value());
         if mm_ctx_ffi.contains_key (&(port as u32)) {continue}
         let addr = SocketAddr::new (localhost, port);
+        // TODO: Fail eventually, printing the first and/or last errors.
         if let Ok (server) = crate::http_fallback::new_http_fallback (ctx.weak(), addr) {
             ctx.ffi_handle.store (port as u32, AtomicOrdering::Relaxed);
             mm_ctx_ffi.insert (port as u32, ctx.weak());
