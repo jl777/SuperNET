@@ -59,6 +59,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"51.15.16.224\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"185.130.212.13\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"5.9.142.219\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"200.25.4.38\"}"
 
 #tests/addnotarys_7776
 coins/btc_7776
