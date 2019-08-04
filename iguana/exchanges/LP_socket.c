@@ -1312,8 +1312,8 @@ void LP_electrum_txhistory_loop(void *_coin)
             sleep(10);
             continue;
         }
-        int history_size = cJSON_GetArraySize(history);
-        for (int i = history_size - 1; i >= 0; i--) {
+        int i,history_size = cJSON_GetArraySize(history);
+        for (i = history_size - 1; i >= 0; i--) {
             cJSON *history_item = jitem(history, i);
             char *tx_hash = jstr(history_item, "tx_hash");
             struct LP_tx_history_item *iter;
@@ -1349,7 +1349,8 @@ void LP_electrum_txhistory_loop(void *_coin)
                 strcpy(item->category, "receive");
                 cJSON *vin = jobj(tx_item, "vin");
                 cJSON *prev_tx_item = NULL;
-                for (int j = 0; j < cJSON_GetArraySize(vin); j++) {
+                int j;
+                for (j = 0; j < cJSON_GetArraySize(vin); j++) {
                     cJSON *vin_item = jitem(vin, j);
                     char *address = jstr(vin_item, "address");
                     if (address != NULL) {
@@ -1377,9 +1378,9 @@ void LP_electrum_txhistory_loop(void *_coin)
                         free_json(params);
                     }
                 }
-                int size = 0;
+                int k,size = 0;
                 cJSON *vout = jarray(&size, tx_item, "vout");
-                for (int k = 0; k < size; k++) {
+                for (k = 0; k < size; k++) {
                     cJSON *vout_item = jitem(vout, k);
                     char *vout_address = LP_get_address_from_tx_out(vout_item);
                     if (vout_address != 0) {
