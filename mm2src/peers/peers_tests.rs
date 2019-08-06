@@ -101,8 +101,7 @@ async fn peers_exchange (conf: Json) {
             crate::FixedValidator::Exact (expect)
         }
 
-        let received = await! (super::recvʹ (
-            bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone())));
+        let received = super::recvʹ (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone())) .await;
         let received = unwrap! (received);
         assert_eq! (received, message);
 

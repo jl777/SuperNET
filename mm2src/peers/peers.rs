@@ -4,7 +4,7 @@
 // MM2_DHT_GET=f, build time, disable DHT retrieval.
 // MM2_FALLBACK=$, build time, override fallback timeouts.
 
-#![feature (non_ascii_idents, vec_resize_default, ip, weak_counts, async_await, await_macro)]
+#![feature (non_ascii_idents, vec_resize_default, ip, weak_counts, async_await)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 #![cfg_attr(not(feature = "native"), allow(unused_macros))]
@@ -52,7 +52,6 @@ use futures::{Async, Future, Poll};
 use futures::task::Task;
 use futures03::compat::Future01CompatExt;
 use futures03::executor::block_on;
-use futures03::task::{Context, Poll as Poll03, Waker};
 use futures03::future::{FutureExt, TryFutureExt};
 use gstuff::{now_float, slurp};
 use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry, RawEntryMut};
@@ -79,7 +78,6 @@ use std::mem::{uninitialized, zeroed};
 use std::net::{IpAddr, SocketAddr};
 use std::num::{NonZeroU8, NonZeroU64};
 use std::path::Path;
-use std::pin::Pin;
 use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
 use std::str::from_utf8_unchecked;
@@ -1683,7 +1681,7 @@ pub async fn recvʹ (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: Box<
     // NB: There should be no zero bytes in the salt (due to `CStr::from_ptr` and the possibility of a similar problem abroad).
     let salt = format_radix (checksum_ecma (&subject), 36);
 
-    let rc = await! (RecvFuture {pctx, seed, salt, validator, frid: None, fallback} .compat());
+    let rc = RecvFuture {pctx, seed, salt, validator, frid: None, fallback} .compat() .await;
     Ok (try_s! (rc))
 }
 
@@ -1714,7 +1712,7 @@ pub async fn peers_recv_helper (req: Request<Vec<u8>>) -> Result<Response<Vec<u8
         FixedValidator::Exact (bytes) => Box::new (move |candidate| candidate == &bytes[..])
     };
     log! ("peers_recv_helper] waiting...");
-    let rc = await! (recvʹ (ctx, args.subject, args.fallback, validator));
+    let rc = recvʹ (ctx, args.subject, args.fallback, validator) .await;
     log! ("peers_recv_helper] done waiting!");
     let vec = try_s! (rc);
     let res = try_s! (Response::builder().header (CONTENT_LENGTH, vec.len()) .body (vec));
