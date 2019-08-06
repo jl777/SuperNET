@@ -145,7 +145,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         jaddistr(addresses,coinaddr);
         if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
-            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
+            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx,0)) != 0 )
             {
                 printf("sendrawtransaction.(%s)\n",sendtx);
                 free(sendtx);

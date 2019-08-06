@@ -667,7 +667,7 @@ return(clonestr("{\"error\":\"basilisk disabled\"}"));
             }
             else if ( dexreq.func == 'S' )
             {
-                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
+                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen],0);
             }
             else if ( dexreq.func == '*' )
             {
