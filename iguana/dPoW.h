@@ -116,7 +116,7 @@ struct dpow_block
     struct dpow_recvdata recv[64];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend;
-    int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS],destht_start;
+    int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk,matches,bestmatches;
     cJSON *ratified;
     uint16_t CCid;
@@ -179,7 +179,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash);
 bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height);
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin);
-char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
+char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx, int32_t mine);
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);

@@ -667,7 +667,7 @@ return(clonestr("{\"error\":\"basilisk disabled\"}"));
             }
             else if ( dexreq.func == 'S' )
             {
-                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
+                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen],0);
             }
             else if ( dexreq.func == '*' )
             {
@@ -1999,19 +1999,6 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         }
-        
-        // check that block has advanced by 1 on KMD before allowing bestmask to be calculated 
-        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
-        {
-            if ( bp->destht_start == bp->destcoin->longestchain )
-                return;
-        }
-        else 
-        {
-            if ( bp->height == bp->srccoin->longestchain )
-                return;
-        }  
-        //fprintf(stderr, "[%s] checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol, bp->destht_start, bp->destcoin->longestchain);
         
         dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )

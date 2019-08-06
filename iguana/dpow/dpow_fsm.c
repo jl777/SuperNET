@@ -145,7 +145,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         jaddistr(addresses,coinaddr);
         if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
-            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
+            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx,0)) != 0 )
             {
                 printf("sendrawtransaction.(%s)\n",sendtx);
                 free(sendtx);
@@ -309,7 +309,6 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->myind = -1;
-        bp->destht_start = bp->destcoin->longestchain;
         for (i=0; i<sizeof(bp->notaries)/sizeof(*bp->notaries); i++)
             bp->notaries[i].bestk = -1;
         bp->opret_symbol = dp->symbol;
