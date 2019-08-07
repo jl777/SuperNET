@@ -648,7 +648,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {
-            if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx)) != 0 )
+            if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx,(bestmask & (1LL << bp->myind)) != 0)) != 0 ) 
             {
                 //printf("sendrawtransaction.(%s)\n",retstr);
                 if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
