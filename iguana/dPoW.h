@@ -179,7 +179,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash);
 bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height);
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin);
-char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
+char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx, int32_t mine);
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);

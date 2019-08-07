@@ -762,7 +762,7 @@ cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char 
 }
 
 
-char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
+char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx, int32_t mine)
 {
     bits256 txid; cJSON *json,*array; char *paramstr,*retstr;
     if ( coin->active == 0 ) return (0);
@@ -772,7 +772,9 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
-        printf(">>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n",coin->symbol,retstr);
+        char colour[16];
+        sprintf(colour,mine != 0 ? GREEN : RED);
+        fprintf(stderr,"%s>>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n"RESET,colour,coin->symbol,retstr);
         free(paramstr);
         return(retstr);
     }
