@@ -262,20 +262,16 @@ pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr)
                 } else if path == "/test_ip" {  // Helps `fn test_ip` to check the IP availability.
                     rpc_response (200, "k")
                 } else if path.starts_with ("/helper/") {
-                    if client.ip().is_loopback() {
-                        let helper = &path[8..];
-                        if helper == "peers_recv" {
-                            let f = crate::peers_recv_helper (req);
-                            Box::new (f.boxed().compat())
-                        } else {
-                            rpc_response (404, "unknown helper")
-                        }
-                    } else {
-                        rpc_response (500, "non-local client")
+                    if !client.ip().is_loopback() {return rpc_response (500, "non-local client")}
+                    let helper = &path[8..];
+                    macro_rules! bc {($f: expr) => {Box::new ($f.boxed().compat())}};
+                    match helper {
+                        "peers_initialize" => bc! (crate::peers_initialize (req)),
+                        "peers_recv" => bc! (crate::peers_recv (req)),
+                        "peers_send" => bc! (crate::peers_send (req)),
+                        _ => rpc_response (404, "unknown helper")
                     }
-                } else {
-                    rpc_response (404, "unknown path")
-                }
+                } else {rpc_response (404, "unknown path")}
             });
             let f = f.then (move |r| match r {
                 Ok (r) => {
