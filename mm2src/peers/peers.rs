@@ -52,6 +52,8 @@ use futures::{Async, Future, Poll};
 use futures::task::Task;
 use futures03::compat::Future01CompatExt;
 use futures03::executor::block_on;
+#[cfg(not(feature = "native"))]
+use futures03::task::{Context, Poll as Poll03, Waker};
 use futures03::future::{FutureExt, TryFutureExt};
 use gstuff::{now_float, slurp};
 use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry, RawEntryMut};
@@ -78,6 +80,8 @@ use std::mem::{uninitialized, zeroed};
 use std::net::{IpAddr, SocketAddr};
 use std::num::{NonZeroU8, NonZeroU64};
 use std::path::Path;
+#[cfg(not(feature = "native"))]
+use std::pin::Pin;
 use std::ptr::{null, null_mut, read_volatile};
 use std::slice::from_raw_parts;
 use std::str::from_utf8_unchecked;
@@ -1817,7 +1821,7 @@ pub async fn recvʹ (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: Fixe
         }
     }
     log! ("Waiting for " [=helper_request_id]);
-    let rc = try_s! (await! (HttpReply {helper_request_id, waker: None}));
+    let rc = try_s! (HttpReply {helper_request_id, waker: None} .await);
     log! ("Done waiting for " [=helper_request_id]);
     Ok (rc)
 }
