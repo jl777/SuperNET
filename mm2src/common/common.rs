@@ -83,7 +83,7 @@ use std::pin::Pin;
 use rand::{SeedableRng, rngs::SmallRng};
 use serde::{ser, de};
 use serde_json::{self as json, Value as Json};
-use std::env::args;
+use std::env::{args, var, VarError};
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
 use std::ffi::{CStr};
@@ -392,9 +392,9 @@ pub fn double_panic_crash() {
         fn drop (&mut self) {
             panic! ("panic in drop")
     }   }
-    let _panicker = Panicker;
+    let panicker = Panicker;
     if 1 == 1 {panic! ("first panic")}
-    drop (_panicker)  // Delays the drop.
+    drop (panicker)  // Delays the drop.
 }
 
 /// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
@@ -963,9 +963,31 @@ pub fn now_float() -> f64 {
     duration_to_float (Duration::from_millis (now_ms()))
 }
 
+/// If the `MM_LOG` variable is present then tries to open that file.  
+/// Prints a warning to `stdout` if there's a problem opening the file.  
+/// Returns `None` if `MM_LOG` variable is not present or if the specified path can't be opened.
+fn open_log_file() -> Option<fs::File> {
+    let mm_log = match var ("MM_LOG") {
+        Ok (v) => v,
+        Err (VarError::NotPresent) => return None,
+        Err (err) => {println! ("open_log_file] Error getting MM_LOG: {}", err); return None}
+    };
+
+    // For security reasons we want the log path to always end with ".log".
+    if !mm_log.ends_with (".log") {println! ("open_log_file] MM_LOG doesn't end with '.log'"); return None}
+
+    match fs::OpenOptions::new().append (true) .create (true) .open (&mm_log) {
+        Ok (f) => Some (f),
+        Err (err) => {
+            println! ("open_log_file] Can't open {}: {}", mm_log, err);
+            None
+}   }   }
+
 #[cfg(feature = "native")]
 pub fn writeln (line: &str) {
     use std::panic::catch_unwind;
+
+    lazy_static! {static ref LOG_FILE: Mutex<Option<fs::File>> = Mutex::new (open_log_file());}
 
     // `catch_unwind` protects the tests from error
     // 
@@ -973,6 +995,11 @@ pub fn writeln (line: &str) {
     // 
     // (which might be related to https://github.com/rust-lang/rust/issues/29488).
     let _ = catch_unwind (|| {
+        if let Ok (mut log_file) = LOG_FILE.lock() {
+            if let Some (ref mut log_file) = *log_file {
+                let _ = witeln! (log_file, (line));
+                return
+        }   }
         println! ("{}", line);
     });
 }
