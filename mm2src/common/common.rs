@@ -387,13 +387,14 @@ pub fn set_panic_hook() {
 
 /// Simulates the panic-in-panic crash.
 pub fn double_panic_crash() {
-    struct Panicker (u32);
+    struct Panicker;
     impl Drop for Panicker {
         fn drop (&mut self) {
-            panic! ("panic in drop; {}", self.0)
+            panic! ("panic in drop")
     }   }
-    let panicker = Panicker (1);
-    panic! ("first panic; {}", panicker.0)
+    let _panicker = Panicker;
+    if 1 == 1 {panic! ("first panic")}
+    drop (_panicker)  // Delays the drop.
 }
 
 /// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
