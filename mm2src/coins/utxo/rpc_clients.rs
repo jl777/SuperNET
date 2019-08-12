@@ -12,7 +12,7 @@ use futures::sync::mpsc;
 use futures03::compat::Future01CompatExt;
 use futures03::future::FutureExt;
 use futures_timer::{Delay, FutureExt as FutureTimerExt};
-use gstuff::now_ms;
+use gstuff::{now_float, now_ms};
 use hashbrown::HashMap;
 use hashbrown::hash_map::Entry;
 use http::{Request, StatusCode};
@@ -1137,11 +1137,11 @@ fn electrum_connect(
             spawn ((async move || {
                 loop {
                     Timer::after(ELECTRUM_TIMEOUT as f64).await;
-                    let last = last_chunkʹ.load(AtomicOrdering::Relaxed);
-                    if now_ms() - last < ELECTRUM_TIMEOUT * 1000 {continue}
+                    let last = last_chunkʹ.load(AtomicOrdering::Relaxed) as f64 * 1000.;
+                    if now_float() - last < ELECTRUM_TIMEOUT as f64 {continue}
                     // AG: NB: In certain situations a TCP/IP shutdown can block!
                     unwrap!(thread::Builder::new().name("ElectrumShutdown".into()).spawn(move || {
-                        log!([addr] " Didn't receive any data since " (last / 1000) ". Shutting down the connection.");
+                        log!([addr] " Didn't receive any data since " (last as i64) ". Shutting down the connection.");
                         if let Err(e) = stream_clone.shutdown(Shutdown::Both) {
                             log!([addr] " error shutting down the connection " [e]);
                         }
