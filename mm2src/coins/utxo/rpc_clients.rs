@@ -1103,7 +1103,6 @@ fn electrum_connect(
         let connect_f = match connection.config.clone() {
             ElectrumConfig::TCP => Either::A(TcpStream::connect(&connection.addr).map(|stream| ElectrumStream::Tcp(stream))),
             ElectrumConfig::SSL {dns_name, skip_validation} => {
-                //let dns = dns.clone();
                 let mut ssl_config = ClientConfig::new();
                 ssl_config.root_store.add_server_trust_anchors(&TLS_SERVER_ROOTS);
                 if skip_validation {
