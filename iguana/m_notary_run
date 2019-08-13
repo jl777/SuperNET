@@ -43,6 +43,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.149.173\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"31.184.227.140\"}"   # peer2cloud_AR
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"103.101.129.113\"}"   # pungocloud_SH
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.136.148\"}"
 
 
 #tests/addnotarys_7776
@@ -99,7 +100,7 @@ coins/our_7776
 coins/iln_7776
 coins/rick_7776
 coins/morty_7776
-coins/vote2019_7776
+#coins/vote2019_7776
 coins/hush3_7776
 coins/koin_7776
 coins/zexo_7776
