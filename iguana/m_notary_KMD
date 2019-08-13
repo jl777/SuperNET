@@ -17,6 +17,7 @@ sleep 3
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"178.128.93.117\"}"   # lukechilds_AR
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"67.207.94.69\"}"     # lukechilds_NA
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"103.6.12.105\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.136.148\"}"
 
 # This will add all KMD assetchains from assetchains.json.
 ./add_coins
