@@ -1134,9 +1134,9 @@ fn electrum_connect(
             let stream_clone = try_loop!(stream.as_ref().try_clone(), rx, connection, delay);
             let last_chunk = Arc::new(AtomicU64::new(now_ms()));
             let last_chunkʹ = last_chunk.clone();
-            spawn ((async move || {
+            spawn (async move {
                 loop {
-                    Timer::after(ELECTRUM_TIMEOUT as f64).await;
+                    Timer::sleep(ELECTRUM_TIMEOUT as f64).await;
                     let last = last_chunkʹ.load(AtomicOrdering::Relaxed) as f64 * 1000.;
                     if now_float() - last < ELECTRUM_TIMEOUT as f64 {continue}
                     // AG: NB: In certain situations a TCP/IP shutdown can block!
@@ -1148,7 +1148,7 @@ fn electrum_connect(
                     }), "Can't spawn ElectrumShutdown");
                     break
                 }
-            })());
+            });
             let (sink, stream) = Bytes.framed(stream).split();
             // this forwards the messages from rx to sink (write) part of tcp stream
             let send_all = SendAll::new(sink, rx);
@@ -1176,7 +1176,7 @@ fn electrum_connect(
         })
     });
 
-    spawn(connect_loop.compat().map(|_r: Result<(), ()>| ()));
+    spawn(connect_loop.compat().map(|_:Result<(),()>|()));
     connection
 }
 

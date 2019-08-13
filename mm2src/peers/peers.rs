@@ -1705,9 +1705,7 @@ helper! (peers_recv, args: ToPeersRecv, {
         FixedValidator::AnythingGoes => Box::new (|_| true),
         FixedValidator::Exact (bytes) => Box::new (move |candidate| candidate == &bytes[..])
     };
-    log! ("peers_recv_helper] waiting...");
     let vec: Vec<u8> = try_s! (recvʹ (ctx, args.subject, args.fallback, validator) .await);
-    log! ("peers_recv_helper] done waiting!");
     Ok (vec)
 });
 
