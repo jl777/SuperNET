@@ -618,6 +618,7 @@ enum ElectrumConfig {
 }
 
 /// Attempts to proccess the request (parse url, etc), build up the config and create new electrum connection
+#[cfg(feature = "native")]
 pub fn spawn_electrum(
     req: &ElectrumRpcRequest
 ) -> Result<ElectrumConnection, String> {
@@ -898,11 +899,15 @@ impl ElectrumClientImpl {
         }
     }
 
+    #[cfg(feature = "native")]
     pub fn add_server(&mut self, req: &ElectrumRpcRequest) -> Result<(), String> {
         let connection = try_s!(spawn_electrum(req));
         self.connections.push(connection);
         Ok(())
     }
+
+    #[cfg(not(feature = "native"))]
+    pub fn add_server(&mut self, req: &ElectrumRpcRequest) -> Result<(), String> {unimplemented!()}
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#server-ping
     pub fn server_ping(&self) -> RpcRes<()> {
@@ -1030,11 +1035,13 @@ macro_rules! try_loop {
 }
 
 /// The enum wrapping possible variants of underlying Streams
+#[cfg(feature = "native")]
 enum ElectrumStream<S> {
     Tcp(TcpStream),
     Tls(TlsStream<TcpStream, S>),
 }
 
+#[cfg(feature = "native")]
 impl<S> AsRef<TcpStream> for ElectrumStream<S> {
     fn as_ref(&self) -> &TcpStream {
         match self {
@@ -1044,6 +1051,7 @@ impl<S> AsRef<TcpStream> for ElectrumStream<S> {
     }
 }
 
+#[cfg(feature = "native")]
 impl<S: Session> std::io::Read for ElectrumStream<S> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         match self {
@@ -1053,8 +1061,10 @@ impl<S: Session> std::io::Read for ElectrumStream<S> {
     }
 }
 
+#[cfg(feature = "native")]
 impl<S: Session> AsyncRead for ElectrumStream<S> {}
 
+#[cfg(feature = "native")]
 impl<S: Session> std::io::Write for ElectrumStream<S> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
@@ -1071,6 +1081,7 @@ impl<S: Session> std::io::Write for ElectrumStream<S> {
     }
 }
 
+#[cfg(feature = "native")]
 impl<S: Session> AsyncWrite for ElectrumStream<S> {
     fn shutdown(&mut self) -> Poll<(), std::io::Error> {
         match self {
@@ -1084,6 +1095,7 @@ const ELECTRUM_TIMEOUT: u64 = 60;
 
 /// Builds up the electrum connection, spawns endless loop that attempts to reconnect to the server
 /// in case of connection errors
+#[cfg(feature = "native")]
 fn electrum_connect(
     addr: SocketAddr,
     config: ElectrumConfig
@@ -1186,6 +1198,7 @@ fn electrum_connect(
 /// Implementation adopted from https://github.com/tokio-rs/tokio/blob/master/examples/connect.rs#L84
 pub struct Bytes;
 
+#[cfg(feature = "native")]
 impl Decoder for Bytes {
     type Item = BytesMut;
     type Error = io::Error;
@@ -1200,6 +1213,7 @@ impl Decoder for Bytes {
     }
 }
 
+#[cfg(feature = "native")]
 impl Encoder for Bytes {
     type Item = Vec<u8>;
     type Error = io::Error;

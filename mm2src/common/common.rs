@@ -1057,17 +1057,8 @@ pub extern fn set_panic_hook() {
     use std::panic::{set_hook, PanicInfo};
 
     set_hook (Box::new (|info: &PanicInfo| {
-        let mut msg = String::new();
-        if let Some (loc) = info.location() {
-            let _ = wite! (&mut msg, (filename (loc.file())) ':' (loc.line()) "] ");
-        } else {
-            msg.push_str ("?] ");
-        }
-        if let Some (message) = info.message() {
-            let _ = wite! (&mut msg, "panick: " (message));
-        } else {
-            msg.push_str ("panick!")
-        }
+        let mut msg = String::with_capacity (256);
+        let _ = wite! (&mut msg, ((info)));
         writeln (&msg)
     }))
 }

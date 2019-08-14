@@ -7,6 +7,7 @@ use common::mm_ctx::{MmArc, MmCtxBuilder};
 use crdts::CmRDT;
 use futures::Future;
 use futures03::executor::block_on;
+use futures03::future::{select, Either};
 use rand::{self, Rng};
 use serde_json::Value as Json;
 use std::mem::zeroed;
@@ -102,11 +103,12 @@ async fn peers_exchange (conf: Json) {
             crate::FixedValidator::Exact (expect)
         }
 
-        // TODO: Fail with timeout if the message doesn't come.
-        Timer::sleep (0.1) .await;
-
-        let received = super::recvʹ (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone())) .await;
-        let received = unwrap! (received);
+        let rc = super::recvʹ (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone()));
+        let rc = select (Box::pin (rc), Timer::sleep (99.)) .await;
+        let received = match rc {
+            Either::Left ((rc, _)) => unwrap! (rc),
+            Either::Right (_) => panic! ("Out of time waiting for reply")
+        };
         assert_eq! (received, message);
 
         if fallback_on {

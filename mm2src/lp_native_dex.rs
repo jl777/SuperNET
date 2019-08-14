@@ -19,7 +19,9 @@
 
 use futures::{Future};
 use futures::sync::oneshot::Sender;
+use futures03::compat::Future01CompatExt;
 use futures03::executor::block_on;
+use futures03::future::FutureExt;
 use http::StatusCode;
 use keys::KeyPair;
 use libc::{self, c_char};
@@ -41,8 +43,10 @@ use std::thread::{self};
 
 use coins::utxo::{key_pair_from_seed};
 
-use crate::common::{nonz, lp, slurp_url, MM_VERSION};
-use crate::common::wio::{CORE};
+#[cfg(feature = "native")]
+use crate::common::lp;
+use crate::common::executor::spawn;
+use crate::common::{nonz, slurp_url, MM_VERSION};
 use crate::common::log::TagParam;
 use crate::common::mm_ctx::{MmCtx, MmArc};
 use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, client_p2p_loop};
@@ -1296,7 +1300,7 @@ fn test_ip (ctx: &MmArc, ip: IpAddr) -> Result<(Sender<()>, u16), String> {
     // Finish the server `Future` when `shutdown_rx` fires.
     let (shutdown_tx, shutdown_rx) = futures::sync::oneshot::channel::<()>();
     let server = server.select2 (shutdown_rx) .then (|_| Ok(()));
-    CORE.spawn (move |_| server);
+    spawn (server.compat().map(|_:Result<(),()>|()));
 
     let url = fomat! ("http://" if ip.is_unspecified() {"127.0.0.1"} else {(ip)} ":" (port) "/test_ip");
     log! ("test_ip] Checking " (url));
