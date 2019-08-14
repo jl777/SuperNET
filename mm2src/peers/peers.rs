@@ -37,7 +37,7 @@ use common::{bits256, SlurpFut};
 #[cfg(not(feature = "native"))]
 use common::helperᶜ;
 #[cfg(feature = "native")]
-use common::{binprint, slice_to_malloc, is_a_test_drill, RaiiRm};
+use common::{slice_to_malloc, is_a_test_drill, RaiiRm};
 use common::log::TagParam;
 use common::mm_ctx::{from_ctx, MmArc};
 use crc::crc32::{update, IEEE_TABLE};
@@ -50,7 +50,7 @@ use futures03::compat::Future01CompatExt;
 #[cfg(not(feature = "native"))]
 use futures03::task::{Context, Poll as Poll03, Waker};
 use futures03::future::{FutureExt, TryFutureExt};
-use gstuff::{now_float, slurp};
+use gstuff::{binprint, now_float, slurp};
 use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry, RawEntryMut};
 use itertools::Itertools;
 #[cfg(feature = "native")]
@@ -1725,7 +1725,7 @@ pub extern fn start_helpers() -> i32 {
         let addr = SocketAddr::new (localhost, port);
         // TODO: Fail eventually, printing the first and/or last errors.
         if let Ok (server) = crate::http_fallback::new_http_fallback (ctx.weak(), addr) {
-            ctx.ffi_handle.store (port as u32, AtomicOrdering::Relaxed);
+            unwrap! (ctx.ffi_handle.pin (port as u32));
             mm_ctx_ffi.insert (port as u32, ctx.weak());
             let _leak = Arc::into_raw (ctx.0);
             common::wio::CORE.spawn (move |_| server);  // Keep running the server indefinitely. 

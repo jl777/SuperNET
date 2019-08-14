@@ -402,14 +402,6 @@ pub fn double_panic_crash() {
     drop (panicker)  // Delays the drop.
 }
 
-/// Helps logging binary data (particularly with text-readable parts, such as bencode, netstring)
-/// by replacing all the non-printable bytes with the `blank` character.
-pub fn binprint (bin: &[u8], blank: u8) -> String {
-    let mut bin: Vec<u8> = bin.into();
-    for ch in bin.iter_mut() {if *ch < 0x20 || *ch >= 0x7F {*ch = blank}}
-    unsafe {String::from_utf8_unchecked (bin)}
-}
-
 /// Tries to detect if we're running under a test, allowing us to be lazy and *delay* some costly operations.
 /// 
 /// Note that the code SHOULD behave uniformely regardless of where it's invoked from
@@ -1151,6 +1143,8 @@ macro_rules! helper {
     }
 }
 
+pub mod for_tests;
+
 fn without_trailing_zeroes (decimal: &str, dot: usize) -> &str {
     let mut pos = decimal.len() - 1;
     loop {
@@ -1246,5 +1240,3 @@ fn test_round_to() {
     assert_eq! (round_to (&BigDecimal::from (0), 0), "0");
     assert_eq! (round_to (&BigDecimal::from (-0), 0), "0");
 }
-
-pub mod for_tests;
