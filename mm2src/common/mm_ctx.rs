@@ -1,4 +1,5 @@
 use crossbeam::{channel, Sender, Receiver};
+use gstuff::Constructible;
 use hashbrown::HashSet;
 use hashbrown::hash_map::{Entry, HashMap};
 use keys::KeyPair;
@@ -12,7 +13,6 @@ use std::net::SocketAddr;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use crate::{log, small_rng};
 use crate::log::LogState;
@@ -46,14 +46,14 @@ pub struct MmCtx {
     /// Should be refactored away in the future. State should always be valid.
     /// If there are things that are loaded in background then they should be separately optional,
     /// without invalidating the entire state.
-    pub initialized: AtomicBool,
+    pub initialized: Constructible<bool>,
     /// True if the RPC HTTP server was started.
-    pub rpc_started: AtomicBool,
+    pub rpc_started: Constructible<bool>,
     /// True if the MarketMaker instance needs to stop.
-    pub stop: AtomicBool,
+    pub stop: Constructible<bool>,
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.  
     /// 0 if the handler ID is allocated yet.
-    pub ffi_handle: AtomicU32,
+    pub ffi_handle: Constructible<u32>,
     /// Callbacks to invoke from `fn stop`.
     pub stop_listeners: Mutex<Vec<Box<dyn FnMut()->Result<(), String>>>>,
     /// The context belonging to the `portfolio` crate: `PortfolioContext`.
@@ -68,19 +68,20 @@ pub struct MmCtx {
     pub coins_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
     /// The context belonging to the `prices` mod: `PricesContext`.
     pub prices_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
-    /// Seednode P2P message bus channel
+    /// Seednode P2P message bus channel.
     pub seednode_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
-    /// Standard node P2P message bus channel
+    /// Standard node P2P message bus channel.
     pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
-    /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase
-    /// The future replacement of lp::G.LP_myrmd160
-    pub rmd160: H160,
+    /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.  
+    /// Replacement of `lp::G.LP_myrmd160`.
+    pub rmd160: Constructible<H160>,
     /// Seed node IPs, initialized in `fn lp_initpeers`.
     pub seeds: Mutex<Vec<IpAddr>>,
-    /// secp256k1 key pair derived from passphrase
-    /// future replacement of lp::G.LP_privkey
-    pub secp256k1_key_pair: Option<KeyPair>,
-    /// Coins that should be enabled to kick start the interrupted swaps and orders
+    /// secp256k1 key pair derived from passphrase.  
+    /// cf. `key_pair_from_seed`.  
+    /// Replacement of `lp::G.LP_privkey`.
+    pub secp256k1_key_pair: Constructible<KeyPair>,
+    /// Coins that should be enabled to kick start the interrupted swaps and orders.
     pub coins_needed_for_kick_start: Mutex<HashSet<String>>,
     /// The context belonging to the `lp_swap` mod: `SwapsContext`.
     pub swaps_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
@@ -90,10 +91,10 @@ impl MmCtx {
         MmCtx {
             conf: Json::Object (json::Map::new()),
             log,
-            initialized: AtomicBool::new (false),
-            rpc_started: AtomicBool::new (false),
-            stop: AtomicBool::new (false),
-            ffi_handle: AtomicU32::new (0),
+            initialized: Constructible::default(),
+            rpc_started: Constructible::default(),
+            stop: Constructible::default(),
+            ffi_handle: Constructible::default(),
             stop_listeners: Mutex::new (Vec::new()),
             portfolio_ctx: Mutex::new (None),
             ordermatch_ctx: Mutex::new (None),
@@ -103,12 +104,17 @@ impl MmCtx {
             prices_ctx: Mutex::new (None),
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
-            rmd160: [0; 20].into(),
+            rmd160: Constructible::default(),
             seeds: Mutex::new (Vec::new()),
-            secp256k1_key_pair: None,
-            coins_needed_for_kick_start: Mutex::new(HashSet::new()),
+            secp256k1_key_pair: Constructible::default(),
+            coins_needed_for_kick_start: Mutex::new (HashSet::new()),
             swaps_ctx: Mutex::new (None),
         }
+    }
+
+    pub fn rmd160 (&self) -> &H160 {
+        lazy_static! {static ref DEFAULT: H160 = [0; 20].into();}
+        self.rmd160.or (&|| &*DEFAULT)
     }
 
     #[cfg(feature = "native")]
@@ -145,7 +151,7 @@ impl MmCtx {
         } else {
             Path::new ("DB")
         };
-        path.join (hex::encode (&*self.rmd160) )
+        path.join (hex::encode (&**self.rmd160()))
     }
 
     pub fn netid (&self) -> u16 {
@@ -155,7 +161,7 @@ impl MmCtx {
     }
 
     pub fn stop (&self) {
-        if self.stop.compare_and_swap (false, true, Ordering::Relaxed) == false {
+        if self.stop.pin (true) .is_ok() {
             let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
             // NB: It is important that we `drain` the `stop_listeners` rather than simply iterating over them
             // because otherwise there might be reference counting instances remaining in a listener
@@ -171,7 +177,7 @@ impl MmCtx {
     /// True if the MarketMaker instance needs to stop.
     #[cfg(feature = "native")]
     pub fn is_stopping (&self) -> bool {
-        self.stop.load (Ordering::Relaxed)
+        self.stop.copy_or (false)
     }
 
     /// True if the MarketMaker instance needs to stop.
@@ -184,7 +190,7 @@ impl MmCtx {
     /// The callback is invoked immediately if the MM is stopped already.
     pub fn on_stop (&self, mut cb: Box<dyn FnMut()->Result<(), String>>) {
         let mut stop_listeners = unwrap! (self.stop_listeners.lock(), "Can't lock stop_listeners");
-        if self.stop.load (Ordering::Relaxed) {
+        if self.stop.copy_or (false) {
             if let Err (err) = cb() {
                 log! ({"MmCtx::on_stop] Listener error: {}", err})
             }
@@ -203,9 +209,13 @@ impl MmCtx {
         }
     }
 
-    /// Get the reference to secp256k1 key pair
+    /// Get a reference to the secp256k1 key pair.  
+    /// Panics if the key pair is not available.
     pub fn secp256k1_key_pair(&self) -> &KeyPair {
-        unwrap!(self.secp256k1_key_pair.as_ref())
+        match self.secp256k1_key_pair.as_option() {
+            Some (pair) => pair,
+            None => panic! ("secp256k1_key_pair not available")
+        }
     }
 }
 impl Default for MmCtx {
@@ -244,8 +254,7 @@ impl MmArc {
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.
     pub fn ffi_handle (&self) -> Result<u32, String> {
         let mut mm_ctx_ffi = try_s! (MM_CTX_FFI.lock());
-        let have = self.ffi_handle.load (Ordering::Relaxed);
-        if have != 0 {return Ok (have)}
+        for &have in &self.ffi_handle {return Ok (have)}
         let mut tries = 0;
         let mut rng = small_rng();
         loop {
@@ -256,7 +265,7 @@ impl MmArc {
                 Entry::Occupied (_) => continue,  // Try another ID.
                 Entry::Vacant (ve) => {
                     ve.insert (self.weak());
-                    self.ffi_handle.store (rid, Ordering::Relaxed);
+                    try_s! (self.ffi_handle.pin (rid));
                     return Ok (rid)
                 }
             }
@@ -384,8 +393,8 @@ impl MmCtxBuilder {
         }
 
         if let Some (key_pair) = self.key_pair {
-            ctx.rmd160 = key_pair.public().address_hash();
-            ctx.secp256k1_key_pair = Some (key_pair);
+            unwrap! (ctx.rmd160.pin (key_pair.public().address_hash()));
+            unwrap! (ctx.secp256k1_key_pair.pin (key_pair));
         }
 
         MmArc (Arc::new (ctx))

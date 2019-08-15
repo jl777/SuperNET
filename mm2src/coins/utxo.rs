@@ -1570,7 +1570,7 @@ fn read_native_mode_conf(filename: &dyn AsRef<Path>) -> Result<(Option<u16>, Str
 }
 
 #[cfg(not(feature = "native"))]
-fn read_native_mode_conf(_filename: &AsRef<Path>) -> Result<(Option<u16>, String, String), String> {
+fn read_native_mode_conf(_filename: &dyn AsRef<Path>) -> Result<(Option<u16>, String, String), String> {
     unimplemented!()
 }
 

@@ -1,17 +1,19 @@
 use common::{bits256, now_float, small_rng};
+use common::executor::Timer;
 #[cfg(feature = "native")]
 use common::wio::{drive, CORE};
 use common::for_tests::wait_for_log_re;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
 use crdts::CmRDT;
 use futures::Future;
-//use futures03::compat::Future01CompatExt;
 use futures03::executor::block_on;
+use futures03::future::{select, Either};
 use rand::{self, Rng};
 use serde_json::Value as Json;
-use std::future::{Future as Future03};
 use std::mem::zeroed;
 use std::net::{Ipv4Addr, SocketAddr};
+#[cfg(not(feature = "native"))]
+use std::os::raw::c_char;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
@@ -101,8 +103,12 @@ async fn peers_exchange (conf: Json) {
             crate::FixedValidator::Exact (expect)
         }
 
-        let received = super::recvʹ (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone())) .await;
-        let received = unwrap! (received);
+        let rc = super::recvʹ (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone()));
+        let rc = select (Box::pin (rc), Timer::sleep (99.)) .await;
+        let received = match rc {
+            Either::Left ((rc, _)) => unwrap! (rc),
+            Either::Right (_) => panic! ("Out of time waiting for reply")
+        };
         assert_eq! (received, message);
 
         if fallback_on {
@@ -129,13 +135,24 @@ async fn peers_exchange (conf: Json) {
 }
 
 /// Send and receive messages of various length and chunking via the DHT.
-pub fn peers_dht() -> impl Future03<Output=()> {peers_exchange (json! ({"dht": "on"}))}
+pub async fn peers_dht() {
+    peers_exchange (json! ({"dht": "on"})) .await
+}
+
+/// Invokes callback `cb_id` in the WASM host, passing a `(ptr,len)` string to it.
+#[cfg(not(feature = "native"))]
+extern "C" {pub fn call_back (cb_id: i32, ptr: *const c_char, len: i32);}
 
 // Temporarily exposed in order to experiment with portability helpers.
 #[cfg(not(feature = "native"))]
 #[no_mangle]
-pub extern fn test_peers_dht() {
-    common::executor::spawn (peers_dht())
+pub extern fn test_peers_dht (cb_id: i32) {
+    use std::ptr::null;
+
+    common::executor::spawn (async move {
+        peers_dht().await;
+        unsafe {call_back (cb_id, null(), 0)}
+    })
 }
 
 /// Using a minimal one second HTTP fallback which should happen before the DHT kicks in.

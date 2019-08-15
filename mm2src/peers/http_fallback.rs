@@ -5,7 +5,7 @@ use crdts::{CvRDT, CmRDT, Map, Orswot};
 use either::Either;
 use futures::{future, self, Async, Future};
 use futures03::future::{FutureExt, TryFutureExt};
-use gstuff::{netstring, now_float};
+use gstuff::{binprint, netstring, now_float};
 use hashbrown::hash_map::{Entry, HashMap, RawEntryMut};
 use http::{Request, Response, StatusCode};
 use http::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
@@ -31,7 +31,7 @@ use zstd_sys::{ZSTD_CDict, ZSTD_createCDict_byReference, ZSTD_freeCDict, ZSTD_co
     ZSTD_frameParameters, ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_isError, ZSTD_compressBound,
     ZSTD_createDCtx, ZSTD_freeDCtx, ZSTD_DDict, ZSTD_createDDict, ZSTD_freeDDict, ZSTD_decompress_usingDDict};
 
-use common::{bits256, binprint, rpc_response, HyRes};
+use common::{bits256, rpc_response, HyRes};
 use common::wio::{slurp_req};
 #[cfg(feature = "native")]
 use common::wio::{CORE, HTTP};
