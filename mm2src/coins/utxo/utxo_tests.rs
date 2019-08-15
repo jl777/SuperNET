@@ -1,5 +1,6 @@
 use super::*;
 use crate::utxo::rpc_clients::{ElectrumProtocol};
+use common::lp_privkey::key_pair_from_seed;
 use mocktopus::mocking::*;
 
 fn utxo_coin_for_test() -> UtxoCoin {
