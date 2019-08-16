@@ -2,9 +2,13 @@ use crossbeam::{channel, Sender, Receiver};
 use gstuff::Constructible;
 use hashbrown::HashSet;
 use hashbrown::hash_map::{Entry, HashMap};
-use keys::KeyPair;
+use keys::{DisplayLayout, KeyPair, Private};
 use primitives::hash::H160;
 use rand::Rng;
+#[cfg(not(feature = "native"))]
+use serde_bencode::ser::to_bytes as bencode;
+use serde_bencode::de::from_bytes as bdecode;
+use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::any::Any;
 use std::net::IpAddr;
@@ -14,8 +18,8 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::{log, small_rng};
-use crate::log::LogState;
+use crate::{bits256, small_rng};
+use crate::log::{self, LogState};
 
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///
@@ -169,21 +173,11 @@ impl MmCtx {
             for mut listener in stop_listeners.drain (..) {
                 if let Err (err) = listener() {
                     log! ({"MmCtx::stop] Listener error: {}", err})
-                }
-            }
-        }
-    }
+    }   }   }   }
 
     /// True if the MarketMaker instance needs to stop.
-    #[cfg(feature = "native")]
     pub fn is_stopping (&self) -> bool {
         self.stop.copy_or (false)
-    }
-
-    /// True if the MarketMaker instance needs to stop.
-    #[cfg(not(feature = "native"))]
-    pub fn is_stopping (&self) -> bool {
-        self.stop.load (Ordering::Relaxed)
     }
 
     /// Register a callback to be invoked when the MM receives the "stop" request.  
@@ -196,8 +190,7 @@ impl MmCtx {
             }
         } else {
             stop_listeners.push (cb)
-        }
-    }
+    }   }
 
     /// Sends the P2P message to a processing thread
     pub fn broadcast_p2p_msg(&self, msg: &str) {
@@ -206,18 +199,26 @@ impl MmCtx {
             unwrap!(self.seednode_p2p_channel.0.send(msg.to_owned().into_bytes()));
         } else {
             unwrap!(self.client_p2p_channel.0.send(msg.to_owned().into_bytes()));
-        }
-    }
+    }   }
 
     /// Get a reference to the secp256k1 key pair.  
     /// Panics if the key pair is not available.
-    pub fn secp256k1_key_pair(&self) -> &KeyPair {
+    pub fn secp256k1_key_pair (&self) -> &KeyPair {
         match self.secp256k1_key_pair.as_option() {
             Some (pair) => pair,
             None => panic! ("secp256k1_key_pair not available")
+    }   }
+
+    /// This is our public ID, allowing us to be different from other peers.  
+    /// This should also be our public key which we'd use for message verification.
+    pub fn public_id (&self) -> Result<bits256, String> {
+        for pair in &self.secp256k1_key_pair {
+            let public = pair.public();  // Compressed public key is going to be 33 bytes.
+            // First byte is a prefix, https://davidederosa.com/basic-blockchain-programming/elliptic-curve-keys/.
+            return Ok (bits256 {bytes: *array_ref! (public, 1, 32)})
         }
-    }
-}
+        ERR! ("Public ID is not yet available")
+}   }
 impl Default for MmCtx {
     fn default() -> Self {
         Self::with_log_state (LogState::in_memory())
@@ -250,6 +251,14 @@ lazy_static! {
     pub static ref MM_CTX_FFI: Mutex<HashMap<u32, MmWeak>> = Mutex::new (HashMap::default());
 }
 
+#[derive (Serialize, Deserialize)]
+struct WiredCtx {
+    // Sending the `conf` as a string in order for bencode not to mess with JSON, and for wire readability.
+    conf: String,
+    secp256k1_key_pair: ByteBuf,
+    ffi_handle: u32
+}
+
 impl MmArc {
     /// Unique context identifier, allowing us to more easily pass the context through the FFI boundaries.
     pub fn ffi_handle (&self) -> Result<u32, String> {
@@ -267,21 +276,19 @@ impl MmArc {
                     ve.insert (self.weak());
                     try_s! (self.ffi_handle.pin (rid));
                     return Ok (rid)
-                }
-            }
-        }
-    }
+    }   }   }   }
 
     #[cfg(not(feature = "native"))]
     pub fn send_to_helpers (&self) -> Result<(), String> {
-        use serde_json::Map;
-
-        // For now we only need to share the `conf` and the `ffi_handle`.
-        let mut ctxʲ = Map::new();
-        // TODO: Use a zero-copy `Serialize`.
-        ctxʲ.insert ("conf".into(), self.conf.clone());
-        ctxʲ.insert ("ffi_handle".into(), Json::Number (try_s! (self.ffi_handle()) .into()));
-        let ctxˢ = try_s! (json::to_vec (&ctxʲ));
+        let ctxʷ = WiredCtx {
+            conf: try_s! (json::to_string (&self.conf)),
+            secp256k1_key_pair: match self.secp256k1_key_pair.as_option() {
+                Some (k) => ByteBuf::from (k.private().layout()),
+                None => ByteBuf::new()
+            },
+            ffi_handle: try_s! (self.ffi_handle())
+        };
+        let ctxˢ = try_s! (bencode (&ctxʷ));
 
         extern "C" {pub fn ctx2helpers (ptr: *const u8, len: u32);}
         unsafe {ctx2helpers (ctxˢ.as_ptr(), ctxˢ.len() as u32)}
@@ -299,8 +306,7 @@ impl MmArc {
                 None => ERR! ("MmArc] ffi_handle {} is dead", ffi_handle)
             },
             None => ERR! ("MmArc] ffi_handle {} does not exists", ffi_handle)
-        }
-    }
+    }   }
 
     /// Generates a weak link, to track the context without prolonging its life.
     pub fn weak (&self) -> MmWeak {
@@ -323,22 +329,25 @@ pub extern fn ctx2helpers (ptr: *const u8, len: u32) {
     use std::slice::from_raw_parts;
 
     let ctxˢ = unsafe {from_raw_parts (ptr, len as usize)};
-    let ctxʲ: Json = unwrap! (json::from_slice (ctxˢ), "!json::from_slice");
+    let ctxʷ: WiredCtx = unwrap! (bdecode (ctxˢ), "!bdecode");
 
-    let ffi_handle = unwrap! (ctxʲ["ffi_handle"].as_u64(), "!ffi_handle") as u32;
-
-    if let Ok (_ctx) = MmArc::from_ffi_handle (ffi_handle) {
+    if let Ok (_ctx) = MmArc::from_ffi_handle (ctxʷ.ffi_handle) {
         //log! ("ffi_handle " (ffi_handle) " already exists");
     } else {
+        let pair: Option<KeyPair> = if ctxʷ.secp256k1_key_pair.is_empty() {None} else {
+            let private = unwrap! (Private::from_layout (&ctxʷ.secp256k1_key_pair[..]));
+            Some (unwrap! (KeyPair::from_private (private)))
+        };
+
         let ctx = MmCtx {
-            // TODO: Move from a `Deserialize`.
-            conf: ctxʲ["conf"].clone(),
-            ffi_handle: ffi_handle.into(),
+            conf: unwrap! (json::from_str (&ctxʷ.conf)),
+            secp256k1_key_pair: pair.into(),
+            ffi_handle: ctxʷ.ffi_handle.into(),
             ..MmCtx::with_log_state (LogState::in_memory())
         };
         let ctx = MmArc (Arc::new (ctx));
         let mut ctx_ffi = unwrap! (MM_CTX_FFI.lock());
-        ctx_ffi.insert (ffi_handle, ctx.weak());
+        ctx_ffi.insert (ctxʷ.ffi_handle, ctx.weak());
         Arc::into_raw (ctx.0);  // Leak.
     }
 }

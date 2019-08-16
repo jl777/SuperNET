@@ -40,14 +40,13 @@ use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self};
 
-use coins::utxo::{key_pair_from_seed};
-
 #[cfg(feature = "native")]
 use crate::common::lp;
 use crate::common::executor::spawn;
 use crate::common::{nonz, slurp_url, MM_VERSION};
 use crate::common::log::TagParam;
 use crate::common::mm_ctx::{MmCtx, MmArc};
+use crate::common::lp_privkey::key_pair_from_seed;
 use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, client_p2p_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
@@ -1037,7 +1036,7 @@ pub unsafe fn lp_initpeers (ctx: &MmArc, myipaddr: &IpAddr, netid: u16, seednode
     }
     *try_s! (ctx.seeds.lock()) = seed_ips;
 
-    try_s! (block_on (peers::initialize (ctx, netid, lp::G.LP_mypub25519.into(), pubport + 1)));
+    try_s! (block_on (peers::initialize (ctx, netid, pubport + 1)));
 
     Ok(())
 }
@@ -1242,7 +1241,6 @@ pub unsafe fn lp_passphrase_init (ctx: &MmArc) -> Result<(), String> {
 
     lp::G.LP_privkey.bytes.clone_from_slice(&*key_pair.private().secret);
     lp::G.LP_pubsecp.clone_from_slice(&**key_pair.public());
-    lp::G.LP_mypub25519.bytes.clone_from_slice(&key_pair.public()[1..]);
     if !nonz(lp::G.LP_privkey.bytes) {return ERR! ("Error initializing the global private key (G.LP_privkey)")}
     Ok(())
 }
