@@ -26,7 +26,7 @@ crossbeam = "0.6"
 fomat-macros = "0.2"
 futures = "0.1"
 futures03 = { version = ">=0.3.0-alpha.16, <0.4", package = "futures-preview", features = ["compat", "async-await", "nightly"] }
-gstuff = "0.5"
+gstuff = { version = "0.5", features = ["nightly"] }
 hashbrown = {version = "0.1.8", features = ["serde", "nightly"]}
 hex = "0.3.2"
 http = "0.1"
@@ -61,7 +61,7 @@ fomat-macros = "0.3"
 futures = "0.1"
 futures-cpupool = "0.1"
 glob = "0.3"
-gstuff = "0.5"
+gstuff = { version = "0.5", features = ["nightly"] }
 hyper = "0.12"
 hyper-rustls = "0.16"
 itertools = "0.8"
