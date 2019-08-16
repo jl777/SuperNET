@@ -14,6 +14,8 @@
 #![feature(async_await, async_closure)]
 #![feature(duration_float)]
 #![feature(weak_counts)]
+#![feature(hash_raw_entry)]
+
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 

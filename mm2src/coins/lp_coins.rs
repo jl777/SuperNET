@@ -21,6 +21,7 @@
 #![feature(integer_atomics)]
 #![feature(non_ascii_idents)]
 #![feature(async_await, async_closure)]
+#![feature(hash_raw_entry)]
 
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
@@ -35,10 +36,10 @@ use common::{rpc_response, rpc_err_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
 use gstuff::{slurp};
-use hashbrown::hash_map::{HashMap, RawEntryMut};
 use rpc::v1::types::{Bytes as BytesJson};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
+use std::collections::hash_map::{HashMap, RawEntryMut};
 use std::fmt::Debug;
 use std::ops::Deref;
 use std::path::PathBuf;

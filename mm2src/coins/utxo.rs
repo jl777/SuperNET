@@ -33,7 +33,6 @@ use common::mm_ctx::MmArc;
 use dirs::home_dir;
 use futures::{Future};
 use gstuff::{now_ms};
-use hashbrown::hash_map::{HashMap, Entry};
 use keys::{KeyPair, Private, Public, Address, Secret, Type};
 use keys::bytes::Bytes;
 use num_traits::cast::ToPrimitive;
@@ -45,6 +44,7 @@ use script::{Opcode, Builder, Script, ScriptAddress, TransactionInputSigner, Uns
 use serde_json::{self as json, Value as Json};
 use serialization::{serialize, deserialize};
 use std::borrow::Cow;
+use std::collections::hash_map::{HashMap, Entry};
 use std::cmp::Ordering;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};

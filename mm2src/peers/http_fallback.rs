@@ -6,7 +6,6 @@ use either::Either;
 use futures::{future, self, Async, Future};
 use futures03::future::{FutureExt, TryFutureExt};
 use gstuff::{binprint, netstring, now_float};
-use hashbrown::hash_map::{Entry, HashMap, RawEntryMut};
 use http::{Request, Response, StatusCode};
 use http::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 #[cfg(feature = "native")]
@@ -17,6 +16,7 @@ use libc::c_void;
 use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::collections::btree_map::BTreeMap;
+use std::collections::hash_map::{Entry, HashMap, RawEntryMut};
 use std::io::{Cursor, Read, Write};
 use std::mem::uninitialized;
 use std::net::SocketAddr;

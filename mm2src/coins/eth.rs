@@ -31,7 +31,6 @@ use futures::Future;
 use futures::future::{Either, join_all, loop_fn, Loop};
 use futures_timer::Delay;
 use gstuff::{now_ms, slurp};
-use hashbrown::HashMap;
 use http::StatusCode;
 #[cfg(test)]
 use mocktopus::macros::*;
@@ -41,6 +40,7 @@ use rpc::v1::types::{Bytes as BytesJson};
 use serde_json::{self as json, Value as Json};
 use sha3::{Keccak256, Digest};
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::cmp::Ordering;
 use std::ops::Deref;
 use std::path::PathBuf;

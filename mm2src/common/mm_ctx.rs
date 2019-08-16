@@ -1,7 +1,5 @@
 use crossbeam::{channel, Sender, Receiver};
 use gstuff::Constructible;
-use hashbrown::HashSet;
-use hashbrown::hash_map::{Entry, HashMap};
 use keys::{DisplayLayout, KeyPair, Private};
 use primitives::hash::H160;
 use rand::Rng;
@@ -11,6 +9,8 @@ use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::any::Any;
+use std::collections::HashSet;
+use std::collections::hash_map::{Entry, HashMap};
 use std::net::IpAddr;
 #[cfg(feature = "native")]
 use std::net::SocketAddr;

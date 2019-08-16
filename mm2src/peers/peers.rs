@@ -7,7 +7,9 @@
 // NB: We're using `bits256` to denote the official public ID (in the future - the public key) of a peer.
 // In contrast, derived keys are stored as `[u8; 32]`.
 
-#![feature (non_ascii_idents, vec_resize_default, ip, weak_counts, async_await, async_closure)]
+#![feature(non_ascii_idents, vec_resize_default, ip, weak_counts, async_await, async_closure)]
+#![feature(hash_raw_entry)]
+
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 #![cfg_attr(not(feature = "native"), allow(unused_macros))]
@@ -54,7 +56,6 @@ use futures03::compat::Future01CompatExt;
 use futures03::task::{Context, Poll as Poll03, Waker};
 use futures03::future::{FutureExt, TryFutureExt};
 use gstuff::{binprint, now_float, slurp};
-use hashbrown::hash_map::{DefaultHashBuilder, Entry, HashMap, OccupiedEntry, RawEntryMut};
 use itertools::Itertools;
 #[cfg(feature = "native")]
 use libc::{c_char, c_void};
@@ -66,6 +67,7 @@ use serde_bytes::ByteBuf;
 #[cfg(not(feature = "native"))]
 use serde_json::{self as json};
 use std::collections::btree_map::BTreeMap;
+use std::collections::hash_map::{Entry, HashMap, OccupiedEntry, RawEntryMut};
 use std::cmp::Ordering;
 use std::env::{temp_dir, var};
 use std::fs;
@@ -883,7 +885,7 @@ fn get_pieces_scheduler (ctx: &MmArc, salt: Salt, frid: NonZeroU64, task: Task, 
 
 #[cfg(feature = "native")]
 fn get_pieces_scheduler_en (ctx: &MmArc, dugout: &mut dugout_t,
-                            mut getsᵉ: OccupiedEntry<Salt, GetsEntry, DefaultHashBuilder>) {
+                            mut getsᵉ: OccupiedEntry<Salt, GetsEntry>) {
     // Skip or GC the package if there are no clients still working on it.
 
     let (skip, remove) = loop {
