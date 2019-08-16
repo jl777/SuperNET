@@ -30,8 +30,7 @@ use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 use std::fs;
 use std::ffi::{CString};
-use std::io::{Cursor, Read, Write};
-use std::mem::{transmute, zeroed};
+use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener};
 use std::path::Path;
 use std::ptr::null_mut;
@@ -43,180 +42,15 @@ use std::thread::{self};
 #[cfg(feature = "native")]
 use crate::common::lp;
 use crate::common::executor::spawn;
-use crate::common::{nonz, slurp_url, MM_VERSION};
+use crate::common::{slurp_url, MM_VERSION};
 use crate::common::log::TagParam;
 use crate::common::mm_ctx::{MmCtx, MmArc};
-use crate::common::lp_privkey::key_pair_from_seed;
+use crate::common::privkey::key_pair_from_seed;
 use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, client_p2p_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{spawn_rpc};
 use common::mm_ctx::MmCtxBuilder;
-
-/*
-#include <stdio.h>
-#ifndef MM_VERSION
-#define MM_VERSION "UNKNOWN"
-#endif
-
-long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
-
-struct LP_millistats
-{
-    double lastmilli,millisum,threshold;
-    uint32_t count;
-    char name[64];
-} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_swapsloop_stats,LP_gcloop_stats,LP_tradesloop_stats;
-extern int32_t IAMLP;
-char LP_methodstr[64];
-
-void LP_millistats_update(struct LP_millistats *mp)
-{
-    double elapsed,millis;
-    if ( mp == 0 )
-    {
-        if ( IAMLP != 0 )
-        {
-            mp = &LP_psockloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        }
-        mp = &LP_reserved_msgs_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &utxosQ_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &command_rpcloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &queue_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &prices_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_coinsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_coinsloopBTC_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_coinsloopKMD_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_pubkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_tradesloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_swapsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_gcloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-    }
-    else
-    {
-        if ( mp->lastmilli == 0. )
-            mp->lastmilli = OS_milliseconds();
-        else
-        {
-            mp->count++;
-            millis = OS_milliseconds();
-            elapsed = (millis - mp->lastmilli);
-            mp->millisum += elapsed;
-            if ( mp->threshold != 0. && elapsed > mp->threshold )
-            {
-                //if ( IAMLP == 0 )
-                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u %s\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count,LP_methodstr);
-            }
-            mp->lastmilli = millis;
-        }
-    }
-}
-
-#include "LP_include.h"
-
-#ifndef NOTETOMIC
-#include "LP_etomic.h"
-#endif
-
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex,LP_blockinit_mutex,LP_pendswap_mutex,LP_listmutex,LP_gtcmutex;
-int32_t LP_canbind;
-char *Broadcaststr,*Reserved_msgs[2][1000];
-int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
-struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
-struct LP_forwardinfo *LP_forwardinfos;
-struct iguana_info *LP_coins;
-struct LP_pubkey_info *LP_pubkeyinfos;
-struct LP_trade *LP_trades,*LP_tradesQ;
-
-//uint32_t LP_deadman_switch;
-uint16_t LP_fixed_pairport;//,LP_publicport;
-uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
-int32_t LP_STOP_RECEIVED,LP_numactive_LP;//,LP_mybussock = -1;
-int32_t LP_mypubsock = -1,IPC_ENDPOINT = -1;
-int32_t LP_cmdcount,LP_mypullsock = -1;
-int32_t LP_numfinished,LP_showwif,IAMLP = 0;
-double LP_profitratio = 1.;
-
-struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
-
-struct LP_globals
-{
-    //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
-    bits256 LP_mypub25519,LP_privkey,LP_mypriv25519,LP_passhash;
-    uint64_t LP_skipstatus[10000], LP_required_etomic_balance;
-    uint16_t netid;
-    uint8_t LP_myrmd160[20],LP_pubsecp[33];
-    uint32_t LP_sessionid,counter,mpnet;
-    int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
-    char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[65],LP_NXTaddr[64];
-    struct LP_privkey LP_privkeys[100];
-} G;
-
-uint32_t LP_rand()
-{
-    uint32_t retval;
-    retval = rand();
-    retval = (retval << 7) ^ (retval >> 17) ^ rand();
-    retval = (retval << 13) ^ (retval >> 13) ^ rand();
-    retval = (retval << 17) ^ (retval >> 7) ^ rand();
-    return(retval);
-}
-
-#include "LP_network.c"
-
-char GLOBAL_DBDIR[] = { "DB" };
-char LP_myipaddr[64],USERHOME[512] = { "/root" };
-char LP_gui[65] = { "cli" };
-
-// stubs
-
-void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
-{
-    
-}
-
-void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel,double relvolume)
-{
-    // add to trades
-}
-
-char *LP_getdatadir()
-{
-    return(USERHOME);
-}
-
-char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_t skip)
-{
-    return(0);
-}
-
-#include "LP_mmjson.c"
-#include "LP_socket.c"
-#include "LP_secp.c"
-#include "LP_bitcoin.c"
-#include "LP_coins.c"
-#include "LP_rpc.c"
-#include "LP_mpnet.c"
-#include "LP_NXT.c"
-#include "LP_cache.c"
-#include "LP_RTmetrics.c"
-#include "LP_utxo.c"
-#include "LP_prices.c"
-#include "LP_scan.c"
-#include "LP_transaction.c"
-#include "LP_stats.c"
-#include "LP_remember.c"
-#include "LP_instantdex.c"
-#include "LP_swap.c"
-#include "LP_peers.c"
-#include "LP_privkey.c"
-#include "LP_forwarding.c"
-#include "LP_signatures.c"
-#include "LP_ordermatch.c"
-#include "LP_tradebots.c"
-#include "LP_messages.c"
-#include "LP_commands.c"
-*/
 
 /// Process a previously queued command that wasn't handled by the RPC `dispatcher`.  
 /// NB: It might be preferable to port more commands into the RPC `dispatcher`, rather than `lp_command_process`, because:  
@@ -1139,6 +973,8 @@ const BITCOIND_RPC_INITIALIZING: AtomicBool = AtomicBool::new (false);
 fn ensure_dir_is_writable(dir_path: &Path) -> bool {
     let c_dir_path = unwrap! (dir_path.to_str());
     let c_dir_path = unwrap! (CString::new (c_dir_path));
+
+    #[cfg(feature = "native")]
     unsafe {lp::OS_ensure_directory (c_dir_path.as_ptr() as *mut c_char)};
 
     /*
@@ -1195,7 +1031,15 @@ fn ensure_file_is_writable(file_path: &Path) -> Result<(), String> {
 fn fix_directories(ctx: &MmCtx) -> Result<(), String> {
     let dbdir = ctx.dbdir();
     try_s!(std::fs::create_dir_all(&dbdir));
-    unsafe {lp::OS_ensure_directory (lp::GLOBAL_DBDIR.as_ptr() as *mut c_char)};
+
+    #[cfg(feature = "native")]
+    unsafe {
+        let dbdir = ctx.dbdir();
+        let dbdir = try_s! (dbdir.to_str().ok_or ("Bad dbdir"));
+        let dbdir = try_s! (CString::new (dbdir));
+        lp::OS_ensure_directory (dbdir.as_ptr() as *mut c_char)
+    };
+
     if !ensure_dir_is_writable(&dbdir.join ("SWAPS")) {return ERR!("SWAPS db dir is not writable")}
     if !ensure_dir_is_writable(&dbdir.join ("SWAPS").join ("MY")) {return ERR!("SWAPS/MY db dir is not writable")}
     if !ensure_dir_is_writable(&dbdir.join ("SWAPS").join ("STATS")) {return ERR!("SWAPS/STATS db dir is not writable")}
@@ -1230,18 +1074,10 @@ pub unsafe fn lp_passphrase_init (ctx: &MmArc) -> Result<(), String> {
         None | Some ("") => return ERR! ("jeezy says we cant use the nullstring as passphrase and I agree"),
         Some (s) => s.to_string()
     };
-    // Prepare and check some of the `lp_initpeers` parameters.
-    let netid = lp::G.netid;
-    lp::G = zeroed();
-    lp::G.netid = netid;
 
     let key_pair = try_s! (key_pair_from_seed (&passphrase));
     let key_pair = try_s! (ctx.secp256k1_key_pair.pin (key_pair));
     try_s! (ctx.rmd160.pin (key_pair.public().address_hash()));
-
-    lp::G.LP_privkey.bytes.clone_from_slice(&*key_pair.private().secret);
-    lp::G.LP_pubsecp.clone_from_slice(&**key_pair.public());
-    if !nonz(lp::G.LP_privkey.bytes) {return ERR! ("Error initializing the global private key (G.LP_privkey)")}
     Ok(())
 }
 
@@ -1320,11 +1156,6 @@ pub fn lp_init (mypubport: u16, conf: Json, ctx_cb: &dyn Fn (u32))
     log! ({"version: {}", MM_VERSION});
     let ctx = MmCtxBuilder::new().with_conf(conf).into_mm_arc();
     unsafe {try_s! (lp_passphrase_init (&ctx))}
-    let global: &mut [c_char] = unsafe {&mut lp::GLOBAL_DBDIR[..]};
-    let global: &mut [u8] = unsafe {transmute (global)};
-    let mut cur = Cursor::new (global);
-    try_s! (write! (&mut cur, "{}", ctx.dbdir().display()));
-    try_s! (write! (&mut cur, "\0"));
 
     ctx_cb (try_s! (ctx.ffi_handle()));
 
@@ -1487,167 +1318,3 @@ pub fn lp_init (mypubport: u16, conf: Json, ctx_cb: &dyn Fn (u32))
     }
     Ok(())
 }
-/*
-
-#ifdef FROM_JS
-extern void *Nanomsg_threadarg;
-void *nn_thread_main_routine(void *arg);
-
-void emscripten_usleep(int32_t x)
-{
-}
-
-char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
-{
-    static uint32_t counter; char fname[512],*retstr; long fsize;
-    if ( strncmp("http://",url,strlen("http://")) != 0 )
-        return(clonestr("{\"error\":\"only http allowed\"}"));
-    sprintf(fname,"bitcoind_RPC/request.%d",counter % 10);
-    counter++;
-    //printf("issue.(%s)\n",url);
-    emscripten_wget(url,fname);
-    retstr = OS_filestr(&fsize,fname);
-    //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
-    return(retstr);
-}
-
-char *barterDEX(char *argstr)
-{
-    static void *ctx;
-    cJSON *argjson; char *retstr;
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    printf("barterDEX.(%s)\n",argstr);
-    if ( (argjson= cJSON_Parse(argstr)) != 0 )
-    {
-        LP_queuecommand(&retstr,argstr,LP_mypubsock);
-        //retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
-        while ( retstr == 0 )
-            usleep(50000);
-        free_json(argjson);
-    } else retstr = clonestr("{\"error\":\"couldnt parse request\"}");
-    return(retstr);
-}
-
-void LP_fromjs_iter()
-{
-    static void *ctx; char *retstr;
-    if ( G.initializing != 0 )
-    {
-        printf("LP_fromjs_iter during G.initializing, skip\n");
-        return;
-    }
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    //if ( Nanomsg_threadarg != 0 )
-    //    nn_thread_main_routine(Nanomsg_threadarg);
-    //LP_pubkeys_query();
-    //LP_utxosQ_process();
-    //LP_nanomsg_recvs(ctx);
-    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock);
-    //queue_loop(0);
-    if ( 0 ) // 10 seconds
-    {
-        LP_coinsloop(0);
-        if ( 0 ) // 100 seconds
-        {
-            LP_notify_pubkeys(ctx,LP_mypubsock);
-            LP_privkey_updates(ctx,LP_mypubsock,0);
-            if ( (retstr= basilisk_swapentry(0,0,0,0)) != 0 )
-                free(retstr);
-        }
-    }
-}
-
-#endif
-
-#undef calloc
-#undef free
-#undef realloc
-#undef clonestr
-
-struct LP_memory_list
-{
-    struct LP_memory_list *next,*prev;
-    uint32_t timestamp,len;
-    void *ptr;
-} *LP_memory_list;
-int32_t zeroval() { return(0); }
-
-void *LP_alloc(uint64_t len)
-{
-//return(calloc(1,len));
-    LP_cjson_allocated += len;
-    LP_cjson_total += len;
-    LP_cjson_count++;
-    struct LP_memory_list *mp;
-    mp = calloc(1,sizeof(*mp) + len);
-    mp->ptr = calloc(1,len);
-    //printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
-    mp->timestamp = (uint32_t)time(NULL);
-    mp->len = (uint32_t)len;
-    portable_mutex_lock(&LP_cJSONmutex);
-    DL_APPEND(LP_memory_list,mp);
-    portable_mutex_unlock(&LP_cJSONmutex);
-    return(mp->ptr);
-}
-
-void LP_free(void *ptr)
-{
-    static uint32_t lasttime,unknown; static int64_t lasttotal;
-//free(ptr); return;
-    uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
-    if ( (now= (uint32_t)time(NULL)) > lasttime+1 )
-    {
-        n = lagging = 0;
-        DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
-        {
-            total += mp->len;
-            n++;
-            if ( 0 && now > mp->timestamp+120 )
-            {
-                lagging++;
-                if ( now > mp->timestamp+240 )
-                {
-                    portable_mutex_lock(&LP_cJSONmutex);
-                    DL_DELETE(LP_memory_list,mp);
-                    portable_mutex_unlock(&LP_cJSONmutex);
-                    free(mp->ptr);
-                    free(mp);
-                }
-            }
-        }
-        printf("[%lld] total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",(long long)(total-lasttotal),n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
-        lasttime = (uint32_t)time(NULL);
-        lasttotal = total;
-    }
-    DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
-    {
-        if ( mp->ptr == ptr )
-            break;
-        mp = 0;
-    }
-    if ( mp != 0 )
-    {
-        LP_cjson_allocated -= mp->len;
-        portable_mutex_lock(&LP_cJSONmutex);
-        DL_DELETE(LP_memory_list,mp);
-        portable_mutex_unlock(&LP_cJSONmutex);
-        //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
-        free(mp->ptr);
-        free(mp);
-    } else unknown++; // free from source file with #define redirect for alloc that wasnt
-}
-
-/*char *LP_clonestr(char *str)
-{
-    char *retstr = LP_alloc(strlen(str)+1);
-    strcpy(retstr,str);
-    return(retstr);
-}
-
-void *LP_realloc(void *ptr,uint64_t len)
-{
-    return(realloc(ptr,len));
-}*/
-*/

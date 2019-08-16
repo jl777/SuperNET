@@ -20,14 +20,3 @@
 #include <inttypes.h>
 
 void OS_ensure_directory(char *dirname);
-
-union _bits256 { uint8_t bytes[32]; uint16_t ushorts[16]; uint32_t uints[8]; uint64_t ulongs[4]; uint64_t txid; };
-typedef union _bits256 bits256;
-char GLOBAL_DBDIR[512];
-
-struct LP_globals
-{
-    bits256 LP_privkey;
-    uint16_t netid;
-    uint8_t LP_pubsecp[33];
-} G;

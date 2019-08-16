@@ -434,6 +434,7 @@ dependencies = [
  "serde_json 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "tar 0.4.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "term 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-core 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "unwrap 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -1,5 +1,5 @@
 use common::for_tests::{enable_electrum, from_env_file, mm_dump, mm_spat, LocalStart, MarketMakerIt};
-use common::lp_privkey::key_pair_from_seed;
+use common::privkey::key_pair_from_seed;
 use dirs;
 use futures03::executor::block_on;
 use gstuff::{slurp};

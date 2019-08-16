@@ -20,7 +20,7 @@
 //
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
-use common::{lp, round_to, rpc_response, rpc_err_response, HyRes, SMALLVAL};
+use common::{bits256, round_to, rpc_response, rpc_err_response, HyRes, SMALLVAL};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
@@ -265,11 +265,12 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
             }
         };
         let ctx = ctx.clone();
-        let mut alice = lp::bits256::default();
+        let mut alice = bits256::default();
         alice.bytes = maker_match.request.sender_pubkey.0;
         let maker_amount = maker_match.reserved.base_amount.clone();
         let taker_amount = maker_match.reserved.rel_amount.clone();
-        let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&lp::G.LP_privkey.bytes, ChecksumType::DSHA256));
+        let privkey = &ctx.secp256k1_key_pair().private().secret;
+        let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&privkey[..], ChecksumType::DSHA256));
         let uuid = maker_match.request.uuid.to_string();
         move || {
             log!("Entering the maker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
@@ -300,7 +301,7 @@ unsafe fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
 unsafe fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
     let alice_loop_thread = thread::Builder::new().name("taker_loop".into()).spawn({
         let ctx = ctx.clone();
-        let mut maker = lp::bits256::default();
+        let mut maker = bits256::default();
         maker.bytes = taker_match.reserved.sender_pubkey.0;
         let taker_coin = match lp_coinfind (&ctx, &taker_match.reserved.rel) {
             Ok(Some(c)) => c,
@@ -326,7 +327,8 @@ unsafe fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
             }
         };
 
-        let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&lp::G.LP_privkey.bytes, ChecksumType::DSHA256));
+        let privkey = &ctx.secp256k1_key_pair().private().secret;
+        let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&privkey[..], ChecksumType::DSHA256));
         let maker_amount = taker_match.reserved.base_amount.clone();
         let taker_amount = taker_match.reserved.rel_amount.clone();
         let uuid = taker_match.reserved.taker_order_uuid.to_string();
@@ -814,7 +816,7 @@ impl PricePingRequest {
             price64: price64.to_string(),
             price: order.price.clone(),
             timestamp,
-            pubsecp: unsafe { hex::encode(&lp::G.LP_pubsecp.to_vec()) },
+            pubsecp: hex::encode(&**ctx.secp256k1_key_pair().public()),
             sig: hex::encode(&*sig),
             balance: max_volume,
         })
@@ -1463,7 +1465,7 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
         base: req.base,
         bid_depth: 0,
         bids,
-        netid: unsafe { lp::G.netid },
+        netid: ctx.netid(),
         rel: req.rel,
         timestamp: now_ms() / 1000,
     };

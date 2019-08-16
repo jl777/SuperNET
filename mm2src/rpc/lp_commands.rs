@@ -130,7 +130,7 @@ pub fn stop (ctx: MmArc) -> HyRes {
         ctx.stop();
         Ok(())
     });
-    CORE.spawn (move |_| stop_f);
+    unwrap! (CORE.lock()) .spawn (stop_f);
     rpc_response (200, r#"{"result": "success"}"#)
 }
 

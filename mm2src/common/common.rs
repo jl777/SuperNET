@@ -13,6 +13,7 @@
 #![feature(non_ascii_idents, integer_atomics, panic_info_message)]
 #![feature(async_await, async_closure)]
 #![feature(duration_float)]
+#![feature(weak_counts)]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
@@ -62,7 +63,7 @@ pub mod log;
 pub mod for_c;
 pub mod custom_futures;
 pub mod iguana_utils;
-pub mod lp_privkey;
+pub mod privkey;
 pub mod mm_ctx;
 pub mod seri;
 #[cfg(feature = "native")]
@@ -82,8 +83,6 @@ use http::{Request, Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
 #[cfg(feature = "native")]
 use libc::{c_char, c_void, malloc, free};
-#[cfg(not(feature = "native"))]
-use std::pin::Pin;
 use rand::{SeedableRng, rngs::SmallRng};
 use serde::{ser, de};
 use serde_json::{self as json, Value as Json};
@@ -96,6 +95,8 @@ use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
 use std::path::{Path};
+#[cfg(not(feature = "native"))]
+use std::pin::Pin;
 use std::ptr::{null_mut, read_volatile};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -116,6 +117,10 @@ pub fn sat_to_f(sat: u64) -> f64 { sat as f64 / SATOSHIS as f64 }
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 #[repr(transparent)]
 pub struct bits256 {pub bytes: [u8; 32]}
+
+impl Default for bits256 {
+    fn default() -> bits256 {
+        bits256 {bytes: unsafe {zeroed()}}}}
 
 impl fmt::Display for bits256 {
     fn fmt (&self, fm: &mut fmt::Formatter) -> fmt::Result {
@@ -163,20 +168,6 @@ impl fmt::Debug for bits256 {
 
 impl From<[u8; 32]> for bits256 {
     fn from (bytes: [u8; 32]) -> Self {bits256 {bytes}}
-}
-
-#[cfg(feature = "native")]
-impl From<lp::_bits256> for bits256 {
-    fn from (bits: lp::_bits256) -> Self {unsafe {bits256 {bytes: bits.bytes}}}
-}
-
-#[cfg(feature = "native")]
-impl From<bits256> for lp::_bits256 {
-    fn from (k: bits256) -> lp::_bits256 {unsafe {
-        let mut bits: lp::_bits256 = zeroed();
-        bits.bytes.copy_from_slice (&k.bytes[..]);
-        bits
-    }}
 }
 
 impl bits256 {
@@ -459,7 +450,7 @@ pub mod wio {
     use crate::SlurpFut;
     use futures::{Async, Future, Poll};
     use futures::sync::oneshot::{self, Receiver};
-    use gstuff::{any_to_str, duration_to_float, now_float};
+    use gstuff::{duration_to_float, now_float};
     use http::{Request, StatusCode, HeaderMap};
     use hyper::Client;
     use hyper::client::HttpConnector;
@@ -467,32 +458,18 @@ pub mod wio {
     use hyper::server::conn::Http;
     use hyper_rustls::HttpsConnector;
     use std::fmt;
-    use std::panic::{catch_unwind, AssertUnwindSafe};
-    use std::process::abort;
-    use std::thread;
     use std::thread::JoinHandle;
     use std::time::Duration;
-    use tokio_core::reactor::Remote;
+    use std::sync::Mutex;
+    use tokio::runtime::Runtime;
 
-    fn start_core_thread() -> Remote {
-        let (tx, rx) = oneshot::channel();
-        unwrap! (thread::Builder::new().name ("CORE".into()) .spawn (move || {
-            if let Err (err) = catch_unwind (AssertUnwindSafe (move || {
-                let mut core = unwrap! (tokio_core::reactor::Core::new(), "!core");
-                unwrap! (tx.send (core.remote()), "Can't send Remote.");
-                loop {core.turn (None)}
-            })) {
-                log! ({"CORE panic! {:?}", any_to_str (&*err)});
-                abort()
-            }
-        }), "!spawn");
-        let core: Remote = unwrap! (rx.wait(), "!wait");
-        core
+    fn start_core_thread() -> Runtime {
+        unwrap! (tokio::runtime::Builder::new().build())
     }
 
     lazy_static! {
         /// Shared asynchronous reactor.
-        pub static ref CORE: Remote = start_core_thread();
+        pub static ref CORE: Mutex<Runtime> = Mutex::new (start_core_thread());
         /// Shared HTTP server.
         pub static ref HTTP: Http = Http::new();
     }
@@ -508,12 +485,12 @@ pub mod wio {
     R: Send + 'static,
     E: Send + 'static {
         let (sx, rx) = oneshot::channel();
-        CORE.spawn (move |_handle| {
+        unwrap! (CORE.lock()) .spawn (
             f.then (move |fr: Result<R, E>| -> Result<(),()> {
                 let _ = sx.send (fr);
                 Ok(())
             })
-        });
+        );
         rx
     }
 
@@ -600,7 +577,7 @@ pub mod wio {
             let dns_threads = 2;
             let https = HttpsConnector::new (dns_threads);
             let client = Client::builder()
-                .executor (CORE.clone())
+                .executor (unwrap! (CORE.lock()) .executor())
                 // Hyper had a lot of Keep-Alive bugs over the years and I suspect
                 // that with the shared client we might be getting errno 10054
                 // due to a closed Keep-Alive connection mismanagement.
@@ -659,7 +636,7 @@ pub mod executor {
 
     pub fn spawn (future: impl Future03<Output = ()> + Send + 'static) {
         let f = future.unit_error().boxed().compat();
-        crate::wio::CORE.spawn (|_| f)
+        unwrap! (crate::wio::CORE.lock()) .spawn (f);
     }
 
     /// A future that completes at a given time.  

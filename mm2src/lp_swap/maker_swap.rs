@@ -908,7 +908,7 @@ pub fn run_maker_swap(swap: MakerSwap, initial_command: Option<MakerSwapCommand>
 mod maker_swap_tests {
     use coins::{MarketCoinOps, SwapOps, TestCoin};
     use coins::eth::{signed_eth_tx_from_bytes, SignedEthTx};
-    use common::lp_privkey::key_pair_from_seed;
+    use common::privkey::key_pair_from_seed;
     use common::mm_ctx::MmCtxBuilder;
     use mocktopus::mocking::*;
     use super::*;

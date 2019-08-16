@@ -25,16 +25,14 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
 use std::str::from_utf8_unchecked;
 #[cfg(feature = "native")]
-use tokio_core::net::TcpListener;
-#[cfg(feature = "native")]
 use zstd_sys::{ZSTD_CDict, ZSTD_createCDict_byReference, ZSTD_freeCDict, ZSTD_compress_usingCDict_advanced,
     ZSTD_frameParameters, ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_isError, ZSTD_compressBound,
     ZSTD_createDCtx, ZSTD_freeDCtx, ZSTD_DDict, ZSTD_createDDict, ZSTD_freeDDict, ZSTD_decompress_usingDDict};
 
 use common::{bits256, rpc_response, HyRes};
-use common::wio::{slurp_req};
+use common::wio::slurp_req;
 #[cfg(feature = "native")]
-use common::wio::{CORE, HTTP};
+use common::wio::CORE;
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 
 /// Data belonging to the server side of this module and owned by the MM2 instance.  
@@ -234,9 +232,13 @@ fn merge_map_impl (ctx: MmWeak, req: Request<Vec<u8>>) -> HyRes {
 #[cfg(feature = "native")]
 pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr)
 -> Result<Box<dyn Future<Item=(), Error=()>+Send>, String> {
+    use common::executor::Timer;
     use common::lift_body::LiftBody;
-
-    let listener = try_s! (TcpListener::bind2 (&addr));
+    use futures::Poll;
+    use futures03::compat::Compat;
+    use hyper::Server;
+    use hyper::service::make_service_fn;
+    use hyper::server::conn::AddrStream;
 
     struct RpcService {ctx: MmWeak, client: SocketAddr}
     impl Service for RpcService {
@@ -288,16 +290,29 @@ pub fn new_http_fallback (ctx: MmWeak, addr: SocketAddr)
                 }
             });
             Box::new (f)
-        }
-    }
-    let server = listener.incoming().for_each (move |(socket, client)| {
-        let ctx = ctx.clone();
-        CORE.spawn (move |_| HTTP
-                .serve_connection (socket, RpcService {ctx, client})
-                .map(|_| ())
-                .map_err (|err| log! ({"{}", err})));
-        Ok(())
-    }) .map_err (|err| log! ({"accept error: {}", err}));
+    }   }
+
+    struct ServiceFabric {ctx: MmWeak, client: SocketAddr}
+    impl Future for ServiceFabric {
+        type Item = RpcService;
+        type Error = hyper::Error;
+        fn poll (&mut self) -> Poll<Self::Item, Self::Error> {
+            Poll::Ok (Async::Ready (RpcService {ctx: self.ctx.clone(), client: self.client}))
+    }   }
+
+    let ctxʹ = ctx.clone();
+    let make_svc = make_service_fn (move |addr: &AddrStream| {
+        ServiceFabric {ctx: ctxʹ.clone(), client: addr.remote_addr()}});
+
+    let shutdown_detector = async move {while !ctx.dropped() {Timer::sleep (0.5) .await}};
+    let shutdown_detector = Compat::new (Box::pin (shutdown_detector.map (|r|->Result<_,()>{Ok(r)})));
+
+    let server = try_s! (Server::try_bind (&addr))
+        .http1_half_close (false)  // https://github.com/hyperium/hyper/issues/1764
+        .executor (try_s! (CORE.lock()) .executor())
+        .serve (make_svc);
+    let server = server.with_graceful_shutdown (shutdown_detector);
+    let server = server.then (|r| {if let Err (err) = r {log! ((err))}; Ok(())});
 
     Ok (Box::new (server))
 }
@@ -495,7 +510,7 @@ log! ("transmit] TBD, time to use the HTTP fallback...");
             };
             Ok(())
         });
-        CORE.spawn (|_| merge_f);
+        unwrap! (CORE.lock()) .spawn (merge_f);
         track.last_store = now;
     }
 

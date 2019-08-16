@@ -245,6 +245,11 @@ pub struct MmWeak (Weak<MmCtx>);
 unsafe impl Send for MmWeak {}
 unsafe impl Sync for MmWeak {}
 
+impl MmWeak {
+    pub fn dropped (&self) -> bool {
+        self.0.strong_count() == 0
+}   }
+
 lazy_static! {
     /// A map from a unique context ID to the corresponding MM context, facilitating context access across the FFI boundaries.  
     /// NB: The entries are not removed in order to keep the FFI handlers unique.

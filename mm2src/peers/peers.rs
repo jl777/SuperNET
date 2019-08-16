@@ -1722,7 +1722,7 @@ pub extern fn start_helpers() -> i32 {
             unwrap! (ctx.ffi_handle.pin (port as u32));
             mm_ctx_ffi.insert (port as u32, ctx.weak());
             let _leak = Arc::into_raw (ctx.0);
-            common::wio::CORE.spawn (move |_| server);  // Keep running the server indefinitely. 
+            unwrap! (common::wio::CORE.lock()) .spawn (server);  // Keep running the server indefinitely. 
             return port as i32
 }   }   }
 

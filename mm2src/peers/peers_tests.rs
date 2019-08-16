@@ -4,7 +4,7 @@ use common::executor::Timer;
 use common::wio::{drive, CORE};
 use common::for_tests::wait_for_log_re;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
-use common::lp_privkey::key_pair_from_seed;
+use common::privkey::key_pair_from_seed;
 use crdts::CmRDT;
 use futures::Future;
 use futures03::executor::block_on;
@@ -165,7 +165,7 @@ pub fn peers_http_fallback_recv() {
     let ctx = MmCtxBuilder::new().into_mm_arc();
     let addr = SocketAddr::new (unwrap! ("127.0.0.1".parse()), 30204);
     let server = unwrap! (super::http_fallback::new_http_fallback (ctx.weak(), addr));
-    CORE.spawn (move |_| server);
+    unwrap! (CORE.lock()) .spawn (server);
 
     block_on (peers_exchange (json! ({
         "http-fallback": "on",
@@ -251,7 +251,7 @@ pub fn peers_http_fallback_kv() {
     let ctx = MmCtxBuilder::new().into_mm_arc();
     let addr = SocketAddr::new (unwrap! ("127.0.0.1".parse()), 30205);
     let server = unwrap! (super::http_fallback::new_http_fallback (ctx.weak(), addr));
-    CORE.spawn (move |_| server);
+    unwrap! (CORE.lock()) .spawn (server);
 
     // Wait for the HTTP server to start.
     thread::sleep (Duration::from_millis (20));

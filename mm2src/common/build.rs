@@ -137,9 +137,6 @@ fn generate_bindings() {
         ]
         .iter(),
         [
-            // defines
-            "G",
-            "GLOBAL_DBDIR",
         ]
         .iter(),
     );

@@ -105,7 +105,7 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
         }
         Box::new (future::ok(()))
     });
-    CORE.spawn (|_| f)
+    unwrap! (CORE.lock()) .spawn (f);
 }
 
 /// The thread processing the peer-to-peer messaging bus.

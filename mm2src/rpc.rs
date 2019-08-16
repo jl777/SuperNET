@@ -268,7 +268,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
                 }
             };
 
-            CORE.spawn(move |_|
+            unwrap!(CORE.lock()).spawn(
                 HTTP.serve_connection(
                     socket,
                     RpcService {
@@ -297,7 +297,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
     }));
 
     let rpc_ip_port = unwrap! (ctx.rpc_ip_port());
-    CORE.spawn (move |_| {
+    unwrap! (CORE.lock()) .spawn ({
         log!(">>>>>>>>>> DEX stats " (rpc_ip_port.ip())":"(rpc_ip_port.port()) " \
                 DEX stats API enabled at unixtime." (gstuff::now_ms() / 1000) " <<<<<<<<<");
         let _ = ctx.rpc_started.pin (true);
