@@ -51,6 +51,10 @@ pub mod eth;
 use self::eth::{eth_coin_from_conf_and_request, EthCoin, SignedEthTx};
 pub mod utxo;
 use self::utxo::{utxo_coin_from_conf_and_request, UtxoTx, UtxoCoin};
+#[doc(hidden)]
+#[allow(unused_variables)]
+pub mod test_coin;
+pub use self::test_coin::TestCoin;
 
 pub trait Transaction: Debug + 'static {
     /// Raw transaction bytes of the transaction
@@ -68,7 +72,7 @@ pub trait Transaction: Debug + 'static {
     fn fee_details(&self) -> Result<Json, String>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TransactionEnum {
     UtxoTx (UtxoTx),
     SignedEthTx (SignedEthTx)
@@ -86,6 +90,12 @@ impl Deref for TransactionEnum {
 }   }   }
 
 pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
+
+#[derive(Debug, PartialEq)]
+pub enum FoundSwapTxSpend {
+    Spent(TransactionEnum),
+    Refunded(TransactionEnum),
+}
 
 /// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
 pub trait SwapOps {
@@ -171,6 +181,24 @@ pub trait SwapOps {
         secret_hash: &[u8],
         search_from_block: u64,
     ) -> Result<Option<TransactionEnum>, String>;
+
+    fn search_for_swap_tx_spend_my(
+        &self,
+        time_lock: u32,
+        other_pub: &[u8],
+        secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String>;
+
+    fn search_for_swap_tx_spend_other(
+        &self,
+        time_lock: u32,
+        other_pub: &[u8],
+        secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String>;
 }
 
 /// Operations that coins have independently from the MarketMaker.
@@ -318,7 +346,8 @@ pub trait MmCoin: SwapOps + MarketCoinOps + Debug + 'static {
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {
     UtxoCoin (UtxoCoin),
-    EthCoin (EthCoin)
+    EthCoin (EthCoin),
+    Test (TestCoin)
 }
 
 impl From<UtxoCoin> for MmCoinEnum {
@@ -331,13 +360,19 @@ impl From<EthCoin> for MmCoinEnum {
         MmCoinEnum::EthCoin (c)
 }   }
 
+impl From<TestCoin> for MmCoinEnum {
+    fn from (c: TestCoin) -> MmCoinEnum {
+        MmCoinEnum::Test (c)
+}   }
+
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for MmCoinEnum {
     type Target = dyn MmCoin;
     fn deref (&self) -> &dyn MmCoin {
         match self {
             &MmCoinEnum::UtxoCoin (ref c) => c,
-            &MmCoinEnum::EthCoin (ref c) => c
+            &MmCoinEnum::EthCoin (ref c) => c,
+            &MmCoinEnum::Test (ref c) => c,
 }   }   }
 
 struct CoinsContext {
@@ -730,10 +765,6 @@ int32_t LP_isdisabled(char *base,char *rel)
 }
 */
 
-/// NB: As of now only a part of coin information has been ported to `MmCoinEnum`.
-///     We plan to port the rest of it later (cf. `lp_coininit`).
-///     Use the `iguana_info()` interface to access the C version meanwhile.
-///
 /// NB: Returns only the enabled (aka active) coins.
 pub fn lp_coinfind (ctx: &MmArc, ticker: &str) -> Result<Option<MmCoinEnum>, String> {
     let cctx = try_s! (CoinsContext::from_ctx (ctx));
@@ -752,21 +783,6 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
 }
 */
-
-/// Get my_balance of a coin
-pub fn my_balance (ctx: MmArc, req: Json) -> HyRes {
-    let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();
-    let coin = match lp_coinfind (&ctx, &ticker) {
-        Ok (Some (t)) => t,
-        Ok (None) => return rpc_err_response (500, &fomat! ("No such coin: " (ticker))),
-        Err (err) => return rpc_err_response (500, &fomat! ("!lp_coinfind(" (ticker) "): " (err)))
-    };
-    Box::new(coin.my_balance().and_then(move |balance| rpc_response(200, json!({
-        "coin": ticker,
-        "balance": balance,
-        "address": coin.my_address(),
-    }).to_string())))
-}
 
 pub fn withdraw (ctx: MmArc, req: Json) -> HyRes {
     let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();

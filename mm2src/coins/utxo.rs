@@ -56,7 +56,8 @@ use std::time::Duration;
 pub use chain::Transaction as UtxoTx;
 
 use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, NativeClient, UtxoRpcClientEnum, UnspentInfo };
-use super::{HistorySyncState, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, TradeInfo, Transaction, TransactionEnum, TransactionFut, TransactionDetails};
+use super::{FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, MmCoinEnum, SwapOps, TradeInfo,
+            Transaction, TransactionEnum, TransactionFut, TransactionDetails};
 use crate::utxo::rpc_clients::{NativeClientImpl, UtxoRpcClientOps, ElectrumRpcRequest};
 use futures::future::Either;
 
@@ -218,6 +219,48 @@ impl UtxoCoinImpl {
     pub fn denominate_satoshis(&self, satoshi: i64) -> f64 {
         satoshi as f64 / 10f64.powf(self.decimals as f64)
     }
+
+    fn search_for_swap_tx_spend(
+        &self,
+        time_lock: u32,
+        first_pub: &Public,
+        second_pub: &Public,
+        secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String> {
+        let tx: UtxoTx = try_s!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
+        let script = payment_script(time_lock, secret_hash, first_pub, second_pub);
+        let expected_script_pubkey = Builder::build_p2sh(&dhash160(&script)).to_bytes();
+        if tx.outputs[0].script_pubkey != expected_script_pubkey {
+            return ERR!("Transaction {:?} output 0 script_pubkey doesn't match expected {:?}", tx, expected_script_pubkey);
+        }
+
+        let spend = try_s!(self.rpc_client.find_output_spend(&tx, 0, search_from_block));
+        match spend {
+            Some(tx) => {
+                let script: Script = tx.inputs[0].script_sig.clone().into();
+                match script.iter().nth(2) {
+                    Some(instruction) => match instruction {
+                        Ok(ref i) if i.opcode == Opcode::OP_0 => return Ok(Some(FoundSwapTxSpend::Spent(tx.into()))),
+                        _ => (),
+                    },
+                    None => (),
+                };
+
+                match script.iter().nth(1) {
+                    Some(instruction) => match instruction {
+                        Ok(ref i) if i.opcode == Opcode::OP_1 => return Ok(Some(FoundSwapTxSpend::Refunded(tx.into()))),
+                        _ => (),
+                    },
+                    None => (),
+                };
+
+                ERR!("Couldn't find required instruction in script_sig of input 0 of tx {:?}", tx)
+            },
+            None => Ok(None),
+        }
+    }
 }
 
 fn payment_script(
@@ -295,7 +338,7 @@ fn p2pkh_spend(
     })
 }
 
-/// Creates signed input spending p2sh output
+/// Creates signed input spending hash time locked p2sh output
 fn p2sh_spend(
     signer: &TransactionInputSigner,
     input_index: usize,
@@ -1104,6 +1147,42 @@ impl SwapOps for UtxoCoin {
             },
         }
     }
+
+    fn search_for_swap_tx_spend_my(
+        &self,
+        time_lock: u32,
+        other_pub: &[u8],
+        secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String> {
+        self.search_for_swap_tx_spend(
+            time_lock,
+            self.key_pair.public(),
+            &try_s!(Public::from_slice(other_pub)),
+            secret_hash,
+            tx,
+            search_from_block
+        )
+    }
+
+    fn search_for_swap_tx_spend_other(
+        &self,
+        time_lock: u32,
+        other_pub: &[u8],
+        secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String> {
+        self.search_for_swap_tx_spend(
+            time_lock,
+            &try_s!(Public::from_slice(other_pub)),
+            self.key_pair.public(),
+            secret_hash,
+            tx,
+            search_from_block
+        )
+    }
 }
 
 impl MarketCoinOps for UtxoCoin {
@@ -1138,10 +1217,23 @@ impl MarketCoinOps for UtxoCoin {
 
     fn wait_for_tx_spend(&self, tx_bytes: &[u8], wait_until: u64, from_block: u64) -> Result<TransactionEnum, String> {
         let tx: UtxoTx = try_s!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
+        let vout = 0;
 
-        let res = try_s!(self.rpc_client.wait_for_payment_spend(&tx, 0, wait_until, from_block));
+        loop {
+            match self.rpc_client.find_output_spend(&tx, vout, from_block) {
+                Ok(Some(tx)) => return Ok(tx.into()),
+                Ok(None) => (),
+                Err(e) => {
+                    log!("Error " (e) " on find_output_spend of tx " [e]);
+                    ()
+                },
+            };
 
-        Ok(res.into())
+            if now_ms() / 1000 > wait_until {
+                return ERR!("Waited too long until {} for transaction {:?} {} to be spent ", wait_until, tx, vout);
+            }
+            thread::sleep(Duration::from_secs(10));
+        }
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {

@@ -76,13 +76,13 @@ pub struct MmCtx {
     pub seednode_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
     /// Standard node P2P message bus channel.
     pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
-    /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.  
+    /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.
     /// Replacement of `lp::G.LP_myrmd160`.
     pub rmd160: Constructible<H160>,
     /// Seed node IPs, initialized in `fn lp_initpeers`.
     pub seeds: Mutex<Vec<IpAddr>>,
-    /// secp256k1 key pair derived from passphrase.  
-    /// cf. `key_pair_from_seed`.  
+    /// secp256k1 key pair derived from passphrase.
+    /// cf. `key_pair_from_seed`.
     /// Replacement of `lp::G.LP_privkey`.
     pub secp256k1_key_pair: Constructible<KeyPair>,
     /// Coins that should be enabled to kick start the interrupted swaps and orders.
@@ -201,7 +201,7 @@ impl MmCtx {
             unwrap!(self.client_p2p_channel.0.send(msg.to_owned().into_bytes()));
     }   }
 
-    /// Get a reference to the secp256k1 key pair.  
+    /// Get a reference to the secp256k1 key pair.
     /// Panics if the key pair is not available.
     pub fn secp256k1_key_pair (&self) -> &KeyPair {
         match self.secp256k1_key_pair.as_option() {
@@ -209,7 +209,7 @@ impl MmCtx {
             None => panic! ("secp256k1_key_pair not available")
     }   }
 
-    /// This is our public ID, allowing us to be different from other peers.  
+    /// This is our public ID, allowing us to be different from other peers.
     /// This should also be our public key which we'd use for message verification.
     pub fn public_id (&self) -> Result<bits256, String> {
         for pair in &self.secp256k1_key_pair {

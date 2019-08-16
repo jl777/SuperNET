@@ -51,10 +51,11 @@ use std::time::Duration;
 use web3::{ self, Web3 };
 use web3::types::{Action as TraceAction, BlockId, BlockNumber, Bytes, CallRequest, FilterBuilder, Log, Transaction as Web3Transaction, TransactionId, H256, Trace, TraceFilterBuilder};
 
-use super::{HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeInfo, TransactionFut,
+use super::{FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeInfo, TransactionFut,
             TransactionEnum, Transaction, TransactionDetails};
 
 pub use ethcore_transaction::SignedTransaction as SignedEthTx;
+pub use rlp;
 
 mod web3_transport;
 use self::web3_transport::Web3Transport;
@@ -264,6 +265,76 @@ impl EthCoinImpl {
             .build();
 
         Box::new(self.web3.eth().logs(filter).map_err(|e| ERRL!("{}", e)))
+    }
+
+    /// Gets `SenderRefunded` events from etomic swap smart contract (`self.swap_contract_address` ) since `from_block`
+    fn refund_events(&self, from_block: u64) -> Box<dyn Future<Item=Vec<Log>, Error=String>> {
+        let contract_event = try_fus!(SWAP_CONTRACT.event("SenderRefunded"));
+        log!([contract_event.signature()]);
+        let filter = FilterBuilder::default()
+            .topics(Some(vec![contract_event.signature()]), None, None, None)
+            .from_block(BlockNumber::Number(from_block))
+            .address(vec![self.swap_contract_address])
+            .build();
+
+        Box::new(self.web3.eth().logs(filter).map_err(|e| ERRL!("{}", e)))
+    }
+
+    fn search_for_swap_tx_spend(
+        &self,
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String> {
+        let unverified: UnverifiedTransaction = try_s!(rlp::decode(tx));
+        let tx = try_s!(SignedEthTx::new(unverified));
+
+        let func_name = match self.coin_type {
+            EthCoinType::Eth => "ethPayment",
+            EthCoinType::Erc20(_token_addr) => "erc20Payment",
+        };
+
+        let payment_func = try_s!(SWAP_CONTRACT.function(func_name));
+        let decoded = try_s!(payment_func.decode_input(&tx.data));
+        let id = match &decoded[0] {
+            Token::FixedBytes(bytes) => bytes.clone(),
+            _ => panic!(),
+        };
+
+        let spend_events = try_s!(self.spend_events(search_from_block).wait());
+        let found = spend_events.iter().find(|event| &event.data.0[..32] == id.as_slice());
+
+        if let Some(event) = found {
+            match event.transaction_hash {
+                Some(tx_hash) => {
+                    let transaction = match try_s!(self.web3.eth().transaction(TransactionId::Hash(tx_hash)).wait()) {
+                        Some(t) => t,
+                        None => return ERR!("Found ReceiverSpent event, but transaction {:02x} is missing", tx_hash),
+                    };
+
+                    return Ok(Some(FoundSwapTxSpend::Spent(TransactionEnum::from(try_s!(signed_tx_from_web3_tx(transaction))))));
+                },
+                None => return ERR!("Found ReceiverSpent event, but it doesn't have tx_hash"),
+            }
+        }
+
+        let refund_events = try_s!(self.refund_events(search_from_block).wait());
+        let found = refund_events.iter().find(|event| &event.data.0[..32] == id.as_slice());
+
+        if let Some(event) = found {
+            match event.transaction_hash {
+                Some(tx_hash) => {
+                    let transaction = match try_s!(self.web3.eth().transaction(TransactionId::Hash(tx_hash)).wait()) {
+                        Some(t) => t,
+                        None => return ERR!("Found SenderRefunded event, but transaction {:02x} is missing", tx_hash),
+                    };
+
+                    return Ok(Some(FoundSwapTxSpend::Refunded(TransactionEnum::from(try_s!(signed_tx_from_web3_tx(transaction))))));
+                },
+                None => return ERR!("Found SenderRefunded event, but it doesn't have tx_hash"),
+            }
+        }
+
+        Ok(None)
     }
 }
 
@@ -484,6 +555,28 @@ impl SwapOps for EthCoin {
             None => Ok(None)
         }
     }
+
+    fn search_for_swap_tx_spend_my(
+        &self,
+        _time_lock: u32,
+        _other_pub: &[u8],
+        _secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String> {
+        self.search_for_swap_tx_spend(tx, search_from_block)
+    }
+
+    fn search_for_swap_tx_spend_other(
+        &self,
+        _time_lock: u32,
+        _other_pub: &[u8],
+        _secret_hash: &[u8],
+        tx: &[u8],
+        search_from_block: u64,
+    ) -> Result<Option<FoundSwapTxSpend>, String> {
+        self.search_for_swap_tx_spend(tx, search_from_block)
+    }
 }
 
 impl MarketCoinOps for EthCoin {
@@ -615,9 +708,7 @@ impl MarketCoinOps for EthCoin {
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
-        let tx: UnverifiedTransaction = try_s!(rlp::decode(bytes));
-        let signed = try_s!(SignedEthTx::new(tx));
-        Ok(TransactionEnum::from(signed))
+        Ok(try_s!(signed_eth_tx_from_bytes(bytes)).into())
     }
 
     fn current_block(&self) -> Box<dyn Future<Item=u64, Error=String> + Send> {
@@ -629,6 +720,12 @@ impl MarketCoinOps for EthCoin {
         let addr = try_s!(addr_from_raw_pubkey(&pubkey_bytes));
         Ok(format!("{:#02x}", addr))
     }
+}
+
+pub fn signed_eth_tx_from_bytes(bytes: &[u8]) -> Result<SignedEthTx, String> {
+    let tx: UnverifiedTransaction = try_s!(rlp::decode(bytes));
+    let signed = try_s!(SignedEthTx::new(tx));
+    Ok(signed)
 }
 
 // We can use a shared nonce lock for all ETH coins.
@@ -2036,7 +2133,7 @@ fn is_valid_checksum_addr(addr: &str) -> bool {
 
 /// Requests the nonce from all available nodes and checks that returned results equal.
 /// Nodes might need some time to sync and there can be other coins that use same nodes in different order.
-/// We need to be sure that nonce is updated on all of them after transaction is sent.
+/// We need to be sure that nonce is updated on all of them before and after transaction is sent.
 fn get_addr_nonce(addr: Address, web3s: &Vec<Web3Instance>) -> impl Future<Item=U256, Error=String> {
     loop_fn((addr, web3s.clone(), true, 0), move |(addr, web3s, first_run, mut errors)| {
         let futures: Vec<_> = web3s.iter().map(|web3| if web3.is_parity {
