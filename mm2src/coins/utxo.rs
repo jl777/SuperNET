@@ -1613,7 +1613,10 @@ fn confpath (coins_en: &Json) -> Result<PathBuf, String> {unimplemented!()}
 fn read_native_mode_conf(filename: &dyn AsRef<Path>) -> Result<(Option<u16>, String, String), String> {
     use ini::Ini;
 
-    let conf: Ini = try_s!(Ini::load_from_file(&filename));
+    let conf: Ini = match Ini::load_from_file(&filename) {
+        Ok(ini) => ini,
+        Err(err) => return ERR!("Error parsing the native wallet configuration '{}': {}", filename.as_ref().display(), err)
+    };
     let section = conf.general_section();
     let rpc_port = match section.get("rpcport") {
         Some(port) => port.parse::<u16>().ok(),
