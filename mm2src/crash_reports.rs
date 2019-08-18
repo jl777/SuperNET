@@ -3,6 +3,7 @@ use common::{self, set_panic_hook, stack_trace, stack_trace_frame, writeln};
 use std::env;
 use std::io::stderr;
 use std::io::Write;
+use std::os::raw::c_int;
 use std::path::Path;
 use std::process::abort;
 use std::sync::Once;

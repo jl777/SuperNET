@@ -25,9 +25,7 @@ use common::{rpc_err_response, rpc_response, HyRes, MM_VERSION};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use futures::Future;
-use futures_timer::Delay;
 use serde_json::{Value as Json};
-use std::time::Duration;
 
 use crate::mm2::lp_swap::get_locked_amount;
 
