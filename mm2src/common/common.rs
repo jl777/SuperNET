@@ -68,8 +68,14 @@ pub mod iguana_utils;
 pub mod privkey;
 pub mod mm_ctx;
 pub mod seri;
+
 #[cfg(feature = "native")]
 pub mod lift_body;
+#[cfg(not(feature = "native"))]
+pub mod lift_body {
+    #[derive(Debug)]
+    pub struct LiftBody<T> {inner: T}
+}
 
 use bigdecimal::BigDecimal;
 use crossbeam::{channel};
@@ -103,6 +109,7 @@ use std::ptr::{null_mut, read_volatile};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::str;
+use uuid::Uuid;
 
 #[cfg(feature = "native")]
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
@@ -1219,3 +1226,9 @@ fn test_round_to() {
     assert_eq! (round_to (&BigDecimal::from (0), 0), "0");
     assert_eq! (round_to (&BigDecimal::from (-0), 0), "0");
 }
+
+#[cfg(feature = "native")]
+pub fn new_uuid() -> Uuid {Uuid::new_v4()}
+
+#[cfg(not(feature = "native"))]
+pub fn new_uuid() -> Uuid {unimplemented!()}

@@ -54,7 +54,6 @@ use futures::task::Task;
 use futures03::compat::Future01CompatExt;
 #[cfg(not(feature = "native"))]
 use futures03::task::{Context, Poll as Poll03, Waker};
-use futures03::future::{FutureExt, TryFutureExt};
 use gstuff::{binprint, now_float, slurp};
 use itertools::Itertools;
 #[cfg(feature = "native")]
@@ -1603,7 +1602,7 @@ struct RecvFuture {
     pctx: Arc<PeersContext>,
     seed: bits256,
     salt: Salt,
-    validator: Box<dyn Fn(&[u8])->bool + Send>,
+    validator: FixedValidator,
     frid: Option<NonZeroU64>,
     /// Start checking the HTTP fallback server for the value
     /// if it doesn't come through other channels in the given number of seconds.
@@ -1634,7 +1633,7 @@ impl Future for RecvFuture {
         {   // Check if the data has arrived.
             let fetched = try_s! (self.pctx.recently_fetched.lock());
             if let Some ((_lm, payload)) = fetched.get (&self.salt) {
-                if (self.validator) (payload) {
+                if self.validator.is_valid (payload) {
                     return Ok (Async::Ready (payload.clone()))
                 }
             }
@@ -1663,7 +1662,7 @@ impl Drop for RecvFuture {
 /// As of now doesn't need a reactor.
 /// Should be `drop`ped soon as we no longer need the transmission.
 #[cfg(feature = "native")]
-pub async fn recvʹ (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: Box<dyn Fn(&[u8])->bool + Send>)
+pub async fn recv (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: FixedValidator)
 -> Result<Vec<u8>, String> {
     let fallback = match option_env! ("MM2_FALLBACK") {Some (n) => try_s! (n.parse()), None => fallback};
     let fallback = try_s! (NonZeroU8::new (fallback) .ok_or ("fallback is 0"));
@@ -1678,6 +1677,7 @@ pub async fn recvʹ (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: Box<
     Ok (try_s! (rc))
 }
 
+/*
 #[cfg(feature = "native")]
 pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<dyn Fn(&[u8])->bool + Send>)
 -> Box<dyn Future<Item=Vec<u8>, Error=String> + Send> {
@@ -1685,6 +1685,7 @@ pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<dyn Fn(&[
     let f = f.boxed().compat();
     Box::new (f)
 }
+*/
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum FixedValidator {
@@ -1692,16 +1693,19 @@ pub enum FixedValidator {
     Exact (Vec<u8>)
 }
 
+impl FixedValidator {
+    fn is_valid (&self, payload: &[u8]) -> bool {
+        match self {
+            &FixedValidator::AnythingGoes => true,
+            &FixedValidator::Exact (ref expected) => payload == &expected[..]
+}   }   }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct ToPeersRecv {ctx: u32, subject: Vec<u8>, fallback: u8, validator: FixedValidator}
 
 helper! (peers_recv, args: ToPeersRecv, {
     let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
-    let validator: Box<dyn Fn(&[u8])->bool + Send> = match args.validator {
-        FixedValidator::AnythingGoes => Box::new (|_| true),
-        FixedValidator::Exact (bytes) => Box::new (move |candidate| candidate == &bytes[..])
-    };
-    let vec: Vec<u8> = try_s! (recvʹ (ctx, args.subject, args.fallback, validator) .await);
+    let vec: Vec<u8> = try_s! (recv (ctx, args.subject, args.fallback, args.validator) .await);
     Ok (vec)
 });
 
@@ -1729,7 +1733,7 @@ pub extern fn start_helpers() -> i32 {
 }   }   }
 
 #[cfg(not(feature = "native"))]
-pub async fn recvʹ (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: FixedValidator)
+pub async fn recv (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: FixedValidator)
 -> Result<Vec<u8>, String> {
     helperᶜ ("peers_recv", try_s! (json::to_vec (&ToPeersRecv {
         ctx: try_s! (ctx.ffi_handle()),

@@ -1,3 +1,7 @@
+#![cfg_attr(not(feature = "native"), allow(unused_imports))]
+#![cfg_attr(not(feature = "native"), allow(unused_macros))]
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use bigdecimal::BigDecimal;
 use bytes::{BytesMut};
 use chain::{OutPoint, Transaction as UtxoTx};
@@ -851,7 +855,7 @@ impl ElectrumClientImpl {
     }
 
     #[cfg(not(feature = "native"))]
-    pub fn add_server(&mut self, req: &ElectrumRpcRequest) -> Result<(), String> {unimplemented!()}
+    pub fn add_server(&mut self, _req: &ElectrumRpcRequest) -> Result<(), String> {unimplemented!()}
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#server-ping
     pub fn server_ping(&self) -> RpcRes<()> {

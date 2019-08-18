@@ -1606,7 +1606,7 @@ fn confpath (coins_en: &Json) -> Result<PathBuf, String> {
 }
 
 #[cfg(not(feature = "native"))]
-fn confpath (coins_en: &Json) -> Result<PathBuf, String> {unimplemented!()}
+fn confpath (_coins_en: &Json) -> Result<PathBuf, String> {unimplemented!()}
 
 /// Attempts to parse native daemon conf file and return rpcport, rpcuser and rpcpassword
 #[cfg(feature = "native")]

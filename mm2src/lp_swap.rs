@@ -54,16 +54,20 @@
 //  lp_swap.rs
 //  marketmaker
 //
+
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use bigdecimal::BigDecimal;
 use futures03::executor::block_on;
 use rpc::v1::types::{Bytes as BytesJson, H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo, TransactionDetails, TransactionEnum};
 use common::{bits256, HyRes, rpc_response};
-use common::wio::Timeout;
+use common::executor::Timer;
 use common::log::{TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures::{Future};
-use gstuff::{now_ms, slurp};
+use futures03::future::Either;
+use gstuff::{now_float, now_ms, slurp};
 use http::Response;
 use primitives::hash::{H160, H264};
 use serde_json::{self as json, Value as Json};
@@ -88,41 +92,39 @@ macro_rules! send {
     }}
 }
 
+// NB: `$validator` is where we should put the decryption and verification in,
+// in order for the bogus DHT input to disrupt communication less.
 macro_rules! recv_ {
-    ($swap: expr, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
+    ($swap: expr, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: expr) => {{
         let recv_subject = fomat! (($subj) '@' ($swap.uuid));
-        let validator = Box::new ($validator) as Box<dyn Fn(&[u8]) -> Result<(), String> + Send>;
+        let recv_subjectᵇ = recv_subject.clone().into_bytes();
         let fallback = ($timeout_sec / 3) .min (30) .max (60) as u8;
-        let recv_f = peers::recv (&$swap.ctx, recv_subject.as_bytes(), fallback, Box::new ({
-            // NB: `peers::recv` is generic and not responsible for handling errors.
-            //     Here, on the other hand, we should know enough to log the errors.
-            //     Also through the macros the logging statements will carry informative line numbers on them.
-            move |payload: &[u8]| -> bool {
-                match validator (payload) {
-                    Ok (()) => true,
-                    Err (err) => {
-                        log! ("Error validating payload '" ($subj) "' (" (payload.len()) " bytes, crc " (crc32::checksum_ieee (payload)) "): " (err) ". Retrying…");
-                        false
-                    }
-                }
+        let recv_f = peers::recv ($swap.ctx.clone(), recv_subjectᵇ, fallback, $validator);
+
+        let started = now_float();
+        let timeout = (BASIC_COMM_TIMEOUT + $timeout_sec) as f64;
+        let timeoutᶠ = Timer::till (started + timeout);
+        block_on (async move {
+            let r = match futures03::future::select (Box::pin (recv_f), timeoutᶠ) .await {
+                Either::Left ((r, _)) => r,
+                Either::Right (_) => return ERR! ("timeout ({:.1} > {:.1})", now_float() - started, timeout)
+            };
+            if let Ok (ref payload) = r {
+                // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
+                let crc = crc32::checksum_ieee (&payload);
+                log! ("Received '" (recv_subject) "' (" (payload.len()) " bytes, crc " (crc) ")");
             }
-        }));
-        let recv_f = Timeout::new (recv_f, Duration::from_secs (BASIC_COMM_TIMEOUT + $timeout_sec));
-        recv_f.wait().map(|payload| {
-            // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
-            let crc = crc32::checksum_ieee (&payload);
-            log! ("Received '" (recv_subject) "' (" (payload.len()) " bytes, crc " (crc) ")");
-            payload
+            r
         })
     }}
 }
 
 macro_rules! recv {
-    ($selff: ident, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {
+    ($selff: ident, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: expr) => {
         recv_! ($selff, $subj, $timeout_sec, $ec, $validator)
     };
     // Use this form if there's a sending future to terminate upon receiving the answer.
-    ($selff: ident, $sending_f: ident, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: block) => {{
+    ($selff: ident, $sending_f: ident, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: expr) => {{
         let payload = recv_! ($selff, $subj, $timeout_sec, $ec, $validator);
         drop ($sending_f);
         payload

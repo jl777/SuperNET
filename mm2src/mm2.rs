@@ -19,11 +19,12 @@
 //  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
 
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+#![cfg_attr(not(feature = "native"), allow(unused_imports))]
+
 use common::{double_panic_crash, MM_VERSION};
 
 use gstuff::{slurp};
-
-use libc::{c_char};
 
 use serde_json::{self as json, Value as Json};
 
@@ -144,8 +145,10 @@ fn help() {
     )
 }
 
-#[allow(dead_code)]
+#[cfg(feature = "native")]
 pub fn mm2_main() {
+    use libc::c_char;
+
     init_crash_reports();
     log!({"AtomicDEX MarketMaker {}", MM_VERSION});
 

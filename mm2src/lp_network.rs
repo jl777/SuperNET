@@ -20,10 +20,12 @@
 
 use bitcrypto::ripemd160;
 use common::{lp_queue_command, HyRes, QueuedCommand, COMMAND_QUEUE};
-use common::wio::CORE;
+use common::executor::spawn;
 use common::mm_ctx::MmArc;
 use crossbeam::channel;
 use futures::{future, Future};
+use futures03::compat::Future01CompatExt;
+use futures03::future::FutureExt;
 use gstuff::now_ms;
 use primitives::hash::H160;
 use serde_json::{self as json, Value as Json};
@@ -105,7 +107,7 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
         }
         Box::new (future::ok(()))
     });
-    unwrap! (CORE.lock()) .spawn (f);
+    spawn (f.compat().map(|_|()))
 }
 
 /// The thread processing the peer-to-peer messaging bus.

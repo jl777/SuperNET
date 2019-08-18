@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
 use common::{self, set_panic_hook, stack_trace, stack_trace_frame, writeln};
-use libc::c_int;
 use std::env;
 use std::io::stderr;
 use std::io::Write;

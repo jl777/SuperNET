@@ -17,9 +17,12 @@
 //  rpc_commands.rs
 //  marketmaker
 //
+
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use coins::{lp_coinfind};
 use common::{rpc_err_response, rpc_response, HyRes, MM_VERSION};
-use common::wio::CORE;
+use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use futures::Future;
 use futures_timer::Delay;
@@ -124,13 +127,10 @@ pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
 pub fn stop (ctx: MmArc) -> HyRes {
     // Should delay the shutdown a bit in order not to trip the "stop" RPC call in unit tests.
     // Stopping immediately leads to the "stop" RPC call failing with the "errno 10054" sometimes.
-    let pause_f = Delay::new (Duration::from_millis (50));
-    let stop_f = pause_f.then (move |r| -> Result<(), ()> {
-        if let Err (err) = r {log! ("stop] Warning, there was a Delay error: " (err))}
+    spawn (async move {
+        Timer::sleep (0.05) .await;
         ctx.stop();
-        Ok(())
     });
-    unwrap! (CORE.lock()) .spawn (stop_f);
     rpc_response (200, r#"{"result": "success"}"#)
 }
 

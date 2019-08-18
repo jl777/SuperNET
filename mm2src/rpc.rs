@@ -16,8 +16,13 @@
 //
 //  Copyright © 2014-2018 SuperNET. All rights reserved.
 //
+
+#![cfg_attr(not(feature = "native"), allow(unused_imports))]
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use coins::{enable, electrum, get_enabled_coins, get_trade_fee, send_raw_transaction, withdraw, my_tx_history};
 use common::{err_to_rpc_json_string, rpc_response, rpc_err_response, HyRes};
+#[cfg(feature = "native")]
 use common::wio::{CORE, HTTP};
 use common::lift_body::LiftBody;
 use common::mm_ctx::MmArc;
@@ -27,12 +32,12 @@ use futures03::future::{FutureExt, TryFutureExt};
 use gstuff;
 use http::{Request, Response, Method};
 use http::header::{HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN};
-use hyper;
-use hyper::rt::Stream;
-use hyper::service::Service;
+#[cfg(feature = "native")]
+use hyper::{self, rt::Stream, service::Service};
 use serde_json::{self as json, Value as Json};
 use std::future::{Future as Future03};
 use std::net::{SocketAddr};
+#[cfg(feature = "native")]
 use tokio_core::net::TcpListener;
 
 use crate::mm2::lp_ordermatch::{buy, cancel_all_orders, cancel_order, my_orders, order_status, orderbook, sell, set_price};
@@ -166,6 +171,7 @@ pub fn dispatcher (req: Json, _remote_addr: Option<SocketAddr>, ctx: MmArc) -> D
 
 type RpcRes = Box<dyn Future<Item=Response<LiftBody<Vec<u8>>>, Error=String> + Send>;
 
+#[cfg(feature = "native")]
 fn hyres_into_rpcres<HR> (hyres: HR) -> impl Future<Item=Response<LiftBody<Vec<u8>>>, Error=String> + Send
 where HR: Future<Item=Response<Vec<u8>>, Error=String> + Send {
     hyres.map (move |r| {
@@ -174,6 +180,7 @@ where HR: Future<Item=Response<Vec<u8>>, Error=String> + Send {
     })
 }
 
+#[cfg(feature = "native")]
 impl Service for RpcService {
     type ReqBody = hyper::Body;
     type ResBody = LiftBody<Vec<u8>>;
@@ -245,6 +252,7 @@ impl Service for RpcService {
     }
 }
 
+#[cfg(feature = "native")]
 pub extern fn spawn_rpc(ctx_h: u32) {
     // NB: We need to manually handle the incoming connections in order to get the remote IP address,
     // cf. https://github.com/hyperium/hyper/issues/1410#issuecomment-419510220.
@@ -304,3 +312,6 @@ pub extern fn spawn_rpc(ctx_h: u32) {
         server
     });
 }
+
+#[cfg(not(feature = "native"))]
+pub extern fn spawn_rpc(_ctx_h: u32) {unimplemented!()}

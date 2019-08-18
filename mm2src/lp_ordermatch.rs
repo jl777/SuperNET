@@ -18,9 +18,12 @@
 //  ordermatch.rs
 //  marketmaker
 //
+
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
-use common::{bits256, round_to, rpc_response, rpc_err_response, HyRes, SMALLVAL};
+use common::{bits256, new_uuid, round_to, rpc_response, rpc_err_response, HyRes, SMALLVAL};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
@@ -714,7 +717,7 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_taker_orders = try_s!(ordermatch_ctx.my_taker_orders.lock());
-    let uuid = Uuid::new_v4();
+    let uuid = new_uuid();
     let our_public_id = try_s!(ctx.public_id());
     let request = TakerRequest {
         base: input.base,
@@ -943,7 +946,7 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
                     }).collect();
                 }
 
-                let uuid = Uuid::new_v4();
+                let uuid = new_uuid();
                 let order = MakerOrder {
                     max_base_vol: volume,
                     min_base_vol: 0.into(),

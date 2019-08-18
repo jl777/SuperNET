@@ -97,17 +97,8 @@ async fn peers_exchange (conf: Json) {
 
         // Get that message from Alice.
 
-        #[cfg(feature = "native")]
-        fn fixed_validator (expect: Vec<u8>) -> Box<dyn Fn(&[u8])->bool + Send> {
-            Box::new (move |payload| payload == &expect[..])
-        }
-
-        #[cfg(not(feature = "native"))]
-        fn fixed_validator (expect: Vec<u8>) -> crate::FixedValidator {
-            crate::FixedValidator::Exact (expect)
-        }
-
-        let rc = super::recvʹ (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, fixed_validator (message.clone()));
+        let validator = super::FixedValidator::Exact (message.clone());
+        let rc = super::recv (bob.clone(), Vec::from (&b"test_dht"[..]), fallback, validator);
         let rc = select (Box::pin (rc), Timer::sleep (99.)) .await;
         let received = match rc {
             Either::Left ((rc, _)) => unwrap! (rc),
@@ -203,7 +194,7 @@ pub fn peers_direct_send() {
     let message: Vec<u8> = (0..33) .map (|_| rng.gen()) .collect();
 
     let _send_f = block_on (super::send (alice.clone(), bob_id, Vec::from (&b"subj"[..]), 255, message.clone()));
-    let recv_f = super::recvʹ (bob.clone(), Vec::from (&b"subj"[..]), 255, Box::new (|_| true));
+    let recv_f = super::recv (bob.clone(), Vec::from (&b"subj"[..]), 255, super::FixedValidator::AnythingGoes);
 
     // Confirm that Bob was added into the friendlist and that we don't know its address yet.
     {

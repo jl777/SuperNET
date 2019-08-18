@@ -17,13 +17,15 @@
 //  marketmaker
 //
 
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+#![cfg_attr(not(feature = "native"), allow(unused_imports))]
+
 use futures::{Future};
 use futures::sync::oneshot::Sender;
 use futures03::compat::Future01CompatExt;
 use futures03::executor::block_on;
 use futures03::future::FutureExt;
 use http::StatusCode;
-use libc::{self, c_char};
 use rand::{random, Rng, SeedableRng};
 use rand::rngs::SmallRng;
 use serde_json::{self as json, Value as Json};
@@ -32,6 +34,7 @@ use std::fs;
 use std::ffi::{CString};
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener};
+use std::os::raw::c_char;
 use std::path::Path;
 use std::ptr::null_mut;
 use std::str;
@@ -61,7 +64,7 @@ use common::mm_ctx::MmCtxBuilder;
 pub unsafe fn lp_command_process(
     ctx: MmArc,
     json: Json,
-) -> *mut libc::c_char {
+) -> *mut c_char {
     if !json["result"].is_null() || !json["error"].is_null() {
         null_mut()
     } else {
@@ -971,11 +974,11 @@ const BITCOIND_RPC_INITIALIZING: AtomicBool = AtomicBool::new (false);
 /// Invokes `OS_ensure_directory`,
 /// then prints an error and returns `false` if the directory is not writable.
 fn ensure_dir_is_writable(dir_path: &Path) -> bool {
-    let c_dir_path = unwrap! (dir_path.to_str());
-    let c_dir_path = unwrap! (CString::new (c_dir_path));
-
-    #[cfg(feature = "native")]
-    unsafe {lp::OS_ensure_directory (c_dir_path.as_ptr() as *mut c_char)};
+    #[cfg(feature = "native")] unsafe {
+        let c_dir_path = unwrap! (dir_path.to_str());
+        let c_dir_path = unwrap! (CString::new (c_dir_path));
+        lp::OS_ensure_directory (c_dir_path.as_ptr() as *mut c_char)
+    };
 
     /*
     char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
@@ -1096,6 +1099,7 @@ pub unsafe fn lp_passphrase_init (ctx: &MmArc) -> Result<(), String> {
 /// Dropping or using that Sender will stop the HTTP fallback server.
 /// 
 /// Also the port of the HTTP fallback server is returned.
+#[cfg(feature = "native")]
 fn test_ip (ctx: &MmArc, ip: IpAddr) -> Result<(Sender<()>, u16), String> {
     use peers::http_fallback::new_http_fallback;
 
@@ -1148,6 +1152,9 @@ fn test_ip (ctx: &MmArc, ip: IpAddr) -> Result<(Sender<()>, u16), String> {
     if body != b"k" {return ERR! ("body not k")}
     Ok ((shutdown_tx, port))
 }
+
+#[cfg(not(feature = "native"))]
+fn test_ip (_ctx: &MmArc, _ip: IpAddr) -> Result<(Sender<()>, u16), String> {unimplemented!()}
 
 /// * `ctx_cb` - callback used to share the `MmCtx` ID with the call site.
 pub fn lp_init (mypubport: u16, conf: Json, ctx_cb: &dyn Fn (u32))

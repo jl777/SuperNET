@@ -5,7 +5,7 @@ edition = "2018"
 
 [features]
 native = [
-  "dirs", "rust-ini", "rustls", "tokio", "tokio-timer", "tokio-io", "tokio-rustls", "tokio-tcp", "webpki-roots",
+  "dirs", "rust-ini", "rustls", "tokio", "tokio-io", "tokio-rustls", "tokio-tcp", "webpki-roots",
   "common/native"
 ]
 
@@ -57,7 +57,6 @@ serialization = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 sha2 = "0.8"
 sha3 = "0.8"
 tokio = { version = "0.1", optional = true }
-tokio-timer = { version = "0.1", optional = true }
 tokio-io = { version = "0.1.10"  , optional = true }
 tokio-rustls = { version = "=0.9.1", optional = true }
 # Need try_clone to shutdown and reconnect the tcp connection when there's no data received from Electrum after some time.

@@ -1,6 +1,9 @@
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use bitcrypto::dhash160;
 use coins::FoundSwapTxSpend;
 use crc::crc32;
+use peers::FixedValidator;
 use rand::Rng;
 use super::*;
 
@@ -258,7 +261,7 @@ impl MakerSwap {
             )),
         };
 
-        let data = match recv!(self, sending_f, "negotiation-reply", 90, -2000, {|_: &[u8]| Ok(())}) {
+        let data = match recv!(self, sending_f, "negotiation-reply", 90, -2000, FixedValidator::AnythingGoes) {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(MakerSwapCommand::Finish),
@@ -309,7 +312,7 @@ impl MakerSwap {
             )),
         };
 
-        let payload = match recv!(self, sending_f, "taker-fee", 600, -2003, {|_: &[u8]| Ok(())}) {
+        let payload = match recv!(self, sending_f, "taker-fee", 600, -2003, FixedValidator::AnythingGoes) {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(MakerSwapCommand::Finish),
@@ -441,7 +444,7 @@ impl MakerSwap {
         };
 
         let wait_duration = self.data.lock_duration / 3;
-        let payload = match recv!(self, sending_f, "taker-payment", wait_duration, -2006, {|_: &[u8]| Ok(())}) {
+        let payload = match recv!(self, sending_f, "taker-payment", wait_duration, -2006, FixedValidator::AnythingGoes) {
             Ok(p) => p,
             Err(e) => return Ok((
                 Some(MakerSwapCommand::RefundMakerPayment),

@@ -1,5 +1,8 @@
+#![cfg_attr(not(feature = "native"), allow(dead_code))]
+
 use coins::{FoundSwapTxSpend};
 use crc::crc32;
+use peers::FixedValidator;
 use super::*;
 
 pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
@@ -454,7 +457,7 @@ impl TakerSwap {
     }
 
     fn negotiate(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let data = match recv!(self, "negotiation", 90, -1000, {|_: &[u8]| Ok(())}) {
+        let data = match recv!(self, "negotiation", 90, -1000, FixedValidator::AnythingGoes) {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -499,7 +502,7 @@ impl TakerSwap {
                 vec![TakerSwapEvent::NegotiateFailed(ERRL!("{}", e).into())]
             )),
         };
-        let data = match recv!(self, sending_f, "negotiated", 90, -1000, {|_: &[u8]| Ok(())}) {
+        let data = match recv!(self, sending_f, "negotiated", 90, -1000, FixedValidator::AnythingGoes) {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -582,7 +585,7 @@ impl TakerSwap {
             )),
         };
 
-        let payload = match recv!(self, sending_f, "maker-payment", 600, -1005, {|_: &[u8]| Ok(())}) {
+        let payload = match recv!(self, sending_f, "maker-payment", 600, -1005, FixedValidator::AnythingGoes) {
             Ok(p) => p,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
