@@ -99,8 +99,10 @@ fn help() {
         // using the CoinGecko behind the scenes unless the "cmc_key" is given.
         // In the future, when MM2 is more widely used and thus we're working more tighly with the GUIs (BarterDEX, HyperDEX, dICO),
         // we might add the "refrel=cmc" and "refrel=coingecko" RPC options.
+/* we're not using the `portfolio` crate at present
         "  cmc_key        ..  CoinMarketCap Professional API Key. Switches from CoinGecko to CoinMarketCap.\n"
         "                     The Key can be obtained from 'https://pro.coinmarketcap.com/account'.\n"
+*/
         "                     NB: The 'coins' command-line configuration must have the lowercased coin names in the 'name' field,\n"
       r#"                     {"coins": [{"name": "dash", "coin": "DASH", ...}, ...], ...}."# "\n"
         // cf. https://github.com/atomiclabs/hyperdex/blob/1d4ed3234b482e769124725c7e979eef5cd72d24/app/marketmaker/supported-currencies.js#L12
