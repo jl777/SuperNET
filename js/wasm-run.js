@@ -1,40 +1,20 @@
 // Run with:
 // 
-//     dash js/wasm-build.sh && (cd js && node wasm-run.js | rustfilt)
+//     dash js/wasm-build.sh && (cd js && node wasm-run.js 2>&1 | rustfilt)
 
+const bencode = require( 'bencode' )
+const { Buffer } = require ('buffer');
+const crc32 = require ('crc-32');  // TODO: Calculate the checksum in Rust instead.
 const fs = require ('fs');
 const http = require('http');  // https://nodejs.org/dist/latest-v12.x/docs/api/http.html
 
-// npm install -g node-gyp
-// Using a version of 'ffi' that works with Node 12.6,
-// cf. https://github.com/node-ffi/node-ffi/pull/544
-// npm install --save lxe/node-ffi#node-12
-const ffi = require ('ffi');
-// https://github.com/TooTallNate/ref; http://tootallnate.github.io/ref/
-const ref = require ('ref');
-const { Buffer } = require ('buffer');
-
 const snooze = ms => new Promise (resolve => setTimeout (resolve, ms));
 
-// Preparing the library:
+// Preparing the native helpers:
 // 
-//     cargo build --features native --package peers --release
-//     cp target/release/peers.dll js/
-//     cp x64/pthreadVC2.dll js/
+//     cargo build --features native --bin mm2
+//     target/debug/mm2 '{"passphrase": "-", "coins": []}'
 // 
-// cf. https://github.com/node-ffi/node-ffi/wiki/Node-FFI-Tutorial
-const io_buf_args = [ref.types.void, [
-  ref.refType (ref.types.uint8), ref.types.uint32, ref.refType (ref.types.uint8), ref.refType (ref.types.uint32)]];
-const libpeers = ffi.Library ('./peers', {
-  'ctx2helpers': [ref.types.void, [ref.refType (ref.types.uint8), ref.types.uint32]],
-  'is_loopback_ip': [ref.types.uint8, ['string']],
-  'peers_drop_send_handler': [ref.types.void, [ref.types.int32, ref.types.int32]],
-  'start_helpers': [ref.types.int32, []]
-});
-const ili_127_0_0_1 = libpeers.is_loopback_ip ('127.0.0.1');
-//console.log ('is_loopback_ip (127.0.0.1) = ' + ili_127_0_0_1);
-const ili_8_8_8_8 = libpeers.is_loopback_ip ('8.8.8.8');
-//console.log ('is_loopback_ip (8.8.8.8) = ' + ili_8_8_8_8);
 
 function from_utf8 (memory, ptr, len) {
   const view = new Uint8Array (memory.buffer, ptr, len);
@@ -56,11 +36,8 @@ function io_buf_proxy (wasmShared, helper, ptr, len, rbuf, rlen) {
   rlen_slice[0] = rbuf_len}
 
 async function runWasm() {
-  const wasmBytes = fs.readFileSync ('peers.wasm');
-  const wasmArray = new Uint8Array (wasmBytes);
+  const wasmBytes = fs.readFileSync ('mm2.wasm');
   const keepAliveAgent = new http.Agent ({keepAlive: true});
-  const ctx_and_port = libpeers.start_helpers();
-  console.log ('wasm-run] ctx_and_port', ctx_and_port);
   const httpRequests = {};
   const wasmShared = {};
   wasmShared.callbacks = {};
@@ -87,25 +64,29 @@ async function runWasm() {
       const decoded = from_utf8 (wasmShared.memory, ptr, len);
       console.log (decoded)},
     common_wait_for_log_re: function (ptr, len, rbuf, rlen) {
-      io_buf_proxy (wasmShared, libpeers.common_wait_for_log_re, ptr, len, rbuf, rlen)},
-    ctx2helpers: function (ptr, len) {
-      const ctx_s = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
-      libpeers.ctx2helpers (ctx_s, ctx_s.byteLength)},
+      //io_buf_proxy (wasmShared, libpeers.common_wait_for_log_re, ptr, len, rbuf, rlen)
+      throw new Error ('TBD')},
     date_now: function() {return Date.now()},
     http_helper_check: function (http_request_id, rbuf, rcap) {
       let ris = '' + http_request_id;
       if (httpRequests[ris] == null) return -1;
       if (httpRequests[ris].buf == null) return -1;
-      /** @type {Uint8Array} */ 
-      const buf = httpRequests[ris].buf;
+      const ben = {
+        status: httpRequests[ris].status,
+        ct: httpRequests[ris].ct,
+        cs: httpRequests[ris].cs,
+        body: httpRequests[ris].buf
+      };
+      const buf = bencode.encode (ben);
       if (buf.length > rcap) return -buf.length;
       const rbuf_slice = new Uint8Array (wasmShared.memory.buffer, rbuf, rcap);
       for (let i = 0; i < buf.length; ++i) rbuf_slice[i] = buf[i];
-      return buf.length
-    },
+      return buf.length},
     http_helper_if: function (helper_ptr, helper_len, payload_ptr, payload_len, timeout_ms) {
       const helper = from_utf8 (wasmShared.memory, helper_ptr, helper_len);
-      const payload = from_utf8 (wasmShared.memory, payload_ptr, payload_len);
+      //const payload = new Uint8Array (wasmShared.memory, payload_ptr, payload_len);
+      const payload = Buffer.from (wasmShared.memory.buffer.slice (payload_ptr, payload_ptr + payload_len));
+      const cs = crc32.buf (payload);
 
       // Find a random ID.
       let ri, ris;
@@ -122,11 +103,12 @@ async function runWasm() {
       const req = http.request ({
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': payload.length
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': payload.length,
+          'X-Helper-Checksum': cs
         },
         hostname: '127.0.0.1',
-        port: ctx_and_port,
+        port: 7783,
         path: '/helper/' + helper,
         agent: keepAliveAgent,
         timeout: timeout_ms
@@ -135,7 +117,7 @@ async function runWasm() {
         res.on ('end', () => {
           let len = 0;
           for (const chunk of chunks) {len += chunk.length}
-          if (res.headers["content-length"] != null && len != res.headers["content-length"]) {
+          if (res.headers['content-length'] != null && len != res.headers['content-length']) {
             throw new Error ('Content-Length mismatch')
           }
           const buf = new Uint8Array (len);
@@ -147,6 +129,9 @@ async function runWasm() {
             }
           }
           if (pos != len) throw new Error ('length mismatch');
+          httpRequests[ris].status = res.statusCode;
+          httpRequests[ris].ct = res.headers['content-type'];
+          httpRequests[ris].cs = res.headers['x-helper-checksum'];
           httpRequests[ris].buf = buf;
           wasmShared.exports.http_ready (ri)
         });
@@ -160,13 +145,17 @@ async function runWasm() {
       return ri  //< request id
     },
     peers_drop_send_handler: function (shp1, shp2) {
-      libpeers.peers_drop_send_handler (shp1, shp2)},
+      //libpeers.peers_drop_send_handler (shp1, shp2);
+      throw new Error ('TBD')},
     peers_initialize: function (ptr, len, rbuf, rlen) {
-      io_buf_proxy (wasmShared, libpeers.peers_initialize, ptr, len, rbuf, rlen)},
+      //io_buf_proxy (wasmShared, libpeers.peers_initialize, ptr, len, rbuf, rlen);
+      throw new Error ('TBD')},
     peers_recv: function (ptr, len, rbuf, rlen) {
-      io_buf_proxy (wasmShared, libpeers.peers_recv, ptr, len, rbuf, rlen)},
+      //io_buf_proxy (wasmShared, libpeers.peers_recv, ptr, len, rbuf, rlen);
+      throw new Error ('TBD')},
     peers_send: function (ptr, len, rbuf, rlen) {
-      io_buf_proxy (wasmShared, libpeers.peers_send, ptr, len, rbuf, rlen)}};
+      //io_buf_proxy (wasmShared, libpeers.peers_send, ptr, len, rbuf, rlen);
+      throw new Error ('TBD')}};
   const wasmInstantiated = await WebAssembly.instantiate (wasmBytes, {env: wasmEnv});
   const exports = wasmInstantiated.instance.exports;
   /** @type {WebAssembly.Memory} */

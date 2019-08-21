@@ -34,7 +34,7 @@ RUN \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # First 7 characters of the commit ID.
-ENV MM_VERSION="8895511"
+ENV MM_VERSION="5569aba"
 
 RUN cd /tmp &&\
     wget https://api.github.com/repos/KomodoPlatform/atomicDEX-API/tarball/$MM_VERSION &&\
@@ -80,4 +80,4 @@ RUN cd /mm2 &&\
 RUN cd /mm2/js &&\
     npm install > npm-install.log 2>&1
 
-CMD cd /mm2/js && node wasm-run.js | rustfilt
+CMD cd /mm2/js && node wasm-run.js 2>&1 | rustfilt

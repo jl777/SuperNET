@@ -1453,7 +1453,7 @@ helper! (peers_initialize, args: ToPeersInitialize, {
 pub async fn initialize (ctx: &MmArc, netid: u16, preferred_port: u16) -> Result<(), String> {
     let pctx = try_s! (PeersContext::from_ctx (&ctx));
 
-    try_s! (ctx.send_to_helpers());
+    try_s! (ctx.send_to_helpers().await);
 
     try_s! (helperᶜ ("peers_initialize", try_s! (json::to_vec (&ToPeersInitialize {
         ctx: try_s! (ctx.ffi_handle()),
@@ -1595,7 +1595,7 @@ pub async fn send (ctx: MmArc, peer: bits256, subject: Vec<u8>, fallback: u8, pa
         fallback,
         payload
     }))) .await);
-    Ok (try_s! (json::from_slice (&rv)))
+    Ok (try_s! (json::from_slice (&rv.body)))
 }
 
 struct RecvFuture {
@@ -1735,12 +1735,13 @@ pub extern fn start_helpers() -> i32 {
 #[cfg(not(feature = "native"))]
 pub async fn recv (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: FixedValidator)
 -> Result<Vec<u8>, String> {
-    helperᶜ ("peers_recv", try_s! (json::to_vec (&ToPeersRecv {
+    let hr = try_s! (helperᶜ ("peers_recv", try_s! (json::to_vec (&ToPeersRecv {
         ctx: try_s! (ctx.ffi_handle()),
         subject: subject.into(),
         fallback,
         validator
-    }))) .await
+    }))) .await);
+    Ok (hr.body.into_vec())
 }
 
 #[cfg(not(feature = "native"))]

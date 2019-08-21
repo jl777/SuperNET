@@ -86,6 +86,7 @@ use futures03::task::{Context, Poll as Poll03};
 use futures03::task::Waker;
 use futures03::compat::Future01CompatExt;
 use futures03::future::FutureExt;
+use gstuff::binprint;
 use hex::FromHex;
 use http::{Request, Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
@@ -93,6 +94,9 @@ use http::header::{HeaderValue, CONTENT_TYPE};
 use libc::{c_char, c_void, malloc, free};
 use rand::{SeedableRng, rngs::SmallRng};
 use serde::{ser, de};
+#[cfg(not(feature = "native"))]
+use serde_bencode::de::from_bytes as bdecode;
+use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::collections::HashMap;
 use std::env::{args, var, VarError};
@@ -1053,9 +1057,23 @@ extern "C" {fn http_helper_if (
     payload: *const u8, payload_len: i32,
     timeout_ms: i32) -> i32;}
 
-/// Check with the WASM host to see if the given HTTP request is ready.
 #[cfg(not(feature = "native"))]
-extern "C" {pub fn http_helper_check (helper_request_id: i32, rbuf: *mut u8, rcap: i32) -> i32;}
+extern "C" {
+    /// Check with the WASM host to see if the given HTTP request is ready.
+    /// 
+    /// Returns the amount of bytes copied to rbuf,  
+    /// or `-1` if the request is not yet finished,  
+    /// or `0 - amount of bytes` in case the intended size was larger than the `rcap`.
+    /// 
+    /// The bytes copied to rbuf are in the bencode format,
+    /// `{status: $number, ct: $bytes, cs: $bytes, body: $bytes}`
+    /// (the `HelperResponse`).
+    /// 
+    /// * `helper_request_id` - Request ID previously returned by `http_helper_if`.
+    /// * `rbuf` - The buffer to copy the response payload into if the request is finished.
+    /// * `rcap` - The size of the `rbuf` buffer.
+    pub fn http_helper_check (helper_request_id: i32, rbuf: *mut u8, rcap: i32) -> i32;
+}
 
 lazy_static! {
     /// Maps helper request ID to the corresponding Waker,
@@ -1071,8 +1089,23 @@ pub extern fn http_ready (helper_request_id: i32) {
     if let Some (waker) = helper_requests.remove (&helper_request_id) {waker.wake()}
 }
 
+#[derive(Deserialize, Debug)]
+pub struct HelperResponse {
+    pub status: u32,
+    #[serde(rename = "ct")]
+    pub content_type: Option<ByteBuf>,
+    #[serde(rename = "cs")]
+    pub checksum: Option<ByteBuf>,
+    pub body: ByteBuf
+}
+/// Mostly used to log the errors coming from the other side.
+impl fmt::Display for HelperResponse {
+    fn fmt (&self, ft: &mut fmt::Formatter) -> fmt::Result {
+        wite! (ft, (self.status) ", " (binprint (&self.body, b'.')))
+}   }
+
 #[cfg(not(feature = "native"))]
-pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<Vec<u8>, String> {
+pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<HelperResponse, String> {
     let helper_request_id = unsafe {http_helper_if (
         helper.as_ptr(), helper.len() as i32,
         args.as_ptr(), args.len() as i32,
@@ -1104,7 +1137,9 @@ pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<Vec<u8>, 
             unwrap! (HELPER_REQUESTS.lock()) .remove (&self.helper_request_id);
         }
     }
-    let rv = try_s! (HelperReply {helper, helper_request_id} .await);
+    let rv: Vec<u8> = try_s! (HelperReply {helper, helper_request_id} .await);
+    //log! ("HelperReply: " (gstuff::binprint (&rv, b'.')));
+    let rv: HelperResponse = try_s! (bdecode (&rv));
     Ok (rv)
 }
 
