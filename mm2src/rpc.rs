@@ -93,7 +93,7 @@ macro_rules! unwrap_or_err_response {
 
 /// Handle bencoded helper requests.
 /// 
-/// Example of a helper request (resulting in the `InvalidPrivate` error):
+/// Example of a helper request (resulting in the "Missing Field: `conf`" error):
 /// 
 ///     curl -v http://127.0.0.1:7783/helper/ctx2helpers \
 ///       -X POST -H 'X-Helper-Checksum: 815441984' -H 'Content-Type: application/octet-stream' \

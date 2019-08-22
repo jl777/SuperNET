@@ -350,8 +350,8 @@ impl MmArc {
 /// so the uniqueness of the `ffi_handle` is not a concern yet.
 #[cfg(feature = "native")]
 pub async fn ctx2helpers (main_ctx: MmArc, req: Bytes) -> Result<Vec<u8>, String> {
-    let ctxʷ: PortableCtx = unwrap! (bdecode (&req), "!bdecode");
-    let private = unwrap! (Private::from_layout (&ctxʷ.secp256k1_key_pair[..]));
+    let ctxʷ: PortableCtx = try_s! (bdecode (&req));
+    let private = try_s! (Private::from_layout (&ctxʷ.secp256k1_key_pair[..]));
     let main_key = try_s! (main_ctx.secp256k1_key_pair.as_option().ok_or ("No key"));
 
     if *main_key.private() == private {
@@ -375,19 +375,19 @@ pub async fn ctx2helpers (main_ctx: MmArc, req: Bytes) -> Result<Vec<u8>, String
     // Create a native copy of the portable context.
 
     let pair: Option<KeyPair> = if ctxʷ.secp256k1_key_pair.is_empty() {None} else {
-        let private = unwrap! (Private::from_layout (&ctxʷ.secp256k1_key_pair[..]));
-        Some (unwrap! (KeyPair::from_private (private)))
+        let private = try_s! (Private::from_layout (&ctxʷ.secp256k1_key_pair[..]));
+        Some (try_s! (KeyPair::from_private (private)))
     };
 
     let ctx = MmCtx {
-        conf: unwrap! (json::from_str (&ctxʷ.conf)),
+        conf: try_s! (json::from_str (&ctxʷ.conf)),
         secp256k1_key_pair: pair.into(),
         ffi_handle: ctxʷ.ffi_handle.into(),
         ..MmCtx::with_log_state (LogState::in_memory())
     };
     let ctx = MmArc (Arc::new (ctx));
     if let Some (ffi_handle) = ctxʷ.ffi_handle {
-        let mut ctx_ffi = unwrap! (MM_CTX_FFI.lock());
+        let mut ctx_ffi = try_s! (MM_CTX_FFI.lock());
         if ctx_ffi.contains_key (&ffi_handle) {return ERR! ("ID race")}
         ctx_ffi.insert (ffi_handle, ctx.weak());
     }

@@ -137,8 +137,10 @@ async function runWasm() {
         });
       });
       req.on ('error', function (err) {
-        // TODO: Propagate to the client.
-        console.log ('req err is', err)
+        httpRequests[ris].status = 0;
+        httpRequests[ris].ct = 'nodejs error';
+        httpRequests[ris].buf = '' + err;
+        wasmShared.exports.http_ready (ri)
       })
       req.write (payload);
       req.end();
