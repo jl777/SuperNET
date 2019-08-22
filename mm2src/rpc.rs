@@ -24,11 +24,14 @@ use bytes::Bytes;
 use coins::{enable, electrum, get_enabled_coins, get_trade_fee, send_raw_transaction, withdraw, my_tx_history};
 use common::{err_to_rpc_json_string, HyRes};
 #[cfg(feature = "native")]
-use common::wio::{CORE, HTTP};
+use common::wio::{CORE, CPUPOOL, HTTP};
 use common::lift_body::LiftBody;
-use common::mm_ctx::{ctx2helpers, MmArc};
+use common::mm_ctx::MmArc;
+#[cfg(feature = "native")]
+use common::mm_ctx::ctx2helpers;
+#[cfg(feature = "native")]
+use common::for_tests::common_wait_for_log_re;
 use futures::{self, Future, Stream};
-use futures_cpupool::CpuPool;
 use futures03::compat::{Compat, Future01CompatExt};
 use futures03::future::{FutureExt, TryFutureExt};
 use gstuff;
@@ -53,11 +56,6 @@ use self::lp_commands::*;
 
 #[path = "rpc/lp_signatures.rs"]
 pub mod lp_signatures;
-
-lazy_static! {
-    /// Shared CPU pool to run intensive/sleeping requests on separate thread
-    pub static ref CPUPOOL: CpuPool = CpuPool::new(8);
-}
 
 /// Lists the RPC method not requiring the "userpass" authentication.  
 /// None is also public to skip auth and display proper error in case of method is missing
@@ -99,21 +97,22 @@ macro_rules! unwrap_or_err_response {
 ///       -X POST -H 'X-Helper-Checksum: 815441984' -H 'Content-Type: application/octet-stream' \
 ///       -d 'd18:secp256k1_key_pair38:.0..Z......g)e.Q.@..d.sn<.v..>0.P....Ie'
 /// 
-async fn helpers (ctx: MmArc, client: SocketAddr, parts: Parts,
-                  body: Box<dyn Stream<Item=Bytes,Error=String>+Send>) -> Result<Response<Vec<u8>>, String> {
-    let ct = try_s! (parts.headers.get (CONTENT_TYPE) .ok_or ("No Content-Type"));
+#[cfg(feature = "native")]
+async fn helpers (ctx: MmArc, client: SocketAddr, req: Parts,
+                  reqᵇ: Box<dyn Stream<Item=Bytes,Error=String>+Send>) -> Result<Response<Vec<u8>>, String> {
+    let ct = try_s! (req.headers.get (CONTENT_TYPE) .ok_or ("No Content-Type"));
     if ct.as_bytes() != b"application/octet-stream" {return ERR! ("Unexpected Content-Type")}
 
     if !client.ip().is_loopback() {return ERR! ("Not local")}
 
-    let body = try_s! (body.concat2().compat().await);
-    //log! ("helpers] " [=parts] ", " (gstuff::binprint (&body, b'.')));
+    let reqᵇ = try_s! (reqᵇ.concat2().compat().await);
+    log! ("helpers] " [=req] ", " (gstuff::binprint (&reqᵇ, b'.')));
 
-    let method = parts.uri.path();
+    let method = req.uri.path();
     if !method.starts_with ("/helper/") {return ERR! ("Bad method")}
     let method = &method[8..];
 
-    let crc32 = try_s! (parts.headers.get ("X-Helper-Checksum") .ok_or ("No checksum"));
+    let crc32 = try_s! (req.headers.get ("X-Helper-Checksum") .ok_or ("No checksum"));
     let crc32 = try_s! (crc32.to_str());
     let crc32: u32 = if crc32.starts_with ('-') {
         // https://www.npmjs.com/package/crc-32 returns signed values
@@ -122,13 +121,17 @@ async fn helpers (ctx: MmArc, client: SocketAddr, parts: Parts,
     } else {try_s! (crc32.parse())};
 
     let mut hasher = crc32fast::Hasher::default();
-    hasher.update (&body);
+    hasher.update (&reqᵇ);
     let expected_checksum = hasher.finalize();
     //log! ([=expected_checksum] ", " [=crc32]);
     if crc32 != expected_checksum {return ERR! ("Damaged goods")}
 
     let res = match method {
-        "ctx2helpers" => try_s! (ctx2helpers (ctx, body) .await),
+        "ctx2helpers" => try_s! (ctx2helpers (ctx, reqᵇ) .await),
+        "peers_initialize" => try_s! (peers::peers_initialize (reqᵇ) .await),
+        "peers_send" => try_s! (peers::peers_send (reqᵇ) .await),
+        "peers_recv" => try_s! (peers::peers_recv (reqᵇ) .await),
+        "common_wait_for_log_re" => try_s! (common_wait_for_log_re (reqᵇ) .await),
         _ => return ERR! ("Unknown helper: {}", method)
     };
 
@@ -196,8 +199,18 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
         "coins_needed_for_kick_start" => hyres(coins_needed_for_kick_start(ctx)),
         // TODO coin initialization performs blocking IO, i.e request.wait(), have to run it on CPUPOOL to avoid blocking shared CORE.
         //      at least until we refactor the functions like `utxo_coin_from_iguana_info` to async versions.
-        "enable" => Box::new(CPUPOOL.spawn_fn(move || { enable (ctx, req) })),
-        "electrum" => Box::new(CPUPOOL.spawn_fn(move || { electrum (ctx, req) })),
+        "enable" => {
+            #[cfg(feature = "native")] {
+                Box::new(CPUPOOL.spawn_fn(move || { enable (ctx, req) }))
+            }
+            #[cfg(not(feature = "native"))] {return DispatcherRes::NoMatch (req)}
+        },
+        "electrum" => {
+            #[cfg(feature = "native")] {
+                Box::new(CPUPOOL.spawn_fn(move || { electrum (ctx, req) }))
+            }
+            #[cfg(not(feature = "native"))] {return DispatcherRes::NoMatch (req)}
+        },
         "get_enabled_coins" => get_enabled_coins (ctx),
         "get_trade_fee" => get_trade_fee (ctx, req),
         // "fundvalue" => lp_fundvalue (ctx, req, false),
@@ -216,7 +229,12 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
         "stop" => stop (ctx),
         "my_recent_swaps" => my_recent_swaps(ctx, req),
         "my_swap_status" => my_swap_status(ctx, req),
-        "recover_funds_of_swap" => Box::new(CPUPOOL.spawn_fn(move || { hyres(recover_funds_of_swap (ctx, req)) })),
+        "recover_funds_of_swap" => {
+            #[cfg(feature = "native")] {
+                Box::new(CPUPOOL.spawn_fn(move || { hyres(recover_funds_of_swap (ctx, req)) }))
+            }
+            #[cfg(not(feature = "native"))] {return DispatcherRes::NoMatch (req)}
+        },
         "stats_swap_status" => stats_swap_status(ctx, req),
         "version" => version(),
         "withdraw" => withdraw(ctx, req),
@@ -237,24 +255,26 @@ where HR: Future<Item=Response<Vec<u8>>, Error=String> + Send {
 }
 */
 
-async fn rpc_serviceʹ (ctx: MmArc, parts: Parts, body: Box<dyn Stream<Item=Bytes,Error=String>+Send>, client: SocketAddr)
+async fn rpc_serviceʹ (ctx: MmArc, req: Parts, reqᵇ: Box<dyn Stream<Item=Bytes,Error=String>+Send>, client: SocketAddr)
 -> Result<Response<Vec<u8>>, String> {
-    if parts.method != Method::POST {return ERR! ("Only POST requests are supported!")}
+    if req.method != Method::POST {return ERR! ("Only POST requests are supported!")}
 
-    // Checksum *tags* the helper requests and serves as a sanity check.
-    if parts.headers.contains_key ("X-Helper-Checksum") {return helpers (ctx, client, parts, body) .await}
+    #[cfg(feature = "native")] {
+        // Checksum *tags* the helper requests and serves as a sanity check.
+        if req.headers.contains_key ("X-Helper-Checksum") {return helpers (ctx, client, req, reqᵇ) .await}
+    }
 
-    let body = try_s! (body.concat2().compat().await);
-    let req: Json = try_s! (json::from_slice (&body));
+    let reqᵇ = try_s! (reqᵇ.concat2().compat().await);
+    let reqʲ: Json = try_s! (json::from_slice (&reqᵇ));
 
     // https://github.com/artemii235/SuperNET/issues/368
     let local_only = ctx.conf["rpc_local_only"].as_bool().unwrap_or(true);
-    if local_only && !client.ip().is_loopback() && !PUBLIC_METHODS.contains (&req["method"].as_str()) {
+    if local_only && !client.ip().is_loopback() && !PUBLIC_METHODS.contains (&reqʲ["method"].as_str()) {
         return ERR! ("Selected method can be called from localhost only!")
     }
-    try_s! (auth (&req, &ctx));
+    try_s! (auth (&reqʲ, &ctx));
 
-    let handler = match dispatcher (req, ctx.clone()) {
+    let handler = match dispatcher (reqʲ, ctx.clone()) {
         DispatcherRes::Match (handler) => handler,
         DispatcherRes::NoMatch (req) => return ERR! ("No such method: {:?}", req["method"])
     };
@@ -278,15 +298,15 @@ async fn rpc_service (req: Request<hyper::Body>, ctx_h: u32, client: SocketAddr)
     };
 
     // Convert the native Hyper stream into a portable stream of `Bytes`.
-    let (parts, body) = req.into_parts();
-    let body = Box::new (body.then (|chunk| -> Result<Bytes, String> {
+    let (req, reqᵇ) = req.into_parts();
+    let reqᵇ = Box::new (reqᵇ.then (|chunk| -> Result<Bytes, String> {
         match chunk {
             Ok (c) => Ok (c.into_bytes()),
             Err (err) => Err (fomat! ((err)))
         }
     }));
 
-    let (mut parts, body) = match rpc_serviceʹ (ctx, parts, body, client) .await {
+    let (mut parts, body) = match rpc_serviceʹ (ctx, req, reqᵇ, client) .await {
         Ok (r) => r.into_parts(),
         Err (err) => {
             log! ("RPC error response: " (err));

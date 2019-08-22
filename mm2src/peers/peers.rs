@@ -37,6 +37,7 @@ pub struct HttpFallbackTargetTrack;
 use crate::http_fallback::{hf_delayed_get, hf_drop_get, hf_poll, hf_transmit};
 
 use atomic::Atomic;
+use bytes::Bytes;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use common::{bits256, SlurpFut};
 #[cfg(not(feature = "native"))]
@@ -1441,13 +1442,15 @@ struct ToPeersInitialize {
     preferred_port: u16
 }
 
-helper! (peers_initialize, args: ToPeersInitialize, {
+#[cfg(feature = "native")]
+pub async fn peers_initialize (req: Bytes) -> Result<Vec<u8>, String> {
+    let args: ToPeersInitialize = try_s! (bdecode (&req));
     let ctx = match MmArc::from_ffi_handle (args.ctx) {
         Ok (ctx) => ctx,
         Err (err) => return ERR! (concat! (stringify! ($helper_name), "] !from_ffi_handle: {}"), err)};
     try_s! (initialize (&ctx, args.netid, args.preferred_port) .await);
     Ok (Vec::new())
-});
+}
 
 #[cfg(not(feature = "native"))]
 pub async fn initialize (ctx: &MmArc, netid: u16, preferred_port: u16) -> Result<(), String> {
@@ -1455,7 +1458,7 @@ pub async fn initialize (ctx: &MmArc, netid: u16, preferred_port: u16) -> Result
 
     try_s! (ctx.send_to_helpers().await);
 
-    try_s! (helperᶜ ("peers_initialize", try_s! (json::to_vec (&ToPeersInitialize {
+    try_s! (helperᶜ ("peers_initialize", try_s! (bencode (&ToPeersInitialize {
         ctx: try_s! (ctx.ffi_handle()),
         netid,
         preferred_port
@@ -1572,30 +1575,34 @@ pub async fn send (ctx: MmArc, peer: bits256, subject: Vec<u8>, fallback: u8, pa
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ToPeersSend {ctx: u32, peer: bits256, subject: Vec<u8>, fallback: u8, payload: Vec<u8>}
+struct ToPeersSend {ctx: u32, peer: bits256, subject: ByteBuf, fallback: u8, payload: ByteBuf}
 
-helper! (peers_send, args: ToPeersSend, {
+#[cfg(feature = "native")]
+pub async fn peers_send (req: bytes::Bytes) -> Result<Vec<u8>, String> {
+    let args: ToPeersSend = try_s! (bdecode (&req));
     let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
-    let mut shr = try_s! (send (ctx, args.peer, args.subject, args.fallback, args.payload) .await);
+    let subject = args.subject.into_vec();
+    let payload = args.payload.into_vec();
+    let mut shr = try_s! (send (ctx, args.peer, subject, args.fallback, payload) .await);
     // We need to leak the `SendHandlerRef` into the portable space
     // in order not to terminate the send prematurely.
     let ptr = shr.0;
     shr.0 = 0;
     Ok (fomat! ((ptr)) .into())
-});
+}
 
 /// Returns the `Arc` address of the `SendHandler`.
 #[cfg(not(feature = "native"))]
 pub async fn send (ctx: MmArc, peer: bits256, subject: Vec<u8>, fallback: u8, payload: Vec<u8>)
 -> Result<SendHandlerRef, String> {
-    let rv = try_s! (helperᶜ ("peers_send", try_s! (json::to_vec (&ToPeersSend {
+    let rv = try_s! (helperᶜ ("peers_send", try_s! (bencode (&ToPeersSend {
         ctx: try_s! (ctx.ffi_handle()),
         peer,
-        subject: subject.into(),
+        subject: ByteBuf::from (subject),
         fallback,
-        payload
+        payload: ByteBuf::from (payload)
     }))) .await);
-    Ok (try_s! (json::from_slice (&rv.body)))
+    Ok (try_s! (json::from_slice (&rv)))
 }
 
 struct RecvFuture {
@@ -1690,7 +1697,7 @@ pub fn recv (ctx: &MmArc, subject: &[u8], fallback: u8, validator: Box<dyn Fn(&[
 #[derive(Serialize, Deserialize, Debug)]
 pub enum FixedValidator {
     AnythingGoes,
-    Exact (Vec<u8>)
+    Exact (ByteBuf)
 }
 
 impl FixedValidator {
@@ -1701,13 +1708,16 @@ impl FixedValidator {
 }   }   }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ToPeersRecv {ctx: u32, subject: Vec<u8>, fallback: u8, validator: FixedValidator}
+struct ToPeersRecv {ctx: u32, subject: ByteBuf, fallback: u8, validator: FixedValidator}
 
-helper! (peers_recv, args: ToPeersRecv, {
+#[cfg(feature = "native")]
+pub async fn peers_recv (req: Bytes) -> Result<Vec<u8>, String> {
+    let args: ToPeersRecv = try_s! (bdecode (&req));
     let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
-    let vec: Vec<u8> = try_s! (recv (ctx, args.subject, args.fallback, args.validator) .await);
+    let subject = args.subject.into_vec();
+    let vec: Vec<u8> = try_s! (recv (ctx, subject, args.fallback, args.validator) .await);
     Ok (vec)
-});
+}
 
 /// Starts the HTTP server, providing access to the native helpers.  
 /// (Should be able to do this from the command line eventually).  
@@ -1735,13 +1745,12 @@ pub extern fn start_helpers() -> i32 {
 #[cfg(not(feature = "native"))]
 pub async fn recv (ctx: MmArc, subject: Vec<u8>, fallback: u8, validator: FixedValidator)
 -> Result<Vec<u8>, String> {
-    let hr = try_s! (helperᶜ ("peers_recv", try_s! (json::to_vec (&ToPeersRecv {
+    Ok (try_s! (helperᶜ ("peers_recv", try_s! (bencode (&ToPeersRecv {
         ctx: try_s! (ctx.ffi_handle()),
-        subject: subject.into(),
+        subject: ByteBuf::from (subject),
         fallback,
         validator
-    }))) .await);
-    Ok (hr.body.into_vec())
+    }))) .await))
 }
 
 #[cfg(not(feature = "native"))]

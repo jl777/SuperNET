@@ -307,10 +307,9 @@ impl MmArc {
         };
         let ctxᵇ = try_s! (bencode (&ctxʷ));
         let hr = try_s! (helperᶜ ("ctx2helpers", ctxᵇ) .await);
-        if hr.status != 200 {return ERR! ("!ctx2helpers: {}", hr)}
 
         // Remember the context ID used by the native helpers in order to simplify consecutive syncs.
-        let ctxⁿ: NativeCtx = try_s! (bdecode (&hr.body));
+        let ctxⁿ: NativeCtx = try_s! (bdecode (&hr));
         if let Some (ffi_handle) = self.ffi_handle.as_option().copied() {
             if ffi_handle != ctxⁿ.ffi_handle {return ERR! ("ffi_handle mismatch")}
         } else {
@@ -398,9 +397,6 @@ pub async fn ctx2helpers (main_ctx: MmArc, req: Bytes) -> Result<Vec<u8>, String
 
     Ok (res)
 }
-
-#[cfg(not(feature = "native"))]
-pub async fn ctx2helpers (_ctx: MmArc, _req: Bytes) -> Result<Vec<u8>, String> {unimplemented!()}
 
 /// Helps getting a crate context from a corresponding `MmCtx` field.
 /// 

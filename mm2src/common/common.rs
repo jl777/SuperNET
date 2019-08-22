@@ -463,6 +463,8 @@ pub mod wio {
     use crate::SlurpFut;
     use futures::{Async, Future, Poll};
     use futures::sync::oneshot::{self, Receiver};
+    use futures03::executor::ThreadPool;
+    use futures_cpupool::CpuPool;
     use gstuff::{duration_to_float, now_float};
     use http::{Request, StatusCode, HeaderMap};
     use hyper::Client;
@@ -483,6 +485,15 @@ pub mod wio {
     lazy_static! {
         /// Shared asynchronous reactor.
         pub static ref CORE: Mutex<Runtime> = Mutex::new (start_core_thread());
+        /// Shared CPU pool to run intensive/sleeping requests on a separate thread.
+        /// 
+        /// Deprecated, prefer the futures 0.3 `POOL` instead.
+        pub static ref CPUPOOL: CpuPool = CpuPool::new(8);
+        /// Shared CPU pool to run intensive/sleeping requests on s separate thread.
+        pub static ref POOL: Mutex<ThreadPool> = Mutex::new (unwrap! (ThreadPool::builder()
+            .pool_size (8)
+            .name_prefix ("POOL")
+            .create(), "!ThreadPool"));
         /// Shared HTTP server.
         pub static ref HTTP: Http = Http::new();
     }
@@ -1105,7 +1116,7 @@ impl fmt::Display for HelperResponse {
 }   }
 
 #[cfg(not(feature = "native"))]
-pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<HelperResponse, String> {
+pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<Vec<u8>, String> {
     let helper_request_id = unsafe {http_helper_if (
         helper.as_ptr(), helper.len() as i32,
         args.as_ptr(), args.len() as i32,
@@ -1138,30 +1149,10 @@ pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<HelperRes
         }
     }
     let rv: Vec<u8> = try_s! (HelperReply {helper, helper_request_id} .await);
-    //log! ("HelperReply: " (gstuff::binprint (&rv, b'.')));
     let rv: HelperResponse = try_s! (bdecode (&rv));
-    Ok (rv)
-}
-
-#[macro_export]
-macro_rules! helper {
-    ($helperⁱ:ident, $encoded_argsⁱ:ident: $encoded_argsᵗ:ty, $body:block) => {
-        #[cfg(feature = "native")]
-        #[doc(hidden)]
-        pub async fn $helperⁱ (req: http::Request<Vec<u8>>) -> Result<http::Response<Vec<u8>>, String> {
-            use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
-            use serde_json::{self as json};
-
-            let $encoded_argsⁱ: $encoded_argsᵗ = try_s! (json::from_slice (req.body()));
-            let rc: Result<Vec<u8>, String> = (async || $body) () .await;
-            let vec = try_s! (rc);
-            let res = try_s! (http::Response::builder()
-                .header (CONTENT_LENGTH, vec.len())
-                .header (CONTENT_TYPE, "application/octet-stream")
-                .body (vec));
-            Ok (res)
-        }
-    }
+    if rv.status != 200 {return ERR! ("!{}: {}", helper, rv)}
+    // TODO: Check `rv.checksum` if present.
+    Ok (rv.body.into_vec())
 }
 
 pub mod for_tests;
