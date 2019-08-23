@@ -686,7 +686,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 /// and should be fixed on the call site.
 ///
 /// * `req` - Payload of the corresponding "enable" or "electrum" RPC request.
-fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, String> {
+pub fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, String> {
     let cctx = try_s! (CoinsContext::from_ctx (ctx));
     {
         let coins = try_s!(cctx.coins.lock());
@@ -738,34 +738,6 @@ fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoinEnum, Str
     }
 
     Ok (coin)
-}
-
-/// Enable a coin in the local wallet mode.
-pub fn enable (ctx: MmArc, req: Json) -> HyRes {
-    let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
-    let coin: MmCoinEnum = try_h! (lp_coininit (&ctx, ticker, &req));
-    Box::new(coin.my_balance().and_then(move |balance|
-        rpc_response(200, json!({
-            "result": "success",
-            "address": coin.my_address(),
-            "balance": balance,
-            "coin": coin.ticker(),
-        }).to_string())
-    ))
-}
-
-/// Enable a coin in the Electrum mode.
-pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
-    let ticker = try_h! (req["coin"].as_str().ok_or ("No 'coin' field"));
-    let coin: MmCoinEnum = try_h! (lp_coininit (&ctx, ticker, &req));
-    Box::new(coin.my_balance().and_then(move |balance|
-        rpc_response(200, json!({
-            "result": "success",
-            "address": coin.my_address(),
-            "balance": balance,
-            "coin": coin.ticker(),
-        }).to_string())
-    ))
 }
 
 /*

@@ -20,7 +20,7 @@
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
-use coins::{enable, electrum, get_enabled_coins, get_trade_fee, send_raw_transaction, withdraw, my_tx_history};
+use coins::{get_enabled_coins, get_trade_fee, send_raw_transaction, withdraw, my_tx_history};
 use common::{err_to_rpc_json_string, rpc_response, rpc_err_response, HyRes};
 #[cfg(feature = "native")]
 use common::wio::{CORE, HTTP};
