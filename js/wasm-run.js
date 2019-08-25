@@ -7,6 +7,9 @@ const { Buffer } = require ('buffer');
 const crc32 = require ('crc-32');  // TODO: Calculate the checksum in Rust instead.
 const fs = require ('fs');
 const http = require('http');  // https://nodejs.org/dist/latest-v12.x/docs/api/http.html
+// https://nodejs.org/api/child_process.html
+// https://www.npmjs.com/package/cross-spawn
+const spawn = require('cross-spawn');
 
 const snooze = ms => new Promise (resolve => setTimeout (resolve, ms));
 
@@ -177,7 +180,24 @@ async function runWasm() {
   while (!test_finished.yep) {await snooze (100)}
   console.log ('wasm-run] done with test_peers_dht');
 
-  clearInterval (executor_i)
+  clearInterval (executor_i);
 }
 
-runWasm().catch (ex => console.log (ex));
+function stop() {
+  const req = http.request ({
+    method: 'POST',
+    hostname: '127.0.0.1',
+    port: 7783,
+    //path: '/helper/' + helper,
+  }, (res) => {});
+  req.write ('{"method": "stop"}');
+  req.end();
+}
+
+// Start the native helpers.
+const mm2 = spawn ('target/debug/mm2', ['{"passphrase": "-", "coins": []}'], {cwd: '..'});
+mm2.stdout.on ('data', (data) => console.log ('native] ' + String (data) .trim()));
+mm2.stderr.on ('data', (data) => console.log ('native] ' + String (data) .trim()));
+
+runWasm().catch (ex => {console.log (ex); stop()});
+stop()

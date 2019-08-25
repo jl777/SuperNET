@@ -8,6 +8,7 @@
   "license": "GPL-2.0-only",
   "dependencies": {
     "bencode": "^2.0.1",
-    "crc-32": "^1.2.0"
+    "crc-32": "^1.2.0",
+    "cross-spawn": "^6.0.5"
   }
 }
