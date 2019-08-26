@@ -1904,15 +1904,6 @@ impl Transaction for SignedEthTx {
         Ok(try_s!(display_u256_with_decimal_point(self.value, decimals).parse()))
     }
 
-    fn from_addrs(&self) -> Vec<String> { vec![format!("{:#02x}", self.sender)] }
-
-    fn to(&self) -> Vec<String> {
-        match self.action {
-            Action::Create => vec!["null".into()],
-            Action::Call(addr) => vec![format!("{:#02x}", addr)],
-        }
-    }
-
     fn fee_details(&self) -> Result<Json, String> {
         let fee = try_s!(EthTxFeeDetails::new(self.gas, self.gas_price, "ETH"));
         Ok(try_s!(json::to_value(fee)))

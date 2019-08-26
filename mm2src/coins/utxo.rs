@@ -25,7 +25,7 @@ use bigdecimal::BigDecimal;
 pub use bitcrypto::{dhash160, ChecksumType, sha256};
 use chain::{TransactionOutput, TransactionInput, OutPoint};
 use chain::constants::{SEQUENCE_FINAL};
-use common::{HyRes, rpc_response};
+use common::{first_char_to_upper, HyRes, rpc_response};
 use common::custom_futures::join_all_sequential;
 use common::jsonrpc_client::{JsonRpcError, JsonRpcErrorType};
 use common::mm_ctx::MmArc;
@@ -67,6 +67,28 @@ use futures::future::Either;
 #[cfg(test)]
 mod utxo_tests;
 
+#[cfg(windows)]
+#[cfg(feature = "native")]
+fn get_special_folder_path() -> PathBuf {
+    use libc::c_char;
+    use std::ffi::CStr;
+    use std::mem::zeroed;
+    use std::ptr::null_mut;
+    use winapi::um::shlobj::SHGetSpecialFolderPathA;
+    use winapi::shared::minwindef::MAX_PATH;
+    use winapi::um::shlobj::CSIDL_APPDATA;
+
+    let mut buf: [c_char; MAX_PATH + 1] = unsafe {zeroed()};
+    // https://docs.microsoft.com/en-us/windows/desktop/api/shlobj_core/nf-shlobj_core-shgetspecialfolderpatha
+    let rc = unsafe {SHGetSpecialFolderPathA (null_mut(), buf.as_mut_ptr(), CSIDL_APPDATA, 1)};
+    if rc != 1 {panic! ("!SHGetSpecialFolderPathA")}
+    Path::new (unwrap! (unsafe {CStr::from_ptr (buf.as_ptr())} .to_str())) .to_path_buf()
+}
+
+#[cfg(not(windows))]
+#[cfg(feature = "native")]
+fn get_special_folder_path() -> PathBuf {panic!("!windows")}
+
 impl Transaction for UtxoTx {
     fn tx_hex(&self) -> Vec<u8> {
         serialize(self).into()
@@ -88,10 +110,6 @@ impl Transaction for UtxoTx {
     fn tx_hash(&self) -> BytesJson { self.hash().reversed().to_vec().into() }
 
     fn amount(&self, _decimals: u8) -> Result<f64, String> { Ok(0.) }
-
-    fn to(&self) -> Vec<String> { vec!["".into()] }
-
-    fn from_addrs(&self) -> Vec<String> { vec!["".into()] }
 
     fn fee_details(&self) -> Result<Json, String> { Ok(Json::Null) }
 }
@@ -1602,13 +1620,48 @@ fn confpath (coins_en: &Json) -> Result<PathBuf, String> {
     // "USERHOME/" prefix should be replaced with the user's home folder.
     let confpathˢ = coins_en["confpath"].as_str().unwrap_or ("") .trim();
     if confpathˢ.is_empty() {
-        let home = try_s! (home_dir().ok_or ("Can not detect the user home directory"));
-        if let Some (assetˢ) = coins_en["asset"].as_str() {
-            return Ok (home.join (".komodo") .join (&assetˢ) .join (fomat! ((assetˢ) ".conf")))
-        } else if let Some (nameˢ) = coins_en["name"].as_str() {
-            return Ok (home.join (fomat! ('.' (nameˢ))) .join (fomat! ((nameˢ) ".conf")))
+        let (name, is_asset_chain) = {
+            match coins_en["asset"].as_str() {
+                Some(a) => (a, true),
+                None => (try_s!(coins_en["name"].as_str().ok_or("'name' field is not found in config")), false),
+            }
+        };
+
+        // komodo/util.cpp/GetDefaultDataDir
+        let mut data_dir = match dirs::home_dir() {
+            Some (hd) => hd,
+            None => Path::new ("/") .to_path_buf()
+        };
+
+        if cfg! (windows) {
+            // >= Vista: c:\Users\$username\AppData\Roaming
+            data_dir = get_special_folder_path();
+            if is_asset_chain {
+                data_dir.push ("Komodo");
+            } else {
+                data_dir.push (first_char_to_upper(name));
+            }
+        } else if cfg! (target_os = "macos") {
+            data_dir.push ("Library");
+            data_dir.push ("Application Support");
+            if is_asset_chain {
+                data_dir.push ("Komodo");
+            } else {
+                data_dir.push (first_char_to_upper(name));
+            }
+        } else {
+            if is_asset_chain {
+                data_dir.push (".komodo");
+            } else {
+                data_dir.push (format!(".{}", name));
+            }
         }
-        return Ok (home.join ("mm2-default-coin-config.conf"))
+
+        if is_asset_chain {data_dir.push (name)}
+
+        let confname = format! ("{}.conf", name);
+
+        return Ok (data_dir.join (&confname[..]))
     }
     let (confpathˢ, rel_to_home) =
         if confpathˢ.starts_with ("~/") {(&confpathˢ[2..], true)}

@@ -386,6 +386,7 @@ dependencies = [
  "unwrap 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "web3 0.6.0 (git+https://github.com/artemii235/rust-web3)",
  "webpki-roots 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
