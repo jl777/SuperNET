@@ -106,7 +106,7 @@ async fn helpers (ctx: MmArc, client: SocketAddr, req: Parts,
     if !client.ip().is_loopback() {return ERR! ("Not local")}
 
     let reqᵇ = try_s! (reqᵇ.concat2().compat().await);
-    log! ("helpers] " [=req] ", " (gstuff::binprint (&reqᵇ, b'.')));
+    //log! ("helpers] " [=req] ", " (gstuff::binprint (&reqᵇ, b'.')));
 
     let method = req.uri.path();
     if !method.starts_with ("/helper/") {return ERR! ("Bad method")}
@@ -127,11 +127,12 @@ async fn helpers (ctx: MmArc, client: SocketAddr, req: Parts,
     if crc32 != expected_checksum {return ERR! ("Damaged goods")}
 
     let res = match method {
+        "common_wait_for_log_re" => try_s! (common_wait_for_log_re (reqᵇ) .await),
         "ctx2helpers" => try_s! (ctx2helpers (ctx, reqᵇ) .await),
         "peers_initialize" => try_s! (peers::peers_initialize (reqᵇ) .await),
         "peers_send" => try_s! (peers::peers_send (reqᵇ) .await),
         "peers_recv" => try_s! (peers::peers_recv (reqᵇ) .await),
-        "common_wait_for_log_re" => try_s! (common_wait_for_log_re (reqᵇ) .await),
+        "peers_drop_send_handler" => try_s! (peers::peers_drop_send_handlerʹ (reqᵇ) .await),
         _ => return ERR! ("Unknown helper: {}", method)
     };
 

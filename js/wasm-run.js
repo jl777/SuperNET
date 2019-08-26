@@ -13,11 +13,7 @@ const spawn = require('cross-spawn');
 
 const snooze = ms => new Promise (resolve => setTimeout (resolve, ms));
 
-// Preparing the native helpers:
-// 
-//     cargo build --features native --bin mm2
-//     target/debug/mm2 '{"passphrase": "-", "coins": []}'
-// 
+const keepAliveAgent = new http.Agent ({keepAlive: true});
 
 function from_utf8 (memory, ptr, len) {
   const view = new Uint8Array (memory.buffer, ptr, len);
@@ -38,9 +34,25 @@ function io_buf_proxy (wasmShared, helper, ptr, len, rbuf, rlen) {
   node_rbuf.copy (rbuf_slice, 0, 0, rbuf_len);
   rlen_slice[0] = rbuf_len}
 
+function http_helper (helper, timeout_ms, payload, cb) {
+  const cs = crc32.buf (payload);
+  return http.request ({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': payload.length,
+      'X-Helper-Checksum': cs
+    },
+    hostname: '127.0.0.1',
+    port: 7783,
+    path: '/helper/' + helper,
+    agent: keepAliveAgent,
+    timeout: timeout_ms
+  }, cb)
+}
+
 async function runWasm() {
   const wasmBytes = fs.readFileSync ('mm2.wasm');
-  const keepAliveAgent = new http.Agent ({keepAlive: true});
   const httpRequests = {};
   const wasmShared = {};
   wasmShared.callbacks = {};
@@ -89,7 +101,6 @@ async function runWasm() {
       const helper = from_utf8 (wasmShared.memory, helper_ptr, helper_len);
       //const payload = new Uint8Array (wasmShared.memory, payload_ptr, payload_len);
       const payload = Buffer.from (wasmShared.memory.buffer.slice (payload_ptr, payload_ptr + payload_len));
-      const cs = crc32.buf (payload);
 
       // Find a random ID.
       let ri, ris;
@@ -103,19 +114,7 @@ async function runWasm() {
       }
 
       let chunks = [];
-      const req = http.request ({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': payload.length,
-          'X-Helper-Checksum': cs
-        },
-        hostname: '127.0.0.1',
-        port: 7783,
-        path: '/helper/' + helper,
-        agent: keepAliveAgent,
-        timeout: timeout_ms
-      }, (res) => {
+      const req = http_helper (helper, timeout_ms, payload, (res) => {
         res.on ('data', (chunk) => chunks.push (chunk));
         res.on ('end', () => {
           let len = 0;
@@ -144,23 +143,17 @@ async function runWasm() {
         httpRequests[ris].ct = 'nodejs error';
         httpRequests[ris].buf = '' + err;
         wasmShared.exports.http_ready (ri)
-      })
+      });
       req.write (payload);
       req.end();
       return ri  //< request id
     },
     peers_drop_send_handler: function (shp1, shp2) {
-      //libpeers.peers_drop_send_handler (shp1, shp2);
-      throw new Error ('TBD')},
-    peers_initialize: function (ptr, len, rbuf, rlen) {
-      //io_buf_proxy (wasmShared, libpeers.peers_initialize, ptr, len, rbuf, rlen);
-      throw new Error ('TBD')},
-    peers_recv: function (ptr, len, rbuf, rlen) {
-      //io_buf_proxy (wasmShared, libpeers.peers_recv, ptr, len, rbuf, rlen);
-      throw new Error ('TBD')},
-    peers_send: function (ptr, len, rbuf, rlen) {
-      //io_buf_proxy (wasmShared, libpeers.peers_send, ptr, len, rbuf, rlen);
-      throw new Error ('TBD')}};
+      const payload = bencode.encode ([shp1, shp2]);
+      const req = http_helper ('peers_drop_send_handler', 100, payload, (res) => {res.on ('end', () => {})});
+      req.on ('error', function (_) {});
+      req.write (payload);
+      req.end()}};
   const wasmInstantiated = await WebAssembly.instantiate (wasmBytes, {env: wasmEnv});
   const exports = wasmInstantiated.instance.exports;
   /** @type {WebAssembly.Memory} */
@@ -188,16 +181,16 @@ function stop() {
     method: 'POST',
     hostname: '127.0.0.1',
     port: 7783,
-    //path: '/helper/' + helper,
+    agent: keepAliveAgent,
   }, (res) => {});
-  req.write ('{"method": "stop"}');
+  req.on ('error', function (_) {});
+  req.write ('{"method": "stop", "userpass": "pass"}');
   req.end();
 }
 
 // Start the native helpers.
-const mm2 = spawn ('target/debug/mm2', ['{"passphrase": "-", "coins": []}'], {cwd: '..'});
+const mm2 = spawn ('js/mm2', ['{"passphrase": "-", "rpc_password": "pass", "coins": []}'], {cwd: '..'});
 mm2.stdout.on ('data', (data) => console.log ('native] ' + String (data) .trim()));
 mm2.stderr.on ('data', (data) => console.log ('native] ' + String (data) .trim()));
 
-runWasm().catch (ex => {console.log (ex); stop()});
-stop()
+runWasm().then (_ => stop()) .catch (ex => {console.log (ex); stop()});
