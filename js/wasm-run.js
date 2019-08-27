@@ -52,6 +52,9 @@ function http_helper (helper, timeout_ms, payload, cb) {
 }
 
 async function runWasm() {
+  // Wait for the helpers RPC server to start.
+  await snooze (500);
+
   const wasmBytes = fs.readFileSync ('mm2.wasm');
   const httpRequests = {};
   const wasmShared = {};
@@ -109,9 +112,7 @@ async function runWasm() {
         ris = '' + ri;
         if (httpRequests[ris] == null) {
           httpRequests[ris] = {};
-          break
-        }
-      }
+          break}}
 
       let chunks = [];
       const req = http_helper (helper, timeout_ms, payload, (res) => {
@@ -120,16 +121,13 @@ async function runWasm() {
           let len = 0;
           for (const chunk of chunks) {len += chunk.length}
           if (res.headers['content-length'] != null && len != res.headers['content-length']) {
-            throw new Error ('Content-Length mismatch')
-          }
+            throw new Error ('Content-Length mismatch')}
           const buf = new Uint8Array (len);
           let pos = 0;
           for (const chunk of chunks) {
             for (let i = 0; i < chunk.length; ++i) {
               buf[pos] = chunk[i];
-              ++pos
-            }
-          }
+              ++pos}}
           if (pos != len) throw new Error ('length mismatch');
           httpRequests[ris].status = res.statusCode;
           httpRequests[ris].ct = res.headers['content-type'];
