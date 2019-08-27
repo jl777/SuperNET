@@ -1,13 +1,11 @@
 use common::for_tests::{enable_electrum, from_env_file, mm_dump, mm_spat, LocalStart, MarketMakerIt};
 use common::privkey::key_pair_from_seed;
-use dirs;
 use futures03::executor::block_on;
 use gstuff::{slurp};
 use hyper::StatusCode;
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use peers;
 use serde_json::{self as json, Value as Json};
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::identity;
 use std::env::{self, var};
@@ -587,57 +585,6 @@ fn test_rpc_password_from_json_no_userpass() {
     assert! (electrum.0.is_server_error(), "RPC «electrum» should have failed with server error, but got «{}», response «{}»", electrum.0, electrum.1);
 }
 
-#[cfg(windows)]
-fn get_special_folder_path() -> PathBuf {
-    use libc::c_char;
-    use std::ffi::CStr;
-    use std::mem::zeroed;
-    use std::ptr::null_mut;
-    use winapi::um::shlobj::SHGetSpecialFolderPathA;
-    use winapi::shared::minwindef::MAX_PATH;
-    use winapi::um::shlobj::CSIDL_APPDATA;
-
-    let mut buf: [c_char; MAX_PATH + 1] = unsafe {zeroed()};
-    // https://docs.microsoft.com/en-us/windows/desktop/api/shlobj_core/nf-shlobj_core-shgetspecialfolderpatha
-    let rc = unsafe {SHGetSpecialFolderPathA (null_mut(), buf.as_mut_ptr(), CSIDL_APPDATA, 1)};
-    if rc != 1 {panic! ("!SHGetSpecialFolderPathA")}
-    Path::new (unwrap! (unsafe {CStr::from_ptr (buf.as_ptr())} .to_str())) .to_path_buf()
-}
-
-#[cfg(not(windows))]
-fn get_special_folder_path() -> PathBuf {panic!("!windows")}
-
-/// Determines komodod conf file location, emulating komodo/util.cpp/GetConfigFile.
-fn komodo_conf_path (ac_name: Option<&'static str>) -> Result<PathBuf, String> {
-    let confname: Cow<str> = if let Some (ac_name) = ac_name {
-        format! ("{}.conf", ac_name).into()
-    } else {
-        "komodo.conf".into()
-    };
-
-    // komodo/util.cpp/GetDefaultDataDir
-
-    let mut path = match dirs::home_dir() {
-        Some (hd) => hd,
-        None => Path::new ("/") .to_path_buf()
-    };
-
-    if cfg! (windows) {
-        // >= Vista: c:\Users\$username\AppData\Roaming
-        path = get_special_folder_path();
-        path.push ("Komodo");
-    } else if cfg! (target_os = "macos") {
-        path.push ("Library");
-        path.push ("Application Support");
-        path.push ("Komodo");
-    } else {
-        path.push (".komodo");
-    }
-
-    if let Some (ac_name) = ac_name {path.push (ac_name)}
-    Ok (path.join (&confname[..]))
-}
-
 /// Helper function requesting my swap status and checking it's events
 fn check_my_swap_status(
     mm: &MarketMakerIt,
@@ -907,13 +854,6 @@ fn trade_test_electrum_and_eth_coins() {
 }
 
 fn trade_base_rel_native(base: &str, rel: &str) {
-    let beer_cfp = unwrap! (komodo_conf_path (Some ("BEER")));
-    let pizza_cfp = unwrap! (komodo_conf_path (Some ("PIZZA")));
-    let etomic_cfp = unwrap! (komodo_conf_path (Some ("ETOMIC")));
-    assert! (beer_cfp.exists(), "BEER config {:?} is not found", beer_cfp);
-    assert! (pizza_cfp.exists(), "PIZZA config {:?} is not found", pizza_cfp);
-    assert! (etomic_cfp.exists(), "ETOMIC config {:?} is not found", etomic_cfp);
-
     let (bob_file_passphrase, bob_file_userpass) = from_env_file (slurp (&".env.seed"));
     let (alice_file_passphrase, alice_file_userpass) = from_env_file (slurp (&".env.client"));
 
@@ -923,9 +863,9 @@ fn trade_base_rel_native(base: &str, rel: &str) {
     let alice_userpass = unwrap! (var ("ALICE_USERPASS") .ok().or (alice_file_userpass), "No ALICE_USERPASS or .env.client/USERPASS");
 
     let coins = json! ([
-        {"coin":"BEER","asset":"BEER","confpath":unwrap!(beer_cfp.to_str())},
-        {"coin":"PIZZA","asset":"PIZZA","confpath":unwrap!(pizza_cfp.to_str())},
-        {"coin":"ETOMIC","asset":"ETOMIC","confpath":unwrap!(etomic_cfp.to_str())},
+        {"coin":"BEER","asset":"BEER"},
+        {"coin":"PIZZA","asset":"PIZZA"},
+        {"coin":"ETOMIC","asset":"ETOMIC"},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80}
     ]);
 
@@ -1114,7 +1054,7 @@ fn trade_etomic_pizza() {
     trade_base_rel_native("ETOMIC", "PIZZA");
 }
 
-fn withdraw_and_send(mm: &MarketMakerIt, coin: &str, to: &str, enable_res: &HashMap<&'static str, Json>, expected_bal_change: f64) {
+fn withdraw_and_send(mm: &MarketMakerIt, coin: &str, to: &str, enable_res: &HashMap<&'static str, Json>, expected_bal_change: &str) {
     let addr = addr_from_enable(unwrap!(enable_res.get(coin)));
 
     let withdraw = unwrap! (mm.rpc (json! ({
@@ -1128,7 +1068,7 @@ fn withdraw_and_send(mm: &MarketMakerIt, coin: &str, to: &str, enable_res: &Hash
     assert! (withdraw.0.is_success(), "!{} withdraw: {}", coin, withdraw.1);
     let withdraw_json: Json = unwrap!(json::from_str(&withdraw.1));
     assert_eq!(Some(&vec![Json::from(to)]), withdraw_json["to"].as_array());
-    assert_eq!(Some(expected_bal_change), withdraw_json["my_balance_change"].as_f64());
+    assert_eq!(Json::from(expected_bal_change), withdraw_json["my_balance_change"]);
     assert_eq!(Some(&vec![addr]), withdraw_json["from"].as_array());
 
     let send = unwrap! (mm.rpc (json! ({
@@ -1180,10 +1120,10 @@ fn test_withdraw_and_send() {
     // Enable coins. Print the replies in case we need the address.
     let enable_res = enable_coins_eth_electrum (&mm_alice, vec!["http://195.201.0.6:8565"]);
     log! ("enable_coins (alice): " [enable_res]);
-    withdraw_and_send(&mm_alice, "PIZZA", "RJTYiYeJ8eVvJ53n2YbrVmxWNNMVZjDGLh", &enable_res, -0.00101);
+    withdraw_and_send(&mm_alice, "PIZZA", "RJTYiYeJ8eVvJ53n2YbrVmxWNNMVZjDGLh", &enable_res, "-0.00101");
     // dev chain gas price is 0 so ETH expected balance change doesn't include the fee
-    withdraw_and_send(&mm_alice, "ETH", "0x657980d55733B41c0C64c06003864e1aAD917Ca7", &enable_res, -0.001);
-    withdraw_and_send(&mm_alice, "JST", "0x657980d55733B41c0C64c06003864e1aAD917Ca7", &enable_res, -0.001);
+    withdraw_and_send(&mm_alice, "ETH", "0x657980d55733B41c0C64c06003864e1aAD917Ca7", &enable_res, "-0.001");
+    withdraw_and_send(&mm_alice, "JST", "0x657980d55733B41c0C64c06003864e1aAD917Ca7", &enable_res, "-0.001");
 
     // must not allow to withdraw to non-P2PKH addresses
     let withdraw = unwrap! (mm_alice.rpc (json! ({
@@ -1207,7 +1147,7 @@ fn test_withdraw_and_send() {
         "amount": "0.001"
     })));
 
-    assert! (withdraw.0.is_server_error(), "PIZZA withdraw: {}", withdraw.1);
+    assert! (withdraw.0.is_server_error(), "ETH withdraw: {}", withdraw.1);
     let withdraw_json: Json = unwrap!(json::from_str(&withdraw.1));
     assert!(unwrap!(withdraw_json["error"].as_str()).contains("Invalid address checksum"));
     unwrap!(mm_alice.stop());
@@ -1749,4 +1689,73 @@ fn test_order_should_not_be_displayed_when_node_is_down() {
     assert_eq!(asks.len(), 0, "Alice RICK/MORTY orderbook must have zero asks");
 
     unwrap! (mm_alice.stop());
+}
+
+#[test]
+// https://github.com/KomodoPlatform/atomicDEX-API/issues/511
+fn test_all_orders_per_pair_per_node_must_be_displayed_in_orderbook() {
+    let coins = json!([
+        {"coin":"RICK","asset":"RICK"},
+        {"coin":"MORTY","asset":"MORTY"},
+    ]);
+
+    let mut mm = unwrap! (MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+        }),
+        "pass".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
+    log!({"Log path: {}", mm.log_path.display()});
+    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    enable_electrum(&mm, "RICK", vec!["electrum3.cipig.net:10017", "electrum2.cipig.net:10017", "electrum1.cipig.net:10017"]);
+    enable_electrum(&mm, "MORTY", vec!["electrum3.cipig.net:10018", "electrum2.cipig.net:10018", "electrum1.cipig.net:10018"]);
+
+    // set 2 orders with different prices
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "setprice",
+        "base": "RICK",
+        "rel": "MORTY",
+        "price": 0.9,
+        "volume": "0.9",
+        "cancel_previous": false,
+    })));
+    assert! (rc.0.is_success(), "!setprice: {}", rc.1);
+
+    let rc = unwrap! (mm.rpc (json! ({
+        "userpass": mm.userpass,
+        "method": "setprice",
+        "base": "RICK",
+        "rel": "MORTY",
+        "price": 1,
+        "volume": "0.9",
+        "cancel_previous": false,
+    })));
+    assert! (rc.0.is_success(), "!setprice: {}", rc.1);
+
+    thread::sleep(Duration::from_secs(12));
+
+    log!("Get RICK/MORTY orderbook");
+    let rc = unwrap!(mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "orderbook",
+            "base": "RICK",
+            "rel": "MORTY",
+        })));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("orderbook " [orderbook]);
+    let asks = orderbook["asks"].as_array().unwrap();
+    assert_eq!(asks.len(), 2, "RICK/MORTY orderbook must have exactly 2 asks");
 }

@@ -917,10 +917,6 @@ impl<R: Send + 'static> RefreshedExternalResource<R> {
     }
 }
 
-/// A Send wrapper for MutexGuard
-pub struct MutexGuardWrapper(pub MutexGuard<'static, ()>);
-unsafe impl Send for MutexGuardWrapper {}
-
 /// From<io::Error> is required to be implemented by futures-timer timeout.
 /// We can't implement it for String directly due to Rust restrictions.
 /// So this solution looks like simplest at least for now. We have to remap errors to get proper type.
@@ -1258,3 +1254,20 @@ pub fn new_uuid() -> Uuid {Uuid::new_v4()}
 
 #[cfg(not(feature = "native"))]
 pub fn new_uuid() -> Uuid {unimplemented!()}
+
+pub fn first_char_to_upper(input: &str) -> String {
+    let mut v: Vec<char> = input.chars().collect();
+    match v.first_mut() {
+        Some(c) => c.make_ascii_uppercase(),
+        None => (),
+    }
+    v.into_iter().collect()
+}
+
+#[test]
+fn test_first_char_to_upper() {
+    assert_eq!("", first_char_to_upper(""));
+    assert_eq!("K", first_char_to_upper("k"));
+    assert_eq!("Komodo", first_char_to_upper("komodo"));
+    assert_eq!(".komodo", first_char_to_upper(".komodo"));
+}
