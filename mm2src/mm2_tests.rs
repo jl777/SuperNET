@@ -1,8 +1,12 @@
+#[cfg(not(feature = "native"))]
+use common::call_back;
 use common::for_tests::{enable_electrum, from_env_file, mm_dump, mm_spat, LocalStart, MarketMakerIt};
 use common::privkey::key_pair_from_seed;
 use futures03::executor::block_on;
 use gstuff::{slurp};
+#[cfg(feature = "native")]
 use hyper::StatusCode;
+#[cfg(feature = "native")]
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use peers;
 use serde_json::{self as json, Value as Json};
@@ -19,6 +23,7 @@ use std::time::Duration;
 
 /// Asks MM to enable the given currency in native mode.  
 /// Returns the RPC reply containing the corresponding wallet address.
+#[cfg(feature = "native")]
 fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
     let native = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
@@ -35,6 +40,7 @@ fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
 
 /// Enables BEER, PIZZA, ETOMIC and ETH.
 /// Returns the RPC replies containing the corresponding wallet addresses.
+#[cfg(feature = "native")]
 fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, Json)> {
     let mut replies = Vec::new();
     replies.push (("BEER", enable_native (mm, "BEER", vec![])));
@@ -44,6 +50,7 @@ fn enable_coins(mm: &MarketMakerIt) -> Vec<(&'static str, Json)> {
     replies
 }
 
+#[cfg(feature = "native")]
 fn enable_coins_eth_electrum(mm: &MarketMakerIt, eth_urls: Vec<&str>) -> HashMap<&'static str, Json> {
     let mut replies = HashMap::new();
     replies.insert ("BEER", enable_electrum (mm, "BEER", vec!["test1.cipig.net:10022","test2.cipig.net:10022","test3.cipig.net:10022"]));
@@ -131,25 +138,27 @@ fn test_mm_start() {
     }
 }
 
-#[cfg(windows)]
+#[allow(unused_variables)]
 fn chdir (dir: &Path) {
-    use std::ffi::CString;
-    use winapi::um::processenv::SetCurrentDirectoryA;
+    #[cfg(feature = "native")] {
+        #[cfg(not(windows))] {
+            use std::ffi::CString;
+            let dirˢ = unwrap! (dir.to_str());
+            let dirᶜ = unwrap! (CString::new (dirˢ));
+            let rc = unsafe {libc::chdir (dirᶜ.as_ptr())};
+            assert_eq! (rc, 0, "Can not chdir to {:?}", dir);
+        }
 
-    let dir = unwrap! (dir.to_str());
-    let dir = unwrap! (CString::new (dir));
-    // https://docs.microsoft.com/en-us/windows/desktop/api/WinBase/nf-winbase-setcurrentdirectory
-    let rc = unsafe {SetCurrentDirectoryA (dir.as_ptr())};
-    assert_ne! (rc, 0);
-}
-
-#[cfg(not(windows))]
-fn chdir (dir: &Path) {
-    use std::ffi::CString;
-    let dirˢ = unwrap! (dir.to_str());
-    let dirᶜ = unwrap! (CString::new (dirˢ));
-    let rc = unsafe {libc::chdir (dirᶜ.as_ptr())};
-    assert_eq! (rc, 0, "Can not chdir to {:?}", dir);
+        #[cfg(windows)] {
+            use std::ffi::CString;
+            use winapi::um::processenv::SetCurrentDirectoryA;
+            let dir = unwrap! (dir.to_str());
+            let dir = unwrap! (CString::new (dir));
+            // https://docs.microsoft.com/en-us/windows/desktop/api/WinBase/nf-winbase-setcurrentdirectory
+            let rc = unsafe {SetCurrentDirectoryA (dir.as_ptr())};
+            assert_ne! (rc, 0);
+        }
+    }
 }
 
 /// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.  
@@ -658,6 +667,7 @@ fn check_recent_swaps(
 
 /// Trading test using coins with remote RPC (Electrum, ETH nodes), it needs only ENV variables to be set, coins daemons are not required.
 /// Trades few pairs concurrently to speed up the process and also act like "load" test
+#[cfg(feature = "native")]
 fn trade_base_rel_electrum(pairs: Vec<(&str, &str)>) {
     let (bob_file_passphrase, _bob_file_userpass) = from_env_file (slurp (&".env.seed"));
     let (alice_file_passphrase, _alice_file_userpass) = from_env_file (slurp (&".env.client"));
@@ -848,11 +858,24 @@ fn trade_base_rel_electrum(pairs: Vec<(&str, &str)>) {
     unwrap! (mm_alice.stop());
 }
 
+#[cfg(feature = "native")]
 #[test]
 fn trade_test_electrum_and_eth_coins() {
     trade_base_rel_electrum(vec![("BEER", "ETOMIC"), ("ETH", "JST")]);
 }
 
+#[cfg(not(feature = "native"))]
+#[no_mangle]
+pub extern fn trade_test_electrum_and_eth_coins (cb_id: i32) {
+    use std::ptr::null;
+
+    common::executor::spawn (async move {
+        if 1 == 1 {panic! ("TBD")}
+        unsafe {call_back (cb_id, null(), 0)}
+    })
+}
+
+#[cfg(feature = "native")]
 fn trade_base_rel_native(base: &str, rel: &str) {
     let (bob_file_passphrase, bob_file_userpass) = from_env_file (slurp (&".env.seed"));
     let (alice_file_passphrase, alice_file_userpass) = from_env_file (slurp (&".env.client"));

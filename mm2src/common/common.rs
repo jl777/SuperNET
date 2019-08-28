@@ -91,7 +91,7 @@ use hex::FromHex;
 use http::{Request, Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
 #[cfg(feature = "native")]
-use libc::{c_char, c_void, malloc, free};
+use libc::{malloc, free};
 use rand::{SeedableRng, rngs::SmallRng};
 use serde::{ser, de};
 #[cfg(not(feature = "native"))]
@@ -106,6 +106,7 @@ use std::ffi::{CStr};
 use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
+use std::os::raw::{c_char, c_void};
 use std::path::{Path};
 #[cfg(not(feature = "native"))]
 use std::pin::Pin;
@@ -1029,7 +1030,6 @@ pub fn writeln (line: &str) {
 #[cfg(not(feature = "native"))]
 pub fn writeln (line: &str) {
     use std::ffi::CString;
-    use std::os::raw::c_char;
 
     extern "C" {pub fn console_log (ptr: *const c_char, len: i32);}
     let lineᶜ = unwrap! (CString::new (line));
@@ -1150,6 +1150,10 @@ pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<Vec<u8>, 
     // TODO: Check `rv.checksum` if present.
     Ok (rv.body.into_vec())
 }
+
+/// Invokes callback `cb_id` in the WASM host, passing a `(ptr,len)` string to it.
+#[cfg(not(feature = "native"))]
+extern "C" {pub fn call_back (cb_id: i32, ptr: *const c_char, len: i32);}
 
 pub mod for_tests;
 

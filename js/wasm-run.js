@@ -21,7 +21,7 @@ function from_utf8 (memory, ptr, len) {
   return utf8dec.decode (view)}
 
 /** Proxy invoking a helper function which takes the (ptr, len) input and fills the (rbuf, rlen) output. */
-function io_buf_proxy (wasmShared, helper, ptr, len, rbuf, rlen) {
+function io_buf_proxy (helper, ptr, len, rbuf, rlen) {
   const encoded_args = Buffer.from (wasmShared.memory.buffer.slice (ptr, ptr + len));
   const rlen_slice = new Uint32Array (wasmShared.memory.buffer, rlen, 4);
   const rbuf_capacity = rlen_slice[0];
@@ -51,23 +51,23 @@ function http_helper (helper, timeout_ms, payload, cb) {
   }, cb)
 }
 
+const wasmShared = {};
+
+function registerCallback (f) {
+  for (;;) {
+    const ri = Math.ceil (Math.random() * 2147483647);
+    const ris = '' + ri;
+    if (wasmShared.callbacks[ris] != null) continue;
+    wasmShared.callbacks[ris] = f;
+    return ri}}
+
 async function runWasm() {
   // Wait for the helpers RPC server to start.
   await snooze (500);
 
   const wasmBytes = fs.readFileSync ('mm2.wasm');
   const httpRequests = {};
-  const wasmShared = {};
   wasmShared.callbacks = {};
-  function registerCallback (f) {
-    for (;;) {
-      const ri = Math.ceil (Math.random() * 2147483647);
-      const ris = '' + ri;
-      if (wasmShared.callbacks[ris] != null) continue;
-      wasmShared.callbacks[ris] = f;
-      return ri
-    }
-  }
   const wasmEnv = {
     bitcoin_ctx: function() {console.log ('env/bitcoin_ctx')},
     bitcoin_ctx_destroy: function() {console.log ('env/bitcoin_ctx_destroy')},
@@ -82,7 +82,7 @@ async function runWasm() {
       const decoded = from_utf8 (wasmShared.memory, ptr, len);
       console.log (decoded)},
     common_wait_for_log_re: function (ptr, len, rbuf, rlen) {
-      //io_buf_proxy (wasmShared, libpeers.common_wait_for_log_re, ptr, len, rbuf, rlen)
+      //io_buf_proxy (libpeers.common_wait_for_log_re, ptr, len, rbuf, rlen)
       throw new Error ('TBD')},
     date_now: function() {return Date.now()},
     http_helper_check: function (http_request_id, rbuf, rcap) {
@@ -162,17 +162,27 @@ async function runWasm() {
 
   exports.set_panic_hook();
 
-  const peers_check = exports.peers_check();
+  //await test_peers_dht();
+  await trade_test_electrum_and_eth_coins();
 
-  console.log ('wasm-run] running test_peers_dht...');
+  clearInterval (executor_i)}
+
+async function test_peers_dht() {
+  const peers_check = exports.peers_check();
+  console.log ('wasm-run] test_peers_dht…');
   const test_finished = {};
   const cb_id = registerCallback (r => test_finished.yep = true);
-  exports.test_peers_dht (cb_id);
+  wasmShared.exports.test_peers_dht (cb_id);
   while (!test_finished.yep) {await snooze (100)}
-  console.log ('wasm-run] done with test_peers_dht');
+  console.log ('wasm-run] test_peers_dht ✅')}
 
-  clearInterval (executor_i);
-}
+async function trade_test_electrum_and_eth_coins() {
+  console.log ('wasm-run] trade_test_electrum_and_eth_coins…');
+  const test_finished = {};
+  const cb_id = registerCallback (r => test_finished.yep = true);
+  wasmShared.exports.trade_test_electrum_and_eth_coins (cb_id);
+  while (!test_finished.yep) {await snooze (100)}
+  console.log ('wasm-run] trade_test_electrum_and_eth_coins ✅')}
 
 function stop() {
   const req = http.request ({
@@ -183,8 +193,7 @@ function stop() {
   }, (res) => {});
   req.on ('error', function (_) {});
   req.write ('{"method": "stop", "userpass": "pass"}');
-  req.end();
-}
+  req.end()}
 
 // Start the native helpers.
 const mm2 = spawn ('js/mm2', ['{"passphrase": "-", "rpc_password": "pass", "coins": []}'], {cwd: '..'});

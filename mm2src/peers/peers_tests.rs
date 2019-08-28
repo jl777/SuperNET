@@ -1,4 +1,6 @@
 use common::{now_float, small_rng};
+#[cfg(not(feature = "native"))]
+use common::call_back;
 use common::executor::Timer;
 #[cfg(feature = "native")]
 use common::wio::{drive, CORE};
@@ -135,11 +137,6 @@ pub async fn peers_dht() {
     peers_exchange (json! ({"dht": "on"})) .await
 }
 
-/// Invokes callback `cb_id` in the WASM host, passing a `(ptr,len)` string to it.
-#[cfg(not(feature = "native"))]
-extern "C" {pub fn call_back (cb_id: i32, ptr: *const c_char, len: i32);}
-
-// Temporarily exposed in order to experiment with portability helpers.
 #[cfg(not(feature = "native"))]
 #[no_mangle]
 pub extern fn test_peers_dht (cb_id: i32) {

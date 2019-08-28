@@ -18,6 +18,9 @@
 //
 //  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
+
+#![cfg_attr(not(feature = "native"), allow(unused_imports))]
+
 pub mod rpc_clients;
 
 use base64::{encode_config as base64_encode, URL_SAFE};
