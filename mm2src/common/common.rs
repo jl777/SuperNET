@@ -694,7 +694,8 @@ pub mod executor {
 
         let started = now_float();
         let ti = Timer::sleep (0.2);
-        assert! (now_float() - started < 0.01);
+        let delta = now_float() - started;
+        assert! (delta < 0.04, "{}", delta);
         block_on (ti);
         let delta = now_float() - started;
         println! ("time delta is {}", delta);
