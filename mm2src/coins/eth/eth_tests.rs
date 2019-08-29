@@ -1,4 +1,5 @@
 use futures03::executor::block_on;
+use futures03::future::join_all;
 use super::*;
 use mocktopus::mocking::*;
 
@@ -7,9 +8,9 @@ fn check_sum(addr: &str, expected: &str) {
     assert_eq!(expected, actual);
 }
 
-fn eth_coin_for_test(coin_type: EthCoinType) -> EthCoin {
+fn eth_coin_for_test(coin_type: EthCoinType, urls: Vec<String>) -> EthCoin {
     let key_pair = KeyPair::from_secret_slice(&hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f").unwrap()).unwrap();
-    let transport = Web3Transport::new(vec!["http://dummy.dummy".into()]).unwrap();
+    let transport = Web3Transport::new(urls).unwrap();
     let web3 = Web3::new(transport);
 
     EthCoin(Arc::new(EthCoinImpl {
@@ -340,7 +341,7 @@ fn test_withdraw_impl_manual_fee() {
     });
     get_addr_nonce.mock_safe(|_, _| MockResult::Return(Box::new(futures::future::ok(0.into()))));
 
-    let coin = eth_coin_for_test(EthCoinType::Eth);
+    let coin = eth_coin_for_test(EthCoinType::Eth, vec!["http://dummy.dummy".into()]);
     let withdraw_req = WithdrawRequest {
         amount: 1.into(),
         to: "0x7Bc1bBDD6A0a722fC9bffC49c921B685ECB84b94".to_string(),
@@ -356,4 +357,25 @@ fn test_withdraw_impl_manual_fee() {
         total_fee: "0.00015".parse().unwrap(),
     }.into());
     assert_eq!(expected, tx_details.fee_details);
+}
+
+#[test]
+fn test_nonce_lock() {
+    // send several transactions concurrently to check that they are not using same nonce
+    // using real ETH dev node
+    let coin = eth_coin_for_test(EthCoinType::Eth, vec!["http://195.201.0.6:8565".into()]);
+    let mut futures = vec![];
+    for _ in 0..5 {
+        futures.push(sign_and_send_transaction_impl(
+            coin.clone(),
+            1000000000000u64.into(),
+            Action::Call(coin.my_address),
+            vec![],
+            21000.into(),
+        ));
+    }
+    let results = block_on(join_all(futures));
+    for result in results {
+        unwrap!(result);
+    }
 }
