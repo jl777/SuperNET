@@ -167,6 +167,7 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// Proof of Work is expected by default
     /// https://en.bitcoin.it/wiki/Proof_of_Stake
     /// https://en.bitcoin.it/wiki/Proof_of_work
+    /// The actual meaning of this is nTime field is used in transaction
     is_pos: bool,
     /// Special field for Zcash and it's forks
     /// Defines if Overwinter network upgrade was activated
@@ -406,6 +407,7 @@ fn p2sh_spending_tx(
     ticker: &str,
     signature_version: SignatureVersion,
     fork_id: u32,
+    n_time: Option<u32>,
 ) -> Result<UtxoTx, String> {
     // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
     // Implication for users: GetMedianTimePast() always trails behind the current time,
@@ -421,6 +423,7 @@ fn p2sh_spending_tx(
     let unsigned = TransactionInputSigner {
         lock_time,
         version,
+        n_time,
         overwintered,
         inputs: vec![UnsignedTransactionInput {
             sequence,
@@ -444,6 +447,7 @@ fn p2sh_spending_tx(
     );
     Ok(UtxoTx {
         version: unsigned.version,
+        n_time: unsigned.n_time,
         overwintered: unsigned.overwintered,
         lock_time: unsigned.lock_time,
         inputs: vec![signed_input],
@@ -485,6 +489,7 @@ fn sign_tx(
     }
     Ok(UtxoTx {
         inputs: signed_inputs,
+        n_time: unsigned.n_time,
         outputs: unsigned.outputs.clone(),
         version: unsigned.version,
         overwintered: unsigned.overwintered,
@@ -635,6 +640,7 @@ impl UtxoCoin {
                 outputs,
                 lock_time,
                 version: arc.tx_version,
+                n_time: if arc.is_pos { Some((now_ms() / 1000) as u32) } else { None },
                 overwintered: arc.overwintered,
                 expiry_height: 0,
                 join_splits: vec![],
@@ -919,6 +925,7 @@ impl SwapOps for UtxoCoin {
                 &arc.ticker,
                 arc.signature_version,
                 arc.fork_id,
+                if arc.is_pos { Some((now_ms() / 1000) as u32) } else { None }
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map_err(|e| ERRL!("{}", e)).map(move |_res|
                 transaction.into()
@@ -965,6 +972,7 @@ impl SwapOps for UtxoCoin {
                 &arc.ticker,
                 arc.signature_version,
                 arc.fork_id,
+                if arc.is_pos { Some((now_ms() / 1000) as u32) } else { None }
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map_err(|e| ERRL!("{}", e)).map(move |_res|
                 transaction.into()
@@ -1010,6 +1018,7 @@ impl SwapOps for UtxoCoin {
                 &arc.ticker,
                 arc.signature_version,
                 arc.fork_id,
+                if arc.is_pos { Some((now_ms() / 1000) as u32) } else { None }
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map_err(|e| ERRL!("{}", e)).map(move |_res|
                 transaction.into()
@@ -1060,6 +1069,7 @@ impl SwapOps for UtxoCoin {
                 &arc.ticker,
                 arc.signature_version,
                 arc.fork_id,
+                if arc.is_pos { Some((now_ms() / 1000) as u32) } else { None }
             ));
             Box::new(arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).map_err(|e| ERRL!("{}", e)).map(move |_res|
                 transaction.into()
@@ -1852,7 +1862,7 @@ pub fn utxo_coin_from_conf_and_request(
         decimals,
         rpc_client,
         key_pair,
-        is_pos: false,
+        is_pos: conf["isPoS"].as_u64() == Some(1),
         notarized: false,
         overwintered,
         pub_addr_prefix,
