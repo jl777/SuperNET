@@ -394,7 +394,7 @@ async fn withdraw_impl(ctx: MmArc, coin: EthCoin, req: WithdrawRequest) -> Resul
         wei_amount -= total_fee;
     };
     let _nonce_lock = try_s!(NONCE_LOCK.lock(|_start, _now| {
-        if ctx.is_stopping() {return ERR!("MM is stopping, aborting sign_and_send_transaction_impl in NONCE_LOCK")}
+        if ctx.is_stopping() {return ERR!("MM is stopping, aborting withdraw_impl in NONCE_LOCK")}
         Ok(0.5)
     }).await);
     let nonce = try_s!(get_addr_nonce(coin.my_address, &coin.web3_instances).compat().await);
