@@ -20,14 +20,39 @@
 
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
-use coins::{lp_coinfind, lp_coininit, MmCoinEnum};
+use coins::{disable_coin as disable_coin_impl, lp_coinfind, lp_coininit, MmCoinEnum};
 use common::{rpc_err_response, rpc_response, HyRes, MM_VERSION};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use futures::Future;
 use serde_json::{Value as Json};
 
-use crate::mm2::lp_swap::get_locked_amount;
+use crate::mm2::lp_ordermatch::{CancelBy, cancel_orders_by};
+use crate::mm2::lp_swap::{get_locked_amount, is_coin_swapping};
+
+/// Attempts to disables the coin
+pub fn disable_coin (ctx: MmArc, req: Json) -> HyRes {
+    let ticker = try_h!(req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();
+    let _coin = match lp_coinfind (&ctx, &ticker) {
+        Ok (Some (t)) => t,
+        Ok (None) => return rpc_err_response (500, &fomat! ("No such coin: " (ticker))),
+        Err (err) => return rpc_err_response (500, &fomat! ("!lp_coinfind(" (ticker) "): " (err)))
+    };
+    if try_h!(is_coin_swapping(&ctx, &ticker)) {
+        return rpc_err_response (500, &fomat! ("There're running swaps using " (ticker)));
+    }
+    let (cancelled, still_matching) = try_h!(cancel_orders_by(&ctx, CancelBy::Coin(ticker.clone())));
+    if !still_matching.is_empty() {
+        return rpc_err_response (500, &fomat! ("There're currently matching orders using " (ticker)));
+    }
+
+    try_h!(disable_coin_impl(&ctx, &ticker));
+    rpc_response(200, json!({
+        "result": "success",
+        "coin": ticker,
+        "cancelled_orders": cancelled,
+    }).to_string())
+}
 
 /// Enable a coin in the Electrum mode.
 pub fn electrum (ctx: MmArc, req: Json) -> HyRes {
