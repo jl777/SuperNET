@@ -30,6 +30,8 @@ use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
 use futures::future::{Either, Future};
 use gstuff::{now_ms, slurp};
 use keys::{Public, Signature};
+#[cfg(test)]
+use mocktopus::macros::*;
 use num_traits::cast::ToPrimitive;
 use primitives::hash::H256;
 use rpc::v1::types::{H256 as H256Json};
@@ -1204,10 +1206,12 @@ fn save_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
     unwrap!(fs::write(path, content));
 }
 
+#[cfg_attr(test, mockable)]
 fn delete_my_maker_order(ctx: &MmArc, order: &MakerOrder) {
     unwrap!(fs::remove_file(my_maker_order_file_path(ctx, &order.uuid)));
 }
 
+#[cfg_attr(test, mockable)]
 fn delete_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
     unwrap!(fs::remove_file(my_taker_order_file_path(ctx, &order.request.uuid)));
 }
@@ -1299,90 +1303,64 @@ pub fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<Uuid>, 
     let mut taker_orders = try_s!(ordermatch_ctx.my_taker_orders.lock());
     let mut my_cancelled_orders = try_s!(ordermatch_ctx.my_cancelled_orders.lock());
 
+    macro_rules! cancel_maker_if_true {
+        ($e: expr, $uuid: ident, $order: ident) => {
+            if $e {
+                if $order.is_cancellable() {
+                    delete_my_maker_order(&ctx, &$order);
+                    my_cancelled_orders.insert($uuid, $order);
+                    cancelled.push($uuid);
+                    None
+                } else {
+                    currently_matching.push($uuid);
+                    Some(($uuid, $order))
+                }
+            } else {
+                Some(($uuid, $order))
+            }
+        };
+    }
+
+    macro_rules! cancel_taker_if_true {
+        ($e: expr, $uuid: ident, $order: ident) => {
+            if $e {
+                if $order.is_cancellable() {
+                    delete_my_taker_order(&ctx, &$order);
+                    cancelled.push($uuid);
+                    None
+                } else {
+                    currently_matching.push($uuid);
+                    Some(($uuid, $order))
+                }
+            } else {
+                Some(($uuid, $order))
+            }
+        };
+    }
+
     match cancel_by {
         CancelBy::All => {
             *maker_orders = maker_orders.drain().filter_map(|(uuid, order)| {
-                if order.is_cancellable() {
-                    delete_my_maker_order(&ctx, &order);
-                    my_cancelled_orders.insert(uuid, order);
-                    cancelled.push(uuid);
-                    None
-                } else {
-                    currently_matching.push(uuid);
-                    Some((uuid, order))
-                }
+                cancel_maker_if_true!(true, uuid, order)
             }).collect();
             *taker_orders = taker_orders.drain().filter_map(|(uuid, order)| {
-                if order.is_cancellable() {
-                    delete_my_taker_order(&ctx, &order);
-                    cancelled.push(uuid);
-                    None
-                } else {
-                    currently_matching.push(uuid);
-                    Some((uuid, order))
-                }
+                cancel_taker_if_true!(true, uuid, order)
             }).collect();
         },
         CancelBy::Pair(pair) => {
             *maker_orders = maker_orders.drain().filter_map(|(uuid, order)| {
-                if order.base == pair.base && order.rel == pair.rel {
-                    if order.is_cancellable() {
-                        delete_my_maker_order(&ctx, &order);
-                        my_cancelled_orders.insert(uuid, order);
-                        cancelled.push(uuid);
-                        None
-                    } else {
-                        currently_matching.push(uuid);
-                        Some((uuid, order))
-                    }
-                } else {
-                    Some((uuid, order))
-                }
+                cancel_maker_if_true!(order.base == pair.base && order.rel == pair.rel, uuid, order)
             }).collect();
             *taker_orders = taker_orders.drain().filter_map(|(uuid, order)| {
-                if order.request.base == pair.base && order.request.rel == pair.rel {
-                    if order.is_cancellable() {
-                        delete_my_taker_order(&ctx, &order);
-                        cancelled.push(uuid);
-                        None
-                    } else {
-                        currently_matching.push(uuid);
-                        Some((uuid, order))
-                    }
-                } else {
-                    Some((uuid, order))
-                }
+                cancel_taker_if_true!(order.request.base == pair.base && order.request.rel == pair.rel, uuid, order)
             }).collect();
         },
         CancelBy::Coin(ticker) => {
             *maker_orders = maker_orders.drain().filter_map(|(uuid, order)| {
-                if order.base == ticker || order.rel == ticker {
-                    if order.is_cancellable() {
-                        delete_my_maker_order(&ctx, &order);
-                        my_cancelled_orders.insert(uuid, order);
-                        cancelled.push(uuid);
-                        None
-                    } else {
-                        currently_matching.push(uuid);
-                        Some((uuid, order))
-                    }
-                } else {
-                    Some((uuid, order))
-                }
+                cancel_maker_if_true!(order.base == ticker || order.rel == ticker, uuid, order)
             }).collect();
             *taker_orders = taker_orders.drain().filter_map(|(uuid, order)| {
-                if order.request.base == ticker || order.request.rel == ticker {
-                    if order.is_cancellable() {
-                        delete_my_taker_order(&ctx, &order);
-                        cancelled.push(uuid);
-                        None
-                    } else {
-                        currently_matching.push(uuid);
-                        Some((uuid, order))
-                    }
-                } else {
-                    Some((uuid, order))
-                }
+                cancel_taker_if_true!(order.request.base == ticker || order.request.rel == ticker, uuid, order)
             }).collect();
         },
     };
