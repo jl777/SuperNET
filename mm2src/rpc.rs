@@ -31,9 +31,9 @@ use common::mm_ctx::MmArc;
 use common::mm_ctx::ctx2helpers;
 #[cfg(feature = "native")]
 use common::for_tests::common_wait_for_log_re;
-use futures::{self, Future, Stream};
-use futures03::compat::{Compat, Future01CompatExt};
-use futures03::future::{FutureExt, TryFutureExt};
+use futures01::{self, Future, Stream};
+use futures::compat::{Compat, Future01CompatExt};
+use futures::future::{FutureExt, TryFutureExt};
 use gstuff;
 use http::{Request, Response, Method};
 use http::request::Parts;
@@ -381,7 +381,7 @@ pub extern fn spawn_rpc(ctx_h: u32) {
 
     // Finish the server `Future` when `shutdown_rx` fires.
 
-    let (shutdown_tx, shutdown_rx) = futures::sync::oneshot::channel::<()>();
+    let (shutdown_tx, shutdown_rx) = futures01::sync::oneshot::channel::<()>();
     let server = server.select2 (shutdown_rx) .then (|_| Ok(()));
     let mut shutdown_tx = Some (shutdown_tx);
     ctx.on_stop (Box::new (move || {

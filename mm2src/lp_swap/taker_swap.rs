@@ -1054,7 +1054,7 @@ mod taker_swap_tests {
         static mut MAKER_PAYMENT_SPEND_CALLED: bool = false;
         TestCoin::send_taker_spends_maker_payment.mock_safe(|_, _, _, _, _| {
             unsafe { MAKER_PAYMENT_SPEND_CALLED = true };
-            MockResult::Return(Box::new(futures::future::ok(eth_tx_for_test().into())))
+            MockResult::Return(Box::new(futures01::future::ok(eth_tx_for_test().into())))
         });
         TestCoin::search_for_swap_tx_spend_other.mock_safe(|_, _, _, _, _, _| MockResult::Return(Ok(None)));
         let maker_coin = MmCoinEnum::Test(TestCoin {});
@@ -1094,7 +1094,7 @@ mod taker_swap_tests {
         static mut TAKER_PAYMENT_REFUND_CALLED: bool = false;
         TestCoin::send_taker_refunds_payment.mock_safe(|_, _, _, _, _| {
             unsafe { TAKER_PAYMENT_REFUND_CALLED = true };
-            MockResult::Return(Box::new(futures::future::ok(eth_tx_for_test().into())))
+            MockResult::Return(Box::new(futures01::future::ok(eth_tx_for_test().into())))
         });
         let maker_coin = MmCoinEnum::Test(TestCoin {});
         let taker_coin = MmCoinEnum::Test(TestCoin {});
@@ -1138,7 +1138,7 @@ mod taker_swap_tests {
         static mut MAKER_PAYMENT_SPEND_CALLED: bool = false;
         TestCoin::send_taker_spends_maker_payment.mock_safe(|_, _, _, _, _| {
             unsafe { MAKER_PAYMENT_SPEND_CALLED = true };
-            MockResult::Return(Box::new(futures::future::ok(eth_tx_for_test().into())))
+            MockResult::Return(Box::new(futures01::future::ok(eth_tx_for_test().into())))
         });
         let maker_coin = MmCoinEnum::Test(TestCoin {});
         let taker_coin = MmCoinEnum::Test(TestCoin {});
@@ -1173,7 +1173,7 @@ mod taker_swap_tests {
         static mut REFUND_CALLED: bool = false;
         TestCoin::send_taker_refunds_payment.mock_safe(|_, _, _, _, _| {
             unsafe { REFUND_CALLED = true };
-            MockResult::Return(Box::new(futures::future::ok(eth_tx_for_test().into())))
+            MockResult::Return(Box::new(futures01::future::ok(eth_tx_for_test().into())))
         });
         let maker_coin = MmCoinEnum::Test(TestCoin {});
         let taker_coin = MmCoinEnum::Test(TestCoin {});
@@ -1232,7 +1232,7 @@ mod taker_swap_tests {
         static mut MAKER_PAYMENT_SPEND_CALLED: bool = false;
         TestCoin::send_taker_spends_maker_payment.mock_safe(|_, _, _, _, _| {
             unsafe { MAKER_PAYMENT_SPEND_CALLED = true };
-            MockResult::Return(Box::new(futures::future::ok(eth_tx_for_test().into())))
+            MockResult::Return(Box::new(futures01::future::ok(eth_tx_for_test().into())))
         });
         let maker_coin = MmCoinEnum::Test(TestCoin {});
         let taker_coin = MmCoinEnum::Test(TestCoin {});

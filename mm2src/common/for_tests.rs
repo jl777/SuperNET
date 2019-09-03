@@ -3,9 +3,9 @@
 use bytes::Bytes;
 use chrono::Local;
 #[cfg(feature = "native")]
-use futures::Future;
-use futures03::task::SpawnExt;
-use futures03::channel::oneshot::channel;
+use futures01::Future;
+use futures::task::SpawnExt;
+use futures::channel::oneshot::channel;
 use gstuff::ISATTY;
 use http::{StatusCode, HeaderMap};
 #[cfg(feature = "native")]

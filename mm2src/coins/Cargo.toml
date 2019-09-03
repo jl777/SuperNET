@@ -34,7 +34,7 @@ futures01 = { version = "0.1", package = "futures" }
 # using select macro requires the crate to be named futures, compilation failed with futures03 name
 futures = { version = ">=0.3.0-alpha.16, <0.4", package = "futures-preview", features = ["compat", "async-await", "nightly"] }
 futures-timer = "0.1"
-gstuff = { version = "0.5", features = ["nightly"] }
+gstuff = { version = "0.6", features = ["nightly"] }
 hex = "0.3.2"
 http = "0.1"
 jsonrpc-core = "8.0.1"

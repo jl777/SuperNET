@@ -27,7 +27,7 @@ use common::{bits256, new_uuid, round_to, rpc_response, rpc_err_response, HyRes,
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use futures::future::{Either, Future};
+use futures01::future::{Either, Future};
 use gstuff::{now_ms, slurp};
 use keys::{Public, Signature};
 #[cfg(test)]
@@ -603,9 +603,9 @@ fn check_locked_coins(ctx: &MmArc, amount: &BigDecimal, balance: &BigDecimal, ti
     let locked = get_locked_amount(ctx, ticker);
     let available = balance - &locked;
     if *amount > available {
-        futures::future::err(ERRL!("The amount {:.8} is larger than available {:.8}, balance: {}, locked by swaps: {:.8}", amount, available, balance, locked))
+        futures01::future::err(ERRL!("The amount {:.8} is larger than available {:.8}, balance: {}, locked by swaps: {:.8}", amount, available, balance, locked))
     } else {
-        futures::future::ok(())
+        futures01::future::ok(())
     }
 }
 

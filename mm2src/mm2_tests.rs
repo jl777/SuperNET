@@ -4,7 +4,7 @@ use common::call_back;
 use common::for_tests::{enable_electrum, from_env_file, get_passphrase, mm_dump, mm_spat,
   LocalStart, MarketMakerIt};
 use common::privkey::key_pair_from_seed;
-use futures03::executor::block_on;
+use futures::executor::block_on;
 #[cfg(feature = "native")]
 use hyper::StatusCode;
 #[cfg(feature = "native")]
@@ -40,7 +40,7 @@ fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
 }
 
 #[cfg(not(feature = "native"))]
-fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
+fn enable_native(_mm: &MarketMakerIt, _coin: &str, _urls: Vec<&str>) -> Json {
     unimplemented!()
 }
 

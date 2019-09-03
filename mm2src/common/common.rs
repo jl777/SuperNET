@@ -79,13 +79,12 @@ pub mod lift_body {
 
 use bigdecimal::BigDecimal;
 use crossbeam::{channel};
-use futures::{future, Future};
-use futures::task::Task;
+use futures01::{future, task::Task, Future};
 #[cfg(not(feature = "native"))]
-use futures03::task::{Context, Poll as Poll03};
-use futures03::task::Waker;
-use futures03::compat::Future01CompatExt;
-use futures03::future::FutureExt;
+use futures::task::{Context, Poll as Poll03};
+use futures::task::Waker;
+use futures::compat::Future01CompatExt;
+use futures::future::FutureExt;
 use gstuff::binprint;
 use hex::FromHex;
 use http::{Request, Response, StatusCode, HeaderMap};
@@ -448,7 +447,7 @@ pub type HyRes = Box<dyn Future<Item=Response<Vec<u8>>, Error=String> + Send>;
 
 #[cfg(not(feature = "native"))]
 pub mod wio {
-    use futures::future::IntoFuture;
+    use futures01::future::IntoFuture;
     use http::Request;
     use super::SlurpFut;
 
@@ -462,9 +461,9 @@ pub mod wio {
 pub mod wio {
     use crate::lift_body::LiftBody;
     use crate::SlurpFut;
-    use futures::{Async, Future, Poll};
-    use futures::sync::oneshot::{self, Receiver};
-    use futures03::executor::ThreadPool;
+    use futures01::{Async, Future, Poll};
+    use futures01::sync::oneshot::{self, Receiver};
+    use futures::executor::ThreadPool;
     use futures_cpupool::CpuPool;
     use gstuff::{duration_to_float, now_float};
     use http::{Request, StatusCode, HeaderMap};
@@ -566,7 +565,7 @@ pub mod wio {
                         // Start waking up this future until it has a chance to timeout.
                         // For now it's just a basic separate thread. Will probably optimize later.
                         if self.monitor.is_none() {
-                            let task = futures::task::current();
+                            let task = futures01::task::current();
                             let deadline = self.started + self.timeout;
                             self.monitor = Some (unwrap! (std::thread::Builder::new().name ("timeout monitor".into()) .spawn (move || {
                                 loop {
@@ -633,7 +632,7 @@ pub mod wio {
             // "an error occurred trying to connect: Connection refused (os error 111)"
             let res = match res {
                 Ok (r) => r,
-                Err (err) => return Box::new (futures::future::err (
+                Err (err) => return Box::new (futures01::future::err (
                     ERRL! ("Error accessing '{}': {}", uri, err)))
             };
             let status = res.status();
@@ -652,8 +651,8 @@ pub mod wio {
 
 #[cfg(feature = "native")]
 pub mod executor {
-    use futures03::{FutureExt, Future as Future03, Poll as Poll03, TryFutureExt};
-    use futures03::task::Context;
+    use futures::{FutureExt, Future as Future03, Poll as Poll03, TryFutureExt};
+    use futures::task::Context;
     use gstuff::now_float;
     use std::pin::Pin;
     use std::time::Duration;
@@ -690,7 +689,7 @@ pub mod executor {
     }
 
     #[test] fn test_timer() {
-        use futures03::executor::block_on;
+        use futures::executor::block_on;
 
         let started = now_float();
         let ti = Timer::sleep (0.2);
