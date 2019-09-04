@@ -4,7 +4,7 @@ use common::call_back;
 use common::for_tests::{enable_electrum, from_env_file, get_passphrase, mm_dump, mm_spat,
   LocalStart, MarketMakerIt};
 use common::privkey::key_pair_from_seed;
-use futures03::executor::block_on;
+use futures::executor::block_on;
 #[cfg(feature = "native")]
 use hyper::StatusCode;
 #[cfg(feature = "native")]
@@ -40,7 +40,7 @@ fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
 }
 
 #[cfg(not(feature = "native"))]
-fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
+fn enable_native(_mm: &MarketMakerIt, _coin: &str, _urls: Vec<&str>) -> Json {
     unimplemented!()
 }
 
@@ -701,8 +701,8 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
-    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
-    log! ({"Bob log path: {}", mm_bob.log_path.display()});
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_bob.mm_dump();
+    #[cfg(feature = "native")] {log! ({"Bob log path: {}", mm_bob.log_path.display()})}
 
     // Both Alice and Bob might try to bind on the "0.0.0.0:47773" DHT port in this test
     // (because the local "127.0.0.*:47773" addresses aren't that useful for DHT).
@@ -727,8 +727,8 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
     ));
 
-    let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
-    log! ({"Alice log path: {}", mm_alice.log_path.display()});
+    let (_alice_dump_log, _alice_dump_dashboard) = mm_alice.mm_dump();
+    #[cfg(feature = "native")] {log! ({"Alice log path: {}", mm_alice.log_path.display()})}
 
     // wait until both nodes RPC API is active
     unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
@@ -746,7 +746,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     // issue sell request on Bob side by setting base/rel price
     for (base, rel) in pairs.iter() {
         log!("Issue bob " (base) "/" (rel) " sell request");
-            let rc = unwrap!(mm_bob.rpc (json! ({
+        let rc = unwrap!(mm_bob.rpc (json! ({
             "userpass": mm_bob.userpass,
             "method": "sell",
             "base": base,
@@ -1298,8 +1298,8 @@ fn startup_passphrase(passphrase: &str, expected_address: &str) {
         "pass".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
-    log!({"Log path: {}", mm.log_path.display()});
+    let (_dump_log, _dump_dashboard) = mm.mm_dump();
+    #[cfg(feature = "native")] {log!({"Log path: {}", mm.log_path.display()})}
     unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
     let enable = enable_electrum (&mm, "KMD", vec!["electrum1.cipig.net:10001"]);
     let addr = addr_from_enable(&enable);

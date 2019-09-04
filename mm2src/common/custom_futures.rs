@@ -2,12 +2,14 @@
 
 use crate::executor::Timer;
 
-use futures::{Async, AsyncSink, Future, Poll, Sink};
-use futures::future::{self, Either, IntoFuture, Loop, loop_fn};
-use futures::stream::{Stream, Fuse};
+use futures01::{Async, AsyncSink, Future, Poll, Sink};
+use futures01::future::{self, Either as Either01, IntoFuture, Loop, loop_fn};
+use futures01::stream::{Stream, Fuse};
 
-use futures03::future::select;
-use futures03::lock::{Mutex as AsyncMutex};
+use futures::future::{select, Either};
+use futures::lock::{Mutex as AsyncMutex};
+
+use gstuff::now_float;
 
 /// The analogue of join_all combinator running futures `sequentially`.
 /// `join_all` runs futures `concurrently` which cause issues with native coins daemons RPC.
@@ -26,9 +28,9 @@ pub fn join_all_sequential<I>(
     let iter = i.into_iter();
     loop_fn((vec![], iter), |(mut output, mut iter)| {
         let fut = if let Some(next) = iter.next() {
-            Either::A(next.into_future().map(|v| Some(v)))
+            Either01::A(next.into_future().map(|v| Some(v)))
         } else {
-            Either::B(future::ok(None))
+            Either01::B(future::ok(None))
         };
 
         fut.and_then(move |val| {
@@ -57,9 +59,9 @@ pub fn select_ok_sequential<I: IntoIterator>(
     let futures = i.into_iter();
     loop_fn((vec![], futures), |(mut errors, mut futures)| {
         let fut = if let Some(next) = futures.next() {
-            Either::A(next.into_future().map(|v| Some(v)))
+            Either01::A(next.into_future().map(|v| Some(v)))
         } else {
-            Either::B(future::ok(None))
+            Either01::B(future::ok(None))
         };
 
         fut.then(move |val| {
@@ -179,7 +181,7 @@ impl<T, U> Future for SendAll<T, U>
     }
 }
 
-pub struct TimedMutexGuard<'a, T> (futures03::lock::MutexGuard<'a, T>);
+pub struct TimedMutexGuard<'a, T> (futures::lock::MutexGuard<'a, T>);
 //impl<'a, T> Drop for TimedMutexGuard<'a, T> {fn drop (&mut self) {}}
 
 /// Like `AsyncMutex` but periodically invokes a callback,
@@ -194,8 +196,6 @@ impl<T> TimedAsyncMutex<T> {
     /// (they are equal on the first invocation of `tick`).
     pub async fn lock<F> (&self, mut tick: F) -> Result<TimedMutexGuard<T>, String>
     where F: FnMut (f64, f64) -> Result<f64, String> {
-        use gstuff::now_float;
-        use futures03::future::Either;
         let start = now_float();
         let mut now = start;
         let mut l = self.0.lock();

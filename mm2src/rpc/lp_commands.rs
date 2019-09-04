@@ -24,7 +24,7 @@ use coins::{disable_coin as disable_coin_impl, lp_coinfind, lp_coininit, MmCoinE
 use common::{rpc_err_response, rpc_response, HyRes, MM_VERSION};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
-use futures::Future;
+use futures01::Future;
 use serde_json::{Value as Json};
 
 use crate::mm2::lp_ordermatch::{CancelBy, cancel_orders_by};
