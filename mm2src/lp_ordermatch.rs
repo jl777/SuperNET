@@ -1278,20 +1278,14 @@ pub fn orders_kick_start(ctx: &MmArc) -> Result<HashSet<String>, String> {
 }
 
 #[derive(Deserialize)]
-pub struct Pair {
-    base: String,
-    rel: String,
-}
-
-#[derive(Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum CancelBy {
     /// All orders of current node
     All,
     /// All orders of specific pair
-    Pair(Pair),
+    Pair { base: String, rel: String },
     /// All orders using the coin ticker as base or rel
-    Coin(String),
+    Coin { ticker: String },
 }
 
 pub fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<Uuid>, Vec<Uuid>), String> {
@@ -1347,15 +1341,15 @@ pub fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<Uuid>, 
                 cancel_taker_if_true!(true, uuid, order)
             }).collect();
         },
-        CancelBy::Pair(pair) => {
+        CancelBy::Pair{base, rel} => {
             *maker_orders = maker_orders.drain().filter_map(|(uuid, order)| {
-                cancel_maker_if_true!(order.base == pair.base && order.rel == pair.rel, uuid, order)
+                cancel_maker_if_true!(order.base == base && order.rel == rel, uuid, order)
             }).collect();
             *taker_orders = taker_orders.drain().filter_map(|(uuid, order)| {
-                cancel_taker_if_true!(order.request.base == pair.base && order.request.rel == pair.rel, uuid, order)
+                cancel_taker_if_true!(order.request.base == base && order.request.rel == rel, uuid, order)
             }).collect();
         },
-        CancelBy::Coin(ticker) => {
+        CancelBy::Coin{ticker} => {
             *maker_orders = maker_orders.drain().filter_map(|(uuid, order)| {
                 cancel_maker_if_true!(order.base == ticker || order.rel == ticker, uuid, order)
             }).collect();

@@ -80,6 +80,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::thread;
 use std::time::{Duration, SystemTime};
+use uuid::Uuid;
 
 // NB: Using a macro instead of a function in order to preserve the line numbers in the log.
 macro_rules! send {
@@ -248,16 +249,22 @@ fn get_locked_amount_by_other_swaps(ctx: &MmArc, except_uuid: &str, coin: &str) 
     )
 }
 
-pub fn is_coin_swapping(ctx: &MmArc, coin: &str) -> Result<bool, String> {
+pub fn active_swaps_using_coin(ctx: &MmArc, coin: &str) -> Result<Vec<Uuid>, String> {
     let swap_ctx = try_s!(SwapsContext::from_ctx(&ctx));
     let swaps = try_s!(swap_ctx.running_swaps.lock());
+    let mut uuids = vec![];
     for swap in swaps.iter() {
         match swap.upgrade() {
-            Some(swap) => if try_s!(swap.read()).maker_coin() == coin || try_s!(swap.read()).taker_coin() == coin { return Ok(true) },
+            Some(swap) => {
+                let swap = try_s!(swap.read());
+                if swap.maker_coin() == coin || swap.taker_coin() == coin {
+                    uuids.push(try_s!(swap.uuid().parse()))
+                }
+            },
             None => (),
         }
     }
-    Ok(false)
+    Ok(uuids)
 }
 
 /// Some coins are "slow" (block time is high - e.g. BTC average block time is ~10 minutes).

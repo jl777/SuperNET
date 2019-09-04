@@ -580,7 +580,7 @@ fn test_cancel_by_single_coin() {
         MockResult::Return(())
     });
 
-    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::Coin("ETOMIC".into())));
+    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::Coin { ticker: "ETOMIC".into() }));
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([2; 16])));
@@ -599,10 +599,10 @@ fn test_cancel_by_pair() {
         MockResult::Return(())
     });
 
-    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::Pair(Pair {
+    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::Pair{
         base: "ETOMIC".into(),
         rel: "BEER".into(),
-    })));
+    }));
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([2; 16])));

@@ -28,7 +28,7 @@ use futures::Future;
 use serde_json::{Value as Json};
 
 use crate::mm2::lp_ordermatch::{CancelBy, cancel_orders_by};
-use crate::mm2::lp_swap::{get_locked_amount, is_coin_swapping};
+use crate::mm2::lp_swap::{get_locked_amount, active_swaps_using_coin};
 
 /// Attempts to disables the coin
 pub fn disable_coin (ctx: MmArc, req: Json) -> HyRes {
@@ -38,19 +38,30 @@ pub fn disable_coin (ctx: MmArc, req: Json) -> HyRes {
         Ok (None) => return rpc_err_response (500, &fomat! ("No such coin: " (ticker))),
         Err (err) => return rpc_err_response (500, &fomat! ("!lp_coinfind(" (ticker) "): " (err)))
     };
-    if try_h!(is_coin_swapping(&ctx, &ticker)) {
-        return rpc_err_response (500, &fomat! ("There're running swaps using " (ticker)));
+    let swaps = try_h!(active_swaps_using_coin(&ctx, &ticker));
+    if !swaps.is_empty() {
+        return rpc_response (500, json!({
+            "error": fomat! ("There're active swaps using " (ticker)),
+            "swaps": swaps,
+        }).to_string());
     }
-    let (cancelled, still_matching) = try_h!(cancel_orders_by(&ctx, CancelBy::Coin(ticker.clone())));
+    let (cancelled, still_matching) = try_h!(cancel_orders_by(&ctx, CancelBy::Coin{ ticker: ticker.clone() }));
     if !still_matching.is_empty() {
-        return rpc_err_response (500, &fomat! ("There're currently matching orders using " (ticker)));
+        return rpc_response (500, json!({
+            "error": fomat! ("There're currently matching orders using " (ticker)),
+            "orders": {
+                "matching": still_matching,
+                "cancelled": cancelled,
+            }
+        }).to_string());
     }
 
     try_h!(disable_coin_impl(&ctx, &ticker));
     rpc_response(200, json!({
-        "result": "success",
-        "coin": ticker,
-        "cancelled_orders": cancelled,
+        "result": {
+            "coin": ticker,
+            "cancelled_orders": cancelled,
+        }
     }).to_string())
 }
 
