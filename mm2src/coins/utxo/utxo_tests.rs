@@ -31,7 +31,16 @@ fn electrum_client_for_test(servers: &[&str]) -> UtxoRpcClientEnum {
 
 fn utxo_coin_for_test(rpc_client: UtxoRpcClientEnum) -> UtxoCoin {
     let checksum_type = ChecksumType::DSHA256;
-    let key_pair = key_pair_from_seed("spice describe gravity federal blast come thank unfair canal monkey style afraid").unwrap();
+    let default_seed = "spice describe gravity federal blast come thank unfair canal monkey style afraid";
+    let seed = match std::env::var("BOB_PASSPHRASE") {
+        Ok(p) => if p.is_empty() {
+            default_seed.into()
+        } else {
+            p
+        },
+        Err(_) => default_seed.into(),
+    };
+    let key_pair = key_pair_from_seed(&seed).unwrap();
     let my_address = Address {
         prefix: 60,
         hash: key_pair.public().address_hash(),
