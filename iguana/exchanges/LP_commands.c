@@ -395,6 +395,7 @@ version\n\
                     p2shtype = 85;
                     wiftype = 188;
                     wiftaddr = 0;
+                    ptr = LP_coinfind("KMD");
                 }
                 else
                 {
@@ -416,6 +417,19 @@ version\n\
                 jaddbits256(retjson,"privkey",privkey);
                 bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
+                uint8_t tmptype; bits256 pubkey;
+                bitcoin_wif2priv("KMD",188,&tmptype,&privkey,passphrase);
+                if ( bits256_nonz(privkey) != 0 )
+                {
+                    privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,passphrase,"");
+
+                    bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
+                    jaddstr(retjson,"convwif",wifstr);
+                    bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
+                    init_hexbytes_noT(pubsecp,pubkey33,33);
+                    jaddstr(retjson,"convpubsecp",pubsecp);
+                    jaddstr(retjson,"convcoinaddr",coinaddr);
+                }
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }

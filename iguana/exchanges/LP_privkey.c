@@ -432,10 +432,25 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     if ( coin->counter == 0 )
     {
+        int32_t i,j,len; uint8_t rawhex[256]; bits256 hash;
         coin->counter++;
         memcpy(G.LP_pubsecp,coin->pubkey33,33);
         bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,rmd160,coin->smartaddr);
+        strcpy(coin->scriptstrs[0],"76a914"); init_hexbytes_noT(&coin->scriptstrs[0][6],rmd160,20); strcpy(&coin->scriptstrs[0][46],"88ac");
+        strcpy(coin->scriptstrs[1],"21"); init_hexbytes_noT(&coin->scriptstrs[1][2],coin->pubkey33,33); strcpy(&coin->scriptstrs[1][68],"ac");
+        for (i=0; i<2; i++)
+        {
+            len = (int32_t)strlen(coin->scriptstrs[i]) >> 1;
+            decode_hex(rawhex,len,coin->scriptstrs[i]);
+            vcalc_sha256(0,hash.bytes,rawhex,len);
+            
+            for (j=0; j<32; j++)
+                sprintf(&coin->scriptstrs[i][j<<1],"%02x",hash.bytes[31-j]);
+            coin->scriptstrs[i][64] = 0;
+            //bits256_str(coin->scriptstrs[i],hash);
+        }
+        //printf("scripts: %s and %s\n",coin->scriptstrs[0],coin->scriptstrs[1]);
         LP_privkeyadd(privkey,rmd160);
         G.LP_privkey = privkey;
         if ( G.counter++ == 0 )
