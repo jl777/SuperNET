@@ -64,8 +64,10 @@ impl Drop for RaiiKill {
 /// Note that because of https://github.com/rust-lang/rust/issues/42474 it's currently impossible to share the MM log interactively,
 /// hence we're doing it in the `drop`.
 pub struct RaiiDump {
+    #[cfg(feature = "native")]
     pub log_path: PathBuf
 }
+#[cfg(feature = "native")]
 impl Drop for RaiiDump {
     fn drop (&mut self) {
         // `term` bypasses the stdout capturing, we should only use it if the capturing was disabled.
@@ -271,7 +273,7 @@ impl MarketMakerIt {
     pub fn mm_dump (&self) -> (RaiiDump, RaiiDump) {mm_dump (&self.log_path)}
 
     #[cfg(not(feature = "native"))]
-    pub fn mm_dump (&self) -> (RaiiDump, RaiiDump) {unimplemented!()}
+    pub fn mm_dump (&self) -> (RaiiDump, RaiiDump) {(RaiiDump{}, RaiiDump{})}
 
     /// Send the "stop" request to the locally running MM.
     #[cfg(feature = "native")]
@@ -372,6 +374,7 @@ pub async fn wait_for_log_re (ctx: &crate::mm_ctx::MmArc, timeout_sec: f64, re_p
 }
 
 /// Create RAII variables to the effect of dumping the log and the status dashboard at the end of the scope.
+#[cfg(feature = "native")]
 pub fn mm_dump (log_path: &Path) -> (RaiiDump, RaiiDump) {(
     RaiiDump {log_path: log_path.to_path_buf()},
     RaiiDump {log_path: unwrap! (dashboard_path (log_path))}

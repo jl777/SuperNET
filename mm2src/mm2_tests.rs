@@ -1,8 +1,9 @@
 use common::slurp;
 #[cfg(not(feature = "native"))]
 use common::call_back;
-use common::for_tests::{enable_electrum, from_env_file, get_passphrase, mm_dump, mm_spat,
-  LocalStart, MarketMakerIt};
+use common::for_tests::{enable_electrum, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt};
+#[cfg(feature = "native")]
+use common::for_tests::mm_dump;
 use common::privkey::key_pair_from_seed;
 use futures::executor::block_on;
 #[cfg(feature = "native")]
