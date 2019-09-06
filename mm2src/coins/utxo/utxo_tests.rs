@@ -75,6 +75,7 @@ fn utxo_coin_for_test(rpc_client: UtxoRpcClientEnum, force_seed: Option<&str>) -
         fork_id: 0,
         signature_version: SignatureVersion::Base,
         history_sync_state: Mutex::new(HistorySyncState::NotEnabled),
+        required_confirmations: 1.into(),
     };
 
     UtxoCoin(Arc::new(coin))
