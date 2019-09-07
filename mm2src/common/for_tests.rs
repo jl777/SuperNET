@@ -30,6 +30,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use crate::{now_float, slurp};
+use crate::executor::Timer;
 #[cfg(not(feature = "native"))]
 use crate::helperᶜ;
 #[cfg(feature = "native")]
@@ -220,7 +221,8 @@ impl MarketMakerIt {
 
     /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
     #[cfg(feature = "native")]
-    pub fn wait_for_log (&mut self, timeout_sec: f64, pred: &dyn Fn (&str) -> bool) -> Result<(), String> {
+    pub async fn wait_for_log<F> (&mut self, timeout_sec: f64, pred: F) -> Result<(), String>
+    where F: Fn (&str) -> bool {
         let start = now_float();
         let ms = 50 .min ((timeout_sec * 1000.) as u64 / 20 + 10);
         loop {
@@ -228,13 +230,14 @@ impl MarketMakerIt {
             if pred (&mm_log) {return Ok(())}
             if now_float() - start > timeout_sec {return ERR! ("Timeout expired waiting for a log condition")}
             if let Some (ref mut pc) = self.pc {if !pc.running() {return ERR! ("MM process terminated prematurely.")}}
-            sleep (Duration::from_millis (ms));
+            Timer::sleep (ms as f64 / 1000.) .await
         }
     }
 
     /// Busy-wait on the instance in-memory log until the `pred` returns `true` or `timeout_sec` expires.
     #[cfg(not(feature = "native"))]
-    pub fn wait_for_log (&mut self, _timeout_sec: f64, _pred: &dyn Fn (&str) -> bool) -> Result<(), String> {
+    pub async fn wait_for_log<F> (&mut self, _timeout_sec: f64, pred: F) -> Result<(), String>
+    where F: Fn (&str) -> bool {
         // TODO: Change the signatures to `pub async fn wait_for_log`.
         unimplemented!()
     }

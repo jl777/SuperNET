@@ -90,7 +90,7 @@ fn test_fundvalue() {portfolio::portfolio_tests::test_fundvalue (local_start())}
 #[test]
 fn test_rpc() {
     let (_, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
-    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (19., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     let no_method = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
@@ -192,7 +192,7 @@ fn local_start() -> LocalStart {local_start_impl}
 #[test]
 fn test_notify() {
     let (_passphrase, mut mm, _dump_log, _dump_dashboard) = mm_spat (local_start(), &identity);
-    unwrap! (mm.wait_for_log (19., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (19., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     let notify = unwrap! (mm.rpc (json! ({
         "method": "notify",
@@ -237,7 +237,7 @@ fn alice_can_see_the_active_order_after_connection() {
     ));
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     log!({"Bob log path: {}", mm_bob.log_path.display()});
-    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     // Enable coins on Bob side. Print the replies in case we need the "address".
     log! ({"enable_coins (bob): {:?}", enable_coins_eth_electrum (&mm_bob, vec!["http://195.201.0.6:8545"])});
     // issue sell request on Bob side by setting base/rel price
@@ -289,7 +289,7 @@ fn alice_can_see_the_active_order_after_connection() {
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
     log!({"Alice log path: {}", mm_alice.log_path.display()});
 
-    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     // Enable coins on Alice side. Print the replies in case we need the "address".
     log! ({"enable_coins (alice): {:?}", enable_coins_eth_electrum (&mm_alice, vec!["http://195.201.0.6:8545"])});
@@ -361,7 +361,7 @@ fn test_my_balance() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     // Enable BEER.
     let json = enable_electrum(&mm, "BEER", vec!["test1.cipig.net:10022","test2.cipig.net:10022","test3.cipig.net:10022"]);
     let balance_on_enable = unwrap!(json["balance"].as_str());
@@ -443,7 +443,7 @@ fn test_check_balance_on_order_post() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     // Enable coins. Print the replies in case we need the "address".
     log! ({"enable_coins (bob): {:?}", enable_coins_eth_electrum (&mm, vec!["http://195.201.0.6:8565"])});
     // issue sell request by setting base/rel price
@@ -494,7 +494,7 @@ fn test_rpc_password_from_json() {
         "password".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
-    unwrap! (err_mm1.wait_for_log (5., &|log| log.contains ("rpc_password must not be empty")));
+    unwrap! (block_on (err_mm1.wait_for_log (5., |log| log.contains ("rpc_password must not be empty"))));
 
     // do not allow empty password
     let mut err_mm2 = unwrap!(MarketMakerIt::start (
@@ -509,7 +509,7 @@ fn test_rpc_password_from_json() {
         "password".into(),
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
-    unwrap! (err_mm2.wait_for_log (5., &|log| log.contains ("rpc_password must be string")));
+    unwrap! (block_on (err_mm2.wait_for_log (5., |log| log.contains ("rpc_password must be string"))));
 
     let mut mm = unwrap! (MarketMakerIt::start (
         json! ({
@@ -525,7 +525,7 @@ fn test_rpc_password_from_json() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     let electrum_invalid = unwrap! (mm.rpc (json! ({
         "userpass": "password1",
         "method": "electrum",
@@ -589,7 +589,7 @@ fn test_rpc_password_from_json_no_userpass() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     let electrum = unwrap! (mm.rpc (json! ({
         "method": "electrum",
         "coin": "BEER",
@@ -710,7 +710,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     // We want to give Bob a headstart in acquiring the port,
     // because Alice will then be able to directly reach it (thanks to "seednode").
     // Direct communication is not required in this test, but it's nice to have.
-    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port")));
+    unwrap! (mm_bob.wait_for_log (9., |log| log.contains ("preferred port")) .await);
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
@@ -732,8 +732,8 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     #[cfg(feature = "native")] {log! ({"Alice log path: {}", mm_alice.log_path.display()})}
 
     // wait until both nodes RPC API is active
-    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats ")) .await);
+    unwrap! (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats ")) .await);
 
     // Enable coins on Bob side. Print the replies in case we need the address.
     log! ({"enable_coins (bob): {:?}", enable_coins_eth_electrum (&mm_bob, vec!["http://195.201.0.6:8565"])});
@@ -776,8 +776,8 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
 
     for (base, rel) in pairs.iter() {
         // ensure the swaps are started
-        unwrap!(mm_alice.wait_for_log (5., &|log| log.contains (&format!("Entering the taker_swap_loop {}/{}", base, rel))));
-        unwrap!(mm_bob.wait_for_log (5., &|log| log.contains (&format!("Entering the maker_swap_loop {}/{}", base, rel))));
+        unwrap! (mm_alice.wait_for_log (5., |log| log.contains (&format!("Entering the taker_swap_loop {}/{}", base, rel))) .await);
+        unwrap! (mm_bob.wait_for_log (5., |log| log.contains (&format!("Entering the maker_swap_loop {}/{}", base, rel))) .await);
     }
 
     let maker_success_events = vec!["Started", "Negotiated", "TakerFeeValidated", "MakerPaymentSent",
@@ -798,8 +798,8 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
                                   "MakerPaymentSpendFailed", "TakerPaymentRefunded", "TakerPaymentRefundFailed"];
 
     for uuid in uuids.iter() {
-        unwrap!(mm_bob.wait_for_log (600., &|log| log.contains (&format!("[swap uuid={}] Finished", uuid))));
-        unwrap!(mm_alice.wait_for_log (600., &|log| log.contains (&format!("[swap uuid={}] Finished", uuid))));
+        unwrap! (mm_bob.wait_for_log (600., |log| log.contains (&format!("[swap uuid={}] Finished", uuid))) .await);
+        unwrap! (mm_alice.wait_for_log (600., |log| log.contains (&format!("[swap uuid={}] Finished", uuid))) .await);
         check_my_swap_status(
             &mm_alice,
             &uuid,
@@ -918,7 +918,7 @@ fn trade_base_rel_native(base: &str, rel: &str) {
     // because Alice will then be able to directly reach it (thanks to "seednode").
     // Direct communication is not required in this test, but it's nice to have.
     // The port differs for another netid, should be 43804 for 9000
-    unwrap! (mm_bob.wait_for_log (9., &|log| log.contains ("preferred port 43804 drill true")));
+    unwrap! (block_on (mm_bob.wait_for_log (9., |log| log.contains ("preferred port 43804 drill true"))));
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
@@ -939,8 +939,8 @@ fn trade_base_rel_native(base: &str, rel: &str) {
     log! ({"Alice log path: {}", mm_alice.log_path.display()});
 
     // wait until both nodes RPC API is active
-    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
-    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
+    unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     // Enable coins on Bob side. Print the replies in case we need the "smartaddress".
     log! ({"enable_coins (bob): {:?}", enable_coins (&mm_bob)});
@@ -949,8 +949,8 @@ fn trade_base_rel_native(base: &str, rel: &str) {
 
     // Both the Taker and the Maker should connect to the netid 9000 open (non-NAT) seed node.
     // NB: Long wayt as there might be delays in the seed node from us reusing the 127.0.0.* IPs with different keys.
-    unwrap! (mm_bob.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
-    unwrap! (mm_alice.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
+    unwrap! (block_on (mm_bob.wait_for_log (999., |log| log.contains ("set pubkey for "))));
+    unwrap! (block_on (mm_alice.wait_for_log (999., |log| log.contains ("set pubkey for "))));
 
     // issue sell request on Bob side by setting base/rel price
     log! ("Issue bob sell request");
@@ -977,12 +977,12 @@ fn trade_base_rel_native(base: &str, rel: &str) {
     assert! (rc.0.is_success(), "!buy: {}", rc.1);
 
     // ensure the swap started
-    unwrap! (mm_alice.wait_for_log (99., &|log| log.contains ("Entering the taker_swap_loop")));
-    unwrap! (mm_bob.wait_for_log (20., &|log| log.contains ("Entering the maker_swap_loop")));
+    unwrap! (block_on (mm_alice.wait_for_log (99., |log| log.contains ("Entering the taker_swap_loop"))));
+    unwrap! (block_on (mm_bob.wait_for_log (20., |log| log.contains ("Entering the maker_swap_loop"))));
 
     // wait for swap to complete on both sides
-    unwrap! (mm_alice.wait_for_log (600., &|log| log.contains ("Swap finished successfully")));
-    unwrap! (mm_bob.wait_for_log (600., &|log| log.contains ("Swap finished successfully")));
+    unwrap! (block_on (mm_alice.wait_for_log (600., |log| log.contains ("Swap finished successfully"))));
+    unwrap! (block_on (mm_bob.wait_for_log (600., |log| log.contains ("Swap finished successfully"))));
 
     unwrap! (mm_bob.stop());
     unwrap! (mm_alice.stop());
@@ -1140,7 +1140,7 @@ fn test_withdraw_and_send() {
     log! ({"Alice log path: {}", mm_alice.log_path.display()});
 
     // wait until RPC API is active
-    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     // Enable coins. Print the replies in case we need the address.
     let enable_res = enable_coins_eth_electrum (&mm_alice, vec!["http://195.201.0.6:8565"]);
@@ -1198,7 +1198,7 @@ fn test_swap_status() {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
     ));
 
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     let my_swap = unwrap! (mm.rpc (json! ({
         "userpass": mm.userpass,
@@ -1246,7 +1246,7 @@ fn test_order_errors_when_base_equal_rel() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     enable_electrum (&mm, "BEER", vec!["test1.cipig.net:10022","test2.cipig.net:10022","test3.cipig.net:10022"]);
 
     let rc = unwrap! (mm.rpc (json! ({
@@ -1301,7 +1301,7 @@ fn startup_passphrase(passphrase: &str, expected_address: &str) {
     ));
     let (_dump_log, _dump_dashboard) = mm.mm_dump();
     #[cfg(feature = "native")] {log!({"Log path: {}", mm.log_path.display()})}
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     let enable = enable_electrum (&mm, "KMD", vec!["electrum1.cipig.net:10001"]);
     let addr = addr_from_enable(&enable);
     assert_eq!(Json::from(expected_address), addr);
@@ -1360,7 +1360,7 @@ fn test_multiple_buy_sell_no_delay() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     enable_electrum (&mm, "BEER", vec!["test1.cipig.net:10022", "test2.cipig.net:10022", "test3.cipig.net:10022"]);
     enable_electrum (&mm, "PIZZA", vec!["test1.cipig.net:10024", "test2.cipig.net:10024", "test3.cipig.net:10024"]);
     enable_electrum (&mm, "ETOMIC", vec!["test1.cipig.net:10025", "test2.cipig.net:10025", "test3.cipig.net:10025"]);
@@ -1452,7 +1452,7 @@ fn test_cancel_order() {
     ));
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     log!({"Bob log path: {}", mm_bob.log_path.display()});
-    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     // Enable coins on Bob side. Print the replies in case we need the "address".
     log! ({"enable_coins (bob): {:?}", enable_coins_eth_electrum (&mm_bob, vec!["http://195.201.0.6:8545"])});
     // issue sell request on Bob side by setting base/rel price
@@ -1488,7 +1488,7 @@ fn test_cancel_order() {
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
     log!({"Alice log path: {}", mm_alice.log_path.display()});
 
-    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     // Enable coins on Alice side. Print the replies in case we need the "address".
     log! ({"enable_coins (alice): {:?}", enable_coins_eth_electrum (&mm_alice, vec!["http://195.201.0.6:8545"])});
@@ -1578,7 +1578,7 @@ fn test_electrum_enable_conn_errors() {
     ));
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     log!({"Bob log path: {}", mm_bob.log_path.display()});
-    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     // Using working servers and few else with random ports to trigger "connection refused"
     enable_electrum(&mm_bob, "RICK", vec![
         "electrum3.cipig.net:10017",
@@ -1623,7 +1623,7 @@ fn test_order_should_not_be_displayed_when_node_is_down() {
     ));
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     log!({"Bob log path: {}", mm_bob.log_path.display()});
-    unwrap! (mm_bob.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     log!("Bob enable RICK " [enable_electrum(&mm_bob, "RICK", vec![
         "electrum3.cipig.net:10017",
@@ -1655,7 +1655,7 @@ fn test_order_should_not_be_displayed_when_node_is_down() {
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
     log!({"Alice log path: {}", mm_alice.log_path.display()});
 
-    unwrap! (mm_alice.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     log!("Alice enable RICK " [enable_electrum(&mm_alice, "RICK", vec![
         "electrum3.cipig.net:10017",
@@ -1741,7 +1741,7 @@ fn test_all_orders_per_pair_per_node_must_be_displayed_in_orderbook() {
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (mm.wait_for_log (22., &|log| log.contains (">>>>>>>>> DEX stats ")));
+    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     enable_electrum(&mm, "RICK", vec!["electrum3.cipig.net:10017", "electrum2.cipig.net:10017", "electrum1.cipig.net:10017"]);
     enable_electrum(&mm, "MORTY", vec!["electrum3.cipig.net:10018", "electrum2.cipig.net:10018", "electrum1.cipig.net:10018"]);
 
