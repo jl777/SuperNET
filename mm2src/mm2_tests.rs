@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use common::slurp;
 #[cfg(not(feature = "native"))]
 use common::call_back;
@@ -5,6 +6,8 @@ use common::for_tests::{enable_electrum, from_env_file, get_passphrase, mm_spat,
 #[cfg(feature = "native")]
 use common::for_tests::mm_dump;
 use common::privkey::key_pair_from_seed;
+#[cfg(not(feature = "native"))]
+use common::mm_ctx::MmArc;
 use futures::executor::block_on;
 #[cfg(feature = "native")]
 use hyper::StatusCode;
@@ -18,6 +21,7 @@ use std::env::{self, var};
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
+use super::{lp_init, lp_main, lp_ports};
 
 // TODO: Consider and/or try moving the integration tests into separate Rust files.
 // "Tests in your src files should be unit tests, and tests in tests/ should be integration-style tests."
@@ -131,9 +135,6 @@ fn test_rpc() {
     // TODO (workaround libtorrent hanging in delete) // unwrap! (mm.wait_for_log (9., &|log| log.contains ("LogState] Bye!")));
 }
 
-use super::{lp_main};
-use bigdecimal::BigDecimal;
-
 /// This is not a separate test but a helper used by `MarketMakerIt` to run the MarketMaker from the test binary.
 #[test]
 fn test_mm_start() {
@@ -169,6 +170,7 @@ fn chdir (dir: &Path) {
 
 /// Typically used when the `LOCAL_THREAD_MM` env is set, helping debug the tested MM.  
 /// NB: Accessing `lp_main` this function have to reside in the mm2 binary crate. We pass a pointer to it to subcrates.
+#[cfg(feature = "native")]
 fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
     unwrap! (thread::Builder::new().name ("MM".into()) .spawn (move || {
         if conf["log"].is_null() {
@@ -186,7 +188,29 @@ fn local_start_impl (folder: PathBuf, log_path: PathBuf, mut conf: Json) {
     }));
 }
 
+/// Starts the WASM version of MM.
+#[cfg(not(feature = "native"))]
+fn wasm_start_impl (ctx: MmArc) {
+    let netid = ctx.conf["netid"].as_u64().unwrap_or (0) as u16;
+    let (_, pubport, _) = unwrap! (lp_ports (netid));
+    unwrap! (lp_init (pubport, ctx));
+}
+
+#[cfg(feature = "native")]
 fn local_start() -> LocalStart {local_start_impl}
+
+#[cfg(not(feature = "native"))]
+fn local_start() -> LocalStart {wasm_start_impl}
+
+macro_rules! local_start {
+    ($who: expr) => {
+        if cfg!(feature = "native") {
+            match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == $who => Some (local_start()), _ => None}
+        } else {
+            Some (local_start())
+        }
+    };
+}
 
 /// Invokes the RPC "notify" method, adding a node to the peer-to-peer ring.
 #[test]
@@ -233,7 +257,7 @@ fn alice_can_see_the_active_order_after_connection() {
             "i_am_seed": true,
         }),
         "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
     log!({"Bob log path: {}", mm_bob.log_path.display()});
@@ -283,7 +307,7 @@ fn alice_can_see_the_active_order_after_connection() {
             "rpc_password": "pass",
         }),
         "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
+        local_start! ("alice")
     ));
 
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
@@ -357,7 +381,7 @@ fn test_my_balance() {
             "rpc_password": "pass",
         }),
         "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"log path: {}", mm.log_path.display()});
@@ -439,7 +463,7 @@ fn test_check_balance_on_order_post() {
             "rpc_password": "pass",
         }),
         "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
@@ -492,7 +516,7 @@ fn test_rpc_password_from_json() {
             "i_am_seed": true,
         }),
         "password".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     unwrap! (block_on (err_mm1.wait_for_log (5., |log| log.contains ("rpc_password must not be empty"))));
 
@@ -507,7 +531,7 @@ fn test_rpc_password_from_json() {
             "i_am_seed": true,
         }),
         "password".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     unwrap! (block_on (err_mm2.wait_for_log (5., |log| log.contains ("rpc_password must be string"))));
 
@@ -521,7 +545,7 @@ fn test_rpc_password_from_json() {
             "i_am_seed": true,
         }),
         "password".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
@@ -585,7 +609,7 @@ fn test_rpc_password_from_json_no_userpass() {
             "i_am_seed": true,
         }),
         "password".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
     let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
     log!({"Log path: {}", mm.log_path.display()});
@@ -699,7 +723,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
             "i_am_seed": true,
         }),
         "password".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+        local_start! ("bob")
     ));
 
     let (_bob_dump_log, _bob_dump_dashboard) = mm_bob.mm_dump();
@@ -725,7 +749,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
             "rpc_password": "password",
         }),
         "password".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "alice" => Some (local_start()), _ => None}
+        local_start! ("alice")
     ));
 
     let (_alice_dump_log, _alice_dump_dashboard) = mm_alice.mm_dump();

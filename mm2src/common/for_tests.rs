@@ -101,7 +101,11 @@ lazy_static! {
     static ref MM_IPS: Mutex<HashSet<IpAddr>> = Mutex::new (HashSet::new());
 }
 
+#[cfg(feature = "native")]
 pub type LocalStart = fn (PathBuf, PathBuf, Json);
+
+#[cfg(not(feature = "native"))]
+pub type LocalStart = fn (MmArc);
 
 /// An instance of a MarketMaker process started by and for an integration test.  
 /// Given that [in CI] the tests are executed before the build, the binary of that process is the tests binary.
@@ -180,6 +184,8 @@ impl MarketMakerIt {
 
         #[cfg(not(feature = "native"))] {
             let ctx = MmCtxBuilder::new().with_conf (conf) .into_mm_arc();
+            let local = try_s! (local.ok_or ("!local"));
+            local (ctx.clone());
             Ok (MarketMakerIt {ctx, ip, userpass})
         }
 
@@ -309,9 +315,13 @@ impl MarketMakerIt {
 #[cfg(feature = "native")]
 impl Drop for MarketMakerIt {
     fn drop (&mut self) {
-        if let Ok (mut mm_ips) = MM_IPS.lock() {
-            mm_ips.remove (&self.ip);
-        } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
+        let ip = self.ip;
+        crate::executor::spawn (async move {
+            Timer::sleep (2.) .await;  // Time for other threads to release the IP.
+            if let Ok (mut mm_ips) = MM_IPS.lock() {
+                mm_ips.remove (&ip);
+            } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
+        })
     }
 }
 
