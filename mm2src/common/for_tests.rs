@@ -16,7 +16,7 @@ use serde_json::{self as json, Value as Json};
 use term;
 use rand::Rng;
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::env::{self, var};
 use std::fs;
 use std::io::Write;
@@ -97,8 +97,9 @@ impl Drop for RaiiDump {
 }
 
 lazy_static! {
-    /// A singleton with the IPs used by the MarketMakerIt instances created in this session.
-    static ref MM_IPS: Mutex<HashSet<IpAddr>> = Mutex::new (HashSet::new());
+    /// A singleton with the IPs used by the MarketMakerIt instances created in this session.  
+    /// The value is set to `false` when the instance is retired.
+    static ref MM_IPS: Mutex<HashMap<IpAddr, bool>> = Mutex::new (HashMap::new());
 }
 
 #[cfg(feature = "native")]
@@ -158,8 +159,8 @@ impl MarketMakerIt {
                 if attempts > 128 {return ERR! ("Out of local IPs?")}
                 let ip: IpAddr = ip4.clone().into();
                 let mut mm_ips = try_s! (MM_IPS.lock());
-                if mm_ips.contains (&ip) {attempts += 1; continue}
-                mm_ips.insert (ip.clone());
+                if mm_ips.contains_key (&ip) {attempts += 1; continue}
+                mm_ips.insert (ip.clone(), true);
                 conf["myipaddr"] = format! ("{}", ip) .into();
                 conf["rpcip"] = format! ("{}", ip) .into();
                 break ip
@@ -167,8 +168,8 @@ impl MarketMakerIt {
         } else {  // Just use the IP given in the `conf`.
             let ip: IpAddr = try_s! (try_s! (conf["myipaddr"].as_str().ok_or ("myipaddr is not a string")) .parse());
             let mut mm_ips = try_s! (MM_IPS.lock());
-            if mm_ips.contains (&ip) {log! ({"MarketMakerIt] Warning, IP {} was already used.", ip})}
-            mm_ips.insert (ip.clone());
+            if mm_ips.contains_key (&ip) {log! ({"MarketMakerIt] Warning, IP {} was already used.", ip})}
+            mm_ips.insert (ip.clone(), true);
             ip
         };
 
@@ -315,13 +316,13 @@ impl MarketMakerIt {
 #[cfg(feature = "native")]
 impl Drop for MarketMakerIt {
     fn drop (&mut self) {
-        let ip = self.ip;
-        crate::executor::spawn (async move {
-            Timer::sleep (2.) .await;  // Time for other threads to release the IP.
-            if let Ok (mut mm_ips) = MM_IPS.lock() {
-                mm_ips.remove (&ip);
-            } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
-        })
+        if let Ok (mut mm_ips) = MM_IPS.lock() {
+            // The IP addresses might still be used by the libtorrent even after a context is dropped,
+            // hence we're not trying to reuse them but rather just mark them as fried.
+            if let Some (active) = mm_ips.get_mut (&self.ip) {
+                *active = false
+            }
+        } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
     }
 }
 
