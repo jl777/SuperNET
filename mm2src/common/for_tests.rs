@@ -32,6 +32,8 @@ use std::time::Duration;
 use crate::{now_float, slurp};
 use crate::executor::Timer;
 #[cfg(not(feature = "native"))]
+use crate::mm_ctx::{MmArc, MmCtxBuilder};
+#[cfg(not(feature = "native"))]
 use crate::helperᶜ;
 #[cfg(feature = "native")]
 use crate::wio::{slurp_req, POOL};
@@ -120,7 +122,7 @@ pub struct MarketMakerIt {
 /// A MarketMaker instance started by and for an integration test.
 #[cfg(not(feature = "native"))]
 pub struct MarketMakerIt {
-    conf: Json,
+    pub ctx: super::mm_ctx::MmArc,
     /// Unique (to run multiple instances) IP, like "127.0.0.$x".
     pub ip: IpAddr,
     /// RPC API key.
@@ -177,7 +179,8 @@ impl MarketMakerIt {
         conf["dbdir"] = unwrap! (db_dir.to_str()) .into();
 
         #[cfg(not(feature = "native"))] {
-            Ok (MarketMakerIt {conf, ip, userpass})
+            let ctx = MmCtxBuilder::new().with_conf (conf) .into_mm_arc();
+            Ok (MarketMakerIt {ctx, ip, userpass})
         }
 
         #[cfg(feature = "native")] {
@@ -236,9 +239,9 @@ impl MarketMakerIt {
 
     /// Busy-wait on the instance in-memory log until the `pred` returns `true` or `timeout_sec` expires.
     #[cfg(not(feature = "native"))]
-    pub async fn wait_for_log<F> (&mut self, _timeout_sec: f64, pred: F) -> Result<(), String>
+    pub async fn wait_for_log<F> (&mut self, timeout_sec: f64, pred: F) -> Result<(), String>
     where F: Fn (&str) -> bool {
-        // TODO: Change the signatures to `pub async fn wait_for_log`.
+        
         unimplemented!()
     }
 
@@ -310,6 +313,16 @@ impl Drop for MarketMakerIt {
             mm_ips.remove (&self.ip);
         } else {log! ("MarketMakerIt] Can't lock MM_IPS.")}
     }
+}
+
+#[macro_export]
+macro_rules! wait_log_re {
+    ($mm_it: expr, $timeout_sec: expr, $re_pred: expr) => {{
+        log! ("Waiting for “" ($re_pred) "”…");
+        let re = unwrap! (regex::Regex::new ($re_pred));
+        let rc = $mm_it.wait_for_log ($timeout_sec, |line| re.is_match (line)) .await;
+        if let Err (err) = rc {panic! ("{}: {}", $re_pred, err)}
+    }};
 }
 
 /// Busy-wait on the log until the `pred` returns `true` or `timeout_sec` expires.
