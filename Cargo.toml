@@ -84,6 +84,8 @@ peers = { path = "mm2src/peers" }
 # portfolio = { path = "mm2src/portfolio" }
 primitives = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 rand = { version = "0.7", features = ["std", "small_rng"] }
+# TODO: Reduce the size of regex by disabling the features we don't use.
+# cf. https://github.com/rust-lang/regex/issues/583
 regex = "1"
 serde = "1.0"
 serde_bencode = "0.2"

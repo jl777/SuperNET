@@ -842,10 +842,6 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
         Vec::new()
     };
 
-    #[cfg(not(feature = "native"))] {
-        try_s! (ctx.send_to_helpers().await);
-    }
-
     let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
     if !i_am_seed {
         if seeds.len() == 0 {
@@ -1267,6 +1263,10 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
             break all_interfaces  // Seems like a better default than 127.0.0.1, might still work for other ports.
         }
     };
+
+    #[cfg(not(feature = "native"))] {
+        try_s! (ctx.send_to_helpers().await);
+    }
 
     let seednode_thread = if i_am_seed && cfg! (feature = "native") {
         log! ("i_am_seed at " (myipaddr) ":" (mypubport));
