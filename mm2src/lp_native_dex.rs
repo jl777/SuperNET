@@ -47,7 +47,7 @@ use crate::common::executor::spawn;
 use crate::common::{slurp_url, MM_VERSION};
 use crate::common::mm_ctx::{MmCtx, MmArc};
 use crate::common::privkey::key_pair_from_seed;
-use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, client_p2p_loop};
+use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, start_client_p2p_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{spawn_rpc};
@@ -842,16 +842,17 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
         Vec::new()
     };
 
+    #[cfg(not(feature = "native"))] {
+        try_s! (ctx.send_to_helpers().await);
+    }
+
     let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
     if !i_am_seed {
         if seeds.len() == 0 {
             return ERR!("At least 1 IP must be provided");
         }
         let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
-        try_s!(thread::Builder::new().name ("client_p2p_loop".into()) .spawn ({
-            let ctx = ctx.clone();
-            move || client_p2p_loop(ctx, seed_ips)
-        }));
+        try_s! (start_client_p2p_loop (ctx.clone(), seed_ips) .await);
     }
 
     let mut seed_ips = Vec::with_capacity (seeds.len());
