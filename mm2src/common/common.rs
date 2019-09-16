@@ -679,15 +679,15 @@ pub mod executor {
                 let (tx, rx) = channel::bounded (0);
                 unwrap! (SCHEDULE.pin (tx), "spawn_after] Can't pin the channel");
                 let mut tasks: BTreeMap<Duration, Vec<Pin<Box<dyn Future03<Output = ()> + Send + 'static>>>> = BTreeMap::new();
+                let mut ready = Vec::with_capacity (4);
                 loop {
                     let now = Duration::from_secs_f64 (now_float());
-                    let mut ready = Vec::new();
                     let mut next_stop = Duration::from_secs_f64 (0.1);
                     for (utc, _) in tasks.iter() {
                         if *utc <= now {ready.push (*utc)}
                         else {next_stop = *utc - now; break}
                     }
-                    for utc in ready {
+                    for utc in ready.drain (..) {
                         let v = match tasks.remove (&utc) {Some (v) => v, None => continue};
                         //log! ("spawn_after] spawning " (v.len()) " tasks at " [utc]);
                         for f in v {spawn (f)}
