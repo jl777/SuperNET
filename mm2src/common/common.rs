@@ -665,6 +665,50 @@ pub mod executor {
         unwrap! (crate::wio::CORE.lock()) .spawn (f);
     }
 
+    /// Schedule the given `future` to be executed shortly after the given `utc` time is reached.
+    pub fn spawn_after (utc: f64, future: impl Future03<Output = ()> + Send + 'static) {
+        use crossbeam::channel;
+        use gstuff::Constructible;
+        use std::collections::BTreeMap;
+        use std::sync::Once;
+
+        static START: Once = Once::new();
+        static SCHEDULE: Constructible<channel::Sender<(f64, Pin<Box<dyn Future03<Output = ()> + Send + 'static>>)>> = Constructible::new();
+        START.call_once (|| {
+            unwrap! (thread::Builder::new().name ("spawn_after".into()) .spawn (move || {
+                let (tx, rx) = channel::bounded (0);
+                unwrap! (SCHEDULE.pin (tx), "spawn_after] Can't pin the channel");
+                let mut tasks: BTreeMap<Duration, Vec<Pin<Box<dyn Future03<Output = ()> + Send + 'static>>>> = BTreeMap::new();
+                loop {
+                    let now = Duration::from_secs_f64 (now_float());
+                    let mut ready = Vec::new();
+                    let mut next_stop = Duration::from_secs_f64 (0.1);
+                    for (utc, _) in tasks.iter() {
+                        if *utc <= now {ready.push (*utc)}
+                        else {next_stop = *utc - now; break}
+                    }
+                    for utc in ready {
+                        let v = match tasks.remove (&utc) {Some (v) => v, None => continue};
+                        //log! ("spawn_after] spawning " (v.len()) " tasks at " [utc]);
+                        for f in v {spawn (f)}
+                    }
+                    let (utc, f) = match rx.recv_timeout (next_stop) {
+                        Ok (t) => t,
+                        Err (channel::RecvTimeoutError::Disconnected) => break,
+                        Err (channel::RecvTimeoutError::Timeout) => continue
+                    };
+                    tasks.entry (Duration::from_secs_f64 (utc)) .or_insert (Vec::new()) .push (f)
+                }
+            }), "Can't spawn a spawn_after thread");
+        });
+        loop {
+            match SCHEDULE.as_option() {
+                None => {thread::yield_now(); continue}
+                Some (tx) => {unwrap! (tx.send ((utc, Box::pin (future))), "Can't reach spawn_after"); break}
+            }
+        }
+    }
+
     /// A future that completes at a given time.  
     pub struct Timer {till_utc: f64}
 
@@ -682,10 +726,7 @@ pub mod executor {
             // NB: We should get a new `Waker` on every `poll` in case the future migrates between executors.
             // cf. https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
             let waker = cx.waker().clone();
-            unwrap! (thread::Builder::new().name ("Timer".into()) .spawn (move || {
-                thread::sleep (Duration::from_secs_f64 (delta));
-                waker.wake()
-            }), "Can't spawn a Timer thread");
+            spawn_after (self.till_utc, async move {waker.wake()});
             Poll03::Pending
         }
     }
