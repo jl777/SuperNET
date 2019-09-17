@@ -68,6 +68,7 @@ pub mod iguana_utils;
 pub mod privkey;
 pub mod mm_ctx;
 pub mod seri;
+pub mod header;
 
 #[cfg(feature = "native")]
 pub mod lift_body;
