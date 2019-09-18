@@ -67,6 +67,7 @@ pub mod custom_futures;
 pub mod iguana_utils;
 pub mod privkey;
 pub mod mm_ctx;
+pub mod mm_number;
 pub mod seri;
 pub mod header;
 
@@ -103,7 +104,8 @@ use std::collections::HashMap;
 use std::env::{self, args, var, VarError};
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
-use std::ffi::{CStr};
+use std::fs::DirEntry;
+use std::ffi::{CStr, OsStr};
 use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
@@ -1355,4 +1357,22 @@ fn test_first_char_to_upper() {
     assert_eq!("K", first_char_to_upper("k"));
     assert_eq!("Komodo", first_char_to_upper("komodo"));
     assert_eq!(".komodo", first_char_to_upper(".komodo"));
+}
+
+pub fn json_dir_entries(path: &dyn AsRef<Path>) -> Result<Vec<DirEntry>, String> {
+    Ok(try_s!(path.as_ref().read_dir()).filter_map(|dir_entry| {
+        let entry = match dir_entry {
+            Ok(ent) => ent,
+            Err(e) => {
+                log!("Error " (e) " reading from dir " (path.as_ref().display()));
+                return None;
+            }
+        };
+
+        if entry.path().extension() == Some(OsStr::new("json")) {
+            Some(entry)
+        } else {
+            None
+        }
+    }).collect())
 }
