@@ -1379,14 +1379,14 @@ impl MmCoin for UtxoCoin {
                 };
                 let fee_decimal = MmNumber::from(fee) / MmNumber::from(10u64.pow(arc.decimals as u32));
                 if &amount < &fee_decimal {
-                    return ERR!("Amount {:?} is too low, it'll result to dust error, at least {:?} is required", amount, fee_decimal);
+                    return ERR!("Amount {} is too low, it'll result to dust error, at least {} is required", amount, fee_decimal);
                 }
                 let required = match trade_info {
                     TradeInfo::Maker => amount + fee_decimal,
                     TradeInfo::Taker(dex_fee) => &amount + &MmNumber::from(dex_fee.clone()) + MmNumber::from(2) * fee_decimal,
                 };
                 if balance < required {
-                    return ERR!("{} balance {:?} is too low, required {:?}", arc.ticker(), balance, required);
+                    return ERR!("{} balance {} is too low, required {}", arc.ticker(), balance, required);
                 }
                 Ok(())
             })

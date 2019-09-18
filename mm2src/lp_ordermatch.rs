@@ -662,7 +662,7 @@ fn check_locked_coins(ctx: &MmArc, amount: &MmNumber, balance: &BigDecimal, tick
     let locked = get_locked_amount(ctx, ticker);
     let available = balance - &locked;
     if amount > &available {
-        futures01::future::err(ERRL!("The amount {:?} is larger than available {:.8}, balance: {}, locked by swaps: {:.8}", amount, available, balance, locked))
+        futures01::future::err(ERRL!("The {} amount {} is larger than available {:.8}, balance: {}, locked by swaps: {:.8}", ticker, amount, available, balance, locked))
     } else {
         futures01::future::ok(())
     }

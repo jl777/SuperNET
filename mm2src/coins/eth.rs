@@ -1758,14 +1758,14 @@ impl MmCoin for EthCoin {
             EthCoinType::Eth => {
                 let required = required + BigDecimal::from_str("0.0002").unwrap().into();
                 if balance < &required {
-                    Box::new(futures01::future::err(ERRL!("{} balance {:?} too low, required {:?}", ticker, balance, required)))
+                    Box::new(futures01::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance, required)))
                 } else {
                     Box::new(futures01::future::ok(()))
                 }
             },
             EthCoinType::Erc20(_) => {
                 if balance < &required {
-                    Box::new(futures01::future::err(ERRL!("{} balance {:?} too low, required {:?}", ticker, balance, required)))
+                    Box::new(futures01::future::err(ERRL!("{} balance {} too low, required {}", ticker, balance, required)))
                 } else {
                     // need to check ETH balance too, address should have some to cover gas fees
                     Box::new(self.eth_balance().and_then(move |eth_balance| {

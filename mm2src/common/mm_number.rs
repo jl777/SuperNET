@@ -11,6 +11,15 @@ pub enum MmNumber {
     BigRational(BigRational),
 }
 
+impl std::fmt::Display for MmNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            MmNumber::BigDecimal(d) => write!(f, "{}", d),
+            MmNumber::BigRational(r) => write!(f, "{}", r),
+        }
+    }
+}
+
 impl From<BigDecimal> for MmNumber {
     fn from(n: BigDecimal) -> MmNumber {
         MmNumber::BigDecimal(n)
