@@ -1437,14 +1437,9 @@ pub struct OrderbookEntry {
     /// Original `ask.price` printed for bids in order to sidestep the decimal rounding (#495).
     #[serde(skip_serializing_if = "Option::is_none")]
     askprice: Option<String>,
-    #[serde(rename="numutxos")]
-    num_utxos: u32,
-    #[serde(rename="avevolume")]
-    ave_volume: f64,
     #[serde(rename="maxvolume")]
     max_volume: f64,
     max_volume_rat: BigRational,
-    depth: f64,
     pubkey: String,
     age: i64,
     zcredits: u64,
@@ -1501,11 +1496,8 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                     price: round_to (&ask.price, base_coin.decimals()),
                     price_rat: ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
                     askprice: None,
-                    num_utxos: 0,
-                    ave_volume: 0.,
                     max_volume: unwrap!(ask.balance.to_f64()),
                     max_volume_rat: ask.balance_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
-                    depth: 0.,
                     pubkey: ask.pubkey.clone(),
                     age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
                     zcredits: 0,
@@ -1527,11 +1519,8 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                     price: round_to (&(BigDecimal::from (1.) / &ask.price), rel_coin.decimals()),
                     price_rat: BigRational::from_integer(1.into()) / ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
                     askprice: Some (round_to (&ask.price, base_coin.decimals())),
-                    num_utxos: 0,
-                    ave_volume: 0.,
                     max_volume: unwrap!(ask.balance.to_f64()),
                     max_volume_rat: ask.balance_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
-                    depth: 0.,
                     pubkey: ask.pubkey.clone(),
                     age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
                     zcredits: 0,
