@@ -1870,14 +1870,9 @@ pub fn utxo_coin_from_conf_and_request(
         _ => return ERR!("utxo_coin_from_conf_and_request should be called only by enable or electrum requests"),
     };
     let asset_chain = conf["asset"].as_str().is_some();
-    let tx_version = if ticker == "KMD" || asset_chain {
-        4
-    } else if ticker == "PART" {
-        160
-    } else {
-        conf["txversion"].as_i64().unwrap_or (1) as i32
-    };
-    let overwintered = ticker == "KMD" || asset_chain || conf["overwintered"].as_u64().unwrap_or (0) == 1;
+    let tx_version = conf["txversion"].as_i64().unwrap_or (1) as i32;
+    let overwintered = conf["overwintered"].as_u64().unwrap_or (0) == 1;
+
     let tx_fee = match conf["txfee"].as_u64() {
         None | Some (0) => if ticker == "BTC" || ticker == "QTUM" {
             let fee_method = match &rpc_client {
