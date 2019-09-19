@@ -25,7 +25,7 @@ use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{bits256, HyRes, json_dir_entries, new_uuid, round_to, rpc_response, rpc_err_response};
+use common::{bits256, HyRes, json_dir_entries, new_uuid, rpc_response, rpc_err_response};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
 use futures01::future::{Either, Future};
@@ -1432,11 +1432,8 @@ pub fn cancel_all_orders(ctx: MmArc, req: Json) -> HyRes {
 pub struct OrderbookEntry {
     coin: String,
     address: String,
-    price: String,
+    price: BigDecimal,
     price_rat: BigRational,
-    /// Original `ask.price` printed for bids in order to sidestep the decimal rounding (#495).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    askprice: Option<String>,
     #[serde(rename="maxvolume")]
     max_volume: f64,
     max_volume_rat: BigRational,
@@ -1493,9 +1490,8 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.base.clone(),
                     address: try_h!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
-                    price: round_to (&ask.price, base_coin.decimals()),
+                    price: ask.price.clone(),
                     price_rat: ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
-                    askprice: None,
                     max_volume: unwrap!(ask.balance.to_f64()),
                     max_volume_rat: ask.balance_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
                     pubkey: ask.pubkey.clone(),
@@ -1516,9 +1512,8 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
                     address: try_h!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
                     // NB: 1/x can not be represented as a decimal and introduces a rounding error
                     // cf. https://github.com/KomodoPlatform/atomicDEX-API/issues/495#issuecomment-516365682
-                    price: round_to (&(BigDecimal::from (1.) / &ask.price), rel_coin.decimals()),
+                    price: BigDecimal::from (1) / &ask.price,
                     price_rat: BigRational::from_integer(1.into()) / ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
-                    askprice: Some (round_to (&ask.price, base_coin.decimals())),
                     max_volume: unwrap!(ask.balance.to_f64()),
                     max_volume_rat: ask.balance_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
                     pubkey: ask.pubkey.clone(),
