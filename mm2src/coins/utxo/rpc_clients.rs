@@ -53,7 +53,6 @@ use tokio_rustls::webpki::DNSNameRef;
 use tokio_tcp::TcpStream;
 #[cfg(feature = "native")]
 use webpki_roots::TLS_SERVER_ROOTS;
-use futures::executor::block_on;
 
 /// Skips the server certificate verification on TLS connection
 pub struct NoCertificateVerification {}
@@ -450,9 +449,9 @@ impl NativeClientImpl {
         rpc_func!(self, "listreceivedbyaddress", min_conf, include_empty, include_watch_only)
     }
 
-    pub fn detect_fee_method(&self) -> impl Future<Item=EstimateFeeMethod, Error=String> {
+    pub fn detect_fee_method(&self) -> impl Future<Item=EstimateFeeMethod, Error=String> + Send {
         let estimate_fee_fut = self.estimate_fee();
-        self.estimate_smart_fee().then(move |res| -> Box<dyn Future<Item=EstimateFeeMethod, Error=String>> {
+        self.estimate_smart_fee().then(move |res| -> Box<dyn Future<Item=EstimateFeeMethod, Error=String> + Send> {
             match res {
                 Ok(smart_fee) => if smart_fee.fee_rate > 0. {
                     Box::new(futures01::future::ok(EstimateFeeMethod::SmartFee))
@@ -603,7 +602,6 @@ enum ElectrumConfig {
 }
 
 /// Attempts to process the request (parse url, etc), build up the config and create new electrum connection
-#[cfg(feature = "native")]
 pub fn spawn_electrum(
     req: &ElectrumRpcRequest
 ) -> Result<ElectrumConnection, String> {
@@ -626,7 +624,7 @@ pub fn spawn_electrum(
                 DNSNameRef::try_from_ascii_str(host).map(|_|()).map_err(|e| fomat!([e]))
             }
             #[cfg(not(feature = "native"))]
-            fn check(host: &str) -> Result<(), String> {Ok(())}
+            fn check(_host: &str) -> Result<(), String> {Ok(())}
 
             try_s!(check(host));
 
@@ -698,19 +696,16 @@ async fn electrum_request_multi(
 }
 
 impl ElectrumClientImpl {
-    #[cfg(feature = "native")]
+    /// Create an Electrum connection and spawn a green thread actor to handle it.
     pub fn add_server(&mut self, req: &ElectrumRpcRequest) -> Result<(), String> {
         let connection = try_s!(spawn_electrum(req));
         self.connections.push(connection);
         Ok(())
     }
 
-    #[cfg(not(feature = "native"))]
-    pub fn add_server(&mut self, _req: &ElectrumRpcRequest) -> Result<(), String> {unimplemented!()}
-
-    pub fn is_connected(&self) -> bool {
+    pub async fn is_connected(&self) -> bool {
         for connection in self.connections.iter() {
-            if block_on(connection.is_connected()) {
+            if connection.is_connected().await {
                 return true;
             }
         }
@@ -1150,9 +1145,16 @@ async fn connect_loop(
     }
 }
 
+#[cfg(not(feature = "native"))]
+async fn connect_loop(
+    _config: ElectrumConfig,
+    _addr: SocketAddr,
+    _responses: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
+    _connection_tx: Arc<AsyncMutex<Option<mpsc::Sender<Vec<u8>>>>>,
+) -> Result<(), ()> {unimplemented!()}
+
 /// Builds up the electrum connection, spawns endless loop that attempts to reconnect to the server
 /// in case of connection errors
-#[cfg(feature = "native")]
 fn electrum_connect(
     addr: SocketAddr,
     config: ElectrumConfig
