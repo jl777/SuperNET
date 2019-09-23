@@ -5,6 +5,7 @@
 const bencode = require('bencode')
 const { Buffer } = require('buffer');
 const crc32 = require('crc-32');  // TODO: Calculate the checksum in Rust instead.
+const ElectrumCli = require('electrum-client');  // https://www.npmjs.com/package/electrum-client
 const fs = require('fs');
 const http = require('http');  // https://nodejs.org/dist/latest-v12.x/docs/api/http.html
 const os = require('os');
@@ -67,6 +68,7 @@ async function runWasm() {
   const wasmBytes = fs.readFileSync ('mm2.wasm');
   const httpRequests = {};
   wasmShared.callbacks = {};
+  wasmShared.electrums = {};
   const memory = new WebAssembly.Memory ({initial: 1, shared: true});
   const wasmEnv = {
     //memory: memory,
@@ -87,6 +89,32 @@ async function runWasm() {
       const v = process.env[name];
       if (v == null) return -1;
       return to_utf8 (wasmShared.memory, rbuf, rcap, v)},
+    host_electrum_connect: function (ptr, len) {
+      const args_s = from_utf8 (wasmShared.memory, ptr, len);
+      const args = JSON.parse (args_s);
+      const url = args.url;
+      const protocol = args.protocol.toLowerCase();
+      const disable_cert_verification = args.disable_cert_verification;
+      const caps = /^(.*?):(\d+)$/.exec (url);
+      if (caps == null) return -1;
+      const host = caps[1];
+      const port = Number (caps[2]);
+      if (protocol != 'tls' && protocol != 'tcp') return -2;
+      const ecl = new ElectrumCli (port, host, protocol);
+      var ri = 0, ris = '';
+      for (;;) {
+        ri = Math.ceil (Math.random() * 2147483647);
+        ris = '' + ri;
+        if (wasmShared.electrums[ris] == null) {
+          wasmShared.electrums[ris] = {host: host, port: port, ecl: ecl, connected: false};
+          break}}
+      ecl.connect().then (_ => {wasmShared.electrums[ris].connected = true});
+      return ri},
+    host_electrum_is_connected: function (ri) {
+      const ris = '' + ri;
+      const en = wasmShared.electrums[ris];
+      if (en == null) return -1;
+      return en.connected ? 1 : 0},
     http_helper_check: function (http_request_id, rbuf, rcap) {
       let ris = '' + http_request_id;
       if (httpRequests[ris] == null) return -1;

@@ -84,6 +84,7 @@ pub trait JsonRpcClient {
     fn transport(&self, request: JsonRpcRequest) -> JsonRpcResponseFut;
 
     fn send_request<T: DeserializeOwned + Send + 'static>(&self, request: JsonRpcRequest) -> RpcRes<T> {
+        #[cfg(not(feature = "native"))] {if 1==1 {panic! ("send_request] TBD")}}
         let request_f = self.transport(request.clone()).map_err({
             let request = request.clone();
             move |e| JsonRpcError {

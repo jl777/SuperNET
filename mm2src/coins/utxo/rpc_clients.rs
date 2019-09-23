@@ -569,7 +569,7 @@ pub fn electrum_script_hash(script: &[u8]) -> Vec<u8> {
     result
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 /// Deserializable Electrum protocol representation for RPC
 pub enum ElectrumProtocol {
     /// TCP
@@ -578,7 +578,7 @@ pub enum ElectrumProtocol {
     SSL,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 /// Electrum request RPC representation
 pub struct ElectrumRpcRequest {
     pub url: String,
@@ -594,14 +594,15 @@ impl Default for ElectrumProtocol {
     }
 }
 
-#[derive(Clone, Debug)]
 /// Electrum client configuration
+#[derive(Clone, Debug, Serialize)]
 enum ElectrumConfig {
     TCP,
     SSL {dns_name: String, skip_validation: bool}
 }
 
 /// Attempts to process the request (parse url, etc), build up the config and create new electrum connection
+#[cfg(feature = "native")]
 pub fn spawn_electrum(
     req: &ElectrumRpcRequest
 ) -> Result<ElectrumConnection, String> {
@@ -638,6 +639,43 @@ pub fn spawn_electrum(
     Ok(electrum_connect(addr, config))
 }
 
+#[cfg(not(feature = "native"))]
+pub fn spawn_electrum (req: &ElectrumRpcRequest) -> Result<ElectrumConnection, String> {
+    use std::net::{IpAddr, Ipv4Addr};
+    use std::os::raw::c_char;
+
+    extern "C" {pub fn host_electrum_connect (ptr: *const c_char, len: i32) -> i32;}
+    let args = unwrap! (json::to_vec (req));
+    let rc = unsafe {host_electrum_connect (args.as_ptr() as *const c_char, args.len() as i32)};
+    if rc < 0 {panic! ("!host_electrum_connect: {}", rc)}
+    let ri = rc;  // Random ID assigned by the host to connection.
+
+    // TODO: Import the `addr` from the host?
+    let addr = SocketAddr::new (IpAddr::V4 (Ipv4Addr::new (0, 0, 0, 0)), 0);
+
+    let responses = Arc::new (Mutex::new (HashMap::new()));
+    let tx = Arc::new (AsyncMutex::new (None));
+
+    let config = match req.protocol {
+        ElectrumProtocol::TCP => ElectrumConfig::TCP,
+        ElectrumProtocol::SSL => {
+            let uri: Uri = try_s! (req.url.parse());
+            let host = try_s! (uri.host().ok_or ("!host"));
+            ElectrumConfig::SSL {
+                dns_name: host.into(),
+                skip_validation: req.disable_cert_verification
+    }   }   };
+
+    Ok (ElectrumConnection {
+        addr,
+        config,
+        tx,
+        shutdown_tx: None,
+        responses,
+        ri
+    })
+}
+
 #[derive(Debug)]
 /// Represents the active Electrum connection to selected address
 pub struct ElectrumConnection {
@@ -651,21 +689,32 @@ pub struct ElectrumConnection {
     shutdown_tx: Option<oneshot::Sender<()>>,
     /// Responses are stored here
     responses: Arc<Mutex<HashMap<String, JsonRpcResponse>>>,
+    /// [Random] connection ID assigned by the WASM host
+    ri: i32
 }
 
 impl ElectrumConnection {
+    #[cfg(feature = "native")]
     async fn is_connected(&self) -> bool {
         self.tx.lock().await.is_some()
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn is_connected (&self) -> bool {
+        extern "C" {pub fn host_electrum_is_connected (ri: i32) -> i32;}
+        let rc = unsafe {host_electrum_is_connected (self.ri)};
+        if rc < 0 {panic! ("!host_electrum_is_connected: {}", rc)}
+        log! ("is_connected] host_electrum_is_connected (" [=self.ri] ") " [=rc]);
+        if rc == 1 {true} else {false}
     }
 }
 
 impl Drop for ElectrumConnection {
     fn drop(&mut self) {
-        if let Err(_) = unwrap!(self.shutdown_tx.take()).send(()) {
-            log! ("electrum_connection_drop] Warning, shutdown_tx already closed");
-        }
-    }
-}
+        if let Some (shutdown_tx) = self.shutdown_tx.take() {
+            if let Err(_) = shutdown_tx.send(()) {
+                log! ("electrum_connection_drop] Warning, shutdown_tx already closed");
+}   }   }   }
 
 #[derive(Debug)]
 pub struct ElectrumClientImpl {
@@ -1155,6 +1204,7 @@ async fn connect_loop(
 
 /// Builds up the electrum connection, spawns endless loop that attempts to reconnect to the server
 /// in case of connection errors
+#[cfg(feature = "native")]
 fn electrum_connect(
     addr: SocketAddr,
     config: ElectrumConfig
@@ -1178,8 +1228,12 @@ fn electrum_connect(
         tx,
         shutdown_tx: Some(shutdown_tx),
         responses,
+        ri: -1
     }
 }
+
+#[cfg(not(feature = "native"))]
+fn electrum_connect (_addr: SocketAddr, _config: ElectrumConfig) -> ElectrumConnection {unimplemented!()}
 
 /// A simple `Codec` implementation that reads buffer until \n according to Electrum protocol specification:
 /// https://electrumx.readthedocs.io/en/latest/protocol-basics.html#message-stream
