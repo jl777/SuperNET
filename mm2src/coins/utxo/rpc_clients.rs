@@ -14,6 +14,8 @@ use futures01::{Async, Future, Poll, Sink, Stream};
 use futures01::future::{Either, loop_fn, Loop, select_ok};
 use futures01::sync::{mpsc, oneshot};
 use futures::compat::{Future01CompatExt};
+#[cfg(not(feature = "native"))]
+use futures::channel::oneshot::Sender as ShotSender;
 use futures::future::{FutureExt, select as select_func, TryFutureExt};
 use futures::lock::{Mutex as AsyncMutex};
 use futures::select;
@@ -644,7 +646,7 @@ pub fn spawn_electrum (req: &ElectrumRpcRequest) -> Result<ElectrumConnection, S
     use std::net::{IpAddr, Ipv4Addr};
     use std::os::raw::c_char;
 
-    extern "C" {pub fn host_electrum_connect (ptr: *const c_char, len: i32) -> i32;}
+    extern "C" {fn host_electrum_connect (ptr: *const c_char, len: i32) -> i32;}
     let args = unwrap! (json::to_vec (req));
     let rc = unsafe {host_electrum_connect (args.as_ptr() as *const c_char, args.len() as i32)};
     if rc < 0 {panic! ("!host_electrum_connect: {}", rc)}
@@ -701,10 +703,10 @@ impl ElectrumConnection {
 
     #[cfg(not(feature = "native"))]
     async fn is_connected (&self) -> bool {
-        extern "C" {pub fn host_electrum_is_connected (ri: i32) -> i32;}
+        extern "C" {fn host_electrum_is_connected (ri: i32) -> i32;}
         let rc = unsafe {host_electrum_is_connected (self.ri)};
         if rc < 0 {panic! ("!host_electrum_is_connected: {}", rc)}
-        log! ("is_connected] host_electrum_is_connected (" [=self.ri] ") " [=rc]);
+        //log! ("is_connected] host_electrum_is_connected (" [=self.ri] ") " [=rc]);
         if rc == 1 {true} else {false}
     }
 }
@@ -722,6 +724,7 @@ pub struct ElectrumClientImpl {
     next_id: Mutex<u64>,
 }
 
+#[cfg(feature = "native")]
 async fn electrum_request_multi(
     client: ElectrumClient,
     request: JsonRpcRequest,
@@ -742,6 +745,61 @@ async fn electrum_request_multi(
         // server.ping must be sent to all servers to keep all connections alive
         Ok(try_s!(select_ok(futures).map(|(result, _)| result).map_err(|e| ERRL!("{:?}", e)).compat().await))
     }
+}
+
+#[cfg(not(feature = "native"))]
+lazy_static! {
+    static ref ELECTRUM_REPLIES: Mutex<HashMap<(i32, i32), ShotSender<()>>> = Mutex::new (HashMap::new());
+}
+
+#[no_mangle]
+#[cfg(not(feature = "native"))]
+pub extern fn electrum_replied (ri: i32, id: i32) {
+    //log! ("electrum_replied] " [=ri] ", " [=id]);
+    let mut electrum_replies = unwrap! (ELECTRUM_REPLIES.lock());
+    if let Some (tx) = electrum_replies.remove (&(ri, id)) {let _ = tx.send(());}
+}
+
+#[cfg(not(feature = "native"))]
+async fn electrum_request_multi (client: ElectrumClient, request: JsonRpcRequest)
+-> Result<JsonRpcResponse, String> {
+    use std::mem::uninitialized;
+    use std::os::raw::c_char;
+    use std::str::from_utf8;
+
+    extern "C" {
+        fn host_electrum_request (ri: i32, ptr: *const c_char, len: i32) -> i32;
+        fn host_electrum_reply (ri: i32, id: i32, rbuf: *mut c_char, rcap: i32) -> i32;
+    }
+
+    let req = try_s! (json::to_string (&request));
+    let id: i32 = try_s! (request.id.parse());
+    let mut jres: Option<JsonRpcResponse> = None;
+
+    for connection in client.connections.iter() {
+        let (tx, rx) = futures::channel::oneshot::channel();
+        try_s! (ELECTRUM_REPLIES.lock()) .insert ((connection.ri, id), tx);
+        let rc = unsafe {host_electrum_request (connection.ri, req.as_ptr() as *const c_char, req.len() as i32)};
+        if rc != 0 {return ERR! ("!host_electrum_request: {}", rc)}
+        let _ = rx.await;  // Wait for the host to invoke `fn electrum_replied`.
+        let mut buf: [u8; 131072] = unsafe {uninitialized()};
+        let rc = unsafe {host_electrum_reply (connection.ri, id, buf.as_mut_ptr() as *mut c_char, buf.len() as i32)};
+        if rc <= 0 {log! ("!host_electrum_reply: " (rc)); continue}  // Skip to the next connection.
+        let res = try_s! (from_utf8 (&buf[0 .. rc as usize]));
+        //log! ("electrum_request_multi] ri " (connection.ri) ", res: " (res));
+        let res: Json = try_s! (json::from_str (res));
+        // TODO: Detect errors and fill the `error` field somehow?
+        jres = Some (JsonRpcResponse {
+            jsonrpc: req.clone(),
+            id: request.id.clone(),
+            result: res,
+            error: Json::Null
+        });
+        // server.ping must be sent to all servers to keep all connections alive
+        if request.method != "server.ping" {break}
+    }
+    let jres = try_s! (jres.ok_or ("!jres"));
+    Ok (jres)
 }
 
 impl ElectrumClientImpl {
