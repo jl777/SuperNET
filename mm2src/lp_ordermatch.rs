@@ -31,7 +31,9 @@ use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
 use futures01::future::{Either, Future};
 use futures::compat::Future01CompatExt;
+use futures::executor::block_on;
 use gstuff::{now_ms, slurp};
+use http::Response;
 use keys::{Public, Signature};
 #[cfg(test)]
 use mocktopus::macros::*;
@@ -303,7 +305,7 @@ impl OrdermatchContext {
 fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
     let mut retval = -1;
     let loop_thread = thread::Builder::new().name("maker_loop".into()).spawn({
-        let taker_coin = match lp_coinfind (&ctx, &maker_match.reserved.rel) {
+        let taker_coin = match block_on (lp_coinfind (&ctx, &maker_match.reserved.rel)) {
             Ok(Some(c)) => c,
             Ok(None) => {
                 log!("Coin " (maker_match.reserved.rel) " is not found/enabled");
@@ -315,7 +317,7 @@ fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
             }
         };
 
-        let maker_coin = match lp_coinfind (&ctx, &maker_match.reserved.base) {
+        let maker_coin = match block_on (lp_coinfind (&ctx, &maker_match.reserved.base)) {
             Ok(Some(c)) => c,
             Ok(None) => {
                 log!("Coin " (maker_match.reserved.base) " is not found/enabled");
@@ -365,7 +367,7 @@ fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
         let ctx = ctx.clone();
         let mut maker = bits256::default();
         maker.bytes = taker_match.reserved.sender_pubkey.0;
-        let taker_coin = match lp_coinfind (&ctx, &taker_match.reserved.rel) {
+        let taker_coin = match block_on (lp_coinfind (&ctx, &taker_match.reserved.rel)) {
             Ok(Some(c)) => c,
             Ok(None) => {
                 log!("Coin " (taker_match.reserved.rel) " is not found/enabled");
@@ -377,7 +379,7 @@ fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
             }
         };
 
-        let maker_coin = match lp_coinfind (&ctx, &taker_match.reserved.base) {
+        let maker_coin = match block_on (lp_coinfind (&ctx, &taker_match.reserved.base)) {
             Ok(Some(c)) => c,
             Ok(None) => {
                 log!("Coin " (taker_match.reserved.base) " is not found/enabled");
@@ -692,12 +694,12 @@ pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     if input.base == input.rel {
         return rpc_err_response(500, "Base and rel must be different coins");
     }
-    let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
+    let rel_coin = try_h!(block_on(lp_coinfind(&ctx, &input.rel)));
     let rel_coin = match rel_coin {
         Some(c) => c,
         None => return rpc_err_response(500, "Rel coin is not found or inactive")
     };
-    let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
+    let base_coin = try_h!(block_on(lp_coinfind(&ctx, &input.base)));
     let base_coin: MmCoinEnum = match base_coin {
         Some(c) => c,
         None => return rpc_err_response(500, "Base coin is not found or inactive")
@@ -716,32 +718,21 @@ pub fn buy(ctx: MmArc, json: Json) -> HyRes {
     }))
 }
 
-pub fn sell(ctx: MmArc, json: Json) -> HyRes {
-    let input: AutoBuyInput = try_h!(json::from_value(json.clone()));
-    if input.base == input.rel {
-        return rpc_err_response(500, "Base and rel must be different coins");
-    }
-    let base_coin = try_h!(lp_coinfind(&ctx, &input.base));
-    let base_coin = match base_coin {
-        Some(c) => c,
-        None => return rpc_err_response(500, "Base coin is not found or inactive")
-    };
-    let rel_coin = try_h!(lp_coinfind(&ctx, &input.rel));
-    let rel_coin = match rel_coin {
-        Some(c) => c,
-        None => return rpc_err_response(500, "Rel coin is not found or inactive")
-    };
-    Box::new(base_coin.my_balance().and_then(move |my_balance| {
-        check_locked_coins(&ctx, &input.volume, &my_balance, base_coin.ticker()).and_then(move |_| {
-            let dex_fee = dex_fee_amount(base_coin.ticker(), rel_coin.ticker(), &input.volume.clone().into());
-            let trade_info = TradeInfo::Taker(dex_fee);
-            base_coin.check_i_have_enough_to_trade(&input.volume.clone().into(), &my_balance.clone().into(), trade_info).and_then(move |_|
-                rel_coin.can_i_spend_other_payment().and_then(move |_|
-                    rpc_response(200, try_h!(lp_auto_buy(&ctx, input)))
-                )
-            )
-        })
-    }))
+pub async fn sell(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let input: AutoBuyInput = try_s!(json::from_value(req));
+    if input.base == input.rel {return ERR!("Base and rel must be different coins")}
+    let base_coin = try_s!(lp_coinfind(&ctx, &input.base).await);
+    let base_coin = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
+    let rel_coin = try_s!(lp_coinfind(&ctx, &input.rel).await);
+    let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
+    let my_balance = try_s!(base_coin.my_balance().compat().await);
+    try_s!(check_locked_coins(&ctx, &input.volume, &my_balance, base_coin.ticker()).compat().await);
+    let dex_fee = dex_fee_amount(base_coin.ticker(), rel_coin.ticker(), &input.volume.clone().into());
+    let trade_info = TradeInfo::Taker(dex_fee);
+    try_s!(base_coin.check_i_have_enough_to_trade(&input.volume.clone().into(), &my_balance.clone().into(), trade_info).compat().await);
+    try_s!(rel_coin.can_i_spend_other_payment().compat().await);
+    let res = try_s!(lp_auto_buy(&ctx, input)).into_bytes();
+    Ok(try_s!(Response::builder().body(res)))
 }
 
 /// Created when maker order is matched with taker request
@@ -844,12 +835,12 @@ struct PricePingRequest {
 
 impl PricePingRequest {
     fn new(ctx: &MmArc, order: &MakerOrder) -> Result<PricePingRequest, String> {
-        let base_coin = match try_s!(lp_coinfind(ctx, &order.base)) {
+        let base_coin = match try_s!(block_on(lp_coinfind(ctx, &order.base))) {
             Some(coin) => coin,
             None => return ERR!("Base coin {} is not found", order.base),
         };
 
-        let _rel_coin = match try_s!(lp_coinfind(ctx, &order.rel)) {
+        let _rel_coin = match try_s!(block_on(lp_coinfind(ctx, &order.rel))) {
             Some(coin) => coin,
             None => return ERR!("Rel coin {} is not found", order.rel),
         };
@@ -993,12 +984,12 @@ pub fn set_price(ctx: MmArc, req: Json) -> HyRes {
         return rpc_err_response(500, "Base and rel must be different coins");
     }
 
-    let base_coin: MmCoinEnum = match try_h!(lp_coinfind(&ctx, &req.base)) {
+    let base_coin: MmCoinEnum = match try_h!(block_on(lp_coinfind(&ctx, &req.base))) {
         Some(coin) => coin,
         None => return rpc_err_response(500, &format!("Base coin {} is not found", req.base)),
     };
 
-    let rel_coin: MmCoinEnum = match try_h!(lp_coinfind(&ctx, &req.rel)) {
+    let rel_coin: MmCoinEnum = match try_h!(block_on(lp_coinfind(&ctx, &req.rel))) {
         Some(coin) => coin,
         None => return rpc_err_response(500, &format!("Rel coin {} is not found", req.rel)),
     };
@@ -1480,12 +1471,12 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
     if req.base == req.rel {
         return rpc_err_response(500, "Base and rel must be different coins");
     }
-    let rel_coin = try_h!(lp_coinfind(&ctx, &req.rel));
+    let rel_coin = try_h!(block_on(lp_coinfind(&ctx, &req.rel)));
     let rel_coin = match rel_coin {
         Some(c) => c,
         None => return rpc_err_response(500, "Rel coin is not found or inactive")
     };
-    let base_coin = try_h!(lp_coinfind(&ctx, &req.base));
+    let base_coin = try_h!(block_on(lp_coinfind(&ctx, &req.base)));
     let base_coin: MmCoinEnum = match base_coin {
         Some(c) => c,
         None => return rpc_err_response(500, "Base coin is not found or inactive")

@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "native"), allow(unused_variables))]
+
 use bigdecimal::BigDecimal;
 use common::slurp;
 #[cfg(not(feature = "native"))]
@@ -61,8 +63,11 @@ async fn enable_coins_eth_electrum(mm: &MarketMakerIt, eth_urls: Vec<&str>) -> H
     replies.insert ("BEER", enable_electrum (mm, "BEER", vec!["test1.cipig.net:10022","test2.cipig.net:10022","test3.cipig.net:10022"]) .await);
     replies.insert ("PIZZA", enable_electrum (mm, "PIZZA", vec!["test1.cipig.net:10024","test2.cipig.net:10024","test3.cipig.net:10024"]) .await);
     replies.insert ("ETOMIC", enable_electrum (mm, "ETOMIC", vec!["test1.cipig.net:10025","test2.cipig.net:10025"]) .await);
-    replies.insert ("ETH", enable_native (mm, "ETH", eth_urls.clone()) .await);
-    replies.insert ("JST", enable_native (mm, "JST", eth_urls) .await);
+    // Temporarily skip the Web3 coins (should enable them back when Web3 is available to WASM).
+    #[cfg(feature = "native")] {
+        replies.insert ("ETH", enable_native (mm, "ETH", eth_urls.clone()) .await);
+        replies.insert ("JST", enable_native (mm, "JST", eth_urls) .await);
+    }
     replies
 }
 

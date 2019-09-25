@@ -223,7 +223,7 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
         "orderbook" => orderbook (ctx, req),
         "order_status" => order_status (ctx, req),
         // "passphrase" => passphrase (ctx, req),
-        "sell" => sell (ctx, req),
+        "sell" => hyres(sell(ctx, req)),
         "send_raw_transaction" => send_raw_transaction (ctx, req),
         "setprice" => set_price (ctx, req),
         "stop" => stop (ctx),
