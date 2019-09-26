@@ -24,7 +24,7 @@ use bytes::Bytes;
 use coins::{get_enabled_coins, get_trade_fee, send_raw_transaction, set_required_confirmations, withdraw, my_tx_history};
 use common::{err_to_rpc_json_string, HyRes};
 #[cfg(feature = "native")]
-use common::wio::{CORE, CPUPOOL, HTTP};
+use common::wio::{slurp_reqʰ, CORE, CPUPOOL, HTTP};
 use common::lift_body::LiftBody;
 use common::mm_ctx::MmArc;
 #[cfg(feature = "native")]
@@ -135,6 +135,7 @@ async fn helpers (ctx: MmArc, client: SocketAddr, req: Parts,
         "peers_recv" => try_s! (peers::peers_recv (reqᵇ) .await),
         "peers_drop_send_handler" => try_s! (peers::peers_drop_send_handlerʰ (reqᵇ) .await),
         "start_client_p2p_loop" => try_s! (lp_network::start_client_p2p_loopʰ (reqᵇ) .await),
+        "slurp_req" => try_s! (slurp_reqʰ (reqᵇ) .await),
         _ => return ERR! ("Unknown helper: {}", method)
     };
 

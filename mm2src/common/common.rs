@@ -445,6 +445,21 @@ pub type SlurpFut = Box<dyn Future<Item=(StatusCode, HeaderMap, Vec<u8>), Error=
 /// the handler is responsible for spawning the future on another reactor if it doesn't fit the `CORE` well.
 pub type HyRes = Box<dyn Future<Item=Response<Vec<u8>>, Error=String> + Send>;
 
+#[derive(Debug, Deserialize, Serialize)]
+struct HostedHttpRequest {
+    method: String,
+    uri: String,
+    headers: HashMap<String, String>,
+    body: Vec<u8>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct HostedHttpResponse {
+    status: u16,
+    headers: HashMap<String, String>,
+    body: Vec<u8>
+}
+
 // To improve git history and ease of exploratory refactoring
 // we're splitting the code in place with conditional compilation.
 // wio stands for "web I/O" or "wasm I/O",
@@ -453,30 +468,75 @@ pub type HyRes = Box<dyn Future<Item=Response<Vec<u8>>, Error=String> + Send>;
 #[cfg(not(feature = "native"))]
 pub mod wio {
     use futures01::future::IntoFuture;
-    use http::Request;
+    use futures::compat::Compat;
+    use futures::future::FutureExt;
+    use futures::lock::Mutex;
+    use futures::channel::oneshot::{channel, Receiver, Sender};
+    use http::{HeaderMap, Method, Request, StatusCode};
+    use http::header::{HeaderName, HeaderValue};
+    use rand::Rng;
+    use serde_bencode::ser::to_bytes as bencode;
+    use serde_bencode::de::from_bytes as bdecode;
+    use std::collections::HashMap;
+    use std::os::raw::c_char;
+    use std::str::FromStr;
     use super::SlurpFut;
 
-    #[allow(dead_code)]
-    pub fn slurp_req (_request: Request<Vec<u8>>) -> SlurpFut {
-        unimplemented!()
+    pub async fn slurp_reqʹ (request: Request<Vec<u8>>) -> Result<(StatusCode, HeaderMap, Vec<u8>), String> {
+        let (parts, body) = request.into_parts();
+
+        let hhreq = super::HostedHttpRequest {
+            method: parts.method.as_str().to_owned(),
+            uri: fomat! ((parts.uri)),
+            headers: parts.headers.iter().filter_map (|(name, value)| {
+                let name = name.as_str().to_owned();
+                let v = match value.to_str() {
+                    Ok (ascii) => ascii,
+                    Err (err) => {log! ("!ascii '" (name) "': " (err)); return None}
+                };
+                Some ((name, v.to_owned()))
+            }) .collect(),
+            body
+        };
+
+        let hhreq = try_s! (bencode (&hhreq));
+        let hhres = try_s! (super::helperᶜ ("slurp_req", hhreq) .await);
+        let hhres: super::HostedHttpResponse = try_s! (bdecode (&hhres));
+        let status = try_s! (StatusCode::from_u16 (hhres.status));
+
+        let mut headers = HeaderMap::<HeaderValue>::with_capacity (hhres.headers.len());
+        for (n, v) in hhres.headers {headers.insert (
+            try_s! (HeaderName::from_str (&n[..])),
+            try_s! (HeaderValue::from_str (&v[..]))
+        );}
+
+        Ok ((status, headers, hhres.body))
+    }
+
+    pub fn slurp_req (request: Request<Vec<u8>>) -> SlurpFut {
+        Box::new (Compat::new (Box::pin (slurp_reqʹ (request))))
     }
 }
 
 #[cfg(feature = "native")]
 pub mod wio {
+    use bytes::Bytes;
     use crate::lift_body::LiftBody;
     use crate::SlurpFut;
     use futures01::{Async, Future, Poll};
     use futures01::sync::oneshot::{self, Receiver};
+    use futures::compat::Future01CompatExt;
     use futures::executor::ThreadPool;
     use futures_cpupool::CpuPool;
     use gstuff::{duration_to_float, now_float};
-    use http::{Request, StatusCode, HeaderMap};
+    use http::{Method, Request, StatusCode, HeaderMap};
     use hyper::Client;
     use hyper::client::HttpConnector;
     use hyper::rt::Stream;
     use hyper::server::conn::Http;
     use hyper_rustls::HttpsConnector;
+    use serde_bencode::ser::to_bytes as bencode;
+    use serde_bencode::de::from_bytes as bdecode;
     use std::fmt;
     use std::thread::JoinHandle;
     use std::time::Duration;
@@ -651,6 +711,40 @@ pub mod wio {
             Box::new (combined_f)
         });
         Box::new (drive_s (response_f))
+    }
+
+    pub async fn slurp_reqʹ (request: Request<Vec<u8>>) -> Result<(StatusCode, HeaderMap, Vec<u8>), String> {
+        slurp_req (request) .compat().await
+    }
+
+    pub async fn slurp_reqʰ (req: Bytes) -> Result<Vec<u8>, String> {
+        let hhreq: super::HostedHttpRequest = try_s! (bdecode (&req));
+        //log! ("slurp_reqʰ] " [=hhreq]);
+
+        let mut req = Request::builder();
+        req.method (try_s! (Method::from_bytes (hhreq.method.as_bytes())));
+        req.uri (hhreq.uri);
+        for (n, v) in hhreq.headers {req.header (&n[..], &v[..]);}
+        let req = try_s! (req.body (hhreq.body));
+
+        let (status, headers, body) = try_s! (slurp_reqʹ (req) .await);
+
+        let hhres = super::HostedHttpResponse {
+            status: status.as_u16(),
+            headers: headers.iter().filter_map (|(name, value)| {
+                let name = name.as_str().to_owned();
+                let v = match value.to_str() {
+                    Ok (ascii) => ascii,
+                    Err (err) => {log! ("!ascii '" (name) "': " (err)); return None}
+                };
+                Some ((name, v.to_owned()))
+            }) .collect(),
+            body
+        };
+        //log! ("HostedHttpResponse: " [=hhres]);
+
+        let hhres = try_s! (bencode (&hhres));
+        Ok (hhres)
     }
 }
 

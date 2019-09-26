@@ -2048,7 +2048,7 @@ fn addr_from_str(addr_str: &str) -> Result<Address, String> {
     Ok(addr)
 }
 
-pub fn eth_coin_from_conf_and_request(
+pub async fn eth_coin_from_conf_and_request(
     ctx: &MmArc,
     ticker: &str,
     conf: &Json,
@@ -2074,7 +2074,7 @@ pub fn eth_coin_from_conf_and_request(
     for url in urls.iter() {
         let transport = try_s!(Web3Transport::new(vec![url.clone()]));
         let web3 = Web3::new(transport);
-        let version = match web3.web3().client_version().wait() {
+        let version = match web3.web3().client_version().compat().await {
             Ok(v) => v,
             Err(e) => {
                 log!("Couldn't get client version for url " (url) ", " (e));

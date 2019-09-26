@@ -63,11 +63,8 @@ async fn enable_coins_eth_electrum(mm: &MarketMakerIt, eth_urls: Vec<&str>) -> H
     replies.insert ("BEER", enable_electrum (mm, "BEER", vec!["test1.cipig.net:10022","test2.cipig.net:10022","test3.cipig.net:10022"]) .await);
     replies.insert ("PIZZA", enable_electrum (mm, "PIZZA", vec!["test1.cipig.net:10024","test2.cipig.net:10024","test3.cipig.net:10024"]) .await);
     replies.insert ("ETOMIC", enable_electrum (mm, "ETOMIC", vec!["test1.cipig.net:10025","test2.cipig.net:10025"]) .await);
-    // Temporarily skip the Web3 coins (should enable them back when Web3 is available to WASM).
-    #[cfg(feature = "native")] {
-        replies.insert ("ETH", enable_native (mm, "ETH", eth_urls.clone()) .await);
-        replies.insert ("JST", enable_native (mm, "JST", eth_urls) .await);
-    }
+    replies.insert ("ETH", enable_native (mm, "ETH", eth_urls.clone()) .await);
+    replies.insert ("JST", enable_native (mm, "JST", eth_urls) .await);
     replies
 }
 
@@ -706,9 +703,9 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     let alice_passphrase = unwrap! (get_passphrase (&".env.client", "ALICE_PASSPHRASE"));
 
     let coins = json! ([
-        {"coin":"BEER","asset":"BEER"},
-        {"coin":"PIZZA","asset":"PIZZA"},
-        {"coin":"ETOMIC","asset":"ETOMIC"},
+        // {"coin":"BEER","asset":"BEER"},
+        // {"coin":"PIZZA","asset":"PIZZA"},
+        // {"coin":"ETOMIC","asset":"ETOMIC"},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000"},
         {"coin":"JST","name":"jst","etomic":"0x2b294F029Fde858b2c62184e8390591755521d8E"}
     ]);
@@ -793,6 +790,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     }
 
     // Allow the order to be converted to maker after not being matched in 30 seconds.
+    log! ("Waiting 32 seconds...");
     Timer::sleep (32.) .await;
 
     for (base, rel) in pairs.iter() {
@@ -910,7 +908,10 @@ pub extern fn trade_test_electrum_and_eth_coins (cb_id: i32) {
     use std::ptr::null;
 
     common::executor::spawn (async move {
-        trade_base_rel_electrum (vec! [("BEER", "ETOMIC"), ("ETH", "JST")]) .await;
+        // BEER and ETOMIC electrums are sometimes down, or blockchains stuck (cf. a5d593).
+        //let pairs = vec! [("BEER", "ETOMIC"), ("ETH", "JST")];
+        let pairs = vec![("ETH", "JST")];
+        trade_base_rel_electrum (pairs) .await;
         unsafe {call_back (cb_id, null(), 0)}
     })
 }
