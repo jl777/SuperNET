@@ -2013,7 +2013,7 @@ impl GasStationData {
     }
 }
 
-fn get_token_decimals(web3: &Web3<Web3Transport>, token_addr: Address) -> Result<u8, String> {
+async fn get_token_decimals(web3: &Web3<Web3Transport>, token_addr: Address) -> Result<u8, String> {
     let function = try_s!(ERC20_CONTRACT.function("decimals"));
     let data = try_s!(function.encode_input(&[]));
     let request = CallRequest {
@@ -2026,7 +2026,7 @@ fn get_token_decimals(web3: &Web3<Web3Transport>, token_addr: Address) -> Result
     };
 
     let f = web3.eth().call(request, Some(BlockNumber::Latest)).map_err(|e| ERRL!("{}", e));
-    let res = try_s!(f.wait());
+    let res = try_s!(f.compat().await);
     let tokens = try_s!(function.decode_output(&res.0));
     let decimals: u64 = match tokens[0] {
         Token::Uint(dec) => dec.into(),
@@ -2102,7 +2102,7 @@ pub async fn eth_coin_from_conf_and_request(
     } else {
         let token_addr = try_s!(addr_from_str(etomic));
         let decimals = match conf["decimals"].as_u64() {
-            None | Some(0) => try_s!(get_token_decimals(&web3, token_addr)),
+            None | Some(0) => try_s!(get_token_decimals(&web3, token_addr).await),
             Some(d) => d as u8,
         };
         (EthCoinType::Erc20(token_addr), decimals)
