@@ -143,7 +143,6 @@ async function runWasm() {
           en.replies[id] = res_s;
           wasmShared.exports.electrum_replied (ri, id)})
         .catch (err => {
-          console.log ('host_electrum_request] TBD, Electrum error', req, '⇒', err);
           wasmShared.exports.electrum_replied (ri, id)});
       return 0},
     host_electrum_reply: function (ri, id, rbuf, rcap) {
