@@ -117,7 +117,8 @@ async function runWasm() {
       // cf. https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-headers-subscribe
       ecl.subscribe.on ('blockchain.headers.subscribe', (header) => {
         console.log ('host_electrum_connect] TBD, Electrum header', header);
-        // TODO: Pass the header to Rust?
+        // TODO: Pass the `header` to Rust?
+        // The `header` looks like `[{hex: '040000', height: 175560}]` except the `hex` is large (seen ~3k).
       });
       return ri},
     host_electrum_is_connected: function (ri) {

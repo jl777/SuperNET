@@ -1434,7 +1434,20 @@ fn test_round_to() {
 pub fn new_uuid() -> Uuid {Uuid::new_v4()}
 
 #[cfg(not(feature = "native"))]
-pub fn new_uuid() -> Uuid {unimplemented!()}
+pub fn new_uuid() -> Uuid {
+    use rand::RngCore;
+    use uuid::{Builder, Variant, Version};
+
+    let mut rng = small_rng();
+    let mut bytes = [0; 16];
+
+    rng.fill_bytes(&mut bytes);
+
+    Builder::from_bytes(bytes)
+        .set_variant(Variant::RFC4122)
+        .set_version(Version::Random)
+        .build()
+}
 
 pub fn first_char_to_upper(input: &str) -> String {
     let mut v: Vec<char> = input.chars().collect();
