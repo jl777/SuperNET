@@ -1013,11 +1013,11 @@ fn ensure_file_is_writable(file_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(feature = "native")]
 fn fix_directories(ctx: &MmCtx) -> Result<(), String> {
     let dbdir = ctx.dbdir();
     try_s!(std::fs::create_dir_all(&dbdir));
 
-    #[cfg(feature = "native")]
     unsafe {
         let dbdir = ctx.dbdir();
         let dbdir = try_s! (dbdir.to_str().ok_or ("Bad dbdir"));
@@ -1039,6 +1039,25 @@ fn fix_directories(ctx: &MmCtx) -> Result<(), String> {
     if !ensure_dir_is_writable(&dbdir.join ("ORDERS").join ("MY").join ("MAKER")) {return ERR!("ORDERS/MY/MAKER db dir is not writable")}
     if !ensure_dir_is_writable(&dbdir.join ("ORDERS").join ("MY").join ("TAKER")) {return ERR!("ORDERS/MY/TAKER db dir is not writable")}
     try_s!(ensure_file_is_writable(&dbdir.join ("GTC").join ("orders")));
+    Ok(())
+}
+
+#[cfg(not(feature = "native"))]
+fn fix_directories(ctx: &MmCtx) -> Result<(), String> {
+    extern "C" {pub fn host_ensure_dir_is_writable(ptr: *const c_char, len: i32) -> i32;}
+    macro_rules! writeable_dir {
+        ($path: expr) => {
+            let path = $path;
+            let path = try_s! (path.to_str().ok_or ("Non-unicode path"));
+            let rc = unsafe {host_ensure_dir_is_writable (path.as_ptr() as *const c_char, path.len() as i32)};
+            if rc != 0 {return ERR! ("Dir '{}' not writeable: {}", path, rc)}
+        };
+    }
+
+    let dbdir = ctx.dbdir();
+    writeable_dir! (dbdir.join ("SWAPS"));
+    writeable_dir! (dbdir.join ("ORDERS") .join ("MY") .join ("MAKER"));
+    writeable_dir! (dbdir.join ("ORDERS") .join ("MY") .join ("TAKER"));
     Ok(())
 }
 
@@ -1177,10 +1196,8 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     log! ({"version: {}", MM_VERSION});
     unsafe {try_s! (lp_passphrase_init (&ctx))}
 
-    #[cfg(feature = "native")] {
-        try_s! (fix_directories (&ctx));
-        try_s! (migrate_db (&ctx));
-    }
+    try_s! (fix_directories (&ctx));
+    #[cfg(feature = "native")] {try_s! (migrate_db (&ctx));}
 
     fn simple_ip_extractor (ip: &str) -> Result<IpAddr, String> {
         let ip = ip.trim();

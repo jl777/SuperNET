@@ -1146,6 +1146,28 @@ pub fn temp_dir() -> PathBuf {
     Path::new (path) .into()
 }
 
+#[cfg(feature = "native")]
+pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), String> {
+    try_s! (fs::write (path, contents));
+    Ok(())
+}
+
+#[cfg(not(feature = "native"))]
+pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), String> {
+    use std::os::raw::c_char;
+
+    extern "C" {pub fn host_write(path_p: *const c_char, path_l: i32, ptr: *const c_char, len: i32) -> i32;}
+
+    let path = try_s! (path.as_ref().to_str().ok_or("Non-unicode path"));
+    let content = contents.as_ref();
+    let rc = unsafe {host_write (
+        path.as_ptr() as *const c_char, path.len() as i32,
+        content.as_ptr() as *const c_char, content.len() as i32
+    )};
+    if rc != 0 {return ERR! ("!host_write: {}", rc)}
+    Ok(())
+}
+
 /// If the `MM_LOG` variable is present then tries to open that file.  
 /// Prints a warning to `stdout` if there's a problem opening the file.  
 /// Returns `None` if `MM_LOG` variable is not present or if the specified path can't be opened.

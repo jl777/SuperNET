@@ -25,14 +25,14 @@ use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{bits256, json_dir_entries, new_uuid, rpc_response, rpc_err_response, HyRes};
+use common::{bits256, json_dir_entries, now_ms, new_uuid, rpc_response, rpc_err_response, write, HyRes};
 use common::executor::spawn;
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
 use futures01::future::{Either, Future};
 use futures::compat::Future01CompatExt;
 use futures::executor::block_on;
-use gstuff::{now_ms, slurp};
+use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
 #[cfg(test)]
@@ -1278,13 +1278,13 @@ fn my_taker_order_file_path(ctx: &MmArc, uuid: &Uuid) -> PathBuf {
 fn save_my_maker_order(ctx: &MmArc, order: &MakerOrder) {
     let path = my_maker_order_file_path(ctx, &order.uuid);
     let content = unwrap!(json::to_vec(order));
-    unwrap!(fs::write(path, content));
+    unwrap!(write(&path, &content));
 }
 
 fn save_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
     let path = my_taker_order_file_path(ctx, &order.request.uuid);
     let content = unwrap!(json::to_vec(order));
-    unwrap!(fs::write(path, content));
+    unwrap!(write(&path, &content));
 }
 
 #[cfg_attr(test, mockable)]
