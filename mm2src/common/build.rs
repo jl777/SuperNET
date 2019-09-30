@@ -31,6 +31,7 @@ use std::process::{ChildStdout, Command, Stdio};
 use std::str::from_utf8_unchecked;
 use std::sync::Arc;
 use std::thread;
+use sysinfo::{System, SystemExt};
 use tar::Archive;
 
 /// Ongoing (RLS) builds might interfere with a precise time comparison.
@@ -684,9 +685,17 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
         return (existing_a, include);
     }
 
-    // Note that the real limit here is the amount of memory
-    // (when building on something like Raspberry Pi the RAM is limited).
-    let processes = 4.max(num_cpus::get_physical());
+    // When building on something like Raspberry Pi the RAM is limited.
+    let sys = System::new();
+    let totalᵐ = sys.get_total_memory();
+    let freeᵐ = sys.get_free_memory();
+    epintln! ([=totalᵐ] ", " [=freeᵐ]);
+    let processes = if freeᵐ < 512 * 1024 {
+        1
+    } else {
+        // NB: Under QEMU the logical is lower than the physical.
+        4.min(num_cpus::get_physical()).min(num_cpus::get())
+    };
 
     // This version of the build doesn't compile Boost separately
     // but rather allows the libtorrent to compile it
