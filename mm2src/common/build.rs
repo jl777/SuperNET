@@ -37,14 +37,16 @@ use tar::Archive;
 const SLIDE: f64 = 60.;
 
 /// Quote spaces, in case the project is on a path with them.
-fn escape_some (path: &str) -> String {
+fn escape_some(path: &str) -> String {
     // AG: I've tried using the shell_escape crate for this,
     // but it adds the single quotes, breaking the variable and argument assignments on Windows.
 
-    let mut esc = String::with_capacity (path.len());
+    let mut esc = String::with_capacity(path.len());
     for ch in path.chars() {
-        if ch == ' ' {esc.push ('\\')}
-        esc.push (ch)
+        if ch == ' ' {
+            esc.push('\\')
+        }
+        esc.push(ch)
     }
     esc
 }
@@ -62,7 +64,9 @@ fn bindgen<
     types: TI,
     defines: DI,
 ) {
-    if cfg!(not(feature = "native")) {return}
+    if cfg!(not(feature = "native")) {
+        return;
+    }
 
     // We'd like to regenerate the bindings whenever the build.rs changes, in case we changed bindgen configuration here.
     let lm_build_rs = unwrap!(last_modified_sec(&"build.rs"), "Can't stat build.rs");
@@ -123,22 +127,16 @@ fn generate_bindings() {
     let _ = fs::create_dir("c_headers");
 
     bindgen(
-        vec![
-            "../../iguana/exchanges/LP_include.h".into(),
-        ],
+        vec!["../../iguana/exchanges/LP_include.h".into()],
         "c_headers/LP_include.rs",
         [
             // functions
-            "OS_ensure_directory"
+            "OS_ensure_directory",
         ]
         .iter(),
         // types
-        [
-        ]
-        .iter(),
-        [
-        ]
-        .iter(),
+        [].iter(),
+        [].iter(),
     );
 }
 
@@ -440,10 +438,11 @@ impl Target {
         let targetᴱ = unwrap!(var("TARGET"));
         match &targetᴱ[..] {
             "x86_64-unknown-linux-gnu" => Target::Unix,
-            "armv7-unknown-linux-gnueabihf" => Target::Unix,  // Raspbian is a modified Debian
+            "armv7-unknown-linux-gnueabihf" => Target::Unix, // Raspbian is a modified Debian
+            "arm-unknown-linux-gnueabihf" => Target::Unix,   // Raspbian under QEMU
             "x86_64-apple-darwin" => Target::Mac,
             "x86_64-pc-windows-msvc" => Target::Windows,
-            "wasm32-unknown-emscripten" => Target::Unix,  // Pretend.
+            "wasm32-unknown-emscripten" => Target::Unix, // Pretend.
             t => panic!("Target not (yet) supported: {}", t),
         }
     }
@@ -685,6 +684,10 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
         return (existing_a, include);
     }
 
+    // Note that the real limit here is the amount of memory
+    // (when building on something like Raspberry Pi the RAM is limited).
+    let processes = 4.max(num_cpus::get_physical());
+
     // This version of the build doesn't compile Boost separately
     // but rather allows the libtorrent to compile it
     // "you probably want to just build libtorrent and have it build boost
@@ -696,7 +699,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     // NB: The common compiler flags go to the "cxxflags=" here
     // and the platform-specific flags go to the jam files or to conditionals below.
     let mut b2 = fomat!(
-        "b2 -j4 -d+2 release"
+        "b2 -j"(processes)" -d+2 release"
         " link=static deprecated-functions=off debug-symbols=off"
         " dht=on encryption=on crypto=built-in iconv=off i2p=off"
         " cxxflags=-DBOOST_ERROR_CODE_HEADER_ONLY=1"
@@ -942,7 +945,9 @@ fn main() {
     println!("cargo:rerun-if-changed={}", path2s(rabs("MM_VERSION")));
     let mm_version = mm_version();
 
-    if cfg!(not(feature = "native")) {return}
+    if cfg!(not(feature = "native")) {
+        return;
+    }
 
     rerun_if_changed("iguana/exchanges/*.c");
     rerun_if_changed("crypto777/*.c");
