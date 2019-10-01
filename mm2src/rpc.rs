@@ -197,7 +197,7 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
     };
     DispatcherRes::Match (match &method[..] {  // Sorted alphanumerically (on the first latter) for readability.
         // "autoprice" => lp_autoprice (ctx, req),
-        "buy" => buy (ctx, req),
+        "buy" => hyres(buy(ctx, req)),
         "cancel_all_orders" => cancel_all_orders (ctx, req),
         "cancel_order" => cancel_order (ctx, req),
         "coins_needed_for_kick_start" => hyres(coins_needed_for_kick_start(ctx)),
