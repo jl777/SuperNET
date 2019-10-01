@@ -19,6 +19,7 @@
 
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
+#![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
 use futures01::{Future};
 use futures01::sync::oneshot::Sender;
@@ -1328,22 +1329,28 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     try_s! (lp_initpeers (&ctx, netid, seednodes) .await);
 
     try_s! (ctx.initialized.pin (true));
+
+    #[cfg(feature = "native")] {
+        // launch kickstart threads before RPC is available, this will prevent the API user to place
+        // an order and start new swap that might get started 2 times because of kick-start
+        let mut coins_needed_for_kick_start = swap_kick_starts (ctx.clone());
+        coins_needed_for_kick_start.extend(try_s!(orders_kick_start(&ctx)));
+        *(try_s!(ctx.coins_needed_for_kick_start.lock())) = coins_needed_for_kick_start;
+    }
+
+    let trades: thread::JoinHandle<()>;
+    #[cfg(feature = "native")] {
+        trades = try_s! (thread::Builder::new().name ("trades".into()) .spawn ({
+            let ctx = ctx.clone();
+            move || lp_ordermatch_loop (ctx)
+        }));
+    }
+
+    let ctxʹ = ctx.clone();
+    spawn (async move {lp_command_q_loop (ctxʹ) .await});
+
     #[cfg(not(feature = "native"))] {if 1==1 {return Ok(())}}  // TODO: Gradually move this point further down.
-    // launch kickstart threads before RPC is available, this will prevent the API user to place
-    // an order and start new swap that might get started 2 times because of kick-start
-    let mut coins_needed_for_kick_start = swap_kick_starts (ctx.clone());
-    coins_needed_for_kick_start.extend(try_s!(orders_kick_start(&ctx)));
-    *(try_s!(ctx.coins_needed_for_kick_start.lock())) = coins_needed_for_kick_start;
 
-    let trades = try_s! (thread::Builder::new().name ("trades".into()) .spawn ({
-        let ctx = ctx.clone();
-        move || lp_ordermatch_loop (ctx)
-    }));
-
-    let command_queue = try_s! (thread::Builder::new().name ("command_queue".into()) .spawn ({
-        let ctx = ctx.clone();
-        move || unsafe { lp_command_q_loop (ctx) }
-    }));
     let ctx_id = try_s! (ctx.ffi_handle());
 
     // `LPinit` currently fails to stop in a timely manner, so we're dropping the `lp_init` context early
@@ -1353,8 +1360,7 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
 
     spawn_rpc(ctx_id);
     // unwrap! (prices.join());
-    unwrap! (trades.join());
-    unwrap! (command_queue.join());
+    #[cfg(feature = "native")] unwrap! (trades.join());
     if let Some(seednode) = seednode_thread {
         unwrap! (seednode.join());
     }

@@ -20,7 +20,7 @@
 
 use bytes::Bytes;
 use bitcrypto::ripemd160;
-use common::{lp_queue_command, HyRes, QueuedCommand, COMMAND_QUEUE};
+use common::{lp_queue_command, now_ms, HyRes, QueuedCommand};
 #[cfg(not(feature = "native"))]
 use common::helperᶜ;
 use common::executor::spawn;
@@ -29,7 +29,6 @@ use crossbeam::channel;
 use futures01::{future, Future};
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
-use gstuff::now_ms;
 use primitives::hash::H160;
 use serde_json::{self as json, Value as Json};
 #[cfg(not(feature = "native"))]
@@ -118,15 +117,22 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
 }
 
 /// The thread processing the peer-to-peer messaging bus.
-pub unsafe fn lp_command_q_loop(ctx: MmArc) {
-    let mut processed_messages: HashMap<H160, u64> = HashMap::new();
-    loop {
-        if ctx.is_stopping() { break }
+pub async fn lp_command_q_loop(ctx: MmArc) {
+    use common::executor::Timer;
+    use futures::StreamExt;
+    use futures::future::{select, Either};
 
-        let cmd = match (*COMMAND_QUEUE).1.recv_timeout(Duration::from_millis(100)) {
-            Ok(cmd) => cmd,
-            Err(channel::RecvTimeoutError::Timeout) => continue,  // And check `is_stopping`.
-            Err(channel::RecvTimeoutError::Disconnected) => break
+    let mut command_queueʳ = unwrap!(unwrap!(ctx.command_queueʳ.lock()).take().ok_or("!command_queueʳ"));
+
+    let mut processed_messages: HashMap<H160, u64> = HashMap::new();
+    let mut stoppingᶠ = Box::pin(async {loop {if ctx.is_stopping() {return}; Timer::sleep(0.2).await}});
+    loop {
+        let nextᶠ = command_queueʳ.next();
+        let rc = select(nextᶠ, stoppingᶠ).await;
+        let cmd = match rc {
+            Either::Left((Some(cmd), s)) => {stoppingᶠ = s; cmd},
+            Either::Left((None, _s)) => break,
+            Either::Right((_n, _s)) => break
         };
 
         let now = now_ms();
@@ -198,16 +204,13 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
             Err(e) => panic!("encountered IO error: {}", e),
         }
 
+        let mut commands = Vec::new();
         clients = clients.drain_filter(|(client, addr, buf)| {
             match client.read_line(buf) {
                 Ok(_) => {
                     if buf.len() > 0 {
-                        let msgs: Vec<_> = buf.split('\n').collect();
-                        for msg in msgs {
-                            if !msg.is_empty() {
-                                lp_queue_command(msg.to_string());
-                            }
-                        }
+                        let msgs = buf.split('\n');
+                        for msg in msgs {if !msg.is_empty() {commands.push(msg.to_string())}}
                         buf.clear();
                     }
                     true
@@ -219,6 +222,9 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
                 },
             }
         }).collect();
+        for msg in commands {
+            unwrap!(lp_queue_command(&ctx, msg));
+        }
 
         clients = match ctx.seednode_p2p_channel.1.recv_timeout(Duration::from_millis(1)) {
             Ok(mut msg) => clients.drain_filter(|(client, addr, _)| {
@@ -308,16 +314,13 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
             }
         }
 
+        let mut commands = Vec::new();
         seed_connections = seed_connections.drain_filter(|conn| {
             match conn.stream.read_line(&mut conn.buf) {
                 Ok(_) => {
                     if conn.buf.len() > 0 {
-                        let msgs: Vec<_> = conn.buf.split('\n').collect();
-                        for msg in msgs {
-                            if !msg.is_empty() {
-                                lp_queue_command(msg.to_string());
-                            }
-                        }
+                        let msgs = conn.buf.split('\n');
+                        for msg in msgs {if !msg.is_empty() {commands.push(msg.to_string())}}
                         conn.buf.clear();
                     }
                     true
@@ -329,6 +332,9 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
                 },
             }
         }).collect();
+        for msg in commands {
+            unwrap!(lp_queue_command(&ctx, msg));
+        }
 
         seed_connections = match ctx.client_p2p_channel.1.recv_timeout(Duration::from_millis(1)) {
             Ok(mut msg) => seed_connections.drain_filter(|conn| {

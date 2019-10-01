@@ -1,5 +1,6 @@
 use bytes::Bytes;
 use crossbeam::{channel, Sender, Receiver};
+use futures::channel::mpsc;
 use gstuff::Constructible;
 #[cfg(not(feature = "native"))]
 use http::Response;
@@ -21,7 +22,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::{bits256, small_rng};
+use crate::{bits256, small_rng, QueuedCommand};
 use crate::log::{self, LogState};
 
 /// MarketMaker state, shared between the various MarketMaker threads.
@@ -79,6 +80,10 @@ pub struct MmCtx {
     pub seednode_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
     /// Standard node P2P message bus channel.
     pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
+    /// Communicating with `lp_command_q_loop`.
+    pub command_queue: mpsc::UnboundedSender<QueuedCommand>,
+    /// Taken by `lp_command_q_loop`.
+    pub command_queueʳ: Mutex<Option<mpsc::UnboundedReceiver<QueuedCommand>>>,
     /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.
     /// Replacement of `lp::G.LP_myrmd160`.
     pub rmd160: Constructible<H160>,
@@ -95,6 +100,7 @@ pub struct MmCtx {
 }
 impl MmCtx {
     pub fn with_log_state (log: LogState) -> MmCtx {
+        let (command_queue, command_queueʳ) = mpsc::unbounded();
         MmCtx {
             conf: Json::Object (json::Map::new()),
             log,
@@ -111,6 +117,8 @@ impl MmCtx {
             prices_ctx: Mutex::new (None),
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
+            command_queue,
+            command_queueʳ: Mutex::new (Some (command_queueʳ)),
             rmd160: Constructible::default(),
             seeds: Mutex::new (Vec::new()),
             secp256k1_key_pair: Constructible::default(),

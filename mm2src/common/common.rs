@@ -81,7 +81,6 @@ pub mod lift_body {
 
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
-use crossbeam::{channel};
 use futures01::{future, task::Task, Future};
 #[cfg(not(feature = "native"))]
 use futures::task::{Context, Poll as Poll03};
@@ -1078,11 +1077,6 @@ pub struct QueuedCommand {
     // retstrp: *mut *mut c_char,
 }
 
-lazy_static! {
-    // TODO: Move to `MmCtx`.
-    pub static ref COMMAND_QUEUE: (channel::Sender<QueuedCommand>, channel::Receiver<QueuedCommand>) = channel::unbounded();
-}
-
 /// Register an RPC command that came internally or from the peer-to-peer bus.
 #[no_mangle]
 #[cfg(feature = "native")]
@@ -1094,23 +1088,25 @@ pub extern "C" fn lp_queue_command_for_c (retstrp: *mut *mut c_char, buf: *mut c
 
     if buf == null_mut() {panic! ("!buf")}
     let msg = String::from (unwrap! (unsafe {CStr::from_ptr (buf)} .to_str()));
-    let cmd = QueuedCommand {
+    let _cmd = QueuedCommand {
         msg,
         queue_id,
         response_sock,
         stats_json_only
     };
-    unwrap! ((*COMMAND_QUEUE).0.send (cmd))
+    panic! ("We need a context ID");
+    //unwrap! ((*COMMAND_QUEUE).0.send (cmd))
 }
 
-pub fn lp_queue_command (msg: String) -> () {
+pub fn lp_queue_command (ctx: &mm_ctx::MmArc, msg: String) -> Result<(), String> {
     let cmd = QueuedCommand {
         msg,
         queue_id: 0,
         response_sock: -1,
         stats_json_only: 0,
     };
-    unwrap! ((*COMMAND_QUEUE).0.send (cmd))
+    try_s! (ctx.command_queue.unbounded_send (cmd));
+    Ok(())
 }
 
 #[cfg(feature = "native")]
