@@ -128,6 +128,8 @@ async fn helpers (ctx: MmArc, client: SocketAddr, req: Parts,
     if crc32 != expected_checksum {return ERR! ("Damaged goods")}
 
     let res = match method {
+        "broadcast_p2p_msg" => try_s! (lp_network::broadcast_p2p_msgʰ (reqᵇ) .await),
+        "client_p2p_loop" => try_s! (lp_network::client_p2p_loopʰ (reqᵇ) .await),
         "common_wait_for_log_re" => try_s! (common_wait_for_log_re (reqᵇ) .await),
         "ctx2helpers" => try_s! (ctx2helpers (ctx, reqᵇ) .await),
         "peers_initialize" => try_s! (peers::peers_initialize (reqᵇ) .await),
@@ -135,6 +137,7 @@ async fn helpers (ctx: MmArc, client: SocketAddr, req: Parts,
         "peers_recv" => try_s! (peers::peers_recv (reqᵇ) .await),
         "peers_drop_send_handler" => try_s! (peers::peers_drop_send_handlerʰ (reqᵇ) .await),
         "start_client_p2p_loop" => try_s! (lp_network::start_client_p2p_loopʰ (reqᵇ) .await),
+        "start_seednode_loop" => try_s! (lp_network::start_seednode_loopʰ (reqᵇ) .await),
         "slurp_req" => try_s! (slurp_reqʰ (reqᵇ) .await),
         _ => return ERR! ("Unknown helper: {}", method)
     };

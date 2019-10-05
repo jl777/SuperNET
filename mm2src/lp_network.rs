@@ -20,10 +20,10 @@
 
 use bytes::Bytes;
 use bitcrypto::ripemd160;
-use common::{lp_queue_command, now_ms, HyRes, QueuedCommand};
+use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 #[cfg(not(feature = "native"))]
 use common::helperᶜ;
-use common::executor::spawn;
+use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use crossbeam::channel;
 use futures01::{future, Future};
@@ -31,12 +31,11 @@ use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use primitives::hash::H160;
 use serde_json::{self as json, Value as Json};
-#[cfg(not(feature = "native"))]
 use serde_bencode::ser::to_bytes as bencode;
 use serde_bencode::de::from_bytes as bdecode;
 use std::collections::hash_map::{HashMap, Entry};
 use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{IpAddr, TcpListener, TcpStream};
 use std::thread;
 use std::time::Duration;
 
@@ -118,7 +117,6 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
 
 /// The thread processing the peer-to-peer messaging bus.
 pub async fn lp_command_q_loop(ctx: MmArc) {
-    use common::executor::Timer;
     use futures::StreamExt;
     use futures::future::{select, Either};
 
@@ -243,6 +241,47 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
     }
 }
 
+#[cfg(feature = "native")]
+pub async fn start_seednode_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16)
+-> Result<Option<thread::JoinHandle<()>>, String> {
+    log! ("i_am_seed at " (myipaddr) ":" (mypubport));
+    let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
+    try_s!(listener.set_nonblocking(true));
+    Ok (Some (try_s!(thread::Builder::new().name ("seednode_loop".into()) .spawn ({
+        let ctx = ctx.clone();
+        move || seednode_loop(ctx, listener)
+    }))))
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct StartSeednodeLoopArgs {
+    ctx: u32,
+    myipaddr: String,
+    mypubport: u16
+}
+
+#[cfg(not(feature = "native"))]
+pub async fn start_seednode_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16)
+-> Result<Option<thread::JoinHandle<()>>, String> {
+    let args = StartSeednodeLoopArgs {
+        ctx: try_s! (ctx.ffi_handle()),
+        myipaddr: fomat! ((myipaddr)),
+        mypubport
+    };
+    let args = try_s! (bencode (&args));
+    try_s! (helperᶜ ("start_seednode_loop", args) .await);
+    Ok (None)
+}
+
+#[cfg(feature = "native")]
+pub async fn start_seednode_loopʰ (req: Bytes) -> Result<Vec<u8>, String> {
+    let args: StartSeednodeLoopArgs = try_s! (bdecode (&req));
+    let myipaddr: IpAddr = try_s! (args.myipaddr.parse());
+    let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
+    try_s! (start_seednode_loop (&ctx, myipaddr, args.mypubport) .await);
+    Ok (Vec::new())
+}
+
 struct SeedConnection {
     stream: BufReader<TcpStream>,
     addr: String,
@@ -263,22 +302,109 @@ struct StartClientP2pLoopArgs {
     addrs: Vec<String>
 }
 
+/// Ask helper to fetch us the messages broadcasted from the seed nodes.
+#[derive(Serialize, Deserialize)]
+struct ClientP2pLoopArgs {
+    /// The instance running the `client_p2p_loop` for us.
+    ctx: u32,
+    /// The time ID of the last message we've seen.
+    since: u64
+}
+
 #[cfg(not(feature = "native"))]
 pub async fn start_client_p2p_loop (ctx: MmArc, addrs: Vec<String>) -> Result<(), String> {
-    let args = StartClientP2pLoopArgs {ctx: try_s! (ctx.ffi_handle()), addrs};
+    use common::helperᶜ;
+    use futures::future::{select, Either};
+
+    let ctx_handle = try_s! (ctx.ffi_handle());
+    let args = StartClientP2pLoopArgs {ctx: ctx_handle, addrs};
     let args = try_s! (bencode (&args));
     try_s! (helperᶜ ("start_client_p2p_loop", args) .await);
+
+    // Get messages from the helper's `client_p2p_loop`.
+    spawn (async move {
+        let mut stoppingᶠ = Box::pin (async {loop {if ctx.is_stopping() {return}; Timer::sleep (0.2) .await}});
+        let mut last_command = 0;
+        loop {
+            let args = ClientP2pLoopArgs {ctx: ctx_handle, since: last_command};
+            let args = unwrap! (bencode (&args));
+            let pollᶠ = Box::pin (helperᶜ ("client_p2p_loop", args));
+            let rc = select (pollᶠ, stoppingᶠ).await;
+            let res = match rc {
+                Either::Left((res, s)) => {stoppingᶠ = s; res},
+                Either::Right((_r, _s)) => break
+            };
+
+            let res = match res {
+                Ok (res) => res,
+                Err (err) => {
+                    log! ("Error invoking the client_p2p_loop helper: " (err));
+                    Timer::sleep (2.2) .await;
+                    continue
+                }
+            };
+            log! ("Got a packet from client_p2p_loop helper: " (gstuff::binprint (&res, b'.')));
+            let commands: Vec<(u64, String)> = unwrap! (bdecode (&res));
+            for (ms, msg) in commands {
+                //log! ("Received a broadcast command: " (msg));
+                last_command = ms;
+                unwrap! (lp_queue_command (&ctx, msg));
+            }
+        }
+    });
+
     Ok(())
 }
 
+/// Poll the native helpers for messages coming from the seed nodes.
+#[cfg(feature = "native")]
+pub async fn client_p2p_loopʰ (req: Bytes) -> Result<Vec<u8>, String> {
+    let args: ClientP2pLoopArgs = try_s! (bdecode (&req));
+    let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
+
+    let start = now_float();
+
+    let broadcasts = loop {
+        let tail: Vec<(u64, String)> = {
+            let mut cqˡ = try_s! (ctx.command_queueʰ.lock());
+            let cq = match &mut *cqˡ {Some (ref mut cq) => cq, None => return ERR! ("!command_queueʰ")};
+            let tail = cq.iter().filter (|(tid, _)| *tid > args.since) .cloned().collect();
+            // The `since` entry itself is *not* removed in order to always have a ground for monotonic increment.
+            cq.retain (|(tid, _)| *tid >= args.since);
+            tail
+        };
+
+        // Naive HTTP Long-polling: if there's nothing to share with the client then busy-wait for more content.
+        if !tail.is_empty() || 11. < now_float() - start {break tail}
+        Timer::sleep (0.1) .await
+    };
+
+    let res = try_s! (bencode (&broadcasts));
+    Ok (res)
+}
+
+pub async fn broadcast_p2p_msgʰ (req: Bytes) -> Result<Vec<u8>, String> {
+    let args: common::BroadcastP2pMessageArgs = try_s! (bdecode (&req));
+    let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
+    ctx.broadcast_p2p_msg (&args.msg);
+    Ok (Vec::new())
+}
+
+/// Tells the native helpers to start the client_p2p_loop, collecting messages from the seed nodes.
+#[cfg(feature = "native")]
 pub async fn start_client_p2p_loopʰ (req: Bytes) -> Result<Vec<u8>, String> {
     let args: StartClientP2pLoopArgs = try_s! (bdecode (&req));
     let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
+    {
+        let mut cq = try_s! (ctx.command_queueʰ.lock());
+        if cq.is_none() {*cq = Some (Vec::new())}
+    }
     try_s! (start_client_p2p_loop (ctx, args.addrs) .await);
     Ok (Vec::new())
 }
 
 /// The loop processing client node activity
+#[cfg(feature = "native")]
 fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
     let mut seed_connections: Vec<SeedConnection> = vec![];
     // ip and last connection attempt timestamp

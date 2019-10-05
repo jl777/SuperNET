@@ -80,10 +80,13 @@ pub struct MmCtx {
     pub seednode_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
     /// Standard node P2P message bus channel.
     pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
-    /// Communicating with `lp_command_q_loop`.
+    /// `lp_queue_command` shares messages with `lp_command_q_loop` via this channel.  
+    /// The messages are usually the JSON broadcasts from the seed nodes.
     pub command_queue: mpsc::UnboundedSender<QueuedCommand>,
-    /// Taken by `lp_command_q_loop`.
+    /// The end of the `command_queue` channel taken by `lp_command_q_loop`.
     pub command_queueʳ: Mutex<Option<mpsc::UnboundedReceiver<QueuedCommand>>>,
+    /// Broadcast `lp_queue_command` messages saved for WASM.
+    pub command_queueʰ: Mutex<Option<Vec<(u64, String)>>>,
     /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.
     /// Replacement of `lp::G.LP_myrmd160`.
     pub rmd160: Constructible<H160>,
@@ -119,6 +122,7 @@ impl MmCtx {
             client_p2p_channel: channel::unbounded(),
             command_queue,
             command_queueʳ: Mutex::new (Some (command_queueʳ)),
+            command_queueʰ: Mutex::new (None),
             rmd160: Constructible::default(),
             seeds: Mutex::new (Vec::new()),
             secp256k1_key_pair: Constructible::default(),
@@ -204,13 +208,29 @@ impl MmCtx {
     }   }
 
     /// Sends the P2P message to a processing thread
+    #[cfg(feature = "native")]
     pub fn broadcast_p2p_msg(&self, msg: &str) {
         let i_am_seed = self.conf["i_am_seed"].as_bool().unwrap_or(false);
         if i_am_seed {
+            log! ("seed broadcast");
             unwrap!(self.seednode_p2p_channel.0.send(msg.to_owned().into_bytes()));
         } else {
+            log! ("client broadcast");
             unwrap!(self.client_p2p_channel.0.send(msg.to_owned().into_bytes()));
     }   }
+
+    #[cfg(not(feature = "native"))]
+    pub fn broadcast_p2p_msg (&self, msg: &str) {
+        use crate::{helperᶜ, BroadcastP2pMessageArgs};
+        use crate::executor::spawn;
+
+        let args = BroadcastP2pMessageArgs {ctx: self.ffi_handle.copy_or (0), msg: msg.into()};
+        let args = unwrap! (bencode (&args));
+        spawn (async move {
+            let rc = helperᶜ ("broadcast_p2p_msg", args) .await;
+            if let Err (err) = rc {log! ("!broadcast_p2p_msg: " (err))}
+        });
+    }
 
     /// Get a reference to the secp256k1 key pair.
     /// Panics if the key pair is not available.

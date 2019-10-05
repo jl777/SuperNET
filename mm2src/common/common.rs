@@ -1099,6 +1099,13 @@ pub extern "C" fn lp_queue_command_for_c (retstrp: *mut *mut c_char, buf: *mut c
 }
 
 pub fn lp_queue_command (ctx: &mm_ctx::MmArc, msg: String) -> Result<(), String> {
+    // If we're helping a WASM then leave a copy of the broadcast for them.
+    if let Some (ref mut cq) = *try_s! (ctx.command_queueʰ.lock()) {
+        // Monotonic increment.
+        let now = if let Some (last) = cq.last() {(last.0 + 1) .max (now_ms())} else {now_ms()};
+        cq.push ((now, msg.clone()))
+    }
+
     let cmd = QueuedCommand {
         msg,
         queue_id: 0,
@@ -1344,6 +1351,12 @@ pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<Vec<u8>, 
     if rv.status != 200 {return ERR! ("!{}: {}", helper, rv)}
     // TODO: Check `rv.checksum` if present.
     Ok (rv.body.into_vec())
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BroadcastP2pMessageArgs {
+    pub ctx: u32,
+    pub msg: String
 }
 
 /// Invokes callback `cb_id` in the WASM host, passing a `(ptr,len)` string to it.

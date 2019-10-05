@@ -33,7 +33,7 @@ use std::borrow::Cow;
 use std::fs;
 use std::ffi::{CString};
 use std::io::{Read, Write};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::os::raw::c_char;
 use std::path::Path;
 use std::str;
@@ -47,7 +47,7 @@ use crate::common::executor::spawn;
 use crate::common::{slurp_url, MM_VERSION};
 use crate::common::mm_ctx::{MmCtx, MmArc};
 use crate::common::privkey::key_pair_from_seed;
-use crate::mm2::lp_network::{lp_command_q_loop, seednode_loop, start_client_p2p_loop};
+use crate::mm2::lp_network::{lp_command_q_loop, start_seednode_loop, start_client_p2p_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{spawn_rpc};
@@ -1313,14 +1313,8 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
 
     #[cfg(not(feature = "native"))] try_s! (ctx.send_to_helpers().await);
 
-    let seednode_thread = if i_am_seed && cfg! (feature = "native") {
-        log! ("i_am_seed at " (myipaddr) ":" (mypubport));
-        let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
-        try_s!(listener.set_nonblocking(true));
-        Some(try_s!(thread::Builder::new().name ("seednode_loop".into()) .spawn ({
-            let ctx = ctx.clone();
-            move || seednode_loop(ctx, listener)
-        })))
+    let seednode_thread = if i_am_seed {
+        try_s! (start_seednode_loop (&ctx, myipaddr, mypubport) .await)
     } else {
         None
     };
