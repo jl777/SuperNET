@@ -1150,6 +1150,24 @@ pub fn temp_dir() -> PathBuf {
 }
 
 #[cfg(feature = "native")]
+pub fn remove_file (path: &dyn AsRef<Path>) -> Result<(), String> {
+    try_s! (fs::remove_file (path));
+    Ok(())
+}
+
+#[cfg(not(feature = "native"))]
+pub fn remove_file (path: &dyn AsRef<Path>) -> Result<(), String> {
+    use std::os::raw::c_char;
+
+    extern "C" {pub fn host_rm (ptr: *const c_char, len: i32) -> i32;}
+
+    let path = try_s! (path.as_ref().to_str().ok_or ("Non-unicode path"));
+    let rc = unsafe {host_rm (path.as_ptr() as *const c_char, path.len() as i32)};
+    if rc != 0 {return ERR! ("!host_rm: {}", rc)}
+    Ok(())
+}
+
+#[cfg(feature = "native")]
 pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), String> {
     try_s! (fs::write (path, contents));
     Ok(())
@@ -1159,9 +1177,9 @@ pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), 
 pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), String> {
     use std::os::raw::c_char;
 
-    extern "C" {pub fn host_write(path_p: *const c_char, path_l: i32, ptr: *const c_char, len: i32) -> i32;}
+    extern "C" {pub fn host_write (path_p: *const c_char, path_l: i32, ptr: *const c_char, len: i32) -> i32;}
 
-    let path = try_s! (path.as_ref().to_str().ok_or("Non-unicode path"));
+    let path = try_s! (path.as_ref().to_str().ok_or ("Non-unicode path"));
     let content = contents.as_ref();
     let rc = unsafe {host_write (
         path.as_ptr() as *const c_char, path.len() as i32,

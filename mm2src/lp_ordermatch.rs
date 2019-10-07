@@ -25,8 +25,9 @@ use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{bits256, json_dir_entries, now_ms, new_uuid, rpc_response, rpc_err_response, write, HyRes};
-use common::executor::spawn;
+use common::{bits256, json_dir_entries, now_ms, new_uuid,
+  remove_file, rpc_response, rpc_err_response, write, HyRes};
+use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
 use futures01::future::{Either, Future};
@@ -45,10 +46,9 @@ use rpc::v1::types::{H256 as H256Json};
 use serde_json::{self as json, Value as Json};
 use std::collections::HashSet;
 use std::collections::hash_map::{Entry, HashMap};
-use std::fs::{self, DirEntry};
-use std::path::{PathBuf};
+use std::fs::DirEntry;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use std::thread;
 use uuid::Uuid;
 
@@ -419,50 +419,48 @@ fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
     }
 }
 
-pub fn lp_ordermatch_loop(ctx: MmArc) {
+pub async fn lp_ordermatch_loop(ctx: MmArc) {
     const ORDERMATCH_TIMEOUT: u64 = 30000;
     let mut last_price_broadcast = 0;
 
     loop {
         if ctx.is_stopping() { break }
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
-        let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
-        let mut my_maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
-        let mut my_cancelled_orders = unwrap!(ordermatch_ctx.my_cancelled_orders.lock());
-        // move the timed out and unmatched taker orders to maker
-        *my_taker_orders = my_taker_orders.drain().filter_map(|(uuid, order)| if order.created_at + ORDERMATCH_TIMEOUT < now_ms() {
-            delete_my_taker_order(&ctx, &order);
-            if order.matches.is_empty() {
-                let maker_order = order.into();
-                save_my_maker_order(&ctx, &maker_order);
-                my_maker_orders.insert(uuid, maker_order);
-            }
-            None
-        } else {
-            Some((uuid, order))
-        }).collect();
-        // remove timed out unfinished matches to unlock the reserved amount
-        my_maker_orders.iter_mut().for_each(|(_, order)| {
-            order.matches = order.matches.drain().filter(
-                |(_, order_match)| order_match.last_updated + ORDERMATCH_TIMEOUT > now_ms() || order_match.connected.is_some()
-            ).collect();
-            save_my_maker_order(&ctx, order);
-        });
-        *my_maker_orders = my_maker_orders.drain().filter_map(|(uuid, order)| {
-            let min_amount: BigDecimal = "0.00777".parse().unwrap();
-            let min_amount: MmNumber = min_amount.into();
-            if order.available_amount() <= min_amount && !order.has_ongoing_matches() {
-                delete_my_maker_order(&ctx, &order);
-                my_cancelled_orders.insert(uuid, order);
+        {
+            let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
+            let mut my_maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
+            let mut my_cancelled_orders = unwrap!(ordermatch_ctx.my_cancelled_orders.lock());
+            // move the timed out and unmatched taker orders to maker
+            *my_taker_orders = my_taker_orders.drain().filter_map(|(uuid, order)| if order.created_at + ORDERMATCH_TIMEOUT < now_ms() {
+                delete_my_taker_order(&ctx, &order);
+                if order.matches.is_empty() {
+                    let maker_order = order.into();
+                    save_my_maker_order(&ctx, &maker_order);
+                    my_maker_orders.insert(uuid, maker_order);
+                }
                 None
             } else {
                 Some((uuid, order))
-            }
-        }).collect();
-
-        drop(my_taker_orders);
-        drop(my_maker_orders);
-        drop(my_cancelled_orders);
+            }).collect();
+            // remove timed out unfinished matches to unlock the reserved amount
+            my_maker_orders.iter_mut().for_each(|(_, order)| {
+                order.matches = order.matches.drain().filter(
+                    |(_, order_match)| order_match.last_updated + ORDERMATCH_TIMEOUT > now_ms() || order_match.connected.is_some()
+                ).collect();
+                save_my_maker_order(&ctx, order);
+            });
+            *my_maker_orders = my_maker_orders.drain().filter_map(|(uuid, order)| {
+                let min_amount: BigDecimal = "0.00777".parse().unwrap();
+                let min_amount: MmNumber = min_amount.into();
+                if order.available_amount() <= min_amount && !order.has_ongoing_matches() {
+                    delete_my_maker_order(&ctx, &order);
+                    my_cancelled_orders.insert(uuid, order);
+                    None
+                } else {
+                    Some((uuid, order))
+                }
+            }).collect();
+        }
 
         if now_ms() > last_price_broadcast + 10000 {
             if let Err(e) = broadcast_my_maker_orders(&ctx) {
@@ -471,22 +469,23 @@ pub fn lp_ordermatch_loop(ctx: MmArc) {
             last_price_broadcast = now_ms();
         }
 
-        let mut orderbook = unwrap!(ordermatch_ctx.orderbook.lock());
-        *orderbook = orderbook.drain().filter_map(|((base, rel), mut pair_orderbook)| {
-            pair_orderbook = pair_orderbook.drain().filter_map(|(pubkey, order)| if now_ms() / 1000 > order.timestamp + 30 {
-                None
-            } else {
-                Some((pubkey, order))
+        {
+            let mut orderbook = unwrap!(ordermatch_ctx.orderbook.lock());
+            *orderbook = orderbook.drain().filter_map(|((base, rel), mut pair_orderbook)| {
+                pair_orderbook = pair_orderbook.drain().filter_map(|(pubkey, order)| if now_ms() / 1000 > order.timestamp + 30 {
+                    None
+                } else {
+                    Some((pubkey, order))
+                }).collect();
+                if pair_orderbook.is_empty() {
+                    None
+                } else {
+                    Some(((base, rel), pair_orderbook))
+                }
             }).collect();
-            if pair_orderbook.is_empty() {
-                None
-            } else {
-                Some(((base, rel), pair_orderbook))
-            }
-        }).collect();
-        drop(orderbook);
+        }
 
-        thread::sleep(Duration::from_secs(1));
+        Timer::sleep(0.777).await;
     }
 }
 
@@ -1278,12 +1277,12 @@ fn save_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
 
 #[cfg_attr(test, mockable)]
 fn delete_my_maker_order(ctx: &MmArc, order: &MakerOrder) {
-    unwrap!(fs::remove_file(my_maker_order_file_path(ctx, &order.uuid)));
+    unwrap!(remove_file(&my_maker_order_file_path(ctx, &order.uuid)));
 }
 
 #[cfg_attr(test, mockable)]
 fn delete_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
-    unwrap!(fs::remove_file(my_taker_order_file_path(ctx, &order.request.uuid)));
+    unwrap!(remove_file(&my_taker_order_file_path(ctx, &order.request.uuid)));
 }
 
 pub fn orders_kick_start(ctx: &MmArc) -> Result<HashSet<String>, String> {
