@@ -249,7 +249,12 @@ impl MmCtx {
             return Ok (bits256 {bytes: *array_ref! (public, 1, 32)})
         }
         ERR! ("Public ID is not yet available")
-}   }
+    }
+
+    pub fn gui (&self) -> Option<&str> {
+        self.conf["gui"].as_str()
+    }
+}
 impl Default for MmCtx {
     fn default() -> Self {
         Self::with_log_state (LogState::in_memory())
