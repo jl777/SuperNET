@@ -12,6 +12,7 @@
 
 #[cfg(test)]
 mod docker_tests {
+    use common::block_on;
     use coins::{FoundSwapTxSpend, MarketCoinOps, SwapOps};
     use coins::utxo::{coin_daemon_data_dir, dhash160, utxo_coin_from_conf_and_request, zcash_params_path, UtxoCoin};
     use coins::utxo::rpc_clients::{UtxoRpcClientEnum, UtxoRpcClientOps};
