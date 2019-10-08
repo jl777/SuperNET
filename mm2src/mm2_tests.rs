@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
 use bigdecimal::BigDecimal;
-use common::slurp;
+use common::{block_on, slurp};
 #[cfg(not(feature = "native"))]
 use common::call_back;
 use common::executor::Timer;
@@ -11,7 +11,6 @@ use common::for_tests::mm_dump;
 use common::privkey::key_pair_from_seed;
 #[cfg(not(feature = "native"))]
 use common::mm_ctx::MmArc;
-use futures::executor::block_on;
 use http::StatusCode;
 #[cfg(feature = "native")]
 use hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN;

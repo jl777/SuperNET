@@ -100,11 +100,12 @@ use serde_bencode::de::from_bytes as bdecode;
 use serde_bytes::ByteBuf;
 use serde_json::{self as json, Value as Json};
 use std::collections::HashMap;
-use std::env::{self, args, var, VarError};
+use std::env::{self, args};
 use std::fmt::{self, Write as FmtWrite};
 use std::fs;
 use std::fs::DirEntry;
 use std::ffi::{CStr, OsStr};
+use std::future::Future as Future03;
 use std::intrinsics::copy;
 use std::io::{Write};
 use std::mem::{forget, size_of, uninitialized, zeroed};
@@ -828,8 +829,6 @@ pub mod executor {
     }
 
     #[test] fn test_timer() {
-        use futures::executor::block_on;
-
         let started = now_float();
         let ti = Timer::sleep (0.2);
         let delta = now_float() - started;
@@ -1116,6 +1115,43 @@ pub fn lp_queue_command (ctx: &mm_ctx::MmArc, msg: String) -> Result<(), String>
     Ok(())
 }
 
+pub fn var (name: &str) -> Result<String, String> {
+    /// Obtains the environment variable `name` from the host, copying it into `rbuf`.  
+    /// Returns the length of the value copied to `rbuf` or -1 if there was an error.
+    #[cfg(not(feature = "native"))]
+    extern "C" {pub fn host_env (name: *const c_char, nameˡ: i32, rbuf: *mut c_char, rcap: i32) -> i32;}
+
+    #[cfg(feature = "native")] {
+        match std::env::var (name) {
+            Ok (v) => Ok (v),
+            Err (_err) => ERR! ("No {}", name)
+        }
+    }
+
+    #[cfg(not(feature = "native"))] {  // Get the environment variable from the host.
+        use std::mem::zeroed;
+        use std::str::from_utf8;
+
+        let mut buf: [u8; 4096] = unsafe {zeroed()};
+        let rc = unsafe {host_env (
+            name.as_ptr() as *const c_char, name.len() as i32,
+            buf.as_mut_ptr() as *mut c_char, buf.len() as i32)};
+        if rc <= 0 {return ERR! ("No {}", name)}
+        let s = try_s! (from_utf8 (&buf[0 .. rc as usize]));
+        Ok (String::from (s))
+    }
+}
+
+pub fn block_on<F> (f: F) -> F::Output where F: Future03 {
+    if var ("TRACE_BLOCK_ON") .map (|v| v == "true") == Ok (true) {
+        let mut trace = String::with_capacity (4096);
+        stack_trace (&mut stack_trace_frame, &mut |l| trace.push_str (l));
+        log! ("block_on at\n" (trace));
+    }
+
+    futures::executor::block_on (f)
+}
+
 #[cfg(feature = "native")]
 pub use gstuff::{now_ms, now_float};
 #[cfg(not(feature = "native"))]
@@ -1195,8 +1231,7 @@ pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), 
 fn open_log_file() -> Option<fs::File> {
     let mm_log = match var ("MM_LOG") {
         Ok (v) => v,
-        Err (VarError::NotPresent) => return None,
-        Err (err) => {println! ("open_log_file] Error getting MM_LOG: {}", err); return None}
+        Err (_) => return None
     };
 
     // For security reasons we want the log path to always end with ".log".

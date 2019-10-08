@@ -25,14 +25,13 @@ use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{bits256, json_dir_entries, now_ms, new_uuid,
+use common::{block_on, bits256, json_dir_entries, now_ms, new_uuid,
   remove_file, rpc_response, rpc_err_response, write, HyRes};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
 use futures01::future::{Either, Future};
 use futures::compat::Future01CompatExt;
-use futures::executor::block_on;
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
