@@ -252,7 +252,7 @@ fn test_wait_for_payment_spend_timeout_native() {
     static mut OUTPUT_SPEND_CALLED: bool = false;
     NativeClient::find_output_spend.mock_safe(|_, _, _, _| {
         unsafe { OUTPUT_SPEND_CALLED = true };
-        MockResult::Return(Ok(None))
+        MockResult::Return(Box::new(futures01::future::ok(None)))
     });
     let client = UtxoRpcClientEnum::Native(NativeClient(Arc::new(client)));
     let coin = utxo_coin_for_test(client, None);
@@ -260,7 +260,7 @@ fn test_wait_for_payment_spend_timeout_native() {
     let wait_until = now_ms() / 1000 - 1;
     let from_block = 1000;
 
-    assert!(coin.wait_for_tx_spend(&transaction, wait_until, from_block).is_err());
+    assert!(coin.wait_for_tx_spend(&transaction, wait_until, from_block).wait().is_err());
     assert!(unsafe { OUTPUT_SPEND_CALLED });
 }
 
@@ -269,7 +269,7 @@ fn test_wait_for_payment_spend_timeout_electrum() {
     static mut OUTPUT_SPEND_CALLED: bool = false;
     ElectrumClient::find_output_spend.mock_safe(|_, _, _, _| {
         unsafe { OUTPUT_SPEND_CALLED = true };
-        MockResult::Return(Ok(None))
+        MockResult::Return(Box::new(futures01::future::ok(None)))
     });
 
     let client = ElectrumClientImpl::new();
@@ -279,7 +279,7 @@ fn test_wait_for_payment_spend_timeout_electrum() {
     let wait_until = now_ms() / 1000 - 1;
     let from_block = 1000;
 
-    assert!(coin.wait_for_tx_spend(&transaction, wait_until, from_block).is_err());
+    assert!(coin.wait_for_tx_spend(&transaction, wait_until, from_block).wait().is_err());
     assert!(unsafe { OUTPUT_SPEND_CALLED });
 }
 

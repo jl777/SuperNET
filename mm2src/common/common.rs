@@ -11,8 +11,7 @@
 //!                   binary
 
 #![feature(non_ascii_idents, integer_atomics, panic_info_message)]
-#![feature(async_await, async_closure)]
-#![feature(duration_float)]
+#![feature(async_closure)]
 #![feature(weak_counts)]
 #![feature(hash_raw_entry)]
 
@@ -118,6 +117,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::str;
 use uuid::Uuid;
+#[cfg(feature = "w-bindgen")]
+use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "native")]
 #[allow(dead_code,non_upper_case_globals,non_camel_case_types,non_snake_case)]
@@ -1116,9 +1117,10 @@ pub fn lp_queue_command (ctx: &mm_ctx::MmArc, msg: String) -> Result<(), String>
 }
 
 pub fn var (name: &str) -> Result<String, String> {
-    /// Obtains the environment variable `name` from the host, copying it into `rbuf`.  
+    /// Obtains the environment variable `name` from the host, copying it into `rbuf`.
     /// Returns the length of the value copied to `rbuf` or -1 if there was an error.
     #[cfg(not(feature = "native"))]
+    #[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
     extern "C" {pub fn host_env (name: *const c_char, nameˡ: i32, rbuf: *mut c_char, rcap: i32) -> i32;}
 
     #[cfg(feature = "native")] {
@@ -1156,6 +1158,7 @@ pub fn block_on<F> (f: F) -> F::Output where F: Future03 {
 pub use gstuff::{now_ms, now_float};
 #[cfg(not(feature = "native"))]
 pub fn now_ms() -> u64 {
+    #[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
     extern "C" {pub fn date_now() -> f64;}
     unsafe {date_now() as u64}
 }
@@ -1177,6 +1180,7 @@ pub fn temp_dir() -> PathBuf {env::temp_dir()}
 
 #[cfg(not(feature = "native"))]
 pub fn temp_dir() -> PathBuf {
+    #[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
     extern "C" {pub fn temp_dir (rbuf: *mut c_char, rcap: i32) -> i32;}
     let mut buf: [u8; 4096] = unsafe {zeroed()};
     let rc = unsafe {temp_dir (buf.as_mut_ptr() as *mut c_char, buf.len() as i32)};
@@ -1195,6 +1199,7 @@ pub fn remove_file (path: &dyn AsRef<Path>) -> Result<(), String> {
 pub fn remove_file (path: &dyn AsRef<Path>) -> Result<(), String> {
     use std::os::raw::c_char;
 
+    #[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
     extern "C" {pub fn host_rm (ptr: *const c_char, len: i32) -> i32;}
 
     let path = try_s! (path.as_ref().to_str().ok_or ("Non-unicode path"));
@@ -1213,6 +1218,7 @@ pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), 
 pub fn write (path: &dyn AsRef<Path>, contents: &dyn AsRef<[u8]>) -> Result<(), String> {
     use std::os::raw::c_char;
 
+    #[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
     extern "C" {pub fn host_write (path_p: *const c_char, path_l: i32, ptr: *const c_char, len: i32) -> i32;}
 
     let path = try_s! (path.as_ref().to_str().ok_or ("Non-unicode path"));
@@ -1273,7 +1279,7 @@ static mut PROCESS_LOG_TAIL: [u8; 0x10000] = make_tail();
 #[cfg(not(feature = "native"))]
 static TAIL_CUR: Atomic<usize> = Atomic::new (0);
 
-#[cfg(not(feature = "native"))]
+#[cfg(all(not(feature = "native"), not(feature = "w-bindgen")))]
 pub fn writeln (line: &str) {
     use std::ffi::CString;
 
@@ -1290,6 +1296,12 @@ pub fn writeln (line: &str) {
             if TAIL_CUR.compare_exchange (posⁱ, posⱼ, Ordering::Relaxed, Ordering::Relaxed) .is_ok() {
                 for (cur, ix) in (posˢ..posⱼ) .zip (0..line.len()) {PROCESS_LOG_TAIL[cur] = line.as_bytes()[ix]}
 }   }   }   }
+
+#[cfg(all(not(feature = "native"), feature = "w-bindgen"))]
+pub fn writeln (line: &str) {
+    use web_sys::console;
+    console::log_1(&line.into());
+}
 
 /// Set up a panic hook that prints the panic location and the message.  
 /// (The default Rust handler doesn't have the means to print the message.
@@ -1311,15 +1323,17 @@ pub fn small_rng() -> SmallRng {
     SmallRng::seed_from_u64 (now_ms())
 }
 
-/// Ask the WASM host to send HTTP request to the native helpers.  
+/// Ask the WASM host to send HTTP request to the native helpers.
 /// Returns request ID used to wait for the reply.
 #[cfg(not(feature = "native"))]
+#[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
 extern "C" {fn http_helper_if (
     helper: *const u8, helper_len: i32,
     payload: *const u8, payload_len: i32,
     timeout_ms: i32) -> i32;}
 
 #[cfg(not(feature = "native"))]
+#[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
 extern "C" {
     /// Check with the WASM host to see if the given HTTP request is ready.
     /// 
@@ -1414,8 +1428,8 @@ pub struct BroadcastP2pMessageArgs {
 
 /// Invokes callback `cb_id` in the WASM host, passing a `(ptr,len)` string to it.
 #[cfg(not(feature = "native"))]
+#[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
 extern "C" {pub fn call_back (cb_id: i32, ptr: *const c_char, len: i32);}
-
 pub mod for_tests;
 
 fn without_trailing_zeroes (decimal: &str, dot: usize) -> &str {
