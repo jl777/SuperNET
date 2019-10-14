@@ -285,7 +285,7 @@ fn test_wait_for_payment_spend_timeout_electrum() {
 
 #[test]
 fn test_search_for_swap_tx_spend_electrum_was_spent() {
-    let client = electrum_client_for_test(&["test1.cipig.net:10025", "test2.cipig.net:10025", "test3.cipig.net:10025"]);
+    let client = electrum_client_for_test(&["test1.cipig.net:10025", "test2.cipig.net:10025"]);
     let coin = utxo_coin_for_test(client, Some("spice describe gravity federal blast come thank unfair canal monkey style afraid"));
     // raw tx bytes of https://etomic.explorer.dexstats.info/tx/c514b3163d66636ebc3574817cb5853d5ab39886183de71ffedf5c5768570a6b
     let payment_tx_bytes = unwrap!(hex::decode("0400008085202f89013ac014d4926c8b435f7a5c58f38975d14f1aba597b1eef2dfdc093457678eb83010000006a47304402204ddb9b10237a1267a02426d923528213ad1e0b62d45be7d9629e2909f099d90c02205eecadecf6fd09cb8465170eb878c5d54e563f067b64e23c418da0f6519ca354012102031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3ffffffff02809698000000000017a914bbd726b74f27b476d5d932e903b5893fd4e8bd2187acdaaa87010000001976a91405aab5342166f8594baf17a7d9bef5d56744332788ac2771515d000000000000000000000000000000"));
@@ -307,7 +307,7 @@ fn test_search_for_swap_tx_spend_electrum_was_spent() {
 
 #[test]
 fn test_search_for_swap_tx_spend_electrum_was_refunded() {
-    let client = electrum_client_for_test(&["test1.cipig.net:10025", "test2.cipig.net:10025", "test3.cipig.net:10025"]);
+    let client = electrum_client_for_test(&["test1.cipig.net:10025", "test2.cipig.net:10025"]);
     let coin = utxo_coin_for_test(client, Some("spice describe gravity federal blast come thank unfair canal monkey style afraid"));
 
     // raw tx bytes of https://etomic.explorer.dexstats.info/tx/c9a47cc6e80a98355cd4e69d436eae6783cbee5991756caa6e64a0743442fa96
@@ -511,7 +511,7 @@ fn test_withdraw_impl_sat_per_kb_fee_max() {
 #[test]
 fn test_utxo_lock() {
     // send several transactions concurrently to check that they are not using same inputs
-    let client = electrum_client_for_test(&["test1.cipig.net:10025", "test2.cipig.net:10025", "test3.cipig.net:10025"]);
+    let client = electrum_client_for_test(&["test1.cipig.net:10025", "test2.cipig.net:10025"]);
     let coin = utxo_coin_for_test(client, None);
     let output = TransactionOutput {
         value: 1000000,
