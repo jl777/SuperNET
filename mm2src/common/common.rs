@@ -92,6 +92,7 @@ use http::{Request, Response, StatusCode, HeaderMap};
 use http::header::{HeaderValue, CONTENT_TYPE};
 #[cfg(feature = "native")]
 use libc::{malloc, free};
+use parking_lot::{Mutex as PaMutex, MutexGuard as PaMutexGuard};
 use rand::{SeedableRng, rngs::SmallRng};
 use serde::{ser, de};
 #[cfg(not(feature = "native"))]
@@ -107,13 +108,13 @@ use std::ffi::{CStr, OsStr};
 use std::future::Future as Future03;
 use std::intrinsics::copy;
 use std::io::{Write};
-use std::mem::{forget, size_of, uninitialized, zeroed};
+use std::mem::{forget, size_of, zeroed};
 use std::os::raw::{c_char, c_void};
 use std::path::{Path, PathBuf};
 #[cfg(not(feature = "native"))]
 use std::pin::Pin;
 use std::ptr::{null_mut, read_volatile};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::str;
 use uuid::Uuid;
@@ -291,14 +292,14 @@ impl<'a> Drop for RaiiRm<'a> {
 }
 
 /// Using a static buffer in order to minimize the chance of heap and stack allocations in the signal handler.
-fn trace_buf() -> MutexGuard<'static, [u8; 256]> {
-    lazy_static! {static ref TRACE_BUF: Mutex<[u8; 256]> = Mutex::new (unsafe {uninitialized()});}
-    unwrap! (TRACE_BUF.lock())
+fn trace_buf() -> PaMutexGuard<'static, [u8; 256]> {
+    static TRACE_BUF: PaMutex<[u8; 256]> = PaMutex::new ([0; 256]);
+    TRACE_BUF.lock()
 }
 
-fn trace_name_buf() -> MutexGuard<'static, [u8; 128]> {
-    lazy_static! {static ref TRACE_NAME_BUF: Mutex<[u8; 128]> = Mutex::new (unsafe {uninitialized()});}
-    unwrap! (TRACE_NAME_BUF.lock())
+fn trace_name_buf() -> PaMutexGuard<'static, [u8; 128]> {
+    static TRACE_NAME_BUF: PaMutex<[u8; 128]> = PaMutex::new ([0; 128]);
+    TRACE_NAME_BUF.lock()
 }
 
 /// Formats a stack frame.

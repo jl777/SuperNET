@@ -37,7 +37,7 @@ use futures::future::{FutureExt, TryFutureExt};
 use futures::try_join;
 use futures_timer::Delay;
 use gstuff::slurp;
-use http::{Response, StatusCode};
+use http::StatusCode;
 // #[cfg(test)]
 use mocktopus::macros::*;
 use rand::seq::SliceRandom;

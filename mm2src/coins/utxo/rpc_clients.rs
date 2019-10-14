@@ -35,11 +35,13 @@ use serde_json::{self as json, Value as Json};
 use serialization::{serialize, deserialize};
 use sha2::{Sha256, Digest};
 use std::collections::hash_map::{HashMap, Entry};
-use std::{io, thread};
+use std::io;
 use std::fmt::Debug;
 use std::cmp::Ordering;
 use std::net::{ToSocketAddrs, SocketAddr};
 use std::ops::Deref;
+#[cfg(not(feature = "native"))]
+use std::os::raw::c_char;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::time::{Duration};
@@ -668,9 +670,6 @@ extern "C" {
     fn host_electrum_request (ri: i32, ptr: *const c_char, len: i32) -> i32;
     fn host_electrum_reply (ri: i32, id: i32, rbuf: *mut c_char, rcap: i32) -> i32;
 }
-
-use std::os::raw::c_char;
-use futures::task::SpawnExt;
 
 #[cfg(not(feature = "native"))]
 pub fn spawn_electrum (req: &ElectrumRpcRequest) -> Result<ElectrumConnection, String> {

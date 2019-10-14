@@ -18,7 +18,7 @@ use serde_json::{self as json, Value as Json};
 use std::collections::btree_map::BTreeMap;
 use std::collections::hash_map::{Entry, HashMap, RawEntryMut};
 use std::io::{Cursor, Read, Write};
-use std::mem::uninitialized;
+use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
@@ -538,7 +538,7 @@ fn process_pulled_maps (ctx: &MmArc, status: StatusCode, _headers: HeaderMap, bo
 
     let compressed = &body[9..];
     // NB: We know the payload will not be bigger than this.
-    let mut buf: [u8; 65536] = unsafe {uninitialized()};
+    let mut buf: [u8; 65536] = unsafe {MaybeUninit::uninit().assume_init()};
     let dctx = unsafe {ZSTD_createDCtx()};  // TODO: Reuse a locked one.
     let len = unsafe {ZSTD_decompress_usingDDict (
         dctx,

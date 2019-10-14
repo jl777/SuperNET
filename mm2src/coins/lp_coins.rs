@@ -92,7 +92,7 @@ impl Deref for TransactionEnum {
             &TransactionEnum::SignedEthTx (ref t) => t,
 }   }   }
 
-pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String>>;
+pub type TransactionFut = Box<dyn Future<Item=TransactionEnum, Error=String> + Send>;
 
 #[derive(Debug, PartialEq)]
 pub enum FoundSwapTxSpend {

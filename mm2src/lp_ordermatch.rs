@@ -363,12 +363,11 @@ fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
     retval
 }
 
-fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
-    let alice_loop_thread = thread::Builder::new().name("taker_loop".into()).spawn({
-        let ctx = ctx.clone();
+fn lp_connected_alice(ctx: MmArc, taker_match: TakerMatch) { // alice
+    spawn (async move {
         let mut maker = bits256::default();
         maker.bytes = taker_match.reserved.sender_pubkey.0;
-        let taker_coin = match block_on (lp_coinfind (&ctx, &taker_match.reserved.rel)) {
+        let taker_coin = match lp_coinfind (&ctx, &taker_match.reserved.rel) .await {
             Ok(Some(c)) => c,
             Ok(None) => {
                 log!("Coin " (taker_match.reserved.rel) " is not found/enabled");
@@ -380,7 +379,7 @@ fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
             }
         };
 
-        let maker_coin = match block_on (lp_coinfind (&ctx, &taker_match.reserved.base)) {
+        let maker_coin = match lp_coinfind (&ctx, &taker_match.reserved.base) .await {
             Ok(Some(c)) => c,
             Ok(None) => {
                 log!("Coin " (taker_match.reserved.base) " is not found/enabled");
@@ -397,27 +396,20 @@ fn lp_connected_alice(ctx: &MmArc, taker_match: &TakerMatch) { // alice
         let maker_amount = taker_match.reserved.get_base_amount().into();
         let taker_amount = taker_match.reserved.get_rel_amount().into();
         let uuid = taker_match.reserved.taker_order_uuid.to_string();
-        move || {
-            log!("Entering the taker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
-            let taker_swap = TakerSwap::new(
-                ctx,
-                maker.into(),
-                maker_coin,
-                taker_coin,
-                maker_amount,
-                taker_amount,
-                my_persistent_pub,
-                uuid,
-            );
-            block_on(run_taker_swap(taker_swap, None));
-        }
+
+        log!("Entering the taker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
+        let taker_swap = TakerSwap::new(
+            ctx,
+            maker.into(),
+            maker_coin,
+            taker_coin,
+            maker_amount,
+            taker_amount,
+            my_persistent_pub,
+            uuid,
+        );
+        run_taker_swap(taker_swap, None).await
     });
-    match alice_loop_thread {
-        Ok(_) => (),
-        Err(e) => {
-            log!({ "Got error trying to start taker loop {}", e });
-        }
-    }
 }
 
 pub async fn lp_ordermatch_loop(ctx: MmArc) {
@@ -565,10 +557,7 @@ pub fn lp_trade_command(
                 }
             };
             // alice
-            lp_connected_alice(
-                &ctx,
-                order_match,
-            );
+            lp_connected_alice(ctx.clone(), order_match.clone());
             // remove the matched order immediately
             delete_my_taker_order(&ctx, &my_order_entry.get());
             my_order_entry.remove();

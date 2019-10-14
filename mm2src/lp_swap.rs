@@ -183,7 +183,7 @@ pub trait AtomicSwap: Send + Sync {
 }
 
 struct SwapsContext {
-    running_swaps: Mutex<Vec<Weak<RwLock<dyn AtomicSwap>>>>,
+    running_swaps: Mutex<Vec<Weak<dyn AtomicSwap>>>,
 }
 
 impl SwapsContext {
@@ -210,7 +210,7 @@ pub fn get_locked_amount(ctx: &MmArc, coin: &str) -> BigDecimal {
         |total, swap| {
             match swap.upgrade() {
                 Some(swap) => {
-                    let locked = unwrap!(swap.read()).locked_amount();
+                    let locked = swap.locked_amount();
                     if locked.coin == coin {
                         total + &locked.amount
                     } else {
@@ -236,8 +236,8 @@ fn get_locked_amount_by_other_swaps(ctx: &MmArc, except_uuid: &str, coin: &str) 
         |total, swap| {
             match swap.upgrade() {
                 Some(swap) => {
-                    let locked = unwrap!(swap.read()).locked_amount();
-                    if locked.coin == coin && unwrap!(swap.read()).uuid() != except_uuid {
+                    let locked = swap.locked_amount();
+                    if locked.coin == coin && swap.uuid() != except_uuid {
                         total + &locked.amount
                     } else {
                         total
@@ -256,7 +256,6 @@ pub fn active_swaps_using_coin(ctx: &MmArc, coin: &str) -> Result<Vec<Uuid>, Str
     for swap in swaps.iter() {
         match swap.upgrade() {
             Some(swap) => {
-                let swap = try_s!(swap.read());
                 if swap.maker_coin() == coin || swap.taker_coin() == coin {
                     uuids.push(try_s!(swap.uuid().parse()))
                 }

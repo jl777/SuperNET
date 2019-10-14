@@ -68,7 +68,6 @@ use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl
 use super::{CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeInfo,
             Transaction, TransactionEnum, TransactionFut, TransactionDetails, WithdrawFee, WithdrawRequest};
 use crate::utxo::rpc_clients::{NativeClientImpl, UtxoRpcClientOps, ElectrumRpcRequest};
-use futures::AsyncReadExt;
 
 #[cfg(test)]
 pub mod utxo_tests;
