@@ -1392,7 +1392,7 @@ pub async fn helperᶜ (helper: &'static str, args: Vec<u8>) -> Result<Vec<u8>, 
     impl std::future::Future for HelperReply {
         type Output = Result<Vec<u8>, String>;
         fn poll (self: Pin<&mut Self>, cx: &mut Context) -> Poll03<Self::Output> {
-            let mut buf: [u8; 65535] = unsafe {uninitialized()};
+            let mut buf: [u8; 65535] = unsafe {std::mem::MaybeUninit::uninit().assume_init()};
             let rlen = unsafe {http_helper_check (self.helper_request_id, buf.as_mut_ptr(), buf.len() as i32)};
             if rlen < -1 {  // Response is larger than capacity.
                 return Poll03::Ready (ERR! ("Helper result is too large ({})", rlen))

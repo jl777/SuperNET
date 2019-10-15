@@ -255,13 +255,13 @@ macro_rules! run {
 #[cfg(windows)]
 fn windows_requirements() {
     use std::ffi::OsString;
-    use std::mem::uninitialized;
+    use std::mem::MaybeUninit;
     use std::os::windows::ffi::OsStringExt;
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724373(v=vs.85).aspx
     use winapi::um::sysinfoapi::GetSystemDirectoryW;
 
     let system = {
-        let mut buf: [u16; 1024] = unsafe { uninitialized() };
+        let mut buf: [u16; 1024] = unsafe { MaybeUninit::uninit().assume_init() };
         let len = unsafe { GetSystemDirectoryW(buf.as_mut_ptr(), (buf.len() - 1) as u32) };
         if len <= 0 {
             panic!("!GetSystemDirectoryW")

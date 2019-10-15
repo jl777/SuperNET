@@ -793,7 +793,7 @@ pub extern fn electrum_replied (ri: i32, id: i32) {
 async fn electrum_request_multi (client: ElectrumClient, request: JsonRpcRequest)
 -> Result<JsonRpcResponse, String> {
     use futures::future::{select, Either};
-    use std::mem::uninitialized;
+    use std::mem::MaybeUninit;
     use std::os::raw::c_char;
     use std::str::from_utf8;
 
@@ -815,7 +815,7 @@ async fn electrum_request_multi (client: ElectrumClient, request: JsonRpcRequest
             Either::Right ((_t, _r)) => {log! ("Electrum " (connection.ri) " timeout"); continue}
         };
 
-        let mut buf: [u8; 131072] = unsafe {uninitialized()};
+        let mut buf: [u8; 131072] = unsafe {MaybeUninit::uninit().assume_init()};
         let rc = unsafe {host_electrum_reply (connection.ri, id, buf.as_mut_ptr() as *mut c_char, buf.len() as i32)};
         if rc <= 0 {log! ("!host_electrum_reply: " (rc)); continue}  // Skip to the next connection.
         let res = try_s! (from_utf8 (&buf[0 .. rc as usize]));
