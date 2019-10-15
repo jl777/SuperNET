@@ -691,7 +691,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     let freeᵐ = sys.get_free_memory() as usize;
     epintln! ([=totalᵐ] ", " [=freeᵐ]);
     // NB: Under QEMU the logical is lower than the physical.
-    let processes = 4
+    let processes = 16
         .min(freeᵐ / 333 * 1024)
         .min(num_cpus::get_physical())
         .min(num_cpus::get());
