@@ -693,7 +693,6 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     // NB: Under QEMU the logical is lower than the physical.
     let processes = 16
         .min(freeᵐ / 333 * 1024)
-        .min(num_cpus::get_physical())
         .min(num_cpus::get());
 
     // This version of the build doesn't compile Boost separately
@@ -957,9 +956,9 @@ fn main() {
         return;
     }
 
-    rerun_if_changed("iguana/exchanges/*.c");
-    rerun_if_changed("crypto777/*.c");
-    rerun_if_changed("crypto777/jpeg/*.c");
+    rerun_if_changed("iguana/exchanges/CMakeLists.txt");
+    rerun_if_changed("iguana/exchanges/LP_include.h");
+    rerun_if_changed("iguana/exchanges/mm.c");
     println!("cargo:rerun-if-changed={}", path2s(rabs("CMakeLists.txt")));
 
     // NB: Using `rerun-if-env-changed` disables the default dependency heuristics.
