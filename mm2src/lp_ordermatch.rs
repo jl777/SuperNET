@@ -462,6 +462,8 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
         }
 
         {
+            // remove "timed out" orders from orderbook
+            // ones that didn't receive an update for 30 seconds or more
             let mut orderbook = unwrap!(ordermatch_ctx.orderbook.lock());
             *orderbook = orderbook.drain().filter_map(|((base, rel), mut pair_orderbook)| {
                 pair_orderbook = pair_orderbook.drain().filter_map(|(pubkey, order)| if now_ms() / 1000 > order.timestamp + 30 {
@@ -811,17 +813,7 @@ struct PricePingRequest {
 }
 
 impl PricePingRequest {
-    async fn new(ctx: &MmArc, order: &MakerOrder) -> Result<PricePingRequest, String> {
-        let base_coin = match try_s!(lp_coinfind(ctx, &order.base).await) {
-            Some(coin) => coin,
-            None => return ERR!("Base coin {} is not found", order.base),
-        };
-
-        let _rel_coin = match try_s!(lp_coinfind(ctx, &order.rel).await) {
-            Some(coin) => coin,
-            None => return ERR!("Rel coin {} is not found", order.rel),
-        };
-
+    fn new(ctx: &MmArc, order: &MakerOrder, balance: BigDecimal) -> Result<PricePingRequest, String> {
         let public_id = try_s!(ctx.public_id());
 
         let price64 = (&order.price * BigDecimal::from(100000000)).to_u64().unwrap();
@@ -840,7 +832,7 @@ impl PricePingRequest {
         let available_amount: BigRational = order.available_amount().into();
         let min_amount = BigRational::new(777.into(), 100000.into());
         let max_volume = if available_amount > min_amount {
-            let my_balance = from_dec_to_ratio(try_s!(base_coin.my_balance().compat().await));
+            let my_balance = from_dec_to_ratio(balance);
             if available_amount <= my_balance && available_amount > BigRational::from_integer(0.into()) {
                 available_amount
             } else {
@@ -1028,19 +1020,49 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
 pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(ctx));
     let my_orders = try_s!(ordermatch_ctx.my_maker_orders.lock()).clone();
-
-    for (_, order) in my_orders.iter() {
-        let ping = match PricePingRequest::new(ctx, order).await {
-            Ok(p) => p,
-            Err(e) => {
-                ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));
-                continue;
+    for (_, order) in my_orders {
+        let base_coin = match try_s!(lp_coinfind(ctx, &order.base).await) {
+            Some(coin) => coin,
+            None => {
+                ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], "base coin is not active yet");
+                continue
             },
         };
 
-        if let Err(e) = lp_send_price_ping(&ping, ctx) {
-            ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], &format! ("ping request send failed {}", e));
-            continue;
+        let _rel_coin = match try_s!(lp_coinfind(ctx, &order.rel).await) {
+            Some(coin) => coin,
+            None => {
+                ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], "rel coin is not active yet");
+                continue
+            },
+        };
+
+        let balance = match base_coin.my_balance().compat().await {
+            Ok(b) => b,
+            Err(e) => {
+                ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], &format! ("failed to get balance of base coin: {}", e));
+                continue;
+            }
+        };
+
+        if balance >= "0.00777".parse().unwrap() {
+            let ping = match PricePingRequest::new(ctx, &order, balance) {
+                Ok(p) => p,
+                Err(e) => {
+                    ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], &format!("ping request creation failed {}", e));
+                    continue;
+                },
+            };
+
+            if let Err(e) = lp_send_price_ping(&ping, ctx) {
+                ctx.log.log("", &[&"broadcast_my_maker_orders", &order.base, &order.rel], &format!("ping request send failed {}", e));
+                continue;
+            }
+        } else {
+            // cancel the order if available balance is lower than "0.00777"
+            try_s!(ordermatch_ctx.my_maker_orders.lock()).remove(&order.uuid);
+            delete_my_maker_order(ctx, &order);
+            try_s!(ordermatch_ctx.my_cancelled_orders.lock()).insert(order.uuid, order);
         }
     }
     // the difference of cancelled orders from maker orders that we broadcast the cancel request only once
@@ -1050,7 +1072,7 @@ pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
         // TODO cancel means setting the volume to 0 as of now, should refactor
         order.max_base_vol = 0.into();
         order.max_base_vol_rat = BigRational::from_integer(0.into());
-        let ping = match PricePingRequest::new(ctx, &order).await {
+        let ping = match PricePingRequest::new(ctx, &order, 0.into()) {
             Ok(p) => p,
             Err(e) => {
                 ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));

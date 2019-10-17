@@ -190,7 +190,7 @@ mod docker_tests {
             .arg("cp")
             .arg(format!("{}:/data/node_0/{}.conf", container.id(), ticker))
             .arg(&conf_path)
-            .spawn()
+            .status()
             .expect("Failed to execute docker command");
         let timeout = now_ms() + 3000;
         loop {
@@ -399,6 +399,17 @@ mod docker_tests {
         log!("orderbook " (unwrap!(json::to_string(&bob_orderbook))));
         let asks = bob_orderbook["asks"].as_array().unwrap();
         assert_eq!(asks.len(), 0, "MYCOIN/MYCOIN1 orderbook must have exactly 0 asks");
+
+        log!("Get my orders");
+        let rc = unwrap! (block_on (mm_bob.rpc (json! ({
+            "userpass": mm_bob.userpass,
+            "method": "my_orders",
+        }))));
+        assert!(rc.0.is_success(), "!my_orders: {}", rc.1);
+        let orders: Json = unwrap!(json::from_str(&rc.1));
+        log!("my_orders " (unwrap!(json::to_string(&orders))));
+        assert!(unwrap!(orders["result"]["maker_orders"].as_object()).is_empty(), "maker_orders must be empty");
+
         unwrap!(block_on(mm_bob.stop()));
     }
 
