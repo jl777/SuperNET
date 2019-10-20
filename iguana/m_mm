@@ -1,16 +1,14 @@
+#!/bin/bash
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; ./m_LP; cd ../iguana
 
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	echo "Linux"
-	# Default is dynamic nanomsg for linux using this script
-	nanomsg_lib="-lnanomsg"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-	# Mac OSX
-	echo "Mac OSX"
-	# on osx this script generates static libnanomsg and uses it to compile static marketmaker binary
+nanomsg_lib="-lnanomsg"
+
+# Build static libnanomsg on macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
 	./build_static_nanomsg.sh
 	nanomsg_lib="../OSlibs/osx/$(uname -m)/libnanomsg-static.a"
 fi
 
-gcc -g -o marketmaker -I../crypto777 exchanges/mm.c ../crypto777/cJSON.c mini-gmp.c groestl.c segwit_addr.c secp256k1.o ../agents/libcrypto777.a $nanomsg_lib -lcurl -lpthread  -lm
+rm marketmaker
+gcc -g -o marketmaker -DNOTETOMIC -I../crypto777 exchanges/mm.c ../crypto777/cJSON.c mini-gmp.c keccak.c groestl.c segwit_addr.c secp256k1.o ../agents/libcrypto777.a $nanomsg_lib -lcurl -lpthread  -lm -lsodium

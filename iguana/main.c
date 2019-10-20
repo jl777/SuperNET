@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -891,7 +891,7 @@ uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,b
 cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t showprivs)
 {
     uint8_t rmd160[20],pub[33]; uint64_t nxt64bits; bits256 pubkey;
-    char str2[41],wifbuf[64],pbuf[65],addr[64],str[128],coinwif[16]; cJSON *retjson; struct iguana_info *coin,*tmp;
+    char str2[41],wifbuf[64],pbuf[65],addr[64],str[128],coinwif[16],*paddr = 0; cJSON *retjson; struct iguana_info *coin,*tmp;
     pubkey = acct777_pubkey(privkey);
     nxt64bits = acct777_nxt64bits(pubkey);
     retjson = cJSON_CreateObject();
@@ -910,7 +910,12 @@ cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t
     {
         if ( coin != 0 && coin->symbol[0] != 0 )
         {
-            if ( bitcoin_address(addr,coin->chain->pubtype,pub,33) != 0 )
+			if (strcmp(coin->chain->symbol, "HUSH") == 0)
+				paddr = bitcoin_address_ex(coin->chain->symbol, addr, 0x1c, coin->chain->pubtype, pub, 33);
+			else
+				paddr = bitcoin_address(addr, coin->chain->pubtype, pub, 33);
+
+            if ( paddr != 0 )
             {
                 jaddstr(retjson,coin->symbol,addr);
                 sprintf(coinwif,"%swif",coin->symbol);
@@ -2157,9 +2162,11 @@ void komodo_REVS_merge(char *str,char *str2)
     getchar();
 }
 
+int32_t komodo_initjson(char *fname);
+
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0,ismainnet = 1, do_OStests = 0; struct supernet_info *myinfo;
+    int32_t usessl = 0,ismainnet = 1, do_OStests = 0; struct supernet_info *myinfo; char *elected = "elected";
     if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( IGUANA_BIGENDIAN == 0 )
@@ -2192,7 +2199,6 @@ void iguana_main(void *arg)
     iguana_Qinit();
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
-    dex_init(myinfo);
     myinfo->psockport = 30000;
     if ( arg != 0 )
     {
@@ -2206,18 +2212,33 @@ void iguana_main(void *arg)
             iguana_notarystats(totals,1);
             exit(0);
         }
-        else if ( strcmp((char *)arg,"notary") == 0 )
-        {
-            myinfo->rpcport = IGUANA_NOTARYPORT;
-            myinfo->IAMNOTARY = 1;
-            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
-        }
         else if ( strncmp((char *)arg,"-port=",6) == 0 )
         {
             myinfo->rpcport = atoi(&((char *)arg)[6]);
             printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
         }
+        else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
+        {
+            if ( strcmp((char *)arg,"notary_nosplit") == 0 )
+                myinfo->nosplit = 1;
+            myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->IAMNOTARY = 1;
+            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+        }
+        else
+        {
+            myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->IAMNOTARY = 1;
+            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+            elected = (char *)arg;
+        }
     }
+    if ( komodo_initjson(elected) < 0 )
+    {
+        printf("didnt find any elected notaries JSON in (%s)\n",elected);
+        exit(-1);
+    }
+    dex_init(myinfo);
 #ifdef IGUANA_OSTESTS
     do_OStests = 1;
 #endif
@@ -2231,6 +2252,7 @@ void iguana_main(void *arg)
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->pending_mutex);
+    portable_mutex_init(&myinfo->MoM_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
     portable_mutex_init(&myinfo->psockmutex);
@@ -2258,12 +2280,12 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
-            char *retstr;
+            /*char *retstr;
             if ( (retstr= _dex_getnotaries(myinfo,"KMD")) != 0 )
             {
                 printf("INITIAL NOTARIES.(%s)\n",retstr);
                 free(retstr);
-            }
+            }*/
         }
     }
     else

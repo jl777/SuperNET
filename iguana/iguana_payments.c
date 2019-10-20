@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -462,6 +462,9 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                         printf("no spendscriptstr %d.(%s)\n",i,jprint(array,0));
                         continue;
                     }
+                    if ( strlen(spendscriptstr) != 50 || strncmp("76a914",spendscriptstr,6) != 0 || strcmp("88ac",&spendscriptstr[50-4]) != 0 )
+                        continue;
+//printf("utxo.(%s)\n",jprint(item,0));
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
                     value = jdouble(item,"amount") * SATOSHIDEN;
                     if ( (0) && jdouble(item,"interest") != 0 )
@@ -519,7 +522,12 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                     printf("illegal destination address.(%s)\n",changeaddr);
                     return(0);
                 }
-                bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+
+				if (strcmp(coin->symbol, "HUSH") == 0)
+					bitcoin_addr2rmd160_ex(coin->symbol, 0x1c, &addrtype, rmd160, changeaddr);
+				else 
+					bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                 bitcoin_txoutput(txobj,spendscript,spendlen,change);
                 if ( opreturn != 0 )

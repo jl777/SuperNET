@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -26,7 +26,7 @@ char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight
 {
     int32_t i,n,height,maxconf=1<<30; int64_t balance = 0; char params[512],*curlstr; cJSON *array,*retjson,*curljson;
     retjson = cJSON_CreateObject();
-    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",params)) != 0 )
+    if ( (curlstr= bitcoind_getinfo(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->getinfostr)) != 0 )
     {
         if ( (curljson= cJSON_Parse(curlstr)) != 0 )
         {
@@ -181,7 +181,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
 {
     struct iguana_txblock txdata; struct iguana_block B; int32_t len,starti,h,num=0,loadheight,hexlen,datalen,n,i,numtxids,flag=0,j,height=-1; cJSON *curljson,*blockjson,*txids; char *bitstr,*curlstr,params[128],str[65]; struct iguana_msghdr H; struct iguana_msgblock *msg; uint8_t *blockspace,revbits[4],bitsbuf[4]; bits256 hash2,checkhash2;
     strcpy(params,"[]");
-    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",params)) != 0 )
+    if ( (curlstr= bitcoind_getinfo(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->getinfostr)) != 0 )
     {
         if ( (curljson= cJSON_Parse(curlstr)) != 0 )
         {
@@ -584,16 +584,27 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     *completedp = 0;
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
-    bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    txfee = (coin->txfee + duplicates*coin->txfee*2);
-    if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
+    
+	if (strcmp(coin->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(coin->chain->symbol, changeaddr, 0x1c, coin->chain->pubtype, myinfo->persistent_pubkey33, 33);
+	else
+		bitcoin_address(changeaddr, coin->chain->pubtype, myinfo->persistent_pubkey33, 33);
+
+    txfee = (coin->txfee + duplicates*coin->txfee/10);
+	uint32_t txversion = 1; // txversion = 1 for non-overwintered and non-sapling coins
+	if (coin->sapling != 0)
+		txversion = 4;
+    if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,txversion,0)) != 0 )
     {
-        if ( duplicates <= 0 )
+		if ( duplicates <= 0 )
             duplicates = 1;
         spendlen = bitcoin_pubkeyspend(script,0,pubkey33);
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
+		//printf("JSON: %s\n", cJSON_Print(txobj));
+		//printf("addresses: %s\n", cJSON_Print(addresses));
         rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,txfee,addresses,0,0,0,0,"127.0.0.1",0,1);
+		//printf("JSON: %s\n", cJSON_Print(txobj));
         if ( strcmp(coin->chain->symbol,"BTC") == 0 && cJSON_GetArraySize(vins) > duplicates/2 )
         {
             free(rawtx);
@@ -602,14 +613,14 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
             free_json(vins);
             return(rawtx);
         }
-        printf("%s splitfunds tx.(%s) vins.(%s)\n",coin->symbol,rawtx,jprint(vins,0));
+        //printf("%s splitfunds tx.(%s) vins.(%s)\n",coin->symbol,rawtx,jprint(vins,0));
         if ( signedtxidp != 0 )
         {
             if ( (signedtx= iguana_signrawtx(myinfo,coin,0,signedtxidp,completedp,vins,rawtx,0,0)) != 0 )
             {
                 if ( *completedp != 0 )
                 {
-                    printf("splitfunds signedtx.(%s)\n",signedtx);
+                    printf("splitfunds %s signedtx.(%s)\n",coin->symbol,signedtx);
                     if ( sendflag != 0 )
                         iguana_sendrawtransaction(myinfo,coin,signedtx);
                     free(rawtx);

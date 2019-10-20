@@ -255,3 +255,16 @@ Execute the OSX deploy script:
 ./osx_deploy.sh
 ```
 The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
+
+# Cmake build of marketmaker with linked etomic lib for ETH/ERC20 atomic swaps:
+1. `make sure g++-7 ln to /usr/bin/g++`
+1. `cd ~/SuperNET`
+1. `git checkout dev`
+1. `git submodule update --init --recursive`
+1. `mkdir build`
+1. `cd build`
+1. `cmake ..`
+1. `cmake --build . --target marketmaker-testnet` for Ropsten Ethereum testnet.
+1. `cmake --build . --target marketmaker-mainnet` for Ethereum mainnet.
+1. `cd build/iguana/exchanges`
+1. `./marketmaker-testnet` or `./marketmaker-mainnet`

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #define HAVE_STRUCT_TIMESPEC
 #include <ctype.h>
 #include <fcntl.h>
@@ -285,6 +286,8 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag);
 int64_t iguana_memfree(struct OS_memspace *mem,void *ptr,int32_t size);
 
 // generic functions
+bits256 iguana_merkle(char *symbol,bits256 *tree,int32_t txn_count);
+bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t len);
 int32_t unhex(char c);
 void touppercase(char *str);
 uint32_t is_ipaddr(char *str);
@@ -422,6 +425,7 @@ bits256 bits256_sha256(bits256 data);
 void bits256_rmd160(uint8_t rmd160[20],bits256 data);
 void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
 double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep);
+char *bitcoind_RPCnew(void *curl_handle,char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

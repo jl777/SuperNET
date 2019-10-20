@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -121,7 +121,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     return(0);
 }
 
-int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
+int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin)
 {
     int32_t haveutxo,completed,minutxo,n; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
     if ( strcmp("BTC",coin->symbol) == 0 )
@@ -129,16 +129,21 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         minutxo = 199;
         n = 10;
     }
+    else if ( strcmp("KMD",coin->symbol) == 0 )
+    {
+        minutxo = 512;
+        n = 256;
+    }
     else
     {
         minutxo = 49;
-        n = 10;
+        n = 50;
     }
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr,srccoin)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
-        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
+        if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
             if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
             {
@@ -157,12 +162,112 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 uint32_t Numallocated;
 
+int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txidp,char *symbol,bits256 *MoMp,uint32_t *MoMdepthp,uint8_t *opret,int32_t opretlen,struct komodo_ccdataMoMoM
+ *mdata)
+{
+    int32_t i,c,len,offset = 0; uint8_t op;
+    symbol[0] = 0;
+    memset(blockhashp->bytes,0,sizeof(*blockhashp));
+    memset(heightp,0,sizeof(*heightp));
+    memset(txidp->bytes,0,sizeof(*txidp));
+    memset(MoMp->bytes,0,sizeof(*MoMp));
+    memset(MoMdepthp,0,sizeof(*MoMdepthp));
+    memset(mdata,0,sizeof(*mdata));
+    if ( opret[offset++] == 0x6a )
+    {
+        if ( (op= opret[offset++]) < 0x4c )
+            len = op;
+        else if ( op == 0x4c )
+            len = opret[offset++];
+        else if ( op == 0x4d )
+        {
+            len = opret[offset++];
+            len = len + ((int32_t)opret[offset++] << 8);
+        } else return(-1);
+        offset += iguana_rwbignum(0,&opret[offset],sizeof(*blockhashp),blockhashp->bytes);
+        offset += iguana_rwnum(0,&opret[offset],sizeof(*heightp),(uint32_t *)heightp);
+        offset += iguana_rwbignum(0,&opret[offset],sizeof(*txidp),txidp->bytes);
+        for (i=0; i<65; i++)
+        {
+            if ( (c= opret[offset++]) == 0 )
+            {
+                symbol[i] = 0;
+                break;
+            }
+            if ( offset > opretlen )
+                break;
+            symbol[i] = c;
+        }
+        if ( offset+sizeof(bits256)+sizeof(uint32_t) <= opretlen )
+        {
+            uint32_t CCid,k;
+            offset += iguana_rwbignum(0,&opret[offset],sizeof(*MoMp),MoMp->bytes);
+            offset += iguana_rwnum(0,&opret[offset],sizeof(*MoMdepthp),(uint32_t *)MoMdepthp);
+                // MoMoM, depth, numpairs, (notarization ht, MoMoM offset)
+            if ( offset+52 <= opretlen )
+            {
+                offset += iguana_rwnum(0,&opret[offset],sizeof(CCid),(uint8_t *)&CCid);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->kmdstarti);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->kmdendi);
+                offset += iguana_rwbignum(0,&opret[offset],sizeof(mdata->MoMoM),(uint8_t *)&mdata->MoMoM);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->MoMoMdepth);
+                offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->numpairs);
+                mdata->len += sizeof(mdata->MoMoM) + sizeof(uint32_t)*4;
+                if ( offset+mdata->numpairs*8 == opretlen )
+                {
+                    mdata->pairs = (struct komodo_ccdatapair *)calloc(mdata->numpairs,sizeof(*mdata->pairs));
+                    for (k=0; k<mdata->numpairs; k++)
+                    {
+                        offset += iguana_rwnum(0,&opret[offset],sizeof(int32_t),(uint8_t *)&mdata->pairs[k].notarization_height);
+                        offset += iguana_rwnum(0,&opret[offset],sizeof(uint32_t),(uint8_t *)&mdata->pairs[k].MoMoMoffset);
+                        mdata->len += sizeof(uint32_t) * 2;
+                    }
+                } else if ( mdata->numpairs > 0 )
+                    printf("offset.%d + %d*8 != opretlen.%d\n",offset,mdata->numpairs,opretlen);
+            }
+        }
+    }
+    return(-1);
+}
+
+bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
+{
+    bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
+    *MoMdepthp = 0;
+    memset(MoM.bytes,0,sizeof(MoM));
+    if ( dpow_smallopreturn(coin->symbol) != 0 ) // 80 byte OP_RETURN limit
+        return(MoM);
+    if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+    {
+        if ( (prevMoMheight= jint(infojson,"prevMoMheight")) >= 0 )
+        {
+            if ( prevMoMheight == 0 )
+                prevMoMheight = 1;
+            *MoMdepthp = (height - prevMoMheight);
+            //printf("%s ht.%d prevMoM.%d -> depth %d\n",coin->symbol,height,prevMoMheight,*MoMdepthp);
+            if ( *MoMdepthp > 1440*30 )
+                *MoMdepthp = 1440*30;
+            if ( *MoMdepthp > 0 && (MoMjson= issue_calcMoM(coin,height,*MoMdepthp)) != 0 )
+            {
+                MoM = jbits256(MoMjson,"MoM");
+                free_json(MoMjson);
+            }
+        }
+        free_json(infojson);
+    }
+    if ( bits256_nonz(MoM) == 0 )
+        *MoMdepthp = 0;
+    return(MoM);
+}
+
 void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
+    MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
     srcprevvout0 = destprevvout0 = -1;
     myinfo = ptrs[0];
@@ -174,27 +279,38 @@ void dpow_statemachinestart(void *ptr)
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
-    dpow_getchaintip(myinfo,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
+    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
+    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
         free(ptr);
         return;
     }
+    MoMdepth = 0;
+    memset(&MoM,0,sizeof(MoM));
     if ( strcmp(src->symbol,"KMD") == 0 )
         kmdheight = checkpoint.blockhash.height;
     else if ( strcmp(dest->symbol,"KMD") == 0 )
+    {
+        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
         kmdheight = dest->longestchain;
+    }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
+        //printf("allocate bp for %s ht.%d -> %s\n",src->symbol,checkpoint.blockhash.height,dest->symbol);
         Numallocated++;
+        bp->MoM = MoM;
+        bp->MoMdepth = MoMdepth;
+        bp->CCid = dp->fullCCid & 0xffff;
         bp->minsigs = minsigs;
         bp->duration = duration;
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->myind = -1;
+        for (i=0; i<sizeof(bp->notaries)/sizeof(*bp->notaries); i++)
+            bp->notaries[i].bestk = -1;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -248,8 +364,9 @@ void dpow_statemachinestart(void *ptr)
             }
             free_json(ratified);
         }
-        bp->bestk = -1;
+        bp->pendingbestk = bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
+        dp->currentbp = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
     }
@@ -268,8 +385,13 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     dp->ratifying += bp->isratify;
-    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
+
+	if (strcmp(src->chain->symbol, "HUSH") == 0)
+		bitcoin_address_ex(src->chain->symbol, srcaddr, 0x1c, src->chain->pubtype, dp->minerkey33, 33);
+	else
+		bitcoin_address(srcaddr, src->chain->pubtype, dp->minerkey33, 33);
+
+	bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
         ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
@@ -295,9 +417,9 @@ void dpow_statemachinestart(void *ptr)
             {
                 myind = i;
                 ep = &bp->notaries[myind];
-                for (j=0; j<33; j++)
-                    printf("%02x",dp->minerkey33[j]);
-                printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
+                //for (j=0; j<33; j++)
+                //    printf("%02x",dp->minerkey33[j]);
+                //printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
             }
         }
         if ( strcmp("KMD",src->symbol) == 0 )
@@ -310,9 +432,10 @@ void dpow_statemachinestart(void *ptr)
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             free(ptr);
             dp->ratifying -= bp->isratify;
+            exit(-1);
             return;
         }
-        printf("myind.%d\n",myind);
+        //printf("myind.%d\n",myind);
     }
     else
     {
@@ -322,7 +445,7 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     bp->myind = myind;
-    printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
+    printf("[%d] notarize %s->%s %s ht.%d minsigs.%d duration.%d start.%u MoM[%d] %s CCid.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp,bp->MoMdepth,bits256_str(str2,bp->MoM),bp->CCid);
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
         for (i=0; i<33; i++)
@@ -350,14 +473,14 @@ void dpow_statemachinestart(void *ptr)
     }
     else
     {
-        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
             dp->ratifying -= bp->isratify;
             free(ptr);
             return;
         }
-        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
             dp->ratifying -= bp->isratify;
@@ -371,7 +494,38 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestutxo = ep->dest.prev_hash;
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
+        else
+        {
+            bp->mysrcutxo = ep->src.prev_hash;
+            bp->mydestutxo = ep->dest.prev_hash;
+        }
     }
+    /*if ( strcmp(dp->symbol,"CHIPS") == 0 && myind == 0 )
+    {
+        char str[65];
+        printf(">>>>>>> CHIPS myind.%d %s/v%d\n",myind,bits256_str(str,bp->notaries[myind].src.prev_hash),bp->notaries[myind].src.prev_vout);
+        bp->desttxid = bp->notaries[myind].src.prev_hash;
+        dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
+    }*/
+
+    if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
+      {
+        // lock the dest utxo if destination coin is KMD.
+        if (dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout) != 0)
+          printf(">>>> LOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+        else
+          printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+      }
+
+      if ( ( strcmp("KMD",src->symbol) == 0 ) && (ep->src.prev_vout != -1) )
+      {
+        // lock the src coin selected utxo if the source coin is KMD.
+        if (dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
+          printf(">>>> LOCKED %s UTXO.(%s) vout.(%d\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+        else
+          printf("<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+      }
+
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
@@ -381,9 +535,9 @@ void dpow_statemachinestart(void *ptr)
     bp->myind = myind;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
-        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
-            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             free(ptr);
             return;
@@ -393,12 +547,14 @@ void dpow_statemachinestart(void *ptr)
     starttime = (uint32_t)time(NULL);
     if ( bp->isratify == 0 )
     {
-        //if ( (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime;
-        extralen = dpow_paxpending(extras,&bp->paxwdcrc);
+        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+            src_or_dest = 0;
+        else src_or_dest = 1;
+        extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
-    printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL));
+    printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld MoM[%d] %s\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL),bp->MoMdepth,bits256_str(str2,bp->MoM));
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
@@ -408,20 +564,22 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( bp->isratify == 0 )
         {
-            if ( myinfo->DPOWS[0].ratifying != 0 )
+            if ( myinfo->DPOWS[0]->ratifying != 0 )
             {
                 printf("break due to already ratifying\n");
                 break;
             }
-            extralen = dpow_paxpending(extras,&bp->paxwdcrc);
+            if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+                src_or_dest = 0;
+            else src_or_dest = 1;
+            extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        sleep(13);
-        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
             if ( bp->isratify == 0 )
             {
-                printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
         }
@@ -438,6 +596,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 printf("%s ht.%d %s got reorged to %s, abort notarization\n",bp->srccoin->symbol,bp->height,bits256_str(str,bp->hashmsg),bits256_str(str2,checkhash));
                 bp->state = 0xffffffff;
+                break;
             }
         }
         if ( bp->state != 0xffffffff )
@@ -455,12 +614,27 @@ void dpow_statemachinestart(void *ptr)
             printf("abort pending ratify\n");
             break;
         }
+        sleep(30);
     }
     printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
-    bp->state = 0xffffffff;
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
+
+    // unlock the dest utxo on KMD.
+    if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
+    {
+      if ( dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout) != 0 )
+        printf(">>>> UNLOCKED %s UTXO.(%s) vout.(%d)\n",dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+    }
+
+    // unlock the src selected utxo on KMD.
+    if ( ( strcmp("KMD",src->symbol) == 0 ) && (ep->src.prev_vout != -1) )
+    {
+      if ( dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout) != 0)
+        printf(">>>> UNLOCKED %s UTXO.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+    }
+
     // dp->blocks[bp->height] = 0;
+    bp->state = 0xffffffff;
     free(ptr);
 }
-
