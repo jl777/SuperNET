@@ -62,7 +62,6 @@ use rpc::v1::types::{Bytes as BytesJson, H160 as H160Json, H256 as H256Json, H26
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo, TransactionDetails, TransactionEnum};
 use common::{block_on, bits256, HyRes, MM_VERSION, now_ms, now_float, rpc_response};
 use common::executor::Timer;
-use common::log::{TagParam};
 use common::mm_ctx::{from_ctx, MmArc};
 use futures01::Future;
 use futures::future::Either;

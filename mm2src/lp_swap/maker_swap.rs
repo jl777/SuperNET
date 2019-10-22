@@ -223,14 +223,17 @@ impl MakerSwap {
         };
 
         let lock_duration = lp_atomic_locktime(self.maker_coin.ticker(), self.taker_coin.ticker());
-        #[cfg(feature = "native")]
-        let mut rng = rand::thread_rng();
-        // TODO small rng uses now_ms() as seed which is completely insecure to generate the secret
-        // for swap, we must consider refactoring
-        #[cfg(not(feature = "native"))]
-        let mut rng = common::small_rng();
 
-        let secret: [u8; 32] = rng.gen();
+        let secret: [u8; 32] = {
+            #[cfg(feature = "native")]
+            let mut rng = rand::thread_rng();
+            // TODO small rng uses now_ms() as seed which is completely insecure to generate the secret
+            // for swap, we must consider refactoring
+            #[cfg(not(feature = "native"))]
+            let mut rng = common::small_rng();
+
+            rng.gen()
+        };
         let started_at = now_ms() / 1000;
 
         let maker_coin_start_block = match self.maker_coin.current_block().compat().await {
@@ -408,12 +411,13 @@ impl MakerSwap {
             ));
         }
 
-        let transaction = match self.maker_coin.check_if_my_payment_sent(
+        let transaction_f = self.maker_coin.check_if_my_payment_sent(
             self.r().data.maker_payment_lock as u32,
             &*self.r().other_persistent_pub,
             &*dhash160(&self.r().data.secret.0),
             self.r().data.maker_coin_start_block,
-        ).compat().await {
+        ).compat();
+        let transaction = match transaction_f.await {
             Ok(res) => match res {
                 Some(tx) => tx,
                 None => {
@@ -515,29 +519,29 @@ impl MakerSwap {
         let wait_duration = self.r().data.lock_duration / 3;
         let wait_taker_payment = self.r().data.started_at + wait_duration;
 
-        let validated = self.taker_coin.validate_taker_payment(
+        let validated_f = self.taker_coin.validate_taker_payment(
             &unwrap!(self.r().taker_payment.clone()).tx_hex,
             self.taker_payment_lock.load(Ordering::Relaxed) as u32,
             &*self.r().other_persistent_pub,
             &*dhash160(&self.r().data.secret.0),
             self.taker_amount.clone(),
-        ).compat().await;
+        ).compat();
 
-        if let Err(e) = validated {
+        if let Err(e) = validated_f.await {
             return Ok((
                 Some(MakerSwapCommand::RefundMakerPayment),
                 vec![MakerSwapEvent::TakerPaymentValidateFailed(ERRL!("!taker_coin.validate_taker_payment: {}", e).into())]
             ))
         }
 
-        let wait = self.taker_coin.wait_for_confirmations(
+        let wait_f = self.taker_coin.wait_for_confirmations(
             &unwrap!(self.r().taker_payment.clone()).tx_hex,
             self.r().data.taker_payment_confirmations,
             wait_taker_payment,
             1,
-        ).compat().await;
+        ).compat();
 
-        if let Err(err) = wait {
+        if let Err(err) = wait_f.await {
             return Ok((
                 Some(MakerSwapCommand::RefundMakerPayment),
                 vec![MakerSwapEvent::TakerPaymentValidateFailed(ERRL!("!taker_coin.wait_for_confirmations: {}", err).into())]
@@ -930,7 +934,7 @@ pub async fn run_maker_swap(swap: MakerSwap, initial_command: Option<MakerSwapCo
     let ctx = swap.ctx.clone();
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
-    let swap_tags: &[&dyn TagParam] = &[&"swap", &("uuid", &uuid[..])];
+    macro_rules! swap_tags {() => {&[&"swap", &("uuid", &uuid[..])]}}
     let running_swap = Arc::new(swap);
     let weak_ref = Arc::downgrade(&running_swap);
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
@@ -945,7 +949,7 @@ pub async fn run_maker_swap(swap: MakerSwap, initial_command: Option<MakerSwapCo
                 event: event.clone(),
             };
             unwrap!(save_my_maker_swap_event(&ctx, &running_swap, to_save), "!save_my_maker_swap_event");
-            status.status(swap_tags, &event.status_str());
+            status.status(swap_tags!(), &event.status_str());
             unwrap!(running_swap.apply_event(event), "!apply_event");
         }
         match res.0 {

@@ -48,7 +48,6 @@ use std::collections::hash_map::{Entry, HashMap};
 use std::fs::DirEntry;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use uuid::Uuid;
 
 use crate::mm2::lp_swap::{dex_fee_amount, get_locked_amount, MakerSwap, run_maker_swap, run_taker_swap, TakerSwap};
@@ -303,33 +302,19 @@ impl OrdermatchContext {
     }
 }
 
-fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
-    let mut retval = -1;
-    let loop_thread = thread::Builder::new().name("maker_loop".into()).spawn({
-        let taker_coin = match block_on (lp_coinfind (&ctx, &maker_match.reserved.rel)) {
+fn lp_connect_start_bob(ctx: MmArc, maker_match: MakerMatch) {
+    spawn(async move {  // aka "maker_loop"
+        let taker_coin = match lp_coinfind(&ctx, &maker_match.reserved.rel).await {
             Ok(Some(c)) => c,
-            Ok(None) => {
-                log!("Coin " (maker_match.reserved.rel) " is not found/enabled");
-                return -1;
-            }
-            Err(e) => {
-                log!("!lp_coinfind(" (maker_match.reserved.rel) "): " (e));
-                return -1;
-            }
+            Ok(None) => {log!("Coin " (maker_match.reserved.rel) " is not found/enabled"); return},
+            Err(e) => {log!("!lp_coinfind(" (maker_match.reserved.rel) "): " (e)); return}
         };
 
-        let maker_coin = match block_on (lp_coinfind (&ctx, &maker_match.reserved.base)) {
+        let maker_coin = match lp_coinfind(&ctx, &maker_match.reserved.base).await {
             Ok(Some(c)) => c,
-            Ok(None) => {
-                log!("Coin " (maker_match.reserved.base) " is not found/enabled");
-                return -1;
-            }
-            Err(e) => {
-                log!("!lp_coinfind(" (maker_match.reserved.base) "): " (e));
-                return -1;
-            }
+            Ok(None) => {log!("Coin " (maker_match.reserved.base) " is not found/enabled"); return},
+            Err(e) => {log!("!lp_coinfind(" (maker_match.reserved.base) "): " (e)); return}
         };
-        let ctx = ctx.clone();
         let mut alice = bits256::default();
         alice.bytes = maker_match.request.sender_pubkey.0;
         let maker_amount = maker_match.reserved.get_base_amount().into();
@@ -337,34 +322,24 @@ fn lp_connect_start_bob(ctx: &MmArc, maker_match: &MakerMatch) -> i32 {
         let privkey = &ctx.secp256k1_key_pair().private().secret;
         let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&privkey[..], ChecksumType::DSHA256));
         let uuid = maker_match.request.uuid.to_string();
-        move || {
-            log!("Entering the maker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
-            let maker_swap = MakerSwap::new(
-                ctx,
-                alice.into(),
-                maker_coin,
-                taker_coin,
-                maker_amount,
-                taker_amount,
-                my_persistent_pub,
-                uuid,
-            );
-            block_on(run_maker_swap(maker_swap, None));
-        }
+
+        log!("Entering the maker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
+        let maker_swap = MakerSwap::new(
+            ctx.clone(),
+            alice.into(),
+            maker_coin,
+            taker_coin,
+            maker_amount,
+            taker_amount,
+            my_persistent_pub,
+            uuid,
+        );
+        run_maker_swap(maker_swap, None).await;
     });
-    match loop_thread {
-        Ok(_h) => {
-            retval = 0;
-        },
-        Err(e) => {
-            log!({ "Got error launching bob swap loop: {}", e });
-        }
-    }
-    retval
 }
 
-fn lp_connected_alice(ctx: MmArc, taker_match: TakerMatch) { // alice
-    spawn (async move {
+fn lp_connected_alice(ctx: MmArc, taker_match: TakerMatch) {
+    spawn (async move {  // aka "taker_loop"
         let mut maker = bits256::default();
         maker.bytes = taker_match.reserved.sender_pubkey.0;
         let taker_coin = match lp_coinfind (&ctx, &taker_match.reserved.rel) .await {
@@ -643,7 +618,7 @@ pub fn lp_trade_command(
             order_match.connect = Some(connect_msg);
             order_match.connected = Some(connected);
             my_order.started_swaps.push(order_match.request.uuid);
-            lp_connect_start_bob(&ctx, order_match);
+            lp_connect_start_bob(ctx.clone(), order_match.clone());
             save_my_maker_order(&ctx, &my_order);
         }
         return 1;
