@@ -20,7 +20,7 @@
 //
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
-use common::{block_on,  HyRes, now_ms, rpc_response, slurp_url, small_rng};
+use common::{block_on, now_ms, slurp_url, small_rng};
 use common::custom_futures::TimedAsyncMutex;
 use common::executor::Timer;
 use common::mm_ctx::{MmArc, MmWeak};
@@ -57,7 +57,7 @@ use std::time::Duration;
 use web3::{ self, Web3 };
 use web3::types::{Action as TraceAction, BlockId, BlockNumber, Bytes, CallRequest, FilterBuilder, Log, Transaction as Web3Transaction, TransactionId, H256, Trace, TraceFilterBuilder};
 
-use super::{CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeInfo,
+use super::{CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TradeInfo,
             TransactionFut, TransactionEnum, Transaction, TransactionDetails, WithdrawFee, WithdrawRequest};
 
 pub use ethcore_transaction::SignedTransaction as SignedEthTx;
@@ -1900,16 +1900,13 @@ impl MmCoin for EthCoin {
         unwrap!(self.history_sync_state.lock()).clone()
     }
 
-    fn get_trade_fee(&self) -> HyRes {
-        Box::new(self.get_gas_price().then(|res| {
-            let gas_price = try_h!(res);
+    fn get_trade_fee(&self) -> Box<dyn Future<Item=TradeFee, Error=String> + Send> {
+        Box::new(self.get_gas_price().and_then(|gas_price| {
             let fee = gas_price * U256::from(150000);
-            rpc_response(200, json!({
-                "result": {
-                    "coin": "ETH",
-                    "amount": try_h!(u256_to_big_decimal(fee, 18))
-                }
-            }).to_string())
+            Ok(TradeFee {
+                coin: "ETH".into(),
+                amount: try_s!(u256_to_big_decimal(fee, 18))
+            })
         }))
     }
 

@@ -15,7 +15,7 @@ default-run = "mm2"
 
 [features]
 native = [
-  "hyper", "tokio-core", "dirs", "docker_tests",
+  "hyper", "tokio-core", "dirs",
   "common/native", "peers/native", "coins/native", # "portfolio/native"
 ]
 w-bindgen = [
@@ -26,6 +26,13 @@ w-bindgen = [
 [[bin]]
 name = "mm2"
 path = "mm2src/mm2_bin.rs"
+test = false
+doctest = false
+bench = false
+
+[[bin]]
+name = "docker_tests"
+path = "mm2src/docker_tests.rs"
 
 [lib]
 name = "mm2"
@@ -69,7 +76,6 @@ crc = "1.8"
 crc32fast = { version = "1.2", features = ["std", "nightly"] }
 crossbeam = "0.7"
 dirs = { version = "1", optional = true }
-docker_tests = { path = "mm2src/docker_tests", optional = true }
 enum-primitive-derive = "0.1"
 fomat-macros = "0.2"
 futures01 = { version = "0.1", package = "futures" }
@@ -127,7 +133,10 @@ features = [
 optional = true
 
 [dev-dependencies]
+libsecp256k1 = "0.2.2"
 mocktopus = "0.7.0"
+rand4 = { version = "0.4", package = "rand" }
+testcontainers = { git = "https://github.com/artemii235/testcontainers-rs.git" }
 
 [workspace]
 members = [

@@ -5,7 +5,7 @@ use common::{block_on, slurp};
 #[cfg(not(feature = "native"))]
 use common::call_back;
 use common::executor::Timer;
-use common::for_tests::{enable_electrum, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt};
+use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt};
 #[cfg(feature = "native")]
 use common::for_tests::mm_dump;
 use common::privkey::key_pair_from_seed;
@@ -28,22 +28,6 @@ use super::lp_main;
 // TODO: Consider and/or try moving the integration tests into separate Rust files.
 // "Tests in your src files should be unit tests, and tests in tests/ should be integration-style tests."
 // - https://doc.rust-lang.org/cargo/guide/tests.html
-
-/// Asks MM to enable the given currency in native mode.  
-/// Returns the RPC reply containing the corresponding wallet address.
-async fn enable_native(mm: &MarketMakerIt, coin: &str, urls: Vec<&str>) -> Json {
-    let native = unwrap! (mm.rpc (json! ({
-        "userpass": mm.userpass,
-        "method": "enable",
-        "coin": coin,
-        "urls": urls,
-        // Dev chain swap contract address
-        "swap_contract_address": "0xa09ad3cd7e96586ebd05a2607ee56b56fb2db8fd",
-        "mm2": 1,
-    })) .await);
-    assert_eq! (native.0, StatusCode::OK, "'enable' failed: {}", native.1);
-    unwrap!(json::from_str(&native.1))
-}
 
 /// Enables BEER, PIZZA, ETOMIC and ETH.
 /// Returns the RPC replies containing the corresponding wallet addresses.
@@ -294,8 +278,7 @@ fn alice_can_see_the_active_order_after_connection() {
     log!("Bob orderbook " [bob_orderbook]);
     let asks = bob_orderbook["asks"].as_array().unwrap();
     assert!(asks.len() > 0, "Bob BEER/PIZZA asks are empty");
-    let vol = asks[0]["maxvolume"].as_f64().unwrap();
-    assert_eq!(vol, 0.9);
+    assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({
@@ -336,8 +319,7 @@ fn alice_can_see_the_active_order_after_connection() {
         log!("Alice orderbook " [alice_orderbook]);
         let asks = alice_orderbook["asks"].as_array().unwrap();
         assert_eq!(asks.len(), 1, "Alice BEER/PIZZA orderbook must have exactly 1 ask");
-        let vol = asks[0]["maxvolume"].as_f64().unwrap();
-        assert_eq!(vol, 0.9);
+        assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
         // orderbook must display valid Bob address
         let address = asks[0]["address"].as_str().unwrap();
         assert_eq!("RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD", address);
@@ -1460,8 +1442,7 @@ fn test_multiple_buy_sell_no_delay() {
     let asks = bob_orderbook["asks"].as_array().unwrap();
     assert!(bids.len() > 0, "BEER/PIZZA bids are empty");
     assert_eq!(0, asks.len(), "BEER/PIZZA asks are not empty");
-    let vol = bids[0]["maxvolume"].as_f64().unwrap();
-    assert_eq!(0.1, vol);
+    assert_eq!(Json::from("0.1"), bids[0]["maxvolume"]);
 
     log!("Get BEER/ETOMIC orderbook");
     let rc = unwrap! (block_on (mm.rpc (json! ({
@@ -1477,8 +1458,7 @@ fn test_multiple_buy_sell_no_delay() {
     let bids = bob_orderbook["bids"].as_array().unwrap();
     assert!(bids.len() > 0, "BEER/ETOMIC bids are empty");
     assert_eq!(asks.len(), 0, "BEER/ETOMIC asks are not empty");
-    let vol = bids[0]["maxvolume"].as_f64().unwrap();
-    assert_eq!(vol, 0.1);
+    assert_eq!(Json::from("0.1"), bids[0]["maxvolume"]);
 }
 
 /// https://github.com/artemii235/SuperNET/issues/398
