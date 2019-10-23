@@ -57,3 +57,4 @@ curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"KOIN\",\"agent\":\"iguana
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"ZEX\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"10000\",\"sendflag\":1,\"duplicates\":50}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"K64\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"10000\",\"sendflag\":1,\"duplicates\":50}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"THC\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"10000\",\"sendflag\":1,\"duplicates\":50}"
+curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"COMMOD\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"10000\",\"sendflag\":1,\"duplicates\":50}"
