@@ -1,15 +1,29 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use atomic::Atomic;
-use coins::{FoundSwapTxSpend};
+use bigdecimal::BigDecimal;
 use common::executor::Timer;
+use common::{bits256, now_ms, now_float, slurp, write, MM_VERSION};
+use common::mm_ctx::MmArc;
+use coins::{FoundSwapTxSpend, MmCoinEnum, TradeInfo, TransactionDetails};
 use crc::crc32;
 use futures::compat::Future01CompatExt;
+use futures::future::Either;
+use futures01::Future;
 use parking_lot::Mutex as PaMutex;
-use peers::{FixedValidator};
-use std::sync::{RwLockReadGuard, RwLockWriteGuard};
+use peers::FixedValidator;
+use primitives::hash::H264;
+use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
+use serde_json::{self as json};
+use serialization::{deserialize, serialize};
+use std::path::PathBuf;
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::atomic::Ordering;
-use super::*;
+use super::{broadcast_my_swap_status, dex_fee_amount, get_locked_amount_by_other_swaps,
+  lp_atomic_locktime, my_swap_file_path,
+  AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
+  SavedSwap, SwapsContext, SwapError, SwapNegotiationData,
+  BASIC_COMM_TIMEOUT};
 
 pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
     ctx.dbdir().join("SWAPS").join("STATS").join("TAKER").join(format!("{}.json", uuid))
@@ -46,8 +60,7 @@ fn save_my_taker_swap_event(ctx: &MmArc, swap: &TakerSwap, event: TakerSavedEven
         taker_swap.events.push(event);
         let new_swap = SavedSwap::Taker(taker_swap);
         let new_content = try_s!(json::to_vec(&new_swap));
-        let mut file = try_s!(File::create(path));
-        try_s!(file.write_all(&new_content));
+        try_s!(write(&path, &new_content));
         Ok(())
     } else {
         ERR!("Expected SavedSwap::Taker at {}, got {:?}", path.display(), swap)

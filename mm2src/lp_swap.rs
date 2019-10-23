@@ -58,23 +58,20 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use bigdecimal::BigDecimal;
-use coins::{lp_coinfind, MmCoinEnum, TradeInfo, TransactionDetails, TransactionEnum};
-use common::{block_on, bits256, now_ms, now_float, rpc_response, HyRes, MM_VERSION};
+use coins::{lp_coinfind, TransactionEnum};
+use common::{block_on, rpc_response, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
-use futures01::Future;
-use futures::future::Either;
 use gstuff::{slurp};
 use http::Response;
 use primitives::hash::{H160, H264};
-use rpc::v1::types::{Bytes as BytesJson, H160 as H160Json, H256 as H256Json, H264 as H264Json};
+use rpc::v1::types::{Bytes as BytesJson};
 use serde_json::{self as json, Value as Json};
-use serialization::{deserialize, serialize};
 use std::collections::{HashSet, HashMap};
 use std::ffi::OsStr;
 use std::fs::{File, DirEntry};
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, RwLock, Weak};
+use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use uuid::Uuid;
@@ -753,6 +750,7 @@ pub async fn import_swaps(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
 
 #[cfg(test)]
 mod lp_swap_tests {
+    use serialization::{deserialize, serialize};
     use super::*;
 
     #[test]
