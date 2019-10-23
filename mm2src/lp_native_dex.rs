@@ -1056,7 +1056,7 @@ fn fix_directories(ctx: &MmCtx) -> Result<(), String> {
     }
 
     let dbdir = ctx.dbdir();
-    writeable_dir! (dbdir.join ("SWAPS"));
+    writeable_dir! (dbdir.join ("SWAPS") .join ("MY"));
     writeable_dir! (dbdir.join ("ORDERS") .join ("MY") .join ("MAKER"));
     writeable_dir! (dbdir.join ("ORDERS") .join ("MY") .join ("TAKER"));
     Ok(())

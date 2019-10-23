@@ -1,16 +1,31 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use atomic::Atomic;
+use bigdecimal::BigDecimal;
 use bitcrypto::dhash160;
-use coins::FoundSwapTxSpend;
+use common::executor::Timer;
+use common::{bits256, now_ms, now_float, slurp, write, MM_VERSION};
+use common::mm_ctx::MmArc;
+use coins::{FoundSwapTxSpend, MmCoinEnum, TradeInfo, TransactionDetails};
 use crc::crc32;
 use futures::compat::Future01CompatExt;
+use futures::future::Either;
+use futures01::Future;
 use parking_lot::Mutex as PaMutex;
 use peers::FixedValidator;
+use primitives::hash::H264;
 use rand::Rng;
-use std::sync::{RwLockReadGuard, RwLockWriteGuard};
+use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
+use serde_json::{self as json};
+use serialization::{deserialize, serialize};
+use std::path::PathBuf;
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::atomic::Ordering;
-use super::*;
+use super::{broadcast_my_swap_status, dex_fee_amount, get_locked_amount_by_other_swaps,
+  lp_atomic_locktime, my_swap_file_path,
+  AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
+  SavedSwap, SwapsContext, SwapError, SwapNegotiationData,
+  BASIC_COMM_TIMEOUT};
 
 pub fn stats_maker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
     ctx.dbdir().join("SWAPS").join("STATS").join("MAKER").join(format!("{}.json", uuid))
@@ -46,8 +61,7 @@ fn save_my_maker_swap_event(ctx: &MmArc, swap: &MakerSwap, event: MakerSavedEven
         maker_swap.events.push(event);
         let new_swap = SavedSwap::Maker(maker_swap);
         let new_content = try_s!(json::to_vec(&new_swap));
-        let mut file = try_s!(File::create(path));
-        try_s!(file.write_all(&new_content));
+        try_s!(write(&path, &new_content));
         Ok(())
     } else {
         ERR!("Expected SavedSwap::Maker at {}, got {:?}", path.display(), swap)
@@ -374,7 +388,7 @@ impl MakerSwap {
                     ))
                 } else {
                     attempts += 1;
-                    thread::sleep(Duration::from_secs(10));
+                    Timer::sleep(10.).await;
                 }
             };
         };
@@ -390,7 +404,7 @@ impl MakerSwap {
                     ))
                 } else {
                     attempts += 1;
-                    thread::sleep(Duration::from_secs(10));
+                    Timer::sleep(10.).await;
                 }
             };
         };
@@ -452,7 +466,7 @@ impl MakerSwap {
                 Ok(details) => break details,
                 Err(e) => {
                     log!({"Error {} getting tx details of {:02x}", e, hash});
-                    thread::sleep(Duration::from_secs(30));
+                    Timer::sleep(30.).await;
                     continue;
                 }
             }
@@ -504,7 +518,7 @@ impl MakerSwap {
                     ))
                 } else {
                     attempts += 1;
-                    thread::sleep(Duration::from_secs(10));
+                    Timer::sleep(10.).await;
                 }
             };
         };
@@ -580,7 +594,7 @@ impl MakerSwap {
                 Ok(details) => break details,
                 Err(e) => {
                     log!({"Error {} getting tx details of {:02x}", e, hash});
-                    thread::sleep(Duration::from_secs(30));
+                    Timer::sleep(30.).await;
                     continue;
                 }
             }
@@ -595,7 +609,7 @@ impl MakerSwap {
         // have to wait for 1 hour more due as some coins have BIP113 activated so these will reject transactions with locktime == present time
         // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
         while now_ms() / 1000 < self.r().data.maker_payment_lock + 3700 {
-            std::thread::sleep(Duration::from_secs(10));
+            Timer::sleep(10.).await;
         }
 
         let spend_fut = self.maker_coin.send_maker_refunds_payment(
@@ -622,7 +636,7 @@ impl MakerSwap {
                 Ok(details) => break details,
                 Err(e) => {
                     log!({"Error {} getting tx details of {:02x}", e, hash});
-                    thread::sleep(Duration::from_secs(30));
+                    Timer::sleep(30.).await;
                     continue;
                 }
             }
@@ -1176,6 +1190,8 @@ mod maker_swap_tests {
 
     #[test]
     fn swap_must_not_lock_funds_by_default() {
+        use crate::mm2::lp_swap::get_locked_amount;
+
         let maker_saved_json = r#"{"error_events":["StartFailed","NegotiateFailed","TakerFeeValidateFailed","MakerPaymentTransactionFailed","MakerPaymentDataSendFailed","TakerPaymentValidateFailed","TakerPaymentSpendFailed","MakerPaymentRefunded","MakerPaymentRefundFailed"],"events":[{"event":{"data":{"lock_duration":7800,"maker_amount":"3.54932734","maker_coin":"KMD","maker_coin_start_block":1452970,"maker_payment_confirmations":1,"maker_payment_lock":1563759539,"my_persistent_pub":"031bb83b58ec130e28e0a6d5d2acf2eb01b0d3f1670e021d47d31db8a858219da8","secret":"0000000000000000000000000000000000000000000000000000000000000000","started_at":1563743939,"taker":"101ace6b08605b9424b0582b5cce044b70a3c8d8d10cb2965e039b0967ae92b9","taker_amount":"0.02004833998671660000000000","taker_coin":"ETH","taker_coin_start_block":8196380,"taker_payment_confirmations":1,"uuid":"3447b727-fe93-4357-8e5a-8cf2699b7e86"},"type":"Started"},"timestamp":1563743939211},{"event":{"data":{"taker_payment_locktime":1563751737,"taker_pubkey":"03101ace6b08605b9424b0582b5cce044b70a3c8d8d10cb2965e039b0967ae92b9"},"type":"Negotiated"},"timestamp":1563743979835},{"event":{"data":{"block_height":8196386,"coin":"ETH","fee_details":null,"from":["0x3D6a2f4Dd6085b34EeD6cBc2D3aaABd0D3B697C1"],"internal_id":"00","my_balance_change":0,"received_by_me":0,"spent_by_me":0,"timestamp":1563744052,"to":["0xD8997941Dd1346e9231118D5685d866294f59e5b"],"total_amount":0.0001,"tx_hash":"a59203eb2328827de00bed699a29389792906e4f39fdea145eb40dc6b3821bd6","tx_hex":"f8690284ee6b280082520894d8997941dd1346e9231118d5685d866294f59e5b865af3107a4000801ca0743d2b7c9fad65805d882179062012261be328d7628ae12ee08eff8d7657d993a07eecbd051f49d35279416778faa4664962726d516ce65e18755c9b9406a9c2fd"},"type":"TakerFeeValidated"},"timestamp":1563744052878}],"success_events":["Started","Negotiated","TakerFeeValidated","MakerPaymentSent","TakerPaymentReceived","TakerPaymentWaitConfirmStarted","TakerPaymentValidatedAndConfirmed","TakerPaymentSpent","Finished"],"uuid":"3447b727-fe93-4357-8e5a-8cf2699b7e86"}"#;
         let maker_saved_swap: MakerSavedSwap = unwrap!(json::from_str(maker_saved_json));
         let key_pair = unwrap!(key_pair_from_seed("spice describe gravity federal blast come thank unfair canal monkey style afraid"));
