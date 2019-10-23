@@ -5,8 +5,11 @@
 #include <io.h>
 
 #define _USE_W32_SOCKETS 1
-#define WIN32_LEAN_AND_MEAN
+
+#ifdef MM_WIN_BUILD
 #include <winsock2.h>
+#endif
+
 #include <windows.h>
 #define PTW32_STATIC_LIB
 #include "pthread.h"

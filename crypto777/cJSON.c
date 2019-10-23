@@ -669,7 +669,7 @@ void cJSON_Minify(char *json)
 
 // the following written by jl777
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -902,10 +902,10 @@ char *get_cJSON_fieldname(cJSON *obj)
 {
     if ( obj != 0 )
     {
-        if ( obj->child != 0 && obj->child->string != 0 )
-            return(obj->child->string);
-        else if ( obj->string != 0 )
+        if ( obj->string != 0 )
             return(obj->string);
+		if ( obj->child != 0 && obj->child->string != 0 )
+			return(obj->child->string);
     }
     return((char *)"<no cJSON string field>");
 }

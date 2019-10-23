@@ -53,7 +53,6 @@ iguana/help.json
 iguana/autoAPI.md
 
 iguana/basilisk.o-2ad8cb38
-=======
 *.pbxproj
 
 iguana/tmp/.tmpmarker
@@ -255,3 +254,21 @@ iguana/DB/UNSPENTS/.tmpmarker
 iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg_append.json
 
 iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg.json
+
+build
+
+.idea
+Release/*
+
+build_win64_release/*
+DB/*
+
+.env.client
+.env.seed
+etomic_build/client/DB
+etomic_build/client/stats.log
+etomic_build/client/unparsed.txt
+etomic_build/seed/DB
+etomic_build/seed/stats.log
+etomic_build/seed/unparsed.txt
+iguana/exchanges/manychains

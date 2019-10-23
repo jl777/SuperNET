@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -48,6 +48,10 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
         {
             myinfo->allcoins_being_added = 1;
             coin = mycalloc('C',1,sizeof(*coin));
+            strcpy(coin->getinfostr,"getinfo");
+            strcpy(coin->validateaddress,"validateaddress");
+            strcpy(coin->estimatefeestr,"estimatefee");
+            strcpy(coin->signtxstr,"signrawtransaction");
             coin->blockspacesize = IGUANA_MAXPACKETSIZE + 8192;
             coin->blockspace = calloc(1,coin->blockspacesize);
             if ( virtcoin != 0 || ((privatechain= jstr(argjson,"geckochain")) != 0 && privatechain[0] != 0) )
@@ -1062,6 +1066,7 @@ void iguana_nameset(char name[64],char *symbol,cJSON *json)
 
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin)
 {
+    // printf("[Decker] iguana_setcoin: [%s] %s", symbol, cJSON_Print(json));
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct supernet_info *myinfo = SuperNET_MYINFO(0);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64]; cJSON *peers;
@@ -1127,10 +1132,18 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = 1;//0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
-    if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
+	
+	coin->sapling = (strcmp("KMD",coin->symbol) == 0);
+	if (jobj(json, "sapling") != 0)
+	{
+		coin->sapling = juint(json, "sapling");
+		printf("[Decker] %s sapling = %d\n", symbol, coin->sapling);
+	}
+    
+	if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = IGUANA_DEFAULT_POLLTIMEOUT;
     coin->active = juint(json,"active");
     if ( (coin->minconfirms= minconfirms) == 0 )
@@ -1216,12 +1229,15 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
     return(0);
 }
 
+void iguana_optableinit();
+
 void iguana_coins(void *arg)
 {
     struct iguana_info **coins,*coin; char *jsonstr,*symbol; cJSON *array,*item,*json;
     int32_t i,n,maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles;
     int64_t maxrecvcache; uint64_t services; struct vin_info V; struct supernet_info *myinfo;
     myinfo = SuperNET_MYINFO(0);
+    iguana_optableinit();
     memset(&V,0,sizeof(V));
     if ( (jsonstr= arg) != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
     {

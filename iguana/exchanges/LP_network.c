@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -27,6 +27,7 @@ struct psock
 } *PSOCKS;
 
 uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT,Pcmdport = MAX_PSOCK_PORT;
+extern portable_mutex_t LP_commandQmutex;
 
 #ifdef FROM_JS
 
@@ -102,29 +103,30 @@ char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t por
     return(str);
 }
 
-/*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
-{
-    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
-    return(str);
-}
 
-int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
-{
-    int32_t sentbytes;
-    if ( sock < 0 )
-    {
-        printf("LP_send.(%s) to illegal socket\n",(char *)msg);
-        if ( freeflag != 0 )
-            free(msg);
-        return(-1);
-    }
-    if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
-        printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
-    else printf("SENT.(%s)\n",(char *)msg);
-    if ( freeflag != 0 )
-        free(msg);
-    return(sentbytes);
-}*/
+/*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
+ {
+ sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
+ return(str);
+ }
+ 
+ int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
+ {
+ int32_t sentbytes;
+ if ( sock < 0 )
+ {
+ printf("LP_send.(%s) to illegal socket\n",(char *)msg);
+ if ( freeflag != 0 )
+ free(msg);
+ return(-1);
+ }
+ if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
+ printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
+ else printf("SENT.(%s)\n",(char *)msg);
+ if ( freeflag != 0 )
+ free(msg);
+ return(sentbytes);
+ }*/
 
 int32_t LP_sockcheck(int32_t sock)
 {
@@ -267,22 +269,29 @@ int32_t LP_peerindsock(int32_t *peerindp)
 
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
-    int32_t maxind,peerind = 0; //sentbytes,
-    if ( sock0 < 0 && sock1 < 0 )
+    int32_t i,maxind,flag = 0,peerind = 0; //sentbytes,
+    for (i=0; i<2; i++)
     {
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (LP_rand() % maxind) + 1;
-        else peerind = 1;
-        sock0 = LP_peerindsock(&peerind);
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (LP_rand() % maxind) + 1;
-        else peerind = 1;
-        sock1 = LP_peerindsock(&peerind);
+        if ( sock0 < 0 && sock1 < 0 )
+        {
+            if ( (maxind= LP_numpeers()) > 0 )
+                peerind = (LP_rand() % maxind) + 1;
+            else peerind = 1;
+            sock0 = LP_peerindsock(&peerind);
+            if ( (maxind= LP_numpeers()) > 0 )
+                peerind = (LP_rand() % maxind) + 1;
+            else peerind = 1;
+            sock1 = LP_peerindsock(&peerind);
+            flag = 1;
+        }
+        if ( sock0 >= 0 )
+            _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
+        if ( sock1 >= 0 )
+            _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
+        if ( flag == 0 )
+            break;
+        sock0 = sock1 = -1;
     }
-    if ( sock0 >= 0 )
-        _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
-    if ( sock1 >= 0 )
-        _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
 }
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
@@ -310,11 +319,11 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
 #ifdef FROM_MARKETMAKER
     if ( (G.LP_IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #else
-    if ( (IAMLP == 0 || pubsock < 0 && strcmp(method,"psock") != 0 )
+    if ( (IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #endif
     {
         free(msg);
-//printf("broadcast %s\n",jstr(argjson,"method"));
+        //printf("broadcast %s\n",jstr(argjson,"method"));
         jdelete(argjson,"method");
         jaddstr(argjson,"method","broadcast");
         if ( jobj(argjson,"timestamp") == 0 )
@@ -332,7 +341,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     }
     free(msg);
 }
-
+    
 void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25519,char *msgstr)
 {
     uint8_t encoded[LP_ENCRYPTED_MAXSIZE],space[sizeof(encoded)],*msg,*nonce,*cipher; int32_t encrypted=0,msglen; uint32_t crc32=0; cJSON *argjson; char *methodstr,method[64],cipherstr[LP_ENCRYPTED_MAXSIZE*2+1];
@@ -388,7 +397,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
     if ( msgstr != 0 )
         free(msgstr);
 }
-
+    
 uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
     uint8_t *buf; int32_t sentbytes,offset=0,i;
@@ -413,18 +422,19 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     free(buf);
     return(nextbits);
 }
-
+    
 struct LP_queuedcommand
 {
     struct LP_queuedcommand *next,*prev;
     char **retstrp;
     int32_t responsesock,msglen,stats_JSONonly;
+    uint32_t queueid;
     char msg[];
 } *LP_commandQ;
     
 void LP_commandQ_loop(void *ctx)
 {
-    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson;
+    struct LP_queuedcommand *ptr,*tmp; int32_t len,size,nonz; char *retstr; cJSON *argjson,*retjson,*result;
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
@@ -434,16 +444,53 @@ void LP_commandQ_loop(void *ctx)
             portable_mutex_lock(&LP_commandQmutex);
             DL_DELETE(LP_commandQ,ptr);
             portable_mutex_unlock(&LP_commandQmutex);
-            if ( (argjson= cJSON_Parse(ptr->msg)) != 0 )
+            if ( ptr->stats_JSONonly < 0 ) // broadcast passthrough
             {
+                if ( ptr->responsesock >= 0  )
+                {
+                    if ( (result= cJSON_Parse(ptr->msg)) != 0  )
+                    {
+                        retjson = cJSON_CreateObject();
+                        jaddnum(retjson,"queueid",0);
+                        jadd(retjson,"result",result);
+                        retstr = jprint(retjson,1);
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
+                            printf("error sending event\n");
+                        free(retstr);
+                    }
+                }
+            }
+            else if ( (argjson= cJSON_Parse(ptr->msg)) != 0 )
+            {
+                //printf("deQ.(%s)\n",jprint(argjson,0));
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
-                    //printf("processed.(%s)\n",retstr);
-                    if ( ptr->responsesock >= 0  && (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
-                        printf("error sending result\n");
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
-                    else free(retstr);
+                    if ( 0 && ptr->queueid != 0 )
+                        printf("sock.%d queueid.%d processed.(%s) -> (%s)\n",ptr->responsesock,ptr->queueid,ptr->msg,retstr);
+                    if ( ptr->responsesock >= 0  )
+                    {
+                        if ( (result= cJSON_Parse(retstr)) != 0 && ptr->queueid != 0 )
+                        {
+                            free(retstr);
+                            retjson = cJSON_CreateObject();
+                            jaddnum(retjson,"queueid",ptr->queueid);
+                            jadd(retjson,"result",result);
+                            retstr = jprint(retjson,1);
+                            //printf("send (%s)\n",retstr);
+                        }
+                        len = (int32_t)strlen(retstr);
+                        if ( ptr->queueid == 0 )
+                            len++;
+                        if ( (size= nn_send(ptr->responsesock,retstr,len,0)) <= 0 )
+                            printf("error sending result\n");
+                    }
+                    if ( retstr != 0 )
+                    {
+                        if ( ptr->retstrp == 0 )
+                            free(retstr);
+                    }
                 }
                 else if ( ptr->retstrp != 0 )
                     (*ptr->retstrp) = clonestr("{\"error\":\"timeout\"}");
@@ -456,22 +503,23 @@ void LP_commandQ_loop(void *ctx)
     }
 }
     
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly)
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid)
 {
     struct LP_queuedcommand *ptr; int32_t msglen;
     msglen = (int32_t)strlen(buf) + 1;
     portable_mutex_lock(&LP_commandQmutex);
-    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr = calloc(1,sizeof(*ptr) + msglen + 1);
     if ( (ptr->retstrp= retstrp) != 0 )
         *retstrp = 0;
-    ptr->responsesock = responsesock;
     ptr->msglen = msglen;
+    ptr->queueid = queueid;
+    ptr->responsesock = responsesock;
     ptr->stats_JSONonly = stats_JSONonly;
     memcpy(ptr->msg,buf,msglen);
     DL_APPEND(LP_commandQ,ptr);
     portable_mutex_unlock(&LP_commandQmutex);
 }
-
+    
 void mynn_close(int32_t sock)
 {
     struct nn_pollfd pfd; int32_t n; void *buf;
@@ -490,7 +538,7 @@ void mynn_close(int32_t sock)
             nn_close(sock);
     }
 }
-        
+    
 void LP_psockloop(void *_ptr)
 {
     static struct nn_pollfd *pfds;
@@ -555,7 +603,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0);
+                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {
@@ -613,7 +661,9 @@ void LP_psockloop(void *_ptr)
                     } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            if ( IAMLP != 0 && sendsock < 0 )
+            if ( sendsock < 0 )
+                usleep(10000);
+            if ( 0 && IAMLP != 0 && sendsock < 0 )
             {
                 usleep(30000);
                 for (i=nonz=0; i<Numpsocks; i++)
@@ -650,7 +700,7 @@ void LP_psockloop(void *_ptr)
         } else usleep(100000);
     }
 }
-
+    
 void LP_psockadd(int32_t ispaired,int32_t publicsock,uint16_t recvport,int32_t sendsock,uint16_t sendport,char *subaddr,char *publicaddr,int32_t cmdchannel)
 {
     struct psock *ptr;
@@ -669,7 +719,7 @@ void LP_psockadd(int32_t ispaired,int32_t publicsock,uint16_t recvport,int32_t s
     ptr->lasttime = (uint32_t)time(NULL);
     portable_mutex_unlock(&LP_psockmutex);
 }
-
+    
 int32_t LP_psockmark(char *publicaddr)
 {
     int32_t i,retval = -1; struct psock *ptr;
@@ -688,7 +738,7 @@ int32_t LP_psockmark(char *publicaddr)
     portable_mutex_unlock(&LP_psockmutex);
     return(retval);
 }
-
+    
 char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
     int32_t i,pullsock,bindflag=(IAMLP != 0),pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
@@ -776,7 +826,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
     }
     return(0);
 }
-        
+    
 char *LP_psock(int32_t *pullsockp,char *ipaddr,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
     char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pubsock=-1;
@@ -816,28 +866,36 @@ char *LP_psock(int32_t *pullsockp,char *ipaddr,int32_t ispaired,int32_t cmdchann
         Pcmdport = MAX_PSOCK_PORT;
     return(clonestr("{\"error\",\"cant find psock ports\"}"));
 }
-
+    
 /*
  LP_pushaddr_get makes transparent the fact that most nodes cannot bind()!
  
  The idea is to create an LP node NN_PAIR sock that the LP node binds to and client node connects to. Additionally, the LP node creates an NN_PULL that other nodes can NN_PUSH to and returns this address in pushaddr/retval for the client node to register with. The desired result is that other than the initial LP node, all the other nodes do a normal NN_PUSH, requiring no change to the NN_PUSH/NN_PULL logic. Of course, the initial LP node needs to autoforward all packets from the public NN_PULL to the NN_PUB
  
-    similar to LP_pushaddr_get, create an NN_PAIR for DEX atomic data, can be assumed to have a max lifetime of 2*INSTANTDEX_LOCKTIME
+ similar to LP_pushaddr_get, create an NN_PAIR for DEX atomic data, can be assumed to have a max lifetime of 2*INSTANTDEX_LOCKTIME
  
  both are combined in LP_psock_get
-
-*/
-
+ 
+ */
+    
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel)
 {
-    char str[65],url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&pubkey=%s",destip,destport-1,ispaired,cmdchannel,bits256_str(str,G.LP_mypub25519));
+    char str[65],url[512],*retstr; bits256 pub25519; int32_t netid;
+#ifdef FROM_MARKETMAKER
+    pub25519 = G.LP_mypub25519;
+    netid = G.netid;
+#else
+    extern bits256 BET_mypub25519;
+    pub25519 = BET_mypub25519;
+    netid = 0;
+#endif
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&pubkey=%s&netid=%d",destip,destport-1,ispaired,cmdchannel,bits256_str(str,pub25519),netid);
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*10);
     printf("issue_LP_psock got (%s) from %s\n",retstr,url); // this is needed?!
     return(retstr);
 }
-
+    
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_t cmdchannel,char *ipaddr)
 {
     uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
@@ -867,7 +925,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_
     }
     return(0);
 }
-
+    
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
     int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -24,13 +24,16 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "../../crypto777/OS_portable.h"
+#define IGUANA_MAXRPCTHREADS 1
+
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
-char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly);
+char *stats_JSON(void *ctx,int32_t fastflag,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 extern uint32_t DOCKERFLAG;
+extern char LP_myipaddr[];
 
 char *stats_validmethods[] =
 {
@@ -330,11 +333,16 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 }
 
 extern void *bitcoin_ctx();
+extern int32_t IPC_ENDPOINT;
+extern portable_mutex_t LP_gcmutex,LP_commandmutex;
+extern struct rpcrequest_info *LP_garbage_collector;
+uint16_t RPC_port;
+static int32_t spawned,maxspawned;
 
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     static void *ctx;
-    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0; uint32_t queueid;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
@@ -515,7 +523,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 cJSON *retitem,*retarray = cJSON_CreateArray();
                 origargjson = argjson;
                 symbol[0] = 0;
-                for (i=0; i<n; i++)
+                for (i=0; i<n; i++) // array cmd path doesnt support event streaming
                 {
                     argjson = jitem(origargjson,i);
                     if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
@@ -529,7 +537,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                         //free(buf);
                         //while ( retstr == 0 )
                         //    usleep(10000);
-                        if ( (retstr= stats_JSON(ctx,"127.0.0.1",-1,argjson,remoteaddr,port)) != 0 )
+                        if ( (retstr= stats_JSON(ctx,0,"127.0.0.1",-1,argjson,remoteaddr,port)) != 0 )
                         {
                             if ( (retitem= cJSON_Parse(retstr)) != 0 )
                                 jaddi(retarray,retitem);
@@ -542,7 +550,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     //free(buf);
                     //while ( retstr == 0 )
                     //    usleep(10000);
-                    if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                    if ( (retstr= stats_JSON(ctx,0,LP_myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                     {
                         if ( (retitem= cJSON_Parse(retstr)) != 0 )
                             jaddi(retarray,retitem);
@@ -556,7 +564,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             else
             {
-                cJSON *arg; //char *buf;
+                cJSON *arg; char *buf,*method; int32_t fastflag;
                 if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
                 {
                     arg = jobj(argjson,"params");
@@ -566,24 +574,35 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 //printf("ARGJSON.(%s)\n",jprint(arg,0));
                 if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                     jaddstr(arg,"userpass",userpass);
+                if ( (fastflag= jint(arg,"fast")) == 0 )
+                {
+                    if ( (method= jstr(arg,"method")) != 0 && (strcmp(method,"orderbook") == 0 || strcmp(method,"portfolio") == 0) )
+                        fastflag = 1*0;
+                }
+                if ( fastflag == 0 )
+                    portable_mutex_lock(&LP_commandmutex);
 #ifdef FROM_MARKETMAKER
                 if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
                 {
-                    //buf = jprint(arg,0);
-                    //LP_queuecommand(&retstr,buf,-1,1);
-                    //free(buf);
-                    //while ( retstr == 0 )
-                    //    usleep(10000);
-                    retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
+                    if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
+                    {
+                        buf = jprint(arg,0);
+                        //printf("Q command\n");
+                        LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
+                        free(buf);
+                        retstr = clonestr("{\"result\":\"success\",\"status\":\"queued\"}");
+                    } else retstr = stats_JSON(ctx,jint(arg,"fast"),"127.0.0.1",-1,arg,remoteaddr,port);
                 } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
-                //buf = jprint(arg,0);
-                //LP_queuecommand(&retstr,buf,-1,1);
-                //free(buf);
-                //while ( retstr == 0 )
-                 //   usleep(10000);
-                retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+                if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
+                {
+                    buf = jprint(arg,0);
+                    LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
+                    free(buf);
+                } else retstr = stats_JSON(ctx,jint(arg,"fast"),LP_myipaddr,-1,arg,remoteaddr,port);
 #endif
+                if ( fastflag == 0 )
+                    portable_mutex_unlock(&LP_commandmutex);
             }
             free_json(argjson);
         }
@@ -623,13 +642,8 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
     return(recvlen);
 }
 
-uint16_t RPC_port;
-extern portable_mutex_t LP_commandmutex,LP_gcmutex;
-extern struct rpcrequest_info *LP_garbage_collector;
-
 void LP_rpc_processreq(void *_ptr)
 {
-    static uint32_t spawned,maxspawned;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
     char helpname[512],remoteaddr[64],*buf,*retstr,space[8192],space2[32786],*jsonbuf; struct rpcrequest_info *req = _ptr;
@@ -639,11 +653,11 @@ void LP_rpc_processreq(void *_ptr)
     sock = req->sock;
     recvlen = flag = 0;
     retstr = 0;
-    //space = calloc(1,size);
     jsonbuf = calloc(1,size);
-    //printf("alloc jsonbuf.%p\n",jsonbuf);
     remains = size-1;
     buf = jsonbuf;
+    if ( spawned < 0 )
+        spawned = 0;
     spawned++;
     if ( spawned > maxspawned )
     {
@@ -706,9 +720,7 @@ void LP_rpc_processreq(void *_ptr)
     if ( recvlen > 0 )
     {
         jsonflag = postflag = 0;
-        //portable_mutex_lock(&LP_commandmutex);
         retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,req->port);
-        //portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
             static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
@@ -793,7 +805,8 @@ void LP_rpc_processreq(void *_ptr)
         //printf("free req.%p\n",req);
         free(req);
     }
-    spawned--;
+    if ( spawned > 0 )
+        spawned--;
 }
 
 extern int32_t IAMLP,LP_STOP_RECEIVED;
@@ -823,7 +836,6 @@ void stats_rpcloop(void *args)
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
-//#ifdef _WIN32
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept port.%u usock.%d errno %d %s\n",port,sock,errno,strerror(errno));
@@ -831,16 +843,6 @@ void stats_rpcloop(void *args)
             bindsock = -1;
             continue;
         }
-/*#else
-        if ( sock < 0 )
-        {
-            //fprintf(stderr,".");
-            if ( IAMLP == 0 )
-                usleep(50000);
-            else usleep(2500);
-            continue;
-        }
-#endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
 //printf("port.%u got incoming from %x\n",port,ipbits);
         if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
@@ -852,29 +854,17 @@ void stats_rpcloop(void *args)
             continue;
         }
         req = calloc(1,sizeof(*req));
-        //printf("alloc req.%p\n",req);
+        //printf("LP_rpc_processreq req.%p\n",req);
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        LP_rpc_processreq(req);
-        continue;
+        if ( 1 || spawned >= (IGUANA_MAXRPCTHREADS-1) )
+            LP_rpc_processreq(req);
         // this might lead to "cant open file errors"
-        if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
+        else if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
             LP_rpc_processreq(req);
-            /*portable_mutex_lock(&LP_gcmutex);
-            DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
-            {
-                DL_DELETE(LP_garbage_collector,req2);
-                free(req2);
-            }
-            portable_mutex_unlock(&LP_gcmutex);
-            if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
-            {
-                printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
-                LP_rpc_processreq(req);
-            }*/
        }
     }
     printf("i got killed\n");

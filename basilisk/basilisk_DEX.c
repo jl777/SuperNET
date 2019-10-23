@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -532,7 +532,6 @@ char *basilisk_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     {
         retstr = _dex_sendrawtransaction(myinfo,coin->symbol,signedtx);
     }
-    else retstr = dpow_sendrawtransaction(myinfo,coin,signedtx);
+    else retstr = dpow_sendrawtransaction(myinfo,coin,signedtx,0);
     return(retstr);
 }
-

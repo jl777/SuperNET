@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -26,10 +26,10 @@
  *			  not from the mingw header, so we need to include the windows header
  *			  if we are compiling in windows 64bit
  */
-//#if defined(_M_X64)
-//#define WIN32_LEAN_AND_MEAN
-//#include <WinSock2.h>
-//#endif
+#if defined(_M_X64)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#endif
 
 #include "OS_portable.h"
 

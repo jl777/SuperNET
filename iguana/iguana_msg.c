@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2017 The SuperNET Developers.                             *
+ * Copyright © 2014-2018 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -600,7 +600,7 @@ int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized
     return(len);
 }
 
-int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgjoinsplit *msg)
+int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgjoinsplit *msg, uint32_t proof_size)
 {
     int32_t len = 0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->vpub_old),&msg->vpub_old);
@@ -620,9 +620,9 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->vmacs[0]),msg->vmacs[0].bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->vmacs[1]),msg->vmacs[1].bytes);
     if ( rwflag == 1 )
-        memcpy(&serialized[len],msg->zkproof,sizeof(msg->zkproof));
-    else memcpy(msg->zkproof,&serialized[len],sizeof(msg->zkproof));
-    len += sizeof(msg->zkproof);
+        memcpy(&serialized[len],msg->zkproof,proof_size);
+    else memcpy(msg->zkproof,&serialized[len],proof_size);
+    len += proof_size;
     return(len);
 }
 
@@ -697,8 +697,14 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         len += iguana_rwvarint32(rwflag,&serialized[len],&numjoinsplits);
         if ( numjoinsplits > 0 )
         {
+            // for version 4 the ZK proof size is 192, otherwise 296
+            uint32_t zksnark_proof_size = ZKSNARK_PROOF_SIZE;
+            if (msg->version >= 4) {
+		zksnark_proof_size = GROTH_PROOF_SIZE;
+            }
+
             for (i=0; i<numjoinsplits; i++)
-                len += iguana_rwjoinsplit(rwflag,&serialized[len],&joinsplit);
+                len += iguana_rwjoinsplit(rwflag,&serialized[len],&joinsplit,zksnark_proof_size);
             if ( rwflag != 0 )
             {
                 memset(joinsplitpubkey,0,sizeof(joinsplitpubkey)); // for now
