@@ -109,6 +109,7 @@ coins/koin_7776
 coins/zexo_7776
 coins/k64_7776
 coins/thc_7776
+coins/commod_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
