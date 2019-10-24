@@ -428,6 +428,21 @@ fn _in_place(path: &dyn AsRef<Path>, update: &mut dyn FnMut(Vec<u8>) -> Vec<u8>)
     }
 }
 
+/// On Raspbian without `-latomic` we're getting
+///
+///     performance_counters.cpp:(.text+0x2c): undefined reference to `__atomic_store_8'
+///
+/// cf. https://github.com/KomodoPlatform/atomicDEX-API/issues/501#issuecomment-545666080  
+/// https://stackoverflow.com/questions/28920489/how-come-stdatomicdouble-isnt-implemented-when-compiling-with-clang  
+fn needs_l_atomic() -> bool {
+    let targetᴱ = unwrap!(var("TARGET"));
+    match &targetᴱ[..] {
+        "armv7-unknown-linux-gnueabihf" => true, // Raspbian
+        "arm-unknown-linux-gnueabihf" => true,   // Raspbian under QEMU
+        _ => false,
+    }
+}
+
 #[derive(PartialEq, Eq, Debug)]
 enum Target {
     Unix,
@@ -691,9 +706,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
     let freeᵐ = sys.get_free_memory() as usize;
     epintln! ([=totalᵐ] ", " [=freeᵐ]);
     // NB: Under QEMU the logical is lower than the physical.
-    let processes = 16
-        .min(freeᵐ / 333 * 1024)
-        .min(num_cpus::get());
+    let processes = 16.min(freeᵐ / 333 * 1024).min(num_cpus::get());
 
     // This version of the build doesn't compile Boost separately
     // but rather allows the libtorrent to compile it
@@ -769,6 +782,10 @@ fn libtorrent() {
 
     if cfg!(windows) {
         println!("cargo:rustc-link-lib=iphlpapi"); // NotifyAddrChange.
+    }
+
+    if needs_l_atomic() {
+        println!("cargo:rustc-link-lib=atomic");
     }
 
     epintln!("Building dht.cc …");
