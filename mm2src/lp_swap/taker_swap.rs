@@ -31,7 +31,7 @@ pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
 
 fn save_my_taker_swap_event(ctx: &MmArc, swap: &TakerSwap, event: TakerSavedEvent) -> Result<(), String> {
     let path = my_swap_file_path(ctx, &swap.uuid);
-    let content = slurp(&path);
+    let content = try_s!(slurp(&path));
     let swap: SavedSwap = if content.is_empty() {
         SavedSwap::Taker(TakerSavedSwap {
             uuid: swap.uuid.clone(),

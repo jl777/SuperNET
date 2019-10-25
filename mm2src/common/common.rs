@@ -1171,10 +1171,20 @@ pub fn now_float() -> f64 {
 }
 
 #[cfg(feature = "native")]
-pub fn slurp (path: &dyn AsRef<Path>) -> Vec<u8> {gstuff::slurp (path)}
+pub fn slurp (path: &dyn AsRef<Path>) -> Result<Vec<u8>, String> {Ok (gstuff::slurp (path))}
 
 #[cfg(not(feature = "native"))]
-pub fn slurp (_path: &dyn AsRef<Path>) -> Vec<u8> {Vec::new()}
+pub fn slurp (path: &dyn AsRef<Path>) -> Result<Vec<u8>, String> {
+    use std::mem::MaybeUninit;
+
+    #[cfg_attr(feature = "w-bindgen", wasm_bindgen(raw_module = "../../../js/defined-in-js.js"))]
+    extern "C" {pub fn host_slurp (path_p: *const c_char, path_l: i32, rbuf: *mut c_char, rcap: i32) -> i32;}
+
+    let path = try_s! (path.as_ref().to_str().ok_or ("slurp: path not unicode"));
+    let mut rbuf: [u8; 262144] = unsafe {MaybeUninit::uninit().assume_init()};
+    let rc = unsafe {host_slurp (path.as_ptr() as *const c_char, path.len() as i32, rbuf.as_mut_ptr() as *mut c_char, rbuf.len() as i32)};
+    if rc < 0 {return ERR! ("!host_slurp: {}", rc)}
+    Ok (Vec::from (&rbuf[.. rc as usize]))}
 
 #[cfg(feature = "native")]
 pub fn temp_dir() -> PathBuf {env::temp_dir()}

@@ -33,7 +33,7 @@ pub fn stats_maker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
 
 fn save_my_maker_swap_event(ctx: &MmArc, swap: &MakerSwap, event: MakerSavedEvent) -> Result<(), String> {
     let path = my_swap_file_path(ctx, &swap.uuid);
-    let content = slurp(&path);
+    let content = try_s!(slurp(&path));
     let swap: SavedSwap = if content.is_empty() {
         SavedSwap::Maker(MakerSavedSwap {
             uuid: swap.uuid.clone(),

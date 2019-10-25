@@ -454,7 +454,7 @@ impl<'a> From<&'a SavedSwap> for MySwapStatusResponse<'a> {
 pub fn my_swap_status(ctx: MmArc, req: Json) -> HyRes {
     let uuid = try_h!(req["params"]["uuid"].as_str().ok_or("uuid parameter is not set or is not string"));
     let path = my_swap_file_path(&ctx, uuid);
-    let content = slurp(&path);
+    let content = try_h!(slurp(&path));
     if content.is_empty() {
         return rpc_response(404, json!({
             "error": "swap data is not found"
@@ -472,8 +472,8 @@ pub fn stats_swap_status(ctx: MmArc, req: Json) -> HyRes {
     let uuid = try_h!(req["params"]["uuid"].as_str().ok_or("uuid parameter is not set or is not string"));
     let maker_path = stats_maker_swap_file_path(&ctx, uuid);
     let taker_path = stats_taker_swap_file_path(&ctx, uuid);
-    let maker_content = slurp(&maker_path);
-    let taker_content = slurp(&taker_path);
+    let maker_content = try_h!(slurp(&maker_path));
+    let taker_content = try_h!(slurp(&taker_path));
     let maker_status: Option<MakerSavedSwap> = if maker_content.is_empty() {
         None
     } else {
@@ -503,7 +503,7 @@ pub fn stats_swap_status(ctx: MmArc, req: Json) -> HyRes {
 /// Broadcasts `my` swap status to P2P network
 fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
     let path = my_swap_file_path(ctx, uuid);
-    let content = slurp(&path);
+    let content = try_s!(slurp(&path));
     let mut status: SavedSwap = try_s!(json::from_slice(&content));
     match &mut status {
         SavedSwap::Taker(_) => (), // do nothing for taker
@@ -546,7 +546,7 @@ pub fn my_recent_swaps(ctx: MmArc, req: Json) -> HyRes {
 
     // iterate over file entries trying to parse the file contents and add to result vector
     let swaps: Vec<Json> = entries.iter().skip(skip).take(limit as usize).map(|(_, path)|
-        match json::from_slice::<SavedSwap>(&slurp(&path)) {
+        match json::from_slice::<SavedSwap>(&unwrap!(slurp(&path))) {
             Ok(swap) => unwrap!(json::to_value(MySwapStatusResponse::from(&swap))),
             Err(e) => {
                 log!("Error " (e) " parsing JSON from " (path.display()));
@@ -579,7 +579,7 @@ pub fn swap_kick_starts(ctx: MmArc) -> HashSet<String> {
     }).collect();
 
     entries.iter().for_each(|path| {
-        match json::from_slice::<SavedSwap>(&slurp(&path)) {
+        match json::from_slice::<SavedSwap>(&unwrap!(slurp(&path))) {
             Ok(swap) => {
                 if !swap.is_finished() {
                     log!("Kick starting the swap " [swap.uuid()]);
@@ -673,7 +673,7 @@ pub async fn coins_needed_for_kick_start(ctx: MmArc) -> Result<Response<Vec<u8>>
 pub async fn recover_funds_of_swap(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let uuid = try_s!(req["params"]["uuid"].as_str().ok_or("uuid parameter is not set or is not string"));
     let path = my_swap_file_path(&ctx, uuid);
-    let content = slurp(&path);
+    let content = try_s!(slurp(&path));
     if content.is_empty() { return ERR!("swap data is not found") }
 
     let swap: SavedSwap = try_s!(json::from_slice(&content));

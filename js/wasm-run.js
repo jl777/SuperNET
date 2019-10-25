@@ -182,6 +182,11 @@ async function runWasm() {
       const path = from_utf8 (wasmShared.memory, ptr, len);
       fs.unlinkSync (path);
       return 0},
+    host_slurp: function (path_p, path_l, rbuf, rcap) {
+      const path = from_utf8 (wasmShared.memory, path_p, path_l);
+      if (!fs.existsSync (path)) return 0;
+      const content = fs.readFileSync (path, {encoding: 'utf8'});
+      return to_utf8 (wasmShared.memory, rbuf, rcap, content)},
     host_write: function (path_p, path_l, ptr, len) {
       const path = from_utf8 (wasmShared.memory, path_p, path_l);
       const content = new Uint8Array (wasmShared.memory.buffer, ptr, len);

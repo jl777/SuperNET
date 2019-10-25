@@ -76,7 +76,7 @@ impl Drop for RaiiDump {
         // `term` bypasses the stdout capturing, we should only use it if the capturing was disabled.
         let nocapture = env::args().any (|a| a == "--nocapture");
 
-        let log = slurp (&self.log_path);
+        let log = unwrap! (slurp (&self.log_path));
 
         // Make sure the log is Unicode.
         // We'll get the "io error when listing tests: Custom { kind: InvalidData, error: StringError("text was not valid unicode") }" otherwise.
@@ -224,7 +224,7 @@ impl MarketMakerIt {
 
     #[cfg(feature = "native")]
     pub fn log_as_utf8 (&self) -> Result<String, String> {
-        let mm_log = slurp (&self.log_path);
+        let mm_log = try_s! (slurp (&self.log_path));
         let mm_log = unsafe {String::from_utf8_unchecked (mm_log)};
         Ok (mm_log)
     }
@@ -474,7 +474,7 @@ use std::os::raw::c_char;
 
 /// Reads passphrase from file or environment.
 pub fn get_passphrase (path: &dyn AsRef<Path>, env: &str) -> Result<String, String> {
-    if let (Some (file_passphrase), _file_userpass) = from_env_file (slurp (path)) {
+    if let (Some (file_passphrase), _file_userpass) = from_env_file (try_s! (slurp (path))) {
         return Ok (file_passphrase)
     }
 
