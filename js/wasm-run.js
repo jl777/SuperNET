@@ -173,7 +173,7 @@ async function runWasm() {
         if (!en.isFile()) continue;
         const name = en.name;
         const stats = fs.statSync (path + '/' + name);
-        const lm = stats.mtimeMs;
+        const lm = Math.floor (stats.mtimeMs);
         entries.push ([lm, name])}
       const jens = JSON.stringify (entries);
       console.log ('host_read_dir:', jens);

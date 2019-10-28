@@ -206,10 +206,8 @@ pub async fn run_taker_swap(swap: TakerSwap, initial_command: Option<TakerSwapCo
         match res.0 {
             Some(c) => { command = c; },
             None => {
-                if cfg!(feature = "native") {
-                    if let Err(e) = broadcast_my_swap_status(&uuid, &ctx) {
-                        log!("!broadcast_my_swap_status(" (uuid) "): " (e));
-                    }
+                if let Err(e) = broadcast_my_swap_status(&uuid, &ctx) {
+                    log!("!broadcast_my_swap_status(" (uuid) "): " (e));
                 }
                 break;
             },

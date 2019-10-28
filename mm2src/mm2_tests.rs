@@ -822,6 +822,13 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     for uuid in uuids.iter() {
         unwrap! (mm_bob.wait_for_log (600., |log| log.contains (&format!("[swap uuid={}] Finished", uuid))) .await);
         unwrap! (mm_alice.wait_for_log (600., |log| log.contains (&format!("[swap uuid={}] Finished", uuid))) .await);
+
+        #[cfg(not(feature = "native"))] {
+            log! ("Waiting a few second for the fresh swap status to be saved..");
+            Timer::sleep (7.77) .await;
+        }
+
+        log! ("Checking alice/taker status..");
         check_my_swap_status(
             &mm_alice,
             &uuid,
@@ -831,6 +838,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
             "0.1".parse().unwrap(),
         ).await;
 
+        log! ("Checking bob/maker status..");
         check_my_swap_status(
             &mm_bob,
             &uuid,
@@ -841,10 +849,11 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
         ).await;
     }
 
-    // give nodes 3 seconds to broadcast their swaps data
+    log! ("Waiting 3 seconds for nodes to broadcast their swaps data..");
     Timer::sleep (3.) .await;
 
     for uuid in uuids.iter() {
+        log! ("Checking alice status..");
         check_stats_swap_status(
             &mm_alice,
             &uuid,
@@ -852,6 +861,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
             &taker_success_events,
         ).await;
 
+        log! ("Checking bob status..");
         check_stats_swap_status(
             &mm_bob,
             &uuid,
@@ -860,7 +870,9 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
         ).await;
     }
 
+    log! ("Checking alice recent swaps..");
     check_recent_swaps(&mm_alice, uuids.len()).await;
+    log! ("Checking bob recent swaps..");
     check_recent_swaps(&mm_bob, uuids.len()).await;
     for (base, rel) in pairs.iter() {
         log!("Get " (base) "/" (rel) " orderbook");
