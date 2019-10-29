@@ -25,7 +25,7 @@ use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{lp_coinfind, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{block_on, bits256, json_dir_entries, now_ms, new_uuid,
+use common::{bits256, json_dir_entries, now_ms, new_uuid,
   remove_file, rpc_response, rpc_err_response, write, HyRes};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
@@ -1437,30 +1437,22 @@ struct OrderbookReq {
     rel: String,
 }
 
-pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
-    let req: OrderbookReq = try_h!(json::from_value(req));
-    if req.base == req.rel {
-        return rpc_err_response(500, "Base and rel must be different coins");
-    }
-    let rel_coin = try_h!(block_on(lp_coinfind(&ctx, &req.rel)));
-    let rel_coin = match rel_coin {
-        Some(c) => c,
-        None => return rpc_err_response(500, "Rel coin is not found or inactive")
-    };
-    let base_coin = try_h!(block_on(lp_coinfind(&ctx, &req.base)));
-    let base_coin: MmCoinEnum = match base_coin {
-        Some(c) => c,
-        None => return rpc_err_response(500, "Base coin is not found or inactive")
-    };
-    let ordermatch_ctx: Arc<OrdermatchContext> = try_h!(OrdermatchContext::from_ctx(&ctx));
-    let orderbook = try_h!(ordermatch_ctx.orderbook.lock());
+pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let req: OrderbookReq = try_s!(json::from_value(req));
+    if req.base == req.rel {return ERR!("Base and rel must be different coins")}
+    let rel_coin = try_s!(lp_coinfind(&ctx, &req.rel).await);
+    let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
+    let base_coin = try_s!(lp_coinfind(&ctx, &req.base).await);
+    let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
+    let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
+    let orderbook = try_s!(ordermatch_ctx.orderbook.lock());
     let asks = match orderbook.get(&(req.base.clone(), req.rel.clone())) {
         Some(asks) => {
             let mut orderbook_entries = vec![];
             for (_, ask) in asks.iter() {
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.base.clone(),
-                    address: try_h!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
+                    address: try_s!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
                     price: ask.price.clone(),
                     price_rat: ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
                     max_volume: ask.balance.clone(),
@@ -1480,7 +1472,7 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
             for (_, ask) in asks.iter() {
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.rel.clone(),
-                    address: try_h!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
+                    address: try_s!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
                     // NB: 1/x can not be represented as a decimal and introduces a rounding error
                     // cf. https://github.com/KomodoPlatform/atomicDEX-API/issues/495#issuecomment-516365682
                     price: BigDecimal::from (1) / &ask.price,
@@ -1508,7 +1500,8 @@ pub fn orderbook(ctx: MmArc, req: Json) -> HyRes {
         rel: req.rel,
         timestamp: now_ms() / 1000,
     };
-    rpc_response(200, try_h!(json::to_string(&response)))
+    let responseʲ = try_s!(json::to_vec(&response));
+    Ok(try_s!(Response::builder().body(responseʲ)))
 }
 
 pub fn migrate_saved_orders(ctx: &MmArc) -> Result<(), String> {
