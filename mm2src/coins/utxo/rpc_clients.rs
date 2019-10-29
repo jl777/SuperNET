@@ -190,7 +190,7 @@ pub struct ValidateAddressRes {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ListTransactionsItem {
-    pub account: String,
+    pub account: Option<String>,
     #[serde(default)]
     pub address: String,
     pub category: String,
