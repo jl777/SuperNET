@@ -607,9 +607,9 @@ pub fn hf_poll (ctx: &MmArc, hf_addr: &Option<SocketAddr>) -> Result<(), String>
         if let Some (ref mut hf_poll) = *hf_pollₒ {
             match hf_poll.poll() {
                 Err (err) => {
+                    *hf_pollₒ = None;
                     log! ("hf_poll error: " (err));
                     pctx.hf_skip_poll_till.store ((now + 10.) as u64, Ordering::Relaxed);
-                    *hf_pollₒ = None;
                     return Ok (true)
                 },
                 Ok (Async::NotReady) => {
@@ -617,13 +617,13 @@ pub fn hf_poll (ctx: &MmArc, hf_addr: &Option<SocketAddr>) -> Result<(), String>
                     return Ok (true)
                 },
                 Ok (Async::Ready ((status, headers, body))) => {
+                    *hf_pollₒ = None;
                     let rc = process_pulled_maps (ctx, status, headers, body);
                     // Should reduce the pause when HTTP long polling is implemented server-side.
                     let pause = if rc.is_ok() {7.} else {10.};
                     let pctx = unwrap! (super::PeersContext::from_ctx (ctx));
                     pctx.hf_skip_poll_till.store ((now + pause) as u64, Ordering::Relaxed);
                     try_s! (rc);
-                    *hf_pollₒ = None;
                     return Ok (true)
                 }
             }

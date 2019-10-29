@@ -382,7 +382,6 @@ impl TakerSwap {
 
     async fn handle_command(&self, command: TakerSwapCommand)
                       -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-log! ("handle_command.." [command]);
         match command {
             TakerSwapCommand::Start => self.start().await,
             TakerSwapCommand::Negotiate => self.negotiate().await,
