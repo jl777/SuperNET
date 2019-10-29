@@ -23,7 +23,7 @@ use super::{broadcast_my_swap_status, dex_fee_amount, get_locked_amount_by_other
   lp_atomic_locktime, my_swap_file_path,
   AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
   SavedSwap, SwapsContext, SwapError, SwapNegotiationData,
-  BASIC_COMM_TIMEOUT};
+  BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
 
 pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
     ctx.dbdir().join("SWAPS").join("STATS").join("TAKER").join(format!("{}.json", uuid))
@@ -701,7 +701,7 @@ impl TakerSwap {
             &unwrap!(self.r().maker_payment.clone()).tx_hex,
             self.r().data.maker_payment_confirmations,
             self.r().data.maker_payment_wait,
-            1,
+            WAIT_CONFIRM_INTERVAL,
         );
         if let Err(err) = f.compat().await {
             return Ok((

@@ -144,6 +144,8 @@ const BASIC_COMM_TIMEOUT: u64 = 90;
 const PAYMENT_LOCKTIME: u64 = 3600 * 2 + 300 * 2;
 const _SWAP_DEFAULT_NUM_CONFIRMS: u32 = 1;
 const _SWAP_DEFAULT_MAX_CONFIRMS: u32 = 6;
+/// MM2 checks that swap payment is confirmed every WAIT_CONFIRM_INTERVAL seconds
+const WAIT_CONFIRM_INTERVAL: u64 = 15;
 
 #[derive(Debug, PartialEq, Serialize)]
 pub enum RecoveredSwapAction {
