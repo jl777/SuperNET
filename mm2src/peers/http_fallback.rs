@@ -618,6 +618,7 @@ pub fn hf_poll (ctx: &MmArc, hf_addr: &Option<SocketAddr>) -> Result<(), String>
                 },
                 Ok (Async::Ready ((status, headers, body))) => {
                     *hf_pollₒ = None;
+                    if status.as_u16() == 500 {log! ("hf_poll 500 from " (hf_addr) ": " (binprint (&body, b'.')))}
                     let rc = process_pulled_maps (ctx, status, headers, body);
                     // Should reduce the pause when HTTP long polling is implemented server-side.
                     let pause = if rc.is_ok() {7.} else {10.};
