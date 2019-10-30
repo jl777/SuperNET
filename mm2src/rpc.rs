@@ -222,7 +222,7 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
         "my_balance" => my_balance (ctx, req),
         "my_tx_history" => my_tx_history(ctx, req),
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
-        "orderbook" => orderbook (ctx, req),
+        "orderbook" => hyres(orderbook(ctx, req)),
         "order_status" => order_status (ctx, req),
         // "passphrase" => passphrase (ctx, req),
         "sell" => hyres(sell(ctx, req)),
