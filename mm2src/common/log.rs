@@ -2,6 +2,7 @@
 
 // TODO: Sort the tags while converting `&[&TagParam]` to `Vec<Tag>`.
 
+use atomic::Atomic;
 use chrono::{Local, TimeZone, Utc};
 use chrono::format::DelayedFormat;
 use chrono::format::strftime::StrftimeItems;
@@ -16,9 +17,12 @@ use std::fmt::Write as WriteFmt;
 use std::mem::swap;
 use std::os::raw::c_char;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
+use std::sync::atomic::Ordering;
 use std::thread;
 use super::{now_ms, writeln};
+use super::executor::{spawn, Timer};
+use super::duplex_mutex::DuplexMutex;
 
 #[cfg(feature = "native")]
 lazy_static! {
@@ -208,20 +212,29 @@ impl fmt::Debug for Tag {
 /// The status entry kept in the dashboard.
 pub struct Status {
     pub tags: Mutex<Vec<Tag>>,
-    pub line: Mutex<String>
+    pub line: Mutex<String>,
+    /// The time, in milliseconds since UNIX epoch, when the tracked operation started.
+    pub start: Atomic<u64>,
+    /// Expected time limit of the tracked operation, in milliseconds since UNIX epoch.  
+    /// 0 if no deadline is set.
+    pub deadline: Atomic<u64>
 }
 
 impl Clone for Status {
     fn clone (&self) -> Status {
         let tags = self.tags.lock().clone();
         let line = self.line.lock().clone();
-        Status {tags: Mutex::new (tags), line: Mutex::new (line)}
-}   }
+        Status {
+            tags: Mutex::new (tags),
+            line: Mutex::new (line),
+            start: Atomic::new (self.start.load (Ordering::Relaxed)),
+            deadline: Atomic::new (self.deadline.load (Ordering::Relaxed))
+}   }   }
 
 impl Status {
     /// Invoked when the `StatusHandle` is dropped, marking the status as finished.
-    fn finished (status: &Arc<Status>, dashboard: &Arc<Mutex<Vec<Arc<Status>>>>, tail: &Arc<Mutex<VecDeque<LogEntry>>>) {
-        let mut dashboard = dashboard.lock();
+    fn finished (status: &Arc<Status>, dashboard: &Arc<DuplexMutex<Vec<Arc<Status>>>>, tail: &Arc<Mutex<VecDeque<LogEntry>>>) {
+        let mut dashboard = unwrap! (dashboard.spinlock (77));
         if let Some (idx) = dashboard.iter().position (|e| Arc::ptr_eq (e, status)) {
             dashboard.swap_remove (idx);
         } else {
@@ -285,7 +298,7 @@ impl LogEntry {
 /// Dropping the handle tells us that the operation was "finished" and that we can dump the final status into the log.
 pub struct StatusHandle {
     status: Option<Arc<Status>>,
-    dashboard: Arc<Mutex<Vec<Arc<Status>>>>,
+    dashboard: Arc<DuplexMutex<Vec<Arc<Status>>>>,
     tail: Arc<Mutex<VecDeque<LogEntry>>>
 }
 
@@ -303,9 +316,14 @@ impl StatusHandle {
             *status.tags.lock() = tagsʹ;
             *status.line.lock() = String::from (line);
         } else {
-            let status = Arc::new (Status {tags: Mutex::new (tagsʹ), line: Mutex::new (line.into())});
+            let status = Arc::new (Status {
+                tags: Mutex::new (tagsʹ),
+                line: Mutex::new (line.into()),
+                start: Atomic::new (now_ms()),
+                deadline: Atomic::new (0)
+            });
             self.status = Some (status.clone());
-            self.dashboard.lock().push (status);
+            unwrap! (self.dashboard.spinlock (77)) .push (status);
         }
     }
 
@@ -322,6 +340,30 @@ impl StatusHandle {
     pub fn detach (&mut self) -> &mut Self {
         self.status = None;
         self
+    }
+
+    /// Sets a deadline for the operation tracked by the status.
+    /// 
+    /// The deadline is used to inform the user of the time constaints of the operation.  
+    /// It is not enforced by the logging/dashboard subsystem.
+    /// 
+    /// * `usec` - The time, in milliseconds since UNIX epoch,
+    ///            when the operation is bound to end regardless of its status (aka a timeout).
+    pub fn deadline (&self, ms: u64) {
+        if let Some (ref status) = self.status {
+            status.deadline.store (ms, Ordering::Relaxed)
+        }
+    }
+
+    /// The number of milliseconds remaining till the deadline.  
+    /// Negative if the deadline is in the past.
+    pub fn ms2deadline (&self) -> Option<i64> {
+        if let Some (ref status) = self.status {
+            let deadline = status.deadline.load (Ordering::Relaxed);
+            if deadline == 0 {None} else {Some (deadline as i64 - now_ms() as i64)}
+        } else {
+            None
+        }
     }
 }
 
@@ -341,7 +383,7 @@ pub fn dashboard_path (log_path: &Path) -> Result<PathBuf, String> {
 /// Carried around by the MarketMaker state, `MmCtx`.  
 /// Keeps track of the log file and the status dashboard.
 pub struct LogState {
-    dashboard: Arc<Mutex<Vec<Arc<Status>>>>,
+    dashboard: Arc<DuplexMutex<Vec<Arc<Status>>>>,
     /// Keeps recent log entries in memory in case we need them for debugging.  
     /// Should allow us to examine the log from withing the unit tests, core dumps and live debugging sessions.
     tail: Arc<Mutex<VecDeque<LogEntry>>>,
@@ -351,19 +393,33 @@ pub struct LogState {
     gravity: Mutex<Option<Arc<Gravity>>>
 }
 
+async fn log_dashboard_sometimes (dashboardʷ: Weak<DuplexMutex<Vec<Arc<Status>>>>) {
+    loop {
+        Timer::sleep (0.777) .await;
+        // The loop stops when the `LogState::dashboard` is dropped.
+        let dashboard = match dashboardʷ.upgrade() {Some (arc) => arc, None => break};
+        let dashboard = unwrap! (dashboard.spinlock (77));
+
+    }
+}
+
 impl LogState {
     /// Log into memory, for unit testing.
     pub fn in_memory() -> LogState {
         LogState {
-            dashboard: Arc::new (Mutex::new (Vec::new())),
+            dashboard: Arc::new (DuplexMutex::new (Vec::new())),
             tail: Arc::new (Mutex::new (VecDeque::with_capacity (64))),
             gravity: Mutex::new (None)
     }   }
 
     /// Initialize according to the MM command-line configuration.
     pub fn mm (_conf: &Json) -> LogState {
+        let dashboard = Arc::new (DuplexMutex::new (Vec::new()));
+
+        spawn (log_dashboard_sometimes (Arc::downgrade (&dashboard)));
+
         LogState {
-            dashboard: Arc::new (Mutex::new (Vec::new())),
+            dashboard,
             tail: Arc::new (Mutex::new (VecDeque::with_capacity (64))),
             gravity: Mutex::new (None)
         }
@@ -382,7 +438,7 @@ impl LogState {
 
     /// Read-only access to the status dashboard.
     pub fn with_dashboard (&self, cb: &mut dyn FnMut (&[Arc<Status>])) {
-        let dashboard = self.dashboard.lock();
+        let dashboard = unwrap! (self.dashboard.spinlock (77));
         cb (&dashboard[..])
     }
 
@@ -412,7 +468,7 @@ impl LogState {
     pub fn claim_status (&self, tags: &[&dyn TagParam]) -> Option<StatusHandle> {
         let mut found = Vec::new();
         let tags: Vec<Tag> = tags.iter().map (|t| Tag {key: t.key(), val: t.val()}) .collect();
-        let dashboard = self.dashboard.lock();
+        let dashboard = unwrap! (self.dashboard.spinlock (77));
         for status_arc in &*dashboard {
             if *status_arc.tags.lock() == tags {found.push (StatusHandle {
                 status: Some (status_arc.clone()),
@@ -565,7 +621,7 @@ impl Drop for LogState {
             gravity.flush()
         }
 
-        let dashboard_copy = self.dashboard.lock().clone();
+        let dashboard_copy = unwrap! (self.dashboard.spinlock (77)) .clone();
         if dashboard_copy.len() > 0 {
             log! ("--- LogState] Bye! Remaining status entries. ---");
             for status in &*dashboard_copy {Status::finished (status, &self.dashboard, &self.tail)}
