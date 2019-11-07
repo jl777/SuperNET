@@ -85,17 +85,17 @@ impl<T> Impl<T> {
 
 /// A mutual exclusion primitive that can be used from both the synchronous and asynchronous contexts.  
 /// 
-/// There is a problem with existing primitives.
+/// There is a problem with existing primitives:
 /// Synchronous Mutex can not be used reliably from WASM since threading there is new.
 /// Asynchronous Mutex is only compatible with fully asynchronous code
 /// because `block_on` will panic under a layered async->sync->block_on(lock),
 /// but making everything asynchronous would lead to bloated machine code,
-/// obscure errors and restraints and slowed compilation speed.
+/// obscure errors, restraints and slowed compilation speed.
 /// 
-/// DuplexMutex bridges this gap by being useable in both contexts.  
+/// DuplexMutex bridges this gap by being useable in both contexts:  
 /// In the synchronous context it will spin.  
-/// In the asynchronous context it will also wait with the `Timer`,
-/// allowing the greed thread holding the lock to resurface even in situations
+/// In the asynchronous context it will wait with the `Timer`,
+/// allowing the green thread holding the lock to resurface even in situations
 /// when both the holder and the entrant are on the same system thread.
 pub struct DuplexMutex<T> {
     pimpl: Arc<Impl<T>>
@@ -115,8 +115,10 @@ impl<T> DuplexMutex<T> {
 
 impl<T> DuplexMutex<T> {
     /// Synchronous spinlock.  
-    /// Should only be used when the mutex contention happens from different system threads
-    /// (like when the mutex guard does not cross green thread boundaries).
+    /// Should be used when the mutex contention happens from different system threads
+    /// (like when the mutex guard does not cross green thread boundaries).  
+    /// Using spinlock from two green threads running on the same system thread might result in a deadlock,
+    /// but that might be mitigated by handling the timeout `Err`.
     pub fn spinlock (&self, timeout_ms: i64) -> Result<DuplexMutexGuard<'_, T>, String> {
         try_s! (self.pimpl.spinlock (timeout_ms));
         Ok (DuplexMutexGuard {mutex: self})
