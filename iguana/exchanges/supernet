@@ -13,7 +13,7 @@ echo bots
 ./bots
 echo supernet
 
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"balances\",\"address\":\"RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"balances\",\"address\":\"RLVzC4tr9cNKvuw2z4m8KuMfZURwCehx55\"}"
 echo supernet
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"fundvalue\",\"address\":\"RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK\",\"holdings\":[{\"coin\":\"stratis\",\"balance\":1227800}, {\"coin\":\"zcash\",\"balance\":0.10000}, {\"coin\":\"syscoin\",\"balance\":20000000}, {\"coin\":\"bitcoin\",\"balance\":450}, {\"coin\":\"bitcoin-cash\",\"balance\":1500}, {\"coin\":\"heat-ledger\",\"balance\":2323851 }, {\"coin\":\"vericoin\",\"balance\":2199368 }, {\"coin\":\"byteball\",\"balance\":4238}, {\"coin\":\"hush\",\"balance\":100000 }, {\"coin\":\"verus\",\"balance\":1650000}],\"divisor\":777777}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"fundvalue\",\"address\":\"RLVzC4tr9cNKvuw2z4m8KuMfZURwCehx55\",\"holdings\":[{\"coin\":\"zcash\",\"balance\":0.10000}, {\"coin\":\"syscoin\",\"balance\":20000000}, {\"coin\":\"bitcoin\",\"balance\":250}, {\"coin\":\"heat-ledger\",\"balance\":2323851 }, {\"coin\":\"vericoin\",\"balance\":2199368 }, {\"coin\":\"byteball\",\"balance\":4238}, {\"coin\":\"hush\",\"balance\":100000 }, {\"coin\":\"verus\",\"balance\":2650000}],\"divisor\":777777}"
 

@@ -260,12 +260,13 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         {
             if ( tx->outpoints[vout].spendheight > 0 )
             {
-                //fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
+                fprintf(stderr,"LP_gettxout (%s) tx->outpoints[vout].spendheight > 0\n",coinaddr);
                 return(0);
             }
             //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
         }
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
+        //printf("issue (%s)\n",buf);
         return(bitcoin_json(coin,"gettxout",buf));
     }
     else
@@ -430,7 +431,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxid2)
 {
-    char buf[128],*retstr; bits256 txid; struct LP_address *ap; cJSON *retjson,*txjson,*array,*item; int32_t i,n,numconfs,vout,usecache=1; struct iguana_info *coin;
+    char buf[128],*retstr; bits256 txid; struct LP_address *ap; cJSON *retjson,*txjson,*array,*item; int32_t i,n,numconfs,vout,addrflag=0,usecache=1; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -461,9 +462,19 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
             if ( strcmp(symbol,"BTC") == 0 )
                 numconfs = 0;
             else numconfs = 1;
-            sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-            retjson = bitcoin_json(coin,"listunspent",buf);
-//printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+            if ( strcmp(coin->symbol,"BTC") != 0 )
+            {
+                sprintf(buf,"[{\"addresses\":[\"%s\"]}]",coinaddr);
+                retjson = bitcoin_json(coin,"getaddressutxos",buf);
+//printf("getaddressutxos.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+            }
+            if ( (n= cJSON_GetArraySize(retjson)) == 0 )
+            {
+                free_json(retjson);
+                sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
+                retjson = bitcoin_json(coin,"listunspent",buf);
+                //printf("LP_listunspent.(%s %s) -> %s\n",symbol,buf,jprint(retjson,0));
+            } else addrflag = 1;
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
                 char str[65];
@@ -472,11 +483,23 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 {
                     item = jitem(retjson,i);
                     txid = jbits256(item,"txid");
-                    vout = jint(item,"vout");
+                    if ( addrflag == 0 )
+                        vout = jint(item,"vout");
+                    else vout = jint(item,"outputIndex");
                     if ( (txjson= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
                     {
-                        jaddi(array,jduplicate(item));
-                        free_json(txjson);
+                        if ( addrflag == 0 )
+                        {
+                            jaddi(array,jduplicate(item));
+                            free_json(txjson);
+                        }
+                        else
+                        {
+                            jaddbits256(txjson,"txid",txid);
+                            jaddnum(txjson,"vout",vout);
+                            //printf("%s\n",jprint(txjson,0));
+                            jaddi(array,txjson);
+                        }
                     } //else printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 }
                 free_json(retjson);
