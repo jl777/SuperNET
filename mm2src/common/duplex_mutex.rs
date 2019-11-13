@@ -46,7 +46,7 @@ struct Impl<T> {
     data: UnsafeCell<T>
 }
 
-// We're only using Impl behind an Arc and a lock.
+// We're only using `Impl::data` behind an `Arc` and a lock.
 unsafe impl<T> Send for Impl<T> {}
 unsafe impl<T> Sync for Impl<T> {}
 
@@ -61,7 +61,7 @@ impl<T> Impl<T> {
             if !fast {
                 spin_wait.reset();
                 let delta = now_ms() as i64 - start;
-                if delta > timeout_ms {return ERR! ("sync_lock timeout, {}ms", delta)}
+                if delta > timeout_ms {return ERR! ("spinlock timeout, {}ms", delta)}
             }
         }
     }
@@ -78,7 +78,7 @@ impl<T> Impl<T> {
             Timer::sleep (0.02) .await;
             if self.locked.compare_exchange (0, 1, Ordering::Relaxed, Ordering::Relaxed) .is_ok() {return Ok(())}
             let delta = now_ms() as i64 - start;
-            if delta > timeout_ms {return ERR! ("sync_lock timeout, {}ms", delta)}
+            if delta > timeout_ms {return ERR! ("sleeplock timeout, {}ms", delta)}
         }
     }
 }
