@@ -20,7 +20,7 @@
 //
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
-use common::{block_on, now_ms, slurp_url, small_rng};
+use common::{now_ms, slurp_url, small_rng};
 use common::custom_futures::TimedAsyncMutex;
 use common::executor::Timer;
 use common::mm_ctx::{MmArc, MmWeak};
@@ -1289,7 +1289,7 @@ impl EthCoin {
             if ctx.is_stopping() { break };
             {
                 let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
-                let coins = block_on(coins_ctx.coins.lock());
+                let coins = unwrap!(coins_ctx.coins.spinlock(77));
                 if !coins.contains_key(&self.ticker) {
                     ctx.log.log("", &[&"tx_history", &self.ticker], "Loop stopped");
                     break
@@ -1526,7 +1526,7 @@ impl EthCoin {
             if ctx.is_stopping() { break };
             {
                 let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
-                let coins = block_on(coins_ctx.coins.lock());
+                let coins = unwrap!(coins_ctx.coins.spinlock(77));
                 if !coins.contains_key(&self.ticker) {
                     ctx.log.log("", &[&"tx_history", &self.ticker], "Loop stopped");
                     break;
