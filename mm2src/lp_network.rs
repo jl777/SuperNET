@@ -455,13 +455,18 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
         let mut commands = Vec::new();
         seed_connections = seed_connections.drain_filter(|conn| {
             match conn.stream.read_line(&mut conn.buf) {
-                Ok(_) => {
-                    if conn.buf.len() > 0 {
-                        let msgs = conn.buf.split('\n');
-                        for msg in msgs {if !msg.is_empty() {commands.push(msg.to_string())}}
-                        conn.buf.clear();
+                Ok(num_bytes) => {
+                    if num_bytes == 0 {
+                        ctx.log.log("😟", &[&"seed_connection", &conn.addr.clone().as_str()], "Reached EOF, dropping connection");
+                        false
+                    } else {
+                        if conn.buf.len() > 0 {
+                            let msgs = conn.buf.split('\n');
+                            for msg in msgs { if !msg.is_empty() { commands.push(msg.to_string()) } }
+                            conn.buf.clear();
+                        }
+                        true
                     }
-                    true
                 },
                 Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => true,
                 Err(e) => {
