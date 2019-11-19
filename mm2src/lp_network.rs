@@ -290,6 +290,7 @@ struct SeedConnection {
     stream: BufReader<TcpStream>,
     addr: String,
     buf: String,
+    last_msg: u64,
 }
 
 #[cfg(feature = "native")]
@@ -439,6 +440,7 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
                                         stream: BufReader::new(stream),
                                         addr: addr.to_string(),
                                         buf: String::new(),
+                                        last_msg: now_ms(),
                                     };
                                     ctx.log.log("⚡", &[&"seed_connection", &addr.as_str()], "Connected");
                                     seed_connections.push(conn);
@@ -455,18 +457,14 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
         let mut commands = Vec::new();
         seed_connections = seed_connections.drain_filter(|conn| {
             match conn.stream.read_line(&mut conn.buf) {
-                Ok(num_bytes) => {
-                    if num_bytes == 0 {
-                        ctx.log.log("😟", &[&"seed_connection", &conn.addr.clone().as_str()], "Reached EOF, dropping connection");
-                        false
-                    } else {
-                        if conn.buf.len() > 0 {
-                            let msgs = conn.buf.split('\n');
-                            for msg in msgs { if !msg.is_empty() { commands.push(msg.to_string()) } }
-                            conn.buf.clear();
-                        }
-                        true
+                Ok(_) => {
+                    if conn.buf.len() > 0 {
+                        let msgs = conn.buf.split('\n');
+                        for msg in msgs { if !msg.is_empty() { commands.push(msg.to_string()) } }
+                        conn.buf.clear();
+                        conn.last_msg = now_ms();
                     }
+                    true
                 },
                 Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => true,
                 Err(e) => {
@@ -493,5 +491,13 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
             Err(channel::RecvTimeoutError::Timeout) => seed_connections,
             Err(channel::RecvTimeoutError::Disconnected) => panic!("client_p2p_channel is disconnected"),
         };
+        seed_connections = seed_connections.drain_filter(|conn|
+            if conn.last_msg + 30000 < now_ms() {
+                ctx.log.log("😟", &[&"seed_connection", &conn.addr.clone().as_str()], "Didn't receive any data in 30 seconds, dropping connection");
+                false
+            } else {
+                true
+            }
+        ).collect();
     }
 }
