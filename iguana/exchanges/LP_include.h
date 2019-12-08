@@ -56,7 +56,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
-//#define LP_DISABLE_DISTCOMBINE
+#define LP_DISABLE_DISTCOMBINE
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 10 // 1 is too small due to edge cases of time(NULL)
@@ -343,7 +343,7 @@ struct iguana_info
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastautosplit,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms,cache_history;
-    char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64],validateaddress[64];
+    char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64],estimatefeestr[32],getinfostr[32],etomic[64],validateaddress[64],scriptstrs[2][256];
     struct LP_tx_history_item *tx_history;
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;

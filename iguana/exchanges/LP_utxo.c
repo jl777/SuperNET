@@ -221,7 +221,10 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest,bits256 utxotxid)
         if ( addinterest != 0 )
         {
             if ( jobj(obj,"interest") != 0 )
+            {
                 value += (jdouble(obj,"interest") * SATOSHIDEN);
+                //char str[65]; printf("(%s) txid.%s %.8f + %.8f\n",jprint(obj,0),bits256_str(str,utxotxid),dstr(value),dstr(jdouble(obj,"interest") * SATOSHIDEN));
+            }
             else
             {
                 interest = LP_komodo_interest(utxotxid,value);
@@ -357,7 +360,7 @@ int32_t LP_address_minmax(int32_t iambob,uint64_t *medianp,uint64_t *minp,uint64
 
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
 {
-    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout,*sobj; int32_t i,n = 0;
+    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; int64_t val; cJSON *txout,*sobj; int32_t i,n = 0;
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
     //portable_mutex_lock(&LP_utxomutex);
@@ -370,13 +373,13 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
-                    //printf("check sobj.hex %s\n",jprint(txout,0));
+//printf("check sobj.hex %s\n",jprint(txout,0));
                     if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && jstr(sobj,"hex") != 0 && strlen(jstr(sobj,"hex")) == 35*2 )
                     {
                         up->U.suppress = 1;
                         //printf("suppress %s\n",jprint(sobj,0));
                     }
-                    if ( LP_value_extract(txout,0,up->U.txid) == 0 )
+                    if ( (val= LP_value_extract(txout,1,up->U.txid)) == 0 )
                     {
 //char str[65]; printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
                         free_json(txout);
@@ -384,6 +387,11 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                         if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                             tx->outpoints[up->U.vout].spendheight = 1;
                         continue;
+                    }
+                    if ( val > up->U.value && strcmp(coin->symbol,"KMD") == 0 )
+                    {
+                        fprintf(stderr,"adjust Uvalue by %.8f\n",dstr(val) - dstr(up->U.value));
+                        up->U.value = val;
                     }
                     free_json(txout);
                 }
@@ -542,7 +550,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
 
 struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
 {
-    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value,total=0; bits256 txid; uint32_t now;
     *nump = 0;
     if ( coin == 0 )
         return(0);
@@ -580,6 +588,7 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
             {
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
+                //printf("%s -> %s/v%d %.8f\n",jprint(item,0),bits256_str(str,txid),vout,dstr(value));
                 if ( bits256_nonz(txid) == 0 )
                     continue;
                 if ( 1 )
@@ -605,9 +614,10 @@ struct LP_address *LP_address_utxo_reset(int32_t *nump,struct iguana_info *coin)
                 {
                     m++;
                     //printf("%.8f ",dstr(value));
+                    total += value;
                 }
             }
-            printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
+            printf("added %d of %d from %s listunspents %.8f\n",m,n,coin->symbol,dstr(total));
         }
         free_json(array);
     }
