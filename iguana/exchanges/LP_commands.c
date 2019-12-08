@@ -382,11 +382,9 @@ version\n\
         }
         else if ( strcmp(method,"calcaddress") == 0 )
         {
-            bits256 privkey,pub; uint8_t pubtype,wiftaddr,p2shtype,taddr,wiftype,pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64],pubsecp[67];
+            bits256 privkey,pub; uint8_t pubtype,wiftaddr,p2shtype,taddr,wiftype,tmptype,pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64],pubsecp[67];
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
-                conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-                privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
                 if ( (coin= jstr(argjson,"coin")) == 0 || (ptr= LP_coinfind(coin)) == 0 )
                 {
                     coin = "KMD";
@@ -405,6 +403,16 @@ version\n\
                     wiftype = ptr->wiftype;
                     wiftaddr = ptr->wiftaddr;
                 }
+                if ( LP_wifstr_valid("KMD",passphrase) > 0 )
+                {
+                    bitcoin_wif2priv("KMD",0,&tmptype,&privkey,passphrase);
+                }
+                else 
+                {
+                    conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+                    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+                }
+                
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"passphrase",passphrase);
                 bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
