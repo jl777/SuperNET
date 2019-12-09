@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# add KMD 
+coins/kmd_7776
+
+# Unlock wallet. 
+./wp_7776
+
+# external coins.
+coins/btc_7776
+
+# Loop through assetchains.json and build the path to the approptiate coins file and run it.
+~/komodo/src/listassetchains | while read chain; do
+    coin="coins/$(echo $chain | awk '{print tolower($0)}')_7776"
+    $coin
+done
+
+# Add KMD source code forks here manually as its not listed in the assetchains.json
+coins/hush3_7776

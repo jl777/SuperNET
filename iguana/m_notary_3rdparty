@@ -1,13 +1,9 @@
 #!/bin/bash
-pkill -15 iguana
-rm -f ../agents/iguana *.o
-git pull
-./m_notary_build
-
-# unlock any locked utxos. 
+# manually kill the iguana you need to restart first!
+# unlock any locked utxos. This will unlock utxos for both pubkeys, need a filter for address to only unlock the pubkey you need to restart. 
 komodo-cli lockunspent true `komodo-cli listlockunspent | jq -c .` 
 
-# Start 3rd party iguana,This uses RPC port 7779.
+# Start 3rd party iguana, no split is default on this branch. This uses RPC port 7779, allows 2 iguana on same OS, incase OP does not have capacity to use 2 VM or 2 servers. 
 stdbuf -oL $1 ../agents/iguana 3rd_party & #> iguana.log 2> error.log  &
 
 myip=`curl -s4 checkip.amazonaws.com`
@@ -17,19 +13,14 @@ sleep 4
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
 sleep 3
 
-# TODO: Need to get some more seeds for both networks. 
+# TODO: Need to get some seeds for both networks. 
+
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"157.230.47.150\"}"   # lukechilds_AR
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"167.71.178.51\"}"    # lukechilds_NA
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"103.6.12.117\"}"
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"185.137.233.199\"}"
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"151.80.108.76\"}"
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"152.89.104.58\"}"    # cipi_AR
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"152.89.105.66\"}"    # cipi_NA
 #curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"185.137.233.199\"}"
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.144.114\"}"   # pungocloud_SH
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"91.206.15.115\"}"    # peer2cloud_AR
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"144.217.11.235\"}"    #indenodes_NA
-curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.144.54\"}"    #indenodes_SH
+#curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"185.137.233.199\"}"
 curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"139.99.189.228\"}"
 
 # add KMD
@@ -46,3 +37,13 @@ coins/gin_7779
 coins/vrsc_7779
 
 sleep 30
+
+# dpow for 3rd party coins. 
+source pubkey.txt
+echo $pubkey
+sleep 3
+curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"CHIPS\",\"pubkey\":\"$pubkey\"}"
+curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"GAME\",\"freq\":5,\"pubkey\":\"$pubkey\"}"
+curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"EMC2\",\"freq\":5,\"pubkey\":\"$pubkey\"}"
+curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"GIN\",\"pubkey\":\"$pubkey\"}"
+curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
