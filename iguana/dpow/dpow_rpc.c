@@ -380,6 +380,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
 bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
     char buf[128],*retstr=0; bits256 blockhash;
+    if ( coin->active == 0 ) return blockhash;
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->active == 0 ) return blockhash;
     if ( coin->FULLNODE < 0 )
