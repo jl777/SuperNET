@@ -532,7 +532,6 @@ char *basilisk_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     {
         retstr = _dex_sendrawtransaction(myinfo,coin->symbol,signedtx);
     }
-    else retstr = dpow_sendrawtransaction(myinfo,coin,signedtx);
+    else retstr = dpow_sendrawtransaction(myinfo,coin,signedtx,0);
     return(retstr);
 }
-
