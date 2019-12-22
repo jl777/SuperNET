@@ -1219,7 +1219,15 @@ fn test_withdraw_and_send() {
     assert!(unwrap!(withdraw_json["error"].as_str()).contains("Address bUN5nesdt1xsAjCtAaYUnNbQhGqUWwQT1Q has invalid format"));
 
     // but must allow to withdraw to P2SH addresses if Segwit flag is true
-    withdraw_and_send(&mm_alice, "PIZZA_SEGWIT", "bUN5nesdt1xsAjCtAaYUnNbQhGqUWwQT1Q", &enable_res, "-0.001");
+    let withdraw = unwrap! (block_on (mm_alice.rpc (json! ({
+        "userpass": mm_alice.userpass,
+        "method": "withdraw",
+        "coin": "PIZZA_SEGWIT",
+        "to": "bUN5nesdt1xsAjCtAaYUnNbQhGqUWwQT1Q",
+        "amount": "0.001"
+    }))));
+
+    assert! (withdraw.0.is_success(), "PIZZA_SEGWIT withdraw: {}", withdraw.1);
 
     // must not allow to withdraw to invalid checksum address
     let withdraw = unwrap! (block_on (mm_alice.rpc (json! ({
