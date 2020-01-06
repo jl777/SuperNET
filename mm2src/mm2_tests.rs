@@ -397,7 +397,8 @@ fn check_set_price_fails(mm: &MarketMakerIt, base: &str, rel: &str) {
         "method": "setprice",
         "base": base,
         "rel": rel,
-        "price": 0.9
+        "price": 0.9,
+        "volume": 1,
     }))));
     assert! (rc.0.is_server_error(), "!setprice success but should be error: {}", rc.1);
 }
@@ -408,7 +409,7 @@ fn check_buy_fails(mm: &MarketMakerIt, base: &str, rel: &str, vol: f64) {
         "method": "buy",
         "base": base,
         "rel": rel,
-        "relvolume": vol,
+        "volume": vol,
         "price": 0.9
     }))));
     assert! (rc.0.is_server_error(), "!buy success but should be error: {}", rc.1);
@@ -420,7 +421,7 @@ fn check_sell_fails(mm: &MarketMakerIt, base: &str, rel: &str, vol: f64) {
         "method": "sell",
         "base": base,
         "rel": rel,
-        "basevolume": vol,
+        "volume": vol,
         "price": 0.9
     }))));
     assert! (rc.0.is_server_error(), "!sell success but should be error: {}", rc.1);
@@ -430,9 +431,8 @@ fn check_sell_fails(mm: &MarketMakerIt, base: &str, rel: &str, vol: f64) {
 #[cfg(feature = "native")]
 fn test_check_balance_on_order_post() {
     let coins = json!([
-        {"coin":"BEER","asset":"BEER","rpcport":8923,"txversion":4},
-        {"coin":"PIZZA","asset":"PIZZA","rpcport":11608,"txversion":4},
-        {"coin":"ETOMIC","asset":"ETOMIC","rpcport":10271,"txversion":4},
+        {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"overwintered":1},
+        {"coin":"MORTY","asset":"MORTY","rpcport":11608,"txversion":4,"overwintered":1},
         {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000","rpcport":80},
         {"coin":"JST","name":"jst","etomic":"0x2b294F029Fde858b2c62184e8390591755521d8E"}
     ]);
@@ -445,7 +445,7 @@ fn test_check_balance_on_order_post() {
             "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
             "rpcip": env::var ("BOB_TRADE_IP") .ok(),
             "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
-            "passphrase": "bob passphrase",
+            "passphrase": "bob passphrase check balance on order post",
             "coins": coins,
             "i_am_seed": true,
             "rpc_password": "pass",
@@ -460,30 +460,30 @@ fn test_check_balance_on_order_post() {
     log! ({"enable_coins (bob): {:?}", block_on (enable_coins_eth_electrum (&mm, vec!["http://195.201.0.6:8565"]))});
     // issue sell request by setting base/rel price
 
-    // Expect error as PIZZA balance is 0
-    check_set_price_fails(&mm, "PIZZA", "BEER");
-    // Address has enough BEER, but doesn't have ETH, so setprice call should fail because maker will not have gas to spend ETH taker payment.
-    check_set_price_fails(&mm, "BEER", "ETH");
-    // Address has enough BEER, but doesn't have ETH, so setprice call should fail because maker will not have gas to spend ERC20 taker payment.
-    check_set_price_fails(&mm, "BEER", "JST");
+    // Expect error as MORTY balance is 0
+    check_set_price_fails(&mm, "MORTY", "RICK");
+    // Address has enough RICK, but doesn't have ETH, so setprice call should fail because maker will not have gas to spend ETH taker payment.
+    check_set_price_fails(&mm, "RICK", "ETH");
+    // Address has enough RICK, but doesn't have ETH, so setprice call should fail because maker will not have gas to spend ERC20 taker payment.
+    check_set_price_fails(&mm, "RICK", "JST");
 
-    // Expect error as PIZZA balance is 0
-    check_buy_fails(&mm, "BEER", "PIZZA", 0.1);
-    // BEER balance is sufficient, but amount is too small, the dex fee will result to dust error from RPC
-    check_buy_fails(&mm, "PIZZA", "BEER", 0.000770);
-    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ETH maker payment.
-    check_buy_fails(&mm, "ETH", "BEER", 0.1);
-    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ERC20 maker payment.
-    check_buy_fails(&mm, "JST", "BEER", 0.1);
+    // Expect error as MORTY balance is 0
+    check_buy_fails(&mm, "RICK", "MORTY", 0.1);
+    // RICK balance is sufficient, but amount is too small, it will result to dust error from RPC
+    check_buy_fails(&mm, "MORTY", "RICK", 0.000001);
+    // Address has enough RICK, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ETH maker payment.
+    check_buy_fails(&mm, "ETH", "RICK", 0.1);
+    // Address has enough RICK, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ERC20 maker payment.
+    check_buy_fails(&mm, "JST", "RICK", 0.1);
 
-    // Expect error as PIZZA balance is 0
-    check_sell_fails(&mm, "BEER", "PIZZA", 0.1);
-    // BEER balance is sufficient, but amount is too small, the dex fee will result to dust error from RPC
-    check_sell_fails(&mm, "PIZZA", "BEER", 0.000770);
-    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ETH maker payment.
-    check_sell_fails(&mm, "ETH", "BEER", 0.1);
-    // Address has enough BEER, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ERC20 maker payment.
-    check_sell_fails(&mm, "JST", "BEER", 0.1);
+    // Expect error as MORTY balance is 0
+    check_sell_fails(&mm, "MORTY", "RICK", 0.1);
+    // RICK balance is sufficient, but amount is too small, the dex fee will result to dust error from RPC
+    check_sell_fails(&mm, "RICK", "MORTY", 0.000001);
+    // Address has enough RICK, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ETH maker payment.
+    check_sell_fails(&mm, "RICK", "ETH", 0.1);
+    // Address has enough RICK, but doesn't have ETH, so buy call should fail because taker will not have gas to spend ERC20 maker payment.
+    check_sell_fails(&mm, "RICK", "JST", 0.1);
 }
 
 #[test]
