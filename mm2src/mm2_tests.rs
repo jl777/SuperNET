@@ -809,14 +809,14 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
 
     let maker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeValidateFailed",
                                   "MakerPaymentTransactionFailed", "MakerPaymentDataSendFailed",
-                                  "TakerPaymentValidateFailed", "TakerPaymentSpendFailed", "MakerPaymentRefunded",
-                                  "MakerPaymentRefundFailed"];
+                                  "TakerPaymentValidateFailed", "TakerPaymentWaitConfirmFailed", "TakerPaymentSpendFailed",
+                                  "MakerPaymentRefunded", "MakerPaymentRefundFailed"];
 
     let taker_success_events = vec!["Started", "Negotiated", "TakerFeeSent", "MakerPaymentReceived",
                                     "MakerPaymentWaitConfirmStarted", "MakerPaymentValidatedAndConfirmed",
                                     "TakerPaymentSent", "TakerPaymentSpent", "MakerPaymentSpent", "Finished"];
 
-    let taker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeSendFailed", "MakerPaymentValidateFailed",
+    let taker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeSendFailed", "MakerPaymentValidateFailed", "MakerPaymentWaitConfirmFailed",
                                   "TakerPaymentTransactionFailed", "TakerPaymentDataSendFailed", "TakerPaymentWaitForSpendFailed",
                                   "MakerPaymentSpendFailed", "TakerPaymentRefunded", "TakerPaymentRefundFailed"];
 
