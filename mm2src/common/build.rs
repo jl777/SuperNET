@@ -634,7 +634,7 @@ fn build_libtorrent(boost: &Path, target: &Target) -> (PathBuf, PathBuf) {
         let tgz = out_dir.join("lt.tgz");
         if !tgz.exists() {
             hget(
-                "https://codeload.github.com/arvidn/libtorrent/legacy.tar.gz/RC_1_2",
+                "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_2/libtorrent-rasterbar-1.2.2.tar.gz",
                 tgz.clone(),
             );
             assert!(tgz.exists());
