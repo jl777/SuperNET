@@ -49,7 +49,7 @@ fn save_my_maker_swap_event(ctx: &MmArc, swap: &MakerSwap, event: MakerSavedEven
                                  "TakerPaymentWaitConfirmStarted".into(), "TakerPaymentValidatedAndConfirmed".into(),
                                  "TakerPaymentSpent".into(), "Finished".into()],
             error_events: vec!["StartFailed".into(), "NegotiateFailed".into(), "TakerFeeValidateFailed".into(),
-                               "MakerPaymentTransactionFailed".into(), "MakerPaymentDataSendFailed".into(),
+                               "MakerPaymentTransactionFailed".into(), "MakerPaymentDataSendFailed".into(), "MakerPaymentWaitConfirmFailed".into(),
                                "TakerPaymentValidateFailed".into(), "TakerPaymentWaitConfirmFailed".into(), "TakerPaymentSpendFailed".into(),
                                "MakerPaymentRefunded".into(), "MakerPaymentRefundFailed".into()],
         })
@@ -139,6 +139,7 @@ impl MakerSwap {
             MakerSwapEvent::MakerPaymentSent(tx) => self.w().maker_payment = Some(tx),
             MakerSwapEvent::MakerPaymentTransactionFailed(err) => self.errors.lock().push(err),
             MakerSwapEvent::MakerPaymentDataSendFailed(err) => self.errors.lock().push(err),
+            MakerSwapEvent::MakerPaymentWaitConfirmFailed(err) => self.errors.lock().push(err),
             MakerSwapEvent::TakerPaymentReceived(tx) => self.w().taker_payment = Some(tx),
             MakerSwapEvent::TakerPaymentWaitConfirmStarted => (),
             MakerSwapEvent::TakerPaymentValidatedAndConfirmed => self.taker_payment_confirmed.store(true, Ordering::Relaxed),
@@ -489,6 +490,20 @@ impl MakerSwap {
             ))
         };
 
+        let maker_payment_wait_confirm = self.r().data.started_at + (self.r().data.lock_duration * 3) / 5;
+        let f = self.maker_coin.wait_for_confirmations(
+            &unwrap!(self.r().maker_payment.clone()).tx_hex,
+            self.r().data.maker_payment_confirmations,
+            maker_payment_wait_confirm,
+            WAIT_CONFIRM_INTERVAL,
+        );
+        if let Err(err) = f.compat().await {
+            return Ok((
+                Some(MakerSwapCommand::RefundMakerPayment),
+                vec![MakerSwapEvent::MakerPaymentWaitConfirmFailed(ERRL!("!wait for maker payment confirmations: {}", err).into())]
+            ));
+        }
+
         // wait for 3/5, we need to leave some time space for transaction to be confirmed
         let wait_duration = (self.r().data.lock_duration * 3) / 5;
         let payload = match recv!(self, sending_f, "taker-payment", wait_duration, -2006, FixedValidator::AnythingGoes) {
@@ -787,6 +802,7 @@ pub enum MakerSwapEvent {
     MakerPaymentSent(TransactionDetails),
     MakerPaymentTransactionFailed(SwapError),
     MakerPaymentDataSendFailed(SwapError),
+    MakerPaymentWaitConfirmFailed(SwapError),
     TakerPaymentReceived(TransactionDetails),
     TakerPaymentWaitConfirmStarted,
     TakerPaymentValidatedAndConfirmed,
@@ -811,6 +827,7 @@ impl MakerSwapEvent {
             MakerSwapEvent::MakerPaymentSent(_) => "Maker payment sent...".to_owned(),
             MakerSwapEvent::MakerPaymentTransactionFailed(_) => "Maker payment failed...".to_owned(),
             MakerSwapEvent::MakerPaymentDataSendFailed(_) => "Maker payment failed...".to_owned(),
+            MakerSwapEvent::MakerPaymentWaitConfirmFailed(_) => "Maker payment wait for confirmation failed...".to_owned(),
             MakerSwapEvent::TakerPaymentReceived(_) => "Taker payment received...".to_owned(),
             MakerSwapEvent::TakerPaymentWaitConfirmStarted => "Taker payment wait confirm started...".to_owned(),
             MakerSwapEvent::TakerPaymentValidatedAndConfirmed => "Taker payment validated and confirmed...".to_owned(),
@@ -852,6 +869,7 @@ impl MakerSavedEvent {
             MakerSwapEvent::MakerPaymentSent(_) => Some(MakerSwapCommand::WaitForTakerPayment),
             MakerSwapEvent::MakerPaymentTransactionFailed(_) => Some(MakerSwapCommand::Finish),
             MakerSwapEvent::MakerPaymentDataSendFailed(_) => Some(MakerSwapCommand::RefundMakerPayment),
+            MakerSwapEvent::MakerPaymentWaitConfirmFailed(_) => Some(MakerSwapCommand::RefundMakerPayment),
             MakerSwapEvent::TakerPaymentReceived(_) => Some(MakerSwapCommand::ValidateTakerPayment),
             MakerSwapEvent::TakerPaymentWaitConfirmStarted => Some(MakerSwapCommand::ValidateTakerPayment),
             MakerSwapEvent::TakerPaymentValidatedAndConfirmed => Some(MakerSwapCommand::SpendTakerPayment),
@@ -1219,6 +1237,9 @@ mod maker_swap_tests {
     #[test]
     fn test_maker_swap_event_should_ban() {
         let event = MakerSwapEvent::TakerPaymentWaitConfirmFailed("err".into());
+        assert!(!event.should_ban_taker());
+
+        let event = MakerSwapEvent::MakerPaymentWaitConfirmFailed("err".into());
         assert!(!event.should_ban_taker());
 
         let event = MakerSwapEvent::NegotiateFailed("err".into());

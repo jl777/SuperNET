@@ -808,7 +808,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
                                     "TakerPaymentValidatedAndConfirmed", "TakerPaymentSpent", "Finished"];
 
     let maker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeValidateFailed",
-                                  "MakerPaymentTransactionFailed", "MakerPaymentDataSendFailed",
+                                  "MakerPaymentTransactionFailed", "MakerPaymentDataSendFailed", "MakerPaymentWaitConfirmFailed",
                                   "TakerPaymentValidateFailed", "TakerPaymentWaitConfirmFailed", "TakerPaymentSpendFailed",
                                   "MakerPaymentRefunded", "MakerPaymentRefundFailed"];
 
@@ -816,9 +816,12 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
                                     "MakerPaymentWaitConfirmStarted", "MakerPaymentValidatedAndConfirmed",
                                     "TakerPaymentSent", "TakerPaymentSpent", "MakerPaymentSpent", "Finished"];
 
-    let taker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeSendFailed", "MakerPaymentValidateFailed", "MakerPaymentWaitConfirmFailed",
-                                  "TakerPaymentTransactionFailed", "TakerPaymentDataSendFailed", "TakerPaymentWaitForSpendFailed",
-                                  "MakerPaymentSpendFailed", "TakerPaymentRefunded", "TakerPaymentRefundFailed"];
+    let taker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeSendFailed",
+                                  "MakerPaymentValidateFailed", "MakerPaymentWaitConfirmFailed",
+                                  "TakerPaymentTransactionFailed", "TakerPaymentWaitConfirmFailed",
+                                  "TakerPaymentDataSendFailed", "TakerPaymentWaitForSpendFailed",
+                                  "MakerPaymentSpendFailed", "TakerPaymentRefunded",
+                                  "TakerPaymentRefundFailed"];
 
     for uuid in uuids.iter() {
         unwrap! (mm_bob.wait_for_log (600., |log| log.contains (&format!("[swap uuid={}] Finished", uuid))) .await);
