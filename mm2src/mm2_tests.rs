@@ -810,7 +810,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     let maker_error_events = vec!["StartFailed", "NegotiateFailed", "TakerFeeValidateFailed",
                                   "MakerPaymentTransactionFailed", "MakerPaymentDataSendFailed", "MakerPaymentWaitConfirmFailed",
                                   "TakerPaymentValidateFailed", "TakerPaymentWaitConfirmFailed", "TakerPaymentSpendFailed",
-                                  "MakerPaymentRefunded", "MakerPaymentRefundFailed"];
+                                  "MakerPaymentWaitRefundStarted", "MakerPaymentRefunded", "MakerPaymentRefundFailed"];
 
     let taker_success_events = vec!["Started", "Negotiated", "TakerFeeSent", "MakerPaymentReceived",
                                     "MakerPaymentWaitConfirmStarted", "MakerPaymentValidatedAndConfirmed",
@@ -820,7 +820,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
                                   "MakerPaymentValidateFailed", "MakerPaymentWaitConfirmFailed",
                                   "TakerPaymentTransactionFailed", "TakerPaymentWaitConfirmFailed",
                                   "TakerPaymentDataSendFailed", "TakerPaymentWaitForSpendFailed",
-                                  "MakerPaymentSpendFailed", "TakerPaymentRefunded",
+                                  "MakerPaymentSpendFailed", "TakerPaymentWaitRefundStarted", "TakerPaymentRefunded",
                                   "TakerPaymentRefundFailed"];
 
     for uuid in uuids.iter() {
