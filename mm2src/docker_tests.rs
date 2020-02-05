@@ -40,40 +40,10 @@ mod docker_tests {
     use std::sync::Mutex;
     use std::thread;
     use std::time::Duration;
-    use test::{list_tests_console, Options, parse_opts, run_tests_console, StaticTestFn, StaticBenchFn, TestDescAndFn};
+    use test::{test_main, StaticTestFn, StaticBenchFn, TestDescAndFn};
     use testcontainers::{Container, Docker, Image};
     use testcontainers::clients::Cli;
     use testcontainers::images::generic::{GenericImage, WaitFor};
-
-    // The copy of libtest function returning the exit code instead of immediate process exit
-    fn test_main(args: &[String], tests: Vec<TestDescAndFn>, options: Options) -> i32 {
-        let mut opts = match parse_opts(args) {
-            Some(Ok(o)) => o,
-            Some(Err(msg)) => {
-                eprintln!("error: {}", msg);
-                return 101
-            },
-            None => return 0,
-        };
-
-        opts.options = options;
-        if opts.list {
-            if let Err(e) = list_tests_console(&opts, tests) {
-                eprintln!("error: io error when listing tests: {:?}", e);
-                return 101;
-            }
-            0
-        } else {
-            match run_tests_console(&opts, tests) {
-                Ok(true) => 0,
-                Ok(false) => 101,
-                Err(e) => {
-                    eprintln!("error: io error when listing tests: {:?}", e);
-                    101
-                }
-            }
-        }
-    }
 
     // AP: custom test runner is intended to initialize the required environment (e.g. coin daemons in the docker containers)
     // and then gracefully clear it by dropping the RAII docker container handlers
@@ -135,10 +105,7 @@ mod docker_tests {
             })
             .collect();
         let args: Vec<String> = std::env::args().collect();
-        let exit_code = test_main(&args, owned_tests, Options::new());
-        // drop explicitly as process::exit breaks standard Rust lifecycle
-        drop(containers);
-        std::process::exit(exit_code);
+        let exit_code = test_main(&args, owned_tests, None);
     }
 
     struct UtxoDockerNode<'a> {
