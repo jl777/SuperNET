@@ -12,10 +12,10 @@
 
 #![feature(non_ascii_idents, integer_atomics, panic_info_message)]
 #![feature(async_closure)]
-#![feature(weak_counts)]
 #![feature(hash_raw_entry)]
 #![feature(optin_builtin_traits)]
 
+#![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
