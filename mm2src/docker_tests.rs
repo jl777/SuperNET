@@ -116,7 +116,7 @@ mod docker_tests {
 
     impl<'a> UtxoDockerNode<'a> {
         pub fn wait_ready(&self) {
-            let conf = json!({"asset":self.ticker});
+            let conf = json!({"asset":self.ticker, "txfee": 1000});
             let req = json!({"method":"enable"});
             let priv_key = unwrap!(hex::decode("809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f"));
             let coin = unwrap!(block_on(utxo_coin_from_conf_and_request(&self.ticker, &conf, &req, &priv_key)));
@@ -181,7 +181,7 @@ mod docker_tests {
         // if previous transaction is not confirmed yet
         let _lock = unwrap!(COINS_LOCK.lock());
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
-        let conf = json!({"asset":ticker,"txversion":4,"overwintered":1});
+        let conf = json!({"asset":ticker,"txversion":4,"overwintered":1,"txfee":1000});
         let req = json!({"method":"enable"});
         let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
         let coin = unwrap!(block_on(utxo_coin_from_conf_and_request(ticker, &conf, &req, &priv_key)));
@@ -282,8 +282,8 @@ mod docker_tests {
     fn order_should_be_cancelled_when_entire_balance_is_withdrawn() {
         let (_, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
         ]);
         let mut mm_bob = unwrap! (MarketMakerIt::start (
             json! ({
@@ -385,8 +385,8 @@ mod docker_tests {
         let (_, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let (_, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
         ]);
         let mut mm_bob = unwrap! (MarketMakerIt::start (
             json! ({

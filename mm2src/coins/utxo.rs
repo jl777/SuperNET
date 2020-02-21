@@ -1925,14 +1925,13 @@ pub async fn utxo_coin_from_conf_and_request(
     let overwintered = conf["overwintered"].as_u64().unwrap_or (0) == 1;
 
     let tx_fee = match conf["txfee"].as_u64() {
-        None | Some (0) => if ticker == "BTC" || ticker == "QTUM" {
+        None => TxFee::Fixed(1000),
+        Some (0) => {
             let fee_method = match &rpc_client {
                 UtxoRpcClientEnum::Electrum(_) => EstimateFeeMethod::Standard,
                 UtxoRpcClientEnum::Native(client) => try_s!(client.detect_fee_method().compat().await)
             };
             TxFee::Dynamic(fee_method)
-        } else {
-            TxFee::Fixed(1000)
         },
         Some (fee) => TxFee::Fixed(fee),
     };
