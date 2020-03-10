@@ -54,4 +54,4 @@ iguana/exchanges/manychains
 /mm2src/*/.vscode/ipch
 
 # coins configuration file
-coins
+/coins
