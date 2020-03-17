@@ -103,5 +103,4 @@ jobs:
           assetUploadMode: replace
           tagSource: manual
           tag: $(RELEASE_TAG)
-        enabled: false
         condition: or( eq( variables['RELEASE_UPLOADED'], '' ), eq( variables['DEBUG_UPLOADED'], '' ) )
