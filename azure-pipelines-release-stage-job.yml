@@ -85,11 +85,16 @@ jobs:
           zip ../../upload/mm2-$(COMMIT_HASH)-$(Agent.OS)-Release.dSYM.zip mm2.dSYM -r
         displayName: 'Prepare release build upload MacOS'
         condition: and( eq( variables['Agent.OS'], 'Darwin' ), eq( variables['RELEASE_UPLOADED'], '' ) )
-      - bash: |
-          docker build -f Dockerfile.release -t komodoofficial/atomicdexapi:$(RELEASE_TAG) .
-          docker push komodoofficial/atomicdexapi:$(RELEASE_TAG)
-        displayName: 'Build Docker release image'
-        condition: and( eq( variables['Agent.OS'], 'Linux' ), eq( variables['RELEASE_UPLOADED'], '' ) )
+      - task: Docker@2
+        displayName: Build and Push Docker Release image
+        inputs:
+          containerRegistry: dockerhub
+          repository: komodoofficial/atomicdexapi
+          command: buildAndPush
+          tags: |
+            $(RELEASE_TAG)
+          condition: and( eq( variables['Agent.OS'], 'Linux' ), eq( variables['RELEASE_UPLOADED'], '' ) )
+          Dockerfile: Dockerfile.release
       - powershell: |
           7z a .\upload\mm2-$(COMMIT_HASH)-$(Agent.OS)-Release.zip .\target\release\mm2.exe .\target\release\*.dll "$Env:windir\system32\msvcr100.dll" "$Env:windir\system32\msvcp140.dll" "$Env:windir\system32\vcruntime140.dll"
         displayName: 'Prepare release build upload Windows'
