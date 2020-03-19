@@ -568,7 +568,7 @@ pub mod wio {
     use hyper::client::HttpConnector;
     use hyper::rt::Stream;
     use hyper::server::conn::Http;
-    use hyper_rustls::HttpsConnector;
+    use hyper_tls::HttpsConnector;
     use serde_bencode::ser::to_bytes as bencode;
     use serde_bencode::de::from_bytes as bdecode;
     use std::fmt;
@@ -698,7 +698,7 @@ pub mod wio {
         /// NB: With a shared client there is a possibility that keep-alive connections will be reused.
         pub static ref HYPER: Client<HttpsConnector<HttpConnector>, LiftBody<Vec<u8>>> = {
             let dns_threads = 2;
-            let https = HttpsConnector::new (dns_threads);
+            let https = HttpsConnector::new (dns_threads).unwrap();
             let client = Client::builder()
                 .executor (unwrap! (CORE.lock()) .executor())
                 // Hyper had a lot of Keep-Alive bugs over the years and I suspect

@@ -17,8 +17,7 @@ extern crate fomat_macros;
 extern crate unwrap;
 
 use bzip2::read::BzDecoder;
-use futures01::{Future, Stream};
-use futures_cpupool::CpuPool;
+use futures::Future;
 use glob::{glob, Paths, PatternError};
 use gstuff::{last_modified_sec, now_float, slurp};
 use hyper_rustls::HttpsConnector;
@@ -339,6 +338,7 @@ fn path2s(path: PathBuf) -> String {
 /// Being able to see the status of the download in the terminal
 /// seems more important here than the Future-based parallelism.
 fn hget(url: &str, to: PathBuf) {
+    use futures::{FutureExt, StreamExt};
     // NB: Not using reqwest because I don't see a "hyper-rustls" option in
     // https://github.com/seanmonstar/reqwest/commit/82bc1be89e576b34f09f0f016b0ff38a22820ac5
     use hyper::client::HttpConnector;
@@ -347,16 +347,15 @@ fn hget(url: &str, to: PathBuf) {
 
     eprintln!("hget] Downloading {} ...", url);
 
-    let https = HttpsConnector::new(1);
-    let pool = CpuPool::new(1);
-    let client = Arc::new(Client::builder().executor(pool.clone()).build(https));
+    let https = HttpsConnector::new();
+    let client = Arc::new(Client::builder().build(https));
 
     fn rec(
         client: Arc<Client<HttpsConnector<HttpConnector>>>,
         request: Request<Body>,
         to: PathBuf,
-    ) -> Box<dyn Future<Item = (), Error = ()> + Send> {
-        Box::new(client.request(request) .then(move |res| -> Box<dyn Future<Item=(), Error=()> + Send> {
+    ) -> Box<dyn Future<Output=()> + Send + Unpin> {
+        Box::new(client.request(request) .then(move |res| -> Box<dyn Future<Output=()> + Send + Unpin> {
             let res = unwrap!(res);
             let status = res.status();
             if status == StatusCode::FOUND {
@@ -384,6 +383,7 @@ fn hget(url: &str, to: PathBuf) {
                 let mut last_status_update = now_float();
                 let len: Option<usize> = res.headers().get(CONTENT_LENGTH) .map(|hv| unwrap!(unwrap!(hv.to_str()).parse()));
                 Box::new(res.into_body().for_each(move |chunk| {
+                    let chunk = chunk.unwrap();
                     received += chunk.len();
                     if now_float() - last_status_update > 3. {
                         last_status_update = now_float();
@@ -394,8 +394,8 @@ fn hget(url: &str, to: PathBuf) {
                         );
                     }
                     unwrap!(file.write_all(&chunk));
-                    Ok(())
-                }).then(move |r| -> Result<(), ()> {unwrap!(r); Ok(())}))
+                    futures::future::ready(())
+                }))
             } else {
                 panic!("hget] Unknown status: {:?} (headers: {:?}", status, res.headers())
             }
@@ -403,7 +403,7 @@ fn hget(url: &str, to: PathBuf) {
     }
 
     let request = unwrap!(Request::builder().uri(url).body(Body::empty()));
-    unwrap!(pool.spawn(rec(client, request, to)).wait())
+    tokio::runtime::Runtime::new().unwrap().block_on(rec(client, request, to))
 }
 
 /// Loads the `path`, runs `update` on it and saves back the result if it differs.

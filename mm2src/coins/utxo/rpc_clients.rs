@@ -50,15 +50,16 @@ use std::time::{Duration};
 use tokio::codec::{Encoder, Decoder};
 #[cfg(feature = "native")]
 use tokio_io::{AsyncRead, AsyncWrite};
-#[cfg(feature = "native")]
-use tokio_rustls::{TlsConnector, TlsStream};
-#[cfg(feature = "native")]
-use tokio_rustls::webpki::DNSNameRef;
+// #[cfg(feature = "native")]
+// use tokio_rustls::{TlsConnector, TlsStream};
+// #[cfg(feature = "native")]
+// use tokio_rustls::webpki::DNSNameRef;
 #[cfg(feature = "native")]
 use tokio_tcp::TcpStream;
 #[cfg(feature = "native")]
 use webpki_roots::TLS_SERVER_ROOTS;
 
+/*
 /// Skips the server certificate verification on TLS connection
 pub struct NoCertificateVerification {}
 
@@ -72,6 +73,7 @@ impl rustls::ServerCertVerifier for NoCertificateVerification {
         Ok(rustls::ServerCertVerified::assertion())
     }
 }
+*/
 
 #[derive(Debug)]
 pub enum UtxoRpcClientEnum {
@@ -652,14 +654,16 @@ pub fn spawn_electrum(
             let uri: Uri = try_s!(req.url.parse());
             let host = try_s!(uri.host().ok_or(ERRL!("Couldn't retrieve host from addr {}", req.url)));
 
+            /*
             #[cfg(feature = "native")]
             fn check(host: &str) -> Result<(), String> {
                 DNSNameRef::try_from_ascii_str(host).map(|_|()).map_err(|e| fomat!([e]))
             }
+            */
             #[cfg(not(feature = "native"))]
             fn check(_host: &str) -> Result<(), String> {Ok(())}
 
-            try_s!(check(host));
+            // try_s!(check(host));
 
             ElectrumConfig::SSL {
                 dns_name: host.into(),
@@ -1153,23 +1157,23 @@ macro_rules! try_loop {
 
 /// The enum wrapping possible variants of underlying Streams
 #[cfg(feature = "native")]
-enum ElectrumStream<S> {
+enum ElectrumStream {
     Tcp(TcpStream),
-    Tls(TlsStream<TcpStream, S>),
+    Tls(TcpStream),
 }
 
 #[cfg(feature = "native")]
-impl<S> AsRef<TcpStream> for ElectrumStream<S> {
+impl AsRef<TcpStream> for ElectrumStream {
     fn as_ref(&self) -> &TcpStream {
         match self {
             ElectrumStream::Tcp(stream) => stream,
-            ElectrumStream::Tls(stream) => stream.get_ref().0
+            ElectrumStream::Tls(stream) => stream,
         }
     }
 }
 
 #[cfg(feature = "native")]
-impl<S: Session> std::io::Read for ElectrumStream<S> {
+impl std::io::Read for ElectrumStream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         match self {
             ElectrumStream::Tcp(stream) => stream.read(buf),
@@ -1179,10 +1183,10 @@ impl<S: Session> std::io::Read for ElectrumStream<S> {
 }
 
 #[cfg(feature = "native")]
-impl<S: Session> AsyncRead for ElectrumStream<S> {}
+impl AsyncRead for ElectrumStream {}
 
 #[cfg(feature = "native")]
-impl<S: Session> std::io::Write for ElectrumStream<S> {
+impl std::io::Write for ElectrumStream {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
             ElectrumStream::Tcp(stream) => stream.write(buf),
@@ -1199,7 +1203,7 @@ impl<S: Session> std::io::Write for ElectrumStream<S> {
 }
 
 #[cfg(feature = "native")]
-impl<S: Session> AsyncWrite for ElectrumStream<S> {
+impl AsyncWrite for ElectrumStream {
     fn shutdown(&mut self) -> Poll<(), std::io::Error> {
         match self {
             ElectrumStream::Tcp(stream) => stream.shutdown(),
@@ -1235,8 +1239,10 @@ async fn connect_loop(
         let socket_addr = try_loop!(addr_to_socket_addr(&addr), addr, delay);
 
         let connect_f = match config.clone() {
-            ElectrumConfig::TCP => Either::A(TcpStream::connect(&socket_addr).map(|stream| ElectrumStream::Tcp(stream))),
+            ElectrumConfig::TCP => TcpStream::connect(&socket_addr).map(|stream| ElectrumStream::Tcp(stream)),
             ElectrumConfig::SSL { dns_name, skip_validation } => {
+                unimplemented!()
+                /*
                 let mut ssl_config = ClientConfig::new();
                 ssl_config.root_store.add_server_trust_anchors(&TLS_SERVER_ROOTS);
                 if skip_validation {
@@ -1251,6 +1257,7 @@ async fn connect_loop(
                     let dns = unwrap!(DNSNameRef::try_from_ascii_str(&dns_name).map_err(|e| fomat!([e])));
                     tls_connector.connect(dns, stream).map(|stream| ElectrumStream::Tls(stream))
                 }))
+                */
             }
         };
 
