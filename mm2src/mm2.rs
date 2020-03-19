@@ -39,6 +39,9 @@ use std::str;
 pub mod crash_reports;
 use self::crash_reports::init_crash_reports;
 
+#[path = "gossipsub.rs"]
+mod gossipsub;
+
 #[path = "lp_native_dex.rs"]
 mod lp_native_dex;
 use self::lp_native_dex::{lp_init, lp_ports};

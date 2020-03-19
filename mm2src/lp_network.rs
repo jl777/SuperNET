@@ -244,12 +244,15 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
 
 #[cfg(feature = "native")]
 pub async fn start_seednode_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16) -> Result<(), String> {
+    use crate::mm2::gossipsub::seednode;
     log! ("i_am_seed at " (myipaddr) ":" (mypubport));
+    /*
     let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
     try_s!(listener.set_nonblocking(true));
+    */
     try_s!(thread::Builder::new().name ("seednode_loop".into()) .spawn ({
         let ctx = ctx.clone();
-        move || seednode_loop(ctx, listener)
+        move || seednode(&myipaddr.to_string(), mypubport)
     }));
     Ok(())
 }

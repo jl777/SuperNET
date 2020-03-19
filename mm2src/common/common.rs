@@ -784,8 +784,8 @@ pub mod wio {
 
 #[cfg(feature = "native")]
 pub mod executor {
-    use futures::{FutureExt, Future as Future03, Poll as Poll03, TryFutureExt};
-    use futures::task::Context;
+    use futures::{FutureExt, Future as Future03, TryFutureExt};
+    use futures::task::{Context, Poll as Poll03};
     use gstuff::now_float;
     use std::pin::Pin;
     use std::time::Duration;
