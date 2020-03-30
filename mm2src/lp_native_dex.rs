@@ -845,8 +845,8 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
         if seeds.len() == 0 {
             return ERR!("At least 1 IP must be provided");
         }
-        let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
-        try_s! (start_client_p2p_loop (ctx.clone(), seed_ips) .await);
+        // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
+        try_s! (start_client_p2p_loop (ctx.clone(), seeds[0].0.to_string(), pubport) .await);
     }
 
     let mut seed_ips = Vec::with_capacity (seeds.len());

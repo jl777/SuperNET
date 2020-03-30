@@ -75,6 +75,7 @@ crc32fast = { version = "1.2", features = ["std", "nightly"] }
 crossbeam = "0.7"
 dirs = { version = "1", optional = true }
 enum-primitive-derive = "0.1"
+env_logger = "0.7.1"
 fomat-macros = "0.2"
 futures01 = { version = "0.1", package = "futures" }
 futures-cpupool = "0.1"
@@ -154,3 +155,4 @@ num-rational = { git =  "https://github.com/artemii235/num-rational.git" }
 # Remove when the fix applied to upstream
 # https://github.com/CodeSandwich/Mocktopus/pull/50
 mocktopus_macros = { git = "https://github.com/artemii235/Mocktopus.git" }
+libp2p = { path = "/Users/artem/dev/rust-libp2p" }

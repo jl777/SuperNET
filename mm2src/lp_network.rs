@@ -298,9 +298,10 @@ struct SeedConnection {
 }
 
 #[cfg(feature = "native")]
-pub async fn start_client_p2p_loop (ctx: MmArc, addrs: Vec<String>) -> Result<(), String> {
+pub async fn start_client_p2p_loop (ctx: MmArc, seed_addr: String, port: u16) -> Result<(), String> {
+    use crate::mm2::gossipsub::clientnode;
     try_s!(thread::Builder::new().name ("client_p2p_loop".into()) .spawn ({
-        move || client_p2p_loop (ctx, addrs)
+        move || clientnode(&seed_addr, port)
     }));
     Ok(())
 }
@@ -416,7 +417,7 @@ pub async fn start_client_p2p_loopʰ (req: Bytes) -> Result<Vec<u8>, String> {
         let mut cq = try_s! (ctx.command_queueʰ.lock());
         if cq.is_none() {*cq = Some (Vec::new())}
     }
-    try_s! (start_client_p2p_loop (ctx, args.addrs) .await);
+    try_s! (start_client_p2p_loop (ctx, args.addrs[0].clone(), 1000) .await);
     Ok (Vec::new())
 }
 

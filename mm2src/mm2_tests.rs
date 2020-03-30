@@ -6,7 +6,7 @@ use common::{block_on, slurp};
 #[cfg(not(feature = "native"))]
 use common::call_back;
 use common::executor::Timer;
-use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt};
+use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt, RaiiDump};
 #[cfg(feature = "native")]
 use common::for_tests::mm_dump;
 use common::privkey::key_pair_from_seed;
@@ -2131,7 +2131,7 @@ fn setprice_buy_sell_min_volume() {
 
 #[test]
 #[cfg(feature = "native")]
-fn gossip_sub_seednode() {
+fn gossipsub() {
     let coins = json! ([
         {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"overwintered":1},
         {"coin":"MORTY","asset":"MORTY","rpcport":11608,"txversion":4,"overwintered":1},
@@ -2139,7 +2139,7 @@ fn gossip_sub_seednode() {
         {"coin":"JST","name":"jst","etomic":"0x2b294F029Fde858b2c62184e8390591755521d8E"}
     ]);
 
-    let mut mm = unwrap!(MarketMakerIt::start (
+    let mut mm_bob = unwrap!(MarketMakerIt::start (
         json! ({
             "gui": "nogui",
             "netid": 9998,
@@ -2155,9 +2155,38 @@ fn gossip_sub_seednode() {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm.log_path);
-    log!({"Log path: {}", mm.log_path.display()});
-    unwrap! (block_on (mm.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob.log_path);
+    log!({"Log path: {}", mm_bob.log_path.display()});
+    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
+
+    let alices = spin_n_nodes(&fomat!((mm_bob.ip)), &coins, 1);
+    thread::sleep(Duration::from_secs(60));
+}
+
+fn spin_n_nodes(seednode: &str, coins: &Json, n: usize) -> Vec<(MarketMakerIt, RaiiDump, RaiiDump)> {
+    let mut mm_nodes = Vec::with_capacity(n);
+    for i in 0..n {
+        let mut mm = unwrap!(MarketMakerIt::start (
+            json! ({
+                "gui": "nogui",
+                "netid": 9998,
+                "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
+                "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
+                "passphrase": format!("alice passphrase {}", i),
+                "coins": coins,
+                "seednodes": [seednode],
+                "rpc_password": "pass",
+            }),
+            "pass".into(),
+            local_start! ("alice")
+        ));
+
+        let (alice_dump_log, alice_dump_dashboard) = mm_dump(&mm.log_path);
+        log!({ "Alice {} log path: {}", i, mm.log_path.display() });
+        unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (&format!("Dialed {}", seednode)))));
+        mm_nodes.push((mm, alice_dump_log, alice_dump_dashboard));
+    }
+    mm_nodes
 }
 
 // HOWTO
