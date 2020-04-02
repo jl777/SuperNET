@@ -2202,7 +2202,7 @@ fn gossipsub() {
         {"coin":"JST","name":"jst","etomic":"0x2b294F029Fde858b2c62184e8390591755521d8E"}
     ]);
 
-    let mut mm_bob = unwrap!(MarketMakerIt::start (
+    let mut mm_bob1 = unwrap!(MarketMakerIt::start (
         json! ({
             "gui": "nogui",
             "netid": 9998,
@@ -2218,15 +2218,60 @@ fn gossipsub() {
         match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
     ));
 
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob.log_path);
-    log!({"Log path: {}", mm_bob.log_path.display()});
-    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob1.log_path);
+    log!({"Bob 1 Log path: {}", mm_bob1.log_path.display()});
+    unwrap! (block_on (mm_bob1.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
 
-    let alices = spin_n_nodes(&fomat!((mm_bob.ip)), &coins, 1);
+    let mut mm_bob2 = unwrap!(MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+            "seednodes": [fomat!((mm_bob1.ip))]
+        }),
+        "pass".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob2.log_path);
+    log!({"Bob 2 Log path: {}", mm_bob2.log_path.display()});
+    unwrap! (block_on (mm_bob2.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
+    unwrap!(block_on (mm_bob2.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob1.ip)))));
+
+    let mut mm_bob3 = unwrap!(MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": "bob passphrase",
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+            "seednodes": [fomat!((mm_bob1.ip)), fomat!((mm_bob2.ip))]
+        }),
+        "pass".into(),
+        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
+    ));
+
+    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob3.log_path);
+    log!({"Bob 3 Log path: {}", mm_bob3.log_path.display()});
+    unwrap! (block_on (mm_bob3.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
+    unwrap!(block_on (mm_bob3.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob1.ip)))));
+    unwrap!(block_on (mm_bob3.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob2.ip)))));
+
+    let alices = spin_n_nodes(&[&fomat!((mm_bob1.ip)), &fomat!((mm_bob2.ip)), &fomat!((mm_bob3.ip))], &coins, 6);
     thread::sleep(Duration::from_secs(60));
 }
 
-fn spin_n_nodes(seednode: &str, coins: &Json, n: usize) -> Vec<(MarketMakerIt, RaiiDump, RaiiDump)> {
+fn spin_n_nodes(seednodes: &[&str], coins: &Json, n: usize) -> Vec<(MarketMakerIt, RaiiDump, RaiiDump)> {
     let mut mm_nodes = Vec::with_capacity(n);
     for i in 0..n {
         let mut mm = unwrap!(MarketMakerIt::start (
@@ -2237,7 +2282,7 @@ fn spin_n_nodes(seednode: &str, coins: &Json, n: usize) -> Vec<(MarketMakerIt, R
                 "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
                 "passphrase": format!("alice passphrase {}", i),
                 "coins": coins,
-                "seednodes": [seednode],
+                "seednodes": seednodes,
                 "rpc_password": "pass",
             }),
             "pass".into(),
@@ -2246,7 +2291,9 @@ fn spin_n_nodes(seednode: &str, coins: &Json, n: usize) -> Vec<(MarketMakerIt, R
 
         let (alice_dump_log, alice_dump_dashboard) = mm_dump(&mm.log_path);
         log!({ "Alice {} log path: {}", i, mm.log_path.display() });
-        unwrap! (block_on (mm.wait_for_log (22., |log| log.contains (&format!("Dialed {}", seednode)))));
+        for seednode in seednodes.iter() {
+            unwrap!(block_on (mm.wait_for_log (22., |log| log.contains (&format!("Dialed {}", seednode)))));
+        }
         mm_nodes.push((mm, alice_dump_log, alice_dump_dashboard));
     }
     mm_nodes

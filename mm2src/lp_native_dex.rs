@@ -25,6 +25,7 @@ use futures01::{Future};
 use futures01::sync::oneshot::Sender;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
+use futures::prelude::*;
 use http::StatusCode;
 use rand::{random, Rng, SeedableRng};
 use rand::rngs::SmallRng;
@@ -46,7 +47,7 @@ use crate::common::executor::{spawn, Timer};
 use crate::common::{slurp_url, MM_VERSION};
 use crate::common::mm_ctx::{MmCtx, MmArc};
 use crate::common::privkey::key_pair_from_seed;
-use crate::mm2::lp_network::{lp_command_q_loop, start_seednode_loop, start_client_p2p_loop};
+use crate::mm2::lp_network::{lp_command_q_loop, start_client_p2p_loop, start_relayer_node_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{spawn_rpc};
@@ -841,20 +842,19 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
     };
 
     let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
-    if !i_am_seed {
-        if seeds.len() == 0 {
-            return ERR!("At least 1 IP must be provided");
-        }
-        // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
-        try_s! (start_client_p2p_loop (ctx.clone(), seeds[0].0.to_string(), pubport) .await);
-    }
 
     let mut seed_ips = Vec::with_capacity (seeds.len());
     for (seed_ip, _is_lp) in seeds {
         seed_ips.push (try_s! (seed_ip.parse()));
     }
-    *try_s! (ctx.seeds.lock()) = seed_ips;
-
+    *try_s! (ctx.seeds.lock()) = seed_ips.clone();
+    if !i_am_seed {
+        if seed_ips.len() == 0 {
+            return ERR!("At least 1 IP must be provided");
+        }
+        // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
+        try_s! (start_client_p2p_loop (ctx.clone(), seed_ips.iter().map(|ip| ip.to_string()).collect(), pubport) .await);
+    }
     try_s! (peers::initialize (&ctx, netid, pubport + 1) .await);
 
     Ok(())
@@ -1314,10 +1314,31 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     };
 
     #[cfg(not(feature = "native"))] try_s! (ctx.send_to_helpers().await);
-
-    if i_am_seed {try_s! (start_seednode_loop (&ctx, myipaddr, mypubport) .await)}
-
     let seednodes: Option<Vec<String>> = try_s!(json::from_value(ctx.conf["seednodes"].clone()));
+    use crate::mm2::gossipsub::relayer_node;
+    use common::now_ms;
+
+    if i_am_seed {
+        let tx = relayer_node (myipaddr, mypubport, seednodes.clone());
+        try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
+        let mut tx = ctx.gossip_sub_cmd_queue.or(&|| panic!()).clone();
+        let mut last_msg = 0;
+        let mut msg_id = 0;
+        let mut other_relayers = seednodes.clone();
+        spawn(async move {
+            loop {
+                if other_relayers.is_none() {
+                    let now = now_ms();
+                    if now - last_msg > 5000 {
+                        tx.send(format!("Hello {}", msg_id).into_bytes()).await.unwrap();
+                        last_msg = now;
+                        msg_id += 1;
+                    }
+                }
+            }
+        });
+    }
+
     try_s! (lp_initpeers (&ctx, netid, seednodes) .await);
 
     try_s! (ctx.initialized.pin (true));

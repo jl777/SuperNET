@@ -243,8 +243,8 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
 }
 
 #[cfg(feature = "native")]
-pub async fn start_seednode_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16) -> Result<(), String> {
-    use crate::mm2::gossipsub::seednode;
+pub async fn start_relayer_node_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16, other_relayers: Option<Vec<String>>) -> Result<(), String> {
+    use crate::mm2::gossipsub::relayer_node;
     log! ("i_am_seed at " (myipaddr) ":" (mypubport));
     /*
     let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
@@ -252,7 +252,7 @@ pub async fn start_seednode_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16)
     */
     try_s!(thread::Builder::new().name ("seednode_loop".into()) .spawn ({
         let ctx = ctx.clone();
-        move || seednode(&myipaddr.to_string(), mypubport)
+        move || relayer_node(myipaddr, mypubport, other_relayers)
     }));
     Ok(())
 }
@@ -286,7 +286,7 @@ pub async fn start_seednode_loopʰ (req: Bytes) -> Result<Vec<u8>, String> {
         let mut cq = try_s! (ctx.command_queueʰ.lock());
         if cq.is_none() {*cq = Some (Vec::new())}
     }
-    try_s! (start_seednode_loop (&ctx, myipaddr, args.mypubport) .await);
+    // try_s! (start_relayer_node_loop (&ctx, myipaddr, args.mypubport) .await);
     Ok (Vec::new())
 }
 
@@ -298,10 +298,10 @@ struct SeedConnection {
 }
 
 #[cfg(feature = "native")]
-pub async fn start_client_p2p_loop (ctx: MmArc, seed_addr: String, port: u16) -> Result<(), String> {
+pub async fn start_client_p2p_loop (ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
     use crate::mm2::gossipsub::clientnode;
     try_s!(thread::Builder::new().name ("client_p2p_loop".into()) .spawn ({
-        move || clientnode(&seed_addr, port)
+        move || clientnode(relayers, port)
     }));
     Ok(())
 }
@@ -417,7 +417,7 @@ pub async fn start_client_p2p_loopʰ (req: Bytes) -> Result<Vec<u8>, String> {
         let mut cq = try_s! (ctx.command_queueʰ.lock());
         if cq.is_none() {*cq = Some (Vec::new())}
     }
-    try_s! (start_client_p2p_loop (ctx, args.addrs[0].clone(), 1000) .await);
+    // try_s! (start_client_p2p_loop (ctx, args.addrs[0].clone(), 1000) .await);
     Ok (Vec::new())
 }
 

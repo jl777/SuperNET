@@ -83,6 +83,7 @@ pub struct MmCtx {
     /// `lp_queue_command` shares messages with `lp_command_q_loop` via this channel.  
     /// The messages are usually the JSON broadcasts from the seed nodes.
     pub command_queue: mpsc::UnboundedSender<QueuedCommand>,
+    pub gossip_sub_cmd_queue: Constructible<mpsc::UnboundedSender<Vec<u8>>>,
     /// The end of the `command_queue` channel taken by `lp_command_q_loop`.
     pub command_queueʳ: Mutex<Option<mpsc::UnboundedReceiver<QueuedCommand>>>,
     /// Broadcast `lp_queue_command` messages saved for WASM.
@@ -121,6 +122,7 @@ impl MmCtx {
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
             command_queue,
+            gossip_sub_cmd_queue: Constructible::default(),
             command_queueʳ: Mutex::new (Some (command_queueʳ)),
             command_queueʰ: Mutex::new (None),
             rmd160: Constructible::default(),
