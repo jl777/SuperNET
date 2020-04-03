@@ -45,7 +45,7 @@ jobs:
       # Cargo uses CPU threads count by default running only 2 concurrent tests on Linux.
       # Explicit --test-threads=8 makes the process faster
       - bash: |
-          cargo test --features native --package mm2 --bin mm2 mm2::mm2_tests::gossipsub -- --exact
+          cargo test --features native --package mm2 --bin mm2 mm2::mm2_tests::alice_can_see_the_active_order_after_connection -- --exact
         displayName: 'Test MM2'
         timeoutInMinutes: 22
         env:

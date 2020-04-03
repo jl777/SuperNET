@@ -301,7 +301,7 @@ struct SeedConnection {
 pub async fn start_client_p2p_loop (ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
     use crate::mm2::gossipsub::clientnode;
     try_s!(thread::Builder::new().name ("client_p2p_loop".into()) .spawn ({
-        move || clientnode(relayers, port)
+        move || clientnode(ctx, relayers, port)
     }));
     Ok(())
 }

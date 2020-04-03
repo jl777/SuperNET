@@ -51,6 +51,7 @@ use uuid::Uuid;
 
 use crate::mm2::lp_swap::{dex_fee_amount, get_locked_amount, is_pubkey_banned, MakerSwap,
                           run_maker_swap, run_taker_swap, TakerSwap};
+use futures::SinkExt;
 
 #[cfg(test)]
 #[cfg(feature = "native")]
@@ -961,7 +962,10 @@ fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String>
         if let Err(err) = rc {log!("!lp_post_price_recv: "(err))}
     });
 
-    ctx.broadcast_p2p_msg(&req_string);
+    let mut tx = ctx.gossip_sub_cmd_queue.or(&|| panic!()).clone();
+    spawn(async move {
+        tx.send(req_string.into_bytes()).await.unwrap();
+    });
     Ok(())
 }
 
