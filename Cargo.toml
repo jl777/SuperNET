@@ -155,4 +155,3 @@ num-rational = { git =  "https://github.com/artemii235/num-rational.git" }
 # Remove when the fix applied to upstream
 # https://github.com/CodeSandwich/Mocktopus/pull/50
 mocktopus_macros = { git = "https://github.com/artemii235/Mocktopus.git" }
-libp2p = { path = "/Users/artem/dev/rust-libp2p" }
