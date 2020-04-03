@@ -856,7 +856,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
 
     log! ("Waiting 3 seconds for nodes to broadcast their swaps data..");
     Timer::sleep (3.) .await;
-
+    /*
     for uuid in uuids.iter() {
         log! ("Checking alice status..");
         check_stats_swap_status(
@@ -874,6 +874,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
             &taker_success_events,
         ).await;
     }
+    */
 
     log! ("Checking alice recent swaps..");
     check_recent_swaps(&mm_alice, uuids.len()).await;

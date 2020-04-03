@@ -571,12 +571,9 @@ fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
 }
 
 /// Saves the swap status notification received from P2P network to local DB.
-pub fn save_stats_swap_status(ctx: &MmArc, data: Json) -> HyRes {
-    let swap: SavedSwap = try_h!(json::from_value(data));
-    try_h!(save_stats_swap(ctx, &swap));
-    rpc_response(200, json!({
-        "result": "success"
-    }).to_string())
+pub fn save_stats_swap_status(ctx: &MmArc, data: Json) {
+    let swap: SavedSwap = unwrap!(json::from_value(data));
+    unwrap!(save_stats_swap(ctx, &swap));
 }
 
 /// Returns the data of recent swaps of `my` node. Returns no more than `limit` records (default: 10).

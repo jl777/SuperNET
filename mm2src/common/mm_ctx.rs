@@ -1,6 +1,10 @@
 use bytes::Bytes;
+use crate::executor::spawn;
 use crossbeam::{channel, Sender, Receiver};
-use futures::channel::mpsc;
+use futures::{
+    channel::mpsc,
+    prelude::*,
+};
 use gstuff::Constructible;
 #[cfg(not(feature = "native"))]
 use http::Response;
@@ -212,12 +216,12 @@ impl MmCtx {
     /// Sends the P2P message to a processing thread
     #[cfg(feature = "native")]
     pub fn broadcast_p2p_msg(&self, msg: &str) {
-        let i_am_seed = self.conf["i_am_seed"].as_bool().unwrap_or(false);
-        if i_am_seed {
-            unwrap!(self.seednode_p2p_channel.0.send(msg.to_owned().into_bytes()));
-        } else {
-            unwrap!(self.client_p2p_channel.0.send(msg.to_owned().into_bytes()));
-    }   }
+        let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
+        let msg = msg.to_string();
+        spawn(async move {
+            tx.send(msg.into_bytes()).await.unwrap();
+        });
+    }
 
     #[cfg(not(feature = "native"))]
     pub fn broadcast_p2p_msg (&self, msg: &str) {

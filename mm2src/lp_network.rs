@@ -117,72 +117,38 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
 }
 
 /// The thread processing the peer-to-peer messaging bus.
-pub async fn lp_command_q_loop(ctx: MmArc) {
-    use futures::StreamExt;
-    use futures::future::{select, Either};
-
-    let mut command_queueʳ = unwrap!(unwrap!(ctx.command_queueʳ.lock()).take().ok_or("!command_queueʳ"));
-
-    let mut processed_messages: HashMap<H160, u64> = HashMap::new();
-    let mut stoppingᶠ = Box::pin(async {loop {if ctx.is_stopping() {return}; Timer::sleep(0.2).await}});
-    loop {
-        let nextᶠ = command_queueʳ.next();
-        let rc = select(nextᶠ, stoppingᶠ).await;
-        let cmd = match rc {
-            Either::Left((Some(cmd), s)) => {stoppingᶠ = s; cmd},
-            Either::Left((None, _s)) => break,
-            Either::Right((_n, _s)) => break
-        };
-
-        let now = now_ms();
-        // clean up messages older than 60 seconds
-        processed_messages = processed_messages.drain().filter(|(_, timestamp)| timestamp + 60000 > now).collect();
-
-        let msg_hash = ripemd160(cmd.msg.as_bytes());
-        match processed_messages.entry(msg_hash) {
-            Entry::Vacant(e) => e.insert(now),
-            Entry::Occupied(_) => continue, // skip the messages that we processed previously
-        };
-
-        let json: Json = match json::from_str(&cmd.msg) {
-            Ok(j) => j,
-            Err(e) => {
-                log!("Error " (e) " parsing JSON from msg " (cmd.msg));
-                continue;
-            }
-        };
-
-        let method = json["method"].as_str();
-        if let Some(m) = method {
-            if m == "swapstatus" {
-                let handler = save_stats_swap_status(&ctx, json["data"].clone());
-                rpc_reply_to_peer(handler, cmd);
-                continue;
-            }
+pub async fn lp_process_p2p_message(ctx: &MmArc, msg: &[u8]) {
+    let json: Json = match json::from_slice(msg) {
+        Ok(j) => j,
+        Err(e) => {
+            log!("Error " (e) " parsing JSON from msg " [msg]);
+            return;
         }
+    };
 
-        // rebroadcast the message if we're seednode
-        // swapstatus is excluded from rebroadcast as the message is big and other nodes might just not need it
-        let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
-        if i_am_seed {
-            ctx.broadcast_p2p_msg(&cmd.msg);
+    let method = json["method"].as_str();
+    if let Some(m) = method {
+        if m == "swapstatus" {
+            save_stats_swap_status(&ctx, json["data"].clone());
+            return;
         }
-
-        let json = match dispatcher(json, ctx.clone()) {
-            DispatcherRes::Match(handler) => {
-                rpc_reply_to_peer(handler, cmd);
-                continue
-            },
-            DispatcherRes::NoMatch(req) => req
-        };
-
-        // Invokes `lp_trade_command`.
-        lp_command_process(
-            ctx.clone(),
-            json,
-        );
     }
+
+    let json = match dispatcher(json, ctx.clone()) {
+        DispatcherRes::Match(handler) => {
+            handler.compat().await;
+            return;
+        },
+        DispatcherRes::NoMatch(req) => req
+    };
+
+    // Invokes `lp_trade_command`.
+    lp_command_process(
+        ctx.clone(),
+        json,
+    );
 }
+
 
 /// The loop processing seednode activity as message relayer/rebroadcaster
 /// Non-blocking mode should be enabled on listener for this to work
@@ -252,7 +218,7 @@ pub async fn start_relayer_node_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: 
     */
     try_s!(thread::Builder::new().name ("seednode_loop".into()) .spawn ({
         let ctx = ctx.clone();
-        move || relayer_node(myipaddr, mypubport, other_relayers)
+        move || relayer_node(ctx, myipaddr, mypubport, other_relayers)
     }));
     Ok(())
 }
@@ -300,9 +266,8 @@ struct SeedConnection {
 #[cfg(feature = "native")]
 pub async fn start_client_p2p_loop (ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
     use crate::mm2::gossipsub::clientnode;
-    try_s!(thread::Builder::new().name ("client_p2p_loop".into()) .spawn ({
-        move || clientnode(ctx, relayers, port)
-    }));
+    let tx = clientnode(ctx.clone(), relayers, port);
+    try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
     Ok(())
 }
 

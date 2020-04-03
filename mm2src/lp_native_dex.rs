@@ -47,7 +47,7 @@ use crate::common::executor::{spawn, Timer};
 use crate::common::{slurp_url, MM_VERSION};
 use crate::common::mm_ctx::{MmCtx, MmArc};
 use crate::common::privkey::key_pair_from_seed;
-use crate::mm2::lp_network::{lp_command_q_loop, start_client_p2p_loop, start_relayer_node_loop};
+use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{spawn_rpc};
@@ -1319,7 +1319,7 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     use common::now_ms;
 
     if i_am_seed {
-        let tx = relayer_node (myipaddr, mypubport, seednodes.clone());
+        let tx = relayer_node (ctx.clone(), myipaddr, mypubport, seednodes.clone());
         try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
         let mut tx = ctx.gossip_sub_cmd_queue.or(&|| panic!()).clone();
         let mut last_msg = 0;
@@ -1353,9 +1353,6 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
 
     let ctxʹ = ctx.clone();
     spawn (async move {lp_ordermatch_loop (ctxʹ) .await});
-
-    let ctxʹ = ctx.clone();
-    spawn (async move {lp_command_q_loop (ctxʹ) .await});
 
     #[cfg(not(feature = "native"))] {if 1==1 {return Ok(())}}  // TODO: Gradually move this point further down.
 

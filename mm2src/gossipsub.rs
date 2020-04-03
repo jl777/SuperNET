@@ -5,7 +5,7 @@ use common::{
     executor::spawn,
     mm_ctx::MmArc,
 };
-use crate::mm2::lp_ordermatch::lp_post_price_recv;
+use crate::mm2::lp_network::lp_process_p2p_message;
 use futures::{
     select, FutureExt,
     channel::mpsc,
@@ -29,7 +29,7 @@ use std::{
 };
 
 
-pub fn relayer_node(ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) -> mpsc::UnboundedSender<Vec<u8>> {
+pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) -> mpsc::UnboundedSender<Vec<u8>> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -79,8 +79,7 @@ pub fn relayer_node(ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) 
     }
 
     let mut listening = false;
-    let (mut tx, mut rx) = mpsc::unbounded::<Vec<u8>>();
-    let res = tx.clone();
+    let (tx, mut rx) = mpsc::unbounded::<Vec<u8>>();
 
     spawn(async move {
         loop {
@@ -98,15 +97,18 @@ pub fn relayer_node(ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) 
                 gossip_event = gossip_event_fut => {
                     drop(gossip_event_fut);
                     match gossip_event {
-                        GossipsubEvent::Message(peer_id, id, message) => println!(
-                            "Got message: {} with id: {} from peer: {:?}",
-                            String::from_utf8_lossy(&message.data),
-                            id,
-                            peer_id
-                        ),
+                        GossipsubEvent::Message(peer_id, id, message) => {
+                            println!(
+                                "Got message: {} with id: {} from peer: {:?}",
+                                String::from_utf8_lossy(&message.data),
+                                id,
+                                peer_id
+                            );
+                            lp_process_p2p_message(&ctx, &message.data).await;
+                        },
                         GossipsubEvent::Subscribed { peer_id, topic } => {
                             swarm.subscribe(Topic::new(topic.into_string()));
-                        }
+                        },
                         _ => println!("{:?}", gossip_event),
                     };
                 },
@@ -128,10 +130,10 @@ pub fn relayer_node(ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) 
             }
         }
     });
-    res
+    tx
 }
 
-pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) {
+pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc::UnboundedSender<Vec<u8>> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -173,26 +175,35 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) {
             Err(e) => println!("Dial {:?} failed: {:?}", relayer, e),
         }
     }
-
+    let (tx, mut rx) = mpsc::unbounded::<Vec<u8>>();
     spawn(async move {
         loop {
-            match swarm.next().await {
-                GossipsubEvent::Message(peer_id, id, message) => {
-                    println!(
-                        "Got message: {} with id: {} from peer: {:?}",
-                        String::from_utf8_lossy(&message.data),
-                        id,
-                        peer_id
-                    );
-                    match json::from_slice::<Json>(&message.data) {
-                        Ok(msg) => {
-                            lp_post_price_recv(&ctx, msg);
+            let mut gossip_event_fut = Box::pin(swarm.next().fuse());
+            let mut rx_fut = rx.next().fuse();
+            select! {
+                gossip_event = gossip_event_fut => {
+                    drop(gossip_event_fut);
+                    match gossip_event {
+                        GossipsubEvent::Message(peer_id, id, message) => {
+                            println!(
+                                "Got message: {} with id: {} from peer: {:?}",
+                                String::from_utf8_lossy(&message.data),
+                                id,
+                                peer_id
+                            );
+                            lp_process_p2p_message(&ctx, &message.data).await;
                         },
-                        Err(_) => (),
+                        _ => println!("{:?}", gossip_event),
+                    };
+                },
+                recv = rx_fut => {
+                    drop(gossip_event_fut);
+                    if let Some(recv) = recv {
+                        swarm.publish(&topic, recv);
                     }
                 },
-                _ => {}
             }
         }
-    })
+    });
+    tx
 }
