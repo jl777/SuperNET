@@ -3,6 +3,7 @@
 #![feature(integer_atomics)]
 
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
+#![recursion_limit="256"]
 
 #[macro_use] extern crate common;
 #[macro_use] extern crate enum_primitive_derive;
