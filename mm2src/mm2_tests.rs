@@ -229,7 +229,7 @@ fn alice_can_see_the_active_order_after_connection() {
     ]);
 
     // start bob and immediately place the order
-    let mut mm_bob = unwrap! (MarketMakerIt::start (
+    let mut mm_bob = unwrap!(MarketMakerIt::start (
         json! ({
             "gui": "nogui",
             "netid": 9998,
@@ -244,14 +244,14 @@ fn alice_can_see_the_active_order_after_connection() {
         "pass".into(),
         local_start! ("bob")
     ));
-    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump (&mm_bob.log_path);
-    log!({"Bob log path: {}", mm_bob.log_path.display()});
-    unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
+    log!({ "Bob log path: {}", mm_bob.log_path.display() });
+    unwrap!(block_on (mm_bob.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
     // Enable coins on Bob side. Print the replies in case we need the "address".
-    log! ({"enable_coins (bob): {:?}", block_on (enable_coins_eth_electrum (&mm_bob, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"]))});
+    log!({ "enable_coins (bob): {:?}", block_on(enable_coins_eth_electrum(&mm_bob, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"])) });
     // issue sell request on Bob side by setting base/rel price
     log!("Issue bob sell request");
-    let rc = unwrap! (block_on (mm_bob.rpc (json! ({
+    let rc = unwrap!(block_on (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
         "method": "setprice",
         "base": "RICK",
@@ -259,27 +259,27 @@ fn alice_can_see_the_active_order_after_connection() {
         "price": 0.9,
         "volume": "0.9",
     }))));
-    assert! (rc.0.is_success(), "!setprice: {}", rc.1);
+    assert!(rc.0.is_success(), "!setprice: {}", rc.1);
 
     thread::sleep(Duration::from_secs(12));
 
     // Bob orderbook must show the new order
     log!("Get RICK/MORTY orderbook on Bob side");
-    let rc = unwrap! (block_on (mm_bob.rpc (json! ({
+    let rc = unwrap!(block_on (mm_bob.rpc (json! ({
         "userpass": mm_bob.userpass,
         "method": "orderbook",
         "base": "RICK",
         "rel": "MORTY",
     }))));
-    assert! (rc.0.is_success(), "!orderbook: {}", rc.1);
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
 
     let bob_orderbook: Json = unwrap!(json::from_str(&rc.1));
-    log!("Bob orderbook " [bob_orderbook]);
+    log!("Bob orderbook "[bob_orderbook]);
     let asks = bob_orderbook["asks"].as_array().unwrap();
     assert!(asks.len() > 0, "Bob RICK/MORTY asks are empty");
     assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
 
-    let mut mm_alice = unwrap! (MarketMakerIt::start (
+    let mut mm_alice = unwrap!(MarketMakerIt::start (
         json! ({
             "gui": "nogui",
             "netid": 9998,
@@ -294,38 +294,34 @@ fn alice_can_see_the_active_order_after_connection() {
         local_start! ("alice")
     ));
 
-    let (_alice_dump_log, _alice_dump_dashboard) = mm_dump (&mm_alice.log_path);
-    log!({"Alice log path: {}", mm_alice.log_path.display()});
+    let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
+    log!({ "Alice log path: {}", mm_alice.log_path.display() });
 
-    unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
+    unwrap!(block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
 
     // Enable coins on Alice side. Print the replies in case we need the "address".
-    log! ({"enable_coins (alice): {:?}", block_on (enable_coins_eth_electrum (&mm_alice, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"]))});
+    log!({ "enable_coins (alice): {:?}", block_on(enable_coins_eth_electrum(&mm_alice, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"])) });
 
-    for _ in 0..2 {
-        // Alice should be able to see the order no later than 10 seconds after connecting to bob
-        thread::sleep(Duration::from_secs(10));
-        log!("Get RICK/MORTY orderbook on Alice side");
-        let rc = unwrap! (block_on (mm_alice.rpc (json! ({
-            "userpass": mm_alice.userpass,
-            "method": "orderbook",
-            "base": "RICK",
-            "rel": "MORTY",
-        }))));
-        assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+    log!("Get RICK/MORTY orderbook on Alice side");
+    let rc = unwrap!(block_on (mm_alice.rpc (json! ({
+        "userpass": mm_alice.userpass,
+        "method": "orderbook",
+        "base": "RICK",
+        "rel": "MORTY",
+    }))));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
 
-        let alice_orderbook: Json = unwrap!(json::from_str(&rc.1));
-        log!("Alice orderbook " [alice_orderbook]);
-        let asks = alice_orderbook["asks"].as_array().unwrap();
-        assert_eq!(asks.len(), 1, "Alice RICK/MORTY orderbook must have exactly 1 ask");
-        assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
-        // orderbook must display valid Bob address
-        let address = asks[0]["address"].as_str().unwrap();
-        assert_eq!("RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD", address);
-    }
+    let alice_orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("Alice orderbook "[alice_orderbook]);
+    let asks = alice_orderbook["asks"].as_array().unwrap();
+    assert_eq!(asks.len(), 1, "Alice RICK/MORTY orderbook must have exactly 1 ask");
+    assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
+    // orderbook must display valid Bob address
+    let address = asks[0]["address"].as_str().unwrap();
+    assert_eq!("RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD", address);
 
-    unwrap! (block_on (mm_bob.stop()));
-    unwrap! (block_on (mm_alice.stop()));
+    unwrap!(block_on (mm_bob.stop()));
+    unwrap!(block_on (mm_alice.stop()));
 }
 
 #[test]
@@ -2268,8 +2264,8 @@ fn gossipsub() {
     unwrap!(block_on (mm_bob3.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob1.ip)))));
     unwrap!(block_on (mm_bob3.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob2.ip)))));
 
-    let alices = spin_n_nodes(&[&fomat!((mm_bob1.ip)), &fomat!((mm_bob2.ip)), &fomat!((mm_bob3.ip))], &coins, 6);
-    thread::sleep(Duration::from_secs(60));
+    let alices = spin_n_nodes(&[&fomat!((mm_bob1.ip)), &fomat!((mm_bob2.ip)), &fomat!((mm_bob3.ip))], &coins, 1);
+    thread::sleep(Duration::from_secs(20));
 }
 
 fn spin_n_nodes(seednodes: &[&str], coins: &Json, n: usize) -> Vec<(MarketMakerIt, RaiiDump, RaiiDump)> {

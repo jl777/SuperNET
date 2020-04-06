@@ -52,6 +52,24 @@ use uuid::Uuid;
 use crate::mm2::lp_swap::{dex_fee_amount, get_locked_amount, is_pubkey_banned, MakerSwap,
                           run_maker_swap, run_taker_swap, TakerSwap};
 
+fn alb_ordered_pair(base: &str, rel: &str) -> String {
+    let (first, second) = if base < rel {
+        (base, rel)
+    } else {
+        (rel, base)
+    };
+    let mut res = first.to_owned();
+    res.push_str(second);
+    res
+}
+
+#[test]
+fn test_alb_ordered_pair() {
+    assert_eq!("BTCKMD", alb_ordered_pair("KMD", "BTC"));
+    assert_eq!("BTCHKMD", alb_ordered_pair("KMD", "BTCH"));
+    assert_eq!("KMDQTUM", alb_ordered_pair("QTUM", "KMD"));
+}
+
 #[cfg(test)]
 #[cfg(feature = "native")]
 #[path = "ordermatch_tests.rs"]
@@ -542,7 +560,8 @@ pub fn lp_trade_command(
                 taker_order_uuid: reserved_msg.taker_order_uuid,
                 maker_order_uuid: reserved_msg.maker_order_uuid,
             };
-            ctx.broadcast_p2p_msg(&unwrap!(json::to_string(&connect)));
+            let topic = alb_ordered_pair(&my_order.request.base, &my_order.request.rel);
+            ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&connect)));
             let taker_match = TakerMatch {
                 reserved: reserved_msg,
                 connect,
@@ -617,7 +636,8 @@ pub fn lp_trade_command(
                     taker_order_uuid: taker_request.uuid,
                     maker_order_uuid: *uuid,
                 };
-                ctx.broadcast_p2p_msg(&unwrap!(json::to_string(&reserved)));
+                let topic = alb_ordered_pair(&order.base, &order.rel);
+                ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&reserved)));
                 let maker_match = MakerMatch {
                     request: taker_request,
                     reserved,
@@ -662,7 +682,8 @@ pub fn lp_trade_command(
                 maker_order_uuid: connect_msg.maker_order_uuid,
                 method: "connected".into(),
             };
-            ctx.broadcast_p2p_msg(&unwrap!(json::to_string(&connected)));
+            let topic = alb_ordered_pair(&my_order.base, &my_order.rel);
+            ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&connected)));
             order_match.connect = Some(connect_msg);
             order_match.connected = Some(connected);
             my_order.started_swaps.push(order_match.request.uuid);
@@ -719,7 +740,7 @@ pub async fn buy(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let trade_info = TradeInfo::Taker(dex_fee);
     try_s!(rel_coin.check_i_have_enough_to_trade(&my_amount.clone().into(), &my_balance.clone().into(), trade_info).compat().await);
     try_s!(base_coin.can_i_spend_other_payment().compat().await);
-    let res = try_s!(lp_auto_buy(&ctx, input)).into_bytes();
+    let res = try_s!(lp_auto_buy(&ctx, input).await).into_bytes();
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -736,7 +757,7 @@ pub async fn sell(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let trade_info = TradeInfo::Taker(dex_fee);
     try_s!(base_coin.check_i_have_enough_to_trade(&input.volume.clone().into(), &my_balance.clone().into(), trade_info).compat().await);
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
-    let res = try_s!(lp_auto_buy(&ctx, input)).into_bytes();
+    let res = try_s!(lp_auto_buy(&ctx, input).await).into_bytes();
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -759,7 +780,7 @@ struct TakerMatch {
     last_updated: u64,
 }
 
-pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
+pub async fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
     if input.price < MmNumber::from(BigRational::new(1.into(), 100000000.into())) {
         return ERR!("Price is too low, minimum is 0.00000001");
     }
@@ -773,7 +794,8 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
         },
         _ => return ERR!("Auto buy must be called only from buy/sell RPC methods")
     };
-
+    let topic = alb_ordered_pair(&input.base, &input.rel);
+    ctx.subscribe_to_p2p_topic(topic.clone());
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_taker_orders = try_s!(ordermatch_ctx.my_taker_orders.lock());
     let uuid = new_uuid();
@@ -801,7 +823,7 @@ pub fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, String> {
         action,
         match_by: input.match_by,
     };
-    ctx.broadcast_p2p_msg(&unwrap!(json::to_string(&request)));
+    ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&request)));
     let result = json!({
         "result": request
     }).to_string();
@@ -961,7 +983,7 @@ fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String>
         if let Err(err) = rc {log!("!lp_post_price_recv: "(err))}
     });
 
-    ctx.broadcast_p2p_msg(&req_string);
+    ctx.broadcast_p2p_msg(alb_ordered_pair(&req.base, &req.rel), &req_string);
     Ok(())
 }
 
@@ -1061,6 +1083,8 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     };
     save_my_maker_order(&ctx, &order);
     let res = try_s!(json::to_vec(&json!({"result":order})));
+    let topic = alb_ordered_pair(&order.base, &order.rel);
+    ctx.subscribe_to_p2p_topic(topic);
     my_orders.insert(uuid, order);
     Ok(try_s!(Response::builder().body(res)))
 }
@@ -1518,6 +1542,9 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &req.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
+    ctx.subscribe_to_p2p_topic(alb_ordered_pair(&req.base, &req.rel));
+    // TODO remove this, added to wait some time to receive messages from other nodes
+    async_std::task::sleep(std::time::Duration::from_secs(3)).await;
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = try_s!(ordermatch_ctx.orderbook.lock());
     let asks = match orderbook.get(&(req.base.clone(), req.rel.clone())) {

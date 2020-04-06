@@ -29,6 +29,11 @@ use std::sync::{Arc, Mutex, Weak};
 use crate::{bits256, small_rng, QueuedCommand};
 use crate::log::{self, LogState};
 
+pub enum P2PCommand {
+    Subscribe(Vec<String>),
+    Publish(Vec<(String, Vec<u8>)>),
+}
+
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///
 /// Every MarketMaker has one and only one instance of `MmCtx`.
@@ -87,7 +92,7 @@ pub struct MmCtx {
     /// `lp_queue_command` shares messages with `lp_command_q_loop` via this channel.  
     /// The messages are usually the JSON broadcasts from the seed nodes.
     pub command_queue: mpsc::UnboundedSender<QueuedCommand>,
-    pub gossip_sub_cmd_queue: Constructible<mpsc::UnboundedSender<Vec<u8>>>,
+    pub gossip_sub_cmd_queue: Constructible<mpsc::UnboundedSender<P2PCommand>>,
     /// The end of the `command_queue` channel taken by `lp_command_q_loop`.
     pub command_queueʳ: Mutex<Option<mpsc::UnboundedReceiver<QueuedCommand>>>,
     /// Broadcast `lp_queue_command` messages saved for WASM.
@@ -215,11 +220,19 @@ impl MmCtx {
 
     /// Sends the P2P message to a processing thread
     #[cfg(feature = "native")]
-    pub fn broadcast_p2p_msg(&self, msg: &str) {
+    pub fn broadcast_p2p_msg(&self, topic: String, msg: &str) {
         let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
         let msg = msg.to_string();
         spawn(async move {
-            tx.send(msg.into_bytes()).await.unwrap();
+            tx.send(P2PCommand::Publish(vec![(topic, msg.into_bytes())])).await.unwrap();
+        });
+    }
+
+    #[cfg(feature = "native")]
+    pub fn subscribe_to_p2p_topic(&self, topic: String) {
+        let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
+        spawn(async move {
+            tx.send(P2PCommand::Subscribe(vec![topic])).await.unwrap();
         });
     }
 

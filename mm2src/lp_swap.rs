@@ -566,7 +566,7 @@ fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
         "method": "swapstatus",
         "data": status,
     }).to_string();
-    ctx.broadcast_p2p_msg(&status_string);
+    ctx.broadcast_p2p_msg("test".into(), &status_string);
     Ok(())
 }
 

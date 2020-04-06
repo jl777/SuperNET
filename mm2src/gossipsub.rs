@@ -3,9 +3,12 @@ use async_std::future::timeout;
 use common::{
     now_ms,
     executor::spawn,
-    mm_ctx::MmArc,
+    mm_ctx::{MmArc, P2PCommand},
 };
-use crate::mm2::lp_network::lp_process_p2p_message;
+use crate::mm2::{
+    lp_network::lp_process_p2p_message,
+    lp_ordermatch::broadcast_my_maker_orders,
+};
 use futures::{
     select, FutureExt,
     channel::mpsc,
@@ -28,8 +31,7 @@ use std::{
     time::Duration,
 };
 
-
-pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) -> mpsc::UnboundedSender<Vec<u8>> {
+pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) -> mpsc::UnboundedSender<P2PCommand> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -37,9 +39,6 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
 
     // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
     let transport = libp2p::build_development_transport(local_key).unwrap();
-
-    // Create a Gossipsub topic
-    let topic = Topic::new("test-net".into());
 
     // Create a Swarm to manage peers and events
     let mut swarm = {
@@ -61,6 +60,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
             //same content will be propagated.
             .build();
         // build a gossipsub network behaviour
+        let topic = Topic::new("ETHJST".into());
         let mut gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
         // gossipsub.subscribe(topic.clone());
         libp2p::Swarm::new(transport, gossipsub, local_peer_id)
@@ -79,7 +79,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
     }
 
     let mut listening = false;
-    let (tx, mut rx) = mpsc::unbounded::<Vec<u8>>();
+    let (tx, mut rx) = mpsc::unbounded();
 
     spawn(async move {
         loop {
@@ -108,14 +108,26 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                         },
                         GossipsubEvent::Subscribed { peer_id, topic } => {
                             swarm.subscribe(Topic::new(topic.into_string()));
+                            broadcast_my_maker_orders(&ctx).await.unwrap();
                         },
                         _ => println!("{:?}", gossip_event),
                     };
                 },
                 recv = rx_fut => {
                     drop(gossip_event_fut);
-                    if let Some(recv) = recv {
-                        swarm.publish(&topic, recv);
+                    if let Some(cmd) = recv {
+                        match cmd {
+                            P2PCommand::Subscribe(topics) => {
+                                for topic in topics {
+                                    swarm.subscribe(Topic::new(topic));
+                                }
+                            },
+                            P2PCommand::Publish(msgs) => {
+                                for (topic, msg) in msgs {
+                                    swarm.publish(&Topic::new(topic), msg);
+                                }
+                            }
+                        }
                     }
                 },
                 tick = tick_fut => {
@@ -133,7 +145,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
     tx
 }
 
-pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc::UnboundedSender<Vec<u8>> {
+pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc::UnboundedSender<P2PCommand> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -141,9 +153,6 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
 
     // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
     let transport = libp2p::build_development_transport(local_key).unwrap();
-
-    // Create a Gossipsub topic
-    let topic = Topic::new("test-net".into());
 
     // Create a Swarm to manage peers and events
     let mut swarm = {
@@ -164,7 +173,6 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
             .build();
         // build a gossipsub network behaviour
         let mut gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
-        gossipsub.subscribe(topic.clone());
         libp2p::Swarm::new(transport, gossipsub, local_peer_id)
     };
 
@@ -175,11 +183,14 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
             Err(e) => println!("Dial {:?} failed: {:?}", relayer, e),
         }
     }
-    let (tx, mut rx) = mpsc::unbounded::<Vec<u8>>();
+    let (tx, mut rx) = mpsc::unbounded();
     spawn(async move {
+        let mut ticks = 0u64;
         loop {
             let mut gossip_event_fut = Box::pin(swarm.next().fuse());
             let mut rx_fut = rx.next().fuse();
+            let never = future::pending::<()>();
+            let mut tick_fut = Box::pin(timeout(Duration::from_secs(1), never).fuse().then(|_| futures::future::ready(())));
             select! {
                 gossip_event = gossip_event_fut => {
                     drop(gossip_event_fut);
@@ -198,8 +209,27 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                 },
                 recv = rx_fut => {
                     drop(gossip_event_fut);
-                    if let Some(recv) = recv {
-                        swarm.publish(&topic, recv);
+                    if let Some(cmd) = recv {
+                        match cmd {
+                            P2PCommand::Subscribe(topics) => {
+                                for topic in topics {
+                                    swarm.subscribe(Topic::new(topic));
+                                }
+                            },
+                            P2PCommand::Publish(msgs) => {
+                                for (topic, msg) in msgs {
+                                    swarm.publish(&Topic::new(topic), msg);
+                                }
+                            }
+                        }
+                    }
+                },
+                tick = tick_fut => {
+                    ticks += 1;
+                    drop(gossip_event_fut);
+                    if ticks == 5 {
+                        let topic = Topic::new("ETHJST".into());
+                        swarm.subscribe(topic);
                     }
                 },
             }

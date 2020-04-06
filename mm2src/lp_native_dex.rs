@@ -1321,22 +1321,6 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     if i_am_seed {
         let tx = relayer_node (ctx.clone(), myipaddr, mypubport, seednodes.clone());
         try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
-        let mut tx = ctx.gossip_sub_cmd_queue.or(&|| panic!()).clone();
-        let mut last_msg = 0;
-        let mut msg_id = 0;
-        let mut other_relayers = seednodes.clone();
-        spawn(async move {
-            loop {
-                if other_relayers.is_none() {
-                    let now = now_ms();
-                    if now - last_msg > 5000 {
-                        tx.send(format!("Hello {}", msg_id).into_bytes()).await.unwrap();
-                        last_msg = now;
-                        msg_id += 1;
-                    }
-                }
-            }
-        });
     }
 
     try_s! (lp_initpeers (&ctx, netid, seednodes) .await);

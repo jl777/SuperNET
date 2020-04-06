@@ -369,7 +369,7 @@ pub async fn p2p_tapʰ (req: Bytes) -> Result<Vec<u8>, String> {
 pub async fn broadcast_p2p_msgʰ (req: Bytes) -> Result<Vec<u8>, String> {
     let args: common::BroadcastP2pMessageArgs = try_s! (bdecode (&req));
     let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
-    ctx.broadcast_p2p_msg (&args.msg);
+    ctx.broadcast_p2p_msg ("test".into(), &args.msg);
     Ok (Vec::new())
 }
 
