@@ -42,10 +42,9 @@ jobs:
           touch mm2src/common/build.rs
           cargo build --features native -vv
         displayName: 'Build MM2 Debug'
-      # Cargo uses CPU threads count by default running only 2 concurrent tests on Linux.
-      # Explicit --test-threads=8 makes the process faster
+      # Explicit --test-threads=16 makes testing process slightly faster on agents that have <16 CPU cores.
       - bash: |
-          cargo test --features native --package mm2 --bin mm2 mm2::mm2_tests::alice_can_see_the_active_order_after_connection -- --exact
+          cargo test --features native --all -- --test-threads=16
         displayName: 'Test MM2'
         timeoutInMinutes: 22
         env:
