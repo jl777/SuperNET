@@ -40,37 +40,19 @@ use std::net::{IpAddr, TcpListener, TcpStream};
 use std::thread;
 use std::time::Duration;
 
+use crate::mm2::gossipsub::TOPIC_SEPARATOR;
 use crate::mm2::lp_native_dex::lp_command_process;
-use crate::mm2::lp_ordermatch::lp_post_price_recv;
-use crate::mm2::lp_swap::save_stats_swap_status;
+use crate::mm2::lp_ordermatch::{lp_post_price_recv, ORDERBOOK_PREFIX};
+use crate::mm2::lp_swap::{save_stats_swap_status, SWAP_PREFIX};
 use crate::mm2::rpc::lp_signatures::lp_notify_recv;
+use futures::{TryFutureExt};
 
 /// Result of `fn dispatcher`.
 pub enum DispatcherRes {
     /// `fn dispatcher` has found a Rust handler for the RPC "method".
     Match (HyRes),
     /// No handler found by `fn dispatcher`. Returning the `Json` request in order for it to be handled elsewhere.
-    NoMatch (Json)
-}
-
-/// The network module dispatcher, handles the messages received from other nodes
-fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
-    // AP: the HTTP RPC server dispatcher was previously used for this purpose which IMHO
-    // breaks single responsibility principe, makes harder to maintain the codebase and possibly
-    // adds security concerns. Also we might end with using different serialization formats (binary)
-    // for P2P messages - JSON is excessive for such purpose while it's completely fine to use it for HTTP server.
-    // See https://github.com/artemii235/SuperNET/issues/415 for more info
-    // So this is a starting point of further refactoring
-    //log! ("dispatcher] " (json::to_string (&req) .unwrap()));
-    let method = match req["method"].clone() {
-        Json::String (method) => method,
-        _ => return DispatcherRes::NoMatch (req)
-    };
-    DispatcherRes::Match (match &method[..] {  // Sorted alphanumerically (on the first latter) for readability.
-        "notify" => lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
-        "postprice" => lp_post_price_recv (&ctx, req),
-        _ => return DispatcherRes::NoMatch (req)
-    })
+    NoMatch
 }
 
 #[derive(Serialize)]
@@ -116,39 +98,19 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
     spawn (f.compat().map(|_|()))
 }
 
-/// The thread processing the peer-to-peer messaging bus.
-pub async fn lp_process_p2p_message(ctx: &MmArc, msg: &[u8]) {
-    let json: Json = match json::from_slice(msg) {
-        Ok(j) => j,
-        Err(e) => {
-            log!("Error " (e) " parsing JSON from msg " [msg]);
-            return;
-        }
-    };
-
-    let method = json["method"].as_str();
-    if let Some(m) = method {
-        if m == "swapstatus" {
-            save_stats_swap_status(&ctx, json["data"].clone());
-            return;
+pub async fn lp_process_p2p_message(ctx: &MmArc, topics: Vec<String>, msg: &[u8]) {
+    for topic in topics {
+        let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
+        match split.next() {
+            Some(ORDERBOOK_PREFIX) => crate::mm2::lp_ordermatch::process_msg(ctx.clone(), msg).await,
+            Some(SWAP_PREFIX) => match split.next() {
+                Some(maybe_uuid) => crate::mm2::lp_swap::process_msg(ctx.clone(), maybe_uuid, msg),
+                None => (),
+            }
+            _ => (),
         }
     }
-
-    let json = match dispatcher(json, ctx.clone()) {
-        DispatcherRes::Match(handler) => {
-            handler.compat().await;
-            return;
-        },
-        DispatcherRes::NoMatch(req) => req
-    };
-
-    // Invokes `lp_trade_command`.
-    lp_command_process(
-        ctx.clone(),
-        json,
-    );
 }
-
 
 /// The loop processing seednode activity as message relayer/rebroadcaster
 /// Non-blocking mode should be enabled on listener for this to work

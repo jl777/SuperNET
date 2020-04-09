@@ -31,6 +31,16 @@ use std::{
     time::Duration,
 };
 
+pub type TopicPrefix = &'static str;
+pub const TOPIC_SEPARATOR: char = '/';
+
+pub fn pub_sub_topic(prefix: TopicPrefix, topic: &str) -> String {
+    let mut res = prefix.to_owned();
+    res.push(TOPIC_SEPARATOR);
+    res.push_str(topic);
+    res
+}
+
 pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) -> mpsc::UnboundedSender<P2PCommand> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
@@ -55,14 +65,12 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
         // set custom gossipsub
         let gossipsub_config = gossipsub::GossipsubConfigBuilder::new()
             .message_id_fn(message_id_fn) // content-address messages. No two messages of the
+            // same content will be propagated.
             .mesh_n(5)
             .mesh_n_high(5)
-            //same content will be propagated.
             .build();
         // build a gossipsub network behaviour
-        let topic = Topic::new("ETHJST".into());
         let mut gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
-        // gossipsub.subscribe(topic.clone());
         libp2p::Swarm::new(transport, gossipsub, local_peer_id)
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
@@ -104,7 +112,8 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                                 id,
                                 peer_id
                             );
-                            lp_process_p2p_message(&ctx, &message.data).await;
+                            let topics = message.topics.iter().map(|topic| topic.as_str().to_owned()).collect();
+                            lp_process_p2p_message(&ctx, topics, &message.data).await;
                         },
                         GossipsubEvent::Subscribed { peer_id, topic } => {
                             swarm.subscribe(Topic::new(topic.into_string()));
@@ -189,8 +198,6 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
         loop {
             let mut gossip_event_fut = Box::pin(swarm.next().fuse());
             let mut rx_fut = rx.next().fuse();
-            let never = future::pending::<()>();
-            let mut tick_fut = Box::pin(timeout(Duration::from_secs(1), never).fuse().then(|_| futures::future::ready(())));
             select! {
                 gossip_event = gossip_event_fut => {
                     drop(gossip_event_fut);
@@ -202,7 +209,8 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                                 id,
                                 peer_id
                             );
-                            lp_process_p2p_message(&ctx, &message.data).await;
+                            let topics = message.topics.iter().map(|topic| topic.as_str().to_owned()).collect();
+                            lp_process_p2p_message(&ctx, topics, &message.data).await;
                         },
                         _ => println!("{:?}", gossip_event),
                     };
@@ -222,14 +230,6 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                                 }
                             }
                         }
-                    }
-                },
-                tick = tick_fut => {
-                    ticks += 1;
-                    drop(gossip_event_fut);
-                    if ticks == 5 {
-                        let topic = Topic::new("ETHJST".into());
-                        swarm.subscribe(topic);
                     }
                 },
             }

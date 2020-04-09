@@ -61,10 +61,14 @@ use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TransactionEnum};
 use common::{block_on, read_dir, rpc_response, slurp, write, HyRes};
 use common::mm_ctx::{from_ctx, MmArc};
+use crate::mm2::{
+    gossipsub::{pub_sub_topic, TopicPrefix}
+};
 use http::Response;
 use primitives::hash::{H160, H256, H264};
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use serde_json::{self as json, Value as Json};
+use serialization::{Deserializable, deserialize, Reader, Serializable, serialize, Stream};
 use std::collections::{HashSet, HashMap};
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -73,14 +77,78 @@ use std::thread;
 use std::time::Duration;
 use uuid::Uuid;
 
+pub const SWAP_PREFIX: TopicPrefix = "swap";
+
+struct SwapMsg {
+    subject: &'static str,
+    data: Vec<u8>,
+}
+
+impl Serializable for SwapMsg {
+    fn serialize(&self, s: &mut Stream) {
+        match self.subject {
+            "negotiation" => s.append(&0u8),
+            "negotiation-reply" => s.append(&1u8),
+            "negotiated" => s.append(&2u8),
+            "taker-fee" => s.append(&3u8),
+            "maker-payment" => s.append(&4u8),
+            "taker-payment" => s.append(&5u8),
+            _ => panic!("Unknown subject {}", self.subject),
+        };
+        s.append(&(self.data.len() as u32));
+        s.append_slice(&self.data);
+    }
+}
+
+impl Deserializable for SwapMsg {
+    fn deserialize<T>(reader: &mut Reader<T>) -> Result<Self, serialization::Error>
+        where Self: Sized, T: std::io::Read {
+        let tag: u8 = reader.read()?;
+        let subject = match tag {
+            0 => "negotiation",
+            1 => "negotiation-reply",
+            2 => "negotiated",
+            3 => "taker-fee",
+            4 => "maker-payment",
+            5 => "taker-payment",
+            _ => return Err(serialization::Error::Custom(ERRL!("Unsupported tag {}", tag))),
+        };
+        let len: u32 = reader.read()?;
+        let mut data = Vec::with_capacity(len as usize);
+        reader.read_slice(&mut data)?;
+        Ok(SwapMsg {
+            subject,
+            data,
+        })
+    }
+}
+
+pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
+    let msg: SwapMsg = match deserialize(msg) {
+        Ok(m) => m,
+        Err(_) => return,
+    };
+    let uuid: Uuid = match topic.parse() {
+        Ok(u) => u,
+        Err(_) => return,
+    };
+    let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
+    let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
+    msgs.entry(uuid).or_insert(HashMap::new()).insert(msg.subject, msg.data);
+}
+
+pub fn swap_topic(uuid: &str) -> String {
+    pub_sub_topic(SWAP_PREFIX, uuid)
+}
+
 // NB: Using a macro instead of a function in order to preserve the line numbers in the log.
 macro_rules! send {
-    ($ctx: expr, $to: expr, $subj: expr, $fallback: expr, $payload: expr) => {{
+    ($ctx: expr, $subj: expr, $topic: expr, $payload: expr) => {{
         // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
-        let crc = crc32::checksum_ieee (&$payload);
-        log!("Sending '" ($subj) "' (" ($payload.len()) " bytes, crc " (crc) ")");
+        // let crc = crc32::checksum_ieee (&$payload);
+        // log!("Sending '" ($subj) "' (" ($payload.len()) " bytes, crc " (crc) ")");
 
-        peers::send ($ctx.clone(), $to, Vec::from ($subj.as_bytes()), $fallback, $payload.into()).await
+        $ctx.broadcast_p2p_msg($topic, $payload);
     }}
 }
 
@@ -204,6 +272,7 @@ struct BanReason {
 struct SwapsContext {
     running_swaps: Mutex<Vec<Weak<dyn AtomicSwap>>>,
     banned_pubkeys: Mutex<HashMap<H256Json, BanReason>>,
+    swap_msgs: Mutex<HashMap<Uuid, HashMap<&'static str, Vec<u8>>>>,
 }
 
 impl SwapsContext {
@@ -213,6 +282,7 @@ impl SwapsContext {
             Ok (SwapsContext {
                 running_swaps: Mutex::new(vec![]),
                 banned_pubkeys: Mutex::new(HashMap::new()),
+                swap_msgs: Mutex::new(HashMap::new()),
             })
         })))
     }

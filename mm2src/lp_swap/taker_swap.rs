@@ -22,7 +22,7 @@ use std::sync::atomic::Ordering;
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount_by_other_swaps,
   lp_atomic_locktime, my_swap_file_path,
   AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
-  SavedSwap, SwapsContext, SwapError, SwapNegotiationData,
+  SavedSwap, swap_topic, SwapsContext, SwapError, SwapNegotiationData,
   BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
 
 pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
@@ -578,7 +578,7 @@ impl TakerSwap {
             persistent_pubkey: self.my_persistent_pub.clone(),
         };
         let bytes = serialize(&taker_data);
-        let sending_f = match send!(self.ctx, self.maker, fomat!(("negotiation-reply") '@' (self.uuid)), 30, bytes.as_slice()) {
+        let sending_f = match send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes) {
             Ok(f) => f,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -660,7 +660,7 @@ impl TakerSwap {
 
     async fn wait_for_maker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.clone();
-        let sending_f = match send!(self.ctx, self.maker, fomat!(("taker-fee") '@' (self.uuid)), 60, tx_hex) {
+        let sending_f = match send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex) {
             Ok(f) => f,
             Err (err) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -814,7 +814,7 @@ impl TakerSwap {
 
     async fn wait_for_taker_payment_spend(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_payment.as_ref().unwrap().tx_hex.clone();
-        let sending_f = match send!(self.ctx, self.maker, fomat!(("taker-payment") '@' (self.uuid)), 60, tx_hex) {
+        let sending_f = match send!(self.ctx, "taker-payment", swap_topic(&self.uuid), tx_hex) {
             Ok(f) => f,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::RefundTakerPayment),
