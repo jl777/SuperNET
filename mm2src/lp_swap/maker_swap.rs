@@ -23,8 +23,8 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::atomic::Ordering;
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount_by_other_swaps,
   lp_atomic_locktime, my_swap_file_path,
-  AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
-  SavedSwap, swap_topic, SwapsContext, SwapError, SwapNegotiationData,
+  AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction, recv_swap_msg,
+  SavedSwap, swap_topic, SwapsContext, SwapError, SwapNegotiationData, SwapMsg,
   BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
 
 pub fn stats_maker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
@@ -310,7 +310,7 @@ impl MakerSwap {
         let bytes = serialize(&maker_negotiation_data);
         let sending_f = send!(self.ctx, "negotiation", swap_topic(&self.uuid), bytes.take());
 
-        let data = match recv!(self, sending_f, "negotiation-reply", 90, -2000, FixedValidator::AnythingGoes) {
+        let data = match recv_swap_msg(self.ctx.clone(), "negotiation-reply", &self.uuid, 90).await {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(MakerSwapCommand::Finish),
@@ -353,15 +353,9 @@ impl MakerSwap {
 
     async fn wait_taker_fee(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
         let negotiated = serialize(&true);
-        let sending_f = match send!(self.ctx, "negotiated", swap_topic(&self.uuid), negotiated) {
-            Ok(f) => f,
-            Err(e) => return Ok((
-                Some(MakerSwapCommand::Finish),
-                vec![MakerSwapEvent::NegotiateFailed(ERRL!("{}", e).into())],
-            )),
-        };
+        let sending_f = send!(self.ctx, "negotiated", swap_topic(&self.uuid), negotiated.take());
 
-        let payload = match recv!(self, sending_f, "taker-fee", 180, -2003, FixedValidator::AnythingGoes) {
+        let payload = match recv_swap_msg(self.ctx.clone(), "taker-fee", &self.uuid, 180).await {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(MakerSwapCommand::Finish),
@@ -484,17 +478,8 @@ impl MakerSwap {
     }
 
     async fn wait_for_taker_payment(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
-        let maker_payment_hex = self.r().maker_payment.as_ref().unwrap().tx_hex.clone();
-        let sending_f = match send!(self.ctx, "maker-payment", swap_topic(&self.uuid), maker_payment_hex) {
-            Ok(f) => f,
-            Err(e) => return Ok((
-                Some(MakerSwapCommand::RefundMakerPayment),
-                vec![
-                    MakerSwapEvent::MakerPaymentDataSendFailed(ERRL!("{}", e).into()),
-                    MakerSwapEvent::MakerPaymentWaitRefundStarted { wait_until: self.wait_refund_until() },
-                ]
-            ))
-        };
+        let maker_payment_hex = self.r().maker_payment.as_ref().unwrap().tx_hex.0.clone();
+        let sending_f = send!(self.ctx, "maker-payment", swap_topic(&self.uuid), maker_payment_hex);
 
         let maker_payment_wait_confirm = self.r().data.started_at + (self.r().data.lock_duration * 3) / 5;
         let f = self.maker_coin.wait_for_confirmations(
@@ -516,7 +501,7 @@ impl MakerSwap {
 
         // wait for 3/5, we need to leave some time space for transaction to be confirmed
         let wait_duration = (self.r().data.lock_duration * 3) / 5;
-        let payload = match recv!(self, sending_f, "taker-payment", wait_duration, -2006, FixedValidator::AnythingGoes) {
+        let payload = match recv_swap_msg(self.ctx.clone(), "taker-payment", &self.uuid, wait_duration).await {
             Ok(p) => p,
             Err(e) => return Ok((
                 Some(MakerSwapCommand::RefundMakerPayment),
@@ -1009,6 +994,8 @@ pub async fn run_maker_swap(swap: MakerSwap, initial_command: Option<MakerSwapCo
     let mut command = initial_command.unwrap_or(MakerSwapCommand::Start);
     let mut events;
     let ctx = swap.ctx.clone();
+    ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
+    Timer::sleep(3u64 as f64).await;
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
     macro_rules! swap_tags {() => {&[&"swap", &("uuid", &uuid[..])]}}

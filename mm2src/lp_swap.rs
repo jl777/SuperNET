@@ -59,7 +59,8 @@
 
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TransactionEnum};
-use common::{block_on, read_dir, rpc_response, slurp, write, HyRes};
+use common::{block_on, read_dir, rpc_response, slurp, write, HyRes, now_ms};
+use common::executor::Timer;
 use common::mm_ctx::{from_ctx, MmArc};
 use crate::mm2::{
     gossipsub::{pub_sub_topic, TopicPrefix}
@@ -79,7 +80,7 @@ use uuid::Uuid;
 
 pub const SWAP_PREFIX: TopicPrefix = "swap";
 
-struct SwapMsg {
+pub struct SwapMsg {
     subject: &'static str,
     data: Vec<u8>,
 }
@@ -114,7 +115,7 @@ impl Deserializable for SwapMsg {
             _ => return Err(serialization::Error::Custom(ERRL!("Unsupported tag {}", tag))),
         };
         let len: u32 = reader.read()?;
-        let mut data = Vec::with_capacity(len as usize);
+        let mut data = vec![0; len as usize];
         reader.read_slice(&mut data)?;
         Ok(SwapMsg {
             subject,
@@ -126,15 +127,15 @@ impl Deserializable for SwapMsg {
 pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let msg: SwapMsg = match deserialize(msg) {
         Ok(m) => m,
-        Err(_) => return,
-    };
-    let uuid: Uuid = match topic.parse() {
-        Ok(u) => u,
-        Err(_) => return,
+        Err(e) => {
+            log!("Swap msg deserialize error " [e]);
+            return
+        },
     };
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
-    msgs.entry(uuid).or_insert(HashMap::new()).insert(msg.subject, msg.data);
+    msgs.entry(topic.to_string()).or_insert(HashMap::new()).insert(msg.subject, msg.data);
+    log!({"Swap msgs {:?}", msgs});
 }
 
 pub fn swap_topic(uuid: &str) -> String {
@@ -147,18 +148,44 @@ macro_rules! send {
         // Checksum here helps us visually verify the logistics between the Maker and Taker logs.
         // let crc = crc32::checksum_ieee (&$payload);
         // log!("Sending '" ($subj) "' (" ($payload.len()) " bytes, crc " (crc) ")");
-
-        $ctx.broadcast_p2p_msg($topic, $payload);
+        let msg = SwapMsg {
+            subject: $subj,
+            data: $payload,
+        };
+        $ctx.broadcast_p2p_msg($topic, serialize(&msg).take());
     }}
 }
 
+async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u64) -> Result<Vec<u8>, String> {
+    let started = now_ms() / 1000;
+    let timeout = BASIC_COMM_TIMEOUT + timeout;
+    let wait_until = started + timeout;
+    loop {
+        Timer::sleep(1u64 as f64).await;
+        let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
+        let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
+        match msgs.get_mut(uuid) {
+            Some(mut swap_msgs) => {
+                match swap_msgs.remove(subject) {
+                    Some(msg) => return Ok(msg),
+                    None => (),
+                }
+            }
+            None => (),
+        }
+        let now = now_ms() / 1000;
+        if now > wait_until {
+            return ERR!("Timeout ({} > {})", now - started, timeout)
+        }
+    }
+}
+
+/*
 // NB: `$validator` is where we should put the decryption and verification in,
 // in order for the bogus DHT input to disrupt communication less.
 macro_rules! recv_ {
     ($swap: expr, $subj: expr, $timeout_sec: expr, $ec: expr, $validator: expr) => {{
-        let recv_subject = fomat! (($subj) '@' ($swap.uuid));
-        let recv_subjectᵇ = recv_subject.clone().into_bytes();
-        let fallback = ($timeout_sec / 3) .min (30) .max (60) as u8;
+        let recv_subject = $subj$swap.uuid;
         let recv_f = peers::recv ($swap.ctx.clone(), recv_subjectᵇ, fallback, $validator);
 
         let started = now_float();
@@ -190,6 +217,7 @@ macro_rules! recv {
         payload
     }};
 }
+*/
 
 #[path = "lp_swap/maker_swap.rs"]
 mod maker_swap;
@@ -272,7 +300,7 @@ struct BanReason {
 struct SwapsContext {
     running_swaps: Mutex<Vec<Weak<dyn AtomicSwap>>>,
     banned_pubkeys: Mutex<HashMap<H256Json, BanReason>>,
-    swap_msgs: Mutex<HashMap<Uuid, HashMap<&'static str, Vec<u8>>>>,
+    swap_msgs: Mutex<HashMap<String, HashMap<&'static str, Vec<u8>>>>,
 }
 
 impl SwapsContext {
@@ -636,7 +664,7 @@ fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
         "method": "swapstatus",
         "data": status,
     }).to_string();
-    ctx.broadcast_p2p_msg("test".into(), &status_string);
+    ctx.broadcast_p2p_msg("test".into(), status_string.into_bytes());
     Ok(())
 }
 

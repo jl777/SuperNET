@@ -590,7 +590,7 @@ pub fn lp_trade_command(
                 maker_order_uuid: reserved_msg.maker_order_uuid,
             };
             let topic = orderbook_topic(&my_order.request.base, &my_order.request.rel);
-            ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&connect)));
+            ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&connect)));
             let taker_match = TakerMatch {
                 reserved: reserved_msg,
                 connect,
@@ -666,7 +666,7 @@ pub fn lp_trade_command(
                     maker_order_uuid: *uuid,
                 };
                 let topic = orderbook_topic(&order.base, &order.rel);
-                ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&reserved)));
+                ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&reserved)));
                 let maker_match = MakerMatch {
                     request: taker_request,
                     reserved,
@@ -712,7 +712,7 @@ pub fn lp_trade_command(
                 method: "connected".into(),
             };
             let topic = orderbook_topic(&my_order.base, &my_order.rel);
-            ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&connected)));
+            ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&connected)));
             order_match.connect = Some(connect_msg);
             order_match.connected = Some(connected);
             my_order.started_swaps.push(order_match.request.uuid);
@@ -855,7 +855,7 @@ pub async fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, Str
         action,
         match_by: input.match_by,
     };
-    ctx.broadcast_p2p_msg(topic, &unwrap!(json::to_string(&request)));
+    ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&request)));
     let result = json!({
         "result": request
     }).to_string();
@@ -1015,7 +1015,7 @@ fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String>
         if let Err(err) = rc {log!("!lp_post_price_recv: "(err))}
     });
 
-    ctx.broadcast_p2p_msg(orderbook_topic(&req.base, &req.rel), &req_string);
+    ctx.broadcast_p2p_msg(orderbook_topic(&req.base, &req.rel), req_string.into_bytes());
     Ok(())
 }
 

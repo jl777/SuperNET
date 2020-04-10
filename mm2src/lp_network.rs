@@ -104,7 +104,10 @@ pub async fn lp_process_p2p_message(ctx: &MmArc, topics: Vec<String>, msg: &[u8]
         match split.next() {
             Some(ORDERBOOK_PREFIX) => crate::mm2::lp_ordermatch::process_msg(ctx.clone(), msg).await,
             Some(SWAP_PREFIX) => match split.next() {
-                Some(maybe_uuid) => crate::mm2::lp_swap::process_msg(ctx.clone(), maybe_uuid, msg),
+                Some(maybe_uuid) => {
+                    log!({"Processing swap msg {} {:?}", maybe_uuid, msg});
+                    crate::mm2::lp_swap::process_msg(ctx.clone(), maybe_uuid, msg);
+                },
                 None => (),
             }
             _ => (),
@@ -331,7 +334,7 @@ pub async fn p2p_tapʰ (req: Bytes) -> Result<Vec<u8>, String> {
 pub async fn broadcast_p2p_msgʰ (req: Bytes) -> Result<Vec<u8>, String> {
     let args: common::BroadcastP2pMessageArgs = try_s! (bdecode (&req));
     let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
-    ctx.broadcast_p2p_msg ("test".into(), &args.msg);
+    ctx.broadcast_p2p_msg ("test".into(), args.msg.into_bytes());
     Ok (Vec::new())
 }
 

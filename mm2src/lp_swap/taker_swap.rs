@@ -21,8 +21,8 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::atomic::Ordering;
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount_by_other_swaps,
   lp_atomic_locktime, my_swap_file_path,
-  AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
-  SavedSwap, swap_topic, SwapsContext, SwapError, SwapNegotiationData,
+  AtomicSwap, LockedAmount, MySwapInfo, recv_swap_msg, RecoveredSwap, RecoveredSwapAction,
+  SavedSwap, swap_topic, SwapsContext, SwapError, SwapNegotiationData, SwapMsg,
   BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
 
 pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
@@ -190,6 +190,8 @@ pub async fn run_taker_swap(swap: TakerSwap, initial_command: Option<TakerSwapCo
     let ctx = swap.ctx.clone();
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
+    ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
+    Timer::sleep(3u64 as f64).await;
     let running_swap = Arc::new(swap);
     let weak_ref = Arc::downgrade(&running_swap);
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
@@ -540,7 +542,7 @@ impl TakerSwap {
     }
 
     async fn negotiate(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let data = match recv!(self, "negotiation", 90, -1000, FixedValidator::AnythingGoes) {
+        let data = match recv_swap_msg(self.ctx.clone(), "negotiation", &self.uuid, 90).await {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -578,14 +580,8 @@ impl TakerSwap {
             persistent_pubkey: self.my_persistent_pub.clone(),
         };
         let bytes = serialize(&taker_data);
-        let sending_f = match send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes) {
-            Ok(f) => f,
-            Err(e) => return Ok((
-                Some(TakerSwapCommand::Finish),
-                vec![TakerSwapEvent::NegotiateFailed(ERRL!("{}", e).into())]
-            )),
-        };
-        let data = match recv!(self, sending_f, "negotiated", 90, -1000, FixedValidator::AnythingGoes) {
+        let sending_f = send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes.take());
+        let data = match recv_swap_msg(self.ctx.clone(), "negotiated", &self.uuid, 90).await {
             Ok(d) => d,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -659,16 +655,10 @@ impl TakerSwap {
     }
 
     async fn wait_for_maker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.clone();
-        let sending_f = match send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex) {
-            Ok(f) => f,
-            Err (err) => return Ok((
-                Some(TakerSwapCommand::Finish),
-                vec![TakerSwapEvent::TakerFeeSendFailed(ERRL!("{}", err).into())]
-            )),
-        };
+        let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.0.clone();
+        let sending_f = send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex);
 
-        let payload = match recv!(self, sending_f, "maker-payment", 180, -1005, FixedValidator::AnythingGoes) {
+        let payload = match recv_swap_msg(self.ctx.clone(), "maker-payment", &self.uuid, 180).await {
             Ok(p) => p,
             Err(e) => return Ok((
                 Some(TakerSwapCommand::Finish),
@@ -813,17 +803,8 @@ impl TakerSwap {
     }
 
     async fn wait_for_taker_payment_spend(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let tx_hex = self.r().taker_payment.as_ref().unwrap().tx_hex.clone();
-        let sending_f = match send!(self.ctx, "taker-payment", swap_topic(&self.uuid), tx_hex) {
-            Ok(f) => f,
-            Err(e) => return Ok((
-                Some(TakerSwapCommand::RefundTakerPayment),
-                vec![
-                    TakerSwapEvent::TakerPaymentDataSendFailed(e.into()),
-                    TakerSwapEvent::TakerPaymentWaitRefundStarted { wait_until: self.wait_refund_until() },
-                ]
-            ))
-        };
+        let tx_hex = self.r().taker_payment.as_ref().unwrap().tx_hex.0.clone();
+        let sending_f = send!(self.ctx, "taker-payment", swap_topic(&self.uuid), tx_hex);
 
         let wait_duration = (self.r().data.lock_duration * 4) / 5;
         let wait_taker_payment = self.r().data.started_at + wait_duration;

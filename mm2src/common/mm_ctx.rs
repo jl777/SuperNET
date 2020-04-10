@@ -220,11 +220,10 @@ impl MmCtx {
 
     /// Sends the P2P message to a processing thread
     #[cfg(feature = "native")]
-    pub fn broadcast_p2p_msg(&self, topic: String, msg: &str) {
+    pub fn broadcast_p2p_msg(&self, topic: String, msg: Vec<u8>) {
         let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
-        let msg = msg.to_string();
         spawn(async move {
-            tx.send(P2PCommand::Publish(vec![(topic, msg.into_bytes())])).await.unwrap();
+            tx.send(P2PCommand::Publish(vec![(topic, msg)])).await.unwrap();
         });
     }
 
