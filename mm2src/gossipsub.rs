@@ -16,14 +16,14 @@ use futures::{
     prelude::*
 };
 use libp2p::gossipsub::protocol::MessageId;
-use libp2p::gossipsub::{GossipsubEvent, GossipsubMessage, Topic};
+use libp2p::gossipsub::{GossipsubEvent, GossipsubMessage, Topic, TopicHash};
 use libp2p::{
     gossipsub, identity,
     PeerId,
 };
 use serde_json::{self as json, Value as Json};
 use std::{
-    collections::hash_map::DefaultHasher,
+    collections::hash_map::{DefaultHasher, HashMap},
     error::Error,
     hash::{Hash, Hasher},
     net::IpAddr,
@@ -70,7 +70,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
             .mesh_n_high(5)
             .build();
         // build a gossipsub network behaviour
-        let mut gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
+        let gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
         libp2p::Swarm::new(transport, gossipsub, local_peer_id)
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
@@ -88,17 +88,14 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
 
     let mut listening = false;
     let (tx, mut rx) = mpsc::unbounded();
+    let mut subscription_tx = HashMap::new();
 
     spawn(async move {
         loop {
             let mut gossip_event_fut = Box::pin(swarm.next().fuse());
             let mut rx_fut = rx.next().fuse();
             let never = future::pending::<()>();
-            let tick_fut = if listening {
-                Either::Left(never.fuse())
-            } else {
-                Either::Right(timeout(Duration::from_millis(500), never).fuse().then(|_| futures::future::ready(())))
-            };
+            let tick_fut = timeout(Duration::from_millis(500), never).fuse().then(|_| futures::future::ready(()));
 
             let mut tick_fut = Box::pin(tick_fut);
             select! {
@@ -126,10 +123,9 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                     drop(gossip_event_fut);
                     if let Some(cmd) = recv {
                         match cmd {
-                            P2PCommand::Subscribe(topics) => {
-                                for topic in topics {
-                                    swarm.subscribe(Topic::new(topic));
-                                }
+                            P2PCommand::Subscribe(topic, tx) => {
+                                swarm.subscribe(Topic::new(topic.clone()));
+                                subscription_tx.insert(topic, tx);
                             },
                             P2PCommand::Publish(msgs) => {
                                 for (topic, msg) in msgs {
@@ -141,6 +137,12 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                 },
                 tick = tick_fut => {
                     drop(gossip_event_fut);
+                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| if swarm.get_mesh_peers(TopicHash::from_raw(topic.clone())).len() > 0 || swarm.get_num_peers() == 0 {
+                        tx.send(()).unwrap();
+                        None
+                    } else {
+                        Some((topic, tx))
+                    }).collect();
                 },
             }
             if !listening {
@@ -181,7 +183,7 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
             //same content will be propagated.
             .build();
         // build a gossipsub network behaviour
-        let mut gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
+        let gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
         libp2p::Swarm::new(transport, gossipsub, local_peer_id)
     };
 
@@ -194,10 +196,13 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
     }
     let (tx, mut rx) = mpsc::unbounded();
     spawn(async move {
-        let mut ticks = 0u64;
+        let mut subscription_tx = HashMap::new();
         loop {
             let mut gossip_event_fut = Box::pin(swarm.next().fuse());
             let mut rx_fut = rx.next().fuse();
+            let never = future::pending::<()>();
+            let mut tick_fut = Box::pin(timeout(Duration::from_millis(500), never).fuse().then(|_| futures::future::ready(())));
+
             select! {
                 gossip_event = gossip_event_fut => {
                     drop(gossip_event_fut);
@@ -219,10 +224,9 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                     drop(gossip_event_fut);
                     if let Some(cmd) = recv {
                         match cmd {
-                            P2PCommand::Subscribe(topics) => {
-                                for topic in topics {
-                                    swarm.subscribe(Topic::new(topic));
-                                }
+                            P2PCommand::Subscribe(topic, tx) => {
+                                swarm.subscribe(Topic::new(topic.clone()));
+                                subscription_tx.insert(topic, tx);
                             },
                             P2PCommand::Publish(msgs) => {
                                 for (topic, msg) in msgs {
@@ -231,6 +235,15 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                             }
                         }
                     }
+                },
+                tick = tick_fut => {
+                    drop(gossip_event_fut);
+                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| if swarm.get_mesh_peers(TopicHash::from_raw(topic.clone())).len() > 0 {
+                        tx.send(()).unwrap();
+                        None
+                    } else {
+                        Some((topic, tx))
+                    }).collect();
                 },
             }
         }

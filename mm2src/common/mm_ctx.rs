@@ -1,8 +1,10 @@
+use async_std::future::timeout;
 use bytes::Bytes;
 use crate::executor::spawn;
 use crossbeam::{channel, Sender, Receiver};
 use futures::{
     channel::mpsc,
+    channel::oneshot,
     prelude::*,
 };
 use gstuff::Constructible;
@@ -25,12 +27,15 @@ use std::net::SocketAddr;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
+use std::time::Duration;
 
 use crate::{bits256, small_rng, QueuedCommand};
 use crate::log::{self, LogState};
 
 pub enum P2PCommand {
-    Subscribe(Vec<String>),
+    // Topics list and oneshot Receiver to notify the subscribing side
+    // whether the topic mesh has at least 1 peer
+    Subscribe(String, oneshot::Sender<()>),
     Publish(Vec<(String, Vec<u8>)>),
 }
 
@@ -227,14 +232,6 @@ impl MmCtx {
         });
     }
 
-    #[cfg(feature = "native")]
-    pub fn subscribe_to_p2p_topic(&self, topic: String) {
-        let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
-        spawn(async move {
-            tx.send(P2PCommand::Subscribe(vec![topic])).await.unwrap();
-        });
-    }
-
     #[cfg(not(feature = "native"))]
     pub fn broadcast_p2p_msg (&self, msg: &str) {
         use crate::{helperᶜ, BroadcastP2pMessageArgs};
@@ -290,6 +287,17 @@ unsafe impl Send for MmArc {}
 unsafe impl Sync for MmArc {}
 impl Clone for MmArc {fn clone (&self) -> MmArc {MmArc (self.0.clone())}}
 impl Deref for MmArc {type Target = MmCtx; fn deref (&self) -> &MmCtx {&*self.0}}
+
+impl MmArc {
+    #[cfg(feature = "native")]
+    pub async fn subscribe_to_p2p_topic(&self, topic: String) -> Result<(), String> {
+        let mut gossip_sub_tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
+        let (tx, rx) = oneshot::channel();
+        gossip_sub_tx.send(P2PCommand::Subscribe(topic, tx)).await.unwrap();
+        let received = try_s!(timeout(Duration::from_secs(10), rx).await);
+        received.map_err(|e| ERRL!("{:?}", e))
+    }
+}
 
 #[derive(Clone)]
 pub struct MmWeak (Weak<MmCtx>);

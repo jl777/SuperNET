@@ -165,7 +165,7 @@ async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u
         let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
         let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
         match msgs.get_mut(uuid) {
-            Some(mut swap_msgs) => {
+            Some(swap_msgs) => {
                 match swap_msgs.remove(subject) {
                     Some(msg) => return Ok(msg),
                     None => (),

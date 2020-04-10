@@ -18,6 +18,7 @@ doctest = false
 
 [dependencies]
 arrayref = "0.3"
+async-std = "1.5.0"
 atomic = "0.4"
 backtrace = "0.3"
 bigdecimal = { version = "0.1", features = ["serde"] }

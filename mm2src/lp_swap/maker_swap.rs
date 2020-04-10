@@ -994,8 +994,8 @@ pub async fn run_maker_swap(swap: MakerSwap, initial_command: Option<MakerSwapCo
     let mut command = initial_command.unwrap_or(MakerSwapCommand::Start);
     let mut events;
     let ctx = swap.ctx.clone();
-    ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
-    Timer::sleep(3u64 as f64).await;
+    let subscribe_fut = ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
+    unwrap!(subscribe_fut.await);
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
     macro_rules! swap_tags {() => {&[&"swap", &("uuid", &uuid[..])]}}

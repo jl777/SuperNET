@@ -824,10 +824,7 @@ pub async fn lp_auto_buy(ctx: &MmArc, input: AutoBuyInput) -> Result<String, Str
         _ => return ERR!("Auto buy must be called only from buy/sell RPC methods")
     };
     let topic = orderbook_topic(&input.base, &input.rel);
-    ctx.subscribe_to_p2p_topic(topic.clone());
-    // TODO remove this, added to wait some time for libp2p swarm to process the subscription
-    // wait for mesh to contain at least 1 peer when node is subscribed to new topic
-    async_std::task::sleep(std::time::Duration::from_secs(3)).await;
+    try_s!(ctx.subscribe_to_p2p_topic(topic.clone()).await);
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_taker_orders = try_s!(ordermatch_ctx.my_taker_orders.lock());
     let uuid = new_uuid();
@@ -1083,41 +1080,44 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
-    let mut my_orders = try_s!(ordermatch_ctx.my_maker_orders.lock());
-    if req.cancel_previous {
-        // remove the previous orders if there're some to allow multiple setprice call per pair
-        // it's common use case now as `autoprice` doesn't work with new ordermatching and
-        // MM2 users request the coins price from aggregators by their own scripts issuing
-        // repetitive setprice calls with new price
-        *my_orders = my_orders.drain().filter(|(_, order)| {
-            let to_delete = order.base == req.base && order.rel == req.rel;
-            if to_delete {
-                delete_my_maker_order(&ctx, &order);
-            }
-            !to_delete
-        }).collect();
-    }
+    let order = {
+        let mut my_orders = try_s!(ordermatch_ctx.my_maker_orders.lock());
+        if req.cancel_previous {
+            // remove the previous orders if there're some to allow multiple setprice call per pair
+            // it's common use case now as `autoprice` doesn't work with new ordermatching and
+            // MM2 users request the coins price from aggregators by their own scripts issuing
+            // repetitive setprice calls with new price
+            *my_orders = my_orders.drain().filter(|(_, order)| {
+                let to_delete = order.base == req.base && order.rel == req.rel;
+                if to_delete {
+                    delete_my_maker_order(&ctx, &order);
+                }
+                !to_delete
+            }).collect();
+        }
 
-    let uuid = new_uuid();
-    let order = MakerOrder {
-        max_base_vol: volume.clone().into(),
-        max_base_vol_rat: volume.into(),
-        min_base_vol: 0.into(),
-        min_base_vol_rat: BigRational::from_integer(0.into()),
-        price: req.price.clone().into(),
-        price_rat: req.price.clone().into(),
-        created_at: now_ms(),
-        base: req.base,
-        rel: req.rel,
-        matches: HashMap::new(),
-        started_swaps: Vec::new(),
-        uuid,
+        let uuid = new_uuid();
+        let order = MakerOrder {
+            max_base_vol: volume.clone().into(),
+            max_base_vol_rat: volume.into(),
+            min_base_vol: 0.into(),
+            min_base_vol_rat: BigRational::from_integer(0.into()),
+            price: req.price.clone().into(),
+            price_rat: req.price.clone().into(),
+            created_at: now_ms(),
+            base: req.base,
+            rel: req.rel,
+            matches: HashMap::new(),
+            started_swaps: Vec::new(),
+            uuid,
+        };
+        save_my_maker_order(&ctx, &order);
+        my_orders.insert(uuid, order.clone());
+        order
     };
-    save_my_maker_order(&ctx, &order);
     let res = try_s!(json::to_vec(&json!({"result":order})));
     let topic = orderbook_topic(&order.base, &order.rel);
-    ctx.subscribe_to_p2p_topic(topic);
-    my_orders.insert(uuid, order);
+    try_s!(ctx.subscribe_to_p2p_topic(topic).await);
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -1574,9 +1574,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &req.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
-    ctx.subscribe_to_p2p_topic(orderbook_topic(&req.base, &req.rel));
-    // TODO remove this, added to wait some time to receive messages from other nodes
-    async_std::task::sleep(std::time::Duration::from_secs(3)).await;
+    try_s!(ctx.subscribe_to_p2p_topic(orderbook_topic(&req.base, &req.rel)).await);
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = try_s!(ordermatch_ctx.orderbook.lock());
     let asks = match orderbook.get(&(req.base.clone(), req.rel.clone())) {

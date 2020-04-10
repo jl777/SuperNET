@@ -188,10 +188,10 @@ pub async fn run_taker_swap(swap: TakerSwap, initial_command: Option<TakerSwapCo
     let mut command = initial_command.unwrap_or(TakerSwapCommand::Start);
     let mut events;
     let ctx = swap.ctx.clone();
+    let subscribe_fut = ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
+    unwrap!(subscribe_fut.await);
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
-    ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
-    Timer::sleep(3u64 as f64).await;
     let running_swap = Arc::new(swap);
     let weak_ref = Arc::downgrade(&running_swap);
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
