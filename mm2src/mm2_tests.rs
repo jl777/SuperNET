@@ -261,8 +261,6 @@ fn alice_can_see_the_active_order_after_connection() {
     }))));
     assert!(rc.0.is_success(), "!setprice: {}", rc.1);
 
-    thread::sleep(Duration::from_secs(12));
-
     // Bob orderbook must show the new order
     log!("Get RICK/MORTY orderbook on Bob side");
     let rc = unwrap!(block_on (mm_bob.rpc (json! ({

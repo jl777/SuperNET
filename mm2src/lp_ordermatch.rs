@@ -99,6 +99,52 @@ fn test_alb_ordered_pair() {
     assert_eq!("KMD:QTUM", alb_ordered_pair("QTUM", "KMD"));
 }
 
+//
+pub struct OrdermatchP2PConnector {
+    ctx: MmArc,
+}
+
+impl OrdermatchEventHandler for OrdermatchP2PConnector {
+    fn maker_order_created(&self, order: Arc<MakerOrder>) {
+        let ctx = self.ctx.clone();
+        spawn(async move {
+            let topic = orderbook_topic(&order.base, &order.rel);
+            ctx.subscribe_to_p2p_topic(topic).await;
+            if let Err(e) = broadcast_my_maker_orders(&ctx).await {
+                ctx.log.log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
+            };
+        });
+    }
+
+    fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
+        let ping = match PricePingRequest::new(&self.ctx, &order, 0.into()) {
+            Ok(p) => p,
+            Err(e) => {
+                self.ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));
+                return;
+            },
+        };
+
+        if let Err(e) = lp_send_price_ping(&ping, &self.ctx) {
+            self.ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request send failed {}", e));
+        }
+    }
+}
+
+pub struct OrdermatchDBConnector {
+    ctx: MmArc,
+}
+
+impl OrdermatchEventHandler for OrdermatchDBConnector {
+    fn maker_order_created(&self, order: Arc<MakerOrder>) {
+        save_my_maker_order(&self.ctx, &order);
+    }
+
+    fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
+        delete_my_maker_order(&self.ctx, &order);
+    }
+}
+
 #[cfg(test)]
 #[cfg(feature = "native")]
 #[path = "ordermatch_tests.rs"]
@@ -358,12 +404,19 @@ struct MakerConnected {
     dest_pub_key: H256Json,
 }
 
+pub trait OrdermatchEventHandler {
+    fn maker_order_created(&self, order: Arc<MakerOrder>);
+
+    fn maker_order_cancelled(&self, order: Arc<MakerOrder>);
+}
+
 struct OrdermatchContext {
     pub my_maker_orders: Mutex<HashMap<Uuid, MakerOrder>>,
     pub my_taker_orders: Mutex<HashMap<Uuid, TakerOrder>>,
     pub my_cancelled_orders: Mutex<HashMap<Uuid, MakerOrder>>,
     /// A map from (base, rel)
     pub orderbook: Mutex<HashMap<(String, String), HashMap<Uuid, PricePingRequest>>>,
+    pub event_subscribers: Mutex<Vec<Box<dyn OrdermatchEventHandler + Send + Sync>>>,
 }
 
 impl OrdermatchContext {
@@ -375,6 +428,14 @@ impl OrdermatchContext {
                 my_maker_orders: Mutex::new (HashMap::default()),
                 my_cancelled_orders: Mutex::new (HashMap::default()),
                 orderbook: Mutex::new (HashMap::default()),
+                event_subscribers: Mutex::new (vec![
+                    Box::new(OrdermatchP2PConnector {
+                        ctx: ctx.clone()
+                    }),
+                    Box::new(OrdermatchDBConnector {
+                        ctx: ctx.clone()
+                    }),
+                ]),
             })
         })))
     }
@@ -384,6 +445,22 @@ impl OrdermatchContext {
     fn from_ctx_weak (ctx_weak: &MmWeak) -> Result<Arc<OrdermatchContext>, String> {
         let ctx = try_s! (MmArc::from_weak (ctx_weak) .ok_or ("Context expired"));
         Self::from_ctx (&ctx)
+    }
+}
+
+impl OrdermatchEventHandler for OrdermatchContext {
+    fn maker_order_created(&self, order: Arc<MakerOrder>) {
+        let subscribers = self.event_subscribers.lock().unwrap();
+        for subscriber in subscribers.iter() {
+            subscriber.maker_order_created(order.clone());
+        }
+    }
+
+    fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
+        let subscribers = self.event_subscribers.lock().unwrap();
+        for subscriber in subscribers.iter() {
+            subscriber.maker_order_cancelled(order.clone());
+        }
     }
 }
 
@@ -515,7 +592,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             }).collect();
         }
 
-        if now_ms() > last_price_broadcast + 10000 {
+        if now_ms() > last_price_broadcast + 5 * 60 * 1000 {
             if let Err(e) = broadcast_my_maker_orders(&ctx).await {
                 ctx.log.log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
             }
@@ -1111,13 +1188,11 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
             started_swaps: Vec::new(),
             uuid,
         };
-        save_my_maker_order(&ctx, &order);
         my_orders.insert(uuid, order.clone());
         order
     };
     let res = try_s!(json::to_vec(&json!({"result":order})));
-    let topic = orderbook_topic(&order.base, &order.rel);
-    try_s!(ctx.subscribe_to_p2p_topic(topic).await);
+    ordermatch_ctx.maker_order_created(Arc::new(order));
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -1164,29 +1239,13 @@ pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
             }
         } else {
             // cancel the order if available balance is lower than MIN_TRADING_VOL
-            try_s!(ordermatch_ctx.my_maker_orders.lock()).remove(&order.uuid);
-            delete_my_maker_order(ctx, &order);
-            try_s!(ordermatch_ctx.my_cancelled_orders.lock()).insert(order.uuid, order);
-        }
-    }
-    // the difference of cancelled orders from maker orders that we broadcast the cancel request only once
-    // cancelled record can be just dropped then
-    let cancelled_orders: HashMap<_, _> = try_s!(ordermatch_ctx.my_cancelled_orders.lock()).drain().collect();
-    for (_, mut order) in cancelled_orders {
-        // TODO cancel means setting the volume to 0 as of now, should refactor
-        order.max_base_vol = 0.into();
-        order.max_base_vol_rat = BigRational::from_integer(0.into());
-        let ping = match PricePingRequest::new(ctx, &order, 0.into()) {
-            Ok(p) => p,
-            Err(e) => {
-                ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));
-                continue;
-            },
-        };
-
-        if let Err(e) = lp_send_price_ping(&ping, ctx) {
-            ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request send failed {}", e));
-            continue;
+            let mut order = try_s!(ordermatch_ctx.my_maker_orders.lock()).remove(&order.uuid);
+            if let Some(mut order) = order {
+                // TODO cancelling means setting volume to 0 as of now, should refactor
+                order.max_base_vol = 0.into();
+                order.max_base_vol_rat = BigRational::from_integer(0.into());
+                ordermatch_ctx.maker_order_cancelled(Arc::new(order));
+            }
         }
     }
 
@@ -1282,8 +1341,7 @@ pub fn cancel_order(ctx: MmArc, req: Json) -> HyRes {
             }
             let mut cancelled_orders = try_h!(ordermatch_ctx.my_cancelled_orders.lock());
             let order = order.remove();
-            delete_my_maker_order(&ctx, &order);
-            cancelled_orders.insert(req.uuid, order);
+            ordermatch_ctx.maker_order_cancelled(Arc::new(order));
             return rpc_response(200, json!({
                 "result": "success"
             }).to_string())
