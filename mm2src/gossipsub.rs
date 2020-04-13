@@ -137,11 +137,14 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                 },
                 tick = tick_fut => {
                     drop(gossip_event_fut);
-                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| if swarm.get_mesh_peers(TopicHash::from_raw(topic.clone())).len() > 0 || swarm.get_num_peers() == 0 {
-                        tx.send(()).unwrap();
-                        None
-                    } else {
-                        Some((topic, tx))
+                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| {
+                        let topic_hash = TopicHash::from_raw(topic.clone());
+                        if swarm.get_mesh_peers(&topic_hash).len() > 0 || swarm.get_num_peers() == 0 || swarm.get_topic_peers(&topic_hash).len() == 0 {
+                            tx.send(()).unwrap();
+                            None
+                        } else {
+                            Some((topic, tx))
+                        }
                     }).collect();
                 },
             }
@@ -238,11 +241,14 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                 },
                 tick = tick_fut => {
                     drop(gossip_event_fut);
-                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| if swarm.get_mesh_peers(TopicHash::from_raw(topic.clone())).len() > 0 {
-                        tx.send(()).unwrap();
-                        None
-                    } else {
-                        Some((topic, tx))
+                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| {
+                        let topic_hash = TopicHash::from_raw(topic.clone());
+                        if swarm.get_mesh_peers(&topic_hash).len() > 0 || swarm.get_num_peers() == 0 {
+                            tx.send(()).unwrap();
+                            None
+                        } else {
+                            Some((topic, tx))
+                        }
                     }).collect();
                 },
             }
