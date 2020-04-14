@@ -23,7 +23,7 @@
 
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
-use coins::{lp_coinfindᵃ, MmCoinEnum, TradeInfo};
+use coins::{BalanceUpdateEventHandler, lp_coinfindᵃ, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
 use common::{bits256, json_dir_entries, now_ms, new_uuid,
   remove_file, rpc_response, rpc_err_response, write, HyRes};
@@ -116,6 +116,17 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         });
     }
 
+    fn maker_order_updated(&self, order: Arc<MakerOrder>) {
+        let ctx = self.ctx.clone();
+        spawn(async move {
+            let topic = orderbook_topic(&order.base, &order.rel);
+            ctx.subscribe_to_p2p_topic(topic).await;
+            if let Err(e) = broadcast_my_maker_orders(&ctx).await {
+                ctx.log.log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
+            };
+        });
+    }
+
     fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
         let ping = match PricePingRequest::new(&self.ctx, &order, 0.into()) {
             Ok(p) => p,
@@ -140,8 +151,50 @@ impl OrdermatchEventHandler for OrdermatchDBConnector {
         save_my_maker_order(&self.ctx, &order);
     }
 
+    fn maker_order_updated(&self, order: Arc<MakerOrder>) {
+        save_my_maker_order(&self.ctx, &order);
+    }
+
     fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
         delete_my_maker_order(&self.ctx, &order);
+    }
+}
+
+pub struct BalanceUpdateOrdermatchHandler {
+    ctx: MmArc,
+}
+
+impl BalanceUpdateOrdermatchHandler {
+    pub fn new(ctx: MmArc) -> Self {
+        BalanceUpdateOrdermatchHandler {
+            ctx
+        }
+    }
+}
+
+impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
+    fn balance_updated(&self, ticker: Arc<String>, new_balance: Arc<BigDecimal>) {
+        let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
+        let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().unwrap();
+        *maker_orders = maker_orders.drain().filter_map(|(uuid, mut order)| {
+            if order.base == *ticker {
+                if *new_balance < MIN_TRADING_VOL.parse().unwrap() {
+                    ordermatch_ctx.maker_order_cancelled(Arc::new(order));
+                    None
+                } else {
+                    if *new_balance < order.max_base_vol {
+                        order.max_base_vol = (*new_balance).clone();
+                        order.max_base_vol_rat = from_dec_to_ratio((*new_balance).clone());
+                        ordermatch_ctx.maker_order_updated(Arc::new(order.clone()));
+                        Some((uuid, order))
+                    } else {
+                        Some((uuid, order))
+                    }
+                }
+            } else {
+                Some((uuid, order))
+            }
+        }).collect();
     }
 }
 
@@ -407,6 +460,8 @@ struct MakerConnected {
 pub trait OrdermatchEventHandler {
     fn maker_order_created(&self, order: Arc<MakerOrder>);
 
+    fn maker_order_updated(&self, order: Arc<MakerOrder>);
+
     fn maker_order_cancelled(&self, order: Arc<MakerOrder>);
 }
 
@@ -453,6 +508,13 @@ impl OrdermatchEventHandler for OrdermatchContext {
         let subscribers = self.event_subscribers.lock().unwrap();
         for subscriber in subscribers.iter() {
             subscriber.maker_order_created(order.clone());
+        }
+    }
+
+    fn maker_order_updated(&self, order: Arc<MakerOrder>) {
+        let subscribers = self.event_subscribers.lock().unwrap();
+        for subscriber in subscribers.iter() {
+            subscriber.maker_order_updated(order.clone());
         }
     }
 
@@ -564,9 +626,9 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             *my_taker_orders = my_taker_orders.drain().filter_map(|(uuid, order)| if order.created_at + ORDERMATCH_TIMEOUT < now_ms() {
                 delete_my_taker_order(&ctx, &order);
                 if order.matches.is_empty() && order.order_type == OrderType::GoodTillCancelled {
-                    let maker_order = order.into();
-                    save_my_maker_order(&ctx, &maker_order);
-                    my_maker_orders.insert(uuid, maker_order);
+                    let maker_order: MakerOrder = order.into();
+                    my_maker_orders.insert(uuid, maker_order.clone());
+                    ordermatch_ctx.maker_order_created(Arc::new(maker_order));
                 }
                 None
             } else {
@@ -583,8 +645,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                 let min_amount: BigDecimal = MIN_TRADING_VOL.parse().unwrap();
                 let min_amount: MmNumber = min_amount.into();
                 if order.available_amount() <= min_amount && !order.has_ongoing_matches() {
-                    delete_my_maker_order(&ctx, &order);
-                    my_cancelled_orders.insert(uuid, order);
+                    ordermatch_ctx.maker_order_cancelled(Arc::new(order));
                     None
                 } else {
                     Some((uuid, order))

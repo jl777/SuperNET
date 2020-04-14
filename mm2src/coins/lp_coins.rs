@@ -36,6 +36,7 @@
 use bigdecimal::BigDecimal;
 use common::{rpc_response, rpc_err_response, HyRes};
 use common::duplex_mutex::DuplexMutex;
+use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc};
 use common::mm_number::MmNumber;
 use futures01::Future;
@@ -434,19 +435,33 @@ impl Deref for MmCoinEnum {
             &MmCoinEnum::Test (ref c) => c,
 }   }   }
 
+pub trait BalanceUpdateEventHandler {
+    fn balance_updated(&self, ticker: Arc<String>, new_balance: Arc<BigDecimal>);
+}
+
 struct CoinsContext {
     /// A map from a currency ticker symbol to the corresponding coin.
     /// Similar to `LP_coins`.
-    coins: DuplexMutex<HashMap<String, MmCoinEnum>>
+    coins: DuplexMutex<HashMap<String, MmCoinEnum>>,
+    balance_update_handlers: DuplexMutex<Vec<Box<dyn BalanceUpdateEventHandler + Send + Sync>>>,
 }
 impl CoinsContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx (ctx: &MmArc) -> Result<Arc<CoinsContext>, String> {
         Ok (try_s! (from_ctx (&ctx.coins_ctx, move || {
             Ok (CoinsContext {
-                coins: DuplexMutex::new (HashMap::new())
+                coins: DuplexMutex::new (HashMap::new()),
+                balance_update_handlers: DuplexMutex::new (vec![]),
             })
         })))
+    }
+}
+
+impl BalanceUpdateEventHandler for CoinsContext {
+    fn balance_updated(&self, ticker: Arc<String>, new_balance: Arc<BigDecimal>) {
+        for sub in unwrap!(self.balance_update_handlers.spinlock(100)).iter() {
+            sub.balance_updated(ticker.clone(), new_balance.clone())
+        }
     }
 }
 
@@ -508,7 +523,9 @@ pub async fn lp_coininit (ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoi
             move || coin.process_history_loop(ctx)
         }));
     }
-
+    let ctxʹ = ctx.clone();
+    let ticker = ticker.to_owned();
+    spawn (async move {check_balance_update_loop (ctxʹ, ticker) .await});
     Ok (coin)
 }
 
@@ -724,4 +741,31 @@ pub async fn show_priv_key(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, S
         }
     })));
     Ok(try_s!(Response::builder().body(res)))
+}
+
+pub async fn check_balance_update_loop(ctx: MmArc, ticker: String) {
+    let mut current_balance = None;
+    loop {
+        Timer::sleep(10.).await;
+        match lp_coinfindᵃ(&ctx, &ticker).await {
+            Ok(Some(coin)) => {
+                let balance = match coin.my_balance().compat().await {
+                    Ok(b) => b,
+                    Err(_) => continue,
+                };
+                if Some(&balance) != current_balance.as_ref() {
+                    let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
+                    coins_ctx.balance_updated(Arc::new(ticker.clone()), Arc::new(balance.clone().into()));
+                    current_balance = Some(balance);
+                }
+            },
+            Ok(None) => break,
+            Err(_) => continue,
+        }
+    }
+}
+
+pub fn register_balance_update_handler(ctx: MmArc, handler: Box<dyn BalanceUpdateEventHandler + Send + Sync>) {
+    let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
+    unwrap!(coins_ctx.balance_update_handlers.spinlock(100)).push(handler);
 }
