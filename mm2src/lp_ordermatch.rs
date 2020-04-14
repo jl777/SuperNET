@@ -105,10 +105,10 @@ pub struct OrdermatchP2PConnector {
 }
 
 impl OrdermatchEventHandler for OrdermatchP2PConnector {
-    fn maker_order_created(&self, order: Arc<MakerOrder>) {
+    fn maker_order_created(&self, order: &MakerOrder) {
         let ctx = self.ctx.clone();
+        let topic = orderbook_topic(&order.base, &order.rel);
         spawn(async move {
-            let topic = orderbook_topic(&order.base, &order.rel);
             ctx.subscribe_to_p2p_topic(topic).await;
             if let Err(e) = broadcast_my_maker_orders(&ctx).await {
                 ctx.log.log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
@@ -116,10 +116,10 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         });
     }
 
-    fn maker_order_updated(&self, order: Arc<MakerOrder>) {
+    fn maker_order_updated(&self, order: &MakerOrder) {
         let ctx = self.ctx.clone();
+        let topic = orderbook_topic(&order.base, &order.rel);
         spawn(async move {
-            let topic = orderbook_topic(&order.base, &order.rel);
             ctx.subscribe_to_p2p_topic(topic).await;
             if let Err(e) = broadcast_my_maker_orders(&ctx).await {
                 ctx.log.log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
@@ -127,8 +127,8 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         });
     }
 
-    fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
-        let ping = match PricePingRequest::new(&self.ctx, &order, 0.into()) {
+    fn maker_order_cancelled(&self, order: &MakerOrder) {
+        let ping = match PricePingRequest::new(&self.ctx, order, 0.into()) {
             Ok(p) => p,
             Err(e) => {
                 self.ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));
@@ -147,16 +147,16 @@ pub struct OrdermatchDBConnector {
 }
 
 impl OrdermatchEventHandler for OrdermatchDBConnector {
-    fn maker_order_created(&self, order: Arc<MakerOrder>) {
-        save_my_maker_order(&self.ctx, &order);
+    fn maker_order_created(&self, order: &MakerOrder) {
+        save_my_maker_order(&self.ctx, order);
     }
 
-    fn maker_order_updated(&self, order: Arc<MakerOrder>) {
-        save_my_maker_order(&self.ctx, &order);
+    fn maker_order_updated(&self, order: &MakerOrder) {
+        save_my_maker_order(&self.ctx, order);
     }
 
-    fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
-        delete_my_maker_order(&self.ctx, &order);
+    fn maker_order_cancelled(&self, order: &MakerOrder) {
+        delete_my_maker_order(&self.ctx, order);
     }
 }
 
@@ -173,19 +173,19 @@ impl BalanceUpdateOrdermatchHandler {
 }
 
 impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
-    fn balance_updated(&self, ticker: Arc<String>, new_balance: Arc<BigDecimal>) {
+    fn balance_updated(&self, ticker: &str, new_balance: &BigDecimal) {
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
         let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().unwrap();
         *maker_orders = maker_orders.drain().filter_map(|(uuid, mut order)| {
             if order.base == *ticker {
                 if *new_balance < MIN_TRADING_VOL.parse().unwrap() {
-                    ordermatch_ctx.maker_order_cancelled(Arc::new(order));
+                    ordermatch_ctx.maker_order_cancelled(&order);
                     None
                 } else {
                     if *new_balance < order.max_base_vol {
                         order.max_base_vol = (*new_balance).clone();
                         order.max_base_vol_rat = from_dec_to_ratio((*new_balance).clone());
-                        ordermatch_ctx.maker_order_updated(Arc::new(order.clone()));
+                        ordermatch_ctx.maker_order_updated(&order);
                         Some((uuid, order))
                     } else {
                         Some((uuid, order))
@@ -458,11 +458,11 @@ struct MakerConnected {
 }
 
 pub trait OrdermatchEventHandler {
-    fn maker_order_created(&self, order: Arc<MakerOrder>);
+    fn maker_order_created(&self, order: &MakerOrder);
 
-    fn maker_order_updated(&self, order: Arc<MakerOrder>);
+    fn maker_order_updated(&self, order: &MakerOrder);
 
-    fn maker_order_cancelled(&self, order: Arc<MakerOrder>);
+    fn maker_order_cancelled(&self, order: &MakerOrder);
 }
 
 struct OrdermatchContext {
@@ -504,24 +504,24 @@ impl OrdermatchContext {
 }
 
 impl OrdermatchEventHandler for OrdermatchContext {
-    fn maker_order_created(&self, order: Arc<MakerOrder>) {
+    fn maker_order_created(&self, order: &MakerOrder) {
         let subscribers = self.event_subscribers.lock().unwrap();
         for subscriber in subscribers.iter() {
-            subscriber.maker_order_created(order.clone());
+            subscriber.maker_order_created(order);
         }
     }
 
-    fn maker_order_updated(&self, order: Arc<MakerOrder>) {
+    fn maker_order_updated(&self, order: &MakerOrder) {
         let subscribers = self.event_subscribers.lock().unwrap();
         for subscriber in subscribers.iter() {
-            subscriber.maker_order_updated(order.clone());
+            subscriber.maker_order_updated(order);
         }
     }
 
-    fn maker_order_cancelled(&self, order: Arc<MakerOrder>) {
+    fn maker_order_cancelled(&self, order: &MakerOrder) {
         let subscribers = self.event_subscribers.lock().unwrap();
         for subscriber in subscribers.iter() {
-            subscriber.maker_order_cancelled(order.clone());
+            subscriber.maker_order_cancelled(order);
         }
     }
 }
@@ -627,8 +627,8 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                 delete_my_taker_order(&ctx, &order);
                 if order.matches.is_empty() && order.order_type == OrderType::GoodTillCancelled {
                     let maker_order: MakerOrder = order.into();
-                    my_maker_orders.insert(uuid, maker_order.clone());
-                    ordermatch_ctx.maker_order_created(Arc::new(maker_order));
+                    ordermatch_ctx.maker_order_created(&maker_order);
+                    my_maker_orders.insert(uuid, maker_order);
                 }
                 None
             } else {
@@ -645,7 +645,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                 let min_amount: BigDecimal = MIN_TRADING_VOL.parse().unwrap();
                 let min_amount: MmNumber = min_amount.into();
                 if order.available_amount() <= min_amount && !order.has_ongoing_matches() {
-                    ordermatch_ctx.maker_order_cancelled(Arc::new(order));
+                    ordermatch_ctx.maker_order_cancelled(&order);
                     None
                 } else {
                     Some((uuid, order))
@@ -1253,7 +1253,7 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         order
     };
     let res = try_s!(json::to_vec(&json!({"result":order})));
-    ordermatch_ctx.maker_order_created(Arc::new(order));
+    ordermatch_ctx.maker_order_created(&order);
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -1305,7 +1305,7 @@ pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
                 // TODO cancelling means setting volume to 0 as of now, should refactor
                 order.max_base_vol = 0.into();
                 order.max_base_vol_rat = BigRational::from_integer(0.into());
-                ordermatch_ctx.maker_order_cancelled(Arc::new(order));
+                ordermatch_ctx.maker_order_cancelled(&order);
             }
         }
     }
@@ -1402,7 +1402,7 @@ pub fn cancel_order(ctx: MmArc, req: Json) -> HyRes {
             }
             let mut cancelled_orders = try_h!(ordermatch_ctx.my_cancelled_orders.lock());
             let order = order.remove();
-            ordermatch_ctx.maker_order_cancelled(Arc::new(order));
+            ordermatch_ctx.maker_order_cancelled(&order);
             return rpc_response(200, json!({
                 "result": "success"
             }).to_string())

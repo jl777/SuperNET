@@ -436,7 +436,7 @@ impl Deref for MmCoinEnum {
 }   }   }
 
 pub trait BalanceUpdateEventHandler {
-    fn balance_updated(&self, ticker: Arc<String>, new_balance: Arc<BigDecimal>);
+    fn balance_updated(&self, ticker: &str, new_balance: &BigDecimal);
 }
 
 struct CoinsContext {
@@ -458,9 +458,9 @@ impl CoinsContext {
 }
 
 impl BalanceUpdateEventHandler for CoinsContext {
-    fn balance_updated(&self, ticker: Arc<String>, new_balance: Arc<BigDecimal>) {
+    fn balance_updated(&self, ticker: &str, new_balance: &BigDecimal) {
         for sub in unwrap!(self.balance_update_handlers.spinlock(100)).iter() {
-            sub.balance_updated(ticker.clone(), new_balance.clone())
+            sub.balance_updated(ticker, new_balance)
         }
     }
 }
@@ -755,7 +755,7 @@ pub async fn check_balance_update_loop(ctx: MmArc, ticker: String) {
                 };
                 if Some(&balance) != current_balance.as_ref() {
                     let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
-                    coins_ctx.balance_updated(Arc::new(ticker.clone()), Arc::new(balance.clone().into()));
+                    coins_ctx.balance_updated(&ticker, &balance);
                     current_balance = Some(balance);
                 }
             },
