@@ -277,6 +277,54 @@ fn alice_can_see_the_active_order_after_connection() {
     assert!(asks.len() > 0, "Bob RICK/MORTY asks are empty");
     assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
 
+    // start eve and immediately place the order
+    let mut mm_eve = unwrap!(MarketMakerIt::start (
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": "eve passphrase",
+            "coins": coins,
+            "rpc_password": "pass",
+            "seednodes": [fomat!((mm_bob.ip))],
+        }),
+        "pass".into(),
+        local_start! ("bob")
+    ));
+    let (_eve_dump_log, _eve_dump_dashboard) = mm_dump(&mm_eve.log_path);
+    log!({ "Eve log path: {}", mm_eve.log_path.display() });
+    unwrap!(block_on (mm_eve.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
+    // Enable coins on Eve side. Print the replies in case we need the "address".
+    log!({ "enable_coins (eve): {:?}", block_on(enable_coins_eth_electrum(&mm_eve, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"])) });
+    // issue sell request on Eve side by setting base/rel price
+    log!("Issue eve sell request");
+    let rc = unwrap!(block_on (mm_eve.rpc (json! ({
+        "userpass": mm_eve.userpass,
+        "method": "setprice",
+        "base": "RICK",
+        "rel": "MORTY",
+        "price": "1",
+        "volume": "0.9",
+    }))));
+    assert!(rc.0.is_success(), "!setprice: {}", rc.1);
+
+    // Bob orderbook must show the new order
+    log!("Get RICK/MORTY orderbook on Eve side");
+    let rc = unwrap!(block_on (mm_eve.rpc (json! ({
+        "userpass": mm_eve.userpass,
+        "method": "orderbook",
+        "base": "RICK",
+        "rel": "MORTY",
+    }))));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let eve_orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("Eve orderbook "[eve_orderbook]);
+    let asks = eve_orderbook["asks"].as_array().unwrap();
+    assert_eq!(asks.len(), 2, "Eve RICK/MORTY orderbook must have exactly 2 asks");
+
     let mut mm_alice = unwrap!(MarketMakerIt::start (
         json! ({
             "gui": "nogui",
@@ -312,14 +360,11 @@ fn alice_can_see_the_active_order_after_connection() {
     let alice_orderbook: Json = unwrap!(json::from_str(&rc.1));
     log!("Alice orderbook "[alice_orderbook]);
     let asks = alice_orderbook["asks"].as_array().unwrap();
-    assert_eq!(asks.len(), 1, "Alice RICK/MORTY orderbook must have exactly 1 ask");
-    assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
-    // orderbook must display valid Bob address
-    let address = asks[0]["address"].as_str().unwrap();
-    assert_eq!("RRnMcSeKiLrNdbp91qNVQwwXx5azD4S4CD", address);
+    assert_eq!(asks.len(), 2, "Alice RICK/MORTY orderbook must have exactly 2 asks");
 
     unwrap!(block_on (mm_bob.stop()));
     unwrap!(block_on (mm_alice.stop()));
+    unwrap!(block_on (mm_eve.stop()));
 }
 
 #[test]
@@ -2185,85 +2230,6 @@ fn test_fill_or_kill_taker_order_should_not_transform_to_maker() {
     let my_taker_orders: HashMap<String, Json> = unwrap!(json::from_value(my_orders["result"]["taker_orders"].clone()));
     assert!(my_maker_orders.is_empty(), "maker_orders must be empty");
     assert!(my_taker_orders.is_empty(), "taker_orders must be empty");
-}
-
-#[test]
-#[cfg(feature = "native")]
-fn gossipsub() {
-    let coins = json! ([
-        {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"overwintered":1},
-        {"coin":"MORTY","asset":"MORTY","rpcport":11608,"txversion":4,"overwintered":1},
-        {"coin":"ETH","name":"ethereum","etomic":"0x0000000000000000000000000000000000000000"},
-        {"coin":"JST","name":"jst","etomic":"0x2b294F029Fde858b2c62184e8390591755521d8E"}
-    ]);
-
-    let mut mm_bob1 = unwrap!(MarketMakerIt::start (
-        json! ({
-            "gui": "nogui",
-            "netid": 9998,
-            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
-            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
-            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
-            "passphrase": "bob passphrase",
-            "coins": coins,
-            "rpc_password": "pass",
-            "i_am_seed": true,
-        }),
-        "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
-    ));
-
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob1.log_path);
-    log!({"Bob 1 Log path: {}", mm_bob1.log_path.display()});
-    unwrap! (block_on (mm_bob1.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
-
-    let mut mm_bob2 = unwrap!(MarketMakerIt::start (
-        json! ({
-            "gui": "nogui",
-            "netid": 9998,
-            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
-            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
-            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
-            "passphrase": "bob passphrase",
-            "coins": coins,
-            "rpc_password": "pass",
-            "i_am_seed": true,
-            "seednodes": [fomat!((mm_bob1.ip))]
-        }),
-        "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
-    ));
-
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob2.log_path);
-    log!({"Bob 2 Log path: {}", mm_bob2.log_path.display()});
-    unwrap! (block_on (mm_bob2.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
-    unwrap!(block_on (mm_bob2.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob1.ip)))));
-
-    let mut mm_bob3 = unwrap!(MarketMakerIt::start (
-        json! ({
-            "gui": "nogui",
-            "netid": 9998,
-            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
-            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
-            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
-            "passphrase": "bob passphrase",
-            "coins": coins,
-            "rpc_password": "pass",
-            "i_am_seed": true,
-            "seednodes": [fomat!((mm_bob1.ip)), fomat!((mm_bob2.ip))]
-        }),
-        "pass".into(),
-        match var ("LOCAL_THREAD_MM") {Ok (ref e) if e == "bob" => Some (local_start()), _ => None}
-    ));
-
-    let (_dump_log, _dump_dashboard) = mm_dump (&mm_bob3.log_path);
-    log!({"Bob 3 Log path: {}", mm_bob3.log_path.display()});
-    unwrap! (block_on (mm_bob3.wait_for_log (22., |log| log.contains ("libp2p gossipsub node listening on"))));
-    unwrap!(block_on (mm_bob3.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob1.ip)))));
-    unwrap!(block_on (mm_bob3.wait_for_log (22., |log| log.contains (&format!("Dialed {}", mm_bob2.ip)))));
-
-    let alices = spin_n_nodes(&[&fomat!((mm_bob1.ip)), &fomat!((mm_bob2.ip)), &fomat!((mm_bob3.ip))], &coins, 1);
-    thread::sleep(Duration::from_secs(20));
 }
 
 fn spin_n_nodes(seednodes: &[&str], coins: &Json, n: usize) -> Vec<(MarketMakerIt, RaiiDump, RaiiDump)> {

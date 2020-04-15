@@ -179,6 +179,8 @@ impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
         *maker_orders = maker_orders.drain().filter_map(|(uuid, mut order)| {
             if order.base == *ticker {
                 if *new_balance < MIN_TRADING_VOL.parse().unwrap() {
+                    order.max_base_vol = 0.into();
+                    order.max_base_vol_rat = BigRational::from_integer(0.into());
                     ordermatch_ctx.maker_order_cancelled(&order);
                     None
                 } else {

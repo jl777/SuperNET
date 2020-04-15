@@ -115,6 +115,7 @@ pub struct MmCtx {
     pub coins_needed_for_kick_start: Mutex<HashSet<String>>,
     /// The context belonging to the `lp_swap` mod: `SwapsContext`.
     pub swaps_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
+    pub gossipsub_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
 }
 impl MmCtx {
     pub fn with_log_state (log: LogState) -> MmCtx {
@@ -144,6 +145,7 @@ impl MmCtx {
             secp256k1_key_pair: Constructible::default(),
             coins_needed_for_kick_start: Mutex::new (HashSet::new()),
             swaps_ctx: Mutex::new (None),
+            gossipsub_ctx: Mutex::new (None),
         }
     }
 

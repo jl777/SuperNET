@@ -3,7 +3,7 @@ use async_std::future::timeout;
 use common::{
     now_ms,
     executor::spawn,
-    mm_ctx::{MmArc, P2PCommand},
+    mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand},
 };
 use crate::mm2::{
     lp_network::lp_process_p2p_message,
@@ -13,6 +13,7 @@ use futures::{
     select, FutureExt,
     channel::mpsc,
     future::Either,
+    lock::{Mutex as AsyncMutex},
     prelude::*
 };
 use libp2p::gossipsub::protocol::MessageId;
@@ -27,9 +28,71 @@ use std::{
     error::Error,
     hash::{Hash, Hasher},
     net::IpAddr,
+    ops::Deref,
+    sync::Arc,
     task::{Context, Poll},
     time::Duration,
 };
+
+pub trait GossipsubEventHandler {
+    fn subscribed_to_topic(&self, peer: &str, topic: &str);
+
+    fn message_received(&self, peer: &str, topics: &[&str], msg: &[u8]);
+}
+
+pub struct GossipsubContext(AsyncMutex<GossipsubContextImpl>);
+
+impl Deref for GossipsubContext {
+    type Target = AsyncMutex<GossipsubContextImpl>;
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl GossipsubContext {
+    /// Obtains a reference to this crate context, creating it if necessary.
+    fn from_ctx (ctx: &MmArc) -> Result<Arc<GossipsubContext>, String> {
+        Ok (try_s! (from_ctx (&ctx.gossipsub_ctx, move || {
+            Ok (GossipsubContext(AsyncMutex::new(GossipsubContextImpl {
+                event_handlers: vec![],
+            })))
+        })))
+    }
+
+    /// Obtains a reference to this crate context, creating it if necessary.
+    #[allow(dead_code)]
+    fn from_ctx_weak (ctx_weak: &MmWeak) -> Result<Arc<GossipsubContext>, String> {
+        let ctx = try_s! (MmArc::from_weak (ctx_weak) .ok_or ("Context expired"));
+        Self::from_ctx (&ctx)
+    }
+}
+
+pub struct GossipsubContextImpl {
+    event_handlers: Vec<Box<dyn GossipsubEventHandler + Send + Sync>>,
+}
+
+pub async fn add_gossipsub_event_handler(ctx: &MmArc, new_handler: Box<dyn GossipsubEventHandler + Send + Sync>) {
+    let gossipsub_ctx = unwrap!(GossipsubContext::from_ctx(ctx));
+    gossipsub_ctx.lock().await.add_event_handler(new_handler);
+}
+
+impl GossipsubContextImpl {
+    pub fn add_event_handler(&mut self, new_handler: Box<dyn GossipsubEventHandler + Send + Sync>) {
+        self.event_handlers.push(new_handler);
+    }
+}
+
+impl GossipsubEventHandler for GossipsubContextImpl {
+    fn subscribed_to_topic(&self, peer: &str, topic: &str) {
+        for handler in self.event_handlers.iter() {
+            handler.subscribed_to_topic(peer, topic);
+        }
+    }
+
+    fn message_received(&self, peer: &str, topics: &[&str], msg: &[u8]) {
+        for handler in self.event_handlers.iter() {
+            handler.message_received(peer, topics, msg);
+        }
+    }
+}
 
 pub type TopicPrefix = &'static str;
 pub const TOPIC_SEPARATOR: char = '/';
@@ -46,6 +109,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
     println!("Local peer id: {:?}", local_peer_id);
+    let gossipsub_ctx = unwrap!(GossipsubContext::from_ctx(&ctx));
 
     // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
     let transport = libp2p::build_development_transport(local_key).unwrap();
@@ -109,8 +173,8 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                                 id,
                                 peer_id
                             );
-                            let topics = message.topics.iter().map(|topic| topic.as_str().to_owned()).collect();
-                            lp_process_p2p_message(&ctx, topics, &message.data).await;
+                            let topics: Vec<&str> = message.topics.iter().map(|topic| topic.as_str()).collect();
+                            gossipsub_ctx.lock().await.message_received(&peer_id.to_base58(), &topics, &message.data);
                         },
                         GossipsubEvent::Subscribed { peer_id, topic } => {
                             swarm.subscribe(Topic::new(topic.into_string()));
@@ -164,6 +228,7 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
     println!("Local peer id: {:?}", local_peer_id);
+    let gossipsub_ctx = unwrap!(GossipsubContext::from_ctx(&ctx));
 
     // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
     let transport = libp2p::build_development_transport(local_key).unwrap();
@@ -217,8 +282,8 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                                 id,
                                 peer_id
                             );
-                            let topics = message.topics.iter().map(|topic| topic.as_str().to_owned()).collect();
-                            lp_process_p2p_message(&ctx, topics, &message.data).await;
+                            let topics: Vec<&str> = message.topics.iter().map(|topic| topic.as_str()).collect();
+                            gossipsub_ctx.lock().await.message_received(&peer_id.to_base58(), &topics, &message.data);
                         },
                         _ => println!("{:?}", gossip_event),
                     };
