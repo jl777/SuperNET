@@ -22,13 +22,14 @@
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 
 use coins::{disable_coin as disable_coin_impl, lp_coinfind, lp_coininit, MmCoinEnum};
-use common::{rpc_err_response, rpc_response, HyRes, MM_VERSION};
+use common::{rpc_err_response, rpc_response, HyRes, MM_DATETIME, MM_VERSION};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use futures01::Future;
 use futures::compat::Future01CompatExt;
 use http::Response;
 use serde_json::{self as json, Value as Json};
+use std::borrow::Cow;
 
 use crate::mm2::lp_ordermatch::{CancelBy, cancel_orders_by};
 use crate::mm2::lp_swap::{get_locked_amount, active_swaps_using_coin};
@@ -205,7 +206,33 @@ pub fn stop (ctx: MmArc) -> HyRes {
     rpc_response (200, r#"{"result": "success"}"#)
 }
 
-pub fn version() -> HyRes { rpc_response(200, json!({"result": MM_VERSION}).to_string()) }
+pub async fn sim_panic (req: Json) -> Result<Response<Vec<u8>>, String> {
+    #[derive(Deserialize)] struct Req {#[serde(default)] mode: String}
+    let req: Req = try_s! (json::from_value (req));
+
+    #[derive(Serialize)] struct Ret<'a> {
+        /// Supported panic modes.
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        modes: Vec<Cow<'a, str>>
+    }
+    let ret: Ret;
+
+    if req.mode.is_empty() {
+        ret = Ret {modes: vec! ["simple".into()]}
+    } else if req.mode == "simple" {
+        panic! ("sim_panic: simple")
+    } else {return ERR! ("No such mode: {}", req.mode)}
+
+    let js = try_s! (json::to_vec (&ret));
+    Ok (try_s! (Response::builder().body (js)))
+}
+
+pub fn version() -> HyRes {
+    rpc_response (200, json! ({
+        "result": MM_VERSION,
+        "datetime": MM_DATETIME
+    }) .to_string())
+}
 
 // AP: Inventory is not documented and not used as of now, commented out
 /*
