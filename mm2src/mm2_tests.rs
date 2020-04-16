@@ -310,7 +310,6 @@ fn alice_can_see_the_active_order_after_connection() {
     }))));
     assert!(rc.0.is_success(), "!setprice: {}", rc.1);
 
-    // Bob orderbook must show the new order
     log!("Get RICK/MORTY orderbook on Eve side");
     let rc = unwrap!(block_on (mm_eve.rpc (json! ({
         "userpass": mm_eve.userpass,
@@ -321,9 +320,23 @@ fn alice_can_see_the_active_order_after_connection() {
     assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
 
     let eve_orderbook: Json = unwrap!(json::from_str(&rc.1));
-    log!("Eve orderbook "[eve_orderbook]);
+    log!("Eve orderbook " [eve_orderbook]);
     let asks = eve_orderbook["asks"].as_array().unwrap();
     assert_eq!(asks.len(), 2, "Eve RICK/MORTY orderbook must have exactly 2 asks");
+
+    log!("Get RICK/MORTY orderbook on Bob side");
+    let rc = unwrap!(block_on (mm_bob.rpc (json! ({
+        "userpass": mm_bob.userpass,
+        "method": "orderbook",
+        "base": "RICK",
+        "rel": "MORTY",
+    }))));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let bob_orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("Bob orderbook "[bob_orderbook]);
+    let asks = bob_orderbook["asks"].as_array().unwrap();
+    assert_eq!(asks.len(), 2, "Bob RICK/MORTY orderbook must have exactly 2 asks");
 
     let mut mm_alice = unwrap!(MarketMakerIt::start (
         json! ({

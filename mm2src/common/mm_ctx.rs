@@ -36,7 +36,10 @@ pub enum P2PCommand {
     // Topics list and oneshot Receiver to notify the subscribing side
     // whether the topic mesh has at least 1 peer
     Subscribe(String, oneshot::Sender<()>),
+    // Publish the message with topic
     Publish(Vec<(String, Vec<u8>)>),
+    // Send messages to specific connected peers
+    SendToPeers(Vec<(String, Vec<u8>)>, Vec<String>),
 }
 
 /// MarketMaker state, shared between the various MarketMaker threads.

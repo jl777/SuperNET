@@ -49,9 +49,10 @@ use crate::common::executor::{spawn, Timer};
 use crate::common::{slurp_url, MM_VERSION};
 use crate::common::mm_ctx::{MmCtx, MmArc};
 use crate::common::privkey::key_pair_from_seed;
+use crate::mm2::gossipsub::add_gossipsub_event_handler;
 use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
 use crate::mm2::lp_ordermatch::{BalanceUpdateOrdermatchHandler, lp_ordermatch_loop, lp_trade_command,
-                                migrate_saved_orders, orders_kick_start};
+                                migrate_saved_orders, OrdermatchP2PConnector, orders_kick_start};
 use crate::mm2::lp_swap::swap_kick_starts;
 use crate::mm2::rpc::{spawn_rpc};
 use common::mm_number::MmNumber;
@@ -552,6 +553,9 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
 
     let ctxʹ = ctx.clone();
     spawn (async move {lp_ordermatch_loop (ctxʹ) .await});
+    add_gossipsub_event_handler(&ctx, Box::new(OrdermatchP2PConnector {
+        ctx: ctx.clone(),
+    })).await;
 
     #[cfg(not(feature = "native"))] {if 1==1 {return Ok(())}}  // TODO: Gradually move this point further down.
 

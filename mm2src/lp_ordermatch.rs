@@ -28,9 +28,12 @@ use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
 use common::{bits256, json_dir_entries, now_ms, new_uuid,
   remove_file, rpc_response, rpc_err_response, write, HyRes};
 use common::executor::{spawn, Timer};
-use common::mm_ctx::{from_ctx, MmArc, MmWeak};
+use common::mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
-use futures::compat::Future01CompatExt;
+use futures::{
+    compat::Future01CompatExt,
+    sink::SinkExt,
+};
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
@@ -50,7 +53,7 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use crate::mm2::{
-    gossipsub::{pub_sub_topic, TopicPrefix},
+    gossipsub::{GossipsubEventHandler, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR},
     lp_swap::{dex_fee_amount, get_locked_amount, is_pubkey_banned, MakerSwap,
               run_maker_swap, run_taker_swap, TakerSwap}
 };
@@ -99,9 +102,36 @@ fn test_alb_ordered_pair() {
     assert_eq!("KMD:QTUM", alb_ordered_pair("QTUM", "KMD"));
 }
 
-//
+fn parse_orderbook_pair_from_topic(topic: &str) -> Option<(&str, &str)> {
+    let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
+    match split.next() {
+        Some(ORDERBOOK_PREFIX) => match split.next() {
+            Some(maybe_pair) => {
+                let colon = maybe_pair.find(|maybe_colon| maybe_colon == ':');
+                match colon {
+                    Some(index) => if index + 1 < maybe_pair.len() {
+                        Some((&maybe_pair[..index], &maybe_pair[index+1..]))
+                    } else {
+                        None
+                    },
+                    None => None,
+                }
+            },
+            None => None,
+        },
+        _ => None,
+    }
+}
+
+#[test]
+fn test_parse_orderbook_pair_from_topic() {
+    assert_eq!(Some(("BTC", "KMD")), parse_orderbook_pair_from_topic("orbk/BTC:KMD"));
+    assert_eq!(None, parse_orderbook_pair_from_topic("orbk/BTC:"));
+}
+
+#[derive(Clone)]
 pub struct OrdermatchP2PConnector {
-    ctx: MmArc,
+    pub ctx: MmArc,
 }
 
 impl OrdermatchEventHandler for OrdermatchP2PConnector {
@@ -138,6 +168,51 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
 
         if let Err(e) = lp_send_price_ping(&ping, &self.ctx) {
             self.ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request send failed {}", e));
+        }
+    }
+}
+
+impl GossipsubEventHandler for OrdermatchP2PConnector {
+    fn peer_subscribed(&self, peer: &str, topic: &str) {
+        let pair = match parse_orderbook_pair_from_topic(topic) {
+            Some(p) => p,
+            None => return,
+        };
+        let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
+        let orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+        let mut messages = vec![];
+        log!("Current orderbook " [orderbook]);
+        if let Some(orders) = orderbook.get(&(pair.0.to_owned(), pair.1.to_owned())) {
+            for (_, order) in orders.iter() {
+                messages.push((topic.to_owned(), json::to_vec(order).unwrap()));
+            }
+        }
+
+        if let Some(orders) = orderbook.get(&(pair.1.to_owned(), pair.0.to_owned())) {
+            for (_, order) in orders.iter() {
+                messages.push((topic.to_owned(), json::to_vec(order).unwrap()));
+            }
+        }
+        let peers = vec![peer.to_owned()];
+        let mut tx = self.ctx.gossip_sub_cmd_queue.or(&|| panic!()).clone();
+        spawn(async move {
+            tx.send(P2PCommand::SendToPeers(messages, peers)).await.unwrap();
+        });
+    }
+
+    fn message_received(&self, _peer: &str, topics: &[&str], msg: &[u8]) {
+        for topic in topics.iter() {
+            if let Some(pair) = parse_orderbook_pair_from_topic(topic) {
+                match json::from_slice::<Json>(msg) {
+                    Ok(ping) => {
+                        let ctx = self.ctx.clone();
+                        spawn(async move {
+                            lp_post_price_recv(&ctx, ping).compat().await;
+                        });
+                    },
+                    Err(_) => continue,
+                }
+            }
         }
     }
 }
@@ -667,7 +742,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             // ones that didn't receive an update for 30 seconds or more
             let mut orderbook = unwrap!(ordermatch_ctx.orderbook.lock());
             *orderbook = orderbook.drain().filter_map(|((base, rel), mut pair_orderbook)| {
-                pair_orderbook = pair_orderbook.drain().filter_map(|(pubkey, order)| if now_ms() / 1000 > order.timestamp + 30 {
+                pair_orderbook = pair_orderbook.drain().filter_map(|(pubkey, order)| if now_ms() / 1000 > order.timestamp + 300 {
                     None
                 } else {
                     Some((pubkey, order))

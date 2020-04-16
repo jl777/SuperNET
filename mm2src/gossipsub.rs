@@ -35,7 +35,7 @@ use std::{
 };
 
 pub trait GossipsubEventHandler {
-    fn subscribed_to_topic(&self, peer: &str, topic: &str);
+    fn peer_subscribed(&self, peer: &str, topic: &str);
 
     fn message_received(&self, peer: &str, topics: &[&str], msg: &[u8]);
 }
@@ -81,9 +81,9 @@ impl GossipsubContextImpl {
 }
 
 impl GossipsubEventHandler for GossipsubContextImpl {
-    fn subscribed_to_topic(&self, peer: &str, topic: &str) {
+    fn peer_subscribed(&self, peer: &str, topic: &str) {
         for handler in self.event_handlers.iter() {
-            handler.subscribed_to_topic(peer, topic);
+            handler.peer_subscribed(peer, topic);
         }
     }
 
@@ -177,8 +177,9 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                             gossipsub_ctx.lock().await.message_received(&peer_id.to_base58(), &topics, &message.data);
                         },
                         GossipsubEvent::Subscribed { peer_id, topic } => {
-                            swarm.subscribe(Topic::new(topic.into_string()));
-                            broadcast_my_maker_orders(&ctx).await.unwrap();
+                            let topic_str = topic.into_string();
+                            gossipsub_ctx.lock().await.peer_subscribed(&peer_id.to_base58(), &topic_str);
+                            swarm.subscribe(Topic::new(topic_str));
                         },
                         _ => println!("{:?}", gossip_event),
                     };
@@ -195,6 +196,18 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                                 for (topic, msg) in msgs {
                                     swarm.publish(&Topic::new(topic), msg);
                                 }
+                            },
+                            P2PCommand::SendToPeers(msgs, peers) => {
+                                let mut peer_ids = Vec::with_capacity(peers.len());
+                                for peer in peers {
+                                    let peer_id: PeerId = match peer.parse() {
+                                        Ok(p) => p,
+                                        Err(_) => continue,
+                                    };
+                                    peer_ids.push(peer_id);
+                                }
+
+                                swarm.send_messages_to_peers(msgs, peer_ids);
                             }
                         }
                     }
@@ -300,6 +313,18 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                                 for (topic, msg) in msgs {
                                     swarm.publish(&Topic::new(topic), msg);
                                 }
+                            },
+                            P2PCommand::SendToPeers(msgs, peers) => {
+                                let mut peer_ids = Vec::with_capacity(peers.len());
+                                for peer in peers {
+                                    let peer_id: PeerId = match peer.parse() {
+                                        Ok(p) => p,
+                                        Err(_) => continue,
+                                    };
+                                    peer_ids.push(peer_id);
+                                }
+
+                                swarm.send_messages_to_peers(msgs, peer_ids);
                             }
                         }
                     }
