@@ -226,6 +226,7 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
         "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "order_status" => order_status (ctx, req),
         "orderbook" => hyres(orderbook(ctx, req)),
+        "sim_panic" => hyres(sim_panic(req)),
         "recover_funds_of_swap" => {
             #[cfg(feature = "native")] {
                 Box::new(CPUPOOL.spawn_fn(move || { hyres(recover_funds_of_swap (ctx, req)) }))

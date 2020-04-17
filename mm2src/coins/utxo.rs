@@ -1516,12 +1516,12 @@ impl MmCoin for UtxoCoin {
                         Ok(value) => value,
                         Err(e) => {
                             match &e.error {
-                                JsonRpcErrorType::Transport(e) | JsonRpcErrorType::Parse(e) => {
+                                JsonRpcErrorType::Transport(e) | JsonRpcErrorType::Parse(_, e) => {
                                     ctx.log.log("", &[&"tx_history", &self.ticker], &ERRL!("Error {} on scripthash_get_history, retrying", e));
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 },
-                                JsonRpcErrorType::Response(err) => {
+                                JsonRpcErrorType::Response(_addr, err) => {
                                     if *err == history_too_large {
                                         ctx.log.log("", &[&"tx_history", &self.ticker], &ERRL!("Got `history too large`, stopping further attempts to retrieve it"));
                                         *unwrap!(self.history_sync_state.lock()) = HistorySyncState::Error(json!({
@@ -1885,6 +1885,7 @@ pub async fn utxo_coin_from_conf_and_request(
                     None => try_s!(conf["rpcport"].as_u64().ok_or(ERRL!("Rpc port is not set neither in `coins` file nor in native daemon config"))) as u16,
                 };
                 let client = Arc::new(NativeClientImpl {
+                    coin_ticker: ticker.to_string(),
                     uri: fomat!("http://127.0.0.1:"(rpc_port)),
                     auth: format!("Basic {}", base64_encode(&auth_str, URL_SAFE)),
                 });
@@ -1898,7 +1899,7 @@ pub async fn utxo_coin_from_conf_and_request(
             let mut servers: Vec<ElectrumRpcRequest> = try_s!(json::from_value(req["servers"].clone()));
             let mut rng = small_rng();
             servers.as_mut_slice().shuffle(&mut rng);
-            let mut client = ElectrumClientImpl::new();
+            let mut client = ElectrumClientImpl::new(ticker.to_string());
             for server in servers.iter() {
                 match client.add_server(server) {
                     Ok(_) => (),
