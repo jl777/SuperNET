@@ -53,7 +53,7 @@ use crate::mm2::gossipsub::add_gossipsub_event_handler;
 use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
 use crate::mm2::lp_ordermatch::{BalanceUpdateOrdermatchHandler, lp_ordermatch_loop, lp_trade_command,
                                 migrate_saved_orders, OrdermatchP2PConnector, orders_kick_start};
-use crate::mm2::lp_swap::swap_kick_starts;
+use crate::mm2::lp_swap::{SwapsGossipsubConnector, swap_kick_starts};
 use crate::mm2::rpc::{spawn_rpc};
 use common::mm_number::MmNumber;
 
@@ -533,8 +533,9 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     use common::now_ms;
 
     if i_am_seed {
-        let tx = relayer_node (ctx.clone(), myipaddr, mypubport, seednodes.clone());
+        let (tx, peer_id) = relayer_node (ctx.clone(), myipaddr, mypubport, seednodes.clone());
         try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
+        try_s!(ctx.peer_id.pin(peer_id));
     }
 
     try_s! (lp_initpeers (&ctx, netid, seednodes) .await);
@@ -554,6 +555,9 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     let ctxʹ = ctx.clone();
     spawn (async move {lp_ordermatch_loop (ctxʹ) .await});
     add_gossipsub_event_handler(&ctx, Box::new(OrdermatchP2PConnector {
+        ctx: ctx.clone(),
+    })).await;
+    add_gossipsub_event_handler(&ctx, Box::new(SwapsGossipsubConnector {
         ctx: ctx.clone(),
     })).await;
 

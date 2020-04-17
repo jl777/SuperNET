@@ -38,6 +38,8 @@ pub trait GossipsubEventHandler {
     fn peer_subscribed(&self, peer: &str, topic: &str);
 
     fn message_received(&self, peer: &str, topics: &[&str], msg: &[u8]);
+
+    fn peer_disconnected(&self, peer: &str);
 }
 
 pub struct GossipsubContext(AsyncMutex<GossipsubContextImpl>);
@@ -92,6 +94,12 @@ impl GossipsubEventHandler for GossipsubContextImpl {
             handler.message_received(peer, topics, msg);
         }
     }
+
+    fn peer_disconnected(&self, peer: &str) {
+        for handler in self.event_handlers.iter() {
+            handler.peer_disconnected(peer);
+        }
+    }
 }
 
 pub type TopicPrefix = &'static str;
@@ -104,7 +112,8 @@ pub fn pub_sub_topic(prefix: TopicPrefix, topic: &str) -> String {
     res
 }
 
-pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>) -> mpsc::UnboundedSender<P2PCommand> {
+pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>)
+    -> (mpsc::UnboundedSender<P2PCommand>, String) {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -135,7 +144,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
             .build();
         // build a gossipsub network behaviour
         let gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
-        libp2p::Swarm::new(transport, gossipsub, local_peer_id)
+        libp2p::Swarm::new(transport, gossipsub, local_peer_id.clone())
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
@@ -180,6 +189,9 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                             let topic_str = topic.into_string();
                             gossipsub_ctx.lock().await.peer_subscribed(&peer_id.to_base58(), &topic_str);
                             swarm.subscribe(Topic::new(topic_str));
+                        },
+                        GossipsubEvent::PeerDisconnected(peer_id) => {
+                            gossipsub_ctx.lock().await.peer_disconnected(&peer_id.to_base58());
                         },
                         _ => println!("{:?}", gossip_event),
                     };
@@ -233,10 +245,11 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
             }
         }
     });
-    tx
+    (tx, local_peer_id.to_base58())
 }
 
-pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc::UnboundedSender<P2PCommand> {
+pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16)
+    -> (mpsc::UnboundedSender<P2PCommand>, String) {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -265,7 +278,7 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
             .build();
         // build a gossipsub network behaviour
         let gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
-        libp2p::Swarm::new(transport, gossipsub, local_peer_id)
+        libp2p::Swarm::new(transport, gossipsub, local_peer_id.clone())
     };
 
     for relayer in relayers {
@@ -297,6 +310,9 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
                             );
                             let topics: Vec<&str> = message.topics.iter().map(|topic| topic.as_str()).collect();
                             gossipsub_ctx.lock().await.message_received(&peer_id.to_base58(), &topics, &message.data);
+                        },
+                        GossipsubEvent::PeerDisconnected(peer_id) => {
+                            gossipsub_ctx.lock().await.peer_disconnected(&peer_id.to_base58());
                         },
                         _ => println!("{:?}", gossip_event),
                     };
@@ -344,5 +360,5 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16) -> mpsc
             }
         }
     });
-    tx
+    (tx, local_peer_id.to_base58())
 }

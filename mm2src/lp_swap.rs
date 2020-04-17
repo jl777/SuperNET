@@ -63,7 +63,7 @@ use common::{block_on, read_dir, rpc_response, slurp, write, HyRes, now_ms};
 use common::executor::Timer;
 use common::mm_ctx::{from_ctx, MmArc};
 use crate::mm2::{
-    gossipsub::{pub_sub_topic, TopicPrefix}
+    gossipsub::{GossipsubEventHandler, pub_sub_topic, TOPIC_SEPARATOR, TopicPrefix}
 };
 use http::Response;
 use primitives::hash::{H160, H256, H264};
@@ -124,6 +124,36 @@ impl Deserializable for SwapMsg {
     }
 }
 
+pub struct SwapsGossipsubConnector {
+    pub ctx: MmArc,
+}
+
+impl GossipsubEventHandler for SwapsGossipsubConnector {
+    fn peer_subscribed(&self, _peer: &str, _topic: &str) {
+        // do nothing
+    }
+
+    fn message_received(&self, _peer: &str, topics: &[&str], msg: &[u8]) {
+        for topic in topics {
+            let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
+            match split.next() {
+                Some(SWAP_PREFIX) => match split.next() {
+                    Some(maybe_uuid) => {
+                        log!({"Processing swap msg {} {:?}", maybe_uuid, msg});
+                        process_msg(self.ctx.clone(), maybe_uuid, msg);
+                    },
+                    None => (),
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn peer_disconnected(&self, _peer: &str) {
+        // do nothing
+    }
+}
+
 pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let msg: SwapMsg = match deserialize(msg) {
         Ok(m) => m,
@@ -135,7 +165,6 @@ pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
     msgs.entry(topic.to_string()).or_insert(HashMap::new()).insert(msg.subject, msg.data);
-    log!({"Swap msgs {:?}", msgs});
 }
 
 pub fn swap_topic(uuid: &str) -> String {

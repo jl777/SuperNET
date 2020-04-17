@@ -231,8 +231,9 @@ struct SeedConnection {
 #[cfg(feature = "native")]
 pub async fn start_client_p2p_loop (ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
     use crate::mm2::gossipsub::clientnode;
-    let tx = clientnode(ctx.clone(), relayers, port);
+    let (tx, peer_id) = clientnode(ctx.clone(), relayers, port);
     try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
+    try_s!(ctx.peer_id.pin(peer_id));
     Ok(())
 }
 

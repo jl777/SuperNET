@@ -203,17 +203,19 @@ impl GossipsubEventHandler for OrdermatchP2PConnector {
     fn message_received(&self, _peer: &str, topics: &[&str], msg: &[u8]) {
         for topic in topics.iter() {
             if let Some(pair) = parse_orderbook_pair_from_topic(topic) {
-                match json::from_slice::<Json>(msg) {
-                    Ok(ping) => {
-                        let ctx = self.ctx.clone();
-                        spawn(async move {
-                            lp_post_price_recv(&ctx, ping).compat().await;
-                        });
-                    },
-                    Err(_) => continue,
-                }
+                let ctx = self.ctx.clone();
+                let msg = msg.to_owned();
+                spawn(async move {
+                    process_msg(ctx, &msg).await;
+                });
             }
         }
+    }
+
+    fn peer_disconnected(&self, peer: &str) {
+        let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
+        let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+        orderbook.iter_mut().for_each(|(pair, orders)| orders.retain(|_, order| order.peer_id != peer));
     }
 }
 
@@ -1111,6 +1113,7 @@ struct PricePingRequest {
     balance: BigDecimal,
     balance_rat: Option<BigRational>,
     uuid: Option<Uuid>,
+    peer_id: String,
 }
 
 impl PricePingRequest {
@@ -1157,6 +1160,7 @@ impl PricePingRequest {
             balance: from_ratio_to_dec(&max_volume),
             balance_rat: Some(max_volume),
             uuid: Some(order.uuid),
+            peer_id: ctx.peer_id.or(&|| panic!()).clone(),
         })
     }
 }
