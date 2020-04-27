@@ -209,7 +209,7 @@ mod docker_tests {
     }
 
     #[test]
-    fn test_search_for_swap_tx_spend_native_was_refunded() {
+    fn test_search_for_swap_tx_spend_native_was_refunded_taker() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
         let (coin, _) = generate_coin_with_random_privkey("MYCOIN", 1000);
 
@@ -243,7 +243,41 @@ mod docker_tests {
     }
 
     #[test]
-    fn test_search_for_swap_tx_spend_native_was_spent() {
+    fn test_search_for_swap_tx_spend_native_was_refunded_maker() {
+        let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
+        let (coin, _) = generate_coin_with_random_privkey("MYCOIN", 1000);
+
+        let time_lock = (now_ms() / 1000) as u32 - 3600;
+        let tx = coin.send_maker_payment(
+            time_lock,
+            &*coin.my_public_key(),
+            &[0; 20],
+            1.into(),
+        ).wait().unwrap();
+
+        unwrap!(coin.wait_for_confirmations(&tx.tx_hex(), 1, false, timeout, 1).wait());
+
+        let refund_tx = coin.send_maker_refunds_payment(
+            &tx.tx_hex(),
+            time_lock,
+            &*coin.my_public_key(),
+            &[0; 20],
+        ).wait().unwrap();
+
+        unwrap!(coin.wait_for_confirmations(&refund_tx.tx_hex(), 1, false, timeout, 1).wait());
+
+        let found = unwrap!(unwrap!(coin.search_for_swap_tx_spend_my(
+            time_lock,
+            &*coin.my_public_key(),
+            &[0; 20],
+            &tx.tx_hex(),
+            0,
+        )));
+        assert_eq!(FoundSwapTxSpend::Refunded(refund_tx), found);
+    }
+
+    #[test]
+    fn test_search_for_taker_swap_tx_spend_native_was_spent_by_maker() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
         let (coin, _) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let secret = [0; 32];
@@ -259,6 +293,41 @@ mod docker_tests {
         unwrap!(coin.wait_for_confirmations(&tx.tx_hex(), 1, false, timeout, 1).wait());
 
         let spend_tx = coin.send_maker_spends_taker_payment(
+            &tx.tx_hex(),
+            time_lock,
+            &*coin.my_public_key(),
+            &secret,
+        ).wait().unwrap();
+
+        unwrap!(coin.wait_for_confirmations(&spend_tx.tx_hex(), 1, false, timeout, 1).wait());
+
+        let found = unwrap!(unwrap!(coin.search_for_swap_tx_spend_my(
+            time_lock,
+            &*coin.my_public_key(),
+            &*dhash160(&secret),
+            &tx.tx_hex(),
+            0,
+        )));
+        assert_eq!(FoundSwapTxSpend::Spent(spend_tx), found);
+    }
+
+    #[test]
+    fn test_search_for_maker_swap_tx_spend_native_was_spent_by_taker() {
+        let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
+        let (coin, _) = generate_coin_with_random_privkey("MYCOIN", 1000);
+        let secret = [0; 32];
+
+        let time_lock = (now_ms() / 1000) as u32 - 3600;
+        let tx = coin.send_maker_payment(
+            time_lock,
+            &*coin.my_public_key(),
+            &*dhash160(&secret),
+            1.into(),
+        ).wait().unwrap();
+
+        unwrap!(coin.wait_for_confirmations(&tx.tx_hex(), 1, false, timeout, 1).wait());
+
+        let spend_tx = coin.send_taker_spends_maker_payment(
             &tx.tx_hex(),
             time_lock,
             &*coin.my_public_key(),

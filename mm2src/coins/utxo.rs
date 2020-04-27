@@ -1086,7 +1086,7 @@ impl SwapOps for UtxoCoin {
                 redeem_script.into(),
                 vec![output],
                 script_data,
-                SEQUENCE_FINAL,
+                SEQUENCE_FINAL - 1,
             ));
             let tx_fut = arc.rpc_client.send_transaction(&transaction, arc.my_address.clone()).compat();
             try_s!(tx_fut.await);
