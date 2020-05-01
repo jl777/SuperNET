@@ -358,7 +358,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     n += i;
     j = i = 0;
     filetype[0] = 0;
-printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     snprintf(furl,sizeof(furl),"%s",url+1);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
@@ -844,7 +844,7 @@ void stats_rpcloop(void *args)
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-printf("port.%u got incoming from %x\n",port,ipbits);
+//printf("port.%u got incoming from %x\n",port,ipbits);
         if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
             ipbits = localhostbits;
         if ( port == RPC_port && ipbits != localhostbits )
@@ -854,7 +854,7 @@ printf("port.%u got incoming from %x\n",port,ipbits);
             continue;
         }
         req = calloc(1,sizeof(*req));
-printf("LP_rpc_processreq req.%p\n",req);
+        //printf("LP_rpc_processreq req.%p\n",req);
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
