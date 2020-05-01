@@ -844,7 +844,7 @@ void stats_rpcloop(void *args)
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-//printf("port.%u got incoming from %x\n",port,ipbits);
+printf("port.%u got incoming from %x\n",port,ipbits);
         if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
             ipbits = localhostbits;
         if ( port == RPC_port && ipbits != localhostbits )
@@ -854,7 +854,7 @@ void stats_rpcloop(void *args)
             continue;
         }
         req = calloc(1,sizeof(*req));
-        //printf("LP_rpc_processreq req.%p\n",req);
+printf("LP_rpc_processreq req.%p\n",req);
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
