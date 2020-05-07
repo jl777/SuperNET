@@ -1333,12 +1333,20 @@ fn save_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
 
 #[cfg_attr(test, mockable)]
 fn delete_my_maker_order(ctx: &MmArc, order: &MakerOrder) {
-    unwrap!(remove_file(&my_maker_order_file_path(ctx, &order.uuid)));
+    let path = my_maker_order_file_path(ctx, &order.uuid);
+    match remove_file(&path) {
+        Ok(_) => (),
+        Err(e) => log!("Warning, could not remove order file " (path.display()) ", error " (e)),
+    }
 }
 
 #[cfg_attr(test, mockable)]
 fn delete_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
-    unwrap!(remove_file(&my_taker_order_file_path(ctx, &order.request.uuid)));
+    let path = my_taker_order_file_path(ctx, &order.request.uuid);
+    match remove_file(&path) {
+        Ok(_) => (),
+        Err(e) => log!("Warning, could not remove order file " (path.display()) ", error " (e)),
+    }
 }
 
 pub fn orders_kick_start(ctx: &MmArc) -> Result<HashSet<String>, String> {
