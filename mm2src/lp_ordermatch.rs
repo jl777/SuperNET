@@ -54,8 +54,8 @@ use uuid::Uuid;
 
 use crate::mm2::{
     gossipsub::{GossipsubEventHandler, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR},
-    lp_swap::{dex_fee_amount, get_locked_amount, is_pubkey_banned, MakerSwap,
-              run_maker_swap, run_taker_swap, TakerSwap}
+    lp_swap::{dex_fee_amount, get_locked_amount, is_pubkey_banned, run_maker_swap, run_taker_swap,
+              MakerSwap, RunMakerSwapInput, RunTakerSwapInput, TakerSwap}
 };
 
 pub const ORDERBOOK_PREFIX: TopicPrefix = "orbk";

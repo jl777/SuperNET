@@ -5,6 +5,7 @@ use crossbeam::{channel, Sender, Receiver};
 use futures::{
     channel::mpsc,
     channel::oneshot,
+    compat::Compat,
     prelude::*,
 };
 use gstuff::Constructible;

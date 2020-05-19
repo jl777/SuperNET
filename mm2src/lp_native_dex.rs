@@ -53,10 +53,7 @@ use crate::mm2::gossipsub::add_gossipsub_event_handler;
 use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
 use crate::mm2::lp_ordermatch::{BalanceUpdateOrdermatchHandler, lp_ordermatch_loop, lp_trade_command,
                                 migrate_saved_orders, OrdermatchP2PConnector, orders_kick_start};
-use crate::mm2::lp_swap::{SwapsGossipsubConnector, swap_kick_starts};
-use crate::mm2::lp_network::{lp_command_q_loop, start_seednode_loop, start_client_p2p_loop};
-use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start};
-use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
+use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts, SwapsGossipsubConnector};
 use crate::mm2::rpc::{spawn_rpc};
 use common::mm_number::MmNumber;
 
