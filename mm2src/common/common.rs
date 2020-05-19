@@ -60,6 +60,8 @@ macro_rules! ifrom {
 pub mod jsonrpc_client;
 #[macro_use]
 pub mod log;
+#[macro_use]
+pub mod mm_metrics;
 
 pub mod file_lock;
 #[cfg(feature = "native")]
