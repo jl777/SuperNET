@@ -21,6 +21,7 @@ arrayref = "0.3"
 async-std = "1.5.0"
 atomic = "0.4"
 backtrace = "0.3"
+base64 = "0.10.0"
 bigdecimal = { version = "0.1", features = ["serde"] }
 bitcrypto = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 bytes = "0.4"
@@ -33,15 +34,21 @@ futures01 = { version = "0.1", package = "futures" }
 futures = { version = "0.3.1", package = "futures", features = ["compat", "async-await"] }
 futures-cpupool = "0.1"
 gstuff = { version = "0.6", features = ["nightly"] }
+hdrhistogram = "7.0"
 hex = "0.3.2"
 http = "0.1"
 http-body = "0.1"
 hyper = { version = "0.12", optional = true }
 hyper-tls = { version = "0.3" }
 hyper-rustls = { version = "0.20", optional = true }
+itertools = "0.8"
 keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 lazy_static = "1.2"
 libc = { version = "0.2", optional = true }
+metrics = "0.12"
+metrics-runtime = {version = "0.13", default-features = false, features = ["metrics-observer-prometheus"] }
+metrics-core = "0.5"
+metrics-util = "0.3"
 num-bigint = { version = "0.2", features = ["serde", "std"] }
 num-rational = { version = "0.2", features = ["serde", "bigint", "bigint-std"] }
 num-traits = "0.2"

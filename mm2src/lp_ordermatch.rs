@@ -605,6 +605,7 @@ impl OrdermatchEventHandler for OrdermatchContext {
     }
 }
 
+#[cfg_attr(test, mockable)]
 fn lp_connect_start_bob(ctx: MmArc, maker_match: MakerMatch) {
     spawn(async move {  // aka "maker_loop"
         let taker_coin = match lp_coinfindᵃ(&ctx, &maker_match.reserved.rel).await {
@@ -626,7 +627,7 @@ fn lp_connect_start_bob(ctx: MmArc, maker_match: MakerMatch) {
         let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&privkey[..], ChecksumType::DSHA256));
         let uuid = maker_match.request.uuid.to_string();
 
-        log!("Entering the maker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
+        log!("Entering the maker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()) " with uuid: " (uuid));
         let maker_swap = MakerSwap::new(
             ctx.clone(),
             alice.into(),
@@ -637,7 +638,7 @@ fn lp_connect_start_bob(ctx: MmArc, maker_match: MakerMatch) {
             my_persistent_pub,
             uuid,
         );
-        run_maker_swap(maker_swap, None).await;
+        run_maker_swap(RunMakerSwapInput::StartNew(maker_swap), ctx).await;
     });
 }
 
@@ -675,9 +676,9 @@ fn lp_connected_alice(ctx: MmArc, taker_match: TakerMatch) {
         let taker_amount = taker_match.reserved.get_rel_amount().into();
         let uuid = taker_match.reserved.taker_order_uuid.to_string();
 
-        log!("Entering the taker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker()));
+        log!("Entering the taker_swap_loop " (maker_coin.ticker()) "/" (taker_coin.ticker())  " with uuid: " (uuid));
         let taker_swap = TakerSwap::new(
-            ctx,
+            ctx.clone(),
             maker.into(),
             maker_coin,
             taker_coin,
@@ -686,7 +687,7 @@ fn lp_connected_alice(ctx: MmArc, taker_match: TakerMatch) {
             my_persistent_pub,
             uuid,
         );
-        run_taker_swap(taker_swap, None).await
+        run_taker_swap(RunTakerSwapInput::StartNew(taker_swap), ctx).await
     });
 }
 
@@ -869,30 +870,32 @@ pub fn lp_trade_command(
 
         for (uuid, order) in my_orders.iter_mut() {
             if let OrderMatchResult::Matched((base_amount, rel_amount)) = match_order_and_request(order, &taker_request) {
-                let reserved = MakerReserved {
-                    dest_pub_key: taker_request.sender_pubkey.clone(),
-                    sender_pubkey: our_public_id.bytes.into(),
-                    base: order.base.clone(),
-                    base_amount: base_amount.clone().into(),
-                    base_amount_rat: Some(base_amount.into()),
-                    rel_amount: rel_amount.clone().into(),
-                    rel_amount_rat: Some(rel_amount.into()),
-                    rel: order.rel.clone(),
-                    method: "reserved".into(),
-                    taker_order_uuid: taker_request.uuid,
-                    maker_order_uuid: *uuid,
-                };
-                let topic = orderbook_topic(&order.base, &order.rel);
-                ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&reserved)));
-                let maker_match = MakerMatch {
-                    request: taker_request,
-                    reserved,
-                    connect: None,
-                    connected: None,
-                    last_updated: now_ms(),
-                };
-                order.matches.insert(maker_match.request.uuid, maker_match);
-                save_my_maker_order(&ctx, &order);
+                if !order.matches.contains_key(&taker_request.uuid) {
+                    let reserved = MakerReserved {
+                        dest_pub_key: taker_request.sender_pubkey.clone(),
+                        sender_pubkey: our_public_id.bytes.into(),
+                        base: order.base.clone(),
+                        base_amount: base_amount.clone().into(),
+                        base_amount_rat: Some(base_amount.into()),
+                        rel_amount: rel_amount.clone().into(),
+                        rel_amount_rat: Some(rel_amount.into()),
+                        rel: order.rel.clone(),
+                        method: "reserved".into(),
+                        taker_order_uuid: taker_request.uuid,
+                        maker_order_uuid: *uuid,
+                    };
+                    let topic = orderbook_topic(&order.base, &order.rel);
+                    ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&reserved)));
+                    let maker_match = MakerMatch {
+                        request: taker_request,
+                        reserved,
+                        connect: None,
+                        connected: None,
+                        last_updated: now_ms(),
+                    };
+                    order.matches.insert(maker_match.request.uuid, maker_match);
+                    save_my_maker_order(&ctx, &order);
+                }
                 return 1;
             }
         }
@@ -921,20 +924,22 @@ pub fn lp_trade_command(
                 },
             };
 
-            let connected = MakerConnected {
-                sender_pubkey: our_public_id.bytes.into(),
-                dest_pub_key: connect_msg.sender_pubkey.clone(),
-                taker_order_uuid: connect_msg.taker_order_uuid,
-                maker_order_uuid: connect_msg.maker_order_uuid,
-                method: "connected".into(),
-            };
-            let topic = orderbook_topic(&my_order.base, &my_order.rel);
-            ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&connected)));
-            order_match.connect = Some(connect_msg);
-            order_match.connected = Some(connected);
-            my_order.started_swaps.push(order_match.request.uuid);
-            lp_connect_start_bob(ctx.clone(), order_match.clone());
-            save_my_maker_order(&ctx, &my_order);
+            if order_match.connected.is_none() && order_match.connect.is_none() {
+                let connected = MakerConnected {
+                    sender_pubkey: our_public_id.bytes.into(),
+                    dest_pub_key: connect_msg.sender_pubkey.clone(),
+                    taker_order_uuid: connect_msg.taker_order_uuid,
+                    maker_order_uuid: connect_msg.maker_order_uuid,
+                    method: "connected".into(),
+                };
+                let topic = orderbook_topic(&my_order.base, &my_order.rel);
+                ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&connected)));
+                order_match.connect = Some(connect_msg);
+                order_match.connected = Some(connected);
+                my_order.started_swaps.push(order_match.request.uuid);
+                lp_connect_start_bob(ctx.clone(), order_match.clone());
+                save_my_maker_order(&ctx, &my_order);
+            }
         }
         return 1;
     }
@@ -1306,12 +1311,15 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
             // it's common use case now as `autoprice` doesn't work with new ordermatching and
             // MM2 users request the coins price from aggregators by their own scripts issuing
             // repetitive setprice calls with new price
-            *my_orders = my_orders.drain().filter(|(_, order)| {
+            *my_orders = my_orders.drain().filter_map(|(uuid, order)| {
                 let to_delete = order.base == req.base && order.rel == req.rel;
                 if to_delete {
                     delete_my_maker_order(&ctx, &order);
+                    ordermatch_ctx.maker_order_cancelled(&order);
+                    None
+                } else {
+                    Some((uuid, order))
                 }
-                !to_delete
             }).collect();
         }
 
@@ -1589,12 +1597,20 @@ fn save_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
 
 #[cfg_attr(test, mockable)]
 fn delete_my_maker_order(ctx: &MmArc, order: &MakerOrder) {
-    unwrap!(remove_file(&my_maker_order_file_path(ctx, &order.uuid)));
+    let path = my_maker_order_file_path(ctx, &order.uuid);
+    match remove_file(&path) {
+        Ok(_) => (),
+        Err(e) => log!("Warning, could not remove order file " (path.display()) ", error " (e)),
+    }
 }
 
 #[cfg_attr(test, mockable)]
 fn delete_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
-    unwrap!(remove_file(&my_taker_order_file_path(ctx, &order.request.uuid)));
+    let path = my_taker_order_file_path(ctx, &order.request.uuid);
+    match remove_file(&path) {
+        Ok(_) => (),
+        Err(e) => log!("Warning, could not remove order file " (path.display()) ", error " (e)),
+    }
 }
 
 pub fn orders_kick_start(ctx: &MmArc) -> Result<HashSet<String>, String> {

@@ -54,6 +54,9 @@ use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
 use crate::mm2::lp_ordermatch::{BalanceUpdateOrdermatchHandler, lp_ordermatch_loop, lp_trade_command,
                                 migrate_saved_orders, OrdermatchP2PConnector, orders_kick_start};
 use crate::mm2::lp_swap::{SwapsGossipsubConnector, swap_kick_starts};
+use crate::mm2::lp_network::{lp_command_q_loop, start_seednode_loop, start_client_p2p_loop};
+use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start};
+use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
 use crate::mm2::rpc::{spawn_rpc};
 use common::mm_number::MmNumber;
 
@@ -570,5 +573,7 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     // In the mobile version we might depend on `lp_init` staying around until the context stops.
     loop {if ctx.is_stopping() {break}; Timer::sleep (0.2) .await}
 
+    // wait for swaps to stop
+    loop { if running_swaps_num(&ctx) == 0 { break }; Timer::sleep (0.2) .await }
     Ok(())
 }
