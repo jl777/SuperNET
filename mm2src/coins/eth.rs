@@ -31,9 +31,9 @@ use ethcore_transaction::{ Action, Transaction as UnSignedEthTx, UnverifiedTrans
 use ethereum_types::{Address, U256, H160};
 use ethkey::{ KeyPair, Public, public_to_address };
 use futures01::Future;
-use futures01::future::{Either};
+use futures01::future::{Either as Either01};
 use futures::compat::Future01CompatExt;
-use futures::future::{FutureExt, join_all, TryFutureExt};
+use futures::future::{Either, FutureExt, join_all, select, TryFutureExt};
 use futures::{try_join};
 use gstuff::slurp;
 use http::StatusCode;
@@ -258,9 +258,9 @@ impl EthCoinImpl {
     /// Get gas price
     fn get_gas_price(&self) -> impl Future<Item=U256, Error=String> {
         if let Some(url) = &self.gas_station_url {
-            Either::A(GasStationData::get_gas_price(&url))
+            Either01::A(GasStationData::get_gas_price(&url))
         } else {
-            Either::B(self.web3.eth().gas_price().map_err(|e| ERRL!("{}", e)))
+            Either01::B(self.web3.eth().gas_price().map_err(|e| ERRL!("{}", e)))
         }
     }
 
@@ -399,7 +399,11 @@ async fn withdraw_impl(ctx: MmArc, coin: EthCoin, req: WithdrawRequest) -> Resul
         if ctx.is_stopping() {return ERR!("MM is stopping, aborting withdraw_impl in NONCE_LOCK")}
         Ok(0.5)
     }).await);
-    let nonce = try_s!(get_addr_nonce(coin.my_address, &coin.web3_instances).compat().await);
+    let nonce_fut = get_addr_nonce(coin.my_address, &coin.web3_instances).compat();
+    let nonce = match select(nonce_fut, Timer::sleep(30.)).await {
+        Either::Left((nonce_res, _)) => try_s!(nonce_res),
+        Either::Right(_) => return ERR!("Get address nonce timed out"),
+    };
     let tx = UnSignedEthTx { nonce, value: eth_value, action: Action::Call(call_addr), data, gas, gas_price };
 
     let signed = tx.sign(coin.key_pair.secret(), None);
