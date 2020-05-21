@@ -34,7 +34,6 @@ use futures01::Future;
 use futures01::future::{Either as Either01};
 use futures::compat::Future01CompatExt;
 use futures::future::{Either, FutureExt, join_all, select, TryFutureExt};
-use futures::{try_join};
 use gstuff::slurp;
 use http::StatusCode;
 // #[cfg(test)]
@@ -373,17 +372,19 @@ async fn withdraw_impl(ctx: MmArc, coin: EthCoin, req: WithdrawRequest) -> Resul
         },
         Some(_) => return ERR!("Unsupported input fee type"),
         None => {
-            let gas_price_fut = coin.get_gas_price().compat();
+            let gas_price = try_s!(coin.get_gas_price().compat().await);
             let estimate_gas_req = CallRequest {
                 value: Some(eth_value),
                 data: Some(data.clone().into()),
                 from: Some(coin.my_address),
                 to: call_addr,
                 gas: None,
-                gas_price: None,
+                // gas price must be supplied because some smart contracts base their
+                // logic on gas price, e.g. TUSD: https://github.com/KomodoPlatform/atomicDEX-API/issues/643
+                gas_price: Some(gas_price),
             };
             let gas_fut = coin.web3.eth().estimate_gas(estimate_gas_req, None).map_err(|e| ERRL!("{}", e)).compat();
-            try_s!(try_join!(gas_fut, gas_price_fut))
+            (try_s!(gas_fut.await), gas_price)
         }
     };
     let total_fee = gas * gas_price;
