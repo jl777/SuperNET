@@ -606,14 +606,16 @@ impl UtxoCoin {
         let mut sum_outputs_value = 0;
         let mut received_by_me = 0;
         for output in outputs.iter() {
-            true_or_err!(output.value >= DUST, "Output value {} is less than dust amount {}", output.value, DUST);
+            let script: Script = output.script_pubkey.clone().into();
+            if script.opcodes().nth(0) != Some(Ok(Opcode::OP_RETURN)) {
+                true_or_err!(output.value >= DUST, "Output value {} is less than dust amount {}", output.value, DUST);
+            }
             sum_outputs_value += output.value;
             if output.script_pubkey == change_script_pubkey {
                 received_by_me += output.value;
             }
         }
 
-        true_or_err!(sum_outputs_value > 0, "Sum of outputs {:?} is zero", outputs);
         let str_d_zeel = if self.ticker == "NAV" {
             Some("".into())
         } else {
@@ -894,12 +896,24 @@ impl SwapOps for UtxoCoin {
             &try_fus!(Public::from_slice(taker_pub)),
         );
         let amount = try_fus!(sat_from_big_decimal(&amount, self.decimals));
-        let output = TransactionOutput {
+        let htlc_out = TransactionOutput {
             value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
         };
+        // record secret hash to blockchain too making it impossible to lose
+        // lock time may be easily brute forced so it is not mandatory to record it
+        let secret_hash_op_return_script = Builder::default()
+            .push_opcode(Opcode::OP_RETURN)
+            .push_bytes(secret_hash)
+            .into_bytes();
+        let secret_hash_op_return_out = TransactionOutput {
+            value: 0,
+            script_pubkey: secret_hash_op_return_script,
+        };
         let send_fut = match &self.rpc_client {
-            UtxoRpcClientEnum::Electrum(_) => Either::A(self.send_outputs_from_my_address(vec![output]).map_err(|e| ERRL!("{}", e))),
+            UtxoRpcClientEnum::Electrum(_) => Either::A(self.send_outputs_from_my_address(
+                vec![htlc_out, secret_hash_op_return_out]
+            )),
             UtxoRpcClientEnum::Native(client) => {
                 let payment_addr = Address {
                     checksum_type: self.checksum_type,
@@ -910,7 +924,7 @@ impl SwapOps for UtxoCoin {
                 let arc = self.clone();
                 let addr_string = payment_addr.to_string();
                 Either::B(client.import_address(&addr_string, &addr_string, false).map_err(|e| ERRL!("{}", e)).and_then(move |_|
-                    arc.send_outputs_from_my_address(vec![output]).map_err(|e| ERRL!("{}", e))
+                    arc.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out])
                 ))
             }
         };
@@ -921,24 +935,36 @@ impl SwapOps for UtxoCoin {
         &self,
         time_lock: u32,
         maker_pub: &[u8],
-        priv_bn_hash: &[u8],
+        secret_hash: &[u8],
         amount: BigDecimal,
     ) -> TransactionFut {
         let redeem_script = payment_script(
             time_lock,
-            priv_bn_hash,
+            secret_hash,
             self.key_pair.public(),
             &try_fus!(Public::from_slice(maker_pub)),
         );
 
         let amount = try_fus!(sat_from_big_decimal(&amount, self.decimals));
 
-        let output = TransactionOutput {
+        let htlc_out = TransactionOutput {
             value: amount,
             script_pubkey: Builder::build_p2sh(&dhash160(&redeem_script)).into(),
         };
+        // record secret hash to blockchain too making it impossible to lose
+        // lock time may be easily brute forced so it is not mandatory to record it
+        let secret_hash_op_return_script = Builder::default()
+            .push_opcode(Opcode::OP_RETURN)
+            .push_bytes(secret_hash)
+            .into_bytes();
+        let secret_hash_op_return_out = TransactionOutput {
+            value: 0,
+            script_pubkey: secret_hash_op_return_script,
+        };
         let send_fut = match &self.rpc_client {
-            UtxoRpcClientEnum::Electrum(_) => Either::A(self.send_outputs_from_my_address(vec![output])),
+            UtxoRpcClientEnum::Electrum(_) => Either::A(self.send_outputs_from_my_address(
+                vec![htlc_out, secret_hash_op_return_out]
+            )),
             UtxoRpcClientEnum::Native(client) => {
                 let payment_addr = Address {
                     checksum_type: self.checksum_type,
@@ -949,7 +975,7 @@ impl SwapOps for UtxoCoin {
                 let arc = self.clone();
                 let addr_string = payment_addr.to_string();
                 Either::B(client.import_address(&addr_string, &addr_string, false).map_err(|e| ERRL!("{}", e)).and_then(move |_|
-                    arc.send_outputs_from_my_address(vec![output])
+                    arc.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out])
                 ))
             }
         };
