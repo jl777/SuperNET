@@ -2,6 +2,7 @@
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
 use bigdecimal::BigDecimal;
+use common::BigInt;
 use common::{block_on, slurp};
 #[cfg(not(feature = "native"))]
 use common::call_back;
@@ -9,6 +10,7 @@ use common::executor::Timer;
 use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt};
 #[cfg(feature = "native")]
 use common::for_tests::mm_dump;
+use common::mm_number::Fraction;
 use common::privkey::key_pair_from_seed;
 #[cfg(not(feature = "native"))]
 use common::mm_ctx::MmArc;
@@ -1925,6 +1927,46 @@ fn orderbook_should_display_rational_amounts() {
     let volume_in_orderbook: BigRational = unwrap!(json::from_value(asks[0]["max_volume_rat"].clone()));
     assert_eq!(price, price_in_orderbook);
     assert_eq!(volume, volume_in_orderbook);
+
+    let nine = BigInt::from(9);
+    let ten = BigInt::from(10);
+    // should also display fraction
+    let price_in_orderbook: Fraction = unwrap!(json::from_value(asks[0]["price_fraction"].clone()));
+    let volume_in_orderbook: Fraction = unwrap!(json::from_value(asks[0]["max_volume_fraction"].clone()));
+    assert_eq!(nine, *price_in_orderbook.numer());
+    assert_eq!(ten, *price_in_orderbook.denom());
+
+    assert_eq!(nine, *volume_in_orderbook.numer());
+    assert_eq!(ten, *volume_in_orderbook.denom());
+
+    log!("Get MORTY/RICK orderbook");
+    let rc = unwrap! (block_on (mm.rpc (json! ({
+            "userpass": mm.userpass,
+            "method": "orderbook",
+            "base": "MORTY",
+            "rel": "RICK",
+        }))));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("orderbook " [orderbook]);
+    let bids = orderbook["bids"].as_array().unwrap();
+    assert_eq!(bids.len(), 1, "MORTY/RICK orderbook must have exactly 1 bid");
+    let price_in_orderbook: BigRational = unwrap!(json::from_value(bids[0]["price_rat"].clone()));
+    let volume_in_orderbook: BigRational = unwrap!(json::from_value(bids[0]["max_volume_rat"].clone()));
+
+    let price = BigRational::new(10.into(), 9.into());
+    assert_eq!(price, price_in_orderbook);
+    assert_eq!(volume, volume_in_orderbook);
+
+    // should also display fraction
+    let price_in_orderbook: Fraction = unwrap!(json::from_value(bids[0]["price_fraction"].clone()));
+    let volume_in_orderbook: Fraction = unwrap!(json::from_value(bids[0]["max_volume_fraction"].clone()));
+    assert_eq!(ten, *price_in_orderbook.numer());
+    assert_eq!(nine, *price_in_orderbook.denom());
+
+    assert_eq!(nine, *volume_in_orderbook.numer());
+    assert_eq!(ten, *volume_in_orderbook.denom());
 }
 
 fn check_priv_key(mm: &MarketMakerIt, coin: &str, expected_priv_key: &str) {
