@@ -1498,9 +1498,13 @@ impl MmCoin for UtxoCoin {
                 },
             };
 
+            let need_update = history_map
+                .iter()
+                .find(|(_, tx)| tx.should_update_timestamp() || tx.should_update_block_height())
+                .is_some();
             match (&my_balance, &actual_balance) {
                 (Some(prev_balance), Some(actual_balance))
-                if prev_balance == actual_balance => {
+                if prev_balance == actual_balance && !need_update => {
                     // my balance hasn't been changed, there is no need to reload tx_history
                     thread::sleep(Duration::from_secs(30));
                     continue;
@@ -1637,11 +1641,11 @@ impl MmCoin for UtxoCoin {
                     },
                     Entry::Occupied(mut e) => {
                         // update block height for previously unconfirmed transaction
-                        if (e.get().block_height == 0 || e.get().block_height == std::u64::MAX) && height > 0 {
+                        if e.get().should_update_block_height() && height > 0 {
                             e.get_mut().block_height = height;
                             updated = true;
                         }
-                        if e.get().timestamp == 0 {
+                        if e.get().should_update_timestamp() {
                             mm_counter!(ctx.metrics, "tx.history.request.count", 1, "coin" => self.ticker.clone(), "method" => "tx_detail_by_hash");
 
                             if let Ok(tx_details) = self.tx_details_by_hash(&txid.0).wait() {
