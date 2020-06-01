@@ -64,7 +64,8 @@ use std::time::Duration;
 
 pub use chain::Transaction as UtxoTx;
 
-use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, NativeClient, UtxoRpcClientEnum, UnspentInfo};
+use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl,
+                        EstimateFeeMethod, EstimateFeeMode, NativeClient, UtxoRpcClientEnum, UnspentInfo};
 use super::{CoinsContext, CoinTransportMetrics, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, RpcClientType, RpcTransportEventHandlerShared,
             SwapOps, TradeFee, TradeInfo, Transaction, TransactionEnum, TransactionFut, TransactionDetails, WithdrawFee, WithdrawRequest};
 use crate::utxo::rpc_clients::{NativeClientImpl, UtxoRpcClientOps, ElectrumRpcRequest};
@@ -226,6 +227,7 @@ pub struct UtxoCoinImpl {  // pImpl idiom.
     /// relay fee amount instead of calculated
     /// https://github.com/KomodoPlatform/atomicDEX-API/issues/617
     force_min_relay_fee: bool,
+    estimate_fee_mode: Option<EstimateFeeMode>,
 }
 
 impl UtxoCoinImpl {
@@ -233,7 +235,7 @@ impl UtxoCoinImpl {
         match &self.tx_fee {
             TxFee::Fixed(fee) => Ok(ActualTxFee::Fixed(*fee)),
             TxFee::Dynamic(method) => {
-                let fee = self.rpc_client.estimate_fee_sat(self.decimals, method).compat().await?;
+                let fee = self.rpc_client.estimate_fee_sat(self.decimals, method, &self.estimate_fee_mode).compat().await?;
                 Ok(ActualTxFee::Dynamic(fee))
             },
         }
@@ -2125,6 +2127,7 @@ pub async fn utxo_coin_from_conf_and_request(
         history_sync_state: Mutex::new(initial_history_state),
         required_confirmations: required_confirmations.into(),
         force_min_relay_fee: conf["force_min_relay_fee"].as_bool().unwrap_or (false),
+        estimate_fee_mode: json::from_value(conf["estimate_fee_mode"].clone()).unwrap_or(None),
     };
     Ok(UtxoCoin(Arc::new(coin)))
 }
