@@ -540,7 +540,10 @@ impl NativeClientImpl {
     /// Always estimate fee for transaction to be confirmed in next block
     pub fn estimate_smart_fee(&self, mode: &Option<EstimateFeeMode>) -> RpcRes<EstimateSmartFeeRes> {
         let n_blocks = 1;
-        rpc_func!(self, "estimatesmartfee", n_blocks, mode)
+        match mode {
+            Some(m) => rpc_func!(self, "estimatesmartfee", n_blocks, m),
+            None => rpc_func!(self, "estimatesmartfee", n_blocks),
+        }
     }
 
     /// https://bitcoin.org/en/developer-reference#listtransactions
@@ -1035,7 +1038,10 @@ impl ElectrumClient {
     /// Always estimate fee for transaction to be confirmed in next block
     fn estimate_fee(&self, mode: &Option<EstimateFeeMode>) -> RpcRes<f64> {
         let n_blocks = 1;
-        rpc_func!(self, "blockchain.estimatefee", n_blocks, mode)
+        match mode {
+            Some(m) => rpc_func!(self, "blockchain.estimatefee", n_blocks, m),
+            None => rpc_func!(self, "blockchain.estimatefee", n_blocks),
+        }
     }
 }
 
