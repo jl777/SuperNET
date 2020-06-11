@@ -934,3 +934,10 @@ fn test_cashaddresses_in_tx_details_by_hash() {
 
     block_on(fut);
 }
+
+#[test]
+// https://github.com/KomodoPlatform/atomicDEX-API/issues/673
+fn test_network_info_negative_time_offset() {
+    let info_str = r#"{"version":1140200,"subversion":"/Shibetoshi:1.14.2/","protocolversion":70015,"localservices":"0000000000000005","localrelay":true,"timeoffset":-1,"networkactive":true,"connections":12,"networks":[{"name":"ipv4","limited":false,"reachable":true,"proxy":"","proxy_randomize_credentials":false},{"name":"ipv6","limited":false,"reachable":true,"proxy":"","proxy_randomize_credentials":false},{"name":"onion","limited":false,"reachable":true,"proxy":"127.0.0.1:9050","proxy_randomize_credentials":true}],"relayfee":1.00000000,"incrementalfee":0.00001000,"localaddresses":[],"warnings":""}"#;
+    let _info: NetworkInfo = json::from_str(&info_str).unwrap();
+}
