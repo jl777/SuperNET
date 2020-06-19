@@ -276,6 +276,11 @@ impl MmNumber {
     pub fn to_ratio(&self) -> BigRational {
         self.0.clone()
     }
+
+    /// Returns decimal representation of number
+    pub fn to_decimal(&self) -> BigDecimal {
+        from_ratio_to_dec(&self.0)
+    }
 }
 
 impl From<i32> for MmNumber {
