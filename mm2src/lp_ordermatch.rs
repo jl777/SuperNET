@@ -24,6 +24,7 @@
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{BalanceUpdateEventHandler, lp_coinfindᵃ, MmCoinEnum, TradeInfo};
+use coins::{lp_coinfindᵃ, MmCoinEnum};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
 use common::{bits256, json_dir_entries, now_ms, new_uuid,
   remove_file, rpc_response, rpc_err_response, write, HyRes};
@@ -34,6 +35,9 @@ use futures::{
     compat::Future01CompatExt,
     sink::SinkExt,
 };
+use common::mm_ctx::{from_ctx, MmArc, MmWeak};
+use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
+use futures::compat::Future01CompatExt;
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
@@ -276,6 +280,10 @@ impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
         }).collect();
     }
 }
+use crate::mm2::lp_swap::{
+    check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount, is_pubkey_banned, run_maker_swap, run_taker_swap,
+    MakerSwap, RunMakerSwapInput, RunTakerSwapInput, TakerSwap,
+};
 
 #[cfg(test)]
 #[cfg(feature = "native")]
@@ -946,16 +954,6 @@ pub fn lp_trade_command(
     -1
 }
 
-async fn check_locked_coins(ctx: &MmArc, amount: &MmNumber, balance: &BigDecimal, ticker: &str) -> Result<(), String> {
-    let locked = get_locked_amount(ctx, ticker);
-    let available = balance - &locked;
-    if amount > &available {
-        ERR!("The {} amount {} is larger than available {:.8}, balance: {}, locked by swaps: {:.8}", ticker, amount, available, balance, locked)
-    } else {
-        Ok(())
-    }
-}
-
 #[derive(Deserialize, Debug)]
 pub struct AutoBuyInput {
     base: String,
@@ -985,11 +983,7 @@ pub async fn buy(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &input.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
     let my_amount = &input.volume * &input.price;
-    let my_balance = try_s!(rel_coin.my_balance().compat().await);
-    try_s!(check_locked_coins(&ctx, &my_amount, &my_balance, rel_coin.ticker()).await);
-    let dex_fee = dex_fee_amount(base_coin.ticker(), rel_coin.ticker(), &my_amount.clone().into());
-    let trade_info = TradeInfo::Taker(dex_fee);
-    try_s!(rel_coin.check_i_have_enough_to_trade(&my_amount.clone().into(), &my_balance.clone().into(), trade_info).compat().await);
+    try_s!(check_balance_for_taker_swap(&ctx, &rel_coin, &base_coin, my_amount, None).await);
     try_s!(base_coin.can_i_spend_other_payment().compat().await);
     let res = try_s!(lp_auto_buy(&ctx, input).await).into_bytes();
     Ok(try_s!(Response::builder().body(res)))
@@ -1002,11 +996,7 @@ pub async fn sell(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let base_coin = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
     let rel_coin = try_s!(lp_coinfindᵃ(&ctx, &input.rel).await);
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
-    let my_balance = try_s!(base_coin.my_balance().compat().await);
-    try_s!(check_locked_coins(&ctx, &input.volume, &my_balance, base_coin.ticker()).await);
-    let dex_fee = dex_fee_amount(base_coin.ticker(), rel_coin.ticker(), &input.volume.clone().into());
-    let trade_info = TradeInfo::Taker(dex_fee);
-    try_s!(base_coin.check_i_have_enough_to_trade(&input.volume.clone().into(), &my_balance.clone().into(), trade_info).compat().await);
+    try_s!(check_balance_for_taker_swap(&ctx, &base_coin, &rel_coin, input.volume.clone(), None).await);
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
     let res = try_s!(lp_auto_buy(&ctx, input).await).into_bytes();
     Ok(try_s!(Response::builder().body(res)))
@@ -1108,7 +1098,7 @@ struct PricePingRequest {
     base: String,
     rel: String,
     price: BigDecimal,
-    price_rat: Option<BigRational>,
+    price_rat: Option<MmNumber>,
     price64: String,
     timestamp: u64,
     pubsecp: String,
@@ -1116,7 +1106,7 @@ struct PricePingRequest {
     // TODO rename, it's called "balance", but it's actual meaning is max available volume to trade
     #[serde(rename="bal")]
     balance: BigDecimal,
-    balance_rat: Option<BigRational>,
+    balance_rat: Option<MmNumber>,
     uuid: Option<Uuid>,
     peer_id: String,
 }
@@ -1158,12 +1148,12 @@ impl PricePingRequest {
             rel: order.rel.clone(),
             price64: price64.to_string(),
             price: order.price.clone(),
-            price_rat: Some(order.price_rat.clone()),
+            price_rat: Some(order.price_rat.clone().into()),
             timestamp,
             pubsecp: hex::encode(&**ctx.secp256k1_key_pair().public()),
             sig: hex::encode(&*sig),
             balance: from_ratio_to_dec(&max_volume),
-            balance_rat: Some(max_volume),
+            balance_rat: Some(max_volume.into()),
             uuid: Some(order.uuid),
             peer_id: ctx.peer_id.or(&|| panic!()).clone(),
         })
@@ -1282,16 +1272,15 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let my_balance = try_s!(base_coin.my_balance().compat().await);
     let volume = if req.max {
         // use entire balance deducting the locked amount and trade fee if it's paid with base coin,
-        // skipping "check_i_have_enough"
+        // skipping "check_balance_for_maker_swap"
         let trade_fee = try_s!(base_coin.get_trade_fee().compat().await);
-        let mut vol = my_balance - get_locked_amount(&ctx, base_coin.ticker());
+        let mut vol = MmNumber::from(my_balance) - get_locked_amount(&ctx, base_coin.ticker(), &trade_fee);
         if trade_fee.coin == base_coin.ticker() {
-            vol -= trade_fee.amount;
+            vol = vol - trade_fee.amount.into();
         }
         MmNumber::from(vol)
     } else {
-        try_s!(check_locked_coins(&ctx, &req.volume, &my_balance, base_coin.ticker()).await);
-        try_s!(base_coin.check_i_have_enough_to_trade(&req.volume, &my_balance.clone().into(), TradeInfo::Maker).compat().await);
+        try_s!(check_balance_for_maker_swap(&ctx, &base_coin, req.volume.clone(), None).await);
         req.volume.clone()
     };
     if volume < MmNumber::from(unwrap!(MIN_TRADING_VOL.parse::<BigDecimal>())) {
@@ -1750,9 +1739,11 @@ pub struct OrderbookEntry {
     address: String,
     price: BigDecimal,
     price_rat: BigRational,
+    price_fraction: Fraction,
     #[serde(rename="maxvolume")]
     max_volume: BigDecimal,
     max_volume_rat: BigRational,
+    max_volume_fraction: Fraction,
     pubkey: String,
     age: i64,
     zcredits: u64,
@@ -1801,9 +1792,11 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
                     coin: req.base.clone(),
                     address: try_s!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
                     price: ask.price.clone(),
-                    price_rat: ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
+                    price_rat: ask.price_rat.as_ref().map(|p| p.to_ratio()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
+                    price_fraction: ask.price_rat.as_ref().map(|p| p.to_fraction()).unwrap_or(ask.price.clone().into()),
                     max_volume: ask.balance.clone(),
-                    max_volume_rat: ask.balance_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
+                    max_volume_rat: ask.balance_rat.as_ref().map(|p| p.to_ratio()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
+                    max_volume_fraction: ask.balance_rat.as_ref().map(|p| p.to_fraction()).unwrap_or(ask.balance.clone().into()),
                     pubkey: ask.pubkey.clone(),
                     age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
                     zcredits: 0,
@@ -1818,15 +1811,18 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         Some(asks) => {
             let mut orderbook_entries = vec![];
             for (uuid, ask) in asks.iter() {
+                let price_mm = MmNumber::from(1i32) / ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone()).into());
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.rel.clone(),
                     address: try_s!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
                     // NB: 1/x can not be represented as a decimal and introduces a rounding error
                     // cf. https://github.com/KomodoPlatform/atomicDEX-API/issues/495#issuecomment-516365682
                     price: BigDecimal::from (1) / &ask.price,
-                    price_rat: BigRational::from_integer(1.into()) / ask.price_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.price.clone())),
+                    price_rat: price_mm.to_ratio(),
+                    price_fraction: price_mm.to_fraction(),
                     max_volume: ask.balance.clone(),
-                    max_volume_rat: ask.balance_rat.as_ref().map(|p| p.clone()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
+                    max_volume_rat: ask.balance_rat.as_ref().map(|p| p.to_ratio()).unwrap_or(from_dec_to_ratio(ask.balance.clone())),
+                    max_volume_fraction: ask.balance_rat.as_ref().map(|p| p.to_fraction()).unwrap_or(from_dec_to_ratio(ask.balance.clone()).into()),
                     pubkey: ask.pubkey.clone(),
                     age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
                     zcredits: 0,

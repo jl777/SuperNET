@@ -7,8 +7,9 @@ use common::{
     executor::Timer,
     file_lock::FileLock,
     mm_ctx::MmArc,
+    mm_number::MmNumber,
 };
-use coins::{FoundSwapTxSpend, MmCoinEnum, TradeInfo, TransactionDetails};
+use coins::{lp_coinfindᵃ, FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
 use crc::crc32;
 use futures::{
     FutureExt, select,
@@ -16,11 +17,12 @@ use futures::{
     future::Either,
 };
 use futures01::Future;
+use http::Response;
 use parking_lot::Mutex as PaMutex;
 use peers::FixedValidator;
 use primitives::hash::H264;
 use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
-use serde_json::{self as json};
+use serde_json::{self as json, Value as Json};
 use serialization::{deserialize, serialize};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -30,6 +32,11 @@ use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amo
   AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
   SavedSwap, SwapsContext, SwapError, SwapNegotiationData, SwapMsg,
   BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
+use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount,
+            get_locked_amount_by_other_swaps, lp_atomic_locktime, my_swap_file_path, my_swaps_dir,
+            AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
+            SavedSwap, SwapsContext, SwapError, SwapNegotiationData,
+            BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
 
 pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
     ctx.dbdir().join("SWAPS").join("STATS").join("TAKER").join(format!("{}.json", uuid))
@@ -175,8 +182,10 @@ impl TakerSavedSwap {
         if !self.is_finished() { return false };
         for event in self.events.iter() {
             match event.event {
-                TakerSwapEvent::StartFailed(_) | TakerSwapEvent::NegotiateFailed(_) | TakerSwapEvent::TakerFeeSendFailed(_) |
-                TakerSwapEvent::MakerPaymentValidateFailed(_) | TakerSwapEvent::TakerPaymentRefunded(_) | TakerSwapEvent::MakerPaymentSpent(_) => {
+                TakerSwapEvent::StartFailed(_) | TakerSwapEvent::NegotiateFailed(_) |
+                TakerSwapEvent::TakerFeeSendFailed(_) | TakerSwapEvent::MakerPaymentValidateFailed(_) |
+                TakerSwapEvent::TakerPaymentRefunded(_) | TakerSwapEvent::MakerPaymentSpent(_) |
+                TakerSwapEvent::MakerPaymentWaitConfirmFailed(_) => {
                     return false;
                 }
                 _ => (),
@@ -550,31 +559,18 @@ impl TakerSwap {
     }
 
     async fn start(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let my_balance = match self.taker_coin.my_balance().compat().await {
-            Ok(balance) => balance,
-            Err(e) => return Ok((
-                Some(TakerSwapCommand::Finish),
-                vec![TakerSwapEvent::StartFailed(ERRL!("!my_balance {}", e).into())],
-            ))
-        };
-
-        let locked = get_locked_amount_by_other_swaps(&self.ctx, &self.uuid, self.taker_coin.ticker());
-        let available = &my_balance - &locked;
-        if self.taker_amount > available {
+        let check_balance_f = check_balance_for_taker_swap(
+            &self.ctx,
+            &self.taker_coin,
+            &self.maker_coin,
+            self.taker_amount.clone().into(),
+            Some(&self.uuid)
+        );
+        if let Err(e) = check_balance_f.await {
             return Ok((
                 Some(TakerSwapCommand::Finish),
-                vec![TakerSwapEvent::StartFailed(ERRL!("taker amount {} is larger than available {}, balance {}, locked by other swaps {}",
-                    self.taker_amount, available, my_balance, locked
-                ).into())],
+                vec![TakerSwapEvent::StartFailed(ERRL!("!check_balance_for_taker_swap {}", e).into())],
             ));
-        }
-
-        let dex_fee_amount = dex_fee_amount(self.maker_coin.ticker(), self.taker_coin.ticker(), &self.taker_amount);
-        if let Err(e) = self.taker_coin.check_i_have_enough_to_trade(&self.taker_amount.clone().into(), &my_balance.clone().into(), TradeInfo::Taker(dex_fee_amount)).compat().await {
-            return Ok((
-                Some(TakerSwapCommand::Finish),
-                vec![TakerSwapEvent::StartFailed(ERRL!("!check_i_have_enough_to_trade {}", e).into())],
-            ))
         }
 
         if let Err(e) = self.maker_coin.can_i_spend_other_payment().compat().await {
@@ -709,8 +705,8 @@ impl TakerSwap {
         }
 
         let fee_addr_pub_key = unwrap!(hex::decode("03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"));
-        let fee_amount = dex_fee_amount(&self.r().data.maker_coin, &self.r().data.taker_coin, &self.taker_amount);
-        let fee_tx = self.taker_coin.send_taker_fee(&fee_addr_pub_key, fee_amount).compat().await;
+        let fee_amount = dex_fee_amount(&self.r().data.maker_coin, &self.r().data.taker_coin, &self.taker_amount.clone().into());
+        let fee_tx = self.taker_coin.send_taker_fee(&fee_addr_pub_key, fee_amount.into()).compat().await;
         let transaction = match fee_tx {
             Ok (t) => t,
             Err (err) => return Ok((
@@ -1202,16 +1198,29 @@ impl TakerSwap {
 }
 
 impl AtomicSwap for TakerSwap {
-    fn locked_amount(&self) -> LockedAmount {
+    fn locked_amount(&self, trade_fee: &TradeFee) -> LockedAmount {
         // if taker payment is not sent yet the taker fee amount must be virtually locked
-        let fee_amount = match self.r().taker_fee {
+        let dex_fee_amount = match self.r().taker_fee {
             Some(_) => 0.into(),
-            None => dex_fee_amount(self.maker_coin.ticker(), self.taker_coin.ticker(), &self.taker_amount),
+            None => {
+                let amount = dex_fee_amount(self.maker_coin.ticker(), self.taker_coin.ticker(), &self.taker_amount.clone().into());
+                if self.taker_coin.ticker() == trade_fee.coin {
+                    &amount + &trade_fee.amount
+                } else {
+                    amount
+                }
+            },
         };
-
         let amount = match self.r().taker_payment {
             Some(_) => 0.into(),
-            None => fee_amount + &self.taker_amount,
+            None => {
+                let amount = &dex_fee_amount + &MmNumber::from(self.taker_amount.clone());
+                if self.taker_coin.ticker() == trade_fee.coin {
+                    &amount + &trade_fee.amount
+                } else {
+                    amount
+                }
+            },
         };
 
         LockedAmount {
@@ -1227,6 +1236,66 @@ impl AtomicSwap for TakerSwap {
     fn maker_coin(&self) -> &str { self.maker_coin.ticker() }
 
     fn taker_coin(&self) -> &str { self.taker_coin.ticker() }
+}
+
+pub async fn check_balance_for_taker_swap(
+    ctx: &MmArc,
+    my_coin: &MmCoinEnum,
+    other_coin: &MmCoinEnum,
+    volume: MmNumber,
+    swap_uuid: Option<&str>,
+) -> Result<(), String> {
+    let miner_fee = try_s!(my_coin.get_trade_fee().compat().await);
+    log!("check_balance_for_taker_swap miner fee " [miner_fee.amount.to_fraction()]);
+    let locked = match swap_uuid {
+        Some(u) => get_locked_amount_by_other_swaps(ctx, u, my_coin.ticker(), &miner_fee),
+        None => get_locked_amount(&ctx, my_coin.ticker(), &miner_fee),
+    };
+    log!("check_balance_for_taker_swap locked " [locked.to_fraction()]);
+    let my_balance = try_s!(my_coin.my_balance().compat().await).into();
+    log!("check_balance_for_taker_swap balance " (my_balance));
+    let dex_fee = dex_fee_amount(my_coin.ticker(), other_coin.ticker(), &volume);
+    log!("check_balance_for_taker_swap dex_fee " [dex_fee.to_fraction()]);
+    let total_miner_fee = &MmNumber::from(2) * &(miner_fee.amount.clone().into());
+    let total = if my_coin.ticker() == miner_fee.coin {
+        &volume + &dex_fee + total_miner_fee
+    } else {
+        let base_coin_balance: MmNumber = try_s!(my_coin.base_coin_balance().compat().await).into();
+        if total_miner_fee > base_coin_balance {
+            return ERR!("Base coin {} balance {} is not sufficient to pay total miner fees {}",
+                        miner_fee.coin, base_coin_balance, total_miner_fee)
+        }
+        &volume + &dex_fee
+    };
+    let available = &my_balance - &locked;
+    if total <= available {
+        Ok(())
+    } else {
+        ERR!("The total required {} amount {} is larger than available {:.8}, balance: {}, locked by swaps: {:.8}",
+        my_coin.ticker(), total, available, my_balance, locked)
+    }
+}
+
+pub async fn max_taker_vol(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let ticker = try_s!(req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();
+    let coin = match lp_coinfindᵃ(&ctx, &ticker).await {
+        Ok(Some(t)) => t,
+        Ok(None) => return ERR!("No such coin: {}", ticker),
+        Err(err) => return ERR!("!lp_coinfind({}): {}", ticker, err),
+    };
+    let balance = try_s!(coin.my_balance().compat().await);
+    let fee_info = try_s!(coin.get_trade_fee().compat().await);
+    let locked = get_locked_amount(&ctx, coin.ticker(), &fee_info);
+    let mut available_vol = MmNumber::from(balance) - locked;
+    if fee_info.coin == coin.ticker() {
+        available_vol = available_vol - fee_info.amount * 2.into();
+    }
+    available_vol = available_vol * 777.into() / 778.into();
+
+    let res = try_s!(json::to_vec(&json!({
+        "result": available_vol.to_fraction()
+    })));
+    Ok(try_s!(Response::builder().body(res)))
 }
 
 #[cfg(test)]
@@ -1481,5 +1550,14 @@ mod taker_swap_tests {
 
         let event = TakerSwapEvent::TakerPaymentWaitForSpendFailed("err".into());
         assert!(event.should_ban_maker());
+    }
+
+    #[test]
+    // https://github.com/KomodoPlatform/atomicDEX-API/issues/647
+    fn test_recoverable() {
+        // Swap ended with MakerPaymentWaitConfirmFailed event.
+        // MM2 did not attempt to send the payment in this case so swap is not recoverable.
+        let swap: TakerSavedSwap = json::from_str(r#"{"error_events":["StartFailed","NegotiateFailed","TakerFeeSendFailed","MakerPaymentValidateFailed","MakerPaymentWaitConfirmFailed","TakerPaymentTransactionFailed","TakerPaymentWaitConfirmFailed","TakerPaymentDataSendFailed","TakerPaymentWaitForSpendFailed","MakerPaymentSpendFailed","TakerPaymentWaitRefundStarted","TakerPaymentRefunded","TakerPaymentRefundFailed"],"events":[{"event":{"data":{"lock_duration":7800,"maker":"1bb83b58ec130e28e0a6d5d2acf2eb01b0d3f1670e021d47d31db8a858219da8","maker_amount":"0.12596566232185483","maker_coin":"KMD","maker_coin_start_block":1458035,"maker_payment_confirmations":1,"maker_payment_wait":1564053079,"my_persistent_pub":"0326846707a52a233cfc49a61ef51b1698bbe6aa78fa8b8d411c02743c09688f0a","started_at":1564050479,"taker_amount":"50.000000000000001504212457800000","taker_coin":"DOGE","taker_coin_start_block":2823448,"taker_payment_confirmations":1,"taker_payment_lock":1564058279,"uuid":"41383f43-46a5-478c-9386-3b2cce0aca20"},"type":"Started"},"timestamp":1564050480269},{"event":{"data":{"maker_payment_locktime":1564066080,"maker_pubkey":"031bb83b58ec130e28e0a6d5d2acf2eb01b0d3f1670e021d47d31db8a858219da8","secret_hash":"3669eb83a007a3c507448d79f45a9f06ec2f36a8"},"type":"Negotiated"},"timestamp":1564050540991},{"event":{"data":{"block_height":0,"coin":"DOGE","fee_details":{"amount":5},"from":["DBNHC8sQS8SCwCrKzG57G7ZVCh1zaih2tx"],"internal_id":"bdde828b492d6d1cc25cd2322fd592dafd722fcc7d8b0fedce4d3bb4a1a8c8ff","my_balance_change":-5.05791505,"received_by_me":96.85084225,"spent_by_me":101.9087573,"timestamp":0,"to":["DBNHC8sQS8SCwCrKzG57G7ZVCh1zaih2tx","DPZnzesTGPD42AXY1qX8BQp78jLbmzpRT7"],"total_amount":101.9087573,"tx_hash":"bdde828b492d6d1cc25cd2322fd592dafd722fcc7d8b0fedce4d3bb4a1a8c8ff","tx_hex":"0100000002c7efa995c8b7be0a8b6c2d526c6c444c1634d65584e9ee89904e9d8675eac88c010000006a473044022051f34d5e3b7d0b9098d5e35333f3550f9cb9e57df83d5e4635b7a8d2986d6d5602200288c98da05de6950e01229a637110a1800ba643e75cfec59d4eb1021ad9b40801210326846707a52a233cfc49a61ef51b1698bbe6aa78fa8b8d411c02743c09688f0affffffffae6c233989efa7c7d2aa6534adc96078917ff395b7f09f734a147b2f44ade164000000006a4730440220393a784c2da74d0e2a28ec4f7df6c8f9d8b2af6ae6957f1e68346d744223a8fd02201b7a96954ac06815a43a6c7668d829ae9cbb5de76fa77189ddfd9e3038df662c01210326846707a52a233cfc49a61ef51b1698bbe6aa78fa8b8d411c02743c09688f0affffffff02115f5800000000001976a914ca1e04745e8ca0c60d8c5881531d51bec470743f88ac41a84641020000001976a914444f0e1099709ba4d742454a7d98a5c9c162ceab88ac6d84395d"},"type":"TakerFeeSent"},"timestamp":1564050545296},{"event":{"data":{"block_height":0,"coin":"KMD","fee_details":{"amount":0.00001},"from":["RT9MpMyucqXiX8bZLimXBnrrn2ofmdGNKd"],"internal_id":"0a0f11fa82802c2c30862c50ab2162185dae8de7f7235f32c506f814c142b382","my_balance_change":0,"received_by_me":0,"spent_by_me":0,"timestamp":0,"to":["RT9MpMyucqXiX8bZLimXBnrrn2ofmdGNKd","bQTa5QiudricscFpKeJpcvi3rqFW4YEBcs"],"total_amount":1.10033066,"tx_hash":"0a0f11fa82802c2c30862c50ab2162185dae8de7f7235f32c506f814c142b382","tx_hex":"0400008085202f8902ace337db2dd4c56b0697f58fb8cfb6bd1cd6f469d925fc0376d1dcfb7581bf82000000006b483045022100d1f95be235c5c8880f5d703ace287e2768548792c58c5dbd27f5578881b30ea70220030596106e21c7e0057ee0dab283f9a1fe273f15208cba80870c447bd559ef0d0121031bb83b58ec130e28e0a6d5d2acf2eb01b0d3f1670e021d47d31db8a858219da8ffffffff9f339752567c404427fd77f2b35cecdb4c21489edc64e25e729fdb281785e423000000006a47304402203179e95877dbc107123a417f1e648e3ff13d384890f1e4a67b6dd5087235152e0220102a8ab799fadb26b5d89ceb9c7bc721a7e0c2a0d0d7e46bbe0cf3d130010d430121031bb83b58ec130e28e0a6d5d2acf2eb01b0d3f1670e021d47d31db8a858219da8ffffffff025635c0000000000017a91480a95d366d65e34a465ab17b0c9eb1d5a33bae08876cbfce05000000001976a914c3f710deb7320b0efa6edb14e3ebeeb9155fa90d88ac8d7c395d000000000000000000000000000000"},"type":"MakerPaymentReceived"},"timestamp":1564050588176},{"event":{"type":"MakerPaymentWaitConfirmStarted"},"timestamp":1564050588178},{"event":{"data":{"error":"error"},"type":"MakerPaymentWaitConfirmFailed"},"timestamp":1564051092897},{"event":{"type":"Finished"},"timestamp":1564051092900}],"success_events":["Started","Negotiated","TakerFeeSent","MakerPaymentReceived","MakerPaymentWaitConfirmStarted","MakerPaymentValidatedAndConfirmed","TakerPaymentSent","TakerPaymentSpent","MakerPaymentSpent","Finished"],"uuid":"41383f43-46a5-478c-9386-3b2cce0aca20"}"#).unwrap();
+        assert!(!swap.is_recoverable());
     }
 }
