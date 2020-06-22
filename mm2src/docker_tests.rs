@@ -623,6 +623,9 @@ mod docker_tests {
 
         unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains ("Entering the maker_swap_loop MYCOIN/MYCOIN1"))));
         unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains ("Entering the taker_swap_loop MYCOIN/MYCOIN1"))));
+        // TODO when buy call is made immediately swap might be not put into swap ctx yet so locked
+        // amount returns 0
+        thread::sleep(Duration::from_secs(3));
 
         let rc = unwrap! (block_on (mm_alice.rpc (json! ({
             "userpass": mm_alice.userpass,
@@ -713,6 +716,9 @@ mod docker_tests {
 
         unwrap! (block_on (mm_bob.wait_for_log (22., |log| log.contains ("Entering the maker_swap_loop MYCOIN/MYCOIN1"))));
         unwrap! (block_on (mm_alice.wait_for_log (22., |log| log.contains ("Entering the taker_swap_loop MYCOIN/MYCOIN1"))));
+        // TODO when sell call is made immediately swap might be not put into swap ctx yet so locked
+        // amount returns 0
+        thread::sleep(Duration::from_secs(3));
 
         let rc = unwrap! (block_on (mm_alice.rpc (json! ({
             "userpass": mm_alice.userpass,

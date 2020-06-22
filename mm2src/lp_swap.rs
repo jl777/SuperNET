@@ -63,9 +63,6 @@ use coins::{lp_coinfind, TradeFee, TransactionEnum};
 use common::{
     block_on, now_ms, read_dir, rpc_response, slurp, write, HyRes,
     executor::{spawn, Timer},
-    mm_ctx::{from_ctx, MmArc}
-    block_on, read_dir, rpc_response, slurp, write, HyRes,
-    executor::spawn,
     mm_ctx::{from_ctx, MmArc},
     mm_number::MmNumber,
 };

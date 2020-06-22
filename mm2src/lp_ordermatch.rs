@@ -24,20 +24,16 @@
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{BalanceUpdateEventHandler, lp_coinfindᵃ, MmCoinEnum, TradeInfo};
-use coins::{lp_coinfindᵃ, MmCoinEnum};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{bits256, json_dir_entries, now_ms, new_uuid,
-  remove_file, rpc_response, rpc_err_response, write, HyRes};
+use common::{bits256, json_dir_entries, now_ms, new_uuid, remove_file, rpc_response, rpc_err_response,
+             write, HyRes};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand};
-use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, MmNumber};
+use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
 use futures::{
     compat::Future01CompatExt,
     sink::SinkExt,
 };
-use common::mm_ctx::{from_ctx, MmArc, MmWeak};
-use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
-use futures::compat::Future01CompatExt;
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
@@ -58,7 +54,8 @@ use uuid::Uuid;
 
 use crate::mm2::{
     gossipsub::{GossipsubEventHandler, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR},
-    lp_swap::{dex_fee_amount, get_locked_amount, is_pubkey_banned, run_maker_swap, run_taker_swap,
+    lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, dex_fee_amount,
+              get_locked_amount, is_pubkey_banned, run_maker_swap, run_taker_swap,
               MakerSwap, RunMakerSwapInput, RunTakerSwapInput, TakerSwap}
 };
 
@@ -280,10 +277,6 @@ impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
         }).collect();
     }
 }
-use crate::mm2::lp_swap::{
-    check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount, is_pubkey_banned, run_maker_swap, run_taker_swap,
-    MakerSwap, RunMakerSwapInput, RunTakerSwapInput, TakerSwap,
-};
 
 #[cfg(test)]
 #[cfg(feature = "native")]
