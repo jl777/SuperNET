@@ -1487,6 +1487,7 @@ pub struct OrderbookEntry {
     age: i64,
     zcredits: u64,
     uuid: Uuid,
+    is_mine: bool,
 }
 
 #[derive(Serialize)]
@@ -1522,6 +1523,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = try_s!(ordermatch_ctx.orderbook.lock());
+    let my_pubsecp = hex::encode(&**ctx.secp256k1_key_pair().public());
     let asks = match orderbook.get(&(req.base.clone(), req.rel.clone())) {
         Some(asks) => {
             let mut orderbook_entries = vec![];
@@ -1539,6 +1541,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
                     age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
                     zcredits: 0,
                     uuid: *uuid,
+                    is_mine: my_pubsecp == ask.pubsecp,
                 })
             }
             orderbook_entries
@@ -1565,6 +1568,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
                     age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
                     zcredits: 0,
                     uuid: *uuid,
+                    is_mine: my_pubsecp == ask.pubsecp,
                 })
             }
             orderbook_entries
