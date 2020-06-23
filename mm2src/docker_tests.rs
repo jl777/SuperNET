@@ -963,6 +963,7 @@ mod docker_tests {
                 |log| log.contains (&format!("Entering the taker_swap_loop MYCOIN/MYCOIN1 with uuid: {}", uuid))
             )));
         }
+        thread::sleep(Duration::from_secs(3));
         unwrap!(block_on(mm_bob.stop()));
         unwrap!(block_on(mm_alice.stop()));
         for uuid in uuids {

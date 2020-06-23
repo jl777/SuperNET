@@ -194,7 +194,7 @@ async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u
     let timeout = BASIC_COMM_TIMEOUT + timeout;
     let wait_until = started + timeout;
     loop {
-        Timer::sleep(1u64 as f64).await;
+        Timer::sleep(1.).await;
         let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
         let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
         match msgs.get_mut(uuid) {
