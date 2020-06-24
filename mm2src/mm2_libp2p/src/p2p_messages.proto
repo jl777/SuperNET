@@ -3,6 +3,11 @@ syntax = "proto3";
 package mm2_libp2p.pb;
 
 message SignedMessage {
-  bytes signature = 1;
-  bytes payload = 2;
+  bytes pubkey = 1;
+  bytes signature = 2;
+  bytes payload = 3;
+}
+
+message ForTest {
+  bytes payload = 1;
 }
