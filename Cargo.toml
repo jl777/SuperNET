@@ -141,6 +141,7 @@ testcontainers = { git = "https://github.com/artemii235/testcontainers-rs.git" }
 [workspace]
 members = [
   "mm2src/coins",
+  "mm2src/mm2_libp2p",
 ]
 
 # The backtrace disables build.define("HAVE_DL_ITERATE_PHDR", "1"); for android which results in "unknown" function
@@ -152,6 +153,3 @@ members = [
 backtrace = { git = "https://github.com/artemii235/backtrace-rs.git" }
 backtrace-sys = { git = "https://github.com/artemii235/backtrace-rs.git" }
 num-rational = { git =  "https://github.com/artemii235/num-rational.git" }
-# Remove when the fix applied to upstream
-# https://github.com/CodeSandwich/Mocktopus/pull/50
-mocktopus_macros = { git = "https://github.com/artemii235/Mocktopus.git" }

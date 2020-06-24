@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package mm2_libp2p.pb;
+
+message SignedMessage {
+  bytes signature = 1;
+  bytes payload = 2;
+}
