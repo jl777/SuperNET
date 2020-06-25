@@ -771,7 +771,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     // We want to give Bob a headstart in acquiring the port,
     // because Alice will then be able to directly reach it (thanks to "seednode").
     // Direct communication is not required in this test, but it's nice to have.
-    wait_log_re! (mm_bob, 9., "preferred port");
+    // wait_log_re! (mm_bob, 9., "preferred port");
 
     let mut mm_alice = unwrap! (MarketMakerIt::start (
         json! ({

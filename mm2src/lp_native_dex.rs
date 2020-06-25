@@ -132,7 +132,7 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
             // We don't want to unnecessarily spam the friendlist of a public seed node,
             // but for a custom `seednode` we invoke the `investigate_peer`,
             // facilitating direct `peers` communication between the two.
-            try_s!(peers::investigate_peer (&ctx, &seednode, pubport + 1));
+            // try_s!(peers::investigate_peer (&ctx, &seednode, pubport + 1));
         }
         seednodes.into_iter().map(|ip| (Cow::Owned (ip), true)).collect()
     } else if netid > 0 && netid < 9 {
@@ -161,7 +161,7 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
         // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
         try_s! (start_client_p2p_loop (ctx.clone(), seed_ips.iter().map(|ip| ip.to_string()).collect(), pubport) .await);
     }
-    try_s! (peers::initialize (&ctx, netid, pubport + 1) .await);
+    // try_s! (peers::initialize (&ctx, netid, pubport + 1) .await);
 
     Ok(())
 }
@@ -533,7 +533,9 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
     use common::now_ms;
 
     if i_am_seed {
+        log!("Before relayer node");
         let (tx, peer_id) = relayer_node (ctx.clone(), myipaddr, mypubport, seednodes.clone());
+        log!("After relayer node");
         try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
         try_s!(ctx.peer_id.pin(peer_id));
     }
@@ -565,6 +567,7 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
 
     let ctx_id = try_s! (ctx.ffi_handle());
 
+    log!("Before rpc spawn");
     spawn_rpc(ctx_id);
 
     // In the mobile version we might depend on `lp_init` staying around until the context stops.

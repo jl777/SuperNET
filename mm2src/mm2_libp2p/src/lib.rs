@@ -6,6 +6,10 @@ mod p2p_messages {
     include!(concat!(env!("OUT_DIR"), "/mm2_libp2p.pb.rs"));
 }
 
+fn sha256(input: impl AsRef<[u8]>) -> [u8; 32] {
+    Sha256::new().chain(input).finalize().into()
+}
+
 use p2p_messages::ForTest;
 
 /// SignedMessage, should contain signature with recovery id.
@@ -19,6 +23,21 @@ pub struct SignedMessage {
 }
 
 impl SignedMessage {
+    pub fn create_and_sign<T: Message>(payload: &T, secret: &SecretKey) -> Result<Self, ()> {
+        let mut encoded_msg = Vec::with_capacity(payload.encoded_len());
+        payload.encode(&mut encoded_msg).map_err(|_| ())?;
+        let result = sha256(&encoded_msg);
+        let sig_hash = SecpMessage::parse(&result.into());
+        let (sig, rec_id) = sign(&sig_hash, &secret);
+        let mut signature = Vec::with_capacity(65);
+        signature.extend_from_slice(&sig.serialize());
+        signature.push(rec_id.into());
+        Ok(SignedMessage {
+            signature,
+            payload: encoded_msg,
+        })
+    }
+
     /// Attempts to decode the payload and also returns recovered pubkey and signature.
     /// Consumes self, the message should not be reused if signature check failed.
     pub fn parse_payload<T: Default + Message>(self) -> Result<(PublicKey, Signature, T), ()> {
@@ -27,18 +46,11 @@ impl SignedMessage {
         let sig = Signature::parse_slice(&self.signature[..64]).map_err(|_| ())?;
         let rec_id = RecoveryId::parse(self.signature[64]).map_err(|_| ())?;
 
-        // create a Sha256 object
-        let mut hasher = Sha256::new();
+        let sig_hash = sha256(&self.payload);
+        let secp_message = SecpMessage::parse(&sig_hash);
 
-        // write input message
-        hasher.update(&self.payload);
-
-        // read hash digest and consume hasher
-        let result = hasher.finalize();
-        let sig_hash = SecpMessage::parse(&result.into());
-
-        let pubkey = recover(&sig_hash, &sig, &rec_id).map_err(|_| ())?;
-        if !verify(&sig_hash, &sig, &pubkey) { return Err(()); }
+        let pubkey = recover(&secp_message, &sig, &rec_id).map_err(|_| ())?;
+        if !verify(&secp_message, &sig, &pubkey) { return Err(()); }
 
         let payload = T::decode(self.payload.as_slice()).map_err(|_| ())?;
         Ok((pubkey, sig, payload))
@@ -52,30 +64,7 @@ fn test_signed_message_de_encode() {
         payload: vec![0; 32]
     };
 
-    let mut encoded_msg = Vec::with_capacity(initial_msg.encoded_len());
-
-    initial_msg.encode(&mut encoded_msg)
-        .expect("Buffer has sufficient capacity");
-
-    // create a Sha256 object
-    let mut hasher = Sha256::new();
-
-    // write input message
-    hasher.update(&encoded_msg);
-
-    // read hash digest and consume hasher
-    let result = hasher.finalize();
-    let sig_hash = SecpMessage::parse(&result.into());
-    let (sig, rec_id) = sign(&sig_hash, &secret);
-    let mut signature = Vec::with_capacity(65);
-    signature.extend_from_slice(&sig.serialize());
-    signature.push(rec_id.into());
-    let msg = SignedMessage {
-        signature,
-        payload: encoded_msg,
-    };
-
-    let parsed = msg.parse_payload::<ForTest>().unwrap();
-    assert_eq!(parsed.1, sig);
+    let signed = SignedMessage::create_and_sign(&initial_msg, &secret).unwrap();
+    let parsed = signed.parse_payload::<ForTest>().unwrap();
     assert_eq!(parsed.2, initial_msg);
 }
