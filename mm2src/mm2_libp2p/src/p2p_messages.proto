@@ -2,6 +2,26 @@ syntax = "proto3";
 
 package mm2_libp2p.pb;
 
+message MakerOrderKeepAlive {
+  bytes uuid = 1;
+}
+
+message MakerOrder {
+  bytes uuid = 1;
+  string base_ticker = 2;
+  string rel_ticker = 3;
+  repeated uint32 price_numer = 4 [packed = true];
+  repeated uint32 price_denom = 5 [packed = true];
+  repeated uint32 max_volume_numer = 6 [packed = true];
+  repeated uint32 max_volume_denom = 7 [packed = true];
+  repeated uint32 min_volume_numer = 8 [packed = true];
+  repeated uint32 min_volume_denom = 9 [packed = true];
+  uint32 base_confs = 10;
+  uint32 rel_confs = 11;
+  bool base_nota = 12;
+  bool rel_nota = 13;
+}
+
 message SignedMessage {
   bytes pubkey = 1;
   bytes signature = 2;

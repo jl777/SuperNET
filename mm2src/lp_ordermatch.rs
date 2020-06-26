@@ -25,11 +25,13 @@ use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::{BalanceUpdateEventHandler, lp_coinfindᵃ, MmCoinEnum, TradeInfo};
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use common::{bits256, json_dir_entries, now_ms, new_uuid, remove_file, rpc_response, rpc_err_response,
-             write, HyRes};
+use common::{bits256, json_dir_entries, now_ms, new_uuid, remove_file, rpc_response, rpc_err_response, write, HyRes};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand};
-use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
+use common::mm_number::{
+    from_dec_to_ratio, from_ratio_to_dec,
+    BigInt, Fraction, MmNumber, Sign,
+};
 use futures::{
     compat::Future01CompatExt,
     sink::SinkExt,
@@ -37,6 +39,10 @@ use futures::{
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
+use mm2_libp2p::{
+    SignedMessage,
+    p2p_messages::{MakerOrder as MakerOrderMessage},
+};
 #[cfg(test)]
 use mocktopus::macros::*;
 use num_rational::BigRational;
@@ -61,7 +67,76 @@ use crate::mm2::{
 
 pub const ORDERBOOK_PREFIX: TopicPrefix = "orbk";
 
-pub async fn process_msg(ctx: MmArc, msg: &[u8]) {
+impl From<(MakerOrderMessage, Vec<u8>, String, String)> for PricePingRequest {
+    fn from(tuple: (MakerOrderMessage, Vec<u8>, String, String)) -> PricePingRequest {
+        let (order, initial_message, pubsecp, peer_id) = tuple;
+        let price_numer = BigInt::from_slice(Sign::Plus, &order.price_numer);
+        let price_denom = BigInt::from_slice(Sign::Plus, &order.price_denom);
+        let price: MmNumber = BigRational::new(price_numer, price_denom).into();
+
+        let max_vol_numer = BigInt::from_slice(Sign::Plus, &order.max_volume_numer);
+        let max_vol_denom = BigInt::from_slice(Sign::Plus, &order.max_volume_denom);
+        let max_vol: MmNumber = BigRational::new(max_vol_numer, max_vol_denom).into();
+
+        PricePingRequest {
+            method: "".to_string(),
+            pubkey: "".to_string(),
+            base: order.base_ticker,
+            rel: order.rel_ticker,
+            price: price.to_decimal(),
+            price_rat: Some(price),
+            price64: "".to_string(),
+            timestamp: now_ms() / 1000,
+            pubsecp,
+            sig: "".to_string(),
+            balance: max_vol.to_decimal(),
+            balance_rat: Some(max_vol),
+            uuid: Some(Uuid::from_slice(&order.uuid).unwrap()),
+            peer_id,
+            initial_message,
+        }
+    }
+}
+
+fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
+    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+    match orderbook.entry((req.base.clone(), req.rel.clone())) {
+        Entry::Vacant(pair_orders) => if req.balance > 0.into() && req.price > 0.into() {
+            let mut orders = HashMap::new();
+            orders.insert(uuid, req);
+            pair_orders.insert(orders);
+        },
+        Entry::Occupied(mut pair_orders) => {
+            match pair_orders.get_mut().entry(uuid) {
+                Entry::Vacant(order) => if req.balance > 0.into() && req.price > 0.into() {
+                    order.insert(req);
+                },
+                Entry::Occupied(mut order) => if req.balance > 0.into() {
+                    order.insert(req);
+                } else {
+                    order.remove();
+                },
+            }
+        }
+    }
+}
+
+pub async fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
+    match SignedMessage::decode_from_slice(msg) {
+        Ok(s) => {
+            match s.parse_payload::<MakerOrderMessage>() {
+                Ok((pubkey, sig, order)) => {
+                    let req: PricePingRequest = (order, msg.to_vec(), hex::encode(pubkey.serialize_compressed().as_ref()), from_peer).into();
+                    let uuid = req.uuid.unwrap();
+                    insert_or_update_order(&ctx, req, uuid);
+                    return;
+                },
+                Err(_) => (),
+            };
+        },
+        Err(_) => (),
+    };
     let req = match json::from_slice::<Json>(msg) {
         Ok(j) => j,
         Err(_) => return,
@@ -139,11 +214,31 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
     fn maker_order_created(&self, order: &MakerOrder) {
         let ctx = self.ctx.clone();
         let topic = orderbook_topic(&order.base, &order.rel);
+        let message = MakerOrderMessage {
+            uuid: order.uuid.as_bytes().to_vec(),
+            base_ticker: order.base.clone(),
+            rel_ticker: order.rel.clone(),
+            price_numer: order.price.numer().to_u32_digits().1,
+            price_denom: order.price.denom().to_u32_digits().1,
+            max_volume_numer: order.max_base_vol.numer().to_u32_digits().1,
+            max_volume_denom: order.max_base_vol.denom().to_u32_digits().1,
+            min_volume_numer: order.min_base_vol.numer().to_u32_digits().1,
+            min_volume_denom: order.min_base_vol.denom().to_u32_digits().1,
+            base_confs: 0,
+            rel_confs: 0,
+            base_nota: false,
+            rel_nota: false
+        };
         spawn(async move {
-            ctx.subscribe_to_p2p_topic(topic).await;
-            if let Err(e) = broadcast_my_maker_orders(&ctx).await {
-                ctx.log.log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
-            };
+            ctx.subscribe_to_p2p_topic(topic.clone()).await;
+            let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+            let signed = SignedMessage::create_and_sign(&message, &*key_pair.private().secret).unwrap();
+            let encoded_msg = signed.encode_to_vec();
+            let peer = ctx.peer_id.or(&&|| panic!()).clone();
+            let price_ping_req: PricePingRequest = (message.clone(), encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
+            let uuid = price_ping_req.uuid.unwrap();
+            insert_or_update_order(&ctx, price_ping_req, uuid);
+            ctx.broadcast_p2p_msg(topic, encoded_msg);
         });
     }
 
@@ -181,17 +276,17 @@ impl GossipsubEventHandler for OrdermatchP2PConnector {
         };
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
         let orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+        log!("Orderbook] " [orderbook]);
         let mut messages = vec![];
-        log!("Current orderbook " [orderbook]);
         if let Some(orders) = orderbook.get(&(pair.0.to_owned(), pair.1.to_owned())) {
             for (_, order) in orders.iter() {
-                messages.push((topic.to_owned(), json::to_vec(order).unwrap()));
+                messages.push((topic.to_owned(), order.initial_message.clone()));
             }
         }
 
         if let Some(orders) = orderbook.get(&(pair.1.to_owned(), pair.0.to_owned())) {
             for (_, order) in orders.iter() {
-                messages.push((topic.to_owned(), json::to_vec(order).unwrap()));
+                messages.push((topic.to_owned(), order.initial_message.clone()));
             }
         }
         let peers = vec![peer.to_owned()];
@@ -201,13 +296,14 @@ impl GossipsubEventHandler for OrdermatchP2PConnector {
         });
     }
 
-    fn message_received(&self, _peer: &str, topics: &[&str], msg: &[u8]) {
+    fn message_received(&self, peer: String, topics: &[&str], msg: &[u8]) {
         for topic in topics.iter() {
             if let Some(pair) = parse_orderbook_pair_from_topic(topic) {
                 let ctx = self.ctx.clone();
                 let msg = msg.to_owned();
+                let peer_clone = peer.clone();
                 spawn(async move {
-                    process_msg(ctx, &msg).await;
+                    process_msg(ctx, peer_clone, &msg).await;
                 });
             }
         }
@@ -252,19 +348,18 @@ impl BalanceUpdateOrdermatchHandler {
 
 impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
     fn balance_updated(&self, ticker: &str, new_balance: &BigDecimal) {
+        let new_balance = MmNumber::from(new_balance.clone());
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
         let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().unwrap();
         *maker_orders = maker_orders.drain().filter_map(|(uuid, mut order)| {
             if order.base == *ticker {
-                if *new_balance < MIN_TRADING_VOL.parse().unwrap() {
+                if new_balance < MmNumber::from(MIN_TRADING_VOL) {
                     order.max_base_vol = 0.into();
-                    order.max_base_vol_rat = BigRational::from_integer(0.into());
                     ordermatch_ctx.maker_order_cancelled(&order);
                     None
                 } else {
-                    if *new_balance < order.max_base_vol {
-                        order.max_base_vol = (*new_balance).clone();
-                        order.max_base_vol_rat = from_dec_to_ratio((*new_balance).clone());
+                    if new_balance < order.max_base_vol {
+                        order.max_base_vol = new_balance.clone();
                         ordermatch_ctx.maker_order_updated(&order);
                         Some((uuid, order))
                     } else {
@@ -408,15 +503,9 @@ impl TakerOrder {
 /// So upon ordermatch with request we have only 2 combinations "sell":"sell" and "sell":"buy"
 /// Adding "action" to maker order will just double possible combinations making order match more complex.
 pub struct MakerOrder {
-    pub max_base_vol: BigDecimal,
-    #[serde(default = "zero_rat")]
-    pub max_base_vol_rat: BigRational,
-    pub min_base_vol: BigDecimal,
-    #[serde(default = "zero_rat")]
-    pub min_base_vol_rat: BigRational,
-    pub price: BigDecimal,
-    #[serde(default = "zero_rat")]
-    pub price_rat: BigRational,
+    pub max_base_vol: MmNumber,
+    pub min_base_vol: MmNumber,
+    pub price: MmNumber,
     pub created_at: u64,
     pub base: String,
     pub rel: String,
@@ -433,7 +522,7 @@ impl MakerOrder {
             MmNumber::from(BigRational::from_integer(0.into())),
             |reserved, (_, order_match)| reserved + order_match.reserved.get_base_amount()
         );
-        MmNumber::from(self.max_base_vol_rat.clone()) - reserved
+        &self.max_base_vol - &reserved
     }
 
     fn is_cancellable(&self) -> bool {
@@ -455,11 +544,8 @@ impl Into<MakerOrder> for TakerOrder {
     fn into(self) -> MakerOrder {
         let order = match self.request.action {
             TakerAction::Sell => MakerOrder {
-                price: &self.request.rel_amount / &self.request.base_amount,
-                price_rat: (self.request.get_rel_amount() / self.request.get_base_amount()).into(),
-                max_base_vol_rat: self.request.get_base_amount().into(),
-                max_base_vol: self.request.base_amount,
-                min_base_vol_rat: BigRational::from_integer(0.into()),
+                price: (self.request.get_rel_amount() / self.request.get_base_amount()),
+                max_base_vol: self.request.get_base_amount(),
                 min_base_vol: 0.into(),
                 created_at: now_ms(),
                 base: self.request.base,
@@ -470,12 +556,9 @@ impl Into<MakerOrder> for TakerOrder {
             },
             // The "buy" taker order is recreated with reversed pair as Maker order is always considered as "sell"
             TakerAction::Buy => MakerOrder {
-                price: &self.request.base_amount / &self.request.rel_amount,
-                price_rat: (self.request.get_base_amount() / self.request.get_rel_amount()).into(),
-                max_base_vol_rat: self.request.get_rel_amount().into(),
-                max_base_vol: self.request.rel_amount,
+                price: (self.request.get_base_amount() / self.request.get_rel_amount()),
+                max_base_vol: self.request.get_rel_amount(),
                 min_base_vol: 0.into(),
-                min_base_vol_rat: BigRational::from_integer(0.into()),
                 created_at: now_ms(),
                 base: self.request.rel,
                 rel: self.request.base,
@@ -1102,13 +1185,14 @@ struct PricePingRequest {
     balance_rat: Option<MmNumber>,
     uuid: Option<Uuid>,
     peer_id: String,
+    initial_message: Vec<u8>,
 }
 
 impl PricePingRequest {
     fn new(ctx: &MmArc, order: &MakerOrder, balance: BigDecimal) -> Result<PricePingRequest, String> {
         let public_id = try_s!(ctx.public_id());
-
-        let price64 = (&order.price * BigDecimal::from(100000000)).to_u64().unwrap();
+        // not used anywhere
+        let price64 = 0;
         let timestamp = now_ms() / 1000;
         let sig_hash = price_ping_sig_hash(
             timestamp as u32,
@@ -1140,8 +1224,8 @@ impl PricePingRequest {
             base: order.base.clone(),
             rel: order.rel.clone(),
             price64: price64.to_string(),
-            price: order.price.clone(),
-            price_rat: Some(order.price_rat.clone().into()),
+            price: order.price.to_decimal(),
+            price_rat: Some(order.price.clone()),
             timestamp,
             pubsecp: hex::encode(&**ctx.secp256k1_key_pair().public()),
             sig: hex::encode(&*sig),
@@ -1149,6 +1233,7 @@ impl PricePingRequest {
             balance_rat: Some(max_volume.into()),
             uuid: Some(order.uuid),
             peer_id: ctx.peer_id.or(&|| panic!()).clone(),
+            initial_message: vec![],
         })
     }
 }
@@ -1308,11 +1393,8 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         let uuid = new_uuid();
         let order = MakerOrder {
             max_base_vol: volume.clone().into(),
-            max_base_vol_rat: volume.into(),
             min_base_vol: 0.into(),
-            min_base_vol_rat: BigRational::from_integer(0.into()),
             price: req.price.clone().into(),
-            price_rat: req.price.clone().into(),
             created_at: now_ms(),
             base: req.base,
             rel: req.rel,
@@ -1375,7 +1457,6 @@ pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
             if let Some(mut order) = order {
                 // TODO cancelling means setting volume to 0 as of now, should refactor
                 order.max_base_vol = 0.into();
-                order.max_base_vol_rat = BigRational::from_integer(0.into());
                 ordermatch_ctx.maker_order_cancelled(&order);
             }
         }
@@ -1397,15 +1478,13 @@ enum OrderMatchResult {
 fn match_order_and_request(maker: &MakerOrder, taker: &TakerRequest) -> OrderMatchResult {
     let taker_base_amount: MmNumber = taker.get_base_amount();
     let taker_rel_amount: MmNumber = taker.get_rel_amount();
-    let maker_price: MmNumber = maker.price_rat.clone().into();
-    let maker_min_vol: MmNumber = maker.min_base_vol_rat.clone().into();
 
     match taker.action {
         TakerAction::Buy => {
-            if maker.base == taker.base && maker.rel == taker.rel && taker_base_amount <= maker.available_amount() && taker_base_amount >= maker_min_vol {
+            if maker.base == taker.base && maker.rel == taker.rel && taker_base_amount <= maker.available_amount() && taker_base_amount >= maker.min_base_vol {
                 let taker_price = &taker_rel_amount / &taker_base_amount;
-                if taker_price >= maker_price {
-                    OrderMatchResult::Matched((taker_base_amount.clone(), taker_base_amount * maker_price))
+                if taker_price >= maker.price {
+                    OrderMatchResult::Matched((taker_base_amount.clone(), &taker_base_amount * &maker.price))
                 } else {
                     OrderMatchResult::NotMatched
                 }
@@ -1414,10 +1493,10 @@ fn match_order_and_request(maker: &MakerOrder, taker: &TakerRequest) -> OrderMat
             }
         },
         TakerAction::Sell => {
-            if maker.base == taker.rel && maker.rel == taker.base && taker_rel_amount <= maker.available_amount() && taker_rel_amount >= maker_min_vol {
+            if maker.base == taker.rel && maker.rel == taker.base && taker_rel_amount <= maker.available_amount() && taker_rel_amount >= maker.min_base_vol {
                 let taker_price = &taker_base_amount / &taker_rel_amount;
-                if taker_price >= maker_price {
-                    OrderMatchResult::Matched((&taker_base_amount / &maker_price, taker_base_amount))
+                if taker_price >= maker.price {
+                    OrderMatchResult::Matched((&taker_base_amount / &maker.price, taker_base_amount))
                 } else {
                     OrderMatchResult::NotMatched
                 }
@@ -1843,25 +1922,6 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
 }
 
 pub fn migrate_saved_orders(ctx: &MmArc) -> Result<(), String> {
-    let maker_entries = try_s!(json_dir_entries(&my_maker_orders_dir(&ctx)));
-    maker_entries.iter().for_each(|entry| {
-        match json::from_slice::<MakerOrder>(&slurp(&entry.path())) {
-            Ok(mut order) => {
-                if order.max_base_vol_rat == BigRational::zero() {
-                    order.max_base_vol_rat = from_dec_to_ratio(order.max_base_vol.clone());
-                }
-                if order.min_base_vol_rat == BigRational::zero() {
-                    order.min_base_vol_rat = from_dec_to_ratio(order.min_base_vol.clone());
-                }
-                if order.price_rat == BigRational::zero() {
-                    order.price_rat = from_dec_to_ratio(order.price.clone());
-                }
-                save_my_maker_order(ctx, &order)
-            }
-            Err(_) => (),
-        }
-    });
-
     let taker_entries: Vec<DirEntry> = try_s!(json_dir_entries(&my_taker_orders_dir(&ctx)));
     taker_entries.iter().for_each(|entry| {
         match json::from_slice::<TakerOrder>(&slurp(&entry.path())) {

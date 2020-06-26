@@ -98,23 +98,6 @@ fn rpc_reply_to_peer (handler: HyRes, cmd: QueuedCommand) {
     spawn (f.compat().map(|_|()))
 }
 
-pub async fn lp_process_p2p_message(ctx: &MmArc, topics: Vec<String>, msg: &[u8]) {
-    for topic in topics {
-        let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
-        match split.next() {
-            Some(ORDERBOOK_PREFIX) => crate::mm2::lp_ordermatch::process_msg(ctx.clone(), msg).await,
-            Some(SWAP_PREFIX) => match split.next() {
-                Some(maybe_uuid) => {
-                    log!({"Processing swap msg {} {:?}", maybe_uuid, msg});
-                    crate::mm2::lp_swap::process_msg(ctx.clone(), maybe_uuid, msg);
-                },
-                None => (),
-            }
-            _ => (),
-        }
-    }
-}
-
 /// The loop processing seednode activity as message relayer/rebroadcaster
 /// Non-blocking mode should be enabled on listener for this to work
 pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {

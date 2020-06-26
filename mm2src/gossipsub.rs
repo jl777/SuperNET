@@ -6,7 +6,6 @@ use common::{
     mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand},
 };
 use crate::mm2::{
-    lp_network::lp_process_p2p_message,
     lp_ordermatch::broadcast_my_maker_orders,
 };
 use futures::{
@@ -37,7 +36,7 @@ use std::{
 pub trait GossipsubEventHandler {
     fn peer_subscribed(&self, peer: &str, topic: &str);
 
-    fn message_received(&self, peer: &str, topics: &[&str], msg: &[u8]);
+    fn message_received(&self, peer: String, topics: &[&str], msg: &[u8]);
 
     fn peer_disconnected(&self, peer: &str);
 }
@@ -89,9 +88,9 @@ impl GossipsubEventHandler for GossipsubContextImpl {
         }
     }
 
-    fn message_received(&self, peer: &str, topics: &[&str], msg: &[u8]) {
+    fn message_received(&self, peer: String, topics: &[&str], msg: &[u8]) {
         for handler in self.event_handlers.iter() {
-            handler.message_received(peer, topics, msg);
+            handler.message_received(peer.clone(), topics, msg);
         }
     }
 
@@ -183,7 +182,7 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
                                 peer_id
                             );
                             let topics: Vec<&str> = message.topics.iter().map(|topic| topic.as_str()).collect();
-                            gossipsub_ctx.lock().await.message_received(&peer_id.to_base58(), &topics, &message.data);
+                            gossipsub_ctx.lock().await.message_received(peer_id.to_base58(), &topics, &message.data);
                         },
                         GossipsubEvent::Subscribed { peer_id, topic } => {
                             let topic_str = topic.into_string();
@@ -309,7 +308,7 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16)
                                 peer_id
                             );
                             let topics: Vec<&str> = message.topics.iter().map(|topic| topic.as_str()).collect();
-                            gossipsub_ctx.lock().await.message_received(&peer_id.to_base58(), &topics, &message.data);
+                            gossipsub_ctx.lock().await.message_received(peer_id.to_base58(), &topics, &message.data);
                         },
                         GossipsubEvent::PeerDisconnected(peer_id) => {
                             gossipsub_ctx.lock().await.peer_disconnected(&peer_id.to_base58());

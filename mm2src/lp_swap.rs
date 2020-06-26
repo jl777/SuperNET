@@ -137,7 +137,7 @@ impl GossipsubEventHandler for SwapsGossipsubConnector {
         // do nothing
     }
 
-    fn message_received(&self, _peer: &str, topics: &[&str], msg: &[u8]) {
+    fn message_received(&self, _peer: String, topics: &[&str], msg: &[u8]) {
         for topic in topics {
             let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
             match split.next() {

@@ -1,3 +1,5 @@
+use prost_build::Config;
+
 fn main() {
-    prost_build::compile_protos(&["src/p2p_messages.proto"], &["src"]).unwrap();
+    Config::default().out_dir("src").compile_protos(&["src/p2p_messages.proto"], &["src"]).unwrap();
 }

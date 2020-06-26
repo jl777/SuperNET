@@ -166,10 +166,6 @@ pub async fn lp_initpeers (ctx: &MmArc, netid: u16, seednodes: Option<Vec<String
     Ok(())
 }
 
-/// True during the threads initialization in `lp_init`.  
-/// Mirrors the C `bitcoind_RPC_inittime`.
-const BITCOIND_RPC_INITIALIZING: AtomicBool = AtomicBool::new (false);
-
 /// Invokes `OS_ensure_directory`,
 /// then prints an error and returns `false` if the directory is not writable.
 fn ensure_dir_is_writable(dir_path: &Path) -> bool {
@@ -409,7 +405,6 @@ fn test_ip (_ctx: &MmArc, _ip: IpAddr) -> Result<(Sender<()>, u16), String> {
 
 /// * `ctx_cb` - callback used to share the `MmCtx` ID with the call site.
 pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
-    BITCOIND_RPC_INITIALIZING.store (true, Ordering::Relaxed);
     log! ({"lp_init] version: {} DT {}", MM_VERSION, MM_DATETIME});
     unsafe {try_s! (lp_passphrase_init (&ctx))}
 
@@ -567,7 +562,6 @@ pub async fn lp_init (mypubport: u16, ctx: MmArc) -> Result<(), String> {
 
     let ctx_id = try_s! (ctx.ffi_handle());
 
-    log!("Before rpc spawn");
     spawn_rpc(ctx_id);
 
     // In the mobile version we might depend on `lp_init` staying around until the context stops.

@@ -2948,6 +2948,7 @@ dependencies = [
  "libc",
  "libp2p",
  "libsecp256k1 0.2.2",
+ "mm2-libp2p",
  "mocktopus",
  "num-rational",
  "num-traits 0.2.12",
