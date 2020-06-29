@@ -31,7 +31,7 @@ use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 
 use crate::mm2::lp_ordermatch::{CancelBy, cancel_orders_by};
-use crate::mm2::lp_swap::{get_locked_amount, active_swaps_using_coin};
+use crate::mm2::lp_swap::{active_swaps_using_coin};
 
 /// Attempts to disable the coin
 pub fn disable_coin (ctx: MmArc, req: Json) -> HyRes {
@@ -73,12 +73,10 @@ pub async fn electrum (ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let ticker = try_s! (req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();
     let coin: MmCoinEnum = try_s! (lp_coininit (&ctx, &ticker, &req) .await);
     let balance = try_s! (coin.my_balance().compat().await);
-    let trade_fee = try_s!(coin.get_trade_fee().compat().await);
     let res = json! ({
         "result": "success",
         "address": try_s!(coin.my_address()),
         "balance": balance,
-        "locked_by_swaps": get_locked_amount (&ctx, &ticker, &trade_fee),
         "coin": coin.ticker(),
         "required_confirmations": coin.required_confirmations(),
         "requires_notarization": coin.requires_notarization(),
@@ -92,12 +90,10 @@ pub async fn enable (ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String>
     let ticker = try_s! (req["coin"].as_str().ok_or ("No 'coin' field")).to_owned();
     let coin: MmCoinEnum = try_s! (lp_coininit (&ctx, &ticker, &req) .await);
     let balance = try_s! (coin.my_balance().compat().await);
-    let trade_fee = try_s!(coin.get_trade_fee().compat().await);
     let res = json! ({
         "result": "success",
         "address": try_s!(coin.my_address()),
         "balance": balance,
-        "locked_by_swaps": get_locked_amount (&ctx, &ticker, &trade_fee),
         "coin": coin.ticker(),
         "required_confirmations": coin.required_confirmations(),
         "requires_notarization": coin.requires_notarization(),
@@ -141,12 +137,10 @@ pub async fn my_balance (ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Str
         Ok (None) => return ERR!("No such coin: {}", ticker),
         Err (err) => return ERR!("!lp_coinfind({}): {}", ticker, err)
     };
-    let trade_fee = try_s!(coin.get_trade_fee().compat().await);
     let my_balance = try_s!(coin.my_balance().compat().await);
     let res = json!({
         "coin": ticker,
         "balance": my_balance,
-        "locked_by_swaps": get_locked_amount(&ctx, &ticker, &trade_fee).to_fraction(),
         "address": try_s!(coin.my_address()),
     });
     let res = try_s! (json::to_vec (&res));
