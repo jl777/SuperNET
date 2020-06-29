@@ -110,3 +110,33 @@ fn test_signed_message_de_encode() {
     let signed = SignedMessage::create_and_sign(&keep_alive, &secret.serialize()).unwrap();
     println!("Signed maker order keep alive {}", signed.encode_to_vec().len());
 }
+
+#[test]
+fn test_encoded_message_misses_field() {
+    let msg = MakerOrder {
+        uuid: vec![],
+        base_ticker: "BASE".to_string(),
+        rel_ticker: "".to_string(),
+        price_numer: vec![],
+        price_denom: vec![],
+        max_volume_numer: vec![],
+        max_volume_denom: vec![],
+        min_volume_numer: vec![],
+        min_volume_denom: vec![],
+        base_confs: 0,
+        rel_confs: 0,
+        base_nota: false,
+        rel_nota: false,
+    };
+
+    let mut encoded_msg = Vec::with_capacity(msg.encoded_len());
+    msg.encode(&mut encoded_msg).unwrap();
+    println!("{:?}", encoded_msg);
+    println!("{}", hex::encode(encoded_msg));
+
+    let encoded = vec![18, 4, 66, 65, 83, 69];
+    let decoded = MakerOrder::decode(encoded.as_slice()).unwrap();
+    println!("{:?}", decoded);
+
+    println!("{:?}", bincode::serialize(&msg).unwrap());
+}

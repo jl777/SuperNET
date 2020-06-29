@@ -298,6 +298,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "1.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f30d3a39baa26f9651f17b375061f3233dde33424a8b72b0dbe93a68a0bc896d"
+dependencies = [
+ "byteorder 1.3.4",
+ "serde",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.43.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -689,7 +699,7 @@ dependencies = [
  "futures-preview",
  "futures-timer 0.1.1",
  "gstuff",
- "hex",
+ "hex 0.3.2",
  "http 0.1.21",
  "js-sys",
  "jsonrpc-core",
@@ -752,7 +762,7 @@ dependencies = [
  "glob 0.3.0",
  "gstuff",
  "hdrhistogram 7.1.0",
- "hex",
+ "hex 0.3.2",
  "http 0.1.21",
  "http-body 0.1.0",
  "hyper 0.12.35",
@@ -1830,6 +1840,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "half"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d36fab90f82edc3c747f9d438e06cf0a491055896f2a279638bb5beed6c40177"
+
+[[package]]
 name = "hashbrown"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1886,6 +1902,12 @@ name = "hex"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+
+[[package]]
+name = "hex"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
 
 [[package]]
 name = "hmac"
@@ -2923,6 +2945,7 @@ dependencies = [
  "async-std",
  "atomic",
  "bigdecimal",
+ "bincode",
  "bitcrypto",
  "bytes 0.4.12",
  "coins",
@@ -2939,7 +2962,7 @@ dependencies = [
  "futures-cpupool",
  "futures-timer 0.1.1",
  "gstuff",
- "hex",
+ "hex 0.3.2",
  "http 0.1.21",
  "hyper 0.12.35",
  "js-sys",
@@ -2958,9 +2981,11 @@ dependencies = [
  "rand 0.4.6",
  "rand 0.7.3",
  "regex",
+ "rmp-serde",
  "rpc",
  "serde",
  "serde_bencode",
+ "serde_cbor",
  "serde_derive",
  "serde_json",
  "serialization",
@@ -2981,6 +3006,7 @@ dependencies = [
 name = "mm2-libp2p"
 version = "0.1.0"
 dependencies = [
+ "hex 0.4.2",
  "libsecp256k1 0.3.5",
  "prost",
  "prost-build",
@@ -3936,6 +3962,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rmp"
+version = "0.8.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f10b46df14cf1ee1ac7baa4d2fbc2c52c0622a4b82fa8740e37bc452ac0184f"
+dependencies = [
+ "byteorder 1.3.4",
+ "num-traits 0.2.12",
+]
+
+[[package]]
+name = "rmp-serde"
+version = "0.14.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c1ee98f14fe8b8e9c5ea13d25da7b2a1796169202c57a09d7288de90d56222b"
+dependencies = [
+ "byteorder 1.3.4",
+ "rmp",
+ "serde",
+]
+
+[[package]]
 name = "rpc"
 version = "0.1.0"
 source = "git+https://github.com/artemii235/parity-bitcoin.git#1b129897cd4eb630839edfb1641f6cbab9c2ecf7"
@@ -4201,6 +4248,16 @@ version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16ae07dd2f88a366f15bd0632ba725227018c69a1c8550a927324f8eb8368bb9"
 dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_cbor"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e18acfa2f90e8b735b2836ab8d538de304cbb6729a7360729ea5a895d15a622"
+dependencies = [
+ "half",
  "serde",
 ]
 
@@ -4571,7 +4628,7 @@ name = "tc_coblox_bitcoincore"
 version = "0.5.0"
 source = "git+https://github.com/artemii235/testcontainers-rs.git#65e738093488f1b37185af0f1d3cf0ffd23e840d"
 dependencies = [
- "hex",
+ "hex 0.3.2",
  "hmac 0.7.1",
  "log 0.4.8",
  "rand 0.7.3",
