@@ -39,10 +39,7 @@ use futures::{
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
-use mm2_libp2p::{
-    SignedMessage,
-    p2p_messages::{MakerOrder as MakerOrderMessage},
-};
+use mm2_libp2p::{SignedMessage, encode_and_sign, decode_signed};
 #[cfg(test)]
 use mocktopus::macros::*;
 use num_rational::BigRational;
@@ -59,44 +56,33 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use crate::mm2::lp_swap::{
-    check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount, is_pubkey_banned,
-    lp_atomic_locktime, run_maker_swap, run_taker_swap,
-    AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput, SwapConfirmationsSettings, TakerSwap,
 use crate::mm2::{
     gossipsub::{GossipsubEventHandler, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR},
-    lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, dex_fee_amount,
-              get_locked_amount, is_pubkey_banned, run_maker_swap, run_taker_swap,
-              MakerSwap, RunMakerSwapInput, RunTakerSwapInput, TakerSwap}
+    lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount, is_pubkey_banned,
+              lp_atomic_locktime, run_maker_swap, run_taker_swap,
+              AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput, SwapConfirmationsSettings, TakerSwap,
+    }
 };
 
 pub const ORDERBOOK_PREFIX: TopicPrefix = "orbk";
 
-impl From<(MakerOrderMessage, Vec<u8>, String, String)> for PricePingRequest {
-    fn from(tuple: (MakerOrderMessage, Vec<u8>, String, String)) -> PricePingRequest {
+impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PricePingRequest {
+    fn from(tuple: (new_protocol::MakerOrderCreated, Vec<u8>, String, String)) -> PricePingRequest {
         let (order, initial_message, pubsecp, peer_id) = tuple;
-        let price_numer = BigInt::from_slice(Sign::Plus, &order.price_numer);
-        let price_denom = BigInt::from_slice(Sign::Plus, &order.price_denom);
-        let price: MmNumber = BigRational::new(price_numer, price_denom).into();
-
-        let max_vol_numer = BigInt::from_slice(Sign::Plus, &order.max_volume_numer);
-        let max_vol_denom = BigInt::from_slice(Sign::Plus, &order.max_volume_denom);
-        let max_vol: MmNumber = BigRational::new(max_vol_numer, max_vol_denom).into();
-
         PricePingRequest {
             method: "".to_string(),
             pubkey: "".to_string(),
-            base: order.base_ticker,
-            rel: order.rel_ticker,
-            price: price.to_decimal(),
-            price_rat: Some(price),
+            base: order.base,
+            rel: order.rel,
+            price: order.price.to_decimal(),
+            price_rat: Some(order.price),
             price64: "".to_string(),
             timestamp: now_ms() / 1000,
             pubsecp,
             sig: "".to_string(),
-            balance: max_vol.to_decimal(),
-            balance_rat: Some(max_vol),
-            uuid: Some(Uuid::from_slice(&order.uuid).unwrap()),
+            balance: order.max_volume.to_decimal(),
+            balance_rat: Some(order.max_volume.into()),
+            uuid: Some(order.uuid),
             peer_id,
             initial_message,
         }
@@ -128,17 +114,13 @@ fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
 }
 
 pub async fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
-    match SignedMessage::decode_from_slice(msg) {
+    match decode_signed::<new_protocol::MakerOrderCreated>(msg) {
         Ok(s) => {
-            match s.parse_payload::<MakerOrderMessage>() {
-                Ok((pubkey, sig, order)) => {
-                    let req: PricePingRequest = (order, msg.to_vec(), hex::encode(pubkey.serialize_compressed().as_ref()), from_peer).into();
-                    let uuid = req.uuid.unwrap();
-                    insert_or_update_order(&ctx, req, uuid);
-                    return;
-                },
-                Err(_) => (),
-            };
+            let (pubkey, sig, order) = s.into();
+            let req: PricePingRequest = (order, msg.to_vec(), hex::encode(pubkey.to_bytes().as_slice()), from_peer).into();
+            let uuid = req.uuid.unwrap();
+            insert_or_update_order(&ctx, req, uuid);
+            return;
         },
         Err(_) => (),
     };
@@ -219,26 +201,20 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
     fn maker_order_created(&self, order: &MakerOrder) {
         let ctx = self.ctx.clone();
         let topic = orderbook_topic(&order.base, &order.rel);
-        let message = MakerOrderMessage {
-            uuid: order.uuid.as_bytes().to_vec(),
-            base_ticker: order.base.clone(),
-            rel_ticker: order.rel.clone(),
-            price_numer: order.price.numer().to_u32_digits().1,
-            price_denom: order.price.denom().to_u32_digits().1,
-            max_volume_numer: order.max_base_vol.numer().to_u32_digits().1,
-            max_volume_denom: order.max_base_vol.denom().to_u32_digits().1,
-            min_volume_numer: order.min_base_vol.numer().to_u32_digits().1,
-            min_volume_denom: order.min_base_vol.denom().to_u32_digits().1,
-            base_confs: 0,
-            rel_confs: 0,
-            base_nota: false,
-            rel_nota: false
+        let message = new_protocol::MakerOrderCreated {
+            uuid: order.uuid,
+            base: order.base.clone(),
+            rel: order.rel.clone(),
+            price: order.price.clone(),
+            max_volume: order.max_base_vol.clone(),
+            min_volume: order.min_base_vol.clone(),
+            conf_settings: order.conf_settings.unwrap(),
         };
+
         spawn(async move {
             ctx.subscribe_to_p2p_topic(topic.clone()).await;
             let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
-            let signed = SignedMessage::create_and_sign(&message, &*key_pair.private().secret).unwrap();
-            let encoded_msg = signed.encode_to_vec();
+            let encoded_msg = encode_and_sign(&message, &*key_pair.private().secret).unwrap();
             let peer = ctx.peer_id.or(&&|| panic!()).clone();
             let price_ping_req: PricePingRequest = (message.clone(), encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
             let uuid = price_ping_req.uuid.unwrap();
@@ -814,12 +790,9 @@ impl MakerOrderBuilder {
             base: self.base,
             rel: self.rel,
             created_at: now_ms(),
-            max_base_vol: self.max_base_vol.to_decimal(),
-            max_base_vol_rat: self.max_base_vol.into(),
-            min_base_vol: self.min_base_vol.to_decimal(),
-            min_base_vol_rat: self.min_base_vol.into(),
-            price: self.price.to_decimal(),
-            price_rat: self.price.into(),
+            max_base_vol: self.max_base_vol,
+            min_base_vol: self.min_base_vol,
+            price: self.price,
             matches: HashMap::new(),
             started_swaps: Vec::new(),
             uuid: new_uuid(),
@@ -1417,7 +1390,7 @@ pub async fn buy(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let my_amount = &input.volume * &input.price;
     try_s!(check_balance_for_taker_swap(&ctx, &rel_coin, &base_coin, my_amount, None).await);
     try_s!(base_coin.can_i_spend_other_payment().compat().await);
-    let res = try_s!(lp_auto_buy(&ctx, &base_coin, &rel_coin, input)).into_bytes();
+    let res = try_s!(lp_auto_buy(&ctx, &base_coin, &rel_coin, input).await).into_bytes();
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -1430,7 +1403,7 @@ pub async fn sell(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     try_s!(check_balance_for_taker_swap(&ctx, &base_coin, &rel_coin, input.volume.clone(), None).await);
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
-    let res = try_s!(lp_auto_buy(&ctx, &base_coin, &rel_coin, input)).into_bytes();
+    let res = try_s!(lp_auto_buy(&ctx, &base_coin, &rel_coin, input).await).into_bytes();
     Ok(try_s!(Response::builder().body(res)))
 }
 
@@ -1453,7 +1426,7 @@ struct TakerMatch {
     last_updated: u64,
 }
 
-pub fn lp_auto_buy(ctx: &MmArc, base_coin: &MmCoinEnum, rel_coin: &MmCoinEnum, input: AutoBuyInput) -> Result<String, String> {
+pub async fn lp_auto_buy(ctx: &MmArc, base_coin: &MmCoinEnum, rel_coin: &MmCoinEnum, input: AutoBuyInput) -> Result<String, String> {
     if input.price < MmNumber::from(BigRational::new(1.into(), 100000000.into())) {
         return ERR!("Price is too low, minimum is 0.00000001");
     }
@@ -1711,24 +1684,23 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
-    let order = {
-        let mut my_orders = try_s!(ordermatch_ctx.my_maker_orders.lock());
-        if req.cancel_previous {
-            // remove the previous orders if there're some to allow multiple setprice call per pair
-            // it's common use case now as `autoprice` doesn't work with new ordermatching and
-            // MM2 users request the coins price from aggregators by their own scripts issuing
-            // repetitive setprice calls with new price
-            *my_orders = my_orders.drain().filter_map(|(uuid, order)| {
-                let to_delete = order.base == req.base && order.rel == req.rel;
-                if to_delete {
-                    delete_my_maker_order(&ctx, &order);
-                    ordermatch_ctx.maker_order_cancelled(&order);
-                    None
-                } else {
-                    Some((uuid, order))
-                }
-            }).collect();
-        }
+    let mut my_orders = try_s!(ordermatch_ctx.my_maker_orders.lock());
+    if req.cancel_previous {
+        // remove the previous orders if there're some to allow multiple setprice call per pair
+        // it's common use case now as `autoprice` doesn't work with new ordermatching and
+        // MM2 users request the coins price from aggregators by their own scripts issuing
+        // repetitive setprice calls with new price
+        *my_orders = my_orders.drain().filter_map(|(uuid, order)| {
+            let to_delete = order.base == req.base && order.rel == req.rel;
+            if to_delete {
+                delete_my_maker_order(&ctx, &order);
+                ordermatch_ctx.maker_order_cancelled(&order);
+                None
+            } else {
+                Some((uuid, order))
+            }
+        }).collect();
+    }
 
     let conf_settings = OrderConfirmationsSettings {
         base_confs: req.base_confs.unwrap_or(base_coin.required_confirmations()),
@@ -2368,5 +2340,106 @@ fn choose_taker_confs_and_notas(
         maker_coin_nota,
         taker_coin_confs,
         taker_coin_nota,
+    }
+}
+
+mod new_protocol {
+    use common::mm_number::MmNumber;
+    use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
+    use mm2_libp2p::{decode_message, encode_message};
+    use super::{MatchBy, TakerAction};
+    use uuid::Uuid;
+
+    /// Default MsgPack encoded UUID length is 38 bytes (seems like it encodes as string)
+    /// This module encodes to raw 16 bytes representation
+    mod uuid_serialization {
+        use serde::{Deserialize, Deserializer, Serialize, Serializer};
+        use uuid::Uuid;
+
+        pub fn serialize<S>(uuid: &Uuid, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
+            s.serialize_bytes(uuid.as_bytes())
+        }
+
+        pub fn deserialize<'de, D>(d: D) -> Result<Uuid, D::Error> where D: Deserializer<'de> {
+            let bytes: &[u8] = Deserialize::deserialize(d)?;
+            let uuid = Uuid::from_slice(bytes)
+                .map_err(|e| serde::de::Error::custom(format!("Uuid::from_slice error {}", e)))?;
+            Ok(uuid)
+        }
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    pub struct MakerOrderCreated {
+        #[serde(with = "uuid_serialization")]
+        pub uuid: Uuid,
+        pub base: String,
+        pub rel: String,
+        pub price: MmNumber,
+        pub max_volume: MmNumber,
+        pub min_volume: MmNumber,
+        pub conf_settings: OrderConfirmationsSettings,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    struct MakerOrderKeepAlive {
+        #[serde(with = "uuid_serialization")]
+        uuid: Uuid,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    struct MakerOrderCancelled {
+        #[serde(with = "uuid_serialization")]
+        uuid: Uuid,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    struct MakerOrderUpdated {
+        #[serde(with = "uuid_serialization")]
+        uuid: Uuid,
+        new_price: Option<MmNumber>,
+        new_max_volume: Option<MmNumber>,
+        new_min_volume: Option<MmNumber>,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    struct TakerRequest {
+        base: String,
+        rel: String,
+        base_amount: MmNumber,
+        rel_amount: MmNumber,
+        action: TakerAction,
+        uuid: Uuid,
+        #[serde(default)]
+        match_by: MatchBy,
+        conf_settings: OrderConfirmationsSettings,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    struct MakerReserved {
+        base: String,
+        rel: String,
+        base_amount: MmNumber,
+        rel_amount: MmNumber,
+        #[serde(with = "uuid_serialization")]
+        taker_order_uuid: Uuid,
+        #[serde(with = "uuid_serialization")]
+        maker_order_uuid: Uuid,
+        conf_settings: OrderConfirmationsSettings,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    struct TakerConnect {
+        #[serde(with = "uuid_serialization")]
+        taker_order_uuid: Uuid,
+        #[serde(with = "uuid_serialization")]
+        maker_order_uuid: Uuid,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    struct MakerConnected {
+        #[serde(with = "uuid_serialization")]
+        taker_order_uuid: Uuid,
+        #[serde(with = "uuid_serialization")]
+        maker_order_uuid: Uuid,
     }
 }

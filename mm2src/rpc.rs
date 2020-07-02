@@ -57,9 +57,6 @@ use crate::mm2::lp_swap::{coins_needed_for_kick_start, import_swaps, list_banned
 pub mod lp_commands;
 use self::lp_commands::*;
 
-#[path = "rpc/lp_signatures.rs"]
-pub mod lp_signatures;
-
 /// Lists the RPC method not requiring the "userpass" authentication.  
 /// None is also public to skip auth and display proper error in case of method is missing
 const PUBLIC_METHODS: &[Option<&str>] = &[  // Sorted alphanumerically (on the first letter) for readability.
@@ -227,7 +224,6 @@ pub fn dispatcher (req: Json, ctx: MmArc) -> DispatcherRes {
         "my_recent_swaps" => my_recent_swaps(ctx, req),
         "my_swap_status" => my_swap_status(ctx, req),
         "my_tx_history" => my_tx_history(ctx, req),
-        "notify" => lp_signatures::lp_notify_recv (ctx, req),  // Invoked usually from the `lp_command_q_loop`
         "order_status" => order_status (ctx, req),
         "orderbook" => hyres(orderbook(ctx, req)),
         "sim_panic" => hyres(sim_panic(req)),

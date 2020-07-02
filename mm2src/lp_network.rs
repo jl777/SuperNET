@@ -44,7 +44,6 @@ use crate::mm2::gossipsub::TOPIC_SEPARATOR;
 use crate::mm2::lp_native_dex::lp_command_process;
 use crate::mm2::lp_ordermatch::{lp_post_price_recv, ORDERBOOK_PREFIX};
 use crate::mm2::lp_swap::{save_stats_swap_status, SWAP_PREFIX};
-use crate::mm2::rpc::lp_signatures::lp_notify_recv;
 use futures::{TryFutureExt};
 
 /// Result of `fn dispatcher`.
