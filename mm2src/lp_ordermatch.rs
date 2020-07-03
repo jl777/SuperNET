@@ -82,7 +82,7 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
             sig: "".to_string(),
             balance: order.max_volume.to_decimal(),
             balance_rat: Some(order.max_volume.into()),
-            uuid: Some(order.uuid),
+            uuid: Some(order.uuid.into()),
             peer_id,
             initial_message,
         }
@@ -113,13 +113,20 @@ fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     }
 }
 
+fn delete_order(ctx: &MmArc, uuid: Uuid) {
+    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+    for (_, orders) in orderbook.iter_mut() {
+        orders.remove(&uuid);
+    }
+}
+
 pub async fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
-    use new_protocol::OrdermatchMessage::*;
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
         Ok(s) => {
             let (pubkey, sig, message) = s.into();
             match message {
-                MakerOrderCreated(created_msg) => {
+                new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
                     let req: PricePingRequest = (
                         created_msg,
                         msg.to_vec(),
@@ -129,22 +136,25 @@ pub async fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
                     let uuid = req.uuid.unwrap();
                     insert_or_update_order(&ctx, req, uuid);
                 },
-                TakerRequest(taker_request) => {
+                new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
                     process_taker_request(ctx, taker_request.into());
                 },
-                MakerReserved(maker_reserved) => {
+                new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
                     process_maker_reserved(ctx, maker_reserved.into());
                 },
-                TakerConnect(taker_connect) => {
+                new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
                     process_taker_connect(ctx, taker_connect.into());
                 },
-                MakerConnected(maker_connected) => {
+                new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
                     process_maker_connected(ctx, maker_connected.into());
+                },
+                new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
+                    delete_order(&ctx, cancelled_msg.uuid.into());
                 },
                 _ => unimplemented!(),
             }
         },
-        Err(_) => (),
+        Err(e) => println!("Error {} while decoding signed message", e),
     };
 }
 
@@ -208,7 +218,7 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         let ctx = self.ctx.clone();
         let topic = orderbook_topic(&order.base, &order.rel);
         let message = new_protocol::MakerOrderCreated {
-            uuid: order.uuid,
+            uuid: order.uuid.into(),
             base: order.base.clone(),
             rel: order.rel.clone(),
             price: order.price.clone(),
@@ -241,17 +251,10 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
     }
 
     fn maker_order_cancelled(&self, order: &MakerOrder) {
-        let ping = match PricePingRequest::new(&self.ctx, order, 0.into()) {
-            Ok(p) => p,
-            Err(e) => {
-                self.ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request creation failed {}", e));
-                return;
-            },
-        };
-
-        if let Err(e) = lp_send_price_ping(&ping, &self.ctx) {
-            self.ctx.log.log("", &[&"broadcast_cancelled_orders", &order.base, &order.rel], &format! ("ping request send failed {}", e));
-        }
+        let message = new_protocol::OrdermatchMessage::MakerOrderCancelled(new_protocol::MakerOrderCancelled {
+            uuid: order.uuid.into(),
+        });
+        broadcast_ordermatch_message(&self.ctx, orderbook_topic(&order.base, &order.rel), message);
     }
 }
 
@@ -393,7 +396,7 @@ impl OrderConfirmationsSettings {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct TakerRequest {
+pub struct TakerRequest {
     base: String,
     rel: String,
     base_amount: BigDecimal,
@@ -420,13 +423,28 @@ impl From<new_protocol::TakerRequest> for TakerRequest {
             rel_amount: message.rel_amount.to_decimal(),
             rel_amount_rat: Some(message.rel_amount.into()),
             action: message.action,
-            uuid: message.uuid,
+            uuid: message.uuid.into(),
             method: "".to_string(),
             sender_pubkey: Default::default(),
             dest_pub_key: Default::default(),
-            match_by: message.match_by,
+            match_by: message.match_by.into(),
             conf_settings: Some(message.conf_settings),
         }
+    }
+}
+
+impl Into<new_protocol::OrdermatchMessage> for TakerRequest {
+    fn into(self) -> new_protocol::OrdermatchMessage {
+        new_protocol::OrdermatchMessage::TakerRequest(new_protocol::TakerRequest {
+            base_amount: self.get_base_amount(),
+            rel_amount: self.get_rel_amount(),
+            base: self.base,
+            rel: self.rel,
+            action: self.action,
+            uuid: self.uuid.into(),
+            match_by: self.match_by.into(),
+            conf_settings: self.conf_settings.unwrap(),
+        })
     }
 }
 
@@ -887,7 +905,7 @@ impl Into<MakerOrder> for TakerOrder {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct TakerConnect {
+pub struct TakerConnect {
     taker_order_uuid: Uuid,
     maker_order_uuid: Uuid,
     method: String,
@@ -898,8 +916,8 @@ struct TakerConnect {
 impl From<new_protocol::TakerConnect> for TakerConnect {
     fn from(message: new_protocol::TakerConnect) -> TakerConnect {
         TakerConnect {
-            taker_order_uuid: message.taker_order_uuid,
-            maker_order_uuid: message.maker_order_uuid,
+            taker_order_uuid: message.taker_order_uuid.into(),
+            maker_order_uuid: message.maker_order_uuid.into(),
             method: "".to_string(),
             sender_pubkey: Default::default(),
             dest_pub_key: Default::default()
@@ -907,9 +925,18 @@ impl From<new_protocol::TakerConnect> for TakerConnect {
     }
 }
 
+impl Into<new_protocol::OrdermatchMessage> for TakerConnect {
+    fn into(self) -> new_protocol::OrdermatchMessage {
+        new_protocol::OrdermatchMessage::TakerConnect(new_protocol::TakerConnect {
+            taker_order_uuid: self.taker_order_uuid.into(),
+            maker_order_uuid: self.maker_order_uuid.into(),
+        })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(test, derive(Default))]
-struct MakerReserved {
+pub struct MakerReserved {
     base: String,
     rel: String,
     base_amount: BigDecimal,
@@ -949,8 +976,8 @@ impl From<new_protocol::MakerReserved> for MakerReserved {
             rel_amount: message.rel_amount.to_decimal(),
             base_amount_rat: Some(message.base_amount.into()),
             rel_amount_rat: Some(message.rel_amount.into()),
-            taker_order_uuid: message.taker_order_uuid,
-            maker_order_uuid: message.maker_order_uuid,
+            taker_order_uuid: message.taker_order_uuid.into(),
+            maker_order_uuid: message.maker_order_uuid.into(),
             method: "".to_string(),
             sender_pubkey: Default::default(),
             dest_pub_key: Default::default(),
@@ -959,8 +986,22 @@ impl From<new_protocol::MakerReserved> for MakerReserved {
     }
 }
 
+impl Into<new_protocol::OrdermatchMessage> for MakerReserved {
+    fn into(self) -> new_protocol::OrdermatchMessage {
+        new_protocol::OrdermatchMessage::MakerReserved(new_protocol::MakerReserved {
+            base_amount: self.get_base_amount(),
+            rel_amount: self.get_rel_amount(),
+            base: self.base,
+            rel: self.rel,
+            taker_order_uuid: self.taker_order_uuid.into(),
+            maker_order_uuid: self.maker_order_uuid.into(),
+            conf_settings: self.conf_settings.unwrap(),
+        })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct MakerConnected {
+pub struct MakerConnected {
     taker_order_uuid: Uuid,
     maker_order_uuid: Uuid,
     method: String,
@@ -971,12 +1012,21 @@ struct MakerConnected {
 impl From<new_protocol::MakerConnected> for MakerConnected {
     fn from(message: new_protocol::MakerConnected) -> MakerConnected {
         MakerConnected {
-            taker_order_uuid: message.taker_order_uuid,
-            maker_order_uuid: message.maker_order_uuid,
+            taker_order_uuid: message.taker_order_uuid.into(),
+            maker_order_uuid: message.maker_order_uuid.into(),
             method: "".to_string(),
             sender_pubkey: Default::default(),
             dest_pub_key: Default::default()
         }
+    }
+}
+
+impl Into<new_protocol::OrdermatchMessage> for MakerConnected {
+    fn into(self) -> new_protocol::OrdermatchMessage {
+        new_protocol::OrdermatchMessage::MakerConnected(new_protocol::MakerConnected {
+            taker_order_uuid: self.taker_order_uuid.into(),
+            maker_order_uuid: self.maker_order_uuid.into(),
+        })
     }
 }
 
@@ -986,6 +1036,15 @@ pub trait OrdermatchEventHandler {
     fn maker_order_updated(&self, order: &MakerOrder);
 
     fn maker_order_cancelled(&self, order: &MakerOrder);
+}
+
+fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &MmArc, topic: String, msg: T) {
+    let msg = msg.into();
+    println!("Broadcasting message {:?}", msg);
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let encoded_msg = encode_and_sign(&msg, &*key_pair.private().secret).unwrap();
+    println!("Broadcasting message {:?}", encoded_msg);
+    ctx.broadcast_p2p_msg(topic, encoded_msg);
 }
 
 struct OrdermatchContext {
@@ -1247,10 +1306,6 @@ fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
         log!("Sender pubkey " [reserved_msg.sender_pubkey] " is banned");
         return;
     }
-    if H256Json::from(our_public_id.bytes) != reserved_msg.dest_pub_key {
-        // ignore the messages that do not target our node
-        return;
-    }
 
     let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
     let my_order = match my_taker_orders.entry(reserved_msg.taker_order_uuid) {
@@ -1260,11 +1315,6 @@ fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
         },
         Entry::Occupied(entry) => entry.into_mut()
     };
-
-    if my_order.request.dest_pub_key != H256Json::default() && my_order.request.dest_pub_key != reserved_msg.sender_pubkey {
-        log!("got reserved response from different node " (hex::encode(&reserved_msg.sender_pubkey.0)));
-        return;
-    }
 
     // send "connect" message if reserved message targets our pubkey AND
     // reserved amounts match our order AND order is NOT reserved by someone else (empty matches)
@@ -1277,7 +1327,7 @@ fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
             maker_order_uuid: reserved_msg.maker_order_uuid,
         };
         let topic = orderbook_topic(&my_order.request.base, &my_order.request.rel);
-        ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&connect)));
+        broadcast_ordermatch_message(&ctx, topic, connect.clone());
         let taker_match = TakerMatch {
             reserved: reserved_msg,
             connect,
@@ -1293,28 +1343,26 @@ fn process_maker_connected(ctx: MmArc, connected: MakerConnected) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let our_public_id = unwrap!(ctx.public_id());
 
-    if H256Json::from(our_public_id.bytes) == connected.dest_pub_key && H256Json::from(our_public_id.bytes) != connected.sender_pubkey {
-        let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
-        let my_order_entry = match my_taker_orders.entry(connected.taker_order_uuid) {
-            Entry::Occupied(e) => e,
-            Entry::Vacant(_) => {
-                log!("Our node doesn't have the order with uuid "(connected.taker_order_uuid));
-                return;
-            },
-        };
-        let order_match = match my_order_entry.get().matches.get(&connected.maker_order_uuid) {
-            Some(o) => o,
-            None => {
-                log!("Our node doesn't have the match with uuid "(connected.maker_order_uuid));
-                return;
-            }
-        };
-        // alice
-        lp_connected_alice(ctx.clone(), my_order_entry.get().request.clone(), order_match.clone());
-        // remove the matched order immediately
-        delete_my_taker_order(&ctx, &my_order_entry.get());
-        my_order_entry.remove();
-    }
+    let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
+    let my_order_entry = match my_taker_orders.entry(connected.taker_order_uuid) {
+        Entry::Occupied(e) => e,
+        Entry::Vacant(_) => {
+            log!("Our node doesn't have the order with uuid "(connected.taker_order_uuid));
+            return;
+        },
+    };
+    let order_match = match my_order_entry.get().matches.get(&connected.maker_order_uuid) {
+        Some(o) => o,
+        None => {
+            log!("Our node doesn't have the match with uuid "(connected.maker_order_uuid));
+            return;
+        }
+    };
+    // alice
+    lp_connected_alice(ctx.clone(), my_order_entry.get().request.clone(), order_match.clone());
+    // remove the matched order immediately
+    delete_my_taker_order(&ctx, &my_order_entry.get());
+    my_order_entry.remove();
 }
 
 fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
@@ -1328,6 +1376,8 @@ fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
         log!("Skip the request originating from our pubkey");
         return;
     }
+
+    println!("Processing request {:?}", taker_request);
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let mut my_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
 
@@ -1349,7 +1399,8 @@ fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
                     conf_settings: order.conf_settings,
                 };
                 let topic = orderbook_topic(&order.base, &order.rel);
-                ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&reserved)));
+                println!("Request matched sending reserved {:?}", reserved);
+                broadcast_ordermatch_message(&ctx, topic, reserved.clone());
                 let maker_match = MakerMatch {
                     request: taker_request,
                     reserved,
@@ -1369,39 +1420,37 @@ fn process_taker_connect(ctx: MmArc, connect_msg: TakerConnect) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let our_public_id = unwrap!(ctx.public_id());
 
-    if our_public_id.bytes == connect_msg.dest_pub_key.0 && our_public_id.bytes != connect_msg.sender_pubkey.0 {
-        let mut maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
-        let my_order = match maker_orders.get_mut(&connect_msg.maker_order_uuid) {
-            Some(o) => o,
-            None => {
-                log!("Our node doesn't have the order with uuid " (connect_msg.maker_order_uuid));
-                return;
-            },
-        };
-        let order_match = match my_order.matches.get_mut(&connect_msg.taker_order_uuid) {
-            Some(o) => o,
-            None => {
-                log!("Our node doesn't have the match with uuid " (connect_msg.taker_order_uuid));
-                return;
-            },
-        };
+    let mut maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
+    let my_order = match maker_orders.get_mut(&connect_msg.maker_order_uuid) {
+        Some(o) => o,
+        None => {
+            log!("Our node doesn't have the order with uuid "(connect_msg.maker_order_uuid));
+            return;
+        },
+    };
+    let order_match = match my_order.matches.get_mut(&connect_msg.taker_order_uuid) {
+        Some(o) => o,
+        None => {
+            log!("Our node doesn't have the match with uuid "(connect_msg.taker_order_uuid));
+            return;
+        },
+    };
 
-        if order_match.connected.is_none() && order_match.connect.is_none() {
-            let connected = MakerConnected {
-                sender_pubkey: our_public_id.bytes.into(),
-                dest_pub_key: connect_msg.sender_pubkey.clone(),
-                taker_order_uuid: connect_msg.taker_order_uuid,
-                maker_order_uuid: connect_msg.maker_order_uuid,
-                method: "connected".into(),
-            };
-            let topic = orderbook_topic(&my_order.base, &my_order.rel);
-            ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&connected)));
-            order_match.connect = Some(connect_msg);
-            order_match.connected = Some(connected);
-            my_order.started_swaps.push(order_match.request.uuid);
-            lp_connect_start_bob(ctx.clone(), order_match.clone(), my_order.clone());
-            save_my_maker_order(&ctx, &my_order);
-        }
+    if order_match.connected.is_none() && order_match.connect.is_none() {
+        let connected = MakerConnected {
+            sender_pubkey: our_public_id.bytes.into(),
+            dest_pub_key: connect_msg.sender_pubkey.clone(),
+            taker_order_uuid: connect_msg.taker_order_uuid,
+            maker_order_uuid: connect_msg.maker_order_uuid,
+            method: "connected".into(),
+        };
+        let topic = orderbook_topic(&my_order.base, &my_order.rel);
+        broadcast_ordermatch_message(&ctx, topic, connected.clone());
+        order_match.connect = Some(connect_msg);
+        order_match.connected = Some(connected);
+        my_order.started_swaps.push(order_match.request.uuid);
+        lp_connect_start_bob(ctx.clone(), order_match.clone(), my_order.clone());
+        save_my_maker_order(&ctx, &my_order);
     }
 }
 
@@ -1551,7 +1600,7 @@ pub async fn lp_auto_buy(ctx: &MmArc, base_coin: &MmCoinEnum, rel_coin: &MmCoinE
         .with_conf_settings(conf_settings)
         .with_sender_pubkey(H256Json::from(our_public_id.bytes));
     let request = try_s!(request_builder.build());
-    ctx.broadcast_p2p_msg(topic, unwrap!(json::to_vec(&request)));
+    broadcast_ordermatch_message(&ctx, topic, request.clone());
     let result = json!({
         "result": request
     }).to_string();
@@ -2434,12 +2483,14 @@ fn choose_taker_confs_and_notas(
 
 mod new_protocol {
     use common::mm_number::MmNumber;
+    use compact_uuid::CompactUuid;
     use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
-    use mm2_libp2p::{decode_message, encode_message};
-    use super::{MatchBy, TakerAction};
-    use uuid::Uuid;
+    use mm2_libp2p::{decode_message, encode_message, decode_signed, encode_and_sign};
+    use rpc::v1::types::{H256 as H256Json};
+    use std::collections::HashSet;
+    use super::{MatchBy as SuperMatchBy, TakerAction};
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     pub enum OrdermatchMessage {
         MakerOrderCreated(MakerOrderCreated),
         MakerOrderUpdated(MakerOrderUpdated),
@@ -2451,28 +2502,84 @@ mod new_protocol {
         MakerConnected(MakerConnected),
     }
 
-    /// Default MsgPack encoded UUID length is 38 bytes (seems like it encodes as string)
-    /// This module encodes to raw 16 bytes representation
-    mod uuid_serialization {
+    /// MsgPack compact representation does not work with tagged enums (encoding works, but decoding fails)
+    /// This is untagged representation also using compact Uuid representation
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    pub enum MatchBy {
+        Any,
+        Orders(HashSet<CompactUuid>),
+        Pubkeys(HashSet<H256Json>)
+    }
+
+    impl From<SuperMatchBy> for MatchBy {
+        fn from(match_by: SuperMatchBy) -> MatchBy {
+            match match_by {
+                SuperMatchBy::Any => MatchBy::Any,
+                SuperMatchBy::Orders(uuids) => MatchBy::Orders(uuids.into_iter().map(|uuid| uuid.into()).collect()),
+                SuperMatchBy::Pubkeys(pubkeys) => MatchBy::Pubkeys(pubkeys),
+            }
+        }
+    }
+
+    impl Into<SuperMatchBy> for MatchBy {
+        fn into(self) -> SuperMatchBy {
+            match self {
+                MatchBy::Any => SuperMatchBy::Any,
+                MatchBy::Orders(uuids) => SuperMatchBy::Orders(uuids.into_iter().map(|uuid| uuid.into()).collect()),
+                MatchBy::Pubkeys(pubkeys) => SuperMatchBy::Pubkeys(pubkeys),
+            }
+        }
+    }
+
+    mod compact_uuid {
         use serde::{Deserialize, Deserializer, Serialize, Serializer};
+        use std::str::FromStr;
         use uuid::Uuid;
 
-        pub fn serialize<S>(uuid: &Uuid, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
-            s.serialize_bytes(uuid.as_bytes())
+        /// Default MsgPack encoded UUID length is 38 bytes (seems like it is encoded as string)
+        /// This wrapper is encoded to raw 16 bytes representation
+        /// Derives all traits of wrapped value
+        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        pub struct CompactUuid(Uuid);
+
+        impl From<Uuid> for CompactUuid {
+            fn from(uuid: Uuid) -> Self {
+                CompactUuid(uuid)
+            }
         }
 
-        pub fn deserialize<'de, D>(d: D) -> Result<Uuid, D::Error> where D: Deserializer<'de> {
-            let bytes: &[u8] = Deserialize::deserialize(d)?;
-            let uuid = Uuid::from_slice(bytes)
-                .map_err(|e| serde::de::Error::custom(format!("Uuid::from_slice error {}", e)))?;
-            Ok(uuid)
+        impl Into<Uuid> for CompactUuid {
+            fn into(self) -> Uuid { self.0 }
+        }
+
+        impl FromStr for CompactUuid {
+            type Err = uuid::parser::ParseError;
+
+            fn from_str(str: &str) -> Result<Self, Self::Err> {
+                let uuid = Uuid::parse_str(str)?;
+                Ok(uuid.into())
+            }
+        }
+
+        impl Serialize for CompactUuid {
+            fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
+                s.serialize_bytes(self.0.as_bytes())
+            }
+        }
+
+        impl<'de> Deserialize<'de> for CompactUuid {
+            fn deserialize<D>(d: D) -> Result<CompactUuid, D::Error> where D: Deserializer<'de> {
+                let bytes: &[u8] = Deserialize::deserialize(d)?;
+                let uuid = Uuid::from_slice(bytes)
+                    .map_err(|e| serde::de::Error::custom(format!("Uuid::from_slice error {}", e)))?;
+                Ok(uuid.into())
+            }
         }
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct MakerOrderCreated {
-        #[serde(with = "uuid_serialization")]
-        pub uuid: Uuid,
+        pub uuid: CompactUuid,
         pub base: String,
         pub rel: String,
         pub price: MmNumber,
@@ -2482,21 +2589,18 @@ mod new_protocol {
     }
 
     #[derive(Debug, Deserialize, Serialize)]
-    struct MakerOrderKeepAlive {
-        #[serde(with = "uuid_serialization")]
-        uuid: Uuid,
+    pub struct MakerOrderKeepAlive {
+        uuid: CompactUuid,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
-    struct MakerOrderCancelled {
-        #[serde(with = "uuid_serialization")]
-        uuid: Uuid,
+    pub struct MakerOrderCancelled {
+        pub uuid: CompactUuid,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
-    struct MakerOrderUpdated {
-        #[serde(with = "uuid_serialization")]
-        uuid: Uuid,
+    pub struct MakerOrderUpdated {
+        uuid: CompactUuid,
         new_price: Option<MmNumber>,
         new_max_volume: Option<MmNumber>,
         new_min_volume: Option<MmNumber>,
@@ -2509,8 +2613,7 @@ mod new_protocol {
         pub base_amount: MmNumber,
         pub rel_amount: MmNumber,
         pub action: TakerAction,
-        pub uuid: Uuid,
-        #[serde(default)]
+        pub uuid: CompactUuid,
         pub match_by: MatchBy,
         pub conf_settings: OrderConfirmationsSettings,
     }
@@ -2521,26 +2624,47 @@ mod new_protocol {
         pub rel: String,
         pub base_amount: MmNumber,
         pub rel_amount: MmNumber,
-        #[serde(with = "uuid_serialization")]
-        pub taker_order_uuid: Uuid,
-        #[serde(with = "uuid_serialization")]
-        pub maker_order_uuid: Uuid,
+        pub taker_order_uuid: CompactUuid,
+        pub maker_order_uuid: CompactUuid,
         pub conf_settings: OrderConfirmationsSettings,
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct TakerConnect {
-        #[serde(with = "uuid_serialization")]
-        pub taker_order_uuid: Uuid,
-        #[serde(with = "uuid_serialization")]
-        pub maker_order_uuid: Uuid,
+        pub taker_order_uuid: CompactUuid,
+        pub maker_order_uuid: CompactUuid,
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct MakerConnected {
-        #[serde(with = "uuid_serialization")]
-        pub taker_order_uuid: Uuid,
-        #[serde(with = "uuid_serialization")]
-        pub maker_order_uuid: Uuid,
+        pub taker_order_uuid: CompactUuid,
+        pub maker_order_uuid: CompactUuid,
+    }
+
+    #[test]
+    fn check_msg_decode() {
+        let message = OrdermatchMessage::TakerRequest(
+            TakerRequest {
+                base: "ETH".into(),
+                rel: "JST".into(),
+                base_amount: 1.into(),
+                rel_amount: 1.into(),
+                action: TakerAction::Buy,
+                uuid:  "a38bab1b-a0c5-4121-9134-c7113abb96d7".parse().unwrap(),
+                match_by: MatchBy::Any,
+                conf_settings: OrderConfirmationsSettings { base_confs: 1, base_nota: false, rel_confs: 1, rel_nota: false }
+            }
+        );
+
+        let secret = [1; 32];
+        let encoded = encode_and_sign(&message, &secret).unwrap();
+        let decoded = decode_signed::<OrdermatchMessage>(&encoded).unwrap();
+        println!("{:?}", decoded);
+        /*
+        let encoded = [147, 129, 0, 196, 33, 2, 3, 29, 66, 86, 196, 188, 159, 153, 172, 136, 191, 61, 186, 33, 119, 49, 50, 40, 31, 101, 249, 191, 35, 165, 153, 40, 188, 224, 137, 97, 226, 243, 196, 64, 58, 200, 215, 254, 176, 224, 209, 13, 91, 184, 192, 250, 193, 0, 28, 153, 192, 158, 22, 234, 157, 60, 134, 158, 242, 148, 14, 20, 172, 145, 52, 8, 106, 69, 80, 243, 242, 253, 49, 62, 169, 49, 74, 250, 242, 52, 51, 58, 134, 161, 9, 70, 69, 211, 140, 76, 147, 232, 247, 49, 200, 29, 74, 219, 196, 80, 129, 4, 152, 163, 69, 84, 72, 163, 74, 83, 84, 146, 146, 1, 145, 1, 146, 1, 145, 10, 146, 146, 1, 145, 1, 146, 1, 145, 5, 129, 0, 192, 217, 36, 101, 102, 97, 49, 50, 48, 56, 57, 45, 51, 98, 100, 55, 45, 52, 56, 56, 57, 45, 97, 57, 101, 99, 45, 48, 56, 102, 50, 102, 100, 100, 53, 50, 100, 51, 50, 145, 163, 65, 110, 121, 148, 1, 194, 1, 194];
+        let decoded = decode_signed::<OrdermatchMessage>(&encoded).unwrap();
+        println!("{:?}", decoded);
+
+        */
     }
 }

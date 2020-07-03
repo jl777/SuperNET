@@ -792,7 +792,7 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
         log!("Issue bob " (base) "/" (rel) " sell request");
         let rc = unwrap! (mm_bob.rpc (json! ({
             "userpass": mm_bob.userpass,
-            "method": "sell",
+            "method": "setprice",
             "base": base,
             "rel": rel,
             "price": 1,
@@ -802,8 +802,8 @@ async fn trade_base_rel_electrum (pairs: Vec<(&'static str, &'static str)>) {
     }
 
     // Allow the order to be converted to maker after not being matched in 30 seconds.
-    log! ("Waiting 32 seconds…");
-    Timer::sleep (32.) .await;
+    // log! ("Waiting 32 seconds…");
+    // Timer::sleep (32.) .await;
 
     for (base, rel) in pairs.iter() {
         log!("Issue alice " (base) "/" (rel) " buy request");
