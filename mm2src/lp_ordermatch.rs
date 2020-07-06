@@ -229,9 +229,10 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         spawn(async move {
             ctx.subscribe_to_p2p_topic(topic.clone()).await;
             let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
-            let encoded_msg = encode_and_sign(&message, &*key_pair.private().secret).unwrap();
+            let to_broadcast = new_protocol::OrdermatchMessage::MakerOrderCreated(message.clone());
+            let encoded_msg = encode_and_sign(&to_broadcast, &*key_pair.private().secret).unwrap();
             let peer = ctx.peer_id.or(&&|| panic!()).clone();
-            let price_ping_req: PricePingRequest = (message.clone(), encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
+            let price_ping_req: PricePingRequest = (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
             let uuid = price_ping_req.uuid.unwrap();
             insert_or_update_order(&ctx, price_ping_req, uuid);
             ctx.broadcast_p2p_msg(topic, encoded_msg);
@@ -253,6 +254,7 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         let message = new_protocol::OrdermatchMessage::MakerOrderCancelled(new_protocol::MakerOrderCancelled {
             uuid: order.uuid.into(),
         });
+        delete_order(&self.ctx, order.uuid);
         broadcast_ordermatch_message(&self.ctx, orderbook_topic(&order.base, &order.rel), message);
     }
 }
