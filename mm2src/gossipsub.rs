@@ -1,21 +1,15 @@
-use crate::mm2::lp_ordermatch::broadcast_my_maker_orders;
 use async_std::future::timeout;
-use async_std::{io, task};
 use common::{executor::spawn,
-             mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand},
-             now_ms};
-use futures::{channel::mpsc, future::Either, lock::Mutex as AsyncMutex, prelude::*, select, FutureExt};
+             mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand}};
+use futures::{channel::mpsc, lock::Mutex as AsyncMutex, prelude::*, select, FutureExt};
 use libp2p::gossipsub::protocol::MessageId;
 use libp2p::gossipsub::{GossipsubEvent, GossipsubMessage, Topic, TopicHash};
 use libp2p::{gossipsub, identity, PeerId};
-use serde_json::{self as json, Value as Json};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
-          error::Error,
           hash::{Hash, Hasher},
           net::IpAddr,
           ops::Deref,
           sync::Arc,
-          task::{Context, Poll},
           time::Duration};
 
 pub trait GossipsubEventHandler {

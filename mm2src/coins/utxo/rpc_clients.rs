@@ -19,7 +19,7 @@ use futures::compat::Future01CompatExt;
 use futures::future::{select as select_func, FutureExt, TryFutureExt};
 use futures::lock::Mutex as AsyncMutex;
 use futures::select;
-use futures01::future::{loop_fn, select_ok, Either, Loop};
+use futures01::future::{loop_fn, select_ok, Loop};
 use futures01::sync::{mpsc, oneshot};
 use futures01::{Future, Poll, Sink, Stream};
 use futures_timer::{Delay, FutureExt as FutureTimerExt};
@@ -31,7 +31,7 @@ use keys::Address;
 #[cfg(test)] use mocktopus::macros::*;
 use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, VerboseBlockClient, H256 as H256Json};
 #[cfg(feature = "native")]
-use rustls::{self, ClientConfig, Session};
+// use rustls::{self};
 use script::Builder;
 use serde_json::{self as json, Value as Json};
 use serialization::{deserialize, serialize, CompactInteger, Reader};
@@ -54,7 +54,7 @@ use std::time::Duration;
 // #[cfg(feature = "native")]
 // use tokio_rustls::webpki::DNSNameRef;
 #[cfg(feature = "native")] use tokio_tcp::TcpStream;
-#[cfg(feature = "native")] use webpki_roots::TLS_SERVER_ROOTS;
+// #[cfg(feature = "native")] use webpki_roots::TLS_SERVER_ROOTS;
 
 /*
 /// Skips the server certificate verification on TLS connection
@@ -1587,6 +1587,7 @@ macro_rules! try_loop {
 
 /// The enum wrapping possible variants of underlying Streams
 #[cfg(feature = "native")]
+#[allow(dead_code)]
 enum ElectrumStream {
     Tcp(TcpStream),
     Tls(TcpStream),
@@ -1675,11 +1676,8 @@ async fn connect_loop(
         let socket_addr = try_loop!(addr_to_socket_addr(&addr), addr, delay);
 
         let connect_f = match config.clone() {
-            ElectrumConfig::TCP => TcpStream::connect(&socket_addr).map(|stream| ElectrumStream::Tcp(stream)),
-            ElectrumConfig::SSL {
-                dns_name,
-                skip_validation,
-            } => {
+            ElectrumConfig::TCP => TcpStream::connect(&socket_addr).map(ElectrumStream::Tcp),
+            ElectrumConfig::SSL { .. } => {
                 unimplemented!()
                 /*
                 let mut ssl_config = ClientConfig::new();

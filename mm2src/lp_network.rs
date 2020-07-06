@@ -18,7 +18,6 @@
 //
 #![allow(uncommon_codepoints)]
 
-use bitcrypto::ripemd160;
 use bytes::Bytes;
 use common::executor::{spawn, Timer};
 #[cfg(not(feature = "native"))] use common::helperᶜ;
@@ -28,21 +27,13 @@ use crossbeam::channel;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures01::{future, Future};
-use primitives::hash::H160;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
-use std::collections::hash_map::{Entry, HashMap};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, TcpListener, TcpStream};
 use std::thread;
 use std::time::Duration;
-
-use crate::mm2::gossipsub::TOPIC_SEPARATOR;
-use crate::mm2::lp_native_dex::lp_command_process;
-use crate::mm2::lp_ordermatch::{lp_post_price_recv, ORDERBOOK_PREFIX};
-use crate::mm2::lp_swap::{save_stats_swap_status, SWAP_PREFIX};
-use futures::TryFutureExt;
 
 /// Result of `fn dispatcher`.
 pub enum DispatcherRes {
@@ -223,7 +214,7 @@ pub async fn start_seednode_loop(ctx: &MmArc, myipaddr: IpAddr, mypubport: u16) 
 #[cfg(feature = "native")]
 pub async fn start_seednode_loopʰ(req: Bytes) -> Result<Vec<u8>, String> {
     let args: StartSeednodeLoopArgs = try_s!(bdecode(&req));
-    let myipaddr: IpAddr = try_s!(args.myipaddr.parse());
+    let _myipaddr: IpAddr = try_s!(args.myipaddr.parse());
     let ctx = try_s!(MmArc::from_ffi_handle(args.ctx));
     {
         let mut cq = try_s!(ctx.command_queueʰ.lock());

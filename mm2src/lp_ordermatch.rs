@@ -23,19 +23,18 @@
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use coins::{lp_coinfindᵃ, BalanceUpdateEventHandler, MmCoinEnum, TradeInfo};
+use coins::{lp_coinfindᵃ, BalanceUpdateEventHandler, MmCoinEnum};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand};
-use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, BigInt, Fraction, MmNumber, Sign};
+use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
 use common::{bits256, json_dir_entries, new_uuid, now_ms, remove_file, rpc_err_response, rpc_response, write, HyRes};
 use futures::{compat::Future01CompatExt, sink::SinkExt};
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
-use mm2_libp2p::{decode_signed, encode_and_sign, SignedMessage};
+use mm2_libp2p::{decode_signed, encode_and_sign};
 #[cfg(test)] use mocktopus::macros::*;
 use num_rational::BigRational;
-use num_traits::cast::ToPrimitive;
 use num_traits::identities::Zero;
 use primitives::hash::H256;
 use rpc::v1::types::H256 as H256Json;
@@ -118,7 +117,7 @@ fn delete_order(ctx: &MmArc, uuid: Uuid) {
 pub async fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
         Ok(s) => {
-            let (pubkey, sig, message) = s.into();
+            let (pubkey, _sig, message) = s.into();
             match message {
                 new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
                     let req: PricePingRequest = (
@@ -283,7 +282,7 @@ impl GossipsubEventHandler for OrdermatchP2PConnector {
 
     fn message_received(&self, peer: String, topics: &[&str], msg: &[u8]) {
         for topic in topics.iter() {
-            if let Some(pair) = parse_orderbook_pair_from_topic(topic) {
+            if let Some(_pair) = parse_orderbook_pair_from_topic(topic) {
                 let ctx = self.ctx.clone();
                 let msg = msg.to_owned();
                 let peer_clone = peer.clone();
@@ -299,7 +298,7 @@ impl GossipsubEventHandler for OrdermatchP2PConnector {
         let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
         orderbook
             .iter_mut()
-            .for_each(|(pair, orders)| orders.retain(|_, order| order.peer_id != peer));
+            .for_each(|(_pair, orders)| orders.retain(|_, order| order.peer_id != peer));
     }
 }
 
@@ -336,14 +335,12 @@ impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
                         order.max_base_vol = 0.into();
                         ordermatch_ctx.maker_order_cancelled(&order);
                         None
+                    } else if new_balance < order.max_base_vol {
+                        order.max_base_vol = new_balance.clone();
+                        ordermatch_ctx.maker_order_updated(&order);
+                        Some((uuid, order))
                     } else {
-                        if new_balance < order.max_base_vol {
-                            order.max_base_vol = new_balance.clone();
-                            ordermatch_ctx.maker_order_updated(&order);
-                            Some((uuid, order))
-                        } else {
-                            Some((uuid, order))
-                        }
+                        Some((uuid, order))
                     }
                 } else {
                     Some((uuid, order))
@@ -1332,7 +1329,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
         {
             let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
             let mut my_maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
-            let mut my_cancelled_orders = unwrap!(ordermatch_ctx.my_cancelled_orders.lock());
+            let _my_cancelled_orders = unwrap!(ordermatch_ctx.my_cancelled_orders.lock());
             // transform the timed out and unmatched GTC taker orders to maker
             *my_taker_orders = my_taker_orders
                 .drain()
@@ -1461,7 +1458,7 @@ fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
 
 fn process_maker_connected(ctx: MmArc, connected: MakerConnected) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
-    let our_public_id = unwrap!(ctx.public_id());
+    let _our_public_id = unwrap!(ctx.public_id());
 
     let mut my_taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
     let my_order_entry = match my_taker_orders.entry(connected.taker_order_uuid) {
@@ -1695,7 +1692,7 @@ pub async fn lp_auto_buy(
     rel_coin: &MmCoinEnum,
     input: AutoBuyInput,
 ) -> Result<String, String> {
-    if input.price < MmNumber::from(BigRational::new(1.into(), 100000000.into())) {
+    if input.price < MmNumber::from(BigRational::new(1.into(), 100_000_000.into())) {
         return ERR!("Price is too low, minimum is 0.00000001");
     }
 
@@ -2056,7 +2053,7 @@ pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
             }
         } else {
             // cancel the order if available balance is lower than MIN_TRADING_VOL
-            let mut order = try_s!(ordermatch_ctx.my_maker_orders.lock()).remove(&order.uuid);
+            let order = try_s!(ordermatch_ctx.my_maker_orders.lock()).remove(&order.uuid);
             if let Some(mut order) = order {
                 // TODO cancelling means setting volume to 0 as of now, should refactor
                 order.max_base_vol = 0.into();
@@ -2169,7 +2166,7 @@ pub fn cancel_order(ctx: MmArc, req: Json) -> HyRes {
             if !order.get().is_cancellable() {
                 return rpc_err_response(500, &format!("Order {} is being matched now, can't cancel", req.uuid));
             }
-            let mut cancelled_orders = try_h!(ordermatch_ctx.my_cancelled_orders.lock());
+            let _cancelled_orders = try_h!(ordermatch_ctx.my_cancelled_orders.lock());
             let order = order.remove();
             ordermatch_ctx.maker_order_cancelled(&order);
             return rpc_response(
@@ -2729,7 +2726,6 @@ mod new_protocol {
     use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
     use common::mm_number::MmNumber;
     use compact_uuid::CompactUuid;
-    use mm2_libp2p::{decode_message, decode_signed, encode_and_sign, encode_message};
     use rpc::v1::types::H256 as H256Json;
     use std::collections::HashSet;
 

@@ -70,7 +70,7 @@ use http::Response;
 use primitives::hash::{H160, H256, H264};
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use serde_json::{self as json, Value as Json};
-use serialization::{deserialize, serialize, Deserializable, Reader, Serializable, Stream};
+use serialization::{deserialize, Deserializable, Reader, Serializable, Stream};
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::path::PathBuf;

@@ -3,18 +3,16 @@
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount, get_locked_amount_by_other_swaps,
             my_swap_file_path, my_swaps_dir, recv_swap_msg, swap_topic, AtomicSwap, LockedAmount, MySwapInfo,
             RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings, SwapError, SwapMsg,
-            SwapNegotiationData, SwapsContext, BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
+            SwapNegotiationData, SwapsContext, WAIT_CONFIRM_INTERVAL};
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfindᵃ, FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
-use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_float, now_ms,
+use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_ms,
              slurp, write, MM_VERSION};
-use crc::crc32;
-use futures::{compat::Future01CompatExt, future::Either, select, FutureExt};
+use futures::{compat::Future01CompatExt, select, FutureExt};
 use futures01::Future;
 use http::Response;
 use parking_lot::Mutex as PaMutex;
-use peers::FixedValidator;
 use primitives::hash::H264;
 use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use serde_json::{self as json, Value as Json};
@@ -714,7 +712,7 @@ impl TakerSwap {
             persistent_pubkey: self.my_persistent_pub.clone(),
         };
         let bytes = serialize(&taker_data);
-        let sending_f = send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes.take());
+        let _sending_f = send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes.take());
         let data = match recv_swap_msg(self.ctx.clone(), "negotiated", &self.uuid, 90).await {
             Ok(d) => d,
             Err(e) => {
@@ -799,7 +797,7 @@ impl TakerSwap {
 
     async fn wait_for_maker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.0.clone();
-        let sending_f = send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex);
+        let _sending_f = send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex);
 
         let payload = match recv_swap_msg(self.ctx.clone(), "maker-payment", &self.uuid, 180).await {
             Ok(p) => p,

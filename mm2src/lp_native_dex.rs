@@ -21,10 +21,9 @@
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
-use coins::{check_balance_update_loop, register_balance_update_handler};
+use coins::{register_balance_update_handler};
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
-use futures::prelude::*;
 use futures01::sync::oneshot::Sender;
 use futures01::Future;
 use http::StatusCode;
@@ -32,7 +31,6 @@ use rand::rngs::SmallRng;
 use rand::{random, Rng, SeedableRng};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::ffi::CString;
 use std::fs;
 use std::io::{Read, Write};
@@ -41,7 +39,6 @@ use std::os::raw::c_char;
 use std::path::Path;
 use std::str;
 use std::str::from_utf8;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::common::executor::{spawn, Timer};
 #[cfg(feature = "native")] use crate::common::lp;
@@ -49,12 +46,11 @@ use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
 use crate::mm2::gossipsub::add_gossipsub_event_handler;
-use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
+use crate::mm2::lp_network::{start_client_p2p_loop};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler, OrdermatchP2PConnector};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts, SwapsGossipsubConnector};
 use crate::mm2::rpc::spawn_rpc;
-use common::mm_number::MmNumber;
 
 /// Process a previously queued command that wasn't handled by the RPC `dispatcher`.  
 /// NB: It might be preferable to port more commands into the RPC `dispatcher`, rather than `lp_command_process`, because:  
@@ -118,7 +114,7 @@ pub async fn lp_initpeers(ctx: &MmArc, netid: u16, seednodes: Option<Vec<String>
     type IsLp = bool;
 
     let seeds: Vec<(IP, IsLp)> = if let Some(seednodes) = seednodes {
-        for seednode in seednodes.iter() {
+        for _seednode in seednodes.iter() {
             // A custom `seednode` is often used in automatic or manual tests
             // in order to directly give the Taker the address of the Maker.
             // We don't want to unnecessarily spam the friendlist of a public seed node,
@@ -604,7 +600,6 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     try_s!(ctx.send_to_helpers().await);
     let seednodes: Option<Vec<String>> = try_s!(json::from_value(ctx.conf["seednodes"].clone()));
     use crate::mm2::gossipsub::relayer_node;
-    use common::now_ms;
 
     if i_am_seed {
         log!("Before relayer node");

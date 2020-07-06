@@ -1,7 +1,6 @@
-use rand::RngCore;
 use secp256k1::{sign, verify, Message as SecpMessage, PublicKey as Secp256k1Pubkey, SecretKey, Signature};
 use serde::{de,
-            ser::{Error, Serialize, Serializer}};
+            ser::{Serialize, Serializer}};
 use serde_bytes;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -115,6 +114,7 @@ impl From<Secp256k1Pubkey> for PublicKey {
 
 #[test]
 fn signed_message_serde() {
+    use rand::RngCore;
     let mut rng = rand::thread_rng();
     let secret = SecretKey::random(&mut rng);
     let initial_msg = vec![0u8; 32];
