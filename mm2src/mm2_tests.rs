@@ -8,6 +8,7 @@ use common::executor::Timer;
 use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt, RaiiDump};
 #[cfg(feature = "native")]
 use common::for_tests::mm_dump;
+use common::mm_metrics::{MetricType, MetricsJson};
 use common::mm_number::Fraction;
 use common::privkey::key_pair_from_seed;
 use common::BigInt;

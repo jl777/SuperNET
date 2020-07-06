@@ -45,6 +45,7 @@ use std::num::NonZeroU64;
 use std::ops::Deref;
 #[cfg(not(feature = "native"))] use std::os::raw::c_char;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+use std::sync::Arc;
 use std::time::{Duration};
 #[cfg(feature = "native")]
 use tokio::codec::{Encoder, Decoder};

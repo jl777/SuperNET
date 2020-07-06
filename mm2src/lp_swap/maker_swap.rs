@@ -1,9 +1,11 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount, get_locked_amount_by_other_swaps,
-            my_swap_file_path, my_swaps_dir, AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
-            SavedSwap, SwapConfirmationsSettings, SwapError, SwapNegotiationData, SwapsContext, BASIC_COMM_TIMEOUT,
-            WAIT_CONFIRM_INTERVAL};
+            lp_atomic_locktime, my_swaps_dir, my_swap_file_path, recv_swap_msg, swap_topic,
+            AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
+            SavedSwap, SwapConfirmationsSettings, SwapsContext, SwapError, SwapNegotiationData, SwapMsg,
+            BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
+
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use bitcrypto::dhash160;
@@ -21,12 +23,9 @@ use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use serde_json::{self as json};
 use serialization::{deserialize, serialize};
 use std::path::PathBuf;
-use std::sync::atomic::Ordering;
-use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount, get_locked_amount_by_other_swaps,
-            lp_atomic_locktime, my_swaps_dir, my_swap_file_path, recv_swap_msg, swap_topic,
-            AtomicSwap, LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction,
-            SavedSwap, SwapConfirmationsSettings, SwapsContext, SwapError, SwapNegotiationData, SwapMsg,
-            BASIC_COMM_TIMEOUT, WAIT_CONFIRM_INTERVAL};
+use std::sync::{
+    Arc, RwLock, RwLockReadGuard, RwLockWriteGuard,
+    atomic::Ordering};
 
 pub fn stats_maker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
     ctx.dbdir()
