@@ -685,7 +685,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
     }
     let ctxʹ = ctx.clone();
     let ticker = ticker.to_owned();
-    spawn (async move {check_balance_update_loop (ctxʹ, ticker) .await});
+    spawn(async move { check_balance_update_loop(ctxʹ, ticker).await });
     Ok(coin)
 }
 

@@ -1,13 +1,8 @@
+use crate::executor::spawn;
 use async_std::future::timeout;
 use bytes::Bytes;
-use crate::executor::spawn;
-use crossbeam::{channel, Sender, Receiver};
-use futures::{
-    channel::mpsc,
-    channel::oneshot,
-    compat::Compat,
-    prelude::*,
-};
+use crossbeam::{channel, Receiver, Sender};
+use futures::{channel::mpsc, channel::oneshot, compat::Compat, prelude::*};
 use gstuff::Constructible;
 #[cfg(not(feature = "native"))] use http::Response;
 use keys::{DisplayLayout, KeyPair, Private};
@@ -140,26 +135,26 @@ impl MmCtx {
             rpc_started: Constructible::default(),
             stop: Constructible::default(),
             ffi_handle: Constructible::default(),
-            stop_listeners: Mutex::new (Vec::new()),
-            portfolio_ctx: Mutex::new (None),
-            ordermatch_ctx: Mutex::new (None),
-            peers_ctx: Mutex::new (None),
+            stop_listeners: Mutex::new(Vec::new()),
+            portfolio_ctx: Mutex::new(None),
+            ordermatch_ctx: Mutex::new(None),
+            peers_ctx: Mutex::new(None),
             peer_id: Constructible::default(),
-            http_fallback_ctx: Mutex::new (None),
-            coins_ctx: Mutex::new (None),
-            prices_ctx: Mutex::new (None),
+            http_fallback_ctx: Mutex::new(None),
+            coins_ctx: Mutex::new(None),
+            prices_ctx: Mutex::new(None),
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
             command_queue,
             gossip_sub_cmd_queue: Constructible::default(),
-            command_queueʳ: Mutex::new (Some (command_queueʳ)),
-            command_queueʰ: Mutex::new (None),
+            command_queueʳ: Mutex::new(Some(command_queueʳ)),
+            command_queueʰ: Mutex::new(None),
             rmd160: Constructible::default(),
             seeds: Mutex::new(Vec::new()),
             secp256k1_key_pair: Constructible::default(),
-            coins_needed_for_kick_start: Mutex::new (HashSet::new()),
-            swaps_ctx: Mutex::new (None),
-            gossipsub_ctx: Mutex::new (None),
+            coins_needed_for_kick_start: Mutex::new(HashSet::new()),
+            swaps_ctx: Mutex::new(None),
+            gossipsub_ctx: Mutex::new(None),
         }
     }
 

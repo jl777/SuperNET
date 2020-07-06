@@ -42,14 +42,14 @@ use crate::mm2::gossipsub::TOPIC_SEPARATOR;
 use crate::mm2::lp_native_dex::lp_command_process;
 use crate::mm2::lp_ordermatch::{lp_post_price_recv, ORDERBOOK_PREFIX};
 use crate::mm2::lp_swap::{save_stats_swap_status, SWAP_PREFIX};
-use futures::{TryFutureExt};
+use futures::TryFutureExt;
 
 /// Result of `fn dispatcher`.
 pub enum DispatcherRes {
     /// `fn dispatcher` has found a Rust handler for the RPC "method".
     Match(HyRes),
     /// No handler found by `fn dispatcher`. Returning the `Json` request in order for it to be handled elsewhere.
-    NoMatch
+    NoMatch,
 }
 
 #[derive(Serialize)]
@@ -181,14 +181,19 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
 }
 
 #[cfg(feature = "native")]
-pub async fn start_relayer_node_loop (ctx: &MmArc, myipaddr: IpAddr, mypubport: u16, other_relayers: Option<Vec<String>>) -> Result<(), String> {
+pub async fn start_relayer_node_loop(
+    ctx: &MmArc,
+    myipaddr: IpAddr,
+    mypubport: u16,
+    other_relayers: Option<Vec<String>>,
+) -> Result<(), String> {
     use crate::mm2::gossipsub::relayer_node;
     log! ("i_am_seed at " (myipaddr) ":" (mypubport));
     /*
     let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
     try_s!(listener.set_nonblocking(true));
     */
-    try_s!(thread::Builder::new().name ("seednode_loop".into()) .spawn ({
+    try_s!(thread::Builder::new().name("seednode_loop".into()).spawn({
         let ctx = ctx.clone();
         move || relayer_node(ctx, myipaddr, mypubport, other_relayers)
     }));
@@ -227,7 +232,7 @@ pub async fn start_seednode_loopʰ(req: Bytes) -> Result<Vec<u8>, String> {
         }
     }
     // try_s! (start_relayer_node_loop (&ctx, myipaddr, args.mypubport) .await);
-    Ok (Vec::new())
+    Ok(Vec::new())
 }
 
 struct SeedConnection {
@@ -238,7 +243,7 @@ struct SeedConnection {
 }
 
 #[cfg(feature = "native")]
-pub async fn start_client_p2p_loop (ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
+pub async fn start_client_p2p_loop(ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
     use crate::mm2::gossipsub::clientnode;
     let (tx, peer_id) = clientnode(ctx.clone(), relayers, port);
     try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
@@ -359,11 +364,11 @@ pub async fn p2p_tapʰ(req: Bytes) -> Result<Vec<u8>, String> {
     Ok(res)
 }
 
-pub async fn broadcast_p2p_msgʰ (req: Bytes) -> Result<Vec<u8>, String> {
-    let args: common::BroadcastP2pMessageArgs = try_s! (bdecode (&req));
-    let ctx = try_s! (MmArc::from_ffi_handle (args.ctx));
-    ctx.broadcast_p2p_msg ("test".into(), args.msg.into_bytes());
-    Ok (Vec::new())
+pub async fn broadcast_p2p_msgʰ(req: Bytes) -> Result<Vec<u8>, String> {
+    let args: common::BroadcastP2pMessageArgs = try_s!(bdecode(&req));
+    let ctx = try_s!(MmArc::from_ffi_handle(args.ctx));
+    ctx.broadcast_p2p_msg("test".into(), args.msg.into_bytes());
+    Ok(Vec::new())
 }
 
 /// Tells the native helpers to start the client_p2p_loop, collecting messages from the seed nodes.
@@ -378,7 +383,7 @@ pub async fn start_client_p2p_loopʰ(req: Bytes) -> Result<Vec<u8>, String> {
         }
     }
     // try_s! (start_client_p2p_loop (ctx, args.addrs[0].clone(), 1000) .await);
-    Ok (Vec::new())
+    Ok(Vec::new())
 }
 
 /// The loop processing client node activity

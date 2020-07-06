@@ -46,19 +46,15 @@ use std::ops::Deref;
 #[cfg(not(feature = "native"))] use std::os::raw::c_char;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::sync::Arc;
-use std::time::{Duration};
-#[cfg(feature = "native")]
-use tokio::codec::{Encoder, Decoder};
-#[cfg(feature = "native")]
-use tokio_io::{AsyncRead, AsyncWrite};
+use std::time::Duration;
+#[cfg(feature = "native")] use tokio::codec::{Decoder, Encoder};
+#[cfg(feature = "native")] use tokio_io::{AsyncRead, AsyncWrite};
 // #[cfg(feature = "native")]
 // use tokio_rustls::{TlsConnector, TlsStream};
 // #[cfg(feature = "native")]
 // use tokio_rustls::webpki::DNSNameRef;
-#[cfg(feature = "native")]
-use tokio_tcp::TcpStream;
-#[cfg(feature = "native")]
-use webpki_roots::TLS_SERVER_ROOTS;
+#[cfg(feature = "native")] use tokio_tcp::TcpStream;
+#[cfg(feature = "native")] use webpki_roots::TLS_SERVER_ROOTS;
 
 /*
 /// Skips the server certificate verification on TLS connection
@@ -1680,7 +1676,10 @@ async fn connect_loop(
 
         let connect_f = match config.clone() {
             ElectrumConfig::TCP => TcpStream::connect(&socket_addr).map(|stream| ElectrumStream::Tcp(stream)),
-            ElectrumConfig::SSL { dns_name, skip_validation } => {
+            ElectrumConfig::SSL {
+                dns_name,
+                skip_validation,
+            } => {
                 unimplemented!()
                 /*
                 let mut ssl_config = ClientConfig::new();
@@ -1698,7 +1697,7 @@ async fn connect_loop(
                     tls_connector.connect(dns, stream).map(ElectrumStream::Tls)
                 }))
                 */
-            }
+            },
         };
 
         let stream = try_loop!(connect_f.compat().await, addr, delay);

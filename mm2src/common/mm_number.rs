@@ -244,17 +244,11 @@ impl MmNumber {
     pub fn to_ratio(&self) -> BigRational { self.0.clone() }
 
     /// Get BigDecimal representation
-    pub fn to_decimal(&self) -> BigDecimal {
-        from_ratio_to_dec(&self.0)
-    }
+    pub fn to_decimal(&self) -> BigDecimal { from_ratio_to_dec(&self.0) }
 
-    pub fn numer(&self) -> &BigInt {
-        self.0.numer()
-    }
+    pub fn numer(&self) -> &BigInt { self.0.numer() }
 
-    pub fn denom(&self) -> &BigInt {
-        self.0.denom()
-    }
+    pub fn denom(&self) -> &BigInt { self.0.denom() }
 }
 
 impl From<i32> for MmNumber {

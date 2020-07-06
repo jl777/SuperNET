@@ -1,12 +1,10 @@
 use rand::RngCore;
 use secp256k1::{sign, verify, Message as SecpMessage, PublicKey as Secp256k1Pubkey, SecretKey, Signature};
-use serde::{
-    de,
-    ser::{Error, Serialize, Serializer},
-};
+use serde::{de,
+            ser::{Error, Serialize, Serializer}};
+use serde_bytes;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use serde_bytes;
 
 pub fn encode_message<T: Serialize>(message: &T) -> Result<Vec<u8>, rmp_serde::encode::Error> {
     rmp_serde::to_vec(message)
@@ -47,7 +45,9 @@ pub fn encode_and_sign<T: Serialize>(message: &T, secret: &[u8; 32]) -> Result<V
     encode_message(&msg)
 }
 
-pub fn decode_signed<'de, T: de::Deserialize<'de>>(encoded: &'de [u8]) -> Result<SignedMessage<T>, rmp_serde::decode::Error> {
+pub fn decode_signed<'de, T: de::Deserialize<'de>>(
+    encoded: &'de [u8],
+) -> Result<SignedMessage<T>, rmp_serde::decode::Error> {
     let helper: SignedMessageSerdeHelper = decode_message(encoded)?;
     let signature = Signature::parse_slice(helper.signature)
         .map_err(|e| rmp_serde::decode::Error::Syntax(format!("Failed to parse signature {}", e)))?;
@@ -57,26 +57,22 @@ pub fn decode_signed<'de, T: de::Deserialize<'de>>(encoded: &'de [u8]) -> Result
             if !verify(&sig_hash, &signature, &serialized_pub.0) {
                 return Err(rmp_serde::decode::Error::Syntax("Invalid message signature".into()));
             }
-        }
+        },
     }
 
     let payload: T = decode_message(helper.payload)?;
     Ok(SignedMessage {
         pubkey: helper.pubkey,
         signature,
-        payload
+        payload,
     })
 }
 
 impl<T> Into<(PublicKey, Signature, T)> for SignedMessage<T> {
-    fn into(self) -> (PublicKey, Signature, T) {
-        (self.pubkey, self.signature, self.payload)
-    }
+    fn into(self) -> (PublicKey, Signature, T) { (self.pubkey, self.signature, self.payload) }
 }
 
-fn sha256(input: impl AsRef<[u8]>) -> [u8; 32] {
-    Sha256::new().chain(input).finalize().into()
-}
+fn sha256(input: impl AsRef<[u8]>) -> [u8; 32] { Sha256::new().chain(input).finalize().into() }
 
 #[derive(Debug)]
 pub struct Secp256k1PubkeySerialize(Secp256k1Pubkey);
@@ -88,8 +84,10 @@ impl Serialize for Secp256k1PubkeySerialize {
 }
 
 impl<'de> de::Deserialize<'de> for Secp256k1PubkeySerialize {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as de::Deserializer<'de>>::Error> where
-        D: de::Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as de::Deserializer<'de>>::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
         let slice: &[u8] = de::Deserialize::deserialize(deserializer)?;
         let pubkey = Secp256k1Pubkey::parse_slice(slice, None)
             .map_err(|e| de::Error::custom(format!("Error {} parsing pubkey", e)))?;
@@ -112,9 +110,7 @@ impl PublicKey {
 }
 
 impl From<Secp256k1Pubkey> for PublicKey {
-    fn from(pubkey: Secp256k1Pubkey) -> Self {
-        PublicKey::Secp256k1(Secp256k1PubkeySerialize(pubkey))
-    }
+    fn from(pubkey: Secp256k1Pubkey) -> Self { PublicKey::Secp256k1(Secp256k1PubkeySerialize(pubkey)) }
 }
 
 #[test]

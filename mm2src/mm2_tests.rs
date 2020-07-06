@@ -5,9 +5,9 @@ use super::lp_main;
 use bigdecimal::BigDecimal;
 #[cfg(not(feature = "native"))] use common::call_back;
 use common::executor::Timer;
-use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart, MarketMakerIt, RaiiDump};
-#[cfg(feature = "native")]
-use common::for_tests::mm_dump;
+#[cfg(feature = "native")] use common::for_tests::mm_dump;
+use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart,
+                        MarketMakerIt, RaiiDump};
 use common::mm_metrics::{MetricType, MetricsJson};
 use common::mm_number::Fraction;
 use common::privkey::key_pair_from_seed;
@@ -270,7 +270,7 @@ fn alice_can_see_the_active_order_after_connection() {
     assert_eq!(Json::from("0.9"), asks[0]["maxvolume"]);
 
     // start eve and immediately place the order
-    let mut mm_eve = unwrap!(MarketMakerIt::start (
+    let mut mm_eve = unwrap!(MarketMakerIt::start(
         json! ({
             "gui": "nogui",
             "netid": 9998,
@@ -283,16 +283,18 @@ fn alice_can_see_the_active_order_after_connection() {
             "seednodes": [fomat!((mm_bob.ip))],
         }),
         "pass".into(),
-        local_start! ("bob")
+        local_start!("bob")
     ));
     let (_eve_dump_log, _eve_dump_dashboard) = mm_dump(&mm_eve.log_path);
     log!({ "Eve log path: {}", mm_eve.log_path.display() });
-    unwrap!(block_on (mm_eve.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
+    unwrap!(block_on(
+        mm_eve.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
     // Enable coins on Eve side. Print the replies in case we need the "address".
     log!({ "enable_coins (eve): {:?}", block_on(enable_coins_eth_electrum(&mm_eve, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"])) });
     // issue sell request on Eve side by setting base/rel price
     log!("Issue eve sell request");
-    let rc = unwrap!(block_on (mm_eve.rpc (json! ({
+    let rc = unwrap!(block_on(mm_eve.rpc(json! ({
         "userpass": mm_eve.userpass,
         "method": "setprice",
         "base": "RICK",
@@ -303,7 +305,7 @@ fn alice_can_see_the_active_order_after_connection() {
     assert!(rc.0.is_success(), "!setprice: {}", rc.1);
 
     log!("Get RICK/MORTY orderbook on Eve side");
-    let rc = unwrap!(block_on (mm_eve.rpc (json! ({
+    let rc = unwrap!(block_on(mm_eve.rpc(json! ({
         "userpass": mm_eve.userpass,
         "method": "orderbook",
         "base": "RICK",
@@ -312,12 +314,12 @@ fn alice_can_see_the_active_order_after_connection() {
     assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
 
     let eve_orderbook: Json = unwrap!(json::from_str(&rc.1));
-    log!("Eve orderbook " [eve_orderbook]);
+    log!("Eve orderbook "[eve_orderbook]);
     let asks = eve_orderbook["asks"].as_array().unwrap();
     assert_eq!(asks.len(), 2, "Eve RICK/MORTY orderbook must have exactly 2 asks");
 
     log!("Get RICK/MORTY orderbook on Bob side");
-    let rc = unwrap!(block_on (mm_bob.rpc (json! ({
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
         "userpass": mm_bob.userpass,
         "method": "orderbook",
         "base": "RICK",
@@ -330,7 +332,7 @@ fn alice_can_see_the_active_order_after_connection() {
     let asks = bob_orderbook["asks"].as_array().unwrap();
     assert_eq!(asks.len(), 2, "Bob RICK/MORTY orderbook must have exactly 2 asks");
 
-    let mut mm_alice = unwrap!(MarketMakerIt::start (
+    let mut mm_alice = unwrap!(MarketMakerIt::start(
         json! ({
             "gui": "nogui",
             "netid": 9998,
@@ -348,13 +350,15 @@ fn alice_can_see_the_active_order_after_connection() {
     let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
     log!({ "Alice log path: {}", mm_alice.log_path.display() });
 
-    unwrap!(block_on (mm_alice.wait_for_log (22., |log| log.contains (">>>>>>>>> DEX stats "))));
+    unwrap!(block_on(
+        mm_alice.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
 
     // Enable coins on Alice side. Print the replies in case we need the "address".
     log!({ "enable_coins (alice): {:?}", block_on(enable_coins_eth_electrum(&mm_alice, vec!["https://ropsten.infura.io/v3/c01c1b4cf66642528547624e1d6d9d6b"])) });
 
     log!("Get RICK/MORTY orderbook on Alice side");
-    let rc = unwrap!(block_on (mm_alice.rpc (json! ({
+    let rc = unwrap!(block_on(mm_alice.rpc(json! ({
         "userpass": mm_alice.userpass,
         "method": "orderbook",
         "base": "RICK",
@@ -367,9 +371,9 @@ fn alice_can_see_the_active_order_after_connection() {
     let asks = alice_orderbook["asks"].as_array().unwrap();
     assert_eq!(asks.len(), 2, "Alice RICK/MORTY orderbook must have exactly 2 asks");
 
-    unwrap!(block_on (mm_bob.stop()));
-    unwrap!(block_on (mm_alice.stop()));
-    unwrap!(block_on (mm_eve.stop()));
+    unwrap!(block_on(mm_bob.stop()));
+    unwrap!(block_on(mm_alice.stop()));
+    unwrap!(block_on(mm_eve.stop()));
 }
 
 #[test]
@@ -882,14 +886,18 @@ async fn trade_base_rel_electrum(pairs: Vec<(&'static str, &'static str)>) {
     // issue sell request on Bob side by setting base/rel price
     for (base, rel) in pairs.iter() {
         log!("Issue bob " (base) "/" (rel) " sell request");
-        let rc = unwrap! (mm_bob.rpc (json! ({
-            "userpass": mm_bob.userpass,
-            "method": "setprice",
-            "base": base,
-            "rel": rel,
-            "price": 1,
-            "volume": 0.1
-        })) .await);
+        let rc = unwrap!(
+            mm_bob
+                .rpc(json! ({
+                    "userpass": mm_bob.userpass,
+                    "method": "setprice",
+                    "base": base,
+                    "rel": rel,
+                    "price": 1,
+                    "volume": 0.1
+                }))
+                .await
+        );
         assert!(rc.0.is_success(), "!setprice: {}", rc.1);
     }
 
@@ -1029,8 +1037,8 @@ async fn trade_base_rel_electrum(pairs: Vec<(&'static str, &'static str)>) {
         .await;
     }
 
-    log! ("Waiting 3 seconds for nodes to broadcast their swaps data..");
-    Timer::sleep (3.) .await;
+    log!("Waiting 3 seconds for nodes to broadcast their swaps data..");
+    Timer::sleep(3.).await;
     /*
     for uuid in uuids.iter() {
         log!("Checking alice status..");
@@ -2762,7 +2770,7 @@ fn test_electrum_tx_history() {
 fn spin_n_nodes(seednodes: &[&str], coins: &Json, n: usize) -> Vec<(MarketMakerIt, RaiiDump, RaiiDump)> {
     let mut mm_nodes = Vec::with_capacity(n);
     for i in 0..n {
-        let mut mm = unwrap!(MarketMakerIt::start (
+        let mut mm = unwrap!(MarketMakerIt::start(
             json! ({
                 "gui": "nogui",
                 "netid": 9998,
@@ -2774,13 +2782,15 @@ fn spin_n_nodes(seednodes: &[&str], coins: &Json, n: usize) -> Vec<(MarketMakerI
                 "rpc_password": "pass",
             }),
             "pass".into(),
-            local_start! ("alice")
+            local_start!("alice")
         ));
 
         let (alice_dump_log, alice_dump_dashboard) = mm_dump(&mm.log_path);
         log!({ "Alice {} log path: {}", i, mm.log_path.display() });
         for seednode in seednodes.iter() {
-            unwrap!(block_on (mm.wait_for_log (22., |log| log.contains (&format!("Dialed {}", seednode)))));
+            unwrap!(block_on(
+                mm.wait_for_log(22., |log| log.contains(&format!("Dialed {}", seednode)))
+            ));
         }
         mm_nodes.push((mm, alice_dump_log, alice_dump_dashboard));
     }

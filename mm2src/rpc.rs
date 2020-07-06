@@ -240,7 +240,7 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
         "my_recent_swaps" => my_recent_swaps(ctx, req),
         "my_swap_status" => my_swap_status(ctx, req),
         "my_tx_history" => my_tx_history(ctx, req),
-        "order_status" => order_status (ctx, req),
+        "order_status" => order_status(ctx, req),
         "orderbook" => hyres(orderbook(ctx, req)),
         "sim_panic" => hyres(sim_panic(req)),
         "recover_funds_of_swap" => {

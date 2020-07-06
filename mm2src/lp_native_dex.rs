@@ -22,18 +22,18 @@
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
 use coins::{check_balance_update_loop, register_balance_update_handler};
-use futures01::{Future};
-use futures01::sync::oneshot::Sender;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::prelude::*;
+use futures01::sync::oneshot::Sender;
+use futures01::Future;
 use http::StatusCode;
 use rand::rngs::SmallRng;
 use rand::{random, Rng, SeedableRng};
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
-use std::ffi::CString;
 use std::collections::HashMap;
+use std::ffi::CString;
 use std::fs;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -50,10 +50,10 @@ use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
 use crate::mm2::gossipsub::add_gossipsub_event_handler;
 use crate::mm2::lp_network::{start_client_p2p_loop, start_relayer_node_loop};
-use crate::mm2::lp_ordermatch::{BalanceUpdateOrdermatchHandler, lp_ordermatch_loop, lp_trade_command,
-                                migrate_saved_orders, OrdermatchP2PConnector, orders_kick_start};
+use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
+                                BalanceUpdateOrdermatchHandler, OrdermatchP2PConnector};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts, SwapsGossipsubConnector};
-use crate::mm2::rpc::{spawn_rpc};
+use crate::mm2::rpc::spawn_rpc;
 use common::mm_number::MmNumber;
 
 /// Process a previously queued command that wasn't handled by the RPC `dispatcher`.  
@@ -155,13 +155,13 @@ pub async fn lp_initpeers(ctx: &MmArc, netid: u16, seednodes: Option<Vec<String>
     for (seed_ip, _is_lp) in seeds {
         seed_ips.push(try_s!(seed_ip.parse()));
     }
-    *try_s! (ctx.seeds.lock()) = seed_ips.clone();
+    *try_s!(ctx.seeds.lock()) = seed_ips.clone();
     if !i_am_seed {
         if seed_ips.len() == 0 {
             return ERR!("At least 1 IP must be provided");
         }
         // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
-        try_s! (start_client_p2p_loop (ctx.clone(), seed_ips.iter().map(|ip| ip.to_string()).collect(), pubport) .await);
+        try_s!(start_client_p2p_loop(ctx.clone(), seed_ips.iter().map(|ip| ip.to_string()).collect(), pubport).await);
     }
     // try_s! (peers::initialize (&ctx, netid, pubport + 1) .await);
 
@@ -600,20 +600,21 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
         }
     };
 
-    #[cfg(not(feature = "native"))] try_s! (ctx.send_to_helpers().await);
+    #[cfg(not(feature = "native"))]
+    try_s!(ctx.send_to_helpers().await);
     let seednodes: Option<Vec<String>> = try_s!(json::from_value(ctx.conf["seednodes"].clone()));
     use crate::mm2::gossipsub::relayer_node;
     use common::now_ms;
 
     if i_am_seed {
         log!("Before relayer node");
-        let (tx, peer_id) = relayer_node (ctx.clone(), myipaddr, mypubport, seednodes.clone());
+        let (tx, peer_id) = relayer_node(ctx.clone(), myipaddr, mypubport, seednodes.clone());
         log!("After relayer node");
         try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
         try_s!(ctx.peer_id.pin(peer_id));
     }
 
-    try_s! (lp_initpeers (&ctx, netid, seednodes) .await);
+    try_s!(lp_initpeers(&ctx, netid, seednodes).await);
     let balance_update_ordermatch_handler = BalanceUpdateOrdermatchHandler::new(ctx.clone());
     register_balance_update_handler(ctx.clone(), Box::new(balance_update_ordermatch_handler));
 
@@ -631,12 +632,8 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     let ctxʹ = ctx.clone();
     spawn(async move { lp_ordermatch_loop(ctxʹ).await });
 
-    add_gossipsub_event_handler(&ctx, Box::new(OrdermatchP2PConnector {
-        ctx: ctx.clone(),
-    })).await;
-    add_gossipsub_event_handler(&ctx, Box::new(SwapsGossipsubConnector {
-        ctx: ctx.clone(),
-    })).await;
+    add_gossipsub_event_handler(&ctx, Box::new(OrdermatchP2PConnector { ctx: ctx.clone() })).await;
+    add_gossipsub_event_handler(&ctx, Box::new(SwapsGossipsubConnector { ctx: ctx.clone() })).await;
 
     #[cfg(not(feature = "native"))]
     {

@@ -38,11 +38,9 @@ use std::str;
 #[path = "crash_reports.rs"] pub mod crash_reports;
 use self::crash_reports::init_crash_reports;
 
-#[path = "gossipsub.rs"]
-mod gossipsub;
+#[path = "gossipsub.rs"] mod gossipsub;
 
-#[path = "lp_native_dex.rs"]
-mod lp_native_dex;
+#[path = "lp_native_dex.rs"] mod lp_native_dex;
 use self::lp_native_dex::{lp_init, lp_ports};
 
 #[path = "lp_network.rs"] pub mod lp_network;
@@ -56,8 +54,8 @@ use self::lp_native_dex::{lp_init, lp_ports};
 mod mm2_tests;
 
 /// * `ctx_cb` - callback used to share the `MmCtx` ID with the call site.
-pub fn lp_main (conf: Json, ctx_cb: &dyn Fn (u32)) -> Result<(), String> {
-    std::env::set_var ("RUST_LOG", "debug");
+pub fn lp_main(conf: Json, ctx_cb: &dyn Fn(u32)) -> Result<(), String> {
+    std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     if !conf["rpc_password"].is_null() {
         if !conf["rpc_password"].is_string() {

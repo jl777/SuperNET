@@ -1,37 +1,22 @@
-use async_std::{io, task};
+use crate::mm2::lp_ordermatch::broadcast_my_maker_orders;
 use async_std::future::timeout;
-use common::{
-    now_ms,
-    executor::spawn,
-    mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand},
-};
-use crate::mm2::{
-    lp_ordermatch::broadcast_my_maker_orders,
-};
-use futures::{
-    select, FutureExt,
-    channel::mpsc,
-    future::Either,
-    lock::{Mutex as AsyncMutex},
-    prelude::*
-};
+use async_std::{io, task};
+use common::{executor::spawn,
+             mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand},
+             now_ms};
+use futures::{channel::mpsc, future::Either, lock::Mutex as AsyncMutex, prelude::*, select, FutureExt};
 use libp2p::gossipsub::protocol::MessageId;
 use libp2p::gossipsub::{GossipsubEvent, GossipsubMessage, Topic, TopicHash};
-use libp2p::{
-    gossipsub, identity,
-    PeerId,
-};
+use libp2p::{gossipsub, identity, PeerId};
 use serde_json::{self as json, Value as Json};
-use std::{
-    collections::hash_map::{DefaultHasher, HashMap},
-    error::Error,
-    hash::{Hash, Hasher},
-    net::IpAddr,
-    ops::Deref,
-    sync::Arc,
-    task::{Context, Poll},
-    time::Duration,
-};
+use std::{collections::hash_map::{DefaultHasher, HashMap},
+          error::Error,
+          hash::{Hash, Hasher},
+          net::IpAddr,
+          ops::Deref,
+          sync::Arc,
+          task::{Context, Poll},
+          time::Duration};
 
 pub trait GossipsubEventHandler {
     fn peer_subscribed(&self, peer: &str, topic: &str);
@@ -50,9 +35,9 @@ impl Deref for GossipsubContext {
 
 impl GossipsubContext {
     /// Obtains a reference to this crate context, creating it if necessary.
-    fn from_ctx (ctx: &MmArc) -> Result<Arc<GossipsubContext>, String> {
-        Ok (try_s! (from_ctx (&ctx.gossipsub_ctx, move || {
-            Ok (GossipsubContext(AsyncMutex::new(GossipsubContextImpl {
+    fn from_ctx(ctx: &MmArc) -> Result<Arc<GossipsubContext>, String> {
+        Ok(try_s!(from_ctx(&ctx.gossipsub_ctx, move || {
+            Ok(GossipsubContext(AsyncMutex::new(GossipsubContextImpl {
                 event_handlers: vec![],
             })))
         })))
@@ -60,9 +45,9 @@ impl GossipsubContext {
 
     /// Obtains a reference to this crate context, creating it if necessary.
     #[allow(dead_code)]
-    fn from_ctx_weak (ctx_weak: &MmWeak) -> Result<Arc<GossipsubContext>, String> {
-        let ctx = try_s! (MmArc::from_weak (ctx_weak) .ok_or ("Context expired"));
-        Self::from_ctx (&ctx)
+    fn from_ctx_weak(ctx_weak: &MmWeak) -> Result<Arc<GossipsubContext>, String> {
+        let ctx = try_s!(MmArc::from_weak(ctx_weak).ok_or("Context expired"));
+        Self::from_ctx(&ctx)
     }
 }
 
@@ -111,8 +96,12 @@ pub fn pub_sub_topic(prefix: TopicPrefix, topic: &str) -> String {
     res
 }
 
-pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Vec<String>>)
-    -> (mpsc::UnboundedSender<P2PCommand>, String) {
+pub fn relayer_node(
+    ctx: MmArc,
+    ip: IpAddr,
+    port: u16,
+    other_relayers: Option<Vec<String>>,
+) -> (mpsc::UnboundedSender<P2PCommand>, String) {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -167,7 +156,9 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
             let mut gossip_event_fut = Box::pin(swarm.next().fuse());
             let mut rx_fut = rx.next().fuse();
             let never = future::pending::<()>();
-            let tick_fut = timeout(Duration::from_millis(500), never).fuse().then(|_| futures::future::ready(()));
+            let tick_fut = timeout(Duration::from_millis(500), never)
+                .fuse()
+                .then(|_| futures::future::ready(()));
 
             let mut tick_fut = Box::pin(tick_fut);
             select! {
@@ -247,8 +238,11 @@ pub fn relayer_node(ctx: MmArc, ip: IpAddr, port: u16, other_relayers: Option<Ve
     (tx, local_peer_id.to_base58())
 }
 
-pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16)
-    -> (mpsc::UnboundedSender<P2PCommand>, String) {
+pub fn clientnode(
+    ctx: MmArc,
+    relayers: Vec<String>,
+    seednode_port: u16,
+) -> (mpsc::UnboundedSender<P2PCommand>, String) {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -294,7 +288,11 @@ pub fn clientnode(ctx: MmArc, relayers: Vec<String>, seednode_port: u16)
             let mut gossip_event_fut = Box::pin(swarm.next().fuse());
             let mut rx_fut = rx.next().fuse();
             let never = future::pending::<()>();
-            let mut tick_fut = Box::pin(timeout(Duration::from_millis(500), never).fuse().then(|_| futures::future::ready(())));
+            let mut tick_fut = Box::pin(
+                timeout(Duration::from_millis(500), never)
+                    .fuse()
+                    .then(|_| futures::future::ready(())),
+            );
 
             select! {
                 gossip_event = gossip_event_fut => {

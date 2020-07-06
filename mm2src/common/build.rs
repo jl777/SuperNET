@@ -15,8 +15,8 @@
 #[macro_use] extern crate unwrap;
 
 use bzip2::read::BzDecoder;
-use futures::Future;
 use chrono::DateTime;
+use futures::Future;
 use glob::{glob, Paths, PatternError};
 use gstuff::{last_modified_sec, now_float, slurp};
 use hyper_rustls::HttpsConnector;
@@ -389,12 +389,15 @@ fn hget(url: &str, to: PathBuf) {
         client: Arc<Client<HttpsConnector<HttpConnector>>>,
         request: Request<Body>,
         to: PathBuf,
-    ) -> Box<dyn Future<Output=()> + Send + Unpin> {
-        Box::new(client.request(request) .then(move |res| -> Box<dyn Future<Output=()> + Send + Unpin> {
-            let res = unwrap!(res);
-            let status = res.status();
-            if status == StatusCode::FOUND {
-                let location = unwrap!(res.headers()[LOCATION].to_str());
+    ) -> Box<dyn Future<Output = ()> + Send + Unpin> {
+        Box::new(
+            client
+                .request(request)
+                .then(move |res| -> Box<dyn Future<Output = ()> + Send + Unpin> {
+                    let res = unwrap!(res);
+                    let status = res.status();
+                    if status == StatusCode::FOUND {
+                        let location = unwrap!(res.headers()[LOCATION].to_str());
 
                         epintln!("hget] Redirected to "
                             if location.len() < 99 {  // 99 here is a numerically convenient screen width.
@@ -404,41 +407,47 @@ fn hget(url: &str, to: PathBuf) {
                             }
                         );
 
-                let request = unwrap!(Request::builder().uri(location) .body(Body::empty()));
-                rec(client, request, to)
-            } else if status == StatusCode::OK {
-                let mut file = unwrap!(fs::File::create(&to), "hget] Can't create {:?}", to);
-                // "cargo build -vv" shares the stderr with the user but buffers it on a line by line basis,
-                // meaning that without some dirty terminal tricks we won't be able to share
-                // a download status one-liner.
-                // The alternative, then, is to share the status updates based on time:
-                // If the download was working for five-ten seconds we want to share the status
-                // with the user in order not to keep her in the dark.
-                let mut received = 0;
-                let mut last_status_update = now_float();
-                let len: Option<usize> = res.headers().get(CONTENT_LENGTH) .map(|hv| unwrap!(unwrap!(hv.to_str()).parse()));
-                Box::new(res.into_body().for_each(move |chunk| {
-                    let chunk = chunk.unwrap();
-                    received += chunk.len();
-                    if now_float() - last_status_update > 3. {
-                        last_status_update = now_float();
-                        epintln!(
-                            {"hget] Fetched {:.0} KiB", received as f64 / 1024.}
-                            if let Some(len) = len {{" out of {:.0}", len as f64 / 1024.}}
-                            " …"
-                        );
+                        let request = unwrap!(Request::builder().uri(location).body(Body::empty()));
+                        rec(client, request, to)
+                    } else if status == StatusCode::OK {
+                        let mut file = unwrap!(fs::File::create(&to), "hget] Can't create {:?}", to);
+                        // "cargo build -vv" shares the stderr with the user but buffers it on a line by line basis,
+                        // meaning that without some dirty terminal tricks we won't be able to share
+                        // a download status one-liner.
+                        // The alternative, then, is to share the status updates based on time:
+                        // If the download was working for five-ten seconds we want to share the status
+                        // with the user in order not to keep her in the dark.
+                        let mut received = 0;
+                        let mut last_status_update = now_float();
+                        let len: Option<usize> = res
+                            .headers()
+                            .get(CONTENT_LENGTH)
+                            .map(|hv| unwrap!(unwrap!(hv.to_str()).parse()));
+                        Box::new(res.into_body().for_each(move |chunk| {
+                            let chunk = chunk.unwrap();
+                            received += chunk.len();
+                            if now_float() - last_status_update > 3. {
+                                last_status_update = now_float();
+                                epintln!(
+                                    {"hget] Fetched {:.0} KiB", received as f64 / 1024.}
+                                    if let Some(len) = len {{" out of {:.0}", len as f64 / 1024.}}
+                                    " …"
+                                );
+                            }
+                            unwrap!(file.write_all(&chunk));
+                            futures::future::ready(())
+                        }))
+                    } else {
+                        panic!("hget] Unknown status: {:?} (headers: {:?}", status, res.headers())
                     }
-                    unwrap!(file.write_all(&chunk));
-                    futures::future::ready(())
-                }))
-            } else {
-                panic!("hget] Unknown status: {:?} (headers: {:?}", status, res.headers())
-            }
-        }))
+                }),
+        )
     }
 
     let request = unwrap!(Request::builder().uri(url).body(Body::empty()));
-    tokio::runtime::Runtime::new().unwrap().block_on(rec(client, request, to))
+    tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(rec(client, request, to))
 }
 
 /// Loads the `path`, runs `update` on it and saves back the result if it differs.

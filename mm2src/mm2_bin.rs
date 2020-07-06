@@ -1,6 +1,6 @@
 #![feature(non_ascii_idents)]
 #![feature(drain_filter)]
-#![recursion_limit="512"]
+#![recursion_limit = "512"]
 #![feature(test)]
 
 #[macro_use] extern crate common;

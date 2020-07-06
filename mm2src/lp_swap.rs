@@ -57,24 +57,21 @@
 #![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
+use crate::mm2::gossipsub::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR};
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TradeFee, TransactionEnum};
-use common::{
-    block_on, now_ms, read_dir, rpc_response, slurp, write, HyRes,
-    executor::{spawn, Timer},
-    mm_ctx::{from_ctx, MmArc},
-    mm_number::MmNumber,
-};
-use crate::mm2::{
-    gossipsub::{GossipsubEventHandler, pub_sub_topic, TOPIC_SEPARATOR, TopicPrefix}
-};
+use common::{block_on,
+             executor::{spawn, Timer},
+             mm_ctx::{from_ctx, MmArc},
+             mm_number::MmNumber,
+             now_ms, read_dir, rpc_response, slurp, write, HyRes};
 use http::Response;
 use primitives::hash::{H160, H256, H264};
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use serde_json::{self as json, Value as Json};
-use serialization::{Deserializable, deserialize, Reader, Serializable, serialize, Stream};
-use std::collections::{HashSet, HashMap};
+use serialization::{deserialize, serialize, Deserializable, Reader, Serializable, Stream};
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, Weak};
@@ -107,7 +104,10 @@ impl Serializable for SwapMsg {
 
 impl Deserializable for SwapMsg {
     fn deserialize<T>(reader: &mut Reader<T>) -> Result<Self, serialization::Error>
-        where Self: Sized, T: std::io::Read {
+    where
+        Self: Sized,
+        T: std::io::Read,
+    {
         let tag: u8 = reader.read()?;
         let subject = match tag {
             0 => "negotiation",
@@ -121,10 +121,7 @@ impl Deserializable for SwapMsg {
         let len: u32 = reader.read()?;
         let mut data = vec![0; len as usize];
         reader.read_slice(&mut data)?;
-        Ok(SwapMsg {
-            subject,
-            data,
-        })
+        Ok(SwapMsg { subject, data })
     }
 }
 
@@ -147,7 +144,7 @@ impl GossipsubEventHandler for SwapsGossipsubConnector {
                         process_msg(self.ctx.clone(), maybe_uuid, msg);
                     },
                     None => (),
-                }
+                },
                 _ => (),
             }
         }
@@ -162,18 +159,18 @@ pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let msg: SwapMsg = match deserialize(msg) {
         Ok(m) => m,
         Err(e) => {
-            log!("Swap msg deserialize error " [e]);
-            return
+            log!("Swap msg deserialize error "[e]);
+            return;
         },
     };
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
-    msgs.entry(topic.to_string()).or_insert(HashMap::new()).insert(msg.subject, msg.data);
+    msgs.entry(topic.to_string())
+        .or_insert(HashMap::new())
+        .insert(msg.subject, msg.data);
 }
 
-pub fn swap_topic(uuid: &str) -> String {
-    pub_sub_topic(SWAP_PREFIX, uuid)
-}
+pub fn swap_topic(uuid: &str) -> String { pub_sub_topic(SWAP_PREFIX, uuid) }
 
 // NB: Using a macro instead of a function in order to preserve the line numbers in the log.
 macro_rules! send {
@@ -186,7 +183,7 @@ macro_rules! send {
             data: $payload,
         };
         $ctx.broadcast_p2p_msg($topic, serialize(&msg).take());
-    }}
+    }};
 }
 
 async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u64) -> Result<Vec<u8>, String> {
@@ -198,17 +195,15 @@ async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u
         let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
         let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
         match msgs.get_mut(uuid) {
-            Some(swap_msgs) => {
-                match swap_msgs.remove(subject) {
-                    Some(msg) => return Ok(msg),
-                    None => (),
-                }
-            }
+            Some(swap_msgs) => match swap_msgs.remove(subject) {
+                Some(msg) => return Ok(msg),
+                None => (),
+            },
             None => (),
         }
         let now = now_ms() / 1000;
         if now > wait_until {
-            return ERR!("Timeout ({} > {})", now - started, timeout)
+            return ERR!("Timeout ({} > {})", now - started, timeout);
         }
     }
 }
@@ -770,7 +765,8 @@ fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
     let status_string = json!({
         "method": "swapstatus",
         "data": status,
-    }).to_string();
+    })
+    .to_string();
     ctx.broadcast_p2p_msg("test".into(), status_string.into_bytes());
     Ok(())
 }
