@@ -137,15 +137,11 @@ impl GossipsubEventHandler for SwapsGossipsubConnector {
     fn message_received(&self, _peer: String, topics: &[&str], msg: &[u8]) {
         for topic in topics {
             let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
-            match split.next() {
-                Some(SWAP_PREFIX) => match split.next() {
-                    Some(maybe_uuid) => {
-                        log!({"Processing swap msg {} {:?}", maybe_uuid, msg});
-                        process_msg(self.ctx.clone(), maybe_uuid, msg);
-                    },
-                    None => (),
-                },
-                _ => (),
+            if split.next() == Some(SWAP_PREFIX) {
+                if let Some(maybe_uuid) = split.next() {
+                    log!({ "Processing swap msg {} {:?}", maybe_uuid, msg });
+                    process_msg(self.ctx.clone(), maybe_uuid, msg);
+                }
             }
         }
     }
@@ -166,7 +162,7 @@ pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
     msgs.entry(topic.to_string())
-        .or_insert(HashMap::new())
+        .or_insert_with(HashMap::new)
         .insert(msg.subject, msg.data);
 }
 
@@ -194,12 +190,10 @@ async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u
         Timer::sleep(1.).await;
         let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
         let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
-        match msgs.get_mut(uuid) {
-            Some(swap_msgs) => match swap_msgs.remove(subject) {
-                Some(msg) => return Ok(msg),
-                None => (),
-            },
-            None => (),
+        if let Some(swap_msgs) = msgs.get_mut(uuid) {
+            if let Some(msg) = swap_msgs.remove(subject) {
+                return Ok(msg);
+            }
         }
         let now = now_ms() / 1000;
         if now > wait_until {
@@ -772,6 +766,7 @@ fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
 }
 
 /// Saves the swap status notification received from P2P network to local DB.
+#[allow(dead_code)]
 pub fn save_stats_swap_status(ctx: &MmArc, data: Json) {
     let swap: SavedSwap = unwrap!(json::from_value(data));
     unwrap!(save_stats_swap(ctx, &swap));

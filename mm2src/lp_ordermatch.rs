@@ -70,7 +70,7 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
             pubsecp,
             sig: "".to_string(),
             balance: order.max_volume.to_decimal(),
-            balance_rat: Some(order.max_volume.into()),
+            balance_rat: Some(order.max_volume),
             uuid: Some(order.uuid.into()),
             peer_id,
             initial_message,
@@ -218,7 +218,7 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         };
 
         spawn(async move {
-            ctx.subscribe_to_p2p_topic(topic.clone()).await;
+            ctx.subscribe_to_p2p_topic(topic.clone()).await.unwrap();
             let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
             let to_broadcast = new_protocol::OrdermatchMessage::MakerOrderCreated(message.clone());
             let encoded_msg = encode_and_sign(&to_broadcast, &*key_pair.private().secret).unwrap();
@@ -235,7 +235,7 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         let ctx = self.ctx.clone();
         let topic = orderbook_topic(&order.base, &order.rel);
         spawn(async move {
-            ctx.subscribe_to_p2p_topic(topic).await;
+            ctx.subscribe_to_p2p_topic(topic).await.unwrap();
             if let Err(e) = broadcast_my_maker_orders(&ctx).await {
                 ctx.log
                     .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
@@ -920,6 +920,7 @@ impl MakerOrderBuilder {
     }
 }
 
+#[allow(dead_code)]
 fn zero_rat() -> BigRational { BigRational::zero() }
 
 impl MakerOrder {
@@ -1415,7 +1416,7 @@ fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let our_public_id = unwrap!(ctx.public_id());
 
-    if is_pubkey_banned(&ctx, &reserved_msg.sender_pubkey.clone().into()) {
+    if is_pubkey_banned(&ctx, &reserved_msg.sender_pubkey) {
         log!("Sender pubkey " [reserved_msg.sender_pubkey] " is banned");
         return;
     }
@@ -1483,7 +1484,7 @@ fn process_maker_connected(ctx: MmArc, connected: MakerConnected) {
 }
 
 fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
-    if is_pubkey_banned(&ctx, &taker_request.sender_pubkey.clone().into()) {
+    if is_pubkey_banned(&ctx, &taker_request.sender_pubkey) {
         log!("Sender pubkey " [taker_request.sender_pubkey] " is banned");
         return;
     }
@@ -2730,6 +2731,7 @@ mod new_protocol {
     use std::collections::HashSet;
 
     #[derive(Debug, Deserialize, Serialize)]
+    #[allow(clippy::large_enum_variant)]
     pub enum OrdermatchMessage {
         MakerOrderCreated(MakerOrderCreated),
         MakerOrderUpdated(MakerOrderUpdated),

@@ -1,16 +1,16 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount, get_locked_amount_by_other_swaps,
-            my_swap_file_path, my_swaps_dir, recv_swap_msg, swap_topic, AtomicSwap, LockedAmount,
-            MySwapInfo, RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings, SwapError, SwapMsg,
+            my_swap_file_path, my_swaps_dir, recv_swap_msg, swap_topic, AtomicSwap, LockedAmount, MySwapInfo,
+            RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings, SwapError, SwapMsg,
             SwapNegotiationData, SwapsContext, WAIT_CONFIRM_INTERVAL};
 
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use bitcrypto::dhash160;
 use coins::{FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
-use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_ms,
-             slurp, write, MM_VERSION};
+use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_ms, slurp, write,
+             MM_VERSION};
 use futures::{compat::Future01CompatExt, select, FutureExt};
 use futures01::Future;
 use parking_lot::Mutex as PaMutex;
@@ -323,7 +323,7 @@ impl MakerSwap {
         };
 
         let bytes = serialize(&maker_negotiation_data);
-        let _sending_f = send!(self.ctx, "negotiation", swap_topic(&self.uuid), bytes.take());
+        send!(self.ctx, "negotiation", swap_topic(&self.uuid), bytes.take());
 
         let data = match recv_swap_msg(self.ctx.clone(), "negotiation-reply", &self.uuid, 90).await {
             Ok(d) => d,
@@ -370,7 +370,7 @@ impl MakerSwap {
 
     async fn wait_taker_fee(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
         let negotiated = serialize(&true);
-        let _sending_f = send!(self.ctx, "negotiated", swap_topic(&self.uuid), negotiated.take());
+        send!(self.ctx, "negotiated", swap_topic(&self.uuid), negotiated.take());
 
         let payload = match recv_swap_msg(self.ctx.clone(), "taker-fee", &self.uuid, 180).await {
             Ok(d) => d,
@@ -515,7 +515,7 @@ impl MakerSwap {
 
     async fn wait_for_taker_payment(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
         let maker_payment_hex = self.r().maker_payment.as_ref().unwrap().tx_hex.0.clone();
-        let _sending_f = send!(self.ctx, "maker-payment", swap_topic(&self.uuid), maker_payment_hex);
+        send!(self.ctx, "maker-payment", swap_topic(&self.uuid), maker_payment_hex);
 
         let maker_payment_wait_confirm = self.r().data.started_at + (self.r().data.lock_duration * 2) / 5;
         let f = self.maker_coin.wait_for_confirmations(

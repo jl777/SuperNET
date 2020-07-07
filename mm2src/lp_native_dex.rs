@@ -21,7 +21,7 @@
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
-use coins::{register_balance_update_handler};
+use coins::register_balance_update_handler;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures01::sync::oneshot::Sender;
@@ -46,7 +46,7 @@ use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
 use crate::mm2::gossipsub::add_gossipsub_event_handler;
-use crate::mm2::lp_network::{start_client_p2p_loop};
+use crate::mm2::lp_network::start_client_p2p_loop;
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler, OrdermatchP2PConnector};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts, SwapsGossipsubConnector};
@@ -58,6 +58,7 @@ use crate::mm2::rpc::spawn_rpc;
 /// 2) It allows the command handler to run asynchronously and use more time wihtout slowing down the queue loop;  
 /// 3) By being present in the `dispatcher` table the commands are easier to find and to be accounted for;  
 /// 4) No need for `unsafe`, `CJSON` and `*mut c_char` there.
+#[allow(dead_code)]
 pub fn lp_command_process(ctx: MmArc, json: Json) {
     if !json["result"].is_null() || !json["error"].is_null() {
         return;
@@ -153,7 +154,7 @@ pub async fn lp_initpeers(ctx: &MmArc, netid: u16, seednodes: Option<Vec<String>
     }
     *try_s!(ctx.seeds.lock()) = seed_ips.clone();
     if !i_am_seed {
-        if seed_ips.len() == 0 {
+        if seed_ips.is_empty() {
             return ERR!("At least 1 IP must be provided");
         }
         // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();

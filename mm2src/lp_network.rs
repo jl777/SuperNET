@@ -36,6 +36,7 @@ use std::thread;
 use std::time::Duration;
 
 /// Result of `fn dispatcher`.
+#[allow(dead_code)]
 pub enum DispatcherRes {
     /// `fn dispatcher` has found a Rust handler for the RPC "method".
     Match(HyRes),
@@ -51,6 +52,7 @@ struct CommandForNn {
 }
 
 /// Sends a reply to the `cmd.response_sock` peer.
+#[allow(dead_code)]
 fn reply_to_peer(cmd: QueuedCommand, mut reply: Vec<u8>) -> Result<(), String> {
     if cmd.response_sock >= 0 {
         if cmd.queue_id != 0 {
@@ -70,6 +72,7 @@ fn reply_to_peer(cmd: QueuedCommand, mut reply: Vec<u8>) -> Result<(), String> {
 }
 
 /// Run the RPC handler and send it's reply to a peer.
+#[allow(dead_code)]
 fn rpc_reply_to_peer(handler: HyRes, cmd: QueuedCommand) {
     let f = handler.then(move |r| -> Box<dyn Future<Item = (), Error = ()> + Send> {
         let res = match r {
@@ -91,6 +94,7 @@ fn rpc_reply_to_peer(handler: HyRes, cmd: QueuedCommand) {
 
 /// The loop processing seednode activity as message relayer/rebroadcaster
 /// Non-blocking mode should be enabled on listener for this to work
+#[allow(dead_code)]
 pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
     let mut clients = vec![];
     loop {
@@ -172,6 +176,7 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
 }
 
 #[cfg(feature = "native")]
+#[allow(dead_code)]
 pub async fn start_relayer_node_loop(
     ctx: &MmArc,
     myipaddr: IpAddr,
@@ -226,6 +231,7 @@ pub async fn start_seednode_loopʰ(req: Bytes) -> Result<Vec<u8>, String> {
     Ok(Vec::new())
 }
 
+#[allow(dead_code)]
 struct SeedConnection {
     stream: BufReader<TcpStream>,
     addr: String,
@@ -379,6 +385,7 @@ pub async fn start_client_p2p_loopʰ(req: Bytes) -> Result<Vec<u8>, String> {
 
 /// The loop processing client node activity
 #[cfg(feature = "native")]
+#[allow(dead_code)]
 fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
     let mut seed_connections: Vec<SeedConnection> = vec![];
     // ip and last connection attempt timestamp

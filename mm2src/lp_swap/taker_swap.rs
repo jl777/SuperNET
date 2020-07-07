@@ -7,8 +7,8 @@ use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amo
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfindᵃ, FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
-use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_ms,
-             slurp, write, MM_VERSION};
+use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_ms, slurp, write,
+             MM_VERSION};
 use futures::{compat::Future01CompatExt, select, FutureExt};
 use futures01::Future;
 use http::Response;
@@ -712,7 +712,7 @@ impl TakerSwap {
             persistent_pubkey: self.my_persistent_pub.clone(),
         };
         let bytes = serialize(&taker_data);
-        let _sending_f = send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes.take());
+        send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes.take());
         let data = match recv_swap_msg(self.ctx.clone(), "negotiated", &self.uuid, 90).await {
             Ok(d) => d,
             Err(e) => {
@@ -797,7 +797,7 @@ impl TakerSwap {
 
     async fn wait_for_maker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.0.clone();
-        let _sending_f = send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex);
+        send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex);
 
         let payload = match recv_swap_msg(self.ctx.clone(), "maker-payment", &self.uuid, 180).await {
             Ok(p) => p,
@@ -952,7 +952,7 @@ impl TakerSwap {
 
     async fn wait_for_taker_payment_spend(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_payment.as_ref().unwrap().tx_hex.0.clone();
-        let sending_f = send!(self.ctx, "taker-payment", swap_topic(&self.uuid), tx_hex);
+        send!(self.ctx, "taker-payment", swap_topic(&self.uuid), tx_hex);
 
         let wait_duration = (self.r().data.lock_duration * 4) / 5;
         let wait_taker_payment = self.r().data.started_at + wait_duration;
@@ -994,7 +994,6 @@ impl TakerSwap {
                 ]))
             },
         };
-        drop(sending_f);
         let hash = tx.tx_hash();
         log!({"Taker payment spend tx {:02x}", hash});
         // we can attempt to get the details in loop here as transaction was already sent and
