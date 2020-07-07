@@ -114,7 +114,6 @@ impl From<Secp256k1Pubkey> for PublicKey {
 
 #[test]
 fn signed_message_serde() {
-    use rand::RngCore;
     let mut rng = rand::thread_rng();
     let secret = SecretKey::random(&mut rng);
     let initial_msg = vec![0u8; 32];

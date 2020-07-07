@@ -2885,34 +2885,4 @@ mod new_protocol {
         pub taker_order_uuid: CompactUuid,
         pub maker_order_uuid: CompactUuid,
     }
-
-    #[test]
-    fn check_msg_decode() {
-        let message = OrdermatchMessage::TakerRequest(TakerRequest {
-            base: "ETH".into(),
-            rel: "JST".into(),
-            base_amount: 1.into(),
-            rel_amount: 1.into(),
-            action: TakerAction::Buy,
-            uuid: "a38bab1b-a0c5-4121-9134-c7113abb96d7".parse().unwrap(),
-            match_by: MatchBy::Any,
-            conf_settings: OrderConfirmationsSettings {
-                base_confs: 1,
-                base_nota: false,
-                rel_confs: 1,
-                rel_nota: false,
-            },
-        });
-
-        let secret = [1; 32];
-        let encoded = encode_and_sign(&message, &secret).unwrap();
-        let decoded = decode_signed::<OrdermatchMessage>(&encoded).unwrap();
-        println!("{:?}", decoded);
-        /*
-        let encoded = [147, 129, 0, 196, 33, 2, 3, 29, 66, 86, 196, 188, 159, 153, 172, 136, 191, 61, 186, 33, 119, 49, 50, 40, 31, 101, 249, 191, 35, 165, 153, 40, 188, 224, 137, 97, 226, 243, 196, 64, 58, 200, 215, 254, 176, 224, 209, 13, 91, 184, 192, 250, 193, 0, 28, 153, 192, 158, 22, 234, 157, 60, 134, 158, 242, 148, 14, 20, 172, 145, 52, 8, 106, 69, 80, 243, 242, 253, 49, 62, 169, 49, 74, 250, 242, 52, 51, 58, 134, 161, 9, 70, 69, 211, 140, 76, 147, 232, 247, 49, 200, 29, 74, 219, 196, 80, 129, 4, 152, 163, 69, 84, 72, 163, 74, 83, 84, 146, 146, 1, 145, 1, 146, 1, 145, 10, 146, 146, 1, 145, 1, 146, 1, 145, 5, 129, 0, 192, 217, 36, 101, 102, 97, 49, 50, 48, 56, 57, 45, 51, 98, 100, 55, 45, 52, 56, 56, 57, 45, 97, 57, 101, 99, 45, 48, 56, 102, 50, 102, 100, 100, 53, 50, 100, 51, 50, 145, 163, 65, 110, 121, 148, 1, 194, 1, 194];
-        let decoded = decode_signed::<OrdermatchMessage>(&encoded).unwrap();
-        println!("{:?}", decoded);
-
-        */
-    }
 }
