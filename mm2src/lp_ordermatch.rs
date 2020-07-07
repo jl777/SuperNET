@@ -218,7 +218,6 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
         };
 
         spawn(async move {
-            ctx.subscribe_to_p2p_topic(topic.clone()).await.unwrap();
             let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
             let to_broadcast = new_protocol::OrdermatchMessage::MakerOrderCreated(message.clone());
             let encoded_msg = encode_and_sign(&to_broadcast, &*key_pair.private().secret).unwrap();
@@ -227,6 +226,7 @@ impl OrdermatchEventHandler for OrdermatchP2PConnector {
                 (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
             let uuid = price_ping_req.uuid.unwrap();
             insert_or_update_order(&ctx, price_ping_req, uuid);
+            ctx.subscribe_to_p2p_topic(topic.clone()).await.unwrap();
             ctx.broadcast_p2p_msg(topic, encoded_msg);
         });
     }

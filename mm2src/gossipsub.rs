@@ -186,7 +186,9 @@ pub fn relayer_node(
                         match cmd {
                             P2PCommand::Subscribe(topic, tx) => {
                                 swarm.subscribe(Topic::new(topic.clone()));
-                                subscription_tx.insert(topic, tx);
+                                subscription_tx.entry(topic)
+                                    .or_insert(vec![])
+                                    .push(tx);
                             },
                             P2PCommand::Publish(msgs) => {
                                 for (topic, msg) in msgs {
@@ -210,13 +212,15 @@ pub fn relayer_node(
                 },
                 tick = tick_fut => {
                     drop(gossip_event_fut);
-                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| {
+                    subscription_tx = subscription_tx.drain().filter_map(|(topic, senders)| {
                         let topic_hash = TopicHash::from_raw(topic.clone());
                         if swarm.get_mesh_peers(&topic_hash).len() > 0 || swarm.get_num_peers() == 0 || swarm.get_topic_peers(&topic_hash).len() == 0 {
-                            tx.send(()).unwrap();
+                            for tx in senders {
+                                tx.send(()).unwrap();
+                            }
                             None
                         } else {
-                            Some((topic, tx))
+                            Some((topic, senders))
                         }
                     }).collect();
                 },
@@ -314,7 +318,9 @@ pub fn clientnode(
                         match cmd {
                             P2PCommand::Subscribe(topic, tx) => {
                                 swarm.subscribe(Topic::new(topic.clone()));
-                                subscription_tx.insert(topic, tx);
+                                subscription_tx.entry(topic)
+                                    .or_insert(vec![])
+                                    .push(tx);
                             },
                             P2PCommand::Publish(msgs) => {
                                 for (topic, msg) in msgs {
@@ -338,13 +344,15 @@ pub fn clientnode(
                 },
                 tick = tick_fut => {
                     drop(gossip_event_fut);
-                    subscription_tx = subscription_tx.drain().filter_map(|(topic, tx)| {
+                    subscription_tx = subscription_tx.drain().filter_map(|(topic, senders)| {
                         let topic_hash = TopicHash::from_raw(topic.clone());
                         if swarm.get_mesh_peers(&topic_hash).len() > 0 || swarm.get_num_peers() == 0 {
-                            tx.send(()).unwrap();
+                            for tx in senders {
+                                tx.send(()).unwrap();
+                            }
                             None
                         } else {
-                            Some((topic, tx))
+                            Some((topic, senders))
                         }
                     }).collect();
                 },
