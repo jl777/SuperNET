@@ -116,37 +116,34 @@ fn delete_order(ctx: &MmArc, uuid: Uuid) {
 
 pub async fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
-        Ok(s) => {
-            let (pubkey, _sig, message) = s.into();
-            match message {
-                new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
-                    let req: PricePingRequest = (
-                        created_msg,
-                        msg.to_vec(),
-                        hex::encode(pubkey.to_bytes().as_slice()),
-                        from_peer,
-                    )
-                        .into();
-                    let uuid = req.uuid.unwrap();
-                    insert_or_update_order(&ctx, req, uuid);
-                },
-                new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
-                    process_taker_request(ctx, taker_request.into());
-                },
-                new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
-                    process_maker_reserved(ctx, maker_reserved.into());
-                },
-                new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
-                    process_taker_connect(ctx, taker_connect.into());
-                },
-                new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
-                    process_maker_connected(ctx, maker_connected.into());
-                },
-                new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
-                    delete_order(&ctx, cancelled_msg.uuid.into());
-                },
-                _ => unimplemented!(),
-            }
+        Ok((message, _sig, pubkey)) => match message {
+            new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
+                let req: PricePingRequest = (
+                    created_msg,
+                    msg.to_vec(),
+                    hex::encode(pubkey.to_bytes().as_slice()),
+                    from_peer,
+                )
+                    .into();
+                let uuid = req.uuid.unwrap();
+                insert_or_update_order(&ctx, req, uuid);
+            },
+            new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
+                process_taker_request(ctx, taker_request.into());
+            },
+            new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
+                process_maker_reserved(ctx, maker_reserved.into());
+            },
+            new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
+                process_taker_connect(ctx, taker_connect.into());
+            },
+            new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
+                process_maker_connected(ctx, maker_connected.into());
+            },
+            new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
+                delete_order(&ctx, cancelled_msg.uuid.into());
+            },
+            _ => unimplemented!(),
         },
         Err(e) => println!("Error {} while decoding signed message", e),
     };
@@ -1113,10 +1110,8 @@ pub trait OrdermatchEventHandler {
 
 fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &MmArc, topic: String, msg: T) {
     let msg = msg.into();
-    println!("Broadcasting message {:?}", msg);
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let encoded_msg = encode_and_sign(&msg, &*key_pair.private().secret).unwrap();
-    println!("Broadcasting message {:?}", encoded_msg);
     ctx.broadcast_p2p_msg(topic, encoded_msg);
 }
 
@@ -2727,7 +2722,6 @@ mod new_protocol {
     use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
     use common::mm_number::MmNumber;
     use compact_uuid::CompactUuid;
-    use rpc::v1::types::H256 as H256Json;
     use std::collections::HashSet;
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -2749,7 +2743,7 @@ mod new_protocol {
     pub enum MatchBy {
         Any,
         Orders(HashSet<CompactUuid>),
-        Pubkeys(HashSet<H256Json>),
+        Pubkeys(HashSet<[u8; 32]>),
     }
 
     impl From<SuperMatchBy> for MatchBy {
@@ -2757,7 +2751,9 @@ mod new_protocol {
             match match_by {
                 SuperMatchBy::Any => MatchBy::Any,
                 SuperMatchBy::Orders(uuids) => MatchBy::Orders(uuids.into_iter().map(|uuid| uuid.into()).collect()),
-                SuperMatchBy::Pubkeys(pubkeys) => MatchBy::Pubkeys(pubkeys),
+                SuperMatchBy::Pubkeys(pubkeys) => {
+                    MatchBy::Pubkeys(pubkeys.into_iter().map(|pubkey| pubkey.0).collect())
+                },
             }
         }
     }
@@ -2767,7 +2763,9 @@ mod new_protocol {
             match self {
                 MatchBy::Any => SuperMatchBy::Any,
                 MatchBy::Orders(uuids) => SuperMatchBy::Orders(uuids.into_iter().map(|uuid| uuid.into()).collect()),
-                MatchBy::Pubkeys(pubkeys) => SuperMatchBy::Pubkeys(pubkeys),
+                MatchBy::Pubkeys(pubkeys) => {
+                    SuperMatchBy::Pubkeys(pubkeys.into_iter().map(|pubkey| pubkey.into()).collect())
+                },
             }
         }
     }

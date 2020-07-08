@@ -22,13 +22,6 @@ struct SignedMessageSerdeHelper<'a> {
     payload: &'a [u8],
 }
 
-#[derive(Debug)]
-pub struct SignedMessage<T> {
-    pubkey: PublicKey,
-    signature: Signature,
-    payload: T,
-}
-
 pub fn encode_and_sign<T: Serialize>(message: &T, secret: &[u8; 32]) -> Result<Vec<u8>, rmp_serde::encode::Error> {
     let secret = SecretKey::parse(secret).unwrap();
     let encoded = encode_message(message)?;
@@ -46,7 +39,7 @@ pub fn encode_and_sign<T: Serialize>(message: &T, secret: &[u8; 32]) -> Result<V
 
 pub fn decode_signed<'de, T: de::Deserialize<'de>>(
     encoded: &'de [u8],
-) -> Result<SignedMessage<T>, rmp_serde::decode::Error> {
+) -> Result<(T, Signature, PublicKey), rmp_serde::decode::Error> {
     let helper: SignedMessageSerdeHelper = decode_message(encoded)?;
     let signature = Signature::parse_slice(helper.signature)
         .map_err(|e| rmp_serde::decode::Error::Syntax(format!("Failed to parse signature {}", e)))?;
@@ -60,15 +53,7 @@ pub fn decode_signed<'de, T: de::Deserialize<'de>>(
     }
 
     let payload: T = decode_message(helper.payload)?;
-    Ok(SignedMessage {
-        pubkey: helper.pubkey,
-        signature,
-        payload,
-    })
-}
-
-impl<T> Into<(PublicKey, Signature, T)> for SignedMessage<T> {
-    fn into(self) -> (PublicKey, Signature, T) { (self.pubkey, self.signature, self.payload) }
+    Ok((payload, signature, helper.pubkey))
 }
 
 fn sha256(input: impl AsRef<[u8]>) -> [u8; 32] { Sha256::new().chain(input).finalize().into() }
@@ -119,6 +104,6 @@ fn signed_message_serde() {
     let initial_msg = vec![0u8; 32];
     let signed_encoded = encode_and_sign(&initial_msg, &secret.serialize()).unwrap();
 
-    let decoded = decode_signed::<Vec<u8>>(&signed_encoded).unwrap();
-    assert_eq!(decoded.payload, initial_msg);
+    let (decoded, ..) = decode_signed::<Vec<u8>>(&signed_encoded).unwrap();
+    assert_eq!(decoded, initial_msg);
 }

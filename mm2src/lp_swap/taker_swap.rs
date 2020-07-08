@@ -3,7 +3,8 @@
 use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amount, get_locked_amount_by_other_swaps,
             my_swap_file_path, my_swaps_dir, recv_swap_msg, swap_topic, AtomicSwap, LockedAmount, MySwapInfo,
             RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings, SwapError, SwapMsg,
-            SwapNegotiationData, SwapsContext, WAIT_CONFIRM_INTERVAL};
+            SwapsContext, WAIT_CONFIRM_INTERVAL};
+use crate::mm2::lp_swap::{broadcast_message, NegotiationDataMsg};
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfindᵃ, FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
@@ -16,7 +17,6 @@ use parking_lot::Mutex as PaMutex;
 use primitives::hash::H264;
 use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use serde_json::{self as json, Value as Json};
-use serialization::{deserialize, serialize};
 use std::path::PathBuf;
 use std::sync::{atomic::Ordering, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -669,15 +669,7 @@ impl TakerSwap {
     }
 
     async fn negotiate(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let data = match recv_swap_msg(self.ctx.clone(), "negotiation", &self.uuid, 90).await {
-            Ok(d) => d,
-            Err(e) => {
-                return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
-                    ERRL!("{:?}", e).into(),
-                )]))
-            },
-        };
-        let maker_data: SwapNegotiationData = match deserialize(data.as_slice()) {
+        let maker_data = match recv_swap_msg(self.ctx.clone(), |store| store.negotiation.take(), &self.uuid, 90).await {
             Ok(d) => d,
             Err(e) => {
                 return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
@@ -705,24 +697,15 @@ impl TakerSwap {
             )]));
         }
 
-        let taker_data = SwapNegotiationData {
+        let taker_data = SwapMsg::NegotiationReply(NegotiationDataMsg {
             started_at: self.r().data.started_at,
-            secret_hash: maker_data.secret_hash.clone(),
+            secret_hash: maker_data.secret_hash,
             payment_locktime: self.r().data.taker_payment_lock,
-            persistent_pubkey: self.my_persistent_pub.clone(),
-        };
-        let bytes = serialize(&taker_data);
-        send!(self.ctx, "negotiation-reply", swap_topic(&self.uuid), bytes.take());
-        let data = match recv_swap_msg(self.ctx.clone(), "negotiated", &self.uuid, 90).await {
+            persistent_pubkey: self.my_persistent_pub.to_vec(),
+        });
+        broadcast_message(&self.ctx, swap_topic(&self.uuid), taker_data);
+        let negotiated = match recv_swap_msg(self.ctx.clone(), |store| store.negotiated.take(), &self.uuid, 90).await {
             Ok(d) => d,
-            Err(e) => {
-                return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
-                    ERRL!("{:?}", e).into(),
-                )]))
-            },
-        };
-        let negotiated: bool = match deserialize(data.as_slice()) {
-            Ok(n) => n,
             Err(e) => {
                 return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
                     ERRL!("{:?}", e).into(),
@@ -739,7 +722,7 @@ impl TakerSwap {
         Ok((Some(TakerSwapCommand::SendTakerFee), vec![TakerSwapEvent::Negotiated(
             MakerNegotiationData {
                 maker_payment_locktime: maker_data.payment_locktime,
-                maker_pubkey: maker_data.persistent_pubkey.into(),
+                maker_pubkey: maker_data.persistent_pubkey.as_slice().into(),
                 secret_hash: maker_data.secret_hash.into(),
             },
         )]))
@@ -797,9 +780,10 @@ impl TakerSwap {
 
     async fn wait_for_maker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.0.clone();
-        send!(self.ctx, "taker-fee", swap_topic(&self.uuid), tx_hex);
+        let msg = SwapMsg::TakerFee(tx_hex);
+        broadcast_message(&self.ctx, swap_topic(&self.uuid), msg);
 
-        let payload = match recv_swap_msg(self.ctx.clone(), "maker-payment", &self.uuid, 180).await {
+        let payload = match recv_swap_msg(self.ctx.clone(), |store| store.maker_payment.take(), &self.uuid, 180).await {
             Ok(p) => p,
             Err(e) => {
                 return Ok((Some(TakerSwapCommand::Finish), vec![
@@ -952,7 +936,8 @@ impl TakerSwap {
 
     async fn wait_for_taker_payment_spend(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_payment.as_ref().unwrap().tx_hex.0.clone();
-        send!(self.ctx, "taker-payment", swap_topic(&self.uuid), tx_hex);
+        let msg = SwapMsg::TakerPayment(tx_hex);
+        broadcast_message(&self.ctx, swap_topic(&self.uuid), msg);
 
         let wait_duration = (self.r().data.lock_duration * 4) / 5;
         let wait_taker_payment = self.r().data.started_at + wait_duration;

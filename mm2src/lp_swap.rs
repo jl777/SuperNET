@@ -67,10 +67,10 @@ use common::{block_on,
              mm_number::MmNumber,
              now_ms, read_dir, rpc_response, slurp, write, HyRes};
 use http::Response;
+use mm2_libp2p::{decode_signed, encode_and_sign};
 use primitives::hash::{H160, H256, H264};
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use serde_json::{self as json, Value as Json};
-use serialization::{deserialize, Deserializable, Reader, Serializable, Stream};
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -81,48 +81,30 @@ use uuid::Uuid;
 
 pub const SWAP_PREFIX: TopicPrefix = "swap";
 
-pub struct SwapMsg {
-    subject: &'static str,
-    data: Vec<u8>,
+#[derive(Debug, Deserialize, Serialize)]
+pub enum SwapMsg {
+    Negotiation(NegotiationDataMsg),
+    NegotiationReply(NegotiationDataMsg),
+    Negotiated(bool),
+    TakerFee(Vec<u8>),
+    MakerPayment(Vec<u8>),
+    TakerPayment(Vec<u8>),
 }
 
-impl Serializable for SwapMsg {
-    fn serialize(&self, s: &mut Stream) {
-        match self.subject {
-            "negotiation" => s.append(&0u8),
-            "negotiation-reply" => s.append(&1u8),
-            "negotiated" => s.append(&2u8),
-            "taker-fee" => s.append(&3u8),
-            "maker-payment" => s.append(&4u8),
-            "taker-payment" => s.append(&5u8),
-            _ => panic!("Unknown subject {}", self.subject),
-        };
-        s.append(&(self.data.len() as u32));
-        s.append_slice(&self.data);
-    }
+#[derive(Debug, Default)]
+pub struct SwapMsgStore {
+    negotiation: Option<NegotiationDataMsg>,
+    negotiation_reply: Option<NegotiationDataMsg>,
+    negotiated: Option<bool>,
+    taker_fee: Option<Vec<u8>>,
+    maker_payment: Option<Vec<u8>>,
+    taker_payment: Option<Vec<u8>>,
 }
 
-impl Deserializable for SwapMsg {
-    fn deserialize<T>(reader: &mut Reader<T>) -> Result<Self, serialization::Error>
-    where
-        Self: Sized,
-        T: std::io::Read,
-    {
-        let tag: u8 = reader.read()?;
-        let subject = match tag {
-            0 => "negotiation",
-            1 => "negotiation-reply",
-            2 => "negotiated",
-            3 => "taker-fee",
-            4 => "maker-payment",
-            5 => "taker-payment",
-            _ => return Err(serialization::Error::Custom(ERRL!("Unsupported tag {}", tag))),
-        };
-        let len: u32 = reader.read()?;
-        let mut data = vec![0; len as usize];
-        reader.read_slice(&mut data)?;
-        Ok(SwapMsg { subject, data })
-    }
+pub fn broadcast_message(ctx: &MmArc, topic: String, msg: SwapMsg) {
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let encoded_msg = encode_and_sign(&msg, &*key_pair.private().secret).unwrap();
+    ctx.broadcast_p2p_msg(topic, encoded_msg);
 }
 
 pub struct SwapsGossipsubConnector {
@@ -152,7 +134,7 @@ impl GossipsubEventHandler for SwapsGossipsubConnector {
 }
 
 pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
-    let msg: SwapMsg = match deserialize(msg) {
+    let msg = match decode_signed::<SwapMsg>(msg) {
         Ok(m) => m,
         Err(e) => {
             log!("Swap msg deserialize error "[e]);
@@ -161,13 +143,20 @@ pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     };
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
-    msgs.entry(topic.to_string())
-        .or_insert_with(HashMap::new)
-        .insert(msg.subject, msg.data);
+    let msg_store = msgs.entry(topic.to_string()).or_insert_with(Default::default);
+    match msg.0 {
+        SwapMsg::Negotiation(data) => msg_store.negotiation = Some(data),
+        SwapMsg::NegotiationReply(data) => msg_store.negotiation_reply = Some(data),
+        SwapMsg::Negotiated(negotiated) => msg_store.negotiated = Some(negotiated),
+        SwapMsg::TakerFee(taker_fee) => msg_store.taker_fee = Some(taker_fee),
+        SwapMsg::MakerPayment(maker_payment) => msg_store.maker_payment = Some(maker_payment),
+        SwapMsg::TakerPayment(taker_payment) => msg_store.taker_payment = Some(taker_payment),
+    }
 }
 
 pub fn swap_topic(uuid: &str) -> String { pub_sub_topic(SWAP_PREFIX, uuid) }
 
+/*
 // NB: Using a macro instead of a function in order to preserve the line numbers in the log.
 macro_rules! send {
     ($ctx: expr, $subj: expr, $topic: expr, $payload: expr) => {{
@@ -181,8 +170,14 @@ macro_rules! send {
         $ctx.broadcast_p2p_msg($topic, serialize(&msg).take());
     }};
 }
+*/
 
-async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u64) -> Result<Vec<u8>, String> {
+async fn recv_swap_msg<T>(
+    ctx: MmArc,
+    mut getter: impl FnMut(&mut SwapMsgStore) -> Option<T>,
+    uuid: &str,
+    timeout: u64,
+) -> Result<T, String> {
     let started = now_ms() / 1000;
     let timeout = BASIC_COMM_TIMEOUT + timeout;
     let wait_until = started + timeout;
@@ -190,8 +185,8 @@ async fn recv_swap_msg(ctx: MmArc, subject: &'static str, uuid: &str, timeout: u
         Timer::sleep(1.).await;
         let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
         let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
-        if let Some(swap_msgs) = msgs.get_mut(uuid) {
-            if let Some(msg) = swap_msgs.remove(subject) {
+        if let Some(msg_store) = msgs.get_mut(uuid) {
+            if let Some(msg) = getter(msg_store) {
                 return Ok(msg);
             }
         }
@@ -323,7 +318,7 @@ struct SwapsContext {
     /// So when stop was invoked the swaps could stay running on shared executors causing
     /// Very unpleasant consequences
     shutdown_rx: async_std_sync::Receiver<()>,
-    swap_msgs: Mutex<HashMap<String, HashMap<&'static str, Vec<u8>>>>,
+    swap_msgs: Mutex<HashMap<String, SwapMsgStore>>,
 }
 
 impl SwapsContext {
@@ -520,6 +515,14 @@ pub fn dex_fee_amount(base: &str, rel: &str, trade_amount: &MmNumber) -> MmNumbe
     } else {
         fee_amount
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NegotiationDataMsg {
+    started_at: u64,
+    payment_locktime: u64,
+    secret_hash: [u8; 20],
+    persistent_pubkey: Vec<u8>,
 }
 
 /// Data to be exchanged and validated on swap start, the replacement of LP_pubkeys_data, LP_choosei_data, etc.
