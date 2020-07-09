@@ -21,8 +21,8 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use bytes::Bytes;
-use coins::{get_enabled_coins, get_trade_fee, my_tx_history, send_raw_transaction, set_required_confirmations,
-            set_requires_notarization, show_priv_key, withdraw};
+use coins::{convert_address, get_enabled_coins, get_trade_fee, my_tx_history, send_raw_transaction,
+            set_required_confirmations, set_requires_notarization, show_priv_key, validate_address, withdraw};
 #[cfg(feature = "native")]
 use common::for_tests::common_wait_for_log_re;
 use common::lift_body::LiftBody;
@@ -216,6 +216,7 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
         "cancel_all_orders" => cancel_all_orders(ctx, req),
         "cancel_order" => cancel_order(ctx, req),
         "coins_needed_for_kick_start" => hyres(coins_needed_for_kick_start(ctx)),
+        "convertaddress" => hyres(convert_address(ctx, req)),
         "disable_coin" => disable_coin(ctx, req),
         "electrum" => hyres(electrum(ctx, req)),
         "enable" => hyres(enable(ctx, req)),
@@ -266,6 +267,7 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
         "stats_swap_status" => stats_swap_status(ctx, req),
         "stop" => stop(ctx),
         "unban_pubkeys" => hyres(unban_pubkeys(ctx, req)),
+        "validateaddress" => hyres(validate_address(ctx, req)),
         "version" => version(),
         "withdraw" => hyres(withdraw(ctx, req)),
         _ => return DispatcherRes::NoMatch(req),

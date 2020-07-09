@@ -69,7 +69,7 @@ use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl
                         NativeClient, UnspentInfo, UtxoRpcClientEnum};
 use super::{CoinTransportMetrics, CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin,
             RpcClientType, RpcTransportEventHandler, RpcTransportEventHandlerShared, SwapOps, TradeFee, Transaction,
-            TransactionDetails, TransactionEnum, TransactionFut, WithdrawFee, WithdrawRequest};
+            TransactionDetails, TransactionEnum, TransactionFut, ValidateAddressResult, WithdrawFee, WithdrawRequest};
 use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps};
 
 #[cfg(test)] pub mod utxo_tests;
@@ -165,7 +165,7 @@ enum FeePolicy {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "format")]
-enum UtxoAddressFormat {
+pub enum UtxoAddressFormat {
     /// Standard UTXO address format.
     /// In Bitcoin Cash context the standard format also known as 'legacy'.
     #[serde(rename = "standard")]
@@ -369,6 +369,51 @@ impl UtxoCoinImpl {
             UtxoAddressFormat::CashAddress { network } => address
                 .to_cashaddress(&network, self.pub_addr_prefix, self.p2sh_addr_prefix)
                 .and_then(|cashaddress| cashaddress.encode()),
+        }
+    }
+
+    /// Try to convert either standard address or cashaddress.
+    fn try_address_from_str(&self, from: &str) -> Result<Address, String> {
+        let standard_err = match Address::from_str(from) {
+            Ok(a) => return Ok(a),
+            Err(e) => e,
+        };
+
+        let cashaddress_err =
+            match Address::from_cashaddress(from, self.checksum_type, self.pub_addr_prefix, self.p2sh_addr_prefix) {
+                Ok(a) => return Ok(a),
+                Err(e) => e,
+            };
+
+        ERR!(
+            "error on parse standard address: {:?}, error on parse cashaddress: {:?}",
+            standard_err,
+            cashaddress_err,
+        )
+    }
+
+    /// Try to parse address from string using specified format
+    /// and if it failed inform user that he used a wrong format.
+    pub fn address_from_str(&self, address: &str) -> Result<Address, String> {
+        match &self.address_format {
+            UtxoAddressFormat::Standard => Address::from_str(address)
+                .or_else(|e| match Address::from_cashaddress(
+                    &address,
+                    self.checksum_type,
+                    self.pub_addr_prefix,
+                    self.p2sh_addr_prefix) {
+                    Ok(_) => ERR!("Legacy address format activated for {}, but cashaddress format used instead. Try to call 'convertaddress'", self.ticker),
+                    Err(_) => ERR!("{}", e),
+                }),
+            UtxoAddressFormat::CashAddress { .. } => Address::from_cashaddress(
+                &address,
+                self.checksum_type,
+                self.pub_addr_prefix,
+                self.p2sh_addr_prefix)
+                .or_else(|e| match Address::from_str(&address) {
+                    Ok(_) => ERR!("Cashaddress address format activated for {}, but legacy format used instead. Try to call 'convertaddress'", self.ticker),
+                    Err(_) => ERR!("{}", e),
+                })
         }
     }
 
@@ -1569,15 +1614,7 @@ impl MarketCoinOps for UtxoCoin {
 }
 
 async fn withdraw_impl(coin: UtxoCoin, req: WithdrawRequest) -> Result<TransactionDetails, String> {
-    let to = match &coin.address_format {
-        UtxoAddressFormat::Standard => try_s!(Address::from_str(&req.to)),
-        UtxoAddressFormat::CashAddress { .. } => try_s!(Address::from_cashaddress(
-            &req.to,
-            coin.checksum_type,
-            coin.pub_addr_prefix,
-            coin.p2sh_addr_prefix
-        )),
-    };
+    let to = try_s!(coin.address_from_str(&req.to));
     if to.checksum_type != coin.checksum_type {
         return ERR!(
             "Address {} has invalid checksum type, it must be {:?}",
@@ -1672,6 +1709,20 @@ impl MmCoin for UtxoCoin {
     }
 
     fn decimals(&self) -> u8 { self.decimals }
+
+    fn convert_to_address(&self, from: &str, to_address_format: Json) -> Result<String, String> {
+        let to_address_format: UtxoAddressFormat =
+            json::from_value(to_address_format).map_err(|e| ERRL!("Error on parse UTXO address format {:?}", e))?;
+        let from_address = try_s!(self.try_address_from_str(from));
+        match to_address_format {
+            UtxoAddressFormat::Standard => Ok(from_address.to_string()),
+            UtxoAddressFormat::CashAddress { network } => Ok(try_s!(from_address
+                .to_cashaddress(&network, self.pub_addr_prefix, self.p2sh_addr_prefix)
+                .and_then(|cashaddress| cashaddress.encode()))),
+        }
+    }
+
+    fn validate_address(&self, address: &str) -> ValidateAddressResult { validate_address_impl!(self, address) }
 
     #[allow(clippy::cognitive_complexity)]
     fn process_history_loop(&self, ctx: MmArc) {
