@@ -47,7 +47,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use crate::mm2::{gossipsub::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR},
+use crate::mm2::{gossipsub_mod::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR},
                  lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,

@@ -183,7 +183,7 @@ pub async fn start_relayer_node_loop(
     mypubport: u16,
     other_relayers: Option<Vec<String>>,
 ) -> Result<(), String> {
-    use crate::mm2::gossipsub::relayer_node;
+    use crate::mm2::gossipsub_mod::relayer_node;
     log! ("i_am_seed at " (myipaddr) ":" (mypubport));
     /*
     let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
@@ -241,7 +241,7 @@ struct SeedConnection {
 
 #[cfg(feature = "native")]
 pub async fn start_client_p2p_loop(ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
-    use crate::mm2::gossipsub::clientnode;
+    use crate::mm2::gossipsub_mod::clientnode;
     let (tx, peer_id) = clientnode(ctx.clone(), relayers, port);
     try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
     try_s!(ctx.peer_id.pin(peer_id));

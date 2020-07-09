@@ -57,7 +57,7 @@
 #![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
-use crate::mm2::gossipsub::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR};
+use crate::mm2::gossipsub_mod::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR};
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TradeFee, TransactionEnum};

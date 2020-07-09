@@ -2,9 +2,9 @@ use async_std::future::timeout;
 use common::{executor::spawn,
              mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand}};
 use futures::{channel::mpsc, lock::Mutex as AsyncMutex, prelude::*, select, FutureExt};
-use libp2p::gossipsub::protocol::MessageId;
-use libp2p::gossipsub::{GossipsubEvent, GossipsubMessage, Topic, TopicHash};
-use libp2p::{gossipsub, identity, PeerId};
+use libp2p::{identity, PeerId};
+use libp2p_gossipsub::protocol::MessageId;
+use libp2p_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, Topic, TopicHash};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,
@@ -118,14 +118,14 @@ pub fn relayer_node(
         };
 
         // set custom gossipsub
-        let gossipsub_config = gossipsub::GossipsubConfigBuilder::new()
+        let gossipsub_config = GossipsubConfigBuilder::new()
             .message_id_fn(message_id_fn) // content-address messages. No two messages of the
             // same content will be propagated.
             .mesh_n(5)
             .mesh_n_high(5)
             .build();
         // build a gossipsub network behaviour
-        let gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
+        let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
         libp2p::Swarm::new(transport, gossipsub, local_peer_id.clone())
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
@@ -263,12 +263,12 @@ pub fn clientnode(
         };
 
         // set custom gossipsub
-        let gossipsub_config = gossipsub::GossipsubConfigBuilder::new()
+        let gossipsub_config = GossipsubConfigBuilder::new()
             .message_id_fn(message_id_fn) // content-address messages. No two messages of the
             //same content will be propagated.
             .build();
         // build a gossipsub network behaviour
-        let gossipsub = gossipsub::Gossipsub::new(local_peer_id.clone(), gossipsub_config);
+        let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
         libp2p::Swarm::new(transport, gossipsub, local_peer_id.clone())
     };
 
