@@ -23,18 +23,15 @@ use crate::protocol::{GossipsubCodec, ProtocolConfig};
 use futures::prelude::*;
 use futures_codec::Framed;
 use libp2p_core::upgrade::{InboundUpgrade, OutboundUpgrade};
-use libp2p_swarm::protocols_handler::{
-    KeepAlive, ProtocolsHandler, ProtocolsHandlerEvent, ProtocolsHandlerUpgrErr, SubstreamProtocol,
-};
+use libp2p_swarm::protocols_handler::{KeepAlive, ProtocolsHandler, ProtocolsHandlerEvent, ProtocolsHandlerUpgrErr,
+                                      SubstreamProtocol};
 use libp2p_swarm::NegotiatedSubstream;
 use log::{debug, error, trace, warn};
 use smallvec::SmallVec;
-use std::{
-    borrow::Cow,
-    io,
-    pin::Pin,
-    task::{Context, Poll},
-};
+use std::{borrow::Cow,
+          io,
+          pin::Pin,
+          task::{Context, Poll}};
 
 /// Protocol Handler that manages a single long-lived substream with a peer.
 pub struct GossipsubHandler {
@@ -55,6 +52,7 @@ pub struct GossipsubHandler {
 }
 
 /// State of the inbound substream, opened either by us or by the remote.
+#[allow(clippy::large_enum_variant)]
 enum InboundSubstreamState {
     /// Waiting for a message from the remote. The idle state for an inbound substream.
     WaitingInput(Framed<NegotiatedSubstream, GossipsubCodec>),
@@ -65,6 +63,7 @@ enum InboundSubstreamState {
 }
 
 /// State of the outbound substream, opened either by us or by the remote.
+#[allow(clippy::large_enum_variant)]
 enum OutboundSubstreamState {
     /// Waiting for the user to send a message. The idle state for an outbound substream.
     WaitingOutput(Framed<NegotiatedSubstream, GossipsubCodec>),
@@ -82,10 +81,7 @@ impl GossipsubHandler {
     /// Builds a new `GossipsubHandler`.
     pub fn new(protocol_id: impl Into<Cow<'static, [u8]>>, max_transmit_size: usize) -> Self {
         GossipsubHandler {
-            listen_protocol: SubstreamProtocol::new(ProtocolConfig::new(
-                protocol_id,
-                max_transmit_size,
-            )),
+            listen_protocol: SubstreamProtocol::new(ProtocolConfig::new(protocol_id, max_transmit_size)),
             inbound_substream: None,
             outbound_substream: None,
             send_queue: SmallVec::new(),
@@ -114,9 +110,7 @@ impl ProtocolsHandler for GossipsubHandler {
     type OutboundProtocol = ProtocolConfig;
     type OutboundOpenInfo = GossipsubRpc;
 
-    fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol> {
-        self.listen_protocol.clone()
-    }
+    fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol> { self.listen_protocol.clone() }
 
     fn inject_fully_negotiated_inbound(
         &mut self,
@@ -143,37 +137,25 @@ impl ProtocolsHandler for GossipsubHandler {
         }
     }
 
-    fn inject_event(&mut self, message: GossipsubRpc) {
-        self.send_queue.push(message);
-    }
+    fn inject_event(&mut self, message: GossipsubRpc) { self.send_queue.push(message); }
 
     fn inject_dial_upgrade_error(
         &mut self,
         _: Self::OutboundOpenInfo,
-        _: ProtocolsHandlerUpgrErr<
-            <Self::OutboundProtocol as OutboundUpgrade<NegotiatedSubstream>>::Error,
-        >,
+        _: ProtocolsHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgrade<NegotiatedSubstream>>::Error>,
     ) {
         // Ignore upgrade errors for now.
         // If a peer doesn't support this protocol, this will just ignore them, but not disconnect
         // them.
     }
 
-    fn connection_keep_alive(&self) -> KeepAlive {
-        self.keep_alive
-    }
+    fn connection_keep_alive(&self) -> KeepAlive { self.keep_alive }
 
+    #[allow(clippy::type_complexity)]
     fn poll(
         &mut self,
         cx: &mut Context,
-    ) -> Poll<
-        ProtocolsHandlerEvent<
-            Self::OutboundProtocol,
-            Self::OutboundOpenInfo,
-            Self::OutEvent,
-            Self::Error,
-        >,
-    > {
+    ) -> Poll<ProtocolsHandlerEvent<Self::OutboundProtocol, Self::OutboundOpenInfo, Self::OutEvent, Self::Error>> {
         // determine if we need to create the stream
         if !self.send_queue.is_empty() && self.outbound_substream.is_none() {
             let message = self.send_queue.remove(0);
@@ -185,35 +167,28 @@ impl ProtocolsHandler for GossipsubHandler {
         }
 
         loop {
-            match std::mem::replace(
-                &mut self.inbound_substream,
-                Some(InboundSubstreamState::Poisoned),
-            ) {
+            match std::mem::replace(&mut self.inbound_substream, Some(InboundSubstreamState::Poisoned)) {
                 // inbound idle state
                 Some(InboundSubstreamState::WaitingInput(mut substream)) => {
                     match substream.poll_next_unpin(cx) {
                         Poll::Ready(Some(Ok(message))) => {
-                            self.inbound_substream =
-                                Some(InboundSubstreamState::WaitingInput(substream));
+                            self.inbound_substream = Some(InboundSubstreamState::WaitingInput(substream));
                             return Poll::Ready(ProtocolsHandlerEvent::Custom(message));
-                        }
+                        },
                         Poll::Ready(Some(Err(e))) => {
                             debug!("Inbound substream error while awaiting input: {:?}", e);
-                            self.inbound_substream =
-                                Some(InboundSubstreamState::Closing(substream));
-                        }
+                            self.inbound_substream = Some(InboundSubstreamState::Closing(substream));
+                        },
                         // peer closed the stream
                         Poll::Ready(None) => {
-                            self.inbound_substream =
-                                Some(InboundSubstreamState::Closing(substream));
-                        }
+                            self.inbound_substream = Some(InboundSubstreamState::Closing(substream));
+                        },
                         Poll::Pending => {
-                            self.inbound_substream =
-                                Some(InboundSubstreamState::WaitingInput(substream));
+                            self.inbound_substream = Some(InboundSubstreamState::WaitingInput(substream));
                             break;
-                        }
+                        },
                     }
-                }
+                },
                 Some(InboundSubstreamState::Closing(mut substream)) => {
                     match Sink::poll_close(Pin::new(&mut substream), cx) {
                         Poll::Ready(res) => {
@@ -229,86 +204,69 @@ impl ProtocolsHandler for GossipsubHandler {
                                 self.keep_alive = KeepAlive::No;
                             }
                             break;
-                        }
+                        },
                         Poll::Pending => {
-                            self.inbound_substream =
-                                Some(InboundSubstreamState::Closing(substream));
+                            self.inbound_substream = Some(InboundSubstreamState::Closing(substream));
                             break;
-                        }
+                        },
                     }
-                }
+                },
                 None => {
                     self.inbound_substream = None;
                     break;
-                }
-                Some(InboundSubstreamState::Poisoned) => {
-                    panic!("Error occurred during inbound stream processing")
-                }
+                },
+                Some(InboundSubstreamState::Poisoned) => panic!("Error occurred during inbound stream processing"),
             }
         }
 
         loop {
-            match std::mem::replace(
-                &mut self.outbound_substream,
-                Some(OutboundSubstreamState::Poisoned),
-            ) {
+            match std::mem::replace(&mut self.outbound_substream, Some(OutboundSubstreamState::Poisoned)) {
                 // outbound idle state
                 Some(OutboundSubstreamState::WaitingOutput(substream)) => {
                     if !self.send_queue.is_empty() {
                         let message = self.send_queue.remove(0);
                         self.send_queue.shrink_to_fit();
-                        self.outbound_substream =
-                            Some(OutboundSubstreamState::PendingSend(substream, message));
+                        self.outbound_substream = Some(OutboundSubstreamState::PendingSend(substream, message));
                     } else {
-                        self.outbound_substream =
-                            Some(OutboundSubstreamState::WaitingOutput(substream));
+                        self.outbound_substream = Some(OutboundSubstreamState::WaitingOutput(substream));
                         break;
                     }
-                }
+                },
                 Some(OutboundSubstreamState::PendingSend(mut substream, message)) => {
                     match Sink::poll_ready(Pin::new(&mut substream), cx) {
-                        Poll::Ready(Ok(())) => {
-                            match Sink::start_send(Pin::new(&mut substream), message) {
-                                Ok(()) => {
-                                    self.outbound_substream =
-                                        Some(OutboundSubstreamState::PendingFlush(substream))
+                        Poll::Ready(Ok(())) => match Sink::start_send(Pin::new(&mut substream), message) {
+                            Ok(()) => self.outbound_substream = Some(OutboundSubstreamState::PendingFlush(substream)),
+                            Err(e) => {
+                                if let io::ErrorKind::PermissionDenied = e.kind() {
+                                    error!("Message over the maximum transmission limit was not sent.");
+                                    self.outbound_substream = Some(OutboundSubstreamState::WaitingOutput(substream));
+                                } else {
+                                    return Poll::Ready(ProtocolsHandlerEvent::Close(e));
                                 }
-                                Err(e) => {
-                                    if let io::ErrorKind::PermissionDenied = e.kind() {
-                                        error!("Message over the maximum transmission limit was not sent.");
-                                        self.outbound_substream =
-                                            Some(OutboundSubstreamState::WaitingOutput(substream));
-                                    } else {
-                                        return Poll::Ready(ProtocolsHandlerEvent::Close(e));
-                                    }
-                                }
-                            }
-                        }
+                            },
+                        },
                         Poll::Ready(Err(e)) => {
                             debug!("Outbound substream error while sending output: {:?}", e);
                             return Poll::Ready(ProtocolsHandlerEvent::Close(e));
-                        }
+                        },
                         Poll::Pending => {
-                            self.outbound_substream =
-                                Some(OutboundSubstreamState::PendingSend(substream, message));
+                            self.outbound_substream = Some(OutboundSubstreamState::PendingSend(substream, message));
                             break;
-                        }
+                        },
                     }
-                }
+                },
                 Some(OutboundSubstreamState::PendingFlush(mut substream)) => {
                     match Sink::poll_flush(Pin::new(&mut substream), cx) {
                         Poll::Ready(Ok(())) => {
-                            self.outbound_substream =
-                                Some(OutboundSubstreamState::WaitingOutput(substream))
-                        }
+                            self.outbound_substream = Some(OutboundSubstreamState::WaitingOutput(substream))
+                        },
                         Poll::Ready(Err(e)) => return Poll::Ready(ProtocolsHandlerEvent::Close(e)),
                         Poll::Pending => {
-                            self.outbound_substream =
-                                Some(OutboundSubstreamState::PendingFlush(substream));
+                            self.outbound_substream = Some(OutboundSubstreamState::PendingFlush(substream));
                             break;
-                        }
+                        },
                     }
-                }
+                },
                 // Currently never used - manual shutdown may implement this in the future
                 Some(OutboundSubstreamState::_Closing(mut substream)) => {
                     match Sink::poll_close(Pin::new(&mut substream), cx) {
@@ -318,28 +276,25 @@ impl ProtocolsHandler for GossipsubHandler {
                                 self.keep_alive = KeepAlive::No;
                             }
                             break;
-                        }
+                        },
                         Poll::Ready(Err(e)) => {
                             debug!("Outbound substream error while closing: {:?}", e);
                             return Poll::Ready(ProtocolsHandlerEvent::Close(io::Error::new(
                                 io::ErrorKind::BrokenPipe,
                                 "Failed to close outbound substream",
                             )));
-                        }
+                        },
                         Poll::Pending => {
-                            self.outbound_substream =
-                                Some(OutboundSubstreamState::_Closing(substream));
+                            self.outbound_substream = Some(OutboundSubstreamState::_Closing(substream));
                             break;
-                        }
+                        },
                     }
-                }
+                },
                 None => {
                     self.outbound_substream = None;
                     break;
-                }
-                Some(OutboundSubstreamState::Poisoned) => {
-                    panic!("Error occurred during outbound stream processing")
-                }
+                },
+                Some(OutboundSubstreamState::Poisoned) => panic!("Error occurred during outbound stream processing"),
             }
         }
 

@@ -51,10 +51,7 @@ impl Default for ProtocolConfig {
 impl ProtocolConfig {
     /// Builds a new `ProtocolConfig`.
     /// Sets the maximum gossip transmission size.
-    pub fn new(
-        protocol_id: impl Into<Cow<'static, [u8]>>,
-        max_transmit_size: usize,
-    ) -> ProtocolConfig {
+    pub fn new(protocol_id: impl Into<Cow<'static, [u8]>>, max_transmit_size: usize) -> ProtocolConfig {
         ProtocolConfig {
             protocol_id: protocol_id.into(),
             max_transmit_size,
@@ -66,10 +63,10 @@ impl UpgradeInfo for ProtocolConfig {
     type Info = Cow<'static, [u8]>;
     type InfoIter = iter::Once<Self::Info>;
 
-    fn protocol_info(&self) -> Self::InfoIter {
-        iter::once(self.protocol_id.clone())
-    }
+    fn protocol_info(&self) -> Self::InfoIter { iter::once(self.protocol_id.clone()) }
 }
+
+type PinBoxFut<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + Send>>;
 
 impl<TSocket> InboundUpgrade<TSocket> for ProtocolConfig
 where
@@ -77,15 +74,12 @@ where
 {
     type Output = Framed<TSocket, GossipsubCodec>;
     type Error = io::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send>>;
+    type Future = PinBoxFut<Self::Output, Self::Error>;
 
     fn upgrade_inbound(self, socket: TSocket, _: Self::Info) -> Self::Future {
         let mut length_codec = codec::UviBytes::default();
         length_codec.set_max_len(self.max_transmit_size);
-        Box::pin(future::ok(Framed::new(
-            socket,
-            GossipsubCodec { length_codec },
-        )))
+        Box::pin(future::ok(Framed::new(socket, GossipsubCodec { length_codec })))
     }
 }
 
@@ -95,15 +89,12 @@ where
 {
     type Output = Framed<TSocket, GossipsubCodec>;
     type Error = io::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send>>;
+    type Future = PinBoxFut<Self::Output, Self::Error>;
 
     fn upgrade_outbound(self, socket: TSocket, _: Self::Info) -> Self::Future {
         let mut length_codec = codec::UviBytes::default();
         length_codec.set_max_len(self.max_transmit_size);
-        Box::pin(future::ok(Framed::new(
-            socket,
-            GossipsubCodec { length_codec },
-        )))
+        Box::pin(future::ok(Framed::new(socket, GossipsubCodec { length_codec })))
     }
 }
 
@@ -127,11 +118,7 @@ impl Encoder for GossipsubCodec {
                 from: Some(message.source.into_bytes()),
                 data: Some(message.data),
                 seqno: Some(message.sequence_number.to_be_bytes().to_vec()),
-                topic_ids: message
-                    .topics
-                    .into_iter()
-                    .map(TopicHash::into_string)
-                    .collect(),
+                topic_ids: message.topics.into_iter().map(TopicHash::into_string).collect(),
             })
             .collect::<Vec<_>>();
 
@@ -167,42 +154,37 @@ impl Encoder for GossipsubCodec {
                         message_ids: message_ids.into_iter().map(|msg_id| msg_id.0).collect(),
                     };
                     control.ihave.push(rpc_ihave);
-                }
+                },
                 GossipsubControlAction::IWant { message_ids } => {
                     let rpc_iwant = rpc_proto::ControlIWant {
                         message_ids: message_ids.into_iter().map(|msg_id| msg_id.0).collect(),
                     };
                     control.iwant.push(rpc_iwant);
-                }
+                },
                 GossipsubControlAction::Graft { topic_hash } => {
                     let rpc_graft = rpc_proto::ControlGraft {
                         topic_id: Some(topic_hash.into_string()),
                     };
                     control.graft.push(rpc_graft);
-                }
+                },
                 GossipsubControlAction::Prune { topic_hash } => {
                     let rpc_prune = rpc_proto::ControlPrune {
                         topic_id: Some(topic_hash.into_string()),
                     };
                     control.prune.push(rpc_prune);
-                }
+                },
             }
         }
 
         let rpc = rpc_proto::Rpc {
             subscriptions,
             publish,
-            control: if empty_control_msg {
-                None
-            } else {
-                Some(control)
-            },
+            control: if empty_control_msg { None } else { Some(control) },
         };
 
         let mut buf = Vec::with_capacity(rpc.encoded_len());
 
-        rpc.encode(&mut buf)
-            .expect("Buffer has sufficient capacity");
+        rpc.encode(&mut buf).expect("Buffer has sufficient capacity");
 
         // length prefix the protobuf message, ensuring the max limit is not hit
         self.length_codec.encode(Bytes::from(buf), dst)
@@ -224,12 +206,9 @@ impl Decoder for GossipsubCodec {
         let mut messages = Vec::with_capacity(rpc.publish.len());
         for publish in rpc.publish.into_iter() {
             // ensure the sequence number is a u64
-            let seq_no = publish.seqno.ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "sequence number was not provided",
-                )
-            })?;
+            let seq_no = publish
+                .seqno
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "sequence number was not provided"))?;
             if seq_no.len() != 8 {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -241,11 +220,7 @@ impl Decoder for GossipsubCodec {
                     .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid Peer Id"))?,
                 data: publish.data.unwrap_or_default(),
                 sequence_number: BigEndian::read_u64(&seq_no),
-                topics: publish
-                    .topic_ids
-                    .into_iter()
-                    .map(TopicHash::from_raw)
-                    .collect(),
+                topics: publish.topic_ids.into_iter().map(TopicHash::from_raw).collect(),
             });
         }
 
@@ -258,11 +233,7 @@ impl Decoder for GossipsubCodec {
                 .into_iter()
                 .map(|ihave| GossipsubControlAction::IHave {
                     topic_hash: TopicHash::from_raw(ihave.topic_id.unwrap_or_default()),
-                    message_ids: ihave
-                        .message_ids
-                        .into_iter()
-                        .map(|x| MessageId(x))
-                        .collect::<Vec<_>>(),
+                    message_ids: ihave.message_ids.into_iter().map(MessageId).collect::<Vec<_>>(),
                 })
                 .collect();
 
@@ -270,11 +241,7 @@ impl Decoder for GossipsubCodec {
                 .iwant
                 .into_iter()
                 .map(|iwant| GossipsubControlAction::IWant {
-                    message_ids: iwant
-                        .message_ids
-                        .into_iter()
-                        .map(|x| MessageId(x))
-                        .collect::<Vec<_>>(),
+                    message_ids: iwant.message_ids.into_iter().map(MessageId).collect::<Vec<_>>(),
                 })
                 .collect();
 
@@ -324,15 +291,11 @@ impl Decoder for GossipsubCodec {
 pub struct MessageId(pub String);
 
 impl std::fmt::Display for MessageId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.0) }
 }
 
 impl Into<String> for MessageId {
-    fn into(self) -> String {
-        self.0.into()
-    }
+    fn into(self) -> String { self.0 }
 }
 
 /// A message received by the gossipsub system.

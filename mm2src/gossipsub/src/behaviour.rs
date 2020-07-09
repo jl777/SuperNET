@@ -21,32 +21,22 @@
 use crate::config::GossipsubConfig;
 use crate::handler::GossipsubHandler;
 use crate::mcache::MessageCache;
-use crate::protocol::{
-    GossipsubControlAction, GossipsubMessage, GossipsubSubscription, GossipsubSubscriptionAction,
-    MessageId,
-};
+use crate::protocol::{GossipsubControlAction, GossipsubMessage, GossipsubSubscription, GossipsubSubscriptionAction,
+                      MessageId};
 use crate::topic::{Topic, TopicHash};
 use futures::prelude::*;
-use libp2p_core::{Multiaddr, PeerId, connection::ConnectionId};
-use libp2p_swarm::{
-    NetworkBehaviour,
-    NetworkBehaviourAction,
-    NotifyHandler,
-    PollParameters,
-    ProtocolsHandler
-};
+use libp2p_core::{connection::ConnectionId, Multiaddr, PeerId};
+use libp2p_swarm::{NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters, ProtocolsHandler};
 use log::{debug, error, info, trace, warn};
 use lru::LruCache;
 use rand;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{
-    collections::hash_map::HashMap,
-    collections::HashSet,
-    collections::VecDeque,
-    iter,
-    sync::Arc,
-    task::{Context, Poll},
-};
+use std::{collections::hash_map::HashMap,
+          collections::HashSet,
+          collections::VecDeque,
+          iter,
+          sync::Arc,
+          task::{Context, Poll}};
 use wasm_timer::{Instant, Interval};
 
 mod tests;
@@ -243,11 +233,7 @@ impl Gossipsub {
     }
 
     /// Publishes a message with multiple topics to the network.
-    pub fn publish_many(
-        &mut self,
-        topic: impl IntoIterator<Item = Topic>,
-        data: impl Into<Vec<u8>>,
-    ) {
+    pub fn publish_many(&mut self, topic: impl IntoIterator<Item = Topic>, data: impl Into<Vec<u8>>) {
         let message = GossipsubMessage {
             source: self.local_peer_id.clone(),
             data: data.into(),
@@ -257,10 +243,7 @@ impl Gossipsub {
             topics: topic.into_iter().map(|t| self.topic_hash(t)).collect(),
         };
 
-        debug!(
-            "Publishing message: {:?}",
-            (self.config.message_id_fn)(&message)
-        );
+        debug!("Publishing message: {:?}", (self.config.message_id_fn)(&message));
 
         // forward the message to mesh peers
         let local_peer_id = self.local_peer_id.clone();
@@ -280,10 +263,7 @@ impl Gossipsub {
                 } else {
                     // we have no fanout peers, select mesh_n of them and add them to the fanout
                     let mesh_n = self.config.mesh_n;
-                    let new_peers =
-                        Self::get_random_peers(&self.topic_peers, &topic_hash, mesh_n, {
-                            |_| true
-                        });
+                    let new_peers = Self::get_random_peers(&self.topic_peers, &topic_hash, mesh_n, { |_| true });
                     // add the new peers to the fanout and recipient peers
                     self.fanout.insert(topic_hash.clone(), new_peers.clone());
                     for peer in new_peers {
@@ -292,8 +272,7 @@ impl Gossipsub {
                     }
                 }
                 // we are publishing to fanout peers - update the time we published
-                self.fanout_last_pub
-                    .insert(topic_hash.clone(), Instant::now());
+                self.fanout_last_pub.insert(topic_hash.clone(), Instant::now());
             }
         }
 
@@ -327,11 +306,7 @@ impl Gossipsub {
     /// Calling this function will propagate a message stored in the cache, if it still exists.
     /// If the message still exists in the cache, it will be forwarded and this function will return true,
     /// otherwise it will return false.
-    pub fn propagate_message(
-        &mut self,
-        message_id: &MessageId,
-        propagation_source: &PeerId,
-    ) -> bool {
+    pub fn propagate_message(&mut self, message_id: &MessageId, propagation_source: &PeerId) -> bool {
         let message = match self.mcache.get(message_id) {
             Some(message) => message.clone(),
             None => {
@@ -340,7 +315,7 @@ impl Gossipsub {
                     message_id.0
                 );
                 return false;
-            }
+            },
         };
         self.forward_msg(message, propagation_source);
         true
@@ -361,10 +336,7 @@ impl Gossipsub {
         // check if we have mesh_n peers in fanout[topic] and add them to the mesh if we do,
         // removing the fanout entry.
         if let Some((_, peers)) = self.fanout.remove_entry(topic_hash) {
-            debug!(
-                "JOIN: Removing peers from the fanout for topic: {:?}",
-                topic_hash
-            );
+            debug!("JOIN: Removing peers from the fanout for topic: {:?}", topic_hash);
             // add up to mesh_n of them them to the mesh
             // Note: These aren't randomly added, currently FIFO
             let add_peers = std::cmp::min(peers.len(), self.config.mesh_n);
@@ -373,8 +345,7 @@ impl Gossipsub {
                 add_peers, topic_hash
             );
             added_peers.extend_from_slice(&peers[..add_peers]);
-            self.mesh
-                .insert(topic_hash.clone(), peers[..add_peers].to_vec());
+            self.mesh.insert(topic_hash.clone(), peers[..add_peers].to_vec());
             // remove the last published time
             self.fanout_last_pub.remove(topic_hash);
         }
@@ -390,27 +361,17 @@ impl Gossipsub {
             );
             added_peers.extend_from_slice(&new_peers);
             // add them to the mesh
-            debug!(
-                "JOIN: Inserting {:?} random peers into the mesh",
-                new_peers.len()
-            );
-            let mesh_peers = self
-                .mesh
-                .entry(topic_hash.clone())
-                .or_insert_with(|| Vec::new());
+            debug!("JOIN: Inserting {:?} random peers into the mesh", new_peers.len());
+            let mesh_peers = self.mesh.entry(topic_hash.clone()).or_insert_with(Vec::new);
             mesh_peers.extend_from_slice(&new_peers);
         }
 
         for peer_id in added_peers {
             // Send a GRAFT control message
             info!("JOIN: Sending Graft message to peer: {:?}", peer_id);
-            Self::control_pool_add(
-                &mut self.control_pool,
-                peer_id.clone(),
-                GossipsubControlAction::Graft {
-                    topic_hash: topic_hash.clone(),
-                },
-            );
+            Self::control_pool_add(&mut self.control_pool, peer_id.clone(), GossipsubControlAction::Graft {
+                topic_hash: topic_hash.clone(),
+            });
         }
         debug!("Completed JOIN for topic: {:?}", topic_hash);
     }
@@ -424,13 +385,9 @@ impl Gossipsub {
             for peer in peers {
                 // Send a PRUNE control message
                 info!("LEAVE: Sending PRUNE to peer: {:?}", peer);
-                Self::control_pool_add(
-                    &mut self.control_pool,
-                    peer.clone(),
-                    GossipsubControlAction::Prune {
-                        topic_hash: topic_hash.clone(),
-                    },
-                );
+                Self::control_pool_add(&mut self.control_pool, peer.clone(), GossipsubControlAction::Prune {
+                    topic_hash: topic_hash.clone(),
+                });
             }
         }
         debug!("Completed LEAVE for topic: {:?}", topic_hash);
@@ -446,10 +403,7 @@ impl Gossipsub {
         for (topic, ids) in ihave_msgs {
             // only process the message if we are subscribed
             if !self.mesh.contains_key(&topic) {
-                debug!(
-                    "IHAVE: Ignoring IHAVE - Not subscribed to topic: {:?}",
-                    topic
-                );
+                debug!("IHAVE: Ignoring IHAVE - Not subscribed to topic: {:?}", topic);
                 continue;
             }
 
@@ -464,13 +418,9 @@ impl Gossipsub {
         if !iwant_ids.is_empty() {
             // Send the list of IWANT control messages
             debug!("IHAVE: Sending IWANT message");
-            Self::control_pool_add(
-                &mut self.control_pool,
-                peer_id.clone(),
-                GossipsubControlAction::IWant {
-                    message_ids: iwant_ids.iter().cloned().collect(),
-                },
-            );
+            Self::control_pool_add(&mut self.control_pool, peer_id.clone(), GossipsubControlAction::IWant {
+                message_ids: iwant_ids.iter().cloned().collect(),
+            });
         }
         debug!("Completed IHAVE handling for peer: {:?}", peer_id);
     }
@@ -532,9 +482,7 @@ impl Gossipsub {
             // build the prune messages to send
             let prune_messages = to_prune_topics
                 .iter()
-                .map(|t| GossipsubControlAction::Prune {
-                    topic_hash: t.clone(),
-                })
+                .map(|t| GossipsubControlAction::Prune { topic_hash: t.clone() })
                 .collect();
             // Send the prune messages to the peer
             info!(
@@ -574,10 +522,7 @@ impl Gossipsub {
     /// Forwards the message to all peers in the mesh.
     fn handle_received_message(&mut self, msg: GossipsubMessage, propagation_source: &PeerId) {
         let msg_id = (self.config.message_id_fn)(&msg);
-        debug!(
-            "Handling message: {:?} from peer: {:?}",
-            msg_id, propagation_source
-        );
+        debug!("Handling message: {:?} from peer: {:?}", msg_id, propagation_source);
         if self.received.put(msg_id.clone(), ()).is_some() {
             debug!("Message already received, ignoring. Message: {:?}", msg_id);
             return;
@@ -589,9 +534,12 @@ impl Gossipsub {
         // dispatch the message to the user
         if self.mesh.keys().any(|t| msg.topics.iter().any(|u| t == u)) {
             debug!("Sending received message to user");
-            self.events.push_back(NetworkBehaviourAction::GenerateEvent(
-                GossipsubEvent::Message(propagation_source.clone(), msg_id, msg.clone()),
-            ));
+            self.events
+                .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::Message(
+                    propagation_source.clone(),
+                    msg_id,
+                    msg.clone(),
+                )));
         }
 
         // forward the message to mesh peers, if no validation is required
@@ -603,11 +551,7 @@ impl Gossipsub {
     }
 
     /// Handles received subscriptions.
-    fn handle_received_subscriptions(
-        &mut self,
-        subscriptions: &[GossipsubSubscription],
-        propagation_source: &PeerId,
-    ) {
+    fn handle_received_subscriptions(&mut self, subscriptions: &[GossipsubSubscription], propagation_source: &PeerId) {
         debug!(
             "Handling subscriptions: {:?}, from source: {:?}",
             subscriptions, propagation_source
@@ -617,7 +561,7 @@ impl Gossipsub {
             None => {
                 error!("Subscription by unknown peer: {:?}", &propagation_source);
                 return;
-            }
+            },
         };
 
         for subscription in subscriptions {
@@ -649,21 +593,17 @@ impl Gossipsub {
                     // if the mesh needs peers add the peer to the mesh
                     if let Some(peers) = self.mesh.get_mut(&subscription.topic_hash) {
                         if peers.len() < self.config.mesh_n_low {
-                            debug!(
-                                "SUBSCRIPTION: Adding peer {:?} to the mesh",
-                                propagation_source,
-                            );
+                            debug!("SUBSCRIPTION: Adding peer {:?} to the mesh", propagation_source,);
                         }
                         peers.push(propagation_source.clone());
                     }
                     // generates a subscription event to be polled
-                    self.events.push_back(NetworkBehaviourAction::GenerateEvent(
-                        GossipsubEvent::Subscribed {
+                    self.events
+                        .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::Subscribed {
                             peer_id: propagation_source.clone(),
                             topic: subscription.topic_hash.clone(),
-                        },
-                    ));
-                }
+                        }));
+                },
                 GossipsubSubscriptionAction::Unsubscribe => {
                     if let Some(pos) = peer_list.iter().position(|p| p == propagation_source) {
                         info!(
@@ -673,10 +613,7 @@ impl Gossipsub {
                         peer_list.remove(pos);
                     }
                     // remove topic from the peer_topics mapping
-                    if let Some(pos) = subscribed_topics
-                        .iter()
-                        .position(|t| t == &subscription.topic_hash)
-                    {
+                    if let Some(pos) = subscribed_topics.iter().position(|t| t == &subscription.topic_hash) {
                         subscribed_topics.remove(pos);
                     }
                     // remove the peer from the mesh if it exists
@@ -685,19 +622,15 @@ impl Gossipsub {
                     }
 
                     // generate an unsubscribe event to be polled
-                    self.events.push_back(NetworkBehaviourAction::GenerateEvent(
-                        GossipsubEvent::Unsubscribed {
+                    self.events
+                        .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::Unsubscribed {
                             peer_id: propagation_source.clone(),
                             topic: subscription.topic_hash.clone(),
-                        },
-                    ));
-                }
+                        }));
+                },
             }
         }
-        trace!(
-            "Completed handling subscriptions from source: {:?}",
-            propagation_source
-        );
+        trace!("Completed handling subscriptions from source: {:?}", propagation_source);
     }
 
     /// Heartbeat function which shifts the memcache and updates the mesh.
@@ -719,10 +652,9 @@ impl Gossipsub {
                 );
                 // not enough peers - get mesh_n - current_length more
                 let desired_peers = self.config.mesh_n - peers.len();
-                let peer_list =
-                    Self::get_random_peers(&self.topic_peers, topic_hash, desired_peers, {
-                        |peer| !peers.contains(peer)
-                    });
+                let peer_list = Self::get_random_peers(&self.topic_peers, topic_hash, desired_peers, {
+                    |peer| !peers.contains(peer)
+                });
                 for peer in &peer_list {
                     let current_topic = to_graft.entry(peer.clone()).or_insert_with(|| vec![]);
                     current_topic.push(topic_hash.clone());
@@ -746,9 +678,7 @@ impl Gossipsub {
                 peers.shuffle(&mut rng);
                 // remove the first excess_peer_no peers adding them to to_prune
                 for _ in 0..excess_peer_no {
-                    let peer = peers
-                        .pop()
-                        .expect("There should always be enough peers to remove");
+                    let peer = peers.pop().expect("There should always be enough peers to remove");
                     let current_topic = to_prune.entry(peer).or_insert_with(|| vec![]);
                     current_topic.push(topic_hash.clone());
                 }
@@ -781,17 +711,14 @@ impl Gossipsub {
                 match self.peer_topics.get(peer) {
                     Some(topics) => {
                         if !topics.contains(&topic_hash) {
-                            debug!(
-                                "HEARTBEAT: Peer removed from fanout for topic: {:?}",
-                                topic_hash
-                            );
+                            debug!("HEARTBEAT: Peer removed from fanout for topic: {:?}", topic_hash);
                             to_remove_peers.push(peer.clone());
                         }
-                    }
+                    },
                     None => {
                         // remove if the peer has disconnected
                         to_remove_peers.push(peer.clone());
-                    }
+                    },
                 }
             }
             peers.retain(|peer| !to_remove_peers.contains(&peer));
@@ -804,10 +731,9 @@ impl Gossipsub {
                     self.config.mesh_n
                 );
                 let needed_peers = self.config.mesh_n - peers.len();
-                let new_peers =
-                    Self::get_random_peers(&self.topic_peers, topic_hash, needed_peers, |peer| {
-                        !peers.contains(peer)
-                    });
+                let new_peers = Self::get_random_peers(&self.topic_peers, topic_hash, needed_peers, |peer| {
+                    !peers.contains(peer)
+                });
                 peers.extend(new_peers);
             }
         }
@@ -838,22 +764,16 @@ impl Gossipsub {
             }
 
             // get gossip_lazy random peers
-            let to_msg_peers = Self::get_random_peers(
-                &self.topic_peers,
-                &topic_hash,
-                self.config.gossip_lazy,
-                |peer| !peers.contains(peer),
-            );
+            let to_msg_peers =
+                Self::get_random_peers(&self.topic_peers, &topic_hash, self.config.gossip_lazy, |peer| {
+                    !peers.contains(peer)
+                });
             for peer in to_msg_peers {
                 // send an IHAVE message
-                Self::control_pool_add(
-                    &mut self.control_pool,
-                    peer.clone(),
-                    GossipsubControlAction::IHave {
-                        topic_hash: topic_hash.clone(),
-                        message_ids: message_ids.clone(),
-                    },
-                );
+                Self::control_pool_add(&mut self.control_pool, peer.clone(), GossipsubControlAction::IHave {
+                    topic_hash: topic_hash.clone(),
+                    message_ids: message_ids.clone(),
+                });
             }
         }
         debug!("Completed gossip");
@@ -938,7 +858,7 @@ impl Gossipsub {
         if !recipient_peers.is_empty() {
             let event = Arc::new(GossipsubRpc {
                 subscriptions: Vec::new(),
-                messages: vec![message.clone()],
+                messages: vec![message],
                 control_msgs: Vec::new(),
             });
 
@@ -957,16 +877,19 @@ impl Gossipsub {
     pub fn send_messages_to_peers(
         &mut self,
         messages: impl IntoIterator<Item = (String, impl Into<Vec<u8>>)>,
-        recipient_peers: impl IntoIterator<Item = PeerId>
+        recipient_peers: impl IntoIterator<Item = PeerId>,
     ) {
-        let messages = messages.into_iter().map(|(topic, data)| GossipsubMessage {
-            source: self.local_peer_id.clone(),
-            data: data.into(),
-            // To be interoperable with the go-implementation this is treated as a 64-bit
-            // big-endian uint.
-            sequence_number: rand::random(),
-            topics: vec![TopicHash::from_raw(topic)],
-        }).collect();
+        let messages = messages
+            .into_iter()
+            .map(|(topic, data)| GossipsubMessage {
+                source: self.local_peer_id.clone(),
+                data: data.into(),
+                // To be interoperable with the go-implementation this is treated as a 64-bit
+                // big-endian uint.
+                sequence_number: rand::random(),
+                topics: vec![TopicHash::from_raw(topic)],
+            })
+            .collect();
         let event = Arc::new(GossipsubRpc {
             subscriptions: Vec::new(),
             messages,
@@ -1018,10 +941,7 @@ impl Gossipsub {
         peer: PeerId,
         control: GossipsubControlAction,
     ) {
-        control_pool
-            .entry(peer.clone())
-            .or_insert_with(Vec::new)
-            .push(control);
+        control_pool.entry(peer).or_insert_with(Vec::new).push(control);
     }
 
     /// Produces a `TopicHash` for a topic given the gossipsub configuration.
@@ -1049,16 +969,14 @@ impl Gossipsub {
     }
 
     pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
-        self.mesh.get(&topic).map(|peers| peers.clone()).unwrap_or(vec![])
+        self.mesh.get(&topic).cloned().unwrap_or_else(|| vec![])
     }
 
     pub fn get_topic_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
-        self.topic_peers.get(&topic).map(|peers| peers.clone()).unwrap_or(vec![])
+        self.topic_peers.get(&topic).cloned().unwrap_or_else(|| vec![])
     }
 
-    pub fn get_num_peers(&self) -> usize {
-        self.peer_topics.len()
-    }
+    pub fn get_num_peers(&self) -> usize { self.peer_topics.len() }
 }
 
 impl NetworkBehaviour for Gossipsub {
@@ -1066,15 +984,10 @@ impl NetworkBehaviour for Gossipsub {
     type OutEvent = GossipsubEvent;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
-        GossipsubHandler::new(
-            self.config.protocol_id.clone(),
-            self.config.max_transmit_size,
-        )
+        GossipsubHandler::new(self.config.protocol_id.clone(), self.config.max_transmit_size)
     }
 
-    fn addresses_of_peer(&mut self, _: &PeerId) -> Vec<Multiaddr> {
-        Vec::new()
-    }
+    fn addresses_of_peer(&mut self, _: &PeerId) -> Vec<Multiaddr> { Vec::new() }
 
     fn inject_connected(&mut self, id: &PeerId) {
         info!("New peer connected: {:?}", id);
@@ -1113,7 +1026,7 @@ impl NetworkBehaviour for Gossipsub {
                 None => {
                     warn!("Disconnected node, not in connected nodes");
                     return;
-                }
+                },
             };
 
             // remove peer from all mappings
@@ -1143,18 +1056,19 @@ impl NetworkBehaviour for Gossipsub {
                 }
 
                 // remove from fanout
-                self.fanout
-                    .get_mut(&topic)
-                    .map(|peers| peers.retain(|p| p != id));
+                if let Some(peers) = self.fanout.get_mut(&topic) {
+                    peers.retain(|p| p != id)
+                }
             }
         }
 
         // remove peer from peer_topics
         let was_in = self.peer_topics.remove(id);
         debug_assert!(was_in.is_some());
-        self.events.push_back(NetworkBehaviourAction::GenerateEvent(
-            GossipsubEvent::PeerDisconnected(id.clone()),
-        ));
+        self.events
+            .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::PeerDisconnected(
+                id.clone(),
+            )));
     }
 
     fn inject_event(&mut self, propagation_source: PeerId, _: ConnectionId, event: GossipsubRpc) {
@@ -1179,10 +1093,8 @@ impl NetworkBehaviour for Gossipsub {
                     message_ids,
                 } => {
                     ihave_msgs.push((topic_hash, message_ids));
-                }
-                GossipsubControlAction::IWant { message_ids } => {
-                    self.handle_iwant(&propagation_source, message_ids)
-                }
+                },
+                GossipsubControlAction::IWant { message_ids } => self.handle_iwant(&propagation_source, message_ids),
                 GossipsubControlAction::Graft { topic_hash } => graft_msgs.push(topic_hash),
                 GossipsubControlAction::Prune { topic_hash } => prune_msgs.push(topic_hash),
             }
@@ -1202,41 +1114,42 @@ impl NetworkBehaviour for Gossipsub {
         &mut self,
         cx: &mut Context,
         _: &mut impl PollParameters,
-    ) -> Poll<
-        NetworkBehaviourAction<
-            <Self::ProtocolsHandler as ProtocolsHandler>::InEvent,
-            Self::OutEvent,
-        >,
-    > {
+    ) -> Poll<NetworkBehaviourAction<<Self::ProtocolsHandler as ProtocolsHandler>::InEvent, Self::OutEvent>> {
         if let Some(event) = self.events.pop_front() {
             // clone send event reference if others references are present
             match event {
                 NetworkBehaviourAction::NotifyHandler {
-                    peer_id, handler, event: send_event,
+                    peer_id,
+                    handler,
+                    event: send_event,
                 } => match Arc::try_unwrap(send_event) {
                     Ok(event) => {
                         return Poll::Ready(NetworkBehaviourAction::NotifyHandler {
-                            peer_id, event, handler
+                            peer_id,
+                            event,
+                            handler,
                         });
-                    }
+                    },
                     Err(event) => {
                         return Poll::Ready(NetworkBehaviourAction::NotifyHandler {
-                            peer_id, event: (*event).clone(), handler
+                            peer_id,
+                            event: (*event).clone(),
+                            handler,
                         });
-                    }
+                    },
                 },
                 NetworkBehaviourAction::GenerateEvent(e) => {
                     return Poll::Ready(NetworkBehaviourAction::GenerateEvent(e));
-                }
+                },
                 NetworkBehaviourAction::DialAddress { address } => {
                     return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
-                }
+                },
                 NetworkBehaviourAction::DialPeer { peer_id, condition } => {
                     return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
-                }
+                },
                 NetworkBehaviourAction::ReportObservedAddr { address } => {
                     return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address });
-                }
+                },
             }
         }
 

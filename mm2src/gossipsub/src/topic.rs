@@ -31,17 +31,11 @@ pub struct TopicHash {
 }
 
 impl TopicHash {
-    pub fn from_raw(hash: impl Into<String>) -> TopicHash {
-        TopicHash { hash: hash.into() }
-    }
+    pub fn from_raw(hash: impl Into<String>) -> TopicHash { TopicHash { hash: hash.into() } }
 
-    pub fn into_string(self) -> String {
-        self.hash
-    }
+    pub fn into_string(self) -> String { self.hash }
 
-    pub fn as_str(&self) -> &str {
-        &self.hash
-    }
+    pub fn as_str(&self) -> &str { &self.hash }
 }
 
 /// A gossipsub topic.
@@ -51,9 +45,7 @@ pub struct Topic {
 }
 
 impl Topic {
-    pub fn new(topic: String) -> Self {
-        Topic { topic }
-    }
+    pub fn new(topic: String) -> Self { Topic { topic } }
 
     /// Creates a `TopicHash` by SHA256 hashing the topic then base64 encoding the
     /// hash.
@@ -64,9 +56,7 @@ impl Topic {
             enc: None,
         };
         let mut bytes = Vec::with_capacity(topic_descripter.encoded_len());
-        topic_descripter
-            .encode(&mut bytes)
-            .expect("buffer is large enough");
+        topic_descripter.encode(&mut bytes).expect("buffer is large enough");
         let hash = encode(Sha256::digest(&bytes).as_slice());
 
         TopicHash { hash }
@@ -81,13 +71,9 @@ impl Topic {
 }
 
 impl fmt::Display for Topic {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.topic)
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.topic) }
 }
 
 impl fmt::Display for TopicHash {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.hash)
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.hash) }
 }

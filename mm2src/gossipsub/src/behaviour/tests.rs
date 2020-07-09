@@ -53,10 +53,7 @@ mod tests {
         for _ in 0..peer_no {
             let peer = PeerId::random();
             peers.push(peer.clone());
-            <Gossipsub as NetworkBehaviour>::inject_connected(
-                &mut gs,
-                &peer,
-            );
+            <Gossipsub as NetworkBehaviour>::inject_connected(&mut gs, &peer);
             if to_subscribe {
                 gs.handle_received_subscriptions(
                     &topic_hashes
@@ -92,23 +89,18 @@ mod tests {
         );
 
         // collect all the subscriptions
-        let subscriptions =
-            gs.events
-                .iter()
-                .fold(vec![], |mut collected_subscriptions, e| match e {
-                    NetworkBehaviourAction::NotifyHandler { event, .. } => {
-                        for s in &event.subscriptions {
-                            match s.action {
-                                GossipsubSubscriptionAction::Subscribe => {
-                                    collected_subscriptions.push(s.clone())
-                                }
-                                _ => {}
-                            };
-                        }
-                        collected_subscriptions
-                    }
-                    _ => collected_subscriptions,
-                });
+        let subscriptions = gs.events.iter().fold(vec![], |mut collected_subscriptions, e| match e {
+            NetworkBehaviourAction::NotifyHandler { event, .. } => {
+                for s in &event.subscriptions {
+                    match s.action {
+                        GossipsubSubscriptionAction::Subscribe => collected_subscriptions.push(s.clone()),
+                        _ => {},
+                    };
+                }
+                collected_subscriptions
+            },
+            _ => collected_subscriptions,
+        });
 
         // we sent a subscribe to all known peers
         assert!(
@@ -139,10 +131,7 @@ mod tests {
                 gs.topic_peers.get(&topic_hash).is_some(),
                 "Topic_peers contain a topic entry"
             );
-            assert!(
-                gs.mesh.get(&topic_hash).is_some(),
-                "mesh should contain a topic entry"
-            );
+            assert!(gs.mesh.get(&topic_hash).is_some(), "mesh should contain a topic entry");
         }
 
         // unsubscribe from both topics
@@ -155,23 +144,18 @@ mod tests {
             "should be able to unsubscribe successfully from each topic",
         );
 
-        let subscriptions =
-            gs.events
-                .iter()
-                .fold(vec![], |mut collected_subscriptions, e| match e {
-                    NetworkBehaviourAction::NotifyHandler { event, .. } => {
-                        for s in &event.subscriptions {
-                            match s.action {
-                                GossipsubSubscriptionAction::Unsubscribe => {
-                                    collected_subscriptions.push(s.clone())
-                                }
-                                _ => {}
-                            };
-                        }
-                        collected_subscriptions
-                    }
-                    _ => collected_subscriptions,
-                });
+        let subscriptions = gs.events.iter().fold(vec![], |mut collected_subscriptions, e| match e {
+            NetworkBehaviourAction::NotifyHandler { event, .. } => {
+                for s in &event.subscriptions {
+                    match s.action {
+                        GossipsubSubscriptionAction::Unsubscribe => collected_subscriptions.push(s.clone()),
+                        _ => {},
+                    };
+                }
+                collected_subscriptions
+            },
+            _ => collected_subscriptions,
+        });
 
         // we sent a unsubscribe to all known peers, for two topics
         assert!(
@@ -231,20 +215,18 @@ mod tests {
         );
 
         // there should be mesh_n GRAFT messages.
-        let graft_messages =
-            gs.control_pool
-                .iter()
-                .fold(vec![], |mut collected_grafts, (_, controls)| {
-                    for c in controls.iter() {
-                        match c {
-                            GossipsubControlAction::Graft { topic_hash: _ } => {
-                                collected_grafts.push(c.clone())
-                            }
-                            _ => {}
-                        }
+        let graft_messages = gs
+            .control_pool
+            .iter()
+            .fold(vec![], |mut collected_grafts, (_, controls)| {
+                for c in controls.iter() {
+                    match c {
+                        GossipsubControlAction::Graft { topic_hash: _ } => collected_grafts.push(c.clone()),
+                        _ => {},
                     }
-                    collected_grafts
-                });
+                }
+                collected_grafts
+            });
 
         assert_eq!(
             graft_messages.len(),
@@ -278,20 +260,18 @@ mod tests {
         }
 
         // there should now be 12 graft messages to be sent
-        let graft_messages =
-            gs.control_pool
-                .iter()
-                .fold(vec![], |mut collected_grafts, (_, controls)| {
-                    for c in controls.iter() {
-                        match c {
-                            GossipsubControlAction::Graft { topic_hash: _ } => {
-                                collected_grafts.push(c.clone())
-                            }
-                            _ => {}
-                        }
+        let graft_messages = gs
+            .control_pool
+            .iter()
+            .fold(vec![], |mut collected_grafts, (_, controls)| {
+                for c in controls.iter() {
+                    match c {
+                        GossipsubControlAction::Graft { topic_hash: _ } => collected_grafts.push(c.clone()),
+                        _ => {},
                     }
-                    collected_grafts
-                });
+                }
+                collected_grafts
+            });
 
         assert!(
             graft_messages.len() == 12,
@@ -307,8 +287,7 @@ mod tests {
         // - Insert message into gs.mcache and gs.received
 
         let publish_topic = String::from("test_publish");
-        let (mut gs, _, topic_hashes) =
-            build_and_inject_nodes(20, vec![publish_topic.clone()], true);
+        let (mut gs, _, topic_hashes) = build_and_inject_nodes(20, vec![publish_topic.clone()], true);
 
         assert!(
             gs.mesh.get(&topic_hashes[0]).is_some(),
@@ -320,21 +299,17 @@ mod tests {
         gs.publish(&Topic::new(publish_topic), publish_data);
 
         // Collect all publish messages
-        let publishes = gs
-            .events
-            .iter()
-            .fold(vec![], |mut collected_publish, e| match e {
-                NetworkBehaviourAction::NotifyHandler { event, .. } => {
-                    for s in &event.messages {
-                        collected_publish.push(s.clone());
-                    }
-                    collected_publish
+        let publishes = gs.events.iter().fold(vec![], |mut collected_publish, e| match e {
+            NetworkBehaviourAction::NotifyHandler { event, .. } => {
+                for s in &event.messages {
+                    collected_publish.push(s.clone());
                 }
-                _ => collected_publish,
-            });
+                collected_publish
+            },
+            _ => collected_publish,
+        });
 
-        let msg_id =
-            (gs.config.message_id_fn)(&publishes.first().expect("Should contain > 0 entries"));
+        let msg_id = (gs.config.message_id_fn)(&publishes.first().expect("Should contain > 0 entries"));
 
         assert!(
             publishes.len() == 20,
@@ -359,8 +334,7 @@ mod tests {
         // - Send publish message to fanout peers
         // - Insert message into gs.mcache and gs.received
         let fanout_topic = String::from("test_fanout");
-        let (mut gs, _, topic_hashes) =
-            build_and_inject_nodes(20, vec![fanout_topic.clone()], true);
+        let (mut gs, _, topic_hashes) = build_and_inject_nodes(20, vec![fanout_topic.clone()], true);
 
         assert!(
             gs.mesh.get(&topic_hashes[0]).is_some(),
@@ -377,30 +351,23 @@ mod tests {
         gs.publish(&Topic::new(fanout_topic.clone()), publish_data);
 
         assert_eq!(
-            gs.fanout
-                .get(&TopicHash::from_raw(fanout_topic.clone()))
-                .unwrap()
-                .len(),
+            gs.fanout.get(&TopicHash::from_raw(fanout_topic.clone())).unwrap().len(),
             gs.config.mesh_n,
             "Fanout should contain `mesh_n` peers for fanout topic"
         );
 
         // Collect all publish messages
-        let publishes = gs
-            .events
-            .iter()
-            .fold(vec![], |mut collected_publish, e| match e {
-                NetworkBehaviourAction::NotifyHandler { event, .. } => {
-                    for s in &event.messages {
-                        collected_publish.push(s.clone());
-                    }
-                    collected_publish
+        let publishes = gs.events.iter().fold(vec![], |mut collected_publish, e| match e {
+            NetworkBehaviourAction::NotifyHandler { event, .. } => {
+                for s in &event.messages {
+                    collected_publish.push(s.clone());
                 }
-                _ => collected_publish,
-            });
+                collected_publish
+            },
+            _ => collected_publish,
+        });
 
-        let msg_id =
-            (gs.config.message_id_fn)(&publishes.first().expect("Should contain > 0 entries"));
+        let msg_id = (gs.config.message_id_fn)(&publishes.first().expect("Should contain > 0 entries"));
 
         assert_eq!(
             publishes.len(),
@@ -421,11 +388,8 @@ mod tests {
     #[test]
     /// Test the gossipsub NetworkBehaviour peer connection logic.
     fn test_inject_connected() {
-        let (gs, peers, topic_hashes) = build_and_inject_nodes(
-            20,
-            vec![String::from("topic1"), String::from("topic2")],
-            true,
-        );
+        let (gs, peers, topic_hashes) =
+            build_and_inject_nodes(20, vec![String::from("topic1"), String::from("topic2")], true);
 
         // check that our subscriptions are sent to each of the peers
         // collect all the SendEvents
@@ -446,8 +410,8 @@ mod tests {
                         event.subscriptions.len() == 2,
                         "There should be two subscriptions sent to each peer (1 for each topic)."
                     );
-                }
-                _ => {}
+                },
+                _ => {},
             };
         }
 
@@ -570,28 +534,21 @@ mod tests {
 
         gs.topic_peers.insert(topic_hash.clone(), peers.clone());
 
-        let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 5, |_| true);
+        let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 5, |_| true);
         assert!(random_peers.len() == 5, "Expected 5 peers to be returned");
-        let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 30, |_| true);
+        let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 30, |_| true);
         assert!(random_peers.len() == 20, "Expected 20 peers to be returned");
         assert!(random_peers == peers, "Expected no shuffling");
-        let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 20, |_| true);
+        let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 20, |_| true);
         assert!(random_peers.len() == 20, "Expected 20 peers to be returned");
         assert!(random_peers == peers, "Expected no shuffling");
-        let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 0, |_| true);
+        let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 0, |_| true);
         assert!(random_peers.len() == 0, "Expected 0 peers to be returned");
         // test the filter
-        let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 5, |_| false);
+        let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 5, |_| false);
         assert!(random_peers.len() == 0, "Expected 0 peers to be returned");
         let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 10, {
-                |peer| peers.contains(peer)
-            });
+            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 10, { |peer| peers.contains(peer) });
         assert!(random_peers.len() == 10, "Expected 10 peers to be returned");
     }
 
@@ -614,18 +571,15 @@ mod tests {
         gs.handle_iwant(&peers[7], vec![msg_id.clone()]);
 
         // the messages we are sending
-        let sent_messages = gs
-            .events
-            .iter()
-            .fold(vec![], |mut collected_messages, e| match e {
-                NetworkBehaviourAction::NotifyHandler { event, .. } => {
-                    for c in &event.messages {
-                        collected_messages.push(c.clone())
-                    }
-                    collected_messages
+        let sent_messages = gs.events.iter().fold(vec![], |mut collected_messages, e| match e {
+            NetworkBehaviourAction::NotifyHandler { event, .. } => {
+                for c in &event.messages {
+                    collected_messages.push(c.clone())
                 }
-                _ => collected_messages,
-            });
+                collected_messages
+            },
+            _ => collected_messages,
+        });
 
         assert!(
             sent_messages.iter().any(|msg| id(msg) == msg_id),
@@ -659,7 +613,7 @@ mod tests {
             let message_exists = gs.events.iter().any(|e| match e {
                 NetworkBehaviourAction::NotifyHandler { event, .. } => {
                     event.messages.iter().any(|msg| id(msg) == msg_id)
-                }
+                },
                 _ => false,
             });
             // default history_length is 5, expect no messages after shift > 5
@@ -686,32 +640,24 @@ mod tests {
         gs.handle_iwant(&peers[7], vec![MessageId(String::from("unknown id"))]);
         let events_after = gs.events.len();
 
-        assert_eq!(
-            events_before, events_after,
-            "Expected event count to stay the same"
-        );
+        assert_eq!(events_before, events_after, "Expected event count to stay the same");
     }
 
     #[test]
     // tests that an event is created when a peer shares that it has a message we want
     fn test_handle_ihave_subscribed_and_msg_not_cached() {
-        let (mut gs, peers, topic_hashes) =
-            build_and_inject_nodes(20, vec![String::from("topic1")], true);
+        let (mut gs, peers, topic_hashes) = build_and_inject_nodes(20, vec![String::from("topic1")], true);
 
-        gs.handle_ihave(
-            &peers[7],
-            vec![(
-                topic_hashes[0].clone(),
-                vec![MessageId(String::from("unknown id"))],
-            )],
-        );
+        gs.handle_ihave(&peers[7], vec![(topic_hashes[0].clone(), vec![MessageId(
+            String::from("unknown id"),
+        )])]);
 
         // check that we sent an IWANT request for `unknown id`
         let iwant_exists = match gs.control_pool.get(&peers[7]) {
             Some(controls) => controls.iter().any(|c| match c {
-                GossipsubControlAction::IWant { message_ids } => message_ids
-                    .iter()
-                    .any(|m| *m.0 == String::from("unknown id")),
+                GossipsubControlAction::IWant { message_ids } => {
+                    message_ids.iter().any(|m| *m.0 == String::from("unknown id"))
+                },
                 _ => false,
             }),
             _ => false,
@@ -727,8 +673,7 @@ mod tests {
     // tests that an event is not created when a peer shares that it has a message that
     // we already have
     fn test_handle_ihave_subscribed_and_msg_cached() {
-        let (mut gs, peers, topic_hashes) =
-            build_and_inject_nodes(20, vec![String::from("topic1")], true);
+        let (mut gs, peers, topic_hashes) = build_and_inject_nodes(20, vec![String::from("topic1")], true);
 
         let msg_id = MessageId(String::from("known id"));
         gs.received.put(msg_id.clone(), ());
@@ -737,10 +682,7 @@ mod tests {
         gs.handle_ihave(&peers[7], vec![(topic_hashes[0].clone(), vec![msg_id])]);
         let events_after = gs.events.len();
 
-        assert_eq!(
-            events_before, events_after,
-            "Expected event count to stay the same"
-        )
+        assert_eq!(events_before, events_after, "Expected event count to stay the same")
     }
 
     #[test]
@@ -750,27 +692,20 @@ mod tests {
         let (mut gs, peers, _) = build_and_inject_nodes(20, vec![], true);
 
         let events_before = gs.events.len();
-        gs.handle_ihave(
-            &peers[7],
-            vec![(
-                TopicHash::from_raw(String::from("unsubscribed topic")),
-                vec![MessageId(String::from("irrelevant id"))],
-            )],
-        );
+        gs.handle_ihave(&peers[7], vec![(
+            TopicHash::from_raw(String::from("unsubscribed topic")),
+            vec![MessageId(String::from("irrelevant id"))],
+        )]);
         let events_after = gs.events.len();
 
-        assert_eq!(
-            events_before, events_after,
-            "Expected event count to stay the same"
-        )
+        assert_eq!(events_before, events_after, "Expected event count to stay the same")
     }
 
     #[test]
     // tests that a peer is added to our mesh when we are both subscribed
     // to the same topic
     fn test_handle_graft_is_subscribed() {
-        let (mut gs, peers, topic_hashes) =
-            build_and_inject_nodes(20, vec![String::from("topic1")], true);
+        let (mut gs, peers, topic_hashes) = build_and_inject_nodes(20, vec![String::from("topic1")], true);
 
         gs.handle_graft(&peers[7], topic_hashes.clone());
 
@@ -784,13 +719,9 @@ mod tests {
     // tests that a peer is not added to our mesh when they are subscribed to
     // a topic that we are not
     fn test_handle_graft_is_not_subscribed() {
-        let (mut gs, peers, topic_hashes) =
-            build_and_inject_nodes(20, vec![String::from("topic1")], true);
+        let (mut gs, peers, topic_hashes) = build_and_inject_nodes(20, vec![String::from("topic1")], true);
 
-        gs.handle_graft(
-            &peers[7],
-            vec![TopicHash::from_raw(String::from("unsubscribed topic"))],
-        );
+        gs.handle_graft(&peers[7], vec![TopicHash::from_raw(String::from("unsubscribed topic"))]);
 
         assert!(
             gs.mesh.get(&topic_hashes[0]).unwrap().contains(&peers[7]),
@@ -832,8 +763,7 @@ mod tests {
     #[test]
     // tests that a peer is removed from our mesh
     fn test_handle_prune_peer_in_mesh() {
-        let (mut gs, peers, topic_hashes) =
-            build_and_inject_nodes(20, vec![String::from("topic1")], true);
+        let (mut gs, peers, topic_hashes) = build_and_inject_nodes(20, vec![String::from("topic1")], true);
 
         // insert peer into our mesh for 'topic1'
         gs.mesh.insert(topic_hashes[0].clone(), peers.clone());

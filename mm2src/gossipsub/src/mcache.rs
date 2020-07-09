@@ -42,11 +42,7 @@ pub struct MessageCache {
 
 /// Implementation of the MessageCache.
 impl MessageCache {
-    pub fn new(
-        gossip: usize,
-        history_capacity: usize,
-        msg_id: fn(&GossipsubMessage) -> MessageId,
-    ) -> MessageCache {
+    pub fn new(gossip: usize, history_capacity: usize, msg_id: fn(&GossipsubMessage) -> MessageId) -> MessageCache {
         MessageCache {
             gossip,
             msgs: HashMap::default(),
@@ -86,9 +82,7 @@ impl MessageCache {
     }
 
     /// Get a message with `message_id`
-    pub fn get(&self, message_id: &MessageId) -> Option<&GossipsubMessage> {
-        self.msgs.get(message_id)
-    }
+    pub fn get(&self, message_id: &MessageId) -> Option<&GossipsubMessage> { self.msgs.get(message_id) }
 
     /// Get a list of GossipIds for a given topic
     pub fn get_gossip_ids(&self, topic: &TopicHash) -> Vec<MessageId> {

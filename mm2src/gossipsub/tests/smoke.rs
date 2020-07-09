@@ -22,22 +22,13 @@ use futures::prelude::*;
 use log::debug;
 use quickcheck::{QuickCheck, TestResult};
 use rand::{random, seq::SliceRandom, SeedableRng};
-use std::{
-    io::Error,
-    pin::Pin,
-    task::{Context, Poll},
-    time::Duration,
-};
+use std::{io::Error,
+          pin::Pin,
+          task::{Context, Poll},
+          time::Duration};
 
-use libp2p_core::{
-    Multiaddr,
-    Transport,
-    identity,
-    multiaddr::Protocol,
-    muxing::StreamMuxerBox,
-    transport::MemoryTransport,
-    upgrade,
-};
+use libp2p_core::{identity, multiaddr::Protocol, muxing::StreamMuxerBox, transport::MemoryTransport, upgrade,
+                  Multiaddr, Transport};
 use libp2p_gossipsub::{Gossipsub, GossipsubConfig, GossipsubEvent, Topic};
 use libp2p_plaintext::PlainText2Config;
 use libp2p_swarm::Swarm;
@@ -55,7 +46,7 @@ impl Future for Graph {
             match node.poll_next_unpin(cx) {
                 Poll::Ready(Some(event)) => return Poll::Ready((addr.clone(), event)),
                 Poll::Ready(None) => panic!("unexpected None when polling nodes"),
-                Poll::Pending => {}
+                Poll::Pending => {},
             }
         }
 
@@ -101,9 +92,7 @@ impl Graph {
             connected_nodes.push(next);
         }
 
-        Graph {
-            nodes: connected_nodes,
-        }
+        Graph { nodes: connected_nodes }
     }
 
     /// Polls the graph and passes each event into the provided FnMut until it returns `true`.
@@ -122,7 +111,7 @@ impl Graph {
                         if f(ev) {
                             return Poll::Ready(this.take().unwrap());
                         }
-                    }
+                    },
                     Poll::Pending => return Poll::Pending,
                 }
             },
@@ -157,9 +146,7 @@ fn build_node() -> (Multiaddr, Swarm<Gossipsub>) {
     let mut addr: Multiaddr = Protocol::Memory(port).into();
     Swarm::listen_on(&mut swarm, addr.clone()).unwrap();
 
-    addr = addr.with(libp2p_core::multiaddr::Protocol::P2p(
-        public_key.into_peer_id().into(),
-    ));
+    addr = addr.with(libp2p_core::multiaddr::Protocol::P2p(public_key.into_peer_id().into()));
 
     (addr, swarm)
 }
