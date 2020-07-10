@@ -92,8 +92,6 @@ hyper-rustls = { version = "0.20", optional = true }
 keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 lazy_static = "1.3"
 libc = "0.2"
-libp2p = "0.21.1"
-libp2p-gossipsub = { path = "mm2src/gossipsub" }
 mm2-libp2p = { path = "mm2src/mm2_libp2p" }
 num-rational = { version = "0.2", features = ["serde", "bigint", "bigint-std"] }
 num-traits = "0.2"

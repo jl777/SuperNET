@@ -1,10 +1,10 @@
 use async_std::future::timeout;
-use common::{executor::spawn,
+use common::{block_on,
+             executor::spawn,
              mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand}};
 use futures::{channel::mpsc, lock::Mutex as AsyncMutex, prelude::*, select, FutureExt};
 use libp2p::{identity, PeerId};
 use libp2p_gossipsub::protocol::MessageId;
-use libp2p_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, Topic, TopicHash};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,

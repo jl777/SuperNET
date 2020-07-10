@@ -1,3 +1,5 @@
+mod atomicdex_behaviour;
+
 use secp256k1::{sign, verify, Message as SecpMessage, PublicKey as Secp256k1Pubkey, SecretKey, Signature};
 use serde::{de,
             ser::{Serialize, Serializer}};
