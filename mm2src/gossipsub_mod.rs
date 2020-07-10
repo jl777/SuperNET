@@ -96,12 +96,6 @@ pub fn relayer_node(
     port: u16,
     other_relayers: Option<Vec<String>>,
 ) -> (mpsc::UnboundedSender<P2PCommand>, String) {
-    // Create a random PeerId
-    let local_key = identity::Keypair::generate_ed25519();
-    let local_peer_id = PeerId::from(local_key.public());
-    println!("Local peer id: {:?}", local_peer_id);
-    let gossipsub_ctx = unwrap!(GossipsubContext::from_ctx(&ctx));
-
     // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
     let transport = libp2p::build_development_transport(local_key).unwrap();
 
