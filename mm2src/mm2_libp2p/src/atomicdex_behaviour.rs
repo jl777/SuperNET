@@ -3,7 +3,6 @@ use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, Gos
 use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
-              lock::Mutex,
               Future, SinkExt, StreamExt};
 use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
@@ -40,6 +39,8 @@ pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
     message_txs: HashMap<TopicHash, Vec<GossipMessageTx>>,
     #[behaviour(ignore)]
+    mesh_update_txs: HashMap<TopicHash, Vec<oneshot::Sender<()>>>,
+    #[behaviour(ignore)]
     spawn_fn: fn(Box<dyn Future<Output = ()>>) -> (),
     #[behaviour(ignore)]
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
@@ -73,6 +74,10 @@ impl AtomicDexBehavior {
             } => {
                 let topic = Topic::new(topic);
                 self.gossipsub.subscribe(topic.clone());
+                self.mesh_update_txs
+                    .entry(topic.no_hash())
+                    .or_insert_with(Vec::new)
+                    .push(mesh_update_tx);
                 self.message_txs
                     .entry(topic.no_hash())
                     .or_insert_with(Vec::new)
@@ -138,6 +143,7 @@ fn new_and_spawn(
         let adex_behavior = AtomicDexBehavior {
             node_type,
             message_txs: HashMap::new(),
+            mesh_update_txs: HashMap::new(),
             spawn_fn,
             cmd_rx,
             gossipsub,

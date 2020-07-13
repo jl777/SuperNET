@@ -57,7 +57,6 @@
 #![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
-use crate::mm2::gossipsub_mod::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR};
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TradeFee, TransactionEnum};
@@ -67,7 +66,7 @@ use common::{block_on,
              mm_number::MmNumber,
              now_ms, read_dir, rpc_response, slurp, write, HyRes};
 use http::Response;
-use mm2_libp2p::{decode_signed, encode_and_sign};
+use mm2_libp2p::{decode_signed, encode_and_sign, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR};
 use primitives::hash::{H160, H256, H264};
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use serde_json::{self as json, Value as Json};

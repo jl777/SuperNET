@@ -45,7 +45,6 @@ use crate::common::executor::{spawn, Timer};
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
-use crate::mm2::gossipsub_mod::add_gossipsub_event_handler;
 use crate::mm2::lp_network::start_client_p2p_loop;
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler, OrdermatchP2PConnector};
@@ -600,7 +599,6 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     #[cfg(not(feature = "native"))]
     try_s!(ctx.send_to_helpers().await);
     let seednodes: Option<Vec<String>> = try_s!(json::from_value(ctx.conf["seednodes"].clone()));
-    use crate::mm2::gossipsub_mod::relayer_node;
 
     if i_am_seed {
         log!("Before relayer node");

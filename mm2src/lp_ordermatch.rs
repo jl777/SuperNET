@@ -32,7 +32,7 @@ use futures::{compat::Future01CompatExt, sink::SinkExt};
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
-use mm2_libp2p::{decode_signed, encode_and_sign};
+use mm2_libp2p::{decode_signed, encode_and_sign, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR};
 #[cfg(test)] use mocktopus::macros::*;
 use num_rational::BigRational;
 use num_traits::identities::Zero;
@@ -47,11 +47,9 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use crate::mm2::{gossipsub_mod::{pub_sub_topic, GossipsubEventHandler, TopicPrefix, TOPIC_SEPARATOR},
-                 lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
-                           is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
-                           AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
-                           SwapConfirmationsSettings, TakerSwap}};
+use crate::mm2::lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
+                          is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap, AtomicLocktimeVersion,
+                          MakerSwap, RunMakerSwapInput, RunTakerSwapInput, SwapConfirmationsSettings, TakerSwap};
 
 pub const ORDERBOOK_PREFIX: TopicPrefix = "orbk";
 
@@ -1498,11 +1496,11 @@ fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
         if let OrderMatchResult::Matched((base_amount, rel_amount)) = match_order_and_request(order, &taker_request) {
             let base_coin = match lp_coinfind(&ctx, &order.base) {
                 Ok(Some(c)) => c,
-                _ => return 1, // attempt to match with deactivated coin
+                _ => return, // attempt to match with deactivated coin
             };
             let rel_coin = match lp_coinfind(&ctx, &order.rel) {
                 Ok(Some(c)) => c,
-                _ => return 1, // attempt to match with deactivated coin
+                _ => return, // attempt to match with deactivated coin
             };
 
             if !order.matches.contains_key(&taker_request.uuid) {

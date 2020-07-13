@@ -99,6 +99,16 @@ impl From<Secp256k1Pubkey> for PublicKey {
     fn from(pubkey: Secp256k1Pubkey) -> Self { PublicKey::Secp256k1(Secp256k1PubkeySerialize(pubkey)) }
 }
 
+pub type TopicPrefix = &'static str;
+pub const TOPIC_SEPARATOR: char = '/';
+
+pub fn pub_sub_topic(prefix: TopicPrefix, topic: &str) -> String {
+    let mut res = prefix.to_owned();
+    res.push(TOPIC_SEPARATOR);
+    res.push_str(topic);
+    res
+}
+
 #[test]
 fn signed_message_serde() {
     let mut rng = rand::thread_rng();
