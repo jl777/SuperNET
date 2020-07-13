@@ -23,7 +23,7 @@
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
-use coins::{lp_coinfindᵃ, BalanceUpdateEventHandler, MmCoinEnum};
+use coins::{lp_coinfind, lp_coinfindᵃ, BalanceUpdateEventHandler, MmCoinEnum};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
@@ -1496,6 +1496,15 @@ fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
 
     for (uuid, order) in my_orders.iter_mut() {
         if let OrderMatchResult::Matched((base_amount, rel_amount)) = match_order_and_request(order, &taker_request) {
+            let base_coin = match lp_coinfind(&ctx, &order.base) {
+                Ok(Some(c)) => c,
+                _ => return 1, // attempt to match with deactivated coin
+            };
+            let rel_coin = match lp_coinfind(&ctx, &order.rel) {
+                Ok(Some(c)) => c,
+                _ => return 1, // attempt to match with deactivated coin
+            };
+
             if !order.matches.contains_key(&taker_request.uuid) {
                 let reserved = MakerReserved {
                     dest_pub_key: taker_request.sender_pubkey.clone(),
@@ -1509,7 +1518,14 @@ fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
                     method: "reserved".into(),
                     taker_order_uuid: taker_request.uuid,
                     maker_order_uuid: *uuid,
-                    conf_settings: order.conf_settings,
+                    conf_settings: order.conf_settings.or_else(|| {
+                        Some(OrderConfirmationsSettings {
+                            base_confs: base_coin.required_confirmations(),
+                            base_nota: base_coin.requires_notarization(),
+                            rel_confs: rel_coin.required_confirmations(),
+                            rel_nota: rel_coin.requires_notarization(),
+                        })
+                    }),
                 };
                 let topic = orderbook_topic(&order.base, &order.rel);
                 println!("Request matched sending reserved {:?}", reserved);

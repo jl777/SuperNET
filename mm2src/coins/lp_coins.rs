@@ -60,6 +60,17 @@ macro_rules! try_fus {
     };
 }
 
+// validate_address implementation for coin that has address_from_str method
+macro_rules! validate_address_impl {
+    ($self: ident, $address: expr) => {{
+        let result = $self.address_from_str($address);
+        $crate::ValidateAddressResult {
+            is_valid: result.is_ok(),
+            reason: result.err(),
+        }
+    }};
+}
+
 #[doc(hidden)] pub mod coins_tests;
 pub mod eth;
 use self::eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, SignedEthTx};
@@ -367,12 +378,20 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
     /// Maximum number of digits after decimal point used to denominate integer coin units (satoshis, wei, etc.)
     fn decimals(&self) -> u8;
 
+    /// Convert input address to the specified address format.
+    fn convert_to_address(&self, from: &str, to_address_format: Json) -> Result<String, String>;
+
+    fn validate_address(&self, address: &str) -> ValidateAddressResult;
+
     /// Loop collecting coin transaction history and saving it to local DB
     fn process_history_loop(&self, ctx: MmArc);
 
     /// Path to tx history file
     fn tx_history_path(&self, ctx: &MmArc) -> PathBuf {
         let my_address = self.my_address().unwrap_or_default();
+        // BCH cash address format has colon after prefix, e.g. bitcoincash:
+        // Colon can't be used in file names on Windows so it should be escaped
+        let my_address = my_address.replace(":", "_");
         ctx.dbdir()
             .join("TRANSACTIONS")
             .join(format!("{}_{}.json", self.ticker(), my_address))
@@ -403,8 +422,12 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 
     fn save_history_to_file(&self, content: &[u8], ctx: &MmArc) {
         let tmp_file = format!("{}.tmp", self.tx_history_path(&ctx).display());
-        unwrap!(std::fs::write(&tmp_file, content));
-        unwrap!(std::fs::rename(tmp_file, self.tx_history_path(&ctx)));
+        if let Err(e) = std::fs::write(&tmp_file, content) {
+            log!("Error " (e) " writing history to the tmp file " (tmp_file));
+        }
+        if let Err(e) = std::fs::rename(&tmp_file, self.tx_history_path(&ctx)) {
+            log!("Error " (e) " renaming file " (tmp_file) " to " [self.tx_history_path(&ctx)]);
+        }
     }
 
     /// Gets tx details by hash requesting the coin RPC if required
@@ -701,6 +724,56 @@ pub async fn lp_coinfindᵃ(ctx: &MmArc, ticker: &str) -> Result<Option<MmCoinEn
     let cctx = try_s!(CoinsContext::from_ctx(ctx));
     let coins = try_s!(cctx.coins.sleeplock(77).await);
     Ok(coins.get(ticker).cloned())
+}
+
+#[derive(Deserialize)]
+struct ConvertAddressReq {
+    coin: String,
+    from: String,
+    /// format to that the input address should be converted
+    to_address_format: Json,
+}
+
+pub async fn convert_address(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let req: ConvertAddressReq = try_s!(json::from_value(req));
+    let coin = match lp_coinfindᵃ(&ctx, &req.coin).await {
+        Ok(Some(t)) => t,
+        Ok(None) => return ERR!("No such coin: {}", req.coin),
+        Err(err) => return ERR!("!lp_coinfind({}): {}", req.coin, err),
+    };
+    let result = json!({
+        "result": {
+            "address": try_s!(coin.convert_to_address(&req.from, req.to_address_format)),
+        },
+    });
+    let body = try_s!(json::to_vec(&result));
+    Ok(try_s!(Response::builder().body(body)))
+}
+
+#[derive(Deserialize)]
+struct ValidateAddressReq {
+    coin: String,
+    address: String,
+}
+
+#[derive(Serialize)]
+pub struct ValidateAddressResult {
+    is_valid: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reason: Option<String>,
+}
+
+pub async fn validate_address(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let req: ValidateAddressReq = try_s!(json::from_value(req));
+    let coin = match lp_coinfindᵃ(&ctx, &req.coin).await {
+        Ok(Some(t)) => t,
+        Ok(None) => return ERR!("No such coin: {}", req.coin),
+        Err(err) => return ERR!("!lp_coinfind({}): {}", req.coin, err),
+    };
+
+    let res = json!({ "result": coin.validate_address(&req.address) });
+    let body = try_s!(json::to_vec(&res));
+    Ok(try_s!(Response::builder().body(body)))
 }
 
 pub async fn withdraw(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {

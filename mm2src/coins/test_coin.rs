@@ -1,10 +1,11 @@
 use super::{HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionDetails, TransactionEnum,
             TransactionFut};
-use crate::{FoundSwapTxSpend, WithdrawRequest};
+use crate::{FoundSwapTxSpend, ValidateAddressResult, WithdrawRequest};
 use bigdecimal::BigDecimal;
 use common::mm_ctx::MmArc;
 use futures01::Future;
 use mocktopus::macros::*;
+use serde_json::Value as Json;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
@@ -190,6 +191,10 @@ impl MmCoin for TestCoin {
     }
 
     fn decimals(&self) -> u8 { unimplemented!() }
+
+    fn convert_to_address(&self, from: &str, to_address_format: Json) -> Result<String, String> { unimplemented!() }
+
+    fn validate_address(&self, address: &str) -> ValidateAddressResult { unimplemented!() }
 
     fn process_history_loop(&self, ctx: MmArc) { unimplemented!() }
 
