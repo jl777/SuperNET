@@ -180,6 +180,8 @@ impl Gossipsub {
         true
     }
 
+    pub fn is_subscribed(&self, topic_hash: &TopicHash) -> bool { self.mesh.contains_key(&topic_hash) }
+
     /// Unsubscribes from a topic.
     ///
     /// Returns true if we were subscribed to this topic.

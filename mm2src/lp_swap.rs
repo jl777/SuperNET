@@ -106,32 +106,6 @@ pub fn broadcast_message(ctx: &MmArc, topic: String, msg: SwapMsg) {
     ctx.broadcast_p2p_msg(topic, encoded_msg);
 }
 
-pub struct SwapsGossipsubConnector {
-    pub ctx: MmArc,
-}
-
-impl GossipsubEventHandler for SwapsGossipsubConnector {
-    fn peer_subscribed(&self, _peer: &str, _topic: &str) {
-        // do nothing
-    }
-
-    fn message_received(&self, _peer: String, topics: &[&str], msg: &[u8]) {
-        for topic in topics {
-            let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
-            if split.next() == Some(SWAP_PREFIX) {
-                if let Some(maybe_uuid) = split.next() {
-                    log!({ "Processing swap msg {} {:?}", maybe_uuid, msg });
-                    process_msg(self.ctx.clone(), maybe_uuid, msg);
-                }
-            }
-        }
-    }
-
-    fn peer_disconnected(&self, _peer: &str) {
-        // do nothing
-    }
-}
-
 pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let msg = match decode_signed::<SwapMsg>(msg) {
         Ok(m) => m,

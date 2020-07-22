@@ -13,6 +13,15 @@ use std::{collections::hash_map::{DefaultHasher, HashMap},
 
 pub type GossipMessageTx = UnboundedSender<Arc<GossipsubMessage>>;
 
+pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
+
+async fn is_subscribed(mut cmd_tx: AdexCmdTx, topic: String) -> bool {
+    let (tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::IsSubscribed { topic, result_tx: tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
 #[derive(Debug)]
 pub enum AdexBehaviorCmd {
     Subscribe {
@@ -22,6 +31,10 @@ pub enum AdexBehaviorCmd {
         mesh_update_tx: oneshot::Sender<()>,
         /// The tx to send gossip messages in
         gossip_tx: GossipMessageTx,
+    },
+    IsSubscribed {
+        topic: String,
+        result_tx: oneshot::Sender<bool>,
     },
 }
 
@@ -83,6 +96,15 @@ impl AtomicDexBehavior {
                     .or_insert_with(Vec::new)
                     .push(gossip_tx);
             },
+            AdexBehaviorCmd::IsSubscribed { topic, result_tx } => {
+                let topic = TopicHash::from_raw(topic);
+                let is_subscribed = self.gossipsub.is_subscribed(&topic);
+                (self.spawn_fn)(Box::new(async move {
+                    if let Err(e) = result_tx.send(is_subscribed) {
+                        println!("Result rx is dropped");
+                    }
+                }))
+            },
         }
     }
 }
@@ -103,7 +125,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
 }
 
 /// Creates and spawns new AdexBehavior Swarm returning tx to send control commands
-fn new_and_spawn(
+pub fn new_and_spawn(
     node_type: AdexNodeType,
     ip: IpAddr,
     port: u16,
