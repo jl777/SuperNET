@@ -4,6 +4,7 @@ use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amo
             my_swap_file_path, my_swaps_dir, recv_swap_msg, swap_topic, AtomicSwap, LockedAmount, MySwapInfo,
             RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings, SwapError, SwapMsg,
             SwapsContext, WAIT_CONFIRM_INTERVAL};
+use crate::mm2::lp_network::subscribe_to_topic;
 use crate::mm2::lp_swap::{broadcast_message, NegotiationDataMsg};
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
@@ -285,8 +286,7 @@ pub async fn run_taker_swap(swap: RunTakerSwapInput, ctx: MmArc) {
     );
 
     let ctx = swap.ctx.clone();
-    let subscribe_fut = ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
-    unwrap!(subscribe_fut.await);
+    let subscribe_fut = subscribe_to_topic(&ctx, swap_topic(&swap.uuid));
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
     let running_swap = Arc::new(swap);

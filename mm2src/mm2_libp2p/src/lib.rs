@@ -7,6 +7,9 @@ use serde_bytes;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+pub use atomicdex_behaviour::start_gossipsub;
+pub use atomicdex_gossipsub::GossipsubEvent;
+
 pub fn encode_message<T: Serialize>(message: &T) -> Result<Vec<u8>, rmp_serde::encode::Error> {
     rmp_serde::to_vec(message)
 }

@@ -26,17 +26,19 @@ use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 use crossbeam::channel;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
-use futures::SinkExt;
+use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
-use mm2_libp2p::atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, AtomicDexBehavior};
+use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, AtomicDexBehavior, GossipEventRx},
+                 GossipsubEvent, TOPIC_SEPARATOR};
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, TcpListener, TcpStream};
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
+
+use crate::mm2::{lp_ordermatch, lp_swap};
 
 pub struct P2PContext {
     cmd_tx: AdexCmdTx,
@@ -59,11 +61,43 @@ impl P2PContext {
     }
 }
 
+pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx) {
+    while !ctx.is_stopping() {
+        match rx.next().await {
+            Some(GossipsubEvent::Message(peer_id, _, message)) => {
+                for topic in message.topics {
+                    let mut split = topic.as_str().split(TOPIC_SEPARATOR);
+                    match split.next() {
+                        Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
+                            lp_ordermatch::process_msg(ctx.clone(), peer_id.to_string(), &message.data)
+                        },
+                        Some(lp_swap::SWAP_PREFIX) => {
+                            lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data)
+                        },
+                        None | Some(_) => (),
+                    }
+                }
+            },
+            None => break,
+            _ => (),
+        }
+    }
+}
+
 #[cfg(feature = "native")]
 pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
     spawn(async move {
         let cmd = AdexBehaviorCmd::PublishMsg { topic, msg };
+        tx.send(cmd).await.unwrap();
+    });
+}
+
+#[cfg(feature = "native")]
+pub fn subscribe_to_topic(ctx: &MmArc, topic: String) {
+    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
+    spawn(async move {
+        let cmd = AdexBehaviorCmd::Subscribe { topic };
         tx.send(cmd).await.unwrap();
     });
 }

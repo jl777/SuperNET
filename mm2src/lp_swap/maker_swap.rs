@@ -5,7 +5,7 @@ use super::{ban_pubkey, broadcast_message, broadcast_my_swap_status, dex_fee_amo
             LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings,
             SwapError, SwapMsg, SwapsContext, WAIT_CONFIRM_INTERVAL};
 
-use crate::mm2::lp_swap::NegotiationDataMsg;
+use crate::mm2::{lp_network::subscribe_to_topic, lp_swap::NegotiationDataMsg};
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use bitcrypto::dhash160;
@@ -1189,8 +1189,7 @@ pub async fn run_maker_swap(swap: RunMakerSwapInput, ctx: MmArc) {
     );
 
     let ctx = swap.ctx.clone();
-    let subscribe_fut = ctx.subscribe_to_p2p_topic(swap_topic(&swap.uuid));
-    unwrap!(subscribe_fut.await);
+    subscribe_to_topic(&ctx, swap_topic(&swap.uuid));
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
     macro_rules! swap_tags {

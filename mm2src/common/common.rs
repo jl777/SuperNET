@@ -897,6 +897,8 @@ pub mod executor {
         unwrap!(crate::wio::CORE.lock()).spawn(f);
     }
 
+    pub fn spawn_boxed(future: Box<dyn Future03<Output = ()> + Send + Unpin + 'static>) { spawn(future); }
+
     /// Schedule the given `future` to be executed shortly after the given `utc` time is reached.
     pub fn spawn_after(utc: f64, future: impl Future03<Output = ()> + Send + 'static) {
         use crossbeam::channel;

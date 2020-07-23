@@ -25,7 +25,7 @@ use bitcrypto::sha256;
 use coins::utxo::{compressed_pub_key_from_priv_raw, ChecksumType};
 use coins::{lp_coinfind, lp_coinfindᵃ, BalanceUpdateEventHandler, MmCoinEnum};
 use common::executor::{spawn, Timer};
-use common::mm_ctx::{from_ctx, MmArc, MmWeak, P2PCommand};
+use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
 use common::{bits256, json_dir_entries, new_uuid, now_ms, remove_file, rpc_err_response, rpc_response, write, HyRes};
 use futures::{compat::Future01CompatExt, sink::SinkExt};
@@ -47,8 +47,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use crate::mm2::lp_network::send_msgs_to_peers;
-use crate::mm2::{lp_network::broadcast_p2p_msg,
+use crate::mm2::{lp_network::{broadcast_p2p_msg, send_msgs_to_peers, subscribe_to_topic},
                  lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
@@ -217,15 +216,15 @@ fn maker_order_created_p2p_notify(ctx: MmArc, order: &MakerOrder) {
             (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
         let uuid = price_ping_req.uuid.unwrap();
         insert_or_update_order(&ctx, price_ping_req, uuid);
-        ctx.subscribe_to_p2p_topic(topic.clone()).await.unwrap();
-        ctx.broadcast_p2p_msg(topic, encoded_msg);
+        subscribe_to_topic(&ctx, topic.clone());
+        broadcast_p2p_msg(&ctx, topic, encoded_msg);
     });
 }
 
 fn maker_order_updated_p2p_notify(ctx: MmArc, order: &MakerOrder) {
     let topic = orderbook_topic(&order.base, &order.rel);
     spawn(async move {
-        ctx.subscribe_to_p2p_topic(topic).await.unwrap();
+        subscribe_to_topic(&ctx, topic);
         if let Err(e) = broadcast_my_maker_orders(&ctx).await {
             ctx.log
                 .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
@@ -1658,7 +1657,7 @@ pub async fn lp_auto_buy(
         _ => return ERR!("Auto buy must be called only from buy/sell RPC methods"),
     };
     let topic = orderbook_topic(&input.base, &input.rel);
-    try_s!(ctx.subscribe_to_p2p_topic(topic.clone()).await);
+    subscribe_to_topic(ctx, topic.clone());
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_taker_orders = try_s!(ordermatch_ctx.my_taker_orders.lock());
     let our_public_id = try_s!(ctx.public_id());
@@ -2452,7 +2451,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &req.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
-    try_s!(ctx.subscribe_to_p2p_topic(orderbook_topic(&req.base, &req.rel)).await);
+    subscribe_to_topic(&ctx, orderbook_topic(&req.base, &req.rel));
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = try_s!(ordermatch_ctx.orderbook.lock());
     let my_pubsecp = hex::encode(&**ctx.secp256k1_key_pair().public());

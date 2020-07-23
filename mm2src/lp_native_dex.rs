@@ -27,6 +27,7 @@ use futures::future::FutureExt;
 use futures01::sync::oneshot::Sender;
 use futures01::Future;
 use http::StatusCode;
+use mm2_libp2p::start_gossipsub;
 use rand::rngs::SmallRng;
 use rand::{random, Rng, SeedableRng};
 use serde_json::{self as json, Value as Json};
@@ -40,12 +41,12 @@ use std::path::Path;
 use std::str;
 use std::str::from_utf8;
 
-use crate::common::executor::{spawn, Timer};
+use crate::common::executor::{spawn, spawn_boxed, Timer};
 #[cfg(feature = "native")] use crate::common::lp;
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
-use crate::mm2::lp_network::start_client_p2p_loop;
+use crate::mm2::lp_network::{gossip_event_process_loop, start_client_p2p_loop, P2PContext};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
@@ -600,6 +601,11 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     try_s!(ctx.send_to_helpers().await);
     let seednodes: Option<Vec<String>> = try_s!(json::from_value(ctx.conf["seednodes"].clone()));
 
+    let (cmd_tx, event_rx, peer_id) = start_gossipsub(myipaddr, mypubport, spawn_boxed, seednodes);
+    try_s!(ctx.peer_id.pin(peer_id.to_string()));
+    let p2p_context = P2PContext::new(cmd_tx);
+    p2p_context.store_to_mm_arc(&ctx);
+    spawn(gossip_event_process_loop(ctx.clone(), event_rx));
     /*
     if i_am_seed {
         log!("Before relayer node");
@@ -610,7 +616,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     }
     */
 
-    try_s!(lp_initpeers(&ctx, netid, seednodes).await);
+    // try_s!(lp_initpeers(&ctx, netid, seednodes).await);
     let balance_update_ordermatch_handler = BalanceUpdateOrdermatchHandler::new(ctx.clone());
     register_balance_update_handler(ctx.clone(), Box::new(balance_update_ordermatch_handler));
 

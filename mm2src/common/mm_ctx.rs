@@ -31,16 +31,6 @@ use crate::{bits256, small_rng, QueuedCommand};
 /// Default interval to export and record metrics to log.
 const EXPORT_METRICS_INTERVAL: f64 = 5. * 60.;
 
-pub enum P2PCommand {
-    // Topics list and oneshot Receiver to notify the subscribing side
-    // whether the topic mesh has at least 1 peer
-    Subscribe(String, oneshot::Sender<()>),
-    // Publish the message with topic
-    Publish(Vec<(String, Vec<u8>)>),
-    // Send messages to specific connected peers
-    SendToPeers(Vec<(String, Vec<u8>)>, Vec<String>),
-}
-
 type StopListenerCallback = Box<dyn FnMut() -> Result<(), String>>;
 
 /// MarketMaker state, shared between the various MarketMaker threads.
@@ -105,7 +95,6 @@ pub struct MmCtx {
     /// `lp_queue_command` shares messages with `lp_command_q_loop` via this channel.  
     /// The messages are usually the JSON broadcasts from the seed nodes.
     pub command_queue: mpsc::UnboundedSender<QueuedCommand>,
-    pub gossip_sub_cmd_queue: Constructible<mpsc::UnboundedSender<P2PCommand>>,
     /// The end of the `command_queue` channel taken by `lp_command_q_loop`.
     pub command_queueʳ: Mutex<Option<mpsc::UnboundedReceiver<QueuedCommand>>>,
     /// Broadcast `lp_queue_command` messages saved for WASM.
@@ -148,7 +137,6 @@ impl MmCtx {
             seednode_p2p_channel: channel::unbounded(),
             client_p2p_channel: channel::unbounded(),
             command_queue,
-            gossip_sub_cmd_queue: Constructible::default(),
             command_queueʳ: Mutex::new(Some(command_queueʳ)),
             command_queueʰ: Mutex::new(None),
             rmd160: Constructible::default(),
@@ -250,10 +238,13 @@ impl MmCtx {
     /// Sends the P2P message to a processing thread
     #[cfg(feature = "native")]
     pub fn broadcast_p2p_msg(&self, topic: String, msg: Vec<u8>) {
+        /*
         let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
         spawn(async move {
             tx.send(P2PCommand::Publish(vec![(topic, msg)])).await.unwrap();
         });
+
+         */
     }
 
     #[cfg(not(feature = "native"))]
@@ -321,17 +312,6 @@ impl Clone for MmArc {
 impl Deref for MmArc {
     type Target = MmCtx;
     fn deref(&self) -> &MmCtx { &*self.0 }
-}
-
-impl MmArc {
-    #[cfg(feature = "native")]
-    pub async fn subscribe_to_p2p_topic(&self, topic: String) -> Result<(), String> {
-        let mut gossip_sub_tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
-        let (tx, rx) = oneshot::channel();
-        gossip_sub_tx.send(P2PCommand::Subscribe(topic, tx)).await.unwrap();
-        let received = try_s!(timeout(Duration::from_secs(10), rx).await);
-        received.map_err(|e| ERRL!("{:?}", e))
-    }
 }
 
 #[derive(Clone, Default)]
