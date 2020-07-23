@@ -26,14 +26,56 @@ use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 use crossbeam::channel;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
+use futures::SinkExt;
 use futures01::{future, Future};
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, AtomicDexBehavior};
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, TcpListener, TcpStream};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+
+pub struct P2PContext {
+    cmd_tx: AdexCmdTx,
+}
+
+impl P2PContext {
+    pub fn new(cmd_tx: AdexCmdTx) -> Self { P2PContext { cmd_tx } }
+
+    pub fn store_to_mm_arc(self, ctx: &MmArc) { *ctx.p2p_ctx.lock().unwrap() = Some(Arc::new(self)) }
+
+    pub fn fetch_from_mm_arc(ctx: &MmArc) -> Arc<Self> {
+        ctx.p2p_ctx
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .clone()
+            .downcast()
+            .unwrap()
+    }
+}
+
+#[cfg(feature = "native")]
+pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
+    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
+    spawn(async move {
+        let cmd = AdexBehaviorCmd::PublishMsg { topic, msg };
+        tx.send(cmd).await.unwrap();
+    });
+}
+
+#[cfg(feature = "native")]
+pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<String>) {
+    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
+    spawn(async move {
+        let cmd = AdexBehaviorCmd::SendToPeers { msgs, peers };
+        tx.send(cmd).await.unwrap();
+    });
+}
 
 /// Result of `fn dispatcher`.
 #[allow(dead_code)]
@@ -187,11 +229,11 @@ pub async fn start_relayer_node_loop(
     /*
     let listener: TcpListener = try_s!(TcpListener::bind(&fomat!((myipaddr) ":" (mypubport))));
     try_s!(listener.set_nonblocking(true));
-    */
     try_s!(thread::Builder::new().name("seednode_loop".into()).spawn({
         let ctx = ctx.clone();
         move || relayer_node(ctx, myipaddr, mypubport, other_relayers)
     }));
+    */
     Ok(())
 }
 
@@ -240,9 +282,12 @@ struct SeedConnection {
 
 #[cfg(feature = "native")]
 pub async fn start_client_p2p_loop(ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
+    /*
     let (tx, peer_id) = clientnode(ctx.clone(), relayers, port);
     try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
     try_s!(ctx.peer_id.pin(peer_id));
+
+     */
     Ok(())
 }
 

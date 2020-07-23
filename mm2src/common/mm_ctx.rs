@@ -90,7 +90,7 @@ pub struct MmCtx {
     pub ordermatch_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
     /// The context belonging to the `peers` crate: `PeersContext`.
     pub peers_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
-    pub adex_network_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
+    pub p2p_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
     pub peer_id: Constructible<String>,
     /// The context belonging to the `http_fallback` mod: `HttpFallbackContext`.
     pub http_fallback_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
@@ -140,7 +140,7 @@ impl MmCtx {
             portfolio_ctx: Mutex::new(None),
             ordermatch_ctx: Mutex::new(None),
             peers_ctx: Mutex::new(None),
-            adex_network_ctx: Mutex::new(None),
+            p2p_ctx: Mutex::new(None),
             peer_id: Constructible::default(),
             http_fallback_ctx: Mutex::new(None),
             coins_ctx: Mutex::new(None),

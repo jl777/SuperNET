@@ -11,8 +11,6 @@ use std::{collections::hash_map::{DefaultHasher, HashMap},
           sync::Arc,
           task::{Context, Poll}};
 
-pub type GossipMessageTx = UnboundedSender<Arc<GossipsubMessage>>;
-
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 
 async fn is_subscribed(mut cmd_tx: AdexCmdTx, topic: String) -> bool {
@@ -27,14 +25,18 @@ pub enum AdexBehaviorCmd {
     Subscribe {
         /// Subscribe to this topic
         topic: String,
-        /// Get notified about mesh update
-        mesh_update_tx: oneshot::Sender<()>,
-        /// The tx to send gossip messages in
-        gossip_tx: GossipMessageTx,
     },
     IsSubscribed {
         topic: String,
         result_tx: oneshot::Sender<bool>,
+    },
+    PublishMsg {
+        topic: String,
+        msg: Vec<u8>,
+    },
+    SendToPeers {
+        msgs: Vec<(String, Vec<u8>)>,
+        peers: Vec<String>,
     },
 }
 
@@ -50,9 +52,7 @@ pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
     node_type: AdexNodeType,
     #[behaviour(ignore)]
-    message_txs: HashMap<TopicHash, Vec<GossipMessageTx>>,
-    #[behaviour(ignore)]
-    mesh_update_txs: HashMap<TopicHash, Vec<oneshot::Sender<()>>>,
+    event_tx: UnboundedSender<GossipsubEvent>,
     #[behaviour(ignore)]
     spawn_fn: fn(Box<dyn Future<Output = ()>>) -> (),
     #[behaviour(ignore)]
@@ -61,67 +61,51 @@ pub struct AtomicDexBehavior {
 }
 
 impl AtomicDexBehavior {
-    fn notify_on_message(&self, message: GossipsubMessage) {
-        let mut message_txs = Vec::new();
-        for topic in &message.topics {
-            if let Some(txs) = self.message_txs.get(topic) {
-                message_txs.extend(txs.clone());
-            }
-        }
-        let message = Arc::new(message);
+    fn notify_on_event(&self, event: GossipsubEvent) {
+        let mut tx = self.event_tx.clone();
         (self.spawn_fn)(Box::new(async move {
-            for mut tx in message_txs {
-                if let Err(e) = tx.send(Arc::clone(&message)).await {
-                    println!("{}", e);
-                }
+            if let Err(e) = tx.send(event).await {
+                println!("{}", e);
             }
         }))
     }
 
     fn process_cmd(&mut self, cmd: AdexBehaviorCmd) {
         match cmd {
-            AdexBehaviorCmd::Subscribe {
-                topic,
-                mesh_update_tx,
-                gossip_tx,
-            } => {
+            AdexBehaviorCmd::Subscribe { topic } => {
                 let topic = Topic::new(topic);
-                self.gossipsub.subscribe(topic.clone());
-                self.mesh_update_txs
-                    .entry(topic.no_hash())
-                    .or_insert_with(Vec::new)
-                    .push(mesh_update_tx);
-                self.message_txs
-                    .entry(topic.no_hash())
-                    .or_insert_with(Vec::new)
-                    .push(gossip_tx);
+                self.gossipsub.subscribe(topic);
             },
             AdexBehaviorCmd::IsSubscribed { topic, result_tx } => {
                 let topic = TopicHash::from_raw(topic);
                 let is_subscribed = self.gossipsub.is_subscribed(&topic);
                 (self.spawn_fn)(Box::new(async move {
-                    if let Err(e) = result_tx.send(is_subscribed) {
+                    if let Err(_) = result_tx.send(is_subscribed) {
                         println!("Result rx is dropped");
                     }
                 }))
+            },
+            AdexBehaviorCmd::PublishMsg { topic, msg } => {
+                self.gossipsub.publish(&Topic::new(topic), msg);
+            },
+            AdexBehaviorCmd::SendToPeers { msgs, peers } => {
+                let mut peer_ids = Vec::with_capacity(peers.len());
+                for peer in peers {
+                    let peer_id: PeerId = match peer.parse() {
+                        Ok(p) => p,
+                        Err(_) => continue,
+                    };
+                    peer_ids.push(peer_id);
+                }
+
+                self.gossipsub.send_messages_to_peers(msgs, peer_ids);
             },
         }
     }
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: GossipsubEvent) {
-        match event {
-            GossipsubEvent::Message(.., message) => self.notify_on_message(message),
-            GossipsubEvent::Subscribed { peer_id: _, topic } => {
-                if self.node_type == AdexNodeType::Relayer {
-                    let topic = Topic::new(topic.into_string());
-                    self.gossipsub.subscribe(topic);
-                }
-            },
-            _ => println!("{:?}", event),
-        }
-    }
+    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_event(event); }
 }
 
 /// Creates and spawns new AdexBehavior Swarm returning tx to send control commands
@@ -131,7 +115,7 @@ pub fn new_and_spawn(
     port: u16,
     spawn_fn: fn(Box<dyn Future<Output = ()>>) -> (),
     to_dial: Option<Vec<String>>,
-) -> UnboundedSender<AdexBehaviorCmd> {
+) -> (UnboundedSender<AdexBehaviorCmd>, UnboundedReceiver<GossipsubEvent>) {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -139,7 +123,8 @@ pub fn new_and_spawn(
 
     // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
     let transport = libp2p::build_development_transport(local_key).unwrap();
-    let (tx, cmd_rx) = unbounded();
+    let (cmd_tx, cmd_rx) = unbounded();
+    let (event_tx, event_rx) = unbounded();
 
     // Create a Swarm to manage peers and events
     let mut swarm = {
@@ -164,8 +149,7 @@ pub fn new_and_spawn(
         let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
         let adex_behavior = AtomicDexBehavior {
             node_type,
-            message_txs: HashMap::new(),
-            mesh_update_txs: HashMap::new(),
+            event_tx,
             spawn_fn,
             cmd_rx,
             gossipsub,
@@ -206,7 +190,7 @@ pub fn new_and_spawn(
 
     spawn_fn(Box::new(polling_fut));
 
-    tx
+    (cmd_tx, event_rx)
 }
 
 #[test]
