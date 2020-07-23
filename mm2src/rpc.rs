@@ -139,8 +139,8 @@ async fn helpers(
     }
 
     let res = match method {
-        "broadcast_p2p_msg" => try_s!(lp_network::broadcast_p2p_msgʰ(reqᵇ).await),
-        "p2p_tap" => try_s!(lp_network::p2p_tapʰ(reqᵇ).await),
+        // "broadcast_p2p_msg" => try_s! (lp_network::broadcast_p2p_msgʰ (reqᵇ) .await),
+        // "p2p_tap" => try_s! (lp_network::p2p_tapʰ (reqᵇ) .await),
         "common_wait_for_log_re" => try_s!(common_wait_for_log_re(reqᵇ).await),
         "ctx2helpers" => try_s!(ctx2helpers(ctx, reqᵇ).await),
         "peers_initialize" => try_s!(peers::peers_initialize(reqᵇ).await),
