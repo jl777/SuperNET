@@ -24,6 +24,7 @@ use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 use crossbeam::channel;
+use futures::channel::oneshot;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
@@ -78,6 +79,9 @@ pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx) {
                     }
                 }
             },
+            Some(GossipsubEvent::Subscribed { peer_id, topic }) => {
+                lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str());
+            },
             None => break,
             _ => (),
         }
@@ -94,12 +98,12 @@ pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
 }
 
 #[cfg(feature = "native")]
-pub fn subscribe_to_topic(ctx: &MmArc, topic: String) {
+pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
-    spawn(async move {
-        let cmd = AdexBehaviorCmd::Subscribe { topic };
-        tx.send(cmd).await.unwrap();
-    });
+    let (mesh_update_tx, mesh_update_rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::Subscribe { topic, mesh_update_tx };
+    tx.send(cmd).await.unwrap();
+    mesh_update_rx.await.unwrap();
 }
 
 #[cfg(feature = "native")]

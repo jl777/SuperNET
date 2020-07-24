@@ -663,6 +663,11 @@ impl Gossipsub {
                 }
                 // update the mesh
                 debug!("Updating mesh, new mesh: {:?}", peer_list);
+                self.events
+                    .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::MeshUpdated {
+                        topic: topic_hash.clone(),
+                        info: MeshUpdateInfo::AddedPeers(peer_list.len()),
+                    }));
                 peers.extend(peer_list);
             }
 
@@ -684,6 +689,11 @@ impl Gossipsub {
                     let current_topic = to_prune.entry(peer).or_insert_with(|| vec![]);
                     current_topic.push(topic_hash.clone());
                 }
+                self.events
+                    .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::MeshUpdated {
+                        topic: topic_hash.clone(),
+                        info: MeshUpdateInfo::RemovedPeers(excess_peer_no),
+                    }));
             }
         }
 
@@ -1174,6 +1184,12 @@ pub struct GossipsubRpc {
     pub control_msgs: Vec<GossipsubControlAction>,
 }
 
+#[derive(Debug)]
+pub enum MeshUpdateInfo {
+    AddedPeers(usize),
+    RemovedPeers(usize),
+}
+
 /// Event that can happen on the gossipsub behaviour.
 #[derive(Debug)]
 pub enum GossipsubEvent {
@@ -1196,6 +1212,13 @@ pub enum GossipsubEvent {
         peer_id: PeerId,
         /// The topic it has subscribed from.
         topic: TopicHash,
+    },
+
+    /// Notify that topic mesh was updated
+    MeshUpdated {
+        /// The topic that mesh is updated for.
+        topic: TopicHash,
+        info: MeshUpdateInfo,
     },
 
     /// Peer disconnected.

@@ -21,15 +21,27 @@ async fn is_subscribed(mut cmd_tx: AdexCmdTx, topic: String) -> bool {
     rx.await.expect("Tx should be present")
 }
 
+async fn get_mesh_and_total_peers_num(mut cmd_tx: AdexCmdTx, topic: String) -> (usize, usize) {
+    let (tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::GetMeshAndTotalPeersNum { topic, result_tx: tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
 #[derive(Debug)]
 pub enum AdexBehaviorCmd {
     Subscribe {
         /// Subscribe to this topic
         topic: String,
+        mesh_update_tx: oneshot::Sender<()>,
     },
     IsSubscribed {
         topic: String,
         result_tx: oneshot::Sender<bool>,
+    },
+    GetMeshAndTotalPeersNum {
+        topic: String,
+        result_tx: oneshot::Sender<(usize, usize)>,
     },
     PublishMsg {
         topic: String,
@@ -46,6 +58,8 @@ pub enum AdexBehaviorCmd {
 pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
     event_tx: UnboundedSender<GossipsubEvent>,
+    #[behaviour(ignore)]
+    mesh_update_txs: HashMap<TopicHash, Vec<oneshot::Sender<()>>>,
     #[behaviour(ignore)]
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
@@ -65,18 +79,27 @@ impl AtomicDexBehavior {
 
     fn process_cmd(&mut self, cmd: AdexBehaviorCmd) {
         match cmd {
-            AdexBehaviorCmd::Subscribe { topic } => {
+            AdexBehaviorCmd::Subscribe { topic, mesh_update_tx } => {
                 let topic = Topic::new(topic);
+                let topic_hash = topic.no_hash();
                 self.gossipsub.subscribe(topic);
+                if !self.gossipsub.get_mesh_peers(&topic_hash).is_empty() || self.gossipsub.get_num_peers() == 0 {
+                    if let Err(_) = mesh_update_tx.send(()) {
+                        println!("Result rx is dropped");
+                    }
+                } else {
+                    self.mesh_update_txs
+                        .entry(topic_hash)
+                        .or_insert_with(Vec::new)
+                        .push(mesh_update_tx);
+                }
             },
             AdexBehaviorCmd::IsSubscribed { topic, result_tx } => {
                 let topic = TopicHash::from_raw(topic);
                 let is_subscribed = self.gossipsub.is_subscribed(&topic);
-                (self.spawn_fn)(Box::new(Box::pin(async move {
-                    if let Err(_) = result_tx.send(is_subscribed) {
-                        println!("Result rx is dropped");
-                    }
-                })))
+                if let Err(_) = result_tx.send(is_subscribed) {
+                    println!("Result rx is dropped");
+                }
             },
             AdexBehaviorCmd::PublishMsg { topic, msg } => {
                 self.gossipsub.publish(&Topic::new(topic), msg);
@@ -93,12 +116,31 @@ impl AtomicDexBehavior {
 
                 self.gossipsub.send_messages_to_peers(msgs, peer_ids);
             },
+            AdexBehaviorCmd::GetMeshAndTotalPeersNum { topic, result_tx } => {
+                let topic = TopicHash::from_raw(topic);
+                let tuple = (
+                    self.gossipsub.get_mesh_peers(&topic).len(),
+                    self.gossipsub.get_num_peers(),
+                );
+                if let Err(_) = result_tx.send(tuple) {
+                    println!("Result rx is dropped");
+                }
+            },
         }
     }
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_event(event); }
+    fn inject_event(&mut self, event: GossipsubEvent) {
+        if let GossipsubEvent::MeshUpdated { topic, info: _ } = &event {
+            self.mesh_update_txs.remove(&topic).map(|txs| {
+                for tx in txs {
+                    if let Err(_) = tx.send(()) {}
+                }
+            });
+        }
+        self.notify_on_event(event);
+    }
 }
 
 /// Creates and spawns new AdexBehavior Swarm returning:
@@ -151,6 +193,7 @@ pub fn start_gossipsub(
             spawn_fn,
             cmd_rx,
             gossipsub,
+            mesh_update_txs: HashMap::new(),
         };
         libp2p::Swarm::new(transport, adex_behavior, local_peer_id.clone())
     };

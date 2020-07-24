@@ -286,7 +286,7 @@ pub async fn run_taker_swap(swap: RunTakerSwapInput, ctx: MmArc) {
     );
 
     let ctx = swap.ctx.clone();
-    let subscribe_fut = subscribe_to_topic(&ctx, swap_topic(&swap.uuid));
+    subscribe_to_topic(&ctx, swap_topic(&swap.uuid)).await;
     let mut status = ctx.log.status_handle();
     let uuid = swap.uuid.clone();
     let running_swap = Arc::new(swap);

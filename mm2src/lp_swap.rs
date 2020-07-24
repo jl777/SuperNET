@@ -57,6 +57,7 @@
 #![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
+use crate::mm2::lp_network::broadcast_p2p_msg;
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TradeFee, TransactionEnum};
@@ -103,7 +104,7 @@ pub struct SwapMsgStore {
 pub fn broadcast_message(ctx: &MmArc, topic: String, msg: SwapMsg) {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let encoded_msg = encode_and_sign(&msg, &*key_pair.private().secret).unwrap();
-    ctx.broadcast_p2p_msg(topic, encoded_msg);
+    broadcast_p2p_msg(ctx, topic, encoded_msg);
 }
 
 pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {

@@ -252,7 +252,6 @@ fn alice_can_see_the_active_order_after_connection() {
         "volume": "0.9",
     }))));
     assert!(rc.0.is_success(), "!setprice: {}", rc.1);
-
     // Bob orderbook must show the new order
     log!("Get RICK/MORTY orderbook on Bob side");
     let rc = unwrap!(block_on(mm_bob.rpc(json! ({
@@ -1647,7 +1646,7 @@ fn test_cancel_order() {
     }))));
     assert!(cancel_rc.0.is_success(), "!cancel_order: {}", rc.1);
 
-    let pause = 11;
+    let pause = 3;
     log!("Waiting (" (pause) " seconds) for Bob to cancel the order…");
     thread::sleep(Duration::from_secs(pause));
 
