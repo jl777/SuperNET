@@ -78,6 +78,19 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
     }
 }
 
+fn process_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive) {
+    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+    let order = orderbook
+        .values_mut()
+        .flatten()
+        .map(|(_, order)| order)
+        .find(|order| order.uuid == Some(keep_alive.uuid.into()));
+    if let Some(order) = order {
+        order.timestamp = keep_alive.timestamp;
+    }
+}
+
 fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
@@ -129,6 +142,9 @@ pub fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
                         .into();
                     let uuid = req.uuid.unwrap();
                     insert_or_update_order(&ctx, req, uuid);
+                },
+                new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
+                    process_order_keep_alive(&ctx, &keep_alive);
                 },
                 new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
                     process_taker_request(ctx, taker_request.into());
@@ -1081,6 +1097,20 @@ pub trait OrdermatchEventHandler {
     fn maker_order_cancelled(&self, order: &MakerOrder);
 }
 
+fn broadcast_maker_keep_alives(ctx: &MmArc) {
+    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().unwrap();
+    my_maker_orders.values_mut().for_each(|order| {
+        let msg = new_protocol::MakerOrderKeepAlive {
+            uuid: order.uuid.into(),
+            timestamp: now_ms() / 1000,
+        };
+        process_order_keep_alive(ctx, &msg);
+        let topic = orderbook_topic(&order.base, &order.rel);
+        broadcast_ordermatch_message(ctx, topic, msg);
+    })
+}
+
 fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &MmArc, topic: String, msg: T) {
     let msg = msg.into();
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
@@ -1260,7 +1290,7 @@ fn lp_connected_alice(ctx: MmArc, taker_request: TakerRequest, taker_match: Take
 
 pub async fn lp_ordermatch_loop(ctx: MmArc) {
     const ORDERMATCH_TIMEOUT: u64 = 30000;
-    let mut last_price_broadcast = 0;
+    let mut last_price_broadcast = now_ms();
 
     loop {
         if ctx.is_stopping() {
@@ -1320,12 +1350,15 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                 .collect();
         }
 
-        if now_ms() > last_price_broadcast + 5 * 60 * 1000 {
+        if now_ms() > last_price_broadcast + 20 * 1000 {
+            /*
             if let Err(e) = broadcast_my_maker_orders(&ctx).await {
                 ctx.log
                     .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
             }
             last_price_broadcast = now_ms();
+            */
+            broadcast_maker_keep_alives(&ctx);
         }
 
         {
@@ -1338,7 +1371,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     pair_orderbook = pair_orderbook
                         .drain()
                         .filter_map(|(pubkey, order)| {
-                            if now_ms() / 1000 > order.timestamp + 300 {
+                            if now_ms() / 1000 > order.timestamp + 30 {
                                 None
                             } else {
                                 Some((pubkey, order))
@@ -2704,6 +2737,10 @@ mod new_protocol {
         MakerConnected(MakerConnected),
     }
 
+    impl From<MakerOrderKeepAlive> for OrdermatchMessage {
+        fn from(keep_alive: MakerOrderKeepAlive) -> Self { OrdermatchMessage::MakerOrderKeepAlive(keep_alive) }
+    }
+
     /// MsgPack compact representation does not work with tagged enums (encoding works, but decoding fails)
     /// This is untagged representation also using compact Uuid representation
     #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -2800,7 +2837,8 @@ mod new_protocol {
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct MakerOrderKeepAlive {
-        uuid: CompactUuid,
+        pub uuid: CompactUuid,
+        pub timestamp: u64,
     }
 
     #[derive(Debug, Deserialize, Serialize)]

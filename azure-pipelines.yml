@@ -8,8 +8,6 @@ variables:
 
 trigger:
   branches:
-    exclude:
-      - refs/heads/libp2p-gossip-sub-ordermatch
     include:
       - refs/heads/*
   paths:
