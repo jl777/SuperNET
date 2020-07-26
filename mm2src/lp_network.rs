@@ -29,7 +29,7 @@ use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
-use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, AtomicDexBehavior, GossipEventRx},
+use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, GossipEventRx},
                  GossipsubEvent, TOPIC_SEPARATOR};
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
@@ -257,6 +257,7 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
 
 #[cfg(feature = "native")]
 #[allow(dead_code)]
+#[allow(unused)]
 pub async fn start_relayer_node_loop(
     ctx: &MmArc,
     myipaddr: IpAddr,
@@ -319,6 +320,7 @@ struct SeedConnection {
 }
 
 #[cfg(feature = "native")]
+#[allow(unused)]
 pub async fn start_client_p2p_loop(ctx: MmArc, relayers: Vec<String>, port: u16) -> Result<(), String> {
     /*
     let (tx, peer_id) = clientnode(ctx.clone(), relayers, port);

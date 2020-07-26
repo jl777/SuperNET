@@ -75,6 +75,7 @@ pub fn lp_command_process(ctx: MmArc, json: Json) {
 //       We might also diverge in how we handle the p2p communication in the future.
 
 /// Aka `default_LPnodes`. Initial nodes of the peer-to-peer network.
+#[allow(dead_code)]
 const P2P_SEED_NODES: [&str; 5] = [
     "5.9.253.195",
     "173.212.225.176",
@@ -84,6 +85,7 @@ const P2P_SEED_NODES: [&str; 5] = [
 ];
 
 /// Default seed nodes for netid 9999 that is used for MM2 testing
+#[allow(dead_code)]
 const P2P_SEED_NODES_9999: [&str; 3] = ["195.201.116.176", "46.4.87.18", "46.4.78.11"];
 
 pub fn lp_ports(netid: u16) -> Result<(u16, u16, u16), String> {
@@ -104,6 +106,7 @@ pub fn lp_ports(netid: u16) -> Result<(u16, u16, u16), String> {
 }
 
 /// Setup the peer-to-peer network.
+#[allow(dead_code)]
 pub async fn lp_initpeers(ctx: &MmArc, netid: u16, seednodes: Option<Vec<String>>) -> Result<(), String> {
     // Pick our ports.
     let (_pullport, pubport, _busport) = try_s!(lp_ports(netid));
@@ -466,7 +469,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     }
 
     let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
-    let netid = ctx.netid();
+    let _netid = ctx.netid();
 
     // Keeps HTTP fallback server alive until `lp_init` exits.
     let mut _hf_shutdown;

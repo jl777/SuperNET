@@ -1,8 +1,6 @@
-use crate::executor::spawn;
-use async_std::future::timeout;
 use bytes::Bytes;
 use crossbeam::{channel, Receiver, Sender};
-use futures::{channel::mpsc, channel::oneshot, compat::Compat, prelude::*};
+use futures::{channel::mpsc, compat::Compat};
 use gstuff::Constructible;
 #[cfg(not(feature = "native"))] use http::Response;
 use keys::{DisplayLayout, KeyPair, Private};
@@ -21,7 +19,6 @@ use std::net::IpAddr;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
-use std::time::Duration;
 
 use crate::executor::Timer;
 use crate::log::{self, LogState};
@@ -237,15 +234,7 @@ impl MmCtx {
 
     /// Sends the P2P message to a processing thread
     #[cfg(feature = "native")]
-    pub fn broadcast_p2p_msg(&self, topic: String, msg: Vec<u8>) {
-        /*
-        let mut tx = self.gossip_sub_cmd_queue.or(&|| panic!()).clone();
-        spawn(async move {
-            tx.send(P2PCommand::Publish(vec![(topic, msg)])).await.unwrap();
-        });
-
-         */
-    }
+    pub fn broadcast_p2p_msg(&self, _topic: String, _msg: Vec<u8>) { unimplemented!() }
 
     #[cfg(not(feature = "native"))]
     pub fn broadcast_p2p_msg(&self, msg: &str) {

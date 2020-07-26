@@ -67,7 +67,7 @@ use common::{block_on,
              mm_number::MmNumber,
              now_ms, read_dir, rpc_response, slurp, write, HyRes};
 use http::Response;
-use mm2_libp2p::{decode_signed, encode_and_sign, pub_sub_topic, TopicPrefix, TOPIC_SEPARATOR};
+use mm2_libp2p::{decode_signed, encode_and_sign, pub_sub_topic, TopicPrefix};
 use primitives::hash::{H160, H256, H264};
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use serde_json::{self as json, Value as Json};

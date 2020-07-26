@@ -28,7 +28,7 @@ use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
 use common::{bits256, json_dir_entries, new_uuid, now_ms, remove_file, rpc_err_response, rpc_response, write, HyRes};
-use futures::{compat::Future01CompatExt, sink::SinkExt};
+use futures::compat::Future01CompatExt;
 use gstuff::slurp;
 use http::Response;
 use keys::{Public, Signature};
@@ -282,9 +282,10 @@ pub fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
     send_msgs_to_peers(&ctx, messages, peers);
 }
 
+#[allow(dead_code)]
 fn handle_message_received(ctx: MmArc, peer: String, topics: &[&str], msg: &[u8]) {
     for topic in topics.iter() {
-        if let Some(_) = parse_orderbook_pair_from_topic(topic) {
+        if parse_orderbook_pair_from_topic(topic).is_some() {
             let msg = msg.to_owned();
             let peer_clone = peer.clone();
             process_msg(ctx.clone(), peer_clone, &msg);
@@ -292,6 +293,7 @@ fn handle_message_received(ctx: MmArc, peer: String, topics: &[&str], msg: &[u8]
     }
 }
 
+#[allow(dead_code)]
 fn handle_peer_disconnected(ctx: &MmArc, peer: &str) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(ctx));
     let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
@@ -1356,8 +1358,8 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                 ctx.log
                     .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
             }
-            last_price_broadcast = now_ms();
             */
+            last_price_broadcast = now_ms();
             broadcast_maker_keep_alives(&ctx);
         }
 
@@ -2163,7 +2165,7 @@ pub fn cancel_order(ctx: MmArc, req: Json) -> HyRes {
             }
             let _cancelled_orders = try_h!(ordermatch_ctx.my_cancelled_orders.lock());
             let order = order.remove();
-            maker_order_cancelled_p2p_notify(ctx.clone(), &order);
+            maker_order_cancelled_p2p_notify(ctx, &order);
             return rpc_response(
                 200,
                 json!({

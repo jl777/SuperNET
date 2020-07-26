@@ -8,12 +8,12 @@ use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, Pe
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,
-          sync::Arc,
           task::{Context, Poll}};
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
 
+#[allow(dead_code)]
 async fn is_subscribed(mut cmd_tx: AdexCmdTx, topic: String) -> bool {
     let (tx, rx) = oneshot::channel();
     let cmd = AdexBehaviorCmd::IsSubscribed { topic, result_tx: tx };
@@ -21,6 +21,7 @@ async fn is_subscribed(mut cmd_tx: AdexCmdTx, topic: String) -> bool {
     rx.await.expect("Tx should be present")
 }
 
+#[allow(dead_code)]
 async fn get_mesh_and_total_peers_num(mut cmd_tx: AdexCmdTx, topic: String) -> (usize, usize) {
     let (tx, rx) = oneshot::channel();
     let cmd = AdexBehaviorCmd::GetMeshAndTotalPeersNum { topic, result_tx: tx };
@@ -84,7 +85,7 @@ impl AtomicDexBehavior {
                 let topic_hash = topic.no_hash();
                 self.gossipsub.subscribe(topic);
                 if !self.gossipsub.get_mesh_peers(&topic_hash).is_empty() || self.gossipsub.get_num_peers() == 0 {
-                    if let Err(_) = mesh_update_tx.send(()) {
+                    if mesh_update_tx.send(()).is_err() {
                         println!("Result rx is dropped");
                     }
                 } else {
@@ -97,7 +98,7 @@ impl AtomicDexBehavior {
             AdexBehaviorCmd::IsSubscribed { topic, result_tx } => {
                 let topic = TopicHash::from_raw(topic);
                 let is_subscribed = self.gossipsub.is_subscribed(&topic);
-                if let Err(_) = result_tx.send(is_subscribed) {
+                if result_tx.send(is_subscribed).is_err() {
                     println!("Result rx is dropped");
                 }
             },
@@ -122,7 +123,7 @@ impl AtomicDexBehavior {
                     self.gossipsub.get_mesh_peers(&topic).len(),
                     self.gossipsub.get_num_peers(),
                 );
-                if let Err(_) = result_tx.send(tuple) {
+                if result_tx.send(tuple).is_err() {
                     println!("Result rx is dropped");
                 }
             },
@@ -132,12 +133,14 @@ impl AtomicDexBehavior {
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
     fn inject_event(&mut self, event: GossipsubEvent) {
-        if let GossipsubEvent::MeshUpdated { topic, info: _ } = &event {
-            self.mesh_update_txs.remove(&topic).map(|txs| {
+        if let GossipsubEvent::MeshUpdated { topic, .. } = &event {
+            if let Some(txs) = self.mesh_update_txs.remove(&topic) {
                 for tx in txs {
-                    if let Err(_) = tx.send(()) {}
+                    if tx.send(()).is_err() {
+                        println!("Receiver is dropped");
+                    }
                 }
-            });
+            }
         }
         self.notify_on_event(event);
     }
