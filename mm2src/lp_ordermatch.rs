@@ -78,21 +78,47 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
     }
 }
 
-fn process_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive) {
-    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
-    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
-    let order = orderbook
+fn find_order_by_uuid_and_pubkey<'a>(
+    orderbook: &'a mut HashMap<(String, String), HashMap<Uuid, PricePingRequest>>,
+    uuid: &Uuid,
+    from_pubkey: &str,
+) -> Option<&'a mut PricePingRequest> {
+    orderbook
         .values_mut()
         .flatten()
         .map(|(_, order)| order)
-        .find(|order| order.uuid == Some(keep_alive.uuid.into()));
-    if let Some(order) = order {
+        .find(|order| order.uuid == Some(*uuid) && order.pubsecp == from_pubkey)
+}
+
+fn find_order_by_uuid<'a>(
+    orderbook: &'a mut HashMap<(String, String), HashMap<Uuid, PricePingRequest>>,
+    uuid: &Uuid,
+) -> Option<&'a mut PricePingRequest> {
+    orderbook
+        .values_mut()
+        .flatten()
+        .map(|(_, order)| order)
+        .find(|order| order.uuid == Some(*uuid))
+}
+
+fn process_order_keep_alive(ctx: &MmArc, from_pubkey: &str, keep_alive: &new_protocol::MakerOrderKeepAlive) {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+    if let Some(order) = find_order_by_uuid_and_pubkey(&mut orderbook, &keep_alive.uuid.into(), from_pubkey) {
+        order.timestamp = keep_alive.timestamp;
+    }
+}
+
+fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive) {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+    if let Some(order) = find_order_by_uuid(&mut orderbook, &keep_alive.uuid.into()) {
         order.timestamp = keep_alive.timestamp;
     }
 }
 
 fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
-    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
     match orderbook.entry((req.base.clone(), req.rel.clone())) {
         Entry::Vacant(pair_orders) => {
@@ -144,13 +170,15 @@ pub fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
                     insert_or_update_order(&ctx, req, uuid);
                 },
                 new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
-                    process_order_keep_alive(&ctx, &keep_alive);
+                    process_order_keep_alive(&ctx, &pubkey.to_hex(), &keep_alive);
                 },
                 new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
-                    process_taker_request(ctx, taker_request.into());
+                    let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.to_bytes()[1..].into());
+                    process_taker_request(ctx, msg);
                 },
                 new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
-                    process_maker_reserved(ctx, maker_reserved.into());
+                    let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.to_bytes()[1..].into());
+                    process_maker_reserved(ctx, msg);
                 },
                 new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
                     process_taker_connect(ctx, taker_connect.into());
@@ -265,7 +293,6 @@ pub fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
     };
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = ordermatch_ctx.orderbook.lock().unwrap();
-    log!("Orderbook] "[orderbook]);
     let mut messages = vec![];
     if let Some(orders) = orderbook.get(&(pair.0.to_owned(), pair.1.to_owned())) {
         for (_, order) in orders.iter() {
@@ -388,8 +415,8 @@ pub struct TakerRequest {
     conf_settings: Option<OrderConfirmationsSettings>,
 }
 
-impl From<new_protocol::TakerRequest> for TakerRequest {
-    fn from(message: new_protocol::TakerRequest) -> TakerRequest {
+impl TakerRequest {
+    fn from_new_proto_and_pubkey(message: new_protocol::TakerRequest, sender_pubkey: H256Json) -> Self {
         TakerRequest {
             base: message.base,
             rel: message.rel,
@@ -400,7 +427,7 @@ impl From<new_protocol::TakerRequest> for TakerRequest {
             action: message.action,
             uuid: message.uuid.into(),
             method: "".to_string(),
-            sender_pubkey: Default::default(),
+            sender_pubkey,
             dest_pub_key: Default::default(),
             match_by: message.match_by.into(),
             conf_settings: Some(message.conf_settings),
@@ -1028,8 +1055,8 @@ impl MakerReserved {
     }
 }
 
-impl From<new_protocol::MakerReserved> for MakerReserved {
-    fn from(message: new_protocol::MakerReserved) -> MakerReserved {
+impl MakerReserved {
+    fn from_new_proto_and_pubkey(message: new_protocol::MakerReserved, sender_pubkey: H256Json) -> Self {
         MakerReserved {
             base: message.base,
             rel: message.rel,
@@ -1040,7 +1067,7 @@ impl From<new_protocol::MakerReserved> for MakerReserved {
             taker_order_uuid: message.taker_order_uuid.into(),
             maker_order_uuid: message.maker_order_uuid.into(),
             method: "".to_string(),
-            sender_pubkey: Default::default(),
+            sender_pubkey,
             dest_pub_key: Default::default(),
             conf_settings: Some(message.conf_settings),
         }
@@ -1107,7 +1134,7 @@ fn broadcast_maker_keep_alives(ctx: &MmArc) {
             uuid: order.uuid.into(),
             timestamp: now_ms() / 1000,
         };
-        process_order_keep_alive(ctx, &msg);
+        process_my_order_keep_alive(ctx, &msg);
         let topic = orderbook_topic(&order.base, &order.rel);
         broadcast_ordermatch_message(ctx, topic, msg);
     })

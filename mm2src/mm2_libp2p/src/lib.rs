@@ -96,6 +96,12 @@ impl PublicKey {
             PublicKey::Secp256k1(pubkey) => pubkey.0.serialize_compressed().to_vec(),
         }
     }
+
+    pub fn to_hex(&self) -> String {
+        match self {
+            PublicKey::Secp256k1(pubkey) => hex::encode(pubkey.0.serialize_compressed().as_ref()),
+        }
+    }
 }
 
 impl From<Secp256k1Pubkey> for PublicKey {

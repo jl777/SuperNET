@@ -61,7 +61,7 @@ use crate::mm2::lp_network::broadcast_p2p_msg;
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, TradeFee, TransactionEnum};
-use common::{block_on,
+use common::{bits256, block_on,
              executor::{spawn, Timer},
              mm_ctx::{from_ctx, MmArc},
              mm_number::MmNumber,
@@ -99,6 +99,16 @@ pub struct SwapMsgStore {
     taker_fee: Option<Vec<u8>>,
     maker_payment: Option<Vec<u8>>,
     taker_payment: Option<Vec<u8>>,
+    accept_only_from: bits256,
+}
+
+impl SwapMsgStore {
+    pub fn new(accept_only_from: bits256) -> Self {
+        SwapMsgStore {
+            accept_only_from,
+            ..Default::default()
+        }
+    }
 }
 
 pub fn broadcast_message(ctx: &MmArc, topic: String, msg: SwapMsg) {
@@ -117,14 +127,17 @@ pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     };
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
-    let msg_store = msgs.entry(topic.to_string()).or_insert_with(Default::default);
-    match msg.0 {
-        SwapMsg::Negotiation(data) => msg_store.negotiation = Some(data),
-        SwapMsg::NegotiationReply(data) => msg_store.negotiation_reply = Some(data),
-        SwapMsg::Negotiated(negotiated) => msg_store.negotiated = Some(negotiated),
-        SwapMsg::TakerFee(taker_fee) => msg_store.taker_fee = Some(taker_fee),
-        SwapMsg::MakerPayment(maker_payment) => msg_store.maker_payment = Some(maker_payment),
-        SwapMsg::TakerPayment(taker_payment) => msg_store.taker_payment = Some(taker_payment),
+    if let Some(msg_store) = msgs.get_mut(&topic.to_string()) {
+        if &msg_store.accept_only_from.bytes == &msg.2.to_bytes()[1..] {
+            match msg.0 {
+                SwapMsg::Negotiation(data) => msg_store.negotiation = Some(data),
+                SwapMsg::NegotiationReply(data) => msg_store.negotiation_reply = Some(data),
+                SwapMsg::Negotiated(negotiated) => msg_store.negotiated = Some(negotiated),
+                SwapMsg::TakerFee(taker_fee) => msg_store.taker_fee = Some(taker_fee),
+                SwapMsg::MakerPayment(maker_payment) => msg_store.maker_payment = Some(maker_payment),
+                SwapMsg::TakerPayment(taker_payment) => msg_store.taker_payment = Some(taker_payment),
+            }
+        }
     }
 }
 
@@ -320,6 +333,11 @@ impl SwapsContext {
                 shutdown_rx,
             })
         })))
+    }
+
+    pub fn init_msg_store(&self, uuid: String, accept_only_from: bits256) {
+        let store = SwapMsgStore::new(accept_only_from);
+        self.swap_msgs.lock().unwrap().insert(uuid, store);
     }
 }
 

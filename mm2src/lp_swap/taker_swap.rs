@@ -292,6 +292,7 @@ pub async fn run_taker_swap(swap: RunTakerSwapInput, ctx: MmArc) {
     let running_swap = Arc::new(swap);
     let weak_ref = Arc::downgrade(&running_swap);
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
+    swap_ctx.init_msg_store(running_swap.uuid.clone(), running_swap.maker);
     unwrap!(swap_ctx.running_swaps.lock()).push(weak_ref);
     let shutdown_rx = swap_ctx.shutdown_rx.clone();
     let swap_for_log = running_swap.clone();
