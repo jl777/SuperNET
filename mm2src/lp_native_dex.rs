@@ -608,7 +608,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     try_s!(ctx.peer_id.pin(peer_id.to_string()));
     let p2p_context = P2PContext::new(cmd_tx);
     p2p_context.store_to_mm_arc(&ctx);
-    spawn(gossip_event_process_loop(ctx.clone(), event_rx));
+    spawn(gossip_event_process_loop(ctx.clone(), event_rx, i_am_seed));
     /*
     if i_am_seed {
         log!("Before relayer node");

@@ -62,7 +62,7 @@ impl P2PContext {
     }
 }
 
-pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx) {
+pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_relayer: bool) {
     while !ctx.is_stopping() {
         match rx.next().await {
             Some(GossipsubEvent::Message(peer_id, _, message)) => {
@@ -81,6 +81,9 @@ pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx) {
             },
             Some(GossipsubEvent::Subscribed { peer_id, topic }) => {
                 lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str());
+                if i_am_relayer {
+                    subscribe_to_topic(&ctx, topic.to_string()).await;
+                }
             },
             None => break,
             _ => (),
