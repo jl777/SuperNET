@@ -102,6 +102,14 @@ impl PublicKey {
             PublicKey::Secp256k1(pubkey) => hex::encode(pubkey.0.serialize_compressed().as_ref()),
         }
     }
+
+    pub fn unprefixed(&self) -> [u8; 32] {
+        let mut res = [0; 32];
+        match self {
+            PublicKey::Secp256k1(pubkey) => res.copy_from_slice(&pubkey.0.serialize_compressed()[1..33]),
+        }
+        res
+    }
 }
 
 impl From<Secp256k1Pubkey> for PublicKey {

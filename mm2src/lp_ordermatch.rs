@@ -145,7 +145,19 @@ fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     }
 }
 
-fn delete_order(ctx: &MmArc, uuid: Uuid) {
+fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
+    let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
+    for (_, orders) in orderbook.iter_mut() {
+        if let Entry::Occupied(order) = orders.entry(uuid) {
+            if order.get().pubsecp == pubkey {
+                order.remove();
+            }
+        }
+    }
+}
+
+fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().unwrap();
     for (_, orders) in orderbook.iter_mut() {
@@ -173,21 +185,21 @@ pub fn process_msg(ctx: MmArc, from_peer: String, msg: &[u8]) {
                     process_order_keep_alive(&ctx, &pubkey.to_hex(), &keep_alive);
                 },
                 new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
-                    let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.to_bytes()[1..].into());
+                    let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
                     process_taker_request(ctx, msg);
                 },
                 new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
-                    let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.to_bytes()[1..].into());
+                    let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.unprefixed().into());
                     process_maker_reserved(ctx, msg);
                 },
                 new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
-                    process_taker_connect(ctx, taker_connect.into());
+                    process_taker_connect(ctx, pubkey.unprefixed().into(), taker_connect.into());
                 },
                 new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
-                    process_maker_connected(ctx, maker_connected.into());
+                    process_maker_connected(ctx, pubkey.unprefixed().into(), maker_connected.into());
                 },
                 new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
-                    delete_order(&ctx, cancelled_msg.uuid.into());
+                    delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into());
                 },
                 _ => unimplemented!(),
             }
@@ -281,7 +293,7 @@ fn maker_order_cancelled_p2p_notify(ctx: MmArc, order: &MakerOrder) {
     let message = new_protocol::OrdermatchMessage::MakerOrderCancelled(new_protocol::MakerOrderCancelled {
         uuid: order.uuid.into(),
     });
-    delete_order(&ctx, order.uuid);
+    delete_my_order(&ctx, order.uuid);
     println!("maker_order_cancelled_p2p_notify called, message {:?}", message);
     broadcast_ordermatch_message(&ctx, orderbook_topic(&order.base, &order.rel), message);
 }
@@ -1465,7 +1477,7 @@ fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
     }
 }
 
-fn process_maker_connected(ctx: MmArc, connected: MakerConnected) {
+fn process_maker_connected(ctx: MmArc, from_pubkey: H256Json, connected: MakerConnected) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let _our_public_id = unwrap!(ctx.public_id());
 
@@ -1484,6 +1496,11 @@ fn process_maker_connected(ctx: MmArc, connected: MakerConnected) {
             return;
         },
     };
+
+    if order_match.reserved.sender_pubkey != from_pubkey {
+        log!("Connected message sender pubkey != reserved message sender pubkey");
+        return;
+    }
     // alice
     lp_connected_alice(ctx.clone(), my_order_entry.get().request.clone(), order_match.clone());
     // remove the matched order immediately
@@ -1558,7 +1575,7 @@ fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
     }
 }
 
-fn process_taker_connect(ctx: MmArc, connect_msg: TakerConnect) {
+fn process_taker_connect(ctx: MmArc, sender_pubkey: H256Json, connect_msg: TakerConnect) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let our_public_id = unwrap!(ctx.public_id());
 
@@ -1581,6 +1598,10 @@ fn process_taker_connect(ctx: MmArc, connect_msg: TakerConnect) {
             return;
         },
     };
+    if order_match.request.sender_pubkey != sender_pubkey {
+        log!("Connect message sender pubkey != request message sender pubkey");
+        return;
+    }
 
     if order_match.connected.is_none() && order_match.connect.is_none() {
         let connected = MakerConnected {
@@ -1615,7 +1636,7 @@ pub fn lp_trade_command(ctx: MmArc, json: Json) {
                 Ok(c) => c,
                 Err(_) => return,
             };
-            process_maker_connected(ctx, connected);
+            process_maker_connected(ctx, connected.sender_pubkey.clone(), connected);
         },
         // bob
         Some("request") => {
@@ -1630,7 +1651,7 @@ pub fn lp_trade_command(ctx: MmArc, json: Json) {
                 Ok(m) => m,
                 Err(_) => return,
             };
-            process_taker_connect(ctx, connect_msg);
+            process_taker_connect(ctx, connect_msg.sender_pubkey.clone(), connect_msg);
         },
         _ => (),
     }

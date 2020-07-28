@@ -128,7 +128,7 @@ pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
     let mut msgs = unwrap!(swap_ctx.swap_msgs.lock());
     if let Some(msg_store) = msgs.get_mut(&topic.to_string()) {
-        if &msg_store.accept_only_from.bytes == &msg.2.to_bytes()[1..] {
+        if msg_store.accept_only_from.bytes == msg.2.unprefixed() {
             match msg.0 {
                 SwapMsg::Negotiation(data) => msg_store.negotiation = Some(data),
                 SwapMsg::NegotiationReply(data) => msg_store.negotiation_reply = Some(data),
