@@ -4,11 +4,14 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
               Future, SinkExt, StreamExt};
+use libp2p::core::Multiaddr;
 use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
+use std::time::Duration;
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,
           task::{Context, Poll}};
+use wasm_timer::Interval;
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
@@ -202,17 +205,20 @@ pub fn start_gossipsub(
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
+    let relayers: Vec<Multiaddr> = to_dial
+        .unwrap_or_default()
+        .into_iter()
+        .map(|addr| format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap())
+        .collect();
 
-    if let Some(relayers) = to_dial.as_ref() {
-        for relayer in relayers {
-            let addr = format!("/ip4/{}/tcp/{}", relayer, port).parse().unwrap();
-            match libp2p::Swarm::dial_addr(&mut swarm, addr) {
-                Ok(_) => println!("Dialed {}", relayer),
-                Err(e) => println!("Dial {:?} failed: {:?}", relayer, e),
-            }
+    for relayer in &relayers {
+        match libp2p::Swarm::dial_addr(&mut swarm, relayer.clone()) {
+            Ok(_) => println!("Dialed {}", relayer),
+            Err(e) => println!("Dial {:?} failed: {:?}", relayer, e),
         }
     }
 
+    let mut interval = Interval::new(Duration::from_secs(10));
     let polling_fut = poll_fn(move |cx: &mut Context| {
         loop {
             match swarm.cmd_rx.poll_next_unpin(cx) {
@@ -224,9 +230,20 @@ pub fn start_gossipsub(
 
         loop {
             match swarm.poll_next_unpin(cx) {
-                Poll::Ready(Some(event)) => println!("{:?}", event),
+                Poll::Ready(Some(event)) => println!("Swarm event {:?}", event),
                 Poll::Ready(None) => return Poll::Ready(()),
                 Poll::Pending => break,
+            }
+        }
+
+        while let Poll::Ready(Some(())) = interval.poll_next_unpin(cx) {
+            if libp2p::swarm::ExpandedSwarm::network_info(&swarm).num_peers < relayers.len() {
+                for relayer in &relayers {
+                    match libp2p::Swarm::dial_addr(&mut swarm, relayer.clone()) {
+                        Ok(_) => println!("Dialed {}", relayer),
+                        Err(e) => println!("Dial {:?} failed: {:?}", relayer, e),
+                    }
+                }
             }
         }
         Poll::Pending
@@ -236,6 +253,3 @@ pub fn start_gossipsub(
 
     (cmd_tx, event_rx, local_peer_id)
 }
-
-#[test]
-fn test_will_compile() {}

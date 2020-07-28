@@ -3101,6 +3101,7 @@ dependencies = [
  "serde_bytes 0.11.5",
  "serde_derive",
  "sha2 0.9.0",
+ "wasm-timer",
 ]
 
 [[package]]
