@@ -151,10 +151,7 @@ impl AtomicDexBehavior {
                             .into_iter()
                             .map(|point| match point {
                                 ConnectedPoint::Dialer { address } => address.to_string(),
-                                ConnectedPoint::Listener {
-                                    local_addr: _,
-                                    send_back_addr,
-                                } => send_back_addr.to_string(),
+                                ConnectedPoint::Listener { send_back_addr, .. } => send_back_addr.to_string(),
                             })
                             .collect();
                         (peer_id, connected_points)
