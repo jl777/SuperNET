@@ -25,7 +25,7 @@ use crate::protocol::{GossipsubControlAction, GossipsubMessage, GossipsubSubscri
                       MessageId};
 use crate::topic::{Topic, TopicHash};
 use futures::prelude::*;
-use libp2p_core::{connection::ConnectionId, Multiaddr, PeerId};
+use libp2p_core::{connection::ConnectionId, ConnectedPoint, Multiaddr, PeerId};
 use libp2p_swarm::{NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters, ProtocolsHandler};
 use log::{debug, error, info, trace, warn};
 use lru::LruCache;
@@ -79,6 +79,8 @@ pub struct Gossipsub {
 
     /// Heartbeat interval stream.
     heartbeat: Interval,
+
+    peer_connections: HashMap<PeerId, Vec<ConnectedPoint>>,
 }
 
 impl Gossipsub {
@@ -110,6 +112,7 @@ impl Gossipsub {
                 Instant::now() + gs_config.heartbeat_initial_delay,
                 gs_config.heartbeat_interval,
             ),
+            peer_connections: HashMap::new(),
         }
     }
 
@@ -989,6 +992,8 @@ impl Gossipsub {
     }
 
     pub fn get_num_peers(&self) -> usize { self.peer_topics.len() }
+
+    pub fn get_peers_connections(&self) -> HashMap<PeerId, Vec<ConnectedPoint>> { self.peer_connections.clone() }
 }
 
 impl NetworkBehaviour for Gossipsub {
@@ -1081,6 +1086,19 @@ impl NetworkBehaviour for Gossipsub {
             .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::PeerDisconnected(
                 id.clone(),
             )));
+    }
+
+    fn inject_connection_established(&mut self, peer_id: &PeerId, _: &ConnectionId, point: &ConnectedPoint) {
+        self.peer_connections
+            .entry(peer_id.clone())
+            .or_insert_with(Default::default)
+            .push(point.clone());
+    }
+
+    fn inject_connection_closed(&mut self, peer_id: &PeerId, _: &ConnectionId, disconnected_point: &ConnectedPoint) {
+        if let Some(connected_points) = self.peer_connections.get_mut(peer_id) {
+            connected_points.retain(|point| point != disconnected_point);
+        }
     }
 
     fn inject_event(&mut self, propagation_source: PeerId, _: ConnectionId, event: GossipsubRpc) {

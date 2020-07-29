@@ -42,7 +42,7 @@ use std::time::Duration;
 use crate::mm2::{lp_ordermatch, lp_swap};
 
 pub struct P2PContext {
-    cmd_tx: AdexCmdTx,
+    pub cmd_tx: AdexCmdTx,
 }
 
 impl P2PContext {

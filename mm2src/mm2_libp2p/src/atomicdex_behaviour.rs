@@ -4,7 +4,7 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
               Future, SinkExt, StreamExt};
-use libp2p::core::Multiaddr;
+use libp2p::core::{ConnectedPoint, Multiaddr};
 use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
 use std::time::Duration;
 use std::{collections::hash_map::{DefaultHasher, HashMap},
@@ -32,6 +32,13 @@ async fn get_mesh_and_total_peers_num(mut cmd_tx: AdexCmdTx, topic: String) -> (
     rx.await.expect("Tx should be present")
 }
 
+pub async fn get_peers_info(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<String>> {
+    let (result_tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::GetPeersInfo { result_tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
 #[derive(Debug)]
 pub enum AdexBehaviorCmd {
     Subscribe {
@@ -54,6 +61,9 @@ pub enum AdexBehaviorCmd {
     SendToPeers {
         msgs: Vec<(String, Vec<u8>)>,
         peers: Vec<String>,
+    },
+    GetPeersInfo {
+        result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
     },
 }
 
@@ -127,6 +137,30 @@ impl AtomicDexBehavior {
                     self.gossipsub.get_num_peers(),
                 );
                 if result_tx.send(tuple).is_err() {
+                    println!("Result rx is dropped");
+                }
+            },
+            AdexBehaviorCmd::GetPeersInfo { result_tx } => {
+                let result = self
+                    .gossipsub
+                    .get_peers_connections()
+                    .into_iter()
+                    .map(|(peer_id, connected_points)| {
+                        let peer_id = peer_id.to_base58();
+                        let connected_points = connected_points
+                            .into_iter()
+                            .map(|point| match point {
+                                ConnectedPoint::Dialer { address } => address.to_string(),
+                                ConnectedPoint::Listener {
+                                    local_addr: _,
+                                    send_back_addr,
+                                } => send_back_addr.to_string(),
+                            })
+                            .collect();
+                        (peer_id, connected_points)
+                    })
+                    .collect();
+                if result_tx.send(result).is_err() {
                     println!("Result rx is dropped");
                 }
             },

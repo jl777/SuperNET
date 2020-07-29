@@ -219,6 +219,7 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
         "electrum" => hyres(electrum(ctx, req)),
         "enable" => hyres(enable(ctx, req)),
         "get_enabled_coins" => hyres(get_enabled_coins(ctx)),
+        "get_peers_info" => hyres(get_peers_info(ctx)),
         "get_trade_fee" => hyres(get_trade_fee(ctx, req)),
         // "fundvalue" => lp_fundvalue (ctx, req, false),
         "help" => help(),
