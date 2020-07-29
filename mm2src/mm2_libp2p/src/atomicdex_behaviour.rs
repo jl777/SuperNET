@@ -223,7 +223,7 @@ pub fn start_gossipsub(
         loop {
             match swarm.cmd_rx.poll_next_unpin(cx) {
                 Poll::Ready(Some(cmd)) => swarm.process_cmd(cmd),
-                Poll::Ready(None) => panic!("Cmd tx was dropped"),
+                Poll::Ready(None) => return Poll::Ready(()),
                 Poll::Pending => break,
             }
         }
