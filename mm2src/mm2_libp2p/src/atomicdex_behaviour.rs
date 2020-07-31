@@ -6,12 +6,10 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
               Future, SinkExt, StreamExt};
 use libp2p::core::{ConnectedPoint, Multiaddr};
 use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
-use std::time::Duration;
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,
           task::{Context, Poll}};
-use wasm_timer::Interval;
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
@@ -189,13 +187,15 @@ pub fn start_gossipsub(
     port: u16,
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     to_dial: Option<Vec<String>>,
+    my_privkey: &mut [u8],
 ) -> (
     UnboundedSender<AdexBehaviorCmd>,
     UnboundedReceiver<GossipsubEvent>,
     PeerId,
 ) {
     // Create a random PeerId
-    let local_key = identity::Keypair::generate_ed25519();
+    let privkey = identity::secp256k1::SecretKey::from_bytes(my_privkey).unwrap();
+    let local_key = identity::Keypair::Secp256k1(privkey.into());
     let local_peer_id = PeerId::from(local_key.public());
     println!("Local peer id: {:?}", local_peer_id);
 
@@ -203,6 +203,12 @@ pub fn start_gossipsub(
     let transport = libp2p::build_development_transport(local_key).unwrap();
     let (cmd_tx, cmd_rx) = unbounded();
     let (event_tx, event_rx) = unbounded();
+
+    let relayers: Vec<Multiaddr> = to_dial
+        .unwrap_or_default()
+        .into_iter()
+        .map(|addr| format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap())
+        .collect();
 
     // Create a Swarm to manage peers and events
     let mut swarm = {
@@ -224,7 +230,7 @@ pub fn start_gossipsub(
             .mesh_n_high(5)
             .build();
         // build a gossipsub network behaviour
-        let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
+        let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config, relayers.clone());
         let adex_behavior = AtomicDexBehavior {
             event_tx,
             spawn_fn,
@@ -236,12 +242,6 @@ pub fn start_gossipsub(
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
-    let relayers: Vec<Multiaddr> = to_dial
-        .unwrap_or_default()
-        .into_iter()
-        .map(|addr| format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap())
-        .collect();
-
     for relayer in &relayers {
         match libp2p::Swarm::dial_addr(&mut swarm, relayer.clone()) {
             Ok(_) => println!("Dialed {}", relayer),
@@ -249,7 +249,6 @@ pub fn start_gossipsub(
         }
     }
 
-    let mut interval = Interval::new(Duration::from_secs(10));
     let polling_fut = poll_fn(move |cx: &mut Context| {
         loop {
             match swarm.cmd_rx.poll_next_unpin(cx) {
@@ -267,16 +266,6 @@ pub fn start_gossipsub(
             }
         }
 
-        while let Poll::Ready(Some(())) = interval.poll_next_unpin(cx) {
-            if libp2p::swarm::ExpandedSwarm::network_info(&swarm).num_peers < relayers.len() {
-                for relayer in &relayers {
-                    match libp2p::Swarm::dial_addr(&mut swarm, relayer.clone()) {
-                        Ok(_) => println!("Dialed {}", relayer),
-                        Err(e) => println!("Dial {:?} failed: {:?}", relayer, e),
-                    }
-                }
-            }
-        }
         Poll::Pending
     });
 

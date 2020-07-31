@@ -31,9 +31,8 @@ use log::{debug, error, info, trace, warn};
 use lru::LruCache;
 use rand;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{collections::hash_map::HashMap,
-          collections::HashSet,
-          collections::VecDeque,
+use std::time::Duration;
+use std::{collections::{HashMap, HashSet, VecDeque},
           iter,
           sync::Arc,
           task::{Context, Poll}};
@@ -81,11 +80,15 @@ pub struct Gossipsub {
     heartbeat: Interval,
 
     peer_connections: HashMap<PeerId, Vec<ConnectedPoint>>,
+
+    keep_connection_to: Vec<Multiaddr>,
+
+    dial_attempts: HashMap<Multiaddr, Instant>,
 }
 
 impl Gossipsub {
     /// Creates a `Gossipsub` struct given a set of parameters specified by `gs_config`.
-    pub fn new(local_peer_id: PeerId, gs_config: GossipsubConfig) -> Self {
+    pub fn new(local_peer_id: PeerId, gs_config: GossipsubConfig, keep_connection_to: Vec<Multiaddr>) -> Self {
         let local_peer_id = if gs_config.no_source_id {
             PeerId::from_bytes(crate::config::IDENTITY_SOURCE.to_vec()).expect("Valid peer id")
         } else {
@@ -113,6 +116,8 @@ impl Gossipsub {
                 gs_config.heartbeat_interval,
             ),
             peer_connections: HashMap::new(),
+            keep_connection_to,
+            dial_attempts: HashMap::new(),
         }
     }
 
@@ -765,6 +770,8 @@ impl Gossipsub {
 
         // shift the memcache
         self.mcache.shift();
+
+        self.keep_connections();
         debug!("Completed Heartbeat");
     }
 
@@ -994,6 +1001,43 @@ impl Gossipsub {
     pub fn get_num_peers(&self) -> usize { self.peer_topics.len() }
 
     pub fn get_peers_connections(&self) -> HashMap<PeerId, Vec<ConnectedPoint>> { self.peer_connections.clone() }
+
+    pub fn is_connected_to_addr(&self, addr: &Multiaddr) -> bool {
+        for points in self.peer_connections.values() {
+            for point in points {
+                match point {
+                    ConnectedPoint::Dialer { address } => {
+                        if address == addr {
+                            return true;
+                        }
+                    },
+                    ConnectedPoint::Listener { send_back_addr, .. } => {
+                        if send_back_addr == addr {
+                            return true;
+                        }
+                    },
+                }
+            }
+        }
+
+        false
+    }
+
+    fn keep_connections(&mut self) {
+        for addr in &self.keep_connection_to {
+            if !self.is_connected_to_addr(addr) {
+                let now = Instant::now();
+                if let Some(last_dial) = self.dial_attempts.get(addr) {
+                    if *last_dial > now - Duration::from_secs(30) {
+                        continue;
+                    }
+                }
+                self.events
+                    .push_back(NetworkBehaviourAction::DialAddress { address: addr.clone() });
+                self.dial_attempts.insert(addr.clone(), now);
+            }
+        }
+    }
 }
 
 impl NetworkBehaviour for Gossipsub {
@@ -1082,10 +1126,6 @@ impl NetworkBehaviour for Gossipsub {
         // remove peer from peer_topics
         let was_in = self.peer_topics.remove(id);
         debug_assert!(was_in.is_some());
-        self.events
-            .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::PeerDisconnected(
-                id.clone(),
-            )));
     }
 
     fn inject_connection_established(&mut self, peer_id: &PeerId, _: &ConnectionId, point: &ConnectedPoint) {
@@ -1238,7 +1278,4 @@ pub enum GossipsubEvent {
         topic: TopicHash,
         info: MeshUpdateInfo,
     },
-
-    /// Peer disconnected.
-    PeerDisconnected(PeerId),
 }
