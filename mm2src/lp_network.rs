@@ -70,7 +70,8 @@ pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_r
                     let mut split = topic.as_str().split(TOPIC_SEPARATOR);
                     match split.next() {
                         Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
-                            lp_ordermatch::process_msg(ctx.clone(), peer_id.to_string(), &message.data)
+                            lp_ordermatch::process_msg(ctx.clone(), topic.as_str(), peer_id.to_string(), &message.data)
+                                .await;
                         },
                         Some(lp_swap::SWAP_PREFIX) => {
                             lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data)
