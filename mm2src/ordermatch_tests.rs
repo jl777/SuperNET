@@ -741,8 +741,8 @@ fn test_taker_order_cancellable() {
 
 fn prepare_for_cancel_by(ctx: &MmArc) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(ctx));
-    let mut maker_orders = unwrap!(ordermatch_ctx.my_maker_orders.lock());
-    let mut taker_orders = unwrap!(ordermatch_ctx.my_taker_orders.lock());
+    let mut maker_orders = block_on(ordermatch_ctx.my_maker_orders.lock());
+    let mut taker_orders = block_on(ordermatch_ctx.my_taker_orders.lock());
 
     maker_orders.insert(Uuid::from_bytes([0; 16]), MakerOrder {
         uuid: Uuid::from_bytes([0; 16]),
@@ -810,7 +810,7 @@ fn test_cancel_by_single_coin() {
     delete_my_maker_order.mock_safe(|_, _| MockResult::Return(()));
     delete_my_taker_order.mock_safe(|_, _| MockResult::Return(()));
 
-    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::Coin { ticker: "RICK".into() }));
+    let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::Coin { ticker: "RICK".into() })).unwrap();
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([2; 16])));
@@ -825,10 +825,11 @@ fn test_cancel_by_pair() {
     delete_my_maker_order.mock_safe(|_, _| MockResult::Return(()));
     delete_my_taker_order.mock_safe(|_, _| MockResult::Return(()));
 
-    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::Pair {
+    let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::Pair {
         base: "RICK".into(),
         rel: "MORTY".into(),
-    }));
+    }))
+    .unwrap();
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([2; 16])));
@@ -843,7 +844,7 @@ fn test_cancel_by_all() {
     delete_my_maker_order.mock_safe(|_, _| MockResult::Return(()));
     delete_my_taker_order.mock_safe(|_, _| MockResult::Return(()));
 
-    let (cancelled, _) = unwrap!(cancel_orders_by(&ctx, CancelBy::All));
+    let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::All)).unwrap();
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([2; 16])));
@@ -923,11 +924,7 @@ fn lp_connect_start_bob_should_not_be_invoked_if_order_match_already_connected()
         )
         .into_mm_arc();
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    ordermatch_ctx
-        .my_maker_orders
-        .lock()
-        .unwrap()
-        .insert(maker_order.uuid, maker_order);
+    block_on(ordermatch_ctx.my_maker_orders.lock()).insert(maker_order.uuid, maker_order);
 
     static mut CONNECT_START_CALLED: bool = false;
     lp_connect_start_bob.mock_safe(|_, _, _| {
@@ -952,14 +949,10 @@ fn should_process_request_only_once() {
         )
         .into_mm_arc();
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    ordermatch_ctx
-        .my_maker_orders
-        .lock()
-        .unwrap()
-        .insert(maker_order.uuid, maker_order);
+    block_on(ordermatch_ctx.my_maker_orders.lock()).insert(maker_order.uuid, maker_order);
     let request_json = json!({"base":"ETH","rel":"JST","base_amount":"0.1","base_amount_rat":[[1,[1]],[1,[10]]],"rel_amount":"0.2","rel_amount_rat":[[1,[1]],[1,[5]]],"action":"Buy","uuid":"2f9afe84-7a89-4194-8947-45fba563118f","method":"request","sender_pubkey":"031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3","dest_pub_key":"0000000000000000000000000000000000000000000000000000000000000000","match_by":{"type":"Any"}});
     lp_trade_command(ctx, request_json);
-    let maker_orders = ordermatch_ctx.my_maker_orders.lock().unwrap();
+    let maker_orders = block_on(ordermatch_ctx.my_maker_orders.lock());
     let order = maker_orders.get(&uuid).unwrap();
     // when new request is processed match is replaced with new instance resetting
     // connect and connected to None so by checking is_some we check that request message is ignored

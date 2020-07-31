@@ -637,7 +637,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
         // launch kickstart threads before RPC is available, this will prevent the API user to place
         // an order and start new swap that might get started 2 times because of kick-start
         let mut coins_needed_for_kick_start = swap_kick_starts(ctx.clone());
-        coins_needed_for_kick_start.extend(try_s!(orders_kick_start(&ctx)));
+        coins_needed_for_kick_start.extend(try_s!(orders_kick_start(&ctx).await));
         *(try_s!(ctx.coins_needed_for_kick_start.lock())) = coins_needed_for_kick_start;
     }
 

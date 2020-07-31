@@ -20,7 +20,7 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 
-use coins::{disable_coin as disable_coin_impl, lp_coinfind, lp_coinfindᵃ, lp_coininit, MmCoinEnum};
+use coins::{disable_coin as disable_coin_impl, lp_coinfindᵃ, lp_coininit, MmCoinEnum};
 use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use common::{rpc_err_response, rpc_response, HyRes, MM_DATETIME, MM_VERSION};
@@ -33,51 +33,50 @@ use crate::mm2::lp_ordermatch::{cancel_orders_by, CancelBy};
 use crate::mm2::lp_swap::active_swaps_using_coin;
 
 /// Attempts to disable the coin
-pub fn disable_coin(ctx: MmArc, req: Json) -> HyRes {
-    let ticker = try_h!(req["coin"].as_str().ok_or("No 'coin' field")).to_owned();
-    let _coin = match lp_coinfind(&ctx, &ticker) {
+pub async fn disable_coin(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let ticker = try_s!(req["coin"].as_str().ok_or("No 'coin' field")).to_owned();
+    let _coin = match lp_coinfindᵃ(&ctx, &ticker).await {
         // Use lp_coinfindᵃ when async.
         Ok(Some(t)) => t,
-        Ok(None) => return rpc_err_response(500, &fomat!("No such coin: "(ticker))),
-        Err(err) => return rpc_err_response(500, &fomat! ("!lp_coinfind(" (ticker) "): " (err))),
+        Ok(None) => return ERR!("No such coin: {}", ticker),
+        Err(err) => return ERR!("!lp_coinfind({}): ", err),
     };
-    let swaps = try_h!(active_swaps_using_coin(&ctx, &ticker));
+    let swaps = try_s!(active_swaps_using_coin(&ctx, &ticker));
     if !swaps.is_empty() {
-        return rpc_response(
-            500,
-            json!({
-                "error": fomat! ("There're active swaps using " (ticker)),
-                "swaps": swaps,
-            })
-            .to_string(),
-        );
+        let err = json!({
+            "error": fomat! ("There're active swaps using " (ticker)),
+            "swaps": swaps,
+        });
+        return Response::builder()
+            .status(500)
+            .body(json::to_vec(&err).unwrap())
+            .map_err(|e| ERRL!("{}", e));
     }
-    let (cancelled, still_matching) = try_h!(cancel_orders_by(&ctx, CancelBy::Coin { ticker: ticker.clone() }));
+    let (cancelled, still_matching) = try_s!(cancel_orders_by(&ctx, CancelBy::Coin { ticker: ticker.clone() }).await);
     if !still_matching.is_empty() {
-        return rpc_response(
-            500,
-            json!({
-                "error": fomat! ("There're currently matching orders using " (ticker)),
-                "orders": {
-                    "matching": still_matching,
-                    "cancelled": cancelled,
-                }
-            })
-            .to_string(),
-        );
+        let err = json!({
+            "error": fomat! ("There're currently matching orders using " (ticker)),
+            "orders": {
+                "matching": still_matching,
+                "cancelled": cancelled,
+            }
+        });
+        return Response::builder()
+            .status(500)
+            .body(json::to_vec(&err).unwrap())
+            .map_err(|e| ERRL!("{}", e));
     }
 
-    try_h!(disable_coin_impl(&ctx, &ticker));
-    rpc_response(
-        200,
-        json!({
-            "result": {
-                "coin": ticker,
-                "cancelled_orders": cancelled,
-            }
-        })
-        .to_string(),
-    )
+    try_s!(disable_coin_impl(&ctx, &ticker));
+    let res = json!({
+        "result": {
+            "coin": ticker,
+            "cancelled_orders": cancelled,
+        }
+    });
+    Response::builder()
+        .body(json::to_vec(&res).unwrap())
+        .map_err(|e| ERRL!("{}", e))
 }
 
 /// Enable a coin in the Electrum mode.
