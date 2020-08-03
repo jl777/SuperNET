@@ -4,7 +4,7 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
               Future, SinkExt, StreamExt};
-use libp2p::core::{ConnectedPoint, Multiaddr};
+use libp2p::core::{ConnectedPoint, Multiaddr, Transport};
 use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
@@ -14,25 +14,18 @@ use std::{collections::hash_map::{DefaultHasher, HashMap},
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
 
-#[allow(dead_code)]
-async fn is_subscribed(mut cmd_tx: AdexCmdTx, topic: String) -> bool {
-    let (tx, rx) = oneshot::channel();
-    let cmd = AdexBehaviorCmd::IsSubscribed { topic, result_tx: tx };
-    cmd_tx.send(cmd).await.expect("Rx should be present");
-    rx.await.expect("Tx should be present")
-}
-
-#[allow(dead_code)]
-async fn get_mesh_and_total_peers_num(mut cmd_tx: AdexCmdTx, topic: String) -> (usize, usize) {
-    let (tx, rx) = oneshot::channel();
-    let cmd = AdexBehaviorCmd::GetMeshAndTotalPeersNum { topic, result_tx: tx };
-    cmd_tx.send(cmd).await.expect("Rx should be present");
-    rx.await.expect("Tx should be present")
-}
-
+/// Returns info about connected peers
 pub async fn get_peers_info(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<String>> {
     let (result_tx, rx) = oneshot::channel();
     let cmd = AdexBehaviorCmd::GetPeersInfo { result_tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
+/// Returns current gossipsub mesh state
+pub async fn get_gossip_mesh(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<String>> {
+    let (result_tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::GetGossipMesh { result_tx };
     cmd_tx.send(cmd).await.expect("Rx should be present");
     rx.await.expect("Tx should be present")
 }
@@ -44,14 +37,6 @@ pub enum AdexBehaviorCmd {
         topic: String,
         mesh_update_tx: oneshot::Sender<()>,
     },
-    IsSubscribed {
-        topic: String,
-        result_tx: oneshot::Sender<bool>,
-    },
-    GetMeshAndTotalPeersNum {
-        topic: String,
-        result_tx: oneshot::Sender<(usize, usize)>,
-    },
     PublishMsg {
         topic: String,
         msg: Vec<u8>,
@@ -61,6 +46,9 @@ pub enum AdexBehaviorCmd {
         peers: Vec<String>,
     },
     GetPeersInfo {
+        result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
+    },
+    GetGossipMesh {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
     },
 }
@@ -106,13 +94,6 @@ impl AtomicDexBehavior {
                         .push(mesh_update_tx);
                 }
             },
-            AdexBehaviorCmd::IsSubscribed { topic, result_tx } => {
-                let topic = TopicHash::from_raw(topic);
-                let is_subscribed = self.gossipsub.is_subscribed(&topic);
-                if result_tx.send(is_subscribed).is_err() {
-                    println!("Result rx is dropped");
-                }
-            },
             AdexBehaviorCmd::PublishMsg { topic, msg } => {
                 self.gossipsub.publish(&Topic::new(topic), msg);
             },
@@ -127,16 +108,6 @@ impl AtomicDexBehavior {
                 }
 
                 self.gossipsub.send_messages_to_peers(msgs, peer_ids);
-            },
-            AdexBehaviorCmd::GetMeshAndTotalPeersNum { topic, result_tx } => {
-                let topic = TopicHash::from_raw(topic);
-                let tuple = (
-                    self.gossipsub.get_mesh_peers(&topic).len(),
-                    self.gossipsub.get_num_peers(),
-                );
-                if result_tx.send(tuple).is_err() {
-                    println!("Result rx is dropped");
-                }
             },
             AdexBehaviorCmd::GetPeersInfo { result_tx } => {
                 let result = self
@@ -153,6 +124,21 @@ impl AtomicDexBehavior {
                             })
                             .collect();
                         (peer_id, connected_points)
+                    })
+                    .collect();
+                if result_tx.send(result).is_err() {
+                    println!("Result rx is dropped");
+                }
+            },
+            AdexBehaviorCmd::GetGossipMesh { result_tx } => {
+                let result = self
+                    .gossipsub
+                    .get_mesh()
+                    .iter()
+                    .map(|(topic, peers)| {
+                        let topic = topic.to_string();
+                        let peers = peers.iter().map(|peer| peer.to_string()).collect();
+                        (topic, peers)
                     })
                     .collect();
                 if result_tx.send(result).is_err() {
@@ -199,8 +185,21 @@ pub fn start_gossipsub(
     let local_peer_id = PeerId::from(local_key.public());
     println!("Local peer id: {:?}", local_peer_id);
 
-    // Set up an encrypted TCP Transport over the Mplex and Yamux protocols
-    let transport = libp2p::build_development_transport(local_key).unwrap();
+    // Set up an encrypted TCP Transport over the Mplex protocol
+    let transport = {
+        let tcp = libp2p::tcp::TcpConfig::new().nodelay(true);
+        let transport = libp2p::dns::DnsConfig::new(tcp).unwrap();
+        let trans_clone = transport.clone();
+        transport.or_transport(libp2p::websocket::WsConfig::new(trans_clone))
+    };
+
+    let transport = transport
+        .upgrade(libp2p::core::upgrade::Version::V1)
+        .authenticate(libp2p::secio::SecioConfig::new(local_key))
+        .multiplex(libp2p::mplex::MplexConfig::new())
+        .map(|(peer, muxer), _| (peer, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
+        .timeout(std::time::Duration::from_secs(20));
+
     let (cmd_tx, cmd_rx) = unbounded();
     let (event_tx, event_rx) = unbounded();
 

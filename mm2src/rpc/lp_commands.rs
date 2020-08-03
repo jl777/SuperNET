@@ -282,6 +282,19 @@ pub async fn get_peers_info(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     Ok(try_s!(Response::builder().body(res)))
 }
 
+pub async fn get_gossip_mesh(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
+    use crate::mm2::lp_network::P2PContext;
+    use mm2_libp2p::atomicdex_behaviour::get_gossip_mesh;
+    let ctx = P2PContext::fetch_from_mm_arc(&ctx);
+    let cmd_tx = ctx.cmd_tx.clone();
+    let result = get_gossip_mesh(cmd_tx).await;
+    let result = json!({
+        "result": result,
+    });
+    let res = try_s!(json::to_vec(&result));
+    Ok(try_s!(Response::builder().body(res)))
+}
+
 // AP: Inventory is not documented and not used as of now, commented out
 /*
 pub fn inventory (ctx: MmArc, req: Json) -> HyRes {

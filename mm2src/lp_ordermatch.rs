@@ -357,8 +357,10 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
             messages.push((topic.to_owned(), order.initial_message.clone()));
         }
     }
-    let peers = vec![peer.to_owned()];
-    send_msgs_to_peers(&ctx, messages, peers);
+    if !messages.is_empty() {
+        let peers = vec![peer.to_owned()];
+        send_msgs_to_peers(&ctx, messages, peers);
+    }
     log!("handle_peer_subscribed unlocked");
 }
 

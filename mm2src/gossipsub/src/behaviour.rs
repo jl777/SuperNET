@@ -1002,6 +1002,8 @@ impl Gossipsub {
 
     pub fn get_peers_connections(&self) -> HashMap<PeerId, Vec<ConnectedPoint>> { self.peer_connections.clone() }
 
+    pub fn get_mesh(&self) -> &HashMap<TopicHash, Vec<PeerId>> { &self.mesh }
+
     pub fn is_connected_to_addr(&self, addr: &Multiaddr) -> bool {
         for points in self.peer_connections.values() {
             for point in points {

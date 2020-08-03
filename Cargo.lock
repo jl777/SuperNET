@@ -832,7 +832,7 @@ dependencies = [
  "tar",
  "term 0.5.1",
  "tokio 0.1.22",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-core",
  "unwrap",
  "uuid",
@@ -1879,7 +1879,7 @@ dependencies = [
  "indexmap",
  "log 0.4.8",
  "slab 0.4.2",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-util",
 ]
 
@@ -2098,7 +2098,7 @@ dependencies = [
  "pin-project",
  "socket2",
  "time",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tower-service",
  "want 0.3.0",
 ]
@@ -2116,7 +2116,7 @@ dependencies = [
  "log 0.4.8",
  "rustls",
  "rustls-native-certs",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-rustls",
  "webpki",
 ]
@@ -4936,9 +4936,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.21"
+version = "0.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d099fa27b9702bed751524694adbe393e18b36b204da91eb1cbbbbb4a5ee2d58"
+checksum = "5d34ca54d84bf2b5b4d7d31e901a8464f7b60ac145a284fba25ceb801f2ddccd"
 dependencies = [
  "bytes 0.5.5",
  "fnv",
@@ -5061,7 +5061,7 @@ checksum = "15cb62a0d2770787abc96e99c1cd98fcf17f94959f3af63ca85bdfb203f051b4"
 dependencies = [
  "futures-core",
  "rustls",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "webpki",
 ]
 
@@ -5172,7 +5172,7 @@ dependencies = [
  "futures-sink",
  "log 0.4.8",
  "pin-project-lite",
- "tokio 0.2.21",
+ "tokio 0.2.22",
 ]
 
 [[package]]
