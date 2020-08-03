@@ -219,6 +219,7 @@ pub fn start_gossipsub(
         let message_id_fn = |message: &GossipsubMessage| {
             let mut s = DefaultHasher::new();
             message.data.hash(&mut s);
+            message.sequence_number.hash(&mut s);
             MessageId(s.finish().to_string())
         };
 
