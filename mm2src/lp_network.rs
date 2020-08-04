@@ -81,9 +81,10 @@ pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_r
                 }
             },
             Some(GossipsubEvent::Subscribed { peer_id, topic }) => {
-                lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 if i_am_relayer {
                     subscribe_to_topic(&ctx, topic.to_string()).await;
+                    Timer::sleep(1.).await;
+                    lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 }
             },
             None => break,
