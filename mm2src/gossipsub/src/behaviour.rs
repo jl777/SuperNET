@@ -1004,6 +1004,10 @@ impl Gossipsub {
 
     pub fn get_mesh(&self) -> &HashMap<TopicHash, Vec<PeerId>> { &self.mesh }
 
+    pub fn get_all_topic_peers(&self) -> &HashMap<TopicHash, Vec<PeerId>> { &self.topic_peers }
+
+    pub fn get_all_peer_topics(&self) -> &HashMap<PeerId, Vec<TopicHash>> { &self.peer_topics }
+
     pub fn is_connected_to_addr(&self, addr: &Multiaddr) -> bool {
         for points in self.peer_connections.values() {
             for point in points {

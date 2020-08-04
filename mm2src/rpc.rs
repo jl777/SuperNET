@@ -220,6 +220,8 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
         "enable" => hyres(enable(ctx, req)),
         "get_enabled_coins" => hyres(get_enabled_coins(ctx)),
         "get_gossip_mesh" => hyres(get_gossip_mesh(ctx)),
+        "get_gossip_peer_topics" => hyres(get_gossip_peer_topics(ctx)),
+        "get_gossip_topic_peers" => hyres(get_gossip_topic_peers(ctx)),
         "get_peers_info" => hyres(get_peers_info(ctx)),
         "get_trade_fee" => hyres(get_trade_fee(ctx, req)),
         // "fundvalue" => lp_fundvalue (ctx, req, false),

@@ -30,6 +30,20 @@ pub async fn get_gossip_mesh(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<Strin
     rx.await.expect("Tx should be present")
 }
 
+pub async fn get_gossip_peer_topics(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<String>> {
+    let (result_tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::GetGossipPeerTopics { result_tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
+pub async fn get_gossip_topic_peers(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<String>> {
+    let (result_tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviorCmd::GetGossipTopicPeers { result_tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
 #[derive(Debug)]
 pub enum AdexBehaviorCmd {
     Subscribe {
@@ -49,6 +63,12 @@ pub enum AdexBehaviorCmd {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
     },
     GetGossipMesh {
+        result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
+    },
+    GetGossipPeerTopics {
+        result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
+    },
+    GetGossipTopicPeers {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
     },
 }
@@ -134,6 +154,36 @@ impl AtomicDexBehavior {
                 let result = self
                     .gossipsub
                     .get_mesh()
+                    .iter()
+                    .map(|(topic, peers)| {
+                        let topic = topic.to_string();
+                        let peers = peers.iter().map(|peer| peer.to_string()).collect();
+                        (topic, peers)
+                    })
+                    .collect();
+                if result_tx.send(result).is_err() {
+                    println!("Result rx is dropped");
+                }
+            },
+            AdexBehaviorCmd::GetGossipPeerTopics { result_tx } => {
+                let result = self
+                    .gossipsub
+                    .get_all_peer_topics()
+                    .iter()
+                    .map(|(peer, topics)| {
+                        let peer = peer.to_string();
+                        let topics = topics.iter().map(|topic| topic.to_string()).collect();
+                        (peer, topics)
+                    })
+                    .collect();
+                if result_tx.send(result).is_err() {
+                    println!("Result rx is dropped");
+                }
+            },
+            AdexBehaviorCmd::GetGossipTopicPeers { result_tx } => {
+                let result = self
+                    .gossipsub
+                    .get_all_topic_peers()
                     .iter()
                     .map(|(topic, peers)| {
                         let topic = topic.to_string();
