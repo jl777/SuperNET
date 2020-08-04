@@ -314,6 +314,7 @@ async fn maker_order_created_p2p_notify(ctx: MmArc, order: &MakerOrder) {
     let uuid = price_ping_req.uuid.unwrap();
     insert_or_update_order(&ctx, price_ping_req, uuid).await;
     subscribe_to_topic(&ctx, topic.clone()).await;
+    Timer::sleep(1.).await;
     broadcast_p2p_msg(&ctx, topic, encoded_msg);
 }
 
