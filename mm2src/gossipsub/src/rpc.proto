@@ -26,6 +26,7 @@ message ControlMessage {
 	repeated ControlIWant iwant = 2;
 	repeated ControlGraft graft = 3;
 	repeated ControlPrune prune = 4;
+	optional bool iamrelay = 5;
 }
 
 message ControlIHave {

@@ -60,6 +60,8 @@ pub struct Gossipsub {
     /// A map of all connected peers to their subscribed topics.
     peer_topics: HashMap<PeerId, Vec<TopicHash>>,
 
+    relayers: HashSet<PeerId>,
+
     /// Overlay network of connected peers - Maps topics to connected gossipsub peers.
     mesh: HashMap<TopicHash, Vec<PeerId>>,
 
@@ -118,6 +120,7 @@ impl Gossipsub {
             peer_connections: HashMap::new(),
             keep_connection_to,
             dial_attempts: HashMap::new(),
+            relayers: HashSet::new(),
         }
     }
 
@@ -126,6 +129,10 @@ impl Gossipsub {
     /// Returns true if the subscription worked. Returns false if we were already subscribed.
     pub fn subscribe(&mut self, topic: Topic) -> bool {
         debug!("Subscribing to topic: {}", topic);
+        if self.config.i_am_relay {
+            debug!("Relay is subscribed to all topics by default. Subscribe has no effect.");
+            return false;
+        }
         let topic_hash = self.topic_hash(topic.clone());
         if self.mesh.get(&topic_hash).is_some() {
             debug!("Topic: {} is already in the mesh.", topic);
@@ -169,6 +176,10 @@ impl Gossipsub {
     /// Returns true if we were subscribed to this topic.
     pub fn unsubscribe(&mut self, topic: Topic) -> bool {
         debug!("Unsubscribing from topic: {}", topic);
+        if self.config.i_am_relay {
+            debug!("Relay is subscribed to all topics by default. Unsubscribe has no effect");
+            return false;
+        }
         let topic_hash = &self.topic_hash(topic);
 
         if self.mesh.get(topic_hash).is_none() {
@@ -502,6 +513,22 @@ impl Gossipsub {
         debug!("Completed PRUNE handling for peer: {:?}", peer_id);
     }
 
+    /// Handles IAmRelayer control message, does nothing if remote peer already subscribed to some topic
+    fn handle_i_am_relay(&mut self, peer_id: &PeerId, is_relay: bool) {
+        debug!("Handling IAmRelayer message for peer: {:?}", peer_id);
+        if self
+            .peer_topics
+            .entry(peer_id.clone())
+            .or_insert_with(Vec::new)
+            .is_empty()
+            && is_relay
+        {
+            info!("IAmRelayer: Adding peer: {:?} to the relayers list", peer_id);
+            self.relayers.insert(peer_id.clone());
+        }
+        debug!("Completed IAmRelayer handling for peer: {:?}", peer_id);
+    }
+
     /// Handles a newly received GossipsubMessage.
     /// Forwards the message to all peers in the mesh.
     fn handle_received_message(&mut self, msg: GossipsubMessage, propagation_source: &PeerId) {
@@ -516,15 +543,13 @@ impl Gossipsub {
         self.mcache.put(msg.clone());
 
         // dispatch the message to the user
-        if self.mesh.keys().any(|t| msg.topics.iter().any(|u| t == u)) {
-            debug!("Sending received message to user");
-            self.events
-                .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::Message(
-                    propagation_source.clone(),
-                    msg_id,
-                    msg.clone(),
-                )));
-        }
+        debug!("Sending received message to user");
+        self.events
+            .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::Message(
+                propagation_source.clone(),
+                msg_id,
+                msg.clone(),
+            )));
 
         // forward the message to mesh peers, if no validation is required
         if !self.config.manual_propagation {
@@ -645,11 +670,6 @@ impl Gossipsub {
                 }
                 // update the mesh
                 debug!("Updating mesh, new mesh: {:?}", peer_list);
-                self.events
-                    .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::MeshUpdated {
-                        topic: topic_hash.clone(),
-                        info: MeshUpdateInfo::AddedPeers(peer_list.len()),
-                    }));
                 peers.extend(peer_list);
             }
 
@@ -671,11 +691,6 @@ impl Gossipsub {
                     let current_topic = to_prune.entry(peer).or_insert_with(|| vec![]);
                     current_topic.push(topic_hash.clone());
                 }
-                self.events
-                    .push_back(NetworkBehaviourAction::GenerateEvent(GossipsubEvent::MeshUpdated {
-                        topic: topic_hash.clone(),
-                        info: MeshUpdateInfo::RemovedPeers(excess_peer_no),
-                    }));
             }
         }
 
@@ -838,13 +853,25 @@ impl Gossipsub {
         debug!("Forwarding message: {:?}", msg_id);
         let mut recipient_peers = HashSet::new();
 
-        // add mesh peers
-        for topic in &message.topics {
-            // mesh
-            if let Some(mesh_peers) = self.mesh.get(&topic) {
-                for peer_id in mesh_peers {
-                    if peer_id != source {
-                        recipient_peers.insert(peer_id.clone());
+        if self.config.i_am_relay {
+            // relayer simply forwards the message to topic peers
+            for topic in &message.topics {
+                if let Some(topic_peers) = self.topic_peers.get(&topic) {
+                    for peer_id in topic_peers {
+                        if peer_id != source {
+                            recipient_peers.insert(peer_id.clone());
+                        }
+                    }
+                }
+            }
+        } else {
+            // add mesh peers if the node is not relayer
+            for topic in &message.topics {
+                if let Some(mesh_peers) = self.mesh.get(&topic) {
+                    for peer_id in mesh_peers {
+                        if peer_id != source {
+                            recipient_peers.insert(peer_id.clone());
+                        }
                     }
                 }
             }
@@ -854,7 +881,7 @@ impl Gossipsub {
         if !recipient_peers.is_empty() {
             let event = Arc::new(GossipsubRpc {
                 subscriptions: Vec::new(),
-                messages: vec![message],
+                messages: vec![message.clone()],
                 control_msgs: Vec::new(),
             });
 
@@ -866,6 +893,25 @@ impl Gossipsub {
                     handler: NotifyHandler::Any,
                 });
             }
+        }
+
+        if !self.relayers.is_empty() {
+            debug!("Forwarding message to relayers: {:?}", msg_id);
+            let event = Arc::new(GossipsubRpc {
+                subscriptions: Vec::new(),
+                messages: vec![message],
+                control_msgs: Vec::new(),
+            });
+
+            for peer in self.relayers.iter() {
+                debug!("Sending message: {:?} to peer {:?}", msg_id, peer);
+                self.events.push_back(NetworkBehaviourAction::NotifyHandler {
+                    peer_id: peer.clone(),
+                    event: event.clone(),
+                    handler: NotifyHandler::Any,
+                });
+            }
+            debug!("Completed forwarding message to relayers");
         }
         debug!("Completed forwarding message");
     }
@@ -1032,28 +1078,41 @@ impl NetworkBehaviour for Gossipsub {
 
     fn inject_connected(&mut self, id: &PeerId) {
         info!("New peer connected: {:?}", id);
-        // We need to send our subscriptions to the newly-connected node.
-        let mut subscriptions = vec![];
-        for topic_hash in self.mesh.keys() {
-            subscriptions.push(GossipsubSubscription {
-                topic_hash: topic_hash.clone(),
-                action: GossipsubSubscriptionAction::Subscribe,
-            });
-        }
-
-        if !subscriptions.is_empty() {
-            // send our subscriptions to the peer
+        // We need to send our subscriptions to the newly-connected node if we are not relayer.
+        // Notify peer that we act as relayer otherwise
+        if self.config.i_am_relay {
+            debug!("Sending IAmRelay to peer {:?}", id);
             self.events.push_back(NetworkBehaviourAction::NotifyHandler {
                 peer_id: id.clone(),
                 handler: NotifyHandler::Any,
                 event: Arc::new(GossipsubRpc {
                     messages: Vec::new(),
-                    subscriptions,
-                    control_msgs: Vec::new(),
+                    subscriptions: Vec::new(),
+                    control_msgs: vec![GossipsubControlAction::IAmRelay(true)],
                 }),
             });
-        }
+        } else {
+            let mut subscriptions = vec![];
+            for topic_hash in self.mesh.keys() {
+                subscriptions.push(GossipsubSubscription {
+                    topic_hash: topic_hash.clone(),
+                    action: GossipsubSubscriptionAction::Subscribe,
+                });
+            }
 
+            if !subscriptions.is_empty() {
+                // send our subscriptions to the peer
+                self.events.push_back(NetworkBehaviourAction::NotifyHandler {
+                    peer_id: id.clone(),
+                    handler: NotifyHandler::Any,
+                    event: Arc::new(GossipsubRpc {
+                        messages: Vec::new(),
+                        subscriptions,
+                        control_msgs: Vec::new(),
+                    }),
+                });
+            }
+        }
         // For the time being assume all gossipsub peers
         self.peer_topics.insert(id.clone(), Vec::new());
     }
@@ -1124,6 +1183,7 @@ impl NetworkBehaviour for Gossipsub {
     fn inject_event(&mut self, propagation_source: PeerId, _: ConnectionId, event: GossipsubRpc) {
         // Handle subscriptions
         // Update connected peers topics
+        debug!("Event injected {:?}, source {:?}", event, propagation_source);
         self.handle_received_subscriptions(&event.subscriptions, &propagation_source);
 
         // Handle messages
@@ -1147,6 +1207,7 @@ impl NetworkBehaviour for Gossipsub {
                 GossipsubControlAction::IWant { message_ids } => self.handle_iwant(&propagation_source, message_ids),
                 GossipsubControlAction::Graft { topic_hash } => graft_msgs.push(topic_hash),
                 GossipsubControlAction::Prune { topic_hash } => prune_msgs.push(topic_hash),
+                GossipsubControlAction::IAmRelay(is_relay) => self.handle_i_am_relay(&propagation_source, is_relay),
             }
         }
         if !ihave_msgs.is_empty() {
@@ -1222,12 +1283,6 @@ pub struct GossipsubRpc {
     pub control_msgs: Vec<GossipsubControlAction>,
 }
 
-#[derive(Debug)]
-pub enum MeshUpdateInfo {
-    AddedPeers(usize),
-    RemovedPeers(usize),
-}
-
 /// Event that can happen on the gossipsub behaviour.
 #[derive(Debug)]
 pub enum GossipsubEvent {
@@ -1250,12 +1305,5 @@ pub enum GossipsubEvent {
         peer_id: PeerId,
         /// The topic it has subscribed from.
         topic: TopicHash,
-    },
-
-    /// Notify that topic mesh was updated
-    MeshUpdated {
-        /// The topic that mesh is updated for.
-        topic: TopicHash,
-        info: MeshUpdateInfo,
     },
 }

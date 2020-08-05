@@ -1,5 +1,4 @@
-use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageId, Topic,
-                          TopicHash};
+use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageId, Topic};
 use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
@@ -49,7 +48,6 @@ pub enum AdexBehaviorCmd {
     Subscribe {
         /// Subscribe to this topic
         topic: String,
-        mesh_update_tx: oneshot::Sender<()>,
     },
     PublishMsg {
         topic: String,
@@ -79,8 +77,6 @@ pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
     event_tx: UnboundedSender<GossipsubEvent>,
     #[behaviour(ignore)]
-    mesh_update_txs: HashMap<TopicHash, Vec<oneshot::Sender<()>>>,
-    #[behaviour(ignore)]
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
@@ -99,20 +95,9 @@ impl AtomicDexBehavior {
 
     fn process_cmd(&mut self, cmd: AdexBehaviorCmd) {
         match cmd {
-            AdexBehaviorCmd::Subscribe { topic, mesh_update_tx } => {
+            AdexBehaviorCmd::Subscribe { topic } => {
                 let topic = Topic::new(topic);
-                let topic_hash = topic.no_hash();
                 self.gossipsub.subscribe(topic);
-                if !self.gossipsub.get_mesh_peers(&topic_hash).is_empty() || self.gossipsub.get_num_peers() == 0 {
-                    if mesh_update_tx.send(()).is_err() {
-                        println!("Result rx is dropped");
-                    }
-                } else {
-                    self.mesh_update_txs
-                        .entry(topic_hash)
-                        .or_insert_with(Vec::new)
-                        .push(mesh_update_tx);
-                }
             },
             AdexBehaviorCmd::PublishMsg { topic, msg } => {
                 self.gossipsub.publish(&Topic::new(topic), msg);
@@ -200,18 +185,7 @@ impl AtomicDexBehavior {
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: GossipsubEvent) {
-        if let GossipsubEvent::MeshUpdated { topic, .. } = &event {
-            if let Some(txs) = self.mesh_update_txs.remove(&topic) {
-                for tx in txs {
-                    if tx.send(()).is_err() {
-                        println!("Receiver is dropped");
-                    }
-                }
-            }
-        }
-        self.notify_on_event(event);
-    }
+    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_event(event); }
 }
 
 /// Creates and spawns new AdexBehavior Swarm returning:
@@ -224,6 +198,7 @@ pub fn start_gossipsub(
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     to_dial: Option<Vec<String>>,
     my_privkey: &mut [u8],
+    i_am_relay: bool,
 ) -> (
     UnboundedSender<AdexBehaviorCmd>,
     UnboundedReceiver<GossipsubEvent>,
@@ -278,6 +253,7 @@ pub fn start_gossipsub(
             // same content will be propagated.
             .mesh_n(5)
             .mesh_n_high(5)
+            .i_am_relay(i_am_relay)
             .build();
         // build a gossipsub network behaviour
         let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config, relayers.clone());
@@ -286,7 +262,6 @@ pub fn start_gossipsub(
             spawn_fn,
             cmd_rx,
             gossipsub,
-            mesh_update_txs: HashMap::new(),
         };
         libp2p::Swarm::new(transport, adex_behavior, local_peer_id.clone())
     };

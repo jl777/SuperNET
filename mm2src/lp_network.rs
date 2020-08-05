@@ -24,7 +24,6 @@ use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 use crossbeam::channel;
-use futures::channel::oneshot;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
@@ -105,10 +104,8 @@ pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
 #[cfg(feature = "native")]
 pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
-    let (mesh_update_tx, mesh_update_rx) = oneshot::channel();
-    let cmd = AdexBehaviorCmd::Subscribe { topic, mesh_update_tx };
+    let cmd = AdexBehaviorCmd::Subscribe { topic };
     tx.send(cmd).await.unwrap();
-    mesh_update_rx.await.unwrap();
 }
 
 #[cfg(feature = "native")]

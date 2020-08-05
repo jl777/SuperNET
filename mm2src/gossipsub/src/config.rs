@@ -85,6 +85,8 @@ pub struct GossipsubConfig {
     /// The function takes a `GossipsubMessage` as input and outputs a String to be interpreted as
     /// the message id.
     pub message_id_fn: fn(&GossipsubMessage) -> MessageId,
+
+    pub i_am_relay: bool,
 }
 
 impl Default for GossipsubConfig {
@@ -110,6 +112,7 @@ impl Default for GossipsubConfig {
                 source_string.push_str(&message.sequence_number.to_string());
                 MessageId(source_string)
             },
+            i_am_relay: false,
         }
     }
 }
@@ -222,6 +225,11 @@ impl GossipsubConfigBuilder {
         self
     }
 
+    pub fn i_am_relay(&mut self, i_am_relay: bool) -> &mut Self {
+        self.config.i_am_relay = i_am_relay;
+        self
+    }
+
     pub fn build(&self) -> GossipsubConfig { self.config.clone() }
 }
 
@@ -242,6 +250,7 @@ impl std::fmt::Debug for GossipsubConfig {
         let _ = builder.field("hash_topics", &self.hash_topics);
         let _ = builder.field("no_source_id", &self.no_source_id);
         let _ = builder.field("manual_propagation", &self.manual_propagation);
+        let _ = builder.field("i_am_relay", &self.i_am_relay);
         builder.finish()
     }
 }
