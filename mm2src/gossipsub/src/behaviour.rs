@@ -903,13 +903,15 @@ impl Gossipsub {
                 control_msgs: Vec::new(),
             });
 
-            for peer in self.relayers.iter() {
-                debug!("Sending message: {:?} to peer {:?}", msg_id, peer);
-                self.events.push_back(NetworkBehaviourAction::NotifyHandler {
-                    peer_id: peer.clone(),
-                    event: event.clone(),
-                    handler: NotifyHandler::Any,
-                });
+            for relayer in self.relayers.iter() {
+                if relayer != source {
+                    debug!("Sending message: {:?} to relayer {:?}", msg_id, relayer);
+                    self.events.push_back(NetworkBehaviourAction::NotifyHandler {
+                        peer_id: relayer.clone(),
+                        event: event.clone(),
+                        handler: NotifyHandler::Any,
+                    });
+                }
             }
             debug!("Completed forwarding message to relayers");
         }
