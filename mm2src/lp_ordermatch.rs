@@ -110,9 +110,19 @@ async fn process_order_keep_alive(
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     log!("process_order_keep_alive locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    match find_order_by_uuid_and_pubkey(&mut orderbook, &keep_alive.uuid.into(), from_pubkey) {
+    let uuid = keep_alive.uuid.into();
+    match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, from_pubkey) {
         Some(order) => order.timestamp = keep_alive.timestamp,
-        None => broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into()),
+        None => match ordermatch_ctx.inactive_orders.lock().await.remove(&uuid) {
+            Some(mut order) => {
+                order.timestamp = keep_alive.timestamp;
+                orderbook
+                    .entry((order.base.clone(), order.rel.clone()))
+                    .or_insert_with(HashMap::new)
+                    .insert(uuid, order);
+            },
+            None => broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into()),
+        },
     }
     log!("process_order_keep_alive unlocked");
 }
@@ -1191,6 +1201,7 @@ struct OrdermatchContext {
     pub my_cancelled_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     /// A map from (base, rel)
     pub orderbook: AsyncMutex<HashMap<(String, String), HashMap<Uuid, PricePingRequest>>>,
+    pub inactive_orders: AsyncMutex<HashMap<Uuid, PricePingRequest>>,
 }
 
 impl OrdermatchContext {
@@ -1202,6 +1213,7 @@ impl OrdermatchContext {
                 my_maker_orders: AsyncMutex::new(HashMap::default()),
                 my_cancelled_orders: AsyncMutex::new(HashMap::default()),
                 orderbook: AsyncMutex::new(HashMap::default()),
+                inactive_orders: AsyncMutex::new(HashMap::default()),
             })
         })))
     }
@@ -1437,8 +1449,11 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
         {
             // remove "timed out" orders from orderbook
             // ones that didn't receive an update for 30 seconds or more
+            // store them in inactive orders temporary to avoid RepeatOrder request to network in case we start
+            // receiving keep alive aagin
             log!("lp_ordermatch_loop locked");
             let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+            let mut inactive = ordermatch_ctx.inactive_orders.lock().await;
             *orderbook = orderbook
                 .drain()
                 .filter_map(|((base, rel), mut pair_orderbook)| {
@@ -1446,6 +1461,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                         .drain()
                         .filter_map(|(pubkey, order)| {
                             if now_ms() / 1000 > order.timestamp + 30 {
+                                inactive.insert(pubkey, order);
                                 None
                             } else {
                                 Some((pubkey, order))
