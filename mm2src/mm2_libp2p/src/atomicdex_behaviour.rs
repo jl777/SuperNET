@@ -212,7 +212,7 @@ pub fn start_gossipsub(
 
     // Set up an encrypted TCP Transport over the Mplex protocol
     let transport = {
-        let tcp = libp2p::tcp::TcpConfig::new().nodelay(true);
+        let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);
         let transport = libp2p::dns::DnsConfig::new(tcp).unwrap();
         let trans_clone = transport.clone();
         transport.or_transport(libp2p::websocket::WsConfig::new(trans_clone))
