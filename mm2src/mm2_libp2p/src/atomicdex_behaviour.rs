@@ -280,6 +280,7 @@ pub fn start_gossipsub(
             .executor(Box::new(&*SWARM_RUNTIME))
             .build()
     };
+    swarm.gossipsub.subscribe(Topic::new("PEERS".to_owned()));
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
     for relayer in &relayers {
