@@ -315,15 +315,11 @@ async fn maker_order_created_p2p_notify(ctx: MmArc, order: &MakerOrder) {
         (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
     let uuid = price_ping_req.uuid.unwrap();
     insert_or_update_order(&ctx, price_ping_req, uuid).await;
-    subscribe_to_topic(&ctx, topic.clone()).await;
-    Timer::sleep(1.).await;
     broadcast_p2p_msg(&ctx, topic, encoded_msg);
 }
 
-fn maker_order_updated_p2p_notify(ctx: MmArc, order: &MakerOrder) {
-    let topic = orderbook_topic(&order.base, &order.rel);
+fn maker_order_updated_p2p_notify(ctx: MmArc, _order: &MakerOrder) {
     spawn(async move {
-        subscribe_to_topic(&ctx, topic).await;
         if let Err(e) = broadcast_my_maker_orders(&ctx).await {
             ctx.log
                 .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
@@ -2058,6 +2054,7 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         .with_conf_settings(conf_settings);
 
     let new_order = try_s!(builder.build());
+    subscribe_to_topic(&ctx, orderbook_topic(&new_order.base, &new_order.rel)).await;
     maker_order_created_p2p_notify(ctx.clone(), &new_order).await;
     log!("my_maker_orders set_price locked");
     let mut my_orders = ordermatch_ctx.my_maker_orders.lock().await;
