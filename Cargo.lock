@@ -2780,6 +2780,7 @@ dependencies = [
  "atomicdex-gossipsub",
  "futures 0.3.5",
  "hex 0.4.2",
+ "lazy_static",
  "libp2p",
  "libsecp256k1 0.3.5",
  "num-bigint",
@@ -2790,6 +2791,7 @@ dependencies = [
  "serde_bytes 0.11.5",
  "serde_derive",
  "sha2 0.9.0",
+ "tokio 0.2.22",
  "wasm-timer",
 ]
 
@@ -4557,6 +4559,7 @@ dependencies = [
  "lazy_static",
  "memchr",
  "mio",
+ "num_cpus",
  "pin-project-lite",
  "slab 0.4.2",
 ]

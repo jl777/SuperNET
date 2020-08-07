@@ -3,15 +3,28 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
               Future, SinkExt, StreamExt};
+use lazy_static::lazy_static;
 use libp2p::core::{ConnectedPoint, Multiaddr, Transport};
 use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,
+          pin::Pin,
           task::{Context, Poll}};
+use tokio::runtime::Runtime;
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
+
+struct SwarmRuntime(Runtime);
+
+impl libp2p::core::Executor for &SwarmRuntime {
+    fn exec(&self, future: Pin<Box<dyn Future<Output = ()> + Send>>) { self.0.spawn(future); }
+}
+
+lazy_static! {
+    static ref SWARM_RUNTIME: SwarmRuntime = SwarmRuntime(Runtime::new().unwrap());
+}
 
 /// Returns info about connected peers
 pub async fn get_peers_info(mut cmd_tx: AdexCmdTx) -> HashMap<String, Vec<String>> {
@@ -263,7 +276,9 @@ pub fn start_gossipsub(
             cmd_rx,
             gossipsub,
         };
-        libp2p::Swarm::new(transport, adex_behavior, local_peer_id.clone())
+        libp2p::swarm::SwarmBuilder::new(transport, adex_behavior, local_peer_id.clone())
+            .executor(Box::new(&*SWARM_RUNTIME))
+            .build()
     };
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
@@ -294,7 +309,7 @@ pub fn start_gossipsub(
         Poll::Pending
     });
 
-    spawn_fn(Box::new(polling_fut));
+    SWARM_RUNTIME.0.spawn(polling_fut);
 
     (cmd_tx, event_rx, local_peer_id)
 }
