@@ -322,6 +322,8 @@ impl MakerSwap {
             persistent_pubkey: self.my_persistent_pub.to_vec(),
         });
 
+        // wait for 5 seconds before first message broadcast to ensure other node is subscribed to topic
+        Timer::sleep(5.).await;
         broadcast_message(&self.ctx, swap_topic(&self.uuid), maker_negotiation_data);
         let taker_data =
             match recv_swap_msg(self.ctx.clone(), |store| store.negotiation_reply.take(), &self.uuid, 90).await {
