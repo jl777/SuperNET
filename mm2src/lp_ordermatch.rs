@@ -54,6 +54,10 @@ use crate::mm2::{lp_network::{broadcast_p2p_msg, send_msgs_to_peers, subscribe_t
                            SwapConfirmationsSettings, TakerSwap}};
 
 pub const ORDERBOOK_PREFIX: TopicPrefix = "orbk";
+const MIN_ORDER_KEEP_ALIVE_INTERVAL: u64 = 20;
+const MAKER_ORDER_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 3;
+const TAKER_ORDER_TIMEOUT: u64 = 30;
+const ORDER_MATCH_TIMEOUT: u64 = 30;
 
 impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PricePingRequest {
     fn from(tuple: (new_protocol::MakerOrderCreated, Vec<u8>, String, String)) -> PricePingRequest {
@@ -108,7 +112,6 @@ async fn process_order_keep_alive(
     keep_alive: &new_protocol::MakerOrderKeepAlive,
 ) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("process_order_keep_alive locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     let uuid = keep_alive.uuid.into();
     match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, from_pubkey) {
@@ -124,12 +127,10 @@ async fn process_order_keep_alive(
             None => broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into()),
         },
     }
-    log!("process_order_keep_alive unlocked");
 }
 
 async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive, order: &MakerOrder) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("process_my_order_keep_alive locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
 
     let uuid = keep_alive.uuid.into();
@@ -141,12 +142,10 @@ async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::Mak
             maker_order_created_p2p_notify(ctx.clone(), order).await;
         },
     }
-    log!("process_my_order_keep_alive unlocked");
 }
 
 async fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("insert_or_update_order locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     match orderbook.entry((req.base.clone(), req.rel.clone())) {
         Entry::Vacant(pair_orders) => {
@@ -171,12 +170,10 @@ async fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) 
             },
         },
     }
-    log!("insert_or_update_order unlocked");
 }
 
 async fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("delete_order locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     for (_, orders) in orderbook.iter_mut() {
         if let Entry::Occupied(order) = orders.entry(uuid) {
@@ -185,7 +182,6 @@ async fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
             }
         }
     }
-    log!("delete_order unlocked");
 }
 
 fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
@@ -195,22 +191,18 @@ fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
 
 async fn process_repeat_order(ctx: &MmArc, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("my_maker_orders process_repeat_order locked");
     let my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     if let Some(order) = my_maker_orders.get(&uuid) {
         maker_order_created_p2p_notify(ctx.clone(), order).await;
     }
-    log!("my_maker_orders process_repeat_order unlocked");
 }
 
 async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("delete_my_order locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     for (_, orders) in orderbook.iter_mut() {
         orders.remove(&uuid);
     }
-    log!("delete_my_order unlocked");
 }
 
 pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) {
@@ -352,7 +344,6 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
         None => return,
     };
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
-    log!("handle_peer_subscribed locked");
     let orderbook = ordermatch_ctx.orderbook.lock().await;
     let mut messages = vec![];
     if let Some(orders) = orderbook.get(&(pair.0.to_owned(), pair.1.to_owned())) {
@@ -370,7 +361,6 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
         let peers = vec![peer.to_owned()];
         send_msgs_to_peers(&ctx, messages, peers);
     }
-    log!("handle_peer_subscribed unlocked");
 }
 
 pub struct BalanceUpdateOrdermatchHandler {
@@ -385,7 +375,6 @@ impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
     fn balance_updated(&self, ticker: &str, new_balance: &BigDecimal) {
         let new_balance = MmNumber::from(new_balance.clone());
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&self.ctx));
-        log!("my_maker_orders balance_updated locked");
         let mut maker_orders = block_on(ordermatch_ctx.my_maker_orders.lock());
         *maker_orders = maker_orders
             .drain()
@@ -407,7 +396,6 @@ impl BalanceUpdateEventHandler for BalanceUpdateOrdermatchHandler {
                 }
             })
             .collect();
-        log!("my_maker_orders balance_updated unlocked");
     }
 }
 
@@ -1174,7 +1162,6 @@ pub trait OrdermatchEventHandler {
 
 async fn broadcast_maker_keep_alives(ctx: &MmArc) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("my_maker_orders broadcast_maker_keep_alives locked");
     let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     for order in my_maker_orders.values_mut() {
         let msg = new_protocol::MakerOrderKeepAlive {
@@ -1185,7 +1172,6 @@ async fn broadcast_maker_keep_alives(ctx: &MmArc) {
         let topic = orderbook_topic(&order.base, &order.rel);
         broadcast_ordermatch_message(ctx, topic, msg);
     }
-    log!("my_maker_orders broadcast_maker_keep_alives unlocked");
 }
 
 fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &MmArc, topic: String, msg: T) {
@@ -1368,7 +1354,6 @@ fn lp_connected_alice(ctx: MmArc, taker_request: TakerRequest, taker_match: Take
 }
 
 pub async fn lp_ordermatch_loop(ctx: MmArc) {
-    const ORDERMATCH_TIMEOUT: u64 = 30000;
     let mut last_price_broadcast = now_ms();
 
     loop {
@@ -1378,14 +1363,13 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
         let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
         {
             let mut my_taker_orders = ordermatch_ctx.my_taker_orders.lock().await;
-            log!("my_maker_orders lp_ordermatch_loop locked");
             let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
             let _my_cancelled_orders = ordermatch_ctx.my_cancelled_orders.lock().await;
             // transform the timed out and unmatched GTC taker orders to maker
             *my_taker_orders = my_taker_orders
                 .drain()
                 .filter_map(|(uuid, order)| {
-                    if order.created_at + ORDERMATCH_TIMEOUT < now_ms() {
+                    if order.created_at + TAKER_ORDER_TIMEOUT * 1000 < now_ms() {
                         delete_my_taker_order(&ctx, &order);
                         if order.matches.is_empty() && order.order_type == OrderType::GoodTillCancelled {
                             let maker_order: MakerOrder = order.into();
@@ -1410,7 +1394,8 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     .matches
                     .drain()
                     .filter(|(_, order_match)| {
-                        order_match.last_updated + ORDERMATCH_TIMEOUT > now_ms() || order_match.connected.is_some()
+                        order_match.last_updated + ORDER_MATCH_TIMEOUT * 1000 > now_ms()
+                            || order_match.connected.is_some()
                     })
                     .collect();
                 save_my_maker_order(&ctx, order);
@@ -1432,10 +1417,9 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             for order in cancelled {
                 maker_order_cancelled_p2p_notify(ctx.clone(), &order).await;
             }
-            log!("my_maker_orders lp_ordermatch_loop unlocked");
         }
 
-        if now_ms() > last_price_broadcast + 20 * 1000 {
+        if now_ms() > last_price_broadcast + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
             /*
             if let Err(e) = broadcast_my_maker_orders(&ctx).await {
                 ctx.log
@@ -1450,8 +1434,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             // remove "timed out" orders from orderbook
             // ones that didn't receive an update for 30 seconds or more
             // store them in inactive orders temporary to avoid RepeatOrder request to network in case we start
-            // receiving keep alive aagin
-            log!("lp_ordermatch_loop locked");
+            // receiving keep alive again
             let mut orderbook = ordermatch_ctx.orderbook.lock().await;
             let mut inactive = ordermatch_ctx.inactive_orders.lock().await;
             *orderbook = orderbook
@@ -1460,7 +1443,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     pair_orderbook = pair_orderbook
                         .drain()
                         .filter_map(|(pubkey, order)| {
-                            if now_ms() / 1000 > order.timestamp + 30 {
+                            if now_ms() / 1000 > order.timestamp + MAKER_ORDER_TIMEOUT {
                                 inactive.insert(pubkey, order);
                                 None
                             } else {
@@ -1475,7 +1458,6 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     }
                 })
                 .collect();
-            log!("lp_ordermatch_loop unlocked");
         }
 
         Timer::sleep(0.777).await;
@@ -1572,7 +1554,6 @@ async fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
 
     println!("Processing request {:?}", taker_request);
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
-    log!("my_maker_orders process_taker_request locked");
     let mut my_orders = ordermatch_ctx.my_maker_orders.lock().await;
 
     for (uuid, order) in my_orders.iter_mut() {
@@ -1621,18 +1602,15 @@ async fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
                 order.matches.insert(maker_match.request.uuid, maker_match);
                 save_my_maker_order(&ctx, &order);
             }
-            log!("my_maker_orders process_taker_request unlocked");
             return;
         }
     }
-    log!("my_maker_orders process_taker_request unlocked");
 }
 
 async fn process_taker_connect(ctx: MmArc, sender_pubkey: H256Json, connect_msg: TakerConnect) {
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let our_public_id = unwrap!(ctx.public_id());
 
-    log!("my_maker_orders process_taker_connect locked");
     let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     let my_order = match maker_orders.get_mut(&connect_msg.maker_order_uuid) {
         Some(o) => o,
@@ -1673,7 +1651,6 @@ async fn process_taker_connect(ctx: MmArc, sender_pubkey: H256Json, connect_msg:
         lp_connect_start_bob(ctx.clone(), order_match.clone(), my_order.clone());
         save_my_maker_order(&ctx, &my_order);
     }
-    log!("my_maker_orders process_taker_connect unlocked");
 }
 
 pub fn lp_trade_command(ctx: MmArc, json: Json) {
@@ -1952,7 +1929,6 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
         bytes.copy_from_slice(&pubkey[..16]);
         let uuid = req.uuid.unwrap_or_else(|| Uuid::from_bytes(bytes));
         let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(ctx));
-        log!("lp_post_price_recv locked");
         let mut orderbook = ordermatch_ctx.orderbook.lock().await;
         match orderbook.entry((req.base.clone(), req.rel.clone())) {
             Entry::Vacant(pair_orders) => {
@@ -1977,7 +1953,6 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
                 },
             },
         }
-        log!("lp_post_price_recv unlocked");
         Ok(())
     } else {
         ERR!("price ping invalid signature")
@@ -2072,7 +2047,6 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let new_order = try_s!(builder.build());
     subscribe_to_topic(&ctx, orderbook_topic(&new_order.base, &new_order.rel)).await;
     maker_order_created_p2p_notify(ctx.clone(), &new_order).await;
-    log!("my_maker_orders set_price locked");
     let mut my_orders = ordermatch_ctx.my_maker_orders.lock().await;
     if req.cancel_previous {
         let mut cancelled = vec![];
@@ -2099,15 +2073,12 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     }
     let res = try_s!(json::to_vec(&json!({ "result": new_order })));
     my_orders.insert(new_order.uuid, new_order);
-    log!("my_maker_orders set_price unlocked");
     Ok(try_s!(Response::builder().body(res)))
 }
 
 pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(ctx));
-    log!("my_maker_orders broadcast_my_maker_orders clone locked");
     let my_orders = ordermatch_ctx.my_maker_orders.lock().await.clone();
-    log!("my_maker_orders broadcast_my_maker_orders clone unlocked");
     for (_, order) in my_orders {
         let base_coin = match try_s!(lp_coinfindᵃ(ctx, &order.base).await) {
             Some(coin) => coin,
@@ -2168,9 +2139,7 @@ pub async fn broadcast_my_maker_orders(ctx: &MmArc) -> Result<(), String> {
             }
         } else {
             // cancel the order if available balance is lower than MIN_TRADING_VOL
-            log!("my_maker_orders broadcast_my_maker_orders remove locked");
             let order = ordermatch_ctx.my_maker_orders.lock().await.remove(&order.uuid);
-            log!("my_maker_orders broadcast_my_maker_orders remove unlocked");
             if let Some(mut order) = order {
                 // TODO cancelling means setting volume to 0 as of now, should refactor
                 order.max_base_vol = 0.into();
@@ -2241,7 +2210,6 @@ pub async fn order_status(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
     let req: OrderStatusReq = try_s!(json::from_value(req));
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
-    log!("my_maker_orders order_status locked");
     let maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     if let Some(order) = maker_orders.get(&req.uuid) {
         let res = json!({
@@ -2267,7 +2235,6 @@ pub async fn order_status(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
     let res = json!({
         "error": format!("Order with uuid {} is not found", req.uuid),
     });
-    log!("my_maker_orders order_status unlocked");
     Response::builder()
         .status(404)
         .body(json::to_vec(&res).unwrap())
@@ -2283,7 +2250,6 @@ pub async fn cancel_order(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
     let req: CancelOrderReq = try_s!(json::from_value(req));
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
-    log!("my_maker_orders cancel_order locked");
     let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     match maker_orders.entry(req.uuid) {
         Entry::Occupied(order) => {
@@ -2326,7 +2292,6 @@ pub async fn cancel_order(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
     let res = json!({
         "error": format!("Order with uuid {} is not found", req.uuid),
     });
-    log!("my_maker_orders cancel_order unlocked");
     Response::builder()
         .status(404)
         .body(json::to_vec(&res).unwrap())
@@ -2369,7 +2334,6 @@ impl<'a> From<&'a TakerOrder> for TakerOrderForRpc<'a> {
 
 pub async fn my_orders(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
-    log!("my_maker_orders my_orders locked");
     let maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     let taker_orders = ordermatch_ctx.my_taker_orders.lock().await;
     let maker_orders_for_rpc: HashMap<_, _> = maker_orders
@@ -2386,7 +2350,6 @@ pub async fn my_orders(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
             "taker_orders": taker_orders_for_rpc,
         }
     });
-    log!("my_maker_orders my_orders unlocked");
     Response::builder()
         .body(json::to_vec(&res).unwrap())
         .map_err(|e| ERRL!("{}", e))
@@ -2437,7 +2400,6 @@ fn delete_my_taker_order(ctx: &MmArc, order: &TakerOrder) {
 pub async fn orders_kick_start(ctx: &MmArc) -> Result<HashSet<String>, String> {
     let mut coins = HashSet::new();
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(ctx));
-    log!("my_maker_orders orders_kick_start locked");
     let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     let maker_entries = try_s!(json_dir_entries(&my_maker_orders_dir(&ctx)));
 
@@ -2459,7 +2421,6 @@ pub async fn orders_kick_start(ctx: &MmArc) -> Result<HashSet<String>, String> {
             taker_orders.insert(order.request.uuid, order);
         }
     });
-    log!("my_maker_orders orders_kick_start unlocked");
     Ok(coins)
 }
 
@@ -2479,7 +2440,6 @@ pub async fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<U
     let mut currently_matching = vec![];
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(ctx));
-    log!("my_maker_orders cancel_orders_by locked");
     let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     let mut taker_orders = ordermatch_ctx.my_taker_orders.lock().await;
     let mut my_cancelled_orders = ordermatch_ctx.my_cancelled_orders.lock().await;
@@ -2557,7 +2517,6 @@ pub async fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<U
                 .collect();
         },
     };
-    log!("my_maker_orders cancel_orders_by unlocked");
     Ok((cancelled, currently_matching))
 }
 
