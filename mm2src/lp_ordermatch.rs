@@ -247,6 +247,29 @@ pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg
     };
 }
 
+// async fn process_request_order(ctx: &MmArc, uuid: &Uuid, from_pubkey: &str) -> Result<Vec<u8>, String> {
+//     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
+//     log!("process_request_order locked");
+//     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+//     find_order_by_uuid_and_pubkey(&mut orderbook, uuid, from_pubkey)
+//         .map(|order| )
+//     log!("process_request_order unlocked");
+// }
+
+pub async fn process_request(ctx: MmArc, initial_topic: &str, request: &[u8]) -> Result<Vec<u8>, String> {
+    let (request, _sig, _pubkey) = try_s!(decode_signed::<new_protocol::OrdermatchRequest>(request));
+
+    println!("Got ordermatching request {:?}", request);
+    let response = match request {
+        // new_protocol::OrdermatchRequest::GetOrder{uuid, from_pubkey} => {
+        //     process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await;
+        // },
+        new_protocol::OrdermatchRequest::Test => new_protocol::OrdermatchResponse::TestResult,
+    };
+
+    Ok(try_s!(encode_and_sign(response)))
+}
+
 fn alb_ordered_pair(base: &str, rel: &str) -> String {
     let (first, second) = if base < rel { (base, rel) } else { (rel, base) };
     let mut res = first.to_owned();
@@ -2813,11 +2836,12 @@ fn choose_taker_confs_and_notas(
 }
 
 mod new_protocol {
-    use super::{MatchBy as SuperMatchBy, TakerAction};
+    use super::{MakerOrder, MatchBy as SuperMatchBy, TakerAction};
     use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
     use common::mm_number::MmNumber;
     use compact_uuid::CompactUuid;
     use std::collections::HashSet;
+    use uuid::Uuid;
 
     #[derive(Debug, Deserialize, Serialize)]
     #[allow(clippy::large_enum_variant)]
@@ -2831,6 +2855,18 @@ mod new_protocol {
         TakerConnect(TakerConnect),
         MakerConnected(MakerConnected),
         RepeatOrder(RepeatOrder),
+    }
+
+    #[derive(Debug)]
+    pub enum OrdermatchRequest {
+        // GetOrder { uuid: CompactUuid, from_pubkey:String },
+        Test,
+    }
+
+    #[derive(Debug)]
+    pub enum OrdermatchResponse {
+        // MakerOrder(MakerOrder),
+        TestResult,
     }
 
     impl From<MakerOrderKeepAlive> for OrdermatchMessage {

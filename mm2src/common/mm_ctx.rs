@@ -284,7 +284,7 @@ impl Default for MmCtx {
 }
 
 // We don't want to send `MmCtx` across threads, it will only obstruct the normal use case
-// (and might result in undefined behavior if there's a C struct or value in the context that is aliased from the various MM threads).
+// (and might result in undefined behaviour if there's a C struct or value in the context that is aliased from the various MM threads).
 // Only the `MmArc` is `Send`.
 // Also, `MmCtx` not being `Send` allows us to easily keep various C pointers on the context,
 // which will likely come useful during the gradual port.

@@ -7,11 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1"
+async-std = "1.6.2"
 atomicdex-gossipsub = { path = "../gossipsub" }
+env_logger = "0.7.1"
 futures = { version = "0.3.1", package = "futures", features = ["compat", "async-await"] }
 hex = "0.4.2"
 libp2p = "0.21.1"
 libsecp256k1 = "0.3.5"
+log = "0.4.8"
 num-bigint = { version = "0.2", features = ["serde", "std"] }
 num-rational = { version = "0.2", features = ["serde", "bigint", "bigint-std"] }
 rand = { version = "0.7", features = ["std"] }

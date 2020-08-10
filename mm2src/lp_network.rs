@@ -40,6 +40,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
+use mm2_libp2p::atomicdex_behaviour::RequestEventRx;
+use mm2_libp2p::request_response::PeerResponse;
 
 pub struct P2PContext {
     pub cmd_tx: AdexCmdTx,
@@ -92,6 +94,32 @@ pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_r
     }
 }
 
+pub async fn request_response_event_process_loop(ctx: MmArc, mut rx: RequestEventRx, _i_am_relayer: bool) {
+    while !ctx.is_stopping() {
+        let (request, response_tx) = match rx.next().await {
+            Some(r) => r,
+            _ => continue,
+        };
+
+        let mut split = request.topic.as_str().split(TOPIC_SEPARATOR);
+        let result = match split.next() {
+            Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
+                lp_ordermatch::process_request(ctx.clone(), topic.as_str(), &request.req).await
+            },
+            // Some(lp_swap::SWAP_PREFIX) => {
+            //     lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data)
+            // },
+            None | Some(_) => ERR!("invalid request topic {}", request.topic),
+        };
+
+        let res = match result {
+            Ok(res) => PeerResponse::Ok { res },
+            Err(e) => PeerResponse::Err(e),
+        };
+        response_tx.send(res);
+    }
+}
+
 #[cfg(feature = "native")]
 pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
@@ -117,6 +145,19 @@ pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<
         let cmd = AdexBehaviorCmd::SendToPeers { msgs, peers };
         tx.send(cmd).await.unwrap();
     });
+}
+
+#[cfg(features = "native")]
+pub async fn send_request(ctx: &MmArc, req: Vec<u8>, topic: String) -> Result<PeerResponse, String> {
+    let (response_tx, response_rx) = oneshot::channel();
+    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
+    let cmd = AdexBehaviorCmd::SendRequest {
+        req,
+        topic,
+        response_tx,
+    };
+    tx.send(cmd).await.unwrap();
+    Ok(try_s!(response_rx.await))
 }
 
 /// Result of `fn dispatcher`.
