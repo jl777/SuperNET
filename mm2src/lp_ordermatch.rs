@@ -312,6 +312,7 @@ async fn maker_order_created_p2p_notify(ctx: MmArc, order: &MakerOrder) {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let to_broadcast = new_protocol::OrdermatchMessage::MakerOrderCreated(message.clone());
     let encoded_msg = encode_and_sign(&to_broadcast, &*key_pair.private().secret).unwrap();
+    log!("Maker order created size "(encoded_msg.len()));
     let peer = ctx.peer_id.or(&&|| panic!()).clone();
     let price_ping_req: PricePingRequest =
         (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
