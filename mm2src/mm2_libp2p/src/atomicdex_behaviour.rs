@@ -267,6 +267,7 @@ pub fn start_gossipsub(
             .mesh_n(5)
             .mesh_n_high(5)
             .i_am_relay(i_am_relay)
+            .max_transmit_size(1024 * 1024 - 100)
             .build();
         // build a gossipsub network behaviour
         let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config, relayers.clone());

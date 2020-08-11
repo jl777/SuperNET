@@ -2597,7 +2597,6 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         Some(asks) => {
             let mut orderbook_entries = vec![];
             for (uuid, ask) in asks.iter() {
-                log!("Ask size {}"(std::mem::size_of_val(ask)));
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.base.clone(),
                     address: try_s!(base_coin.address_from_pubkey_str(&ask.pubsecp)),

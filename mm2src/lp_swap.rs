@@ -120,8 +120,14 @@ pub fn broadcast_message(ctx: &MmArc, topic: String, msg: SwapMsg) {
 pub fn process_msg(ctx: MmArc, topic: &str, msg: &[u8]) {
     let msg = match decode_signed::<SwapMsg>(msg) {
         Ok(m) => m,
-        Err(e) => {
-            log!("Swap msg deserialize error "[e]);
+        Err(swap_msg_err) => {
+            match json::from_slice::<SwapStatus>(msg) {
+                Ok(status) => save_stats_swap(&ctx, &status.data).unwrap(),
+                Err(swap_status_err) => {
+                    log!("Swap msg deserialize error "[swap_msg_err]);
+                    log!("Swap status deserialize error "[swap_status_err]);
+                },
+            };
             return;
         },
     };
@@ -741,6 +747,12 @@ pub fn stats_swap_status(ctx: MmArc, req: Json) -> HyRes {
     )
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct SwapStatus {
+    method: String,
+    data: SavedSwap,
+}
+
 /// Broadcasts `my` swap status to P2P network
 fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
     let path = my_swap_file_path(ctx, uuid);
@@ -751,12 +763,12 @@ fn broadcast_my_swap_status(uuid: &str, ctx: &MmArc) -> Result<(), String> {
         SavedSwap::Maker(ref mut swap) => swap.hide_secret(),
     };
     try_s!(save_stats_swap(ctx, &status));
-    let status_string = json!({
-        "method": "swapstatus",
-        "data": status,
-    })
-    .to_string();
-    ctx.broadcast_p2p_msg("test".into(), status_string.into_bytes());
+    let status = SwapStatus {
+        method: "swapstatus".into(),
+        data: status,
+    };
+    let msg = json::to_vec(&status).expect("Swap status ser should never fail");
+    broadcast_p2p_msg(ctx, swap_topic(uuid), msg);
     Ok(())
 }
 

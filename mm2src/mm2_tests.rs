@@ -1038,7 +1038,7 @@ async fn trade_base_rel_electrum(pairs: Vec<(&'static str, &'static str)>) {
 
     log!("Waiting 3 seconds for nodes to broadcast their swaps data..");
     Timer::sleep(3.).await;
-    /*
+
     for uuid in uuids.iter() {
         log!("Checking alice status..");
         check_stats_swap_status(&mm_alice, &uuid, &maker_success_events, &taker_success_events).await;
@@ -1046,7 +1046,6 @@ async fn trade_base_rel_electrum(pairs: Vec<(&'static str, &'static str)>) {
         log!("Checking bob status..");
         check_stats_swap_status(&mm_bob, &uuid, &maker_success_events, &taker_success_events).await;
     }
-    */
 
     log!("Checking alice recent swaps..");
     check_recent_swaps(&mm_alice, uuids.len()).await;
@@ -1854,7 +1853,7 @@ fn test_order_should_not_be_displayed_when_node_is_down() {
     assert_eq!(asks.len(), 1, "Alice RICK/MORTY orderbook must have exactly 1 ask");
 
     unwrap!(block_on(mm_bob.stop()));
-    thread::sleep(Duration::from_secs(40));
+    thread::sleep(Duration::from_secs(61));
 
     let rc = unwrap!(block_on(mm_alice.rpc(json! ({
         "userpass": mm_alice.userpass,

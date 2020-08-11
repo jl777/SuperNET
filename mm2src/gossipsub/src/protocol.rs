@@ -43,7 +43,7 @@ impl Default for ProtocolConfig {
     fn default() -> Self {
         Self {
             protocol_id: Cow::Borrowed(b"/meshsub/1.0.0"),
-            max_transmit_size: 5 * 1024 * 1024,
+            max_transmit_size: 2048,
         }
     }
 }
