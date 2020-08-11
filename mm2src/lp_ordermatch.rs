@@ -207,45 +207,42 @@ async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
 
 pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) {
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
-        Ok((message, _sig, pubkey)) => {
-            println!("Got ordermatching message {:?}", message);
-            match message {
-                new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
-                    let req: PricePingRequest = (
-                        created_msg,
-                        msg.to_vec(),
-                        hex::encode(pubkey.to_bytes().as_slice()),
-                        from_peer,
-                    )
-                        .into();
-                    let uuid = req.uuid.unwrap();
-                    insert_or_update_order(&ctx, req, uuid).await;
-                },
-                new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
-                    process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await;
-                },
-                new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
-                    let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
-                    process_taker_request(ctx, msg).await;
-                },
-                new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
-                    let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.unprefixed().into());
-                    process_maker_reserved(ctx, msg).await;
-                },
-                new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
-                    process_taker_connect(ctx, pubkey.unprefixed().into(), taker_connect.into()).await;
-                },
-                new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
-                    process_maker_connected(ctx, pubkey.unprefixed().into(), maker_connected.into()).await;
-                },
-                new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
-                    delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into()).await;
-                },
-                new_protocol::OrdermatchMessage::RepeatOrder(repeat_order) => {
-                    process_repeat_order(&ctx, repeat_order.uuid.into()).await;
-                },
-                _ => unimplemented!(),
-            }
+        Ok((message, _sig, pubkey)) => match message {
+            new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
+                let req: PricePingRequest = (
+                    created_msg,
+                    msg.to_vec(),
+                    hex::encode(pubkey.to_bytes().as_slice()),
+                    from_peer,
+                )
+                    .into();
+                let uuid = req.uuid.unwrap();
+                insert_or_update_order(&ctx, req, uuid).await;
+            },
+            new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
+                process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await;
+            },
+            new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
+                let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
+                process_taker_request(ctx, msg).await;
+            },
+            new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
+                let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.unprefixed().into());
+                process_maker_reserved(ctx, msg).await;
+            },
+            new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
+                process_taker_connect(ctx, pubkey.unprefixed().into(), taker_connect.into()).await;
+            },
+            new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
+                process_maker_connected(ctx, pubkey.unprefixed().into(), maker_connected.into()).await;
+            },
+            new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
+                delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into()).await;
+            },
+            new_protocol::OrdermatchMessage::RepeatOrder(repeat_order) => {
+                process_repeat_order(&ctx, repeat_order.uuid.into()).await;
+            },
+            _ => unimplemented!(),
         },
         Err(e) => println!("Error {} while decoding signed message", e),
     };
@@ -312,7 +309,6 @@ async fn maker_order_created_p2p_notify(ctx: MmArc, order: &MakerOrder) {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let to_broadcast = new_protocol::OrdermatchMessage::MakerOrderCreated(message.clone());
     let encoded_msg = encode_and_sign(&to_broadcast, &*key_pair.private().secret).unwrap();
-    log!("Maker order created size "(encoded_msg.len()));
     let peer = ctx.peer_id.or(&&|| panic!()).clone();
     let price_ping_req: PricePingRequest =
         (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
@@ -358,6 +354,10 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
             messages.push((topic.to_owned(), order.initial_message.clone()));
         }
     }
+    let total_messages_size = messages
+        .iter()
+        .fold(0, |total, (topic, message)| total + topic.len() + message.len());
+    log!("Total messages size to transmit "(total_messages_size));
     if !messages.is_empty() {
         let peers = vec![peer.to_owned()];
         send_msgs_to_peers(&ctx, messages, peers);
