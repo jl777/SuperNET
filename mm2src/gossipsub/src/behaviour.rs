@@ -60,7 +60,11 @@ pub struct Gossipsub {
     /// A map of all connected peers to their subscribed topics.
     peer_topics: HashMap<PeerId, Vec<TopicHash>>,
 
-    relayers: HashSet<PeerId>,
+    /// The peer ids of connected relayer nodes
+    connected_relayers: HashSet<PeerId>,
+
+    /// Relayers to which we forward the messages
+    relayers_mesh: HashSet<PeerId>,
 
     /// Overlay network of connected peers - Maps topics to connected gossipsub peers.
     mesh: HashMap<TopicHash, Vec<PeerId>>,
@@ -120,7 +124,8 @@ impl Gossipsub {
             peer_connections: HashMap::new(),
             keep_connection_to,
             dial_attempts: HashMap::new(),
-            relayers: HashSet::new(),
+            connected_relayers: HashSet::new(),
+            relayers_mesh: HashSet::new(),
         }
     }
 
@@ -524,7 +529,10 @@ impl Gossipsub {
             && is_relay
         {
             info!("IAmRelayer: Adding peer: {:?} to the relayers list", peer_id);
-            self.relayers.insert(peer_id.clone());
+            self.connected_relayers.insert(peer_id.clone());
+            if self.relayers_mesh.len() < self.config.mesh_n_low {
+                self.relayers_mesh.insert(peer_id.clone());
+            }
         }
         debug!("Completed IAmRelayer handling for peer: {:?}", peer_id);
     }
@@ -757,6 +765,7 @@ impl Gossipsub {
         // piggyback pooled control messages
         self.flush_control_pool();
 
+        self.maintain_relayers_mesh();
         // shift the memcache
         self.mcache.shift();
 
@@ -895,7 +904,7 @@ impl Gossipsub {
             }
         }
 
-        if !self.relayers.is_empty() {
+        if !self.relayers_mesh.is_empty() {
             debug!("Forwarding message to relayers: {:?}", msg_id);
             let event = Arc::new(GossipsubRpc {
                 subscriptions: Vec::new(),
@@ -903,7 +912,7 @@ impl Gossipsub {
                 control_msgs: Vec::new(),
             });
 
-            for relayer in self.relayers.iter() {
+            for relayer in self.relayers_mesh.iter() {
                 if relayer != source {
                     debug!("Sending message: {:?} to relayer {:?}", msg_id, relayer);
                     self.events.push_back(NetworkBehaviourAction::NotifyHandler {
@@ -977,6 +986,26 @@ impl Gossipsub {
         debug!("RANDOM PEERS: Got {:?} peers", n);
 
         gossip_peers[..n].to_vec()
+    }
+
+    /// Helper function to get a set of `n` random known relayer peers
+    /// filtered by the function `f`.
+    fn get_random_relays(&self, n: usize, mut f: impl FnMut(&PeerId) -> bool) -> Vec<PeerId> {
+        let mut relayers: Vec<_> = self.connected_relayers.iter().cloned().filter(|p| f(p)).collect();
+
+        // if we have less than needed, return them
+        if relayers.len() <= n {
+            debug!("RANDOM RELAYERS: Got {:?} peers", relayers.len());
+            return relayers.to_vec();
+        }
+
+        // we have more peers than needed, shuffle them and return n of them
+        let mut rng = thread_rng();
+        relayers.partial_shuffle(&mut rng, n);
+
+        debug!("RANDOM RELAYERS: Got {:?} peers", n);
+
+        relayers[..n].to_vec()
     }
 
     // adds a control action to control_pool
@@ -1064,6 +1093,19 @@ impl Gossipsub {
                     .push_back(NetworkBehaviourAction::DialAddress { address: addr.clone() });
                 self.dial_attempts.insert(addr.clone(), now);
             }
+        }
+    }
+
+    fn maintain_relayers_mesh(&mut self) {
+        if self.relayers_mesh.len() < self.config.mesh_n_low {
+            debug!(
+                "HEARTBEAT: relayers low. Contains: {:?} needs: {:?}",
+                self.relayers_mesh.len(),
+                self.config.mesh_n_low
+            );
+            let required = self.config.mesh_n_low - self.relayers_mesh.len();
+            let to_add = self.get_random_relays(required, |p| !self.relayers_mesh.contains(p));
+            self.relayers_mesh.extend(to_add);
         }
     }
 }
@@ -1164,6 +1206,8 @@ impl NetworkBehaviour for Gossipsub {
             }
         }
 
+        self.relayers_mesh.remove(id);
+        self.connected_relayers.remove(id);
         // remove peer from peer_topics
         let was_in = self.peer_topics.remove(id);
         debug_assert!(was_in.is_some());

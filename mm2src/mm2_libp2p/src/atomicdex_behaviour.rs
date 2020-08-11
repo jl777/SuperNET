@@ -18,6 +18,8 @@ pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
 
 struct SwarmRuntime(Runtime);
 
+pub const PEERS_TOPIC: &str = "PEERS";
+
 impl libp2p::core::Executor for &SwarmRuntime {
     fn exec(&self, future: Pin<Box<dyn Future<Output = ()> + Send>>) { self.0.spawn(future); }
 }
@@ -281,7 +283,7 @@ pub fn start_gossipsub(
             .executor(Box::new(&*SWARM_RUNTIME))
             .build()
     };
-    swarm.gossipsub.subscribe(Topic::new("PEERS".to_owned()));
+    swarm.gossipsub.subscribe(Topic::new(PEERS_TOPIC.to_owned()));
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
     for relayer in &relayers {
