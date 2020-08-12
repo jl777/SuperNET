@@ -110,12 +110,15 @@ async fn process_order_keep_alive(
     from_pubkey: &str,
     topic: &str,
     keep_alive: &new_protocol::MakerOrderKeepAlive,
-) {
+) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     let uuid = keep_alive.uuid.into();
     match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, from_pubkey) {
-        Some(order) => order.timestamp = keep_alive.timestamp,
+        Some(order) => {
+            order.timestamp = keep_alive.timestamp;
+            true
+        },
         None => match ordermatch_ctx.inactive_orders.lock().await.remove(&uuid) {
             Some(mut order) => {
                 order.timestamp = keep_alive.timestamp;
@@ -123,8 +126,12 @@ async fn process_order_keep_alive(
                     .entry((order.base.clone(), order.rel.clone()))
                     .or_insert_with(HashMap::new)
                     .insert(uuid, order);
+                true
             },
-            None => broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into()),
+            None => {
+                broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into());
+                false
+            },
         },
     }
 }
@@ -189,12 +196,18 @@ fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
     broadcast_ordermatch_message(ctx, topic, msg);
 }
 
-async fn process_repeat_order(ctx: &MmArc, uuid: Uuid) {
+async fn process_repeat_order(ctx: &MmArc, from_peer: String, uuid: Uuid) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    let my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
-    if let Some(order) = my_maker_orders.get(&uuid) {
-        maker_order_created_p2p_notify(ctx.clone(), order).await;
+    let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+    if let Some(order) = find_order_by_uuid(&mut orderbook, &uuid) {
+        let peers = vec![from_peer];
+        let topic = orderbook_topic(&order.base, &order.rel);
+        let msg = order.initial_message.clone();
+        send_msgs_to_peers(ctx, vec![(topic, msg)], peers);
+        return false;
     }
+
+    true
 }
 
 async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
@@ -205,7 +218,8 @@ async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
     }
 }
 
-pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) {
+/// Attempts to decode a message and process it returning whether the message is valid and worth rebroadcasting
+pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) -> bool {
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
         Ok((message, _sig, pubkey)) => match message {
             new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
@@ -218,34 +232,43 @@ pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg
                     .into();
                 let uuid = req.uuid.unwrap();
                 insert_or_update_order(&ctx, req, uuid).await;
+                true
             },
             new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
-                process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await;
+                process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await
             },
             new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
                 let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
                 process_taker_request(ctx, msg).await;
+                true
             },
             new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
                 let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.unprefixed().into());
                 process_maker_reserved(ctx, msg).await;
+                true
             },
             new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
                 process_taker_connect(ctx, pubkey.unprefixed().into(), taker_connect.into()).await;
+                true
             },
             new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
                 process_maker_connected(ctx, pubkey.unprefixed().into(), maker_connected.into()).await;
+                true
             },
             new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
                 delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into()).await;
+                true
             },
             new_protocol::OrdermatchMessage::RepeatOrder(repeat_order) => {
-                process_repeat_order(&ctx, repeat_order.uuid.into()).await;
+                process_repeat_order(&ctx, from_peer, repeat_order.uuid.into()).await
             },
             _ => unimplemented!(),
         },
-        Err(e) => println!("Error {} while decoding signed message", e),
-    };
+        Err(e) => {
+            println!("Error {} while decoding signed message", e);
+            false
+        },
+    }
 }
 
 fn alb_ordered_pair(base: &str, rel: &str) -> String {
@@ -354,10 +377,6 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
             messages.push((topic.to_owned(), order.initial_message.clone()));
         }
     }
-    let total_messages_size = messages
-        .iter()
-        .fold(0, |total, (topic, message)| total + topic.len() + message.len());
-    log!("Total messages size to transmit "(total_messages_size));
     if !messages.is_empty() {
         let peers = vec![peer.to_owned()];
         send_msgs_to_peers(&ctx, messages, peers);

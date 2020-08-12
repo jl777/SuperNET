@@ -1101,11 +1101,27 @@ impl Gossipsub {
             debug!(
                 "HEARTBEAT: relayers low. Contains: {:?} needs: {:?}",
                 self.relayers_mesh.len(),
-                self.config.mesh_n_low
+                self.config.mesh_n_low,
             );
             let required = self.config.mesh_n - self.relayers_mesh.len();
             let to_add = self.get_random_relays(required, |p| !self.relayers_mesh.contains(p));
             self.relayers_mesh.extend(to_add);
+        }
+
+        if self.relayers_mesh.len() > self.config.mesh_n_high {
+            debug!(
+                "HEARTBEAT: relayers high. Contains: {:?} needs: {:?}",
+                self.relayers_mesh.len(),
+                self.config.mesh_n_high,
+            );
+            let mesh_n = self.config.mesh_n;
+            self.relayers_mesh = self
+                .relayers_mesh
+                .drain()
+                .enumerate()
+                .filter(|(i, _)| i < &mesh_n)
+                .map(|(_, relay)| relay)
+                .collect();
         }
     }
 }

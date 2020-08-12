@@ -84,6 +84,10 @@ pub enum AdexBehaviorCmd {
     GetGossipTopicPeers {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
     },
+    PropagateMessage {
+        message_id: MessageId,
+        propagation_source: PeerId,
+    },
 }
 
 /// AtomicDEX libp2p Network behaviour implementation
@@ -195,6 +199,12 @@ impl AtomicDexBehavior {
                     println!("Result rx is dropped");
                 }
             },
+            AdexBehaviorCmd::PropagateMessage {
+                message_id,
+                propagation_source,
+            } => {
+                self.gossipsub.propagate_message(&message_id, &propagation_source);
+            },
         }
     }
 }
@@ -264,11 +274,9 @@ pub fn start_gossipsub(
 
         // set custom gossipsub
         let gossipsub_config = GossipsubConfigBuilder::new()
-            .message_id_fn(message_id_fn) // content-address messages. No two messages of the
-            // same content will be propagated.
-            .mesh_n(5)
-            .mesh_n_high(5)
+            .message_id_fn(message_id_fn)
             .i_am_relay(i_am_relay)
+            .manual_propagation()
             .max_transmit_size(1024 * 1024 - 100)
             .build();
         // build a gossipsub network behaviour
