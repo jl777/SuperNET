@@ -811,6 +811,7 @@ pub struct MakerOrder {
     started_swaps: Vec<Uuid>,
     uuid: Uuid,
     conf_settings: Option<OrderConfirmationsSettings>,
+    keep_alive_sent_at: Option<u64>,
 }
 
 struct MakerOrderBuilder {
@@ -985,6 +986,7 @@ impl MakerOrderBuilder {
             started_swaps: Vec::new(),
             uuid: new_uuid(),
             conf_settings: self.conf_settings,
+            keep_alive_sent_at: None,
         })
     }
 }
@@ -1028,6 +1030,7 @@ impl Into<MakerOrder> for TakerOrder {
                 started_swaps: Vec::new(),
                 uuid: self.request.uuid,
                 conf_settings: self.request.conf_settings,
+                keep_alive_sent_at: None,
             },
             // The "buy" taker order is recreated with reversed pair as Maker order is always considered as "sell"
             TakerAction::Buy => MakerOrder {
@@ -1041,6 +1044,7 @@ impl Into<MakerOrder> for TakerOrder {
                 started_swaps: Vec::new(),
                 uuid: self.request.uuid,
                 conf_settings: self.request.conf_settings.map(|s| s.reversed()),
+                keep_alive_sent_at: None,
             },
         }
     }
@@ -1181,16 +1185,34 @@ pub trait OrdermatchEventHandler {
 }
 
 async fn broadcast_maker_keep_alives(ctx: &MmArc) {
+    let now = now_ms();
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
+    let mut broadcast_num = 0;
+    let max_broadcast_num = my_maker_orders.len() / 20;
     for order in my_maker_orders.values_mut() {
+        if let Some(keep_alive_at) = order.keep_alive_sent_at {
+            if now - keep_alive_at < MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+                continue;
+            }
+        }
+
+        if now - order.created_at < MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+            continue;
+        }
+
         let msg = new_protocol::MakerOrderKeepAlive {
             uuid: order.uuid.into(),
-            timestamp: now_ms() / 1000,
+            timestamp: now / 1000,
         };
+        order.keep_alive_sent_at = Some(now);
         process_my_order_keep_alive(ctx, &msg, order).await;
         let topic = orderbook_topic(&order.base, &order.rel);
         broadcast_ordermatch_message(ctx, topic, msg);
+        broadcast_num += 1;
+        if broadcast_num >= max_broadcast_num {
+            break;
+        }
     }
 }
 
@@ -1374,8 +1396,6 @@ fn lp_connected_alice(ctx: MmArc, taker_request: TakerRequest, taker_match: Take
 }
 
 pub async fn lp_ordermatch_loop(ctx: MmArc) {
-    let mut last_price_broadcast = now_ms();
-
     loop {
         if ctx.is_stopping() {
             break;
@@ -1439,16 +1459,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             }
         }
 
-        if now_ms() > last_price_broadcast + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
-            /*
-            if let Err(e) = broadcast_my_maker_orders(&ctx).await {
-                ctx.log
-                    .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
-            }
-            */
-            last_price_broadcast = now_ms();
-            broadcast_maker_keep_alives(&ctx).await;
-        }
+        broadcast_maker_keep_alives(&ctx).await;
 
         {
             // remove "timed out" orders from orderbook
