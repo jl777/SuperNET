@@ -138,6 +138,7 @@ impl Encoder for GossipsubCodec {
             iwant: Vec::new(),
             graft: Vec::new(),
             prune: Vec::new(),
+            iamrelay: None,
         };
 
         let empty_control_msg = item.control_msgs.is_empty();
@@ -172,6 +173,9 @@ impl Encoder for GossipsubCodec {
                         topic_id: Some(topic_hash.into_string()),
                     };
                     control.prune.push(rpc_prune);
+                },
+                GossipsubControlAction::IAmRelay(is_relay) => {
+                    control.iamrelay = Some(is_relay);
                 },
             }
         }
@@ -265,6 +269,10 @@ impl Decoder for GossipsubCodec {
             control_msgs.extend(iwant_msgs);
             control_msgs.extend(graft_msgs);
             control_msgs.extend(prune_msgs);
+
+            if let Some(is_relay) = rpc_control.iamrelay {
+                control_msgs.extend(iter::once(GossipsubControlAction::IAmRelay(is_relay)));
+            }
         }
 
         Ok(Some(GossipsubRpc {
@@ -359,4 +367,5 @@ pub enum GossipsubControlAction {
         /// The mesh topic the peer should be removed from.
         topic_hash: TopicHash,
     },
+    IAmRelay(bool),
 }

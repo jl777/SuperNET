@@ -54,6 +54,10 @@ use crate::mm2::{lp_network::{broadcast_p2p_msg, send_msgs_to_peers, subscribe_t
                            SwapConfirmationsSettings, TakerSwap}};
 
 pub const ORDERBOOK_PREFIX: TopicPrefix = "orbk";
+const MIN_ORDER_KEEP_ALIVE_INTERVAL: u64 = 20;
+const MAKER_ORDER_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 3;
+const TAKER_ORDER_TIMEOUT: u64 = 30;
+const ORDER_MATCH_TIMEOUT: u64 = 30;
 
 impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PricePingRequest {
     fn from(tuple: (new_protocol::MakerOrderCreated, Vec<u8>, String, String)) -> PricePingRequest {
@@ -106,20 +110,34 @@ async fn process_order_keep_alive(
     from_pubkey: &str,
     topic: &str,
     keep_alive: &new_protocol::MakerOrderKeepAlive,
-) {
+) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("process_order_keep_alive locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    match find_order_by_uuid_and_pubkey(&mut orderbook, &keep_alive.uuid.into(), from_pubkey) {
-        Some(order) => order.timestamp = keep_alive.timestamp,
-        None => broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into()),
+    let uuid = keep_alive.uuid.into();
+    match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, from_pubkey) {
+        Some(order) => {
+            order.timestamp = keep_alive.timestamp;
+            true
+        },
+        None => match ordermatch_ctx.inactive_orders.lock().await.remove(&uuid) {
+            Some(mut order) => {
+                order.timestamp = keep_alive.timestamp;
+                orderbook
+                    .entry((order.base.clone(), order.rel.clone()))
+                    .or_insert_with(HashMap::new)
+                    .insert(uuid, order);
+                true
+            },
+            None => {
+                broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into());
+                false
+            },
+        },
     }
-    log!("process_order_keep_alive unlocked");
 }
 
 async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive, order: &MakerOrder) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("process_my_order_keep_alive locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
 
     let uuid = keep_alive.uuid.into();
@@ -131,12 +149,10 @@ async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::Mak
             maker_order_created_p2p_notify(ctx.clone(), order).await;
         },
     }
-    log!("process_my_order_keep_alive unlocked");
 }
 
 async fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("insert_or_update_order locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     match orderbook.entry((req.base.clone(), req.rel.clone())) {
         Entry::Vacant(pair_orders) => {
@@ -161,12 +177,10 @@ async fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) 
             },
         },
     }
-    log!("insert_or_update_order unlocked");
 }
 
 async fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("delete_order locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     for (_, orders) in orderbook.iter_mut() {
         if let Entry::Occupied(order) = orders.entry(uuid) {
@@ -175,7 +189,6 @@ async fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
             }
         }
     }
-    log!("delete_order unlocked");
 }
 
 fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
@@ -183,68 +196,79 @@ fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
     broadcast_ordermatch_message(ctx, topic, msg);
 }
 
-async fn process_repeat_order(ctx: &MmArc, uuid: Uuid) {
+async fn process_repeat_order(ctx: &MmArc, from_peer: String, uuid: Uuid) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    let my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
-    if let Some(order) = my_maker_orders.get(&uuid) {
-        maker_order_created_p2p_notify(ctx.clone(), order).await;
+    let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+    if let Some(order) = find_order_by_uuid(&mut orderbook, &uuid) {
+        let peers = vec![from_peer];
+        let topic = orderbook_topic(&order.base, &order.rel);
+        let msg = order.initial_message.clone();
+        send_msgs_to_peers(ctx, vec![(topic, msg)], peers);
+        return false;
     }
+
+    true
 }
 
 async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
-    log!("delete_my_order locked");
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     for (_, orders) in orderbook.iter_mut() {
         orders.remove(&uuid);
     }
-    log!("delete_my_order unlocked");
 }
 
-pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) {
+/// Attempts to decode a message and process it returning whether the message is valid and worth rebroadcasting
+pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) -> bool {
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
-        Ok((message, _sig, pubkey)) => {
-            println!("Got ordermatching message {:?}", message);
-            match message {
-                new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
-                    let req: PricePingRequest = (
-                        created_msg,
-                        msg.to_vec(),
-                        hex::encode(pubkey.to_bytes().as_slice()),
-                        from_peer,
-                    )
-                        .into();
-                    let uuid = req.uuid.unwrap();
-                    insert_or_update_order(&ctx, req, uuid).await;
-                },
-                new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
-                    process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await;
-                },
-                new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
-                    let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
-                    process_taker_request(ctx, msg).await;
-                },
-                new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
-                    let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.unprefixed().into());
-                    process_maker_reserved(ctx, msg).await;
-                },
-                new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
-                    process_taker_connect(ctx, pubkey.unprefixed().into(), taker_connect.into()).await;
-                },
-                new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
-                    process_maker_connected(ctx, pubkey.unprefixed().into(), maker_connected.into()).await;
-                },
-                new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
-                    delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into()).await;
-                },
-                new_protocol::OrdermatchMessage::RepeatOrder(repeat_order) => {
-                    process_repeat_order(&ctx, repeat_order.uuid.into()).await;
-                },
-                _ => unimplemented!(),
-            }
+        Ok((message, _sig, pubkey)) => match message {
+            new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
+                let req: PricePingRequest = (
+                    created_msg,
+                    msg.to_vec(),
+                    hex::encode(pubkey.to_bytes().as_slice()),
+                    from_peer,
+                )
+                    .into();
+                let uuid = req.uuid.unwrap();
+                insert_or_update_order(&ctx, req, uuid).await;
+                true
+            },
+            new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
+                process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await
+            },
+            new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
+                let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
+                process_taker_request(ctx, msg).await;
+                true
+            },
+            new_protocol::OrdermatchMessage::MakerReserved(maker_reserved) => {
+                let msg = MakerReserved::from_new_proto_and_pubkey(maker_reserved, pubkey.unprefixed().into());
+                process_maker_reserved(ctx, msg).await;
+                true
+            },
+            new_protocol::OrdermatchMessage::TakerConnect(taker_connect) => {
+                process_taker_connect(ctx, pubkey.unprefixed().into(), taker_connect.into()).await;
+                true
+            },
+            new_protocol::OrdermatchMessage::MakerConnected(maker_connected) => {
+                process_maker_connected(ctx, pubkey.unprefixed().into(), maker_connected.into()).await;
+                true
+            },
+            new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
+                delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into()).await;
+                true
+            },
+            new_protocol::OrdermatchMessage::RepeatOrder(repeat_order) => {
+                process_repeat_order(&ctx, from_peer, repeat_order.uuid.into()).await
+            },
+            _ => unimplemented!(),
         },
-        Err(e) => println!("Error {} while decoding signed message", e),
-    };
+        Err(e) => {
+            println!("Error {} while decoding signed message", e);
+            false
+        },
+    }
 }
 
 // async fn process_request_order(ctx: &MmArc, uuid: &Uuid, from_pubkey: &str) -> Result<Vec<u8>, String> {
@@ -336,14 +360,11 @@ async fn maker_order_created_p2p_notify(ctx: MmArc, order: &MakerOrder) {
         (message, encoded_msg.clone(), hex::encode(&**key_pair.public()), peer).into();
     let uuid = price_ping_req.uuid.unwrap();
     insert_or_update_order(&ctx, price_ping_req, uuid).await;
-    subscribe_to_topic(&ctx, topic.clone()).await;
     broadcast_p2p_msg(&ctx, topic, encoded_msg);
 }
 
-fn maker_order_updated_p2p_notify(ctx: MmArc, order: &MakerOrder) {
-    let topic = orderbook_topic(&order.base, &order.rel);
+fn maker_order_updated_p2p_notify(ctx: MmArc, _order: &MakerOrder) {
     spawn(async move {
-        subscribe_to_topic(&ctx, topic).await;
         if let Err(e) = broadcast_my_maker_orders(&ctx).await {
             ctx.log
                 .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
@@ -366,7 +387,6 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
         None => return,
     };
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
-    log!("handle_peer_subscribed locked");
     let orderbook = ordermatch_ctx.orderbook.lock().await;
     let mut messages = vec![];
     if let Some(orders) = orderbook.get(&(pair.0.to_owned(), pair.1.to_owned())) {
@@ -384,7 +404,6 @@ pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
         let peers = vec![peer.to_owned()];
         send_msgs_to_peers(&ctx, messages, peers);
     }
-    log!("handle_peer_subscribed unlocked");
 }
 
 pub struct BalanceUpdateOrdermatchHandler {
@@ -815,6 +834,7 @@ pub struct MakerOrder {
     started_swaps: Vec<Uuid>,
     uuid: Uuid,
     conf_settings: Option<OrderConfirmationsSettings>,
+    keep_alive_sent_at: Option<u64>,
 }
 
 struct MakerOrderBuilder {
@@ -989,6 +1009,7 @@ impl MakerOrderBuilder {
             started_swaps: Vec::new(),
             uuid: new_uuid(),
             conf_settings: self.conf_settings,
+            keep_alive_sent_at: None,
         })
     }
 }
@@ -1032,6 +1053,7 @@ impl Into<MakerOrder> for TakerOrder {
                 started_swaps: Vec::new(),
                 uuid: self.request.uuid,
                 conf_settings: self.request.conf_settings,
+                keep_alive_sent_at: None,
             },
             // The "buy" taker order is recreated with reversed pair as Maker order is always considered as "sell"
             TakerAction::Buy => MakerOrder {
@@ -1045,6 +1067,7 @@ impl Into<MakerOrder> for TakerOrder {
                 started_swaps: Vec::new(),
                 uuid: self.request.uuid,
                 conf_settings: self.request.conf_settings.map(|s| s.reversed()),
+                keep_alive_sent_at: None,
             },
         }
     }
@@ -1185,16 +1208,34 @@ pub trait OrdermatchEventHandler {
 }
 
 async fn broadcast_maker_keep_alives(ctx: &MmArc) {
+    let now = now_ms();
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
+    let mut broadcast_num = 0;
+    let max_broadcast_num = my_maker_orders.len() / 20;
     for order in my_maker_orders.values_mut() {
+        if let Some(keep_alive_at) = order.keep_alive_sent_at {
+            if now - keep_alive_at < MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+                continue;
+            }
+        }
+
+        if now - order.created_at < MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+            continue;
+        }
+
         let msg = new_protocol::MakerOrderKeepAlive {
             uuid: order.uuid.into(),
-            timestamp: now_ms() / 1000,
+            timestamp: now / 1000,
         };
+        order.keep_alive_sent_at = Some(now);
         process_my_order_keep_alive(ctx, &msg, order).await;
         let topic = orderbook_topic(&order.base, &order.rel);
         broadcast_ordermatch_message(ctx, topic, msg);
+        broadcast_num += 1;
+        if broadcast_num >= max_broadcast_num {
+            break;
+        }
     }
 }
 
@@ -1211,6 +1252,7 @@ struct OrdermatchContext {
     pub my_cancelled_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     /// A map from (base, rel)
     pub orderbook: AsyncMutex<HashMap<(String, String), HashMap<Uuid, PricePingRequest>>>,
+    pub inactive_orders: AsyncMutex<HashMap<Uuid, PricePingRequest>>,
 }
 
 impl OrdermatchContext {
@@ -1222,6 +1264,7 @@ impl OrdermatchContext {
                 my_maker_orders: AsyncMutex::new(HashMap::default()),
                 my_cancelled_orders: AsyncMutex::new(HashMap::default()),
                 orderbook: AsyncMutex::new(HashMap::default()),
+                inactive_orders: AsyncMutex::new(HashMap::default()),
             })
         })))
     }
@@ -1376,9 +1419,6 @@ fn lp_connected_alice(ctx: MmArc, taker_request: TakerRequest, taker_match: Take
 }
 
 pub async fn lp_ordermatch_loop(ctx: MmArc) {
-    const ORDERMATCH_TIMEOUT: u64 = 30000;
-    let mut last_price_broadcast = now_ms();
-
     loop {
         if ctx.is_stopping() {
             break;
@@ -1392,7 +1432,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             *my_taker_orders = my_taker_orders
                 .drain()
                 .filter_map(|(uuid, order)| {
-                    if order.created_at + ORDERMATCH_TIMEOUT < now_ms() {
+                    if order.created_at + TAKER_ORDER_TIMEOUT * 1000 < now_ms() {
                         delete_my_taker_order(&ctx, &order);
                         if order.matches.is_empty() && order.order_type == OrderType::GoodTillCancelled {
                             let maker_order: MakerOrder = order.into();
@@ -1417,7 +1457,8 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     .matches
                     .drain()
                     .filter(|(_, order_match)| {
-                        order_match.last_updated + ORDERMATCH_TIMEOUT > now_ms() || order_match.connected.is_some()
+                        order_match.last_updated + ORDER_MATCH_TIMEOUT * 1000 > now_ms()
+                            || order_match.connected.is_some()
                     })
                     .collect();
                 save_my_maker_order(&ctx, order);
@@ -1441,29 +1482,23 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             }
         }
 
-        if now_ms() > last_price_broadcast + 20 * 1000 {
-            /*
-            if let Err(e) = broadcast_my_maker_orders(&ctx).await {
-                ctx.log
-                    .log("", &[&"broadcast_my_maker_orders"], &format!("error {}", e));
-            }
-            */
-            last_price_broadcast = now_ms();
-            broadcast_maker_keep_alives(&ctx).await;
-        }
+        broadcast_maker_keep_alives(&ctx).await;
 
         {
             // remove "timed out" orders from orderbook
             // ones that didn't receive an update for 30 seconds or more
-            log!("lp_ordermatch_loop locked");
+            // store them in inactive orders temporary to avoid RepeatOrder request to network in case we start
+            // receiving keep alive again
             let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+            let mut inactive = ordermatch_ctx.inactive_orders.lock().await;
             *orderbook = orderbook
                 .drain()
                 .filter_map(|((base, rel), mut pair_orderbook)| {
                     pair_orderbook = pair_orderbook
                         .drain()
                         .filter_map(|(pubkey, order)| {
-                            if now_ms() / 1000 > order.timestamp + 30 {
+                            if now_ms() / 1000 > order.timestamp + MAKER_ORDER_TIMEOUT {
+                                inactive.insert(pubkey, order);
                                 None
                             } else {
                                 Some((pubkey, order))
@@ -1477,7 +1512,6 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     }
                 })
                 .collect();
-            log!("lp_ordermatch_loop unlocked");
         }
 
         Timer::sleep(0.777).await;
@@ -1949,7 +1983,6 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
         bytes.copy_from_slice(&pubkey[..16]);
         let uuid = req.uuid.unwrap_or_else(|| Uuid::from_bytes(bytes));
         let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(ctx));
-        log!("lp_post_price_recv locked");
         let mut orderbook = ordermatch_ctx.orderbook.lock().await;
         match orderbook.entry((req.base.clone(), req.rel.clone())) {
             Entry::Vacant(pair_orders) => {
@@ -1974,7 +2007,6 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
                 },
             },
         }
-        log!("lp_post_price_recv unlocked");
         Ok(())
     } else {
         ERR!("price ping invalid signature")
@@ -2067,6 +2099,7 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         .with_conf_settings(conf_settings);
 
     let new_order = try_s!(builder.build());
+    subscribe_to_topic(&ctx, orderbook_topic(&new_order.base, &new_order.rel)).await;
     maker_order_created_p2p_notify(ctx.clone(), &new_order).await;
     let mut my_orders = ordermatch_ctx.my_maker_orders.lock().await;
     if req.cancel_previous {
@@ -2538,7 +2571,6 @@ pub async fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<U
                 .collect();
         },
     };
-
     Ok((cancelled, currently_matching))
 }
 
@@ -2658,6 +2690,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         Some(asks) => {
             let mut orderbook_entries = vec![];
             for (uuid, ask) in asks.iter() {
+                log!("Ask size {}"(std::mem::size_of_val(ask)));
                 let price_mm = MmNumber::from(1i32)
                     / ask
                         .price_rat

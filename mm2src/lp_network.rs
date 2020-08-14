@@ -24,13 +24,12 @@ use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 use crossbeam::channel;
-use futures::channel::oneshot;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
 use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, GossipEventRx},
-                 GossipsubEvent, TOPIC_SEPARATOR};
+                 GossipsubEvent, MessageId, PeerId, TOPIC_SEPARATOR};
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
@@ -42,6 +41,7 @@ use std::time::Duration;
 use crate::mm2::{lp_ordermatch, lp_swap};
 use mm2_libp2p::atomicdex_behaviour::RequestEventRx;
 use mm2_libp2p::request_response::PeerResponse;
+use futures::channel::oneshot;
 
 pub struct P2PContext {
     pub cmd_tx: AdexCmdTx,
@@ -67,25 +67,37 @@ impl P2PContext {
 pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_relayer: bool) {
     while !ctx.is_stopping() {
         match rx.next().await {
-            Some(GossipsubEvent::Message(peer_id, _, message)) => {
+            Some(GossipsubEvent::Message(peer_id, message_id, message)) => {
+                let mut to_propagate = false;
                 for topic in message.topics {
                     let mut split = topic.as_str().split(TOPIC_SEPARATOR);
                     match split.next() {
                         Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
-                            lp_ordermatch::process_msg(ctx.clone(), topic.as_str(), peer_id.to_string(), &message.data)
-                                .await;
+                            if lp_ordermatch::process_msg(
+                                ctx.clone(),
+                                topic.as_str(),
+                                peer_id.to_string(),
+                                &message.data,
+                            )
+                            .await
+                            {
+                                to_propagate = true;
+                            }
                         },
                         Some(lp_swap::SWAP_PREFIX) => {
-                            lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data)
+                            lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data);
+                            to_propagate = true;
                         },
                         None | Some(_) => (),
                     }
                 }
+                if to_propagate && i_am_relayer {
+                    propagate_message(&ctx, message_id, peer_id);
+                }
             },
             Some(GossipsubEvent::Subscribed { peer_id, topic }) => {
-                lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 if i_am_relayer {
-                    subscribe_to_topic(&ctx, topic.to_string()).await;
+                    lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 }
             },
             None => break,
@@ -132,10 +144,8 @@ pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
 #[cfg(feature = "native")]
 pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
-    let (mesh_update_tx, mesh_update_rx) = oneshot::channel();
-    let cmd = AdexBehaviorCmd::Subscribe { topic, mesh_update_tx };
+    let cmd = AdexBehaviorCmd::Subscribe { topic };
     tx.send(cmd).await.unwrap();
-    mesh_update_rx.await.unwrap();
 }
 
 #[cfg(feature = "native")]
@@ -158,6 +168,18 @@ pub async fn send_request(ctx: &MmArc, req: Vec<u8>, topic: String) -> Result<Pe
     };
     tx.send(cmd).await.unwrap();
     Ok(try_s!(response_rx.await))
+}
+
+#[cfg(feature = "native")]
+pub fn propagate_message(ctx: &MmArc, message_id: MessageId, propagation_source: PeerId) {
+    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
+    spawn(async move {
+        let cmd = AdexBehaviorCmd::PropagateMessage {
+            message_id,
+            propagation_source,
+        };
+        tx.send(cmd).await.unwrap();
+    });
 }
 
 /// Result of `fn dispatcher`.

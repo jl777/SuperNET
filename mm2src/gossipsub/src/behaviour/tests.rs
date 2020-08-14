@@ -778,4 +778,40 @@ mod tests {
             "Expected peer to be removed from mesh"
         );
     }
+
+    #[test]
+    fn test_maintain_relayers_mesh_n_high() {
+        let peer_no = 20;
+        let (mut gs, peers, _) = build_and_inject_nodes(peer_no, vec![], false);
+        for peer in peers {
+            gs.relayers_mesh.insert(peer);
+        }
+        assert_eq!(peer_no, gs.relayers_mesh.len(), "Relayers mesh must contain 20 peers");
+        gs.maintain_relayers_mesh();
+        assert_eq!(
+            gs.config.mesh_n,
+            gs.relayers_mesh.len(),
+            "Relayers mesh must contain mesh_n peers after maintenance"
+        );
+    }
+
+    #[test]
+    fn test_maintain_relayers_mesh_n_low() {
+        let peer_no = 20;
+        let (mut gs, peers, _) = build_and_inject_nodes(peer_no, vec![], false);
+        for (i, peer) in peers.into_iter().enumerate() {
+            if i < 3 {
+                gs.relayers_mesh.insert(peer);
+            } else {
+                gs.connected_relayers.insert(peer);
+            }
+        }
+        assert_eq!(3, gs.relayers_mesh.len(), "Relayers mesh must contain 3 peers");
+        gs.maintain_relayers_mesh();
+        assert_eq!(
+            gs.config.mesh_n,
+            gs.relayers_mesh.len(),
+            "Relayers mesh must contain mesh_n peers after maintenance"
+        );
+    }
 }

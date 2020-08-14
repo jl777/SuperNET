@@ -612,6 +612,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
         spawn_boxed,
         seednodes,
         &mut *key_pair.private().secret.clone(),
+        i_am_seed,
     );
     try_s!(ctx.peer_id.pin(peer_id.to_string()));
     let p2p_context = P2PContext::new(cmd_tx);
