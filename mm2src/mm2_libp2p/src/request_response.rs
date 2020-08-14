@@ -31,13 +31,13 @@ pub enum Protocol {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PeerRequest {
     pub req: Vec<u8>,
-    pub topic: String,
 }
 
-#[derive(Eq, PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum PeerResponse {
     Ok { res: Vec<u8> },
-    Err(String),
+    None,
+    Err { err: String },
 }
 
 macro_rules! try_io {

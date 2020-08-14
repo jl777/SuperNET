@@ -15,9 +15,7 @@ use std::{collections::hash_map::{DefaultHasher, HashMap},
           task::{Context, Poll}};
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
-pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
-// TODO create a AdexRequestPeer that will contain request info, from_peer_id and oneshot sender
-pub type RequestEventRx = UnboundedReceiver<(PeerRequest, oneshot::Sender<PeerResponse>)>;
+pub type AdexEventRx = UnboundedReceiver<AdexBehaviourEvent>;
 use log::{debug, error};
 
 #[cfg(test)] mod tests;
@@ -53,14 +51,11 @@ pub enum AdexBehaviorCmd {
         msgs: Vec<(String, Vec<u8>)>,
         peers: Vec<String>,
     },
-    /// Request peers until a response is received or a limit is reached.
-    SendRequest {
+    /// Request peers until a response is received.
+    /// Note the request will be sent to relays only because they subscribe on all topics.
+    RequestAnyPeer {
         req: Vec<u8>,
-        /// The maximum number of peers who will be requested.
-        // limit: Option<u16>,
-        /// Request only peers who subscribes on this topic.
-        topic: String,
-        response_tx: oneshot::Sender<PeerResponse>,
+        response_tx: oneshot::Sender<AdexResponse>,
     },
     GetPeersInfo {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
@@ -70,13 +65,66 @@ pub enum AdexBehaviorCmd {
     },
 }
 
+/// The structure is the same as `PeerResponse`,
+/// but is used to prevent `PeerResponse` from being used outside the network implementation.
+#[derive(Debug, Eq, PartialEq)]
+pub enum AdexResponse {
+    Ok { response: Vec<u8> },
+    None,
+    Err { error: String },
+}
+
+impl From<PeerResponse> for AdexResponse {
+    fn from(res: PeerResponse) -> Self {
+        match res {
+            PeerResponse::Ok { res } => AdexResponse::Ok { response: res },
+            PeerResponse::None => AdexResponse::None,
+            PeerResponse::Err { err } => AdexResponse::Err { error: err },
+        }
+    }
+}
+
+impl From<AdexResponse> for PeerResponse {
+    fn from(res: AdexResponse) -> Self {
+        match res {
+            AdexResponse::Ok { response } => PeerResponse::Ok { res: response },
+            AdexResponse::None => PeerResponse::None,
+            AdexResponse::Err { error } => PeerResponse::Err { err: error },
+        }
+    }
+}
+
+/// The structure consists of some GossipsubEvent and RequestResponse events.
+/// It is used to prevent the network events from being used outside the network implementation.
+#[derive(Debug)]
+pub enum AdexBehaviourEvent {
+    /// A message has been received.
+    /// Derived from GossipsubEvent.
+    Message(PeerId, MessageId, GossipsubMessage),
+    /// A remote subscribed to a topic.
+    /// Derived from GossipsubEvent.
+    Subscribed {
+        /// Remote that has subscribed.
+        peer_id: PeerId,
+        /// The topic it has subscribed to.
+        topic: TopicHash,
+    },
+    /// A remote peer sent a request and waits for a response.
+    PeerRequest {
+        /// Remote that sent this request.
+        peer_id: PeerId,
+        /// The serialized data.
+        request: Vec<u8>,
+        /// A response should be passed through the oneshot channel.
+        response_tx: oneshot::Sender<AdexResponse>,
+    },
+}
+
 /// AtomicDEX libp2p Network behaviour implementation
 #[derive(NetworkBehaviour)]
 pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
-    event_tx: UnboundedSender<GossipsubEvent>,
-    #[behaviour(ignore)]
-    request_tx: UnboundedSender<(PeerRequest, oneshot::Sender<PeerResponse>)>,
+    event_tx: UnboundedSender<AdexBehaviourEvent>,
     #[behaviour(ignore)]
     mesh_update_txs: HashMap<TopicHash, Vec<oneshot::Sender<()>>>,
     #[behaviour(ignore)]
@@ -84,7 +132,7 @@ pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
     #[behaviour(ignore)]
-    pending_requests: HashMap<RequestId, oneshot::Sender<PeerResponse>>,
+    pending_requests: HashMap<RequestId, oneshot::Sender<AdexResponse>>,
     #[behaviour(ignore)]
     pending_responses: PendingResponses,
     gossipsub: Gossipsub,
@@ -94,7 +142,7 @@ pub struct AtomicDexBehavior {
 /// Vector of pair:
 /// first - a receiver that is used to receive a response from the business logic.
 /// second - a channel for sending a response to an inbound request.
-type PendingResponses = Vec<(oneshot::Receiver<PeerResponse>, AdexResponseChannel)>;
+type PendingResponses = Vec<(oneshot::Receiver<AdexResponse>, AdexResponseChannel)>;
 
 impl AtomicDexBehavior {
     fn notify_on_event<T: Send + 'static>(&self, mut tx: UnboundedSender<T>, event: T) {
@@ -137,11 +185,7 @@ impl AtomicDexBehavior {
 
                 self.gossipsub.send_messages_to_peers(msgs, peer_ids);
             },
-            AdexBehaviorCmd::SendRequest {
-                req,
-                topic,
-                response_tx,
-            } => {
+            AdexBehaviorCmd::RequestAnyPeer { req, response_tx } => {
                 // temporary get a first peer to send to him the request
                 if let Some(peer_id) = self
                     .gossipsub
@@ -150,7 +194,7 @@ impl AtomicDexBehavior {
                     .next()
                     .map(|(peer_id, _connection_points)| peer_id)
                 {
-                    let request = PeerRequest { req, topic };
+                    let request = PeerRequest { req };
                     debug!("Send request {:?} to {:?}", request, peer_id);
                     let request_id = self.request_response.send_request(&peer_id, request);
                     // send_request() must return a unique request id that cannot be in the pending_requests
@@ -197,20 +241,25 @@ impl AtomicDexBehavior {
         }
     }
 
-    fn process_request(&mut self, request: PeerRequest, channel: AdexResponseChannel) {
+    fn process_request(&mut self, peer_id: PeerId, request: PeerRequest, channel: AdexResponseChannel) {
         debug!("Process request {:?} from {:?}", request, channel);
         // The response_tx is used by the request handler to send a response to `AtomicDexBehavior`
         // and the response_rx is used by the `AtomicDexBehavior` to forward a response through the network.
         let (response_tx, response_rx) = oneshot::channel();
+
         self.pending_responses.push((response_rx, channel));
-        let event = (request, response_tx);
-        self.notify_on_event(self.request_tx.clone(), event)
+        let event = AdexBehaviourEvent::PeerRequest {
+            peer_id,
+            request: request.req,
+            response_tx,
+        };
+        self.notify_on_event(self.event_tx.clone(), event)
     }
 
-    fn process_response(&mut self, request_id: &RequestId, response: PeerResponse) {
+    fn process_response(&mut self, request_id: RequestId, response: PeerResponse) {
         debug!("Process response {:?} on request {:?}", response, request_id);
-        if let Some(tx) = self.pending_requests.remove(request_id) {
-            if tx.send(response).is_err() {
+        if let Some(tx) = self.pending_requests.remove(&request_id) {
+            if tx.send(response.into()).is_err() {
                 error!("Receiver is dropped");
             }
         }
@@ -224,11 +273,11 @@ impl AtomicDexBehavior {
         for (mut response_rx, channel) in pending_responses.into_iter() {
             match response_rx.poll_unpin(cx) {
                 // received a response, forward it through the network
-                Poll::Ready(Ok(response)) => self.request_response.send_response(channel, response),
+                Poll::Ready(Ok(response)) => self.request_response.send_response(channel, response.into()),
                 // the channel was closed, send an error through the network
                 Poll::Ready(Err(e)) => {
                     println!("Error on poll channel {:?}. Send an error to {:?}", e, channel);
-                    let response = PeerResponse::Err(e.to_string());
+                    let response = PeerResponse::Err { err: e.to_string() };
                     self.request_response.send_response(channel, response)
                 },
                 // push the pending response info back to the self container
@@ -240,23 +289,31 @@ impl AtomicDexBehavior {
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
     fn inject_event(&mut self, event: GossipsubEvent) {
-        if let GossipsubEvent::MeshUpdated { topic, .. } = &event {
-            if let Some(txs) = self.mesh_update_txs.remove(&topic) {
-                for tx in txs {
-                    if tx.send(()).is_err() {
-                        println!("Receiver is dropped");
+        let adex_event = match event {
+            GossipsubEvent::Message(peer_id, message_id, message) => {
+                AdexBehaviourEvent::Message(peer_id, message_id, message)
+            },
+            GossipsubEvent::Subscribed { peer_id, topic } => AdexBehaviourEvent::Subscribed { peer_id, topic },
+            GossipsubEvent::MeshUpdated { topic, .. } => {
+                if let Some(txs) = self.mesh_update_txs.remove(&topic) {
+                    for tx in txs {
+                        if tx.send(()).is_err() {
+                            println!("Receiver is dropped");
+                        }
                     }
                 }
-            }
-        }
-        self.notify_on_event(self.event_tx.clone(), event);
+                return;
+            },
+            _ => return,
+        };
+        self.notify_on_event(self.event_tx.clone(), adex_event);
     }
 }
 
 impl NetworkBehaviourEventProcess<AdexRequestResponseEvent> for AtomicDexBehavior {
     fn inject_event(&mut self, event: AdexRequestResponseEvent) {
         debug!("inject_event");
-        let (_peer_id, message) = match event {
+        let (peer_id, message) = match event {
             AdexRequestResponseEvent::Message { peer, message } => (peer, message),
             AdexRequestResponseEvent::InboundFailure { error, .. } => {
                 error!("Error on inbound {:?}", error);
@@ -270,8 +327,8 @@ impl NetworkBehaviourEventProcess<AdexRequestResponseEvent> for AtomicDexBehavio
 
         debug!("Receive the message {:?}", message);
         match message {
-            RequestResponseMessage::Request { request, channel } => self.process_request(request, channel),
-            RequestResponseMessage::Response { request_id, response } => self.process_response(&request_id, response),
+            RequestResponseMessage::Request { request, channel } => self.process_request(peer_id, request, channel),
+            RequestResponseMessage::Response { request_id, response } => self.process_response(request_id, response),
         }
     }
 }
@@ -286,7 +343,7 @@ pub fn start_gossipsub(
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     to_dial: Option<Vec<String>>,
     my_privkey: &mut [u8],
-) -> (UnboundedSender<AdexBehaviorCmd>, GossipEventRx, RequestEventRx, PeerId) {
+) -> (UnboundedSender<AdexBehaviorCmd>, AdexEventRx, PeerId) {
     // Create a random PeerId
     let privkey = identity::secp256k1::SecretKey::from_bytes(my_privkey).unwrap();
     let local_key = identity::Keypair::Secp256k1(privkey.into());
@@ -310,7 +367,6 @@ pub fn start_gossipsub(
 
     let (cmd_tx, cmd_rx) = unbounded();
     let (event_tx, event_rx) = unbounded();
-    let (request_tx, request_rx) = unbounded();
 
     let relayers: Vec<Multiaddr> = to_dial
         .unwrap_or_default()
@@ -349,7 +405,6 @@ pub fn start_gossipsub(
 
         let adex_behavior = AtomicDexBehavior {
             event_tx,
-            request_tx,
             mesh_update_txs: HashMap::new(),
             spawn_fn,
             cmd_rx,
@@ -393,7 +448,7 @@ pub fn start_gossipsub(
 
     spawn_fn(Box::new(polling_fut));
 
-    (cmd_tx, event_rx, request_rx, local_peer_id)
+    (cmd_tx, event_rx, local_peer_id)
 }
 
 /// The addr is expected to be in "/ip{X}/{IP}/{PORT}" format

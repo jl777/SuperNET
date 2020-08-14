@@ -1,6 +1,5 @@
 use super::start_gossipsub;
-use crate::atomicdex_behaviour::AdexBehaviorCmd;
-use crate::request_response::{PeerRequest, PeerResponse};
+use crate::atomicdex_behaviour::{AdexBehaviorCmd, AdexBehaviourEvent, AdexResponse};
 use async_std::task::{block_on, spawn};
 use futures::channel::{mpsc, oneshot};
 use futures::{Future, SinkExt, StreamExt};
@@ -18,9 +17,9 @@ struct Node {
 }
 
 impl Node {
-    fn spawn<F>(ip: String, port: u16, seednodes: Option<Vec<String>>, on_request: F) -> Node
+    fn spawn<F>(ip: String, port: u16, seednodes: Option<Vec<String>>, on_event: F) -> Node
     where
-        F: Fn((PeerRequest, oneshot::Sender<PeerResponse>)) + Send + 'static,
+        F: Fn(AdexBehaviourEvent) + Send + 'static,
     {
         let my_address = ip.parse().unwrap();
 
@@ -28,14 +27,14 @@ impl Node {
         let secret = SecretKey::random(&mut rng);
         let mut priv_key = secret.serialize();
 
-        let (cmd_tx, _gossip_event_rx, mut request_rx, _my_peer_id) =
+        let (cmd_tx, mut event_rx, _my_peer_id) =
             start_gossipsub(my_address, port, spawn_boxed, seednodes, &mut priv_key);
 
         // spawn a response future
         spawn(async move {
             loop {
-                match request_rx.next().await {
-                    Some(r) => on_request(r),
+                match event_rx.next().await {
+                    Some(r) => on_event(r),
                     _ => {
                         println!("Finish response future");
                         break;
@@ -77,15 +76,20 @@ fn test_request_response_ok() {
 
     let request_received = Arc::new(AtomicBool::new(false));
     let request_received_cpy = request_received.clone();
-    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |(request, tx)| {
-        request_received_cpy.store(true, Ordering::Relaxed);
+    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |event| {
+        let (request, response_tx) = match event {
+            AdexBehaviourEvent::PeerRequest {
+                request, response_tx, ..
+            } => (request, response_tx),
+            _ => return,
+        };
 
-        assert_eq!(request.topic, "test:topic");
-        assert_eq!(request.req, b"test request");
+        request_received_cpy.store(true, Ordering::Relaxed);
+        assert_eq!(request, b"test request");
 
         assert_eq!(
-            tx.send(PeerResponse::Ok {
-                res: b"test response".to_vec()
+            response_tx.send(AdexResponse::Ok {
+                response: b"test response".to_vec()
             }),
             Ok(())
         );
@@ -102,9 +106,8 @@ fn test_request_response_ok() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         node2
-            .send_cmd(AdexBehaviorCmd::SendRequest {
+            .send_cmd(AdexBehaviorCmd::RequestAnyPeer {
                 req: b"test request".to_vec(),
-                topic: "test:topic".into(),
                 response_tx,
             })
             .await;
@@ -112,8 +115,8 @@ fn test_request_response_ok() {
         let res = response_rx.await;
         assert_eq!(
             res,
-            Ok(PeerResponse::Ok {
-                res: b"test response".to_vec()
+            Ok(AdexResponse::Ok {
+                response: b"test response".to_vec()
             })
         );
     });
