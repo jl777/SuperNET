@@ -1,23 +1,172 @@
 use crate::{decode_message, encode_message};
 use async_trait::async_trait;
 use core::iter;
+use futures::channel::{mpsc, oneshot};
 use futures::io::{AsyncRead, AsyncWrite};
+use futures::task::{Context, Poll};
+use futures::StreamExt;
 use libp2p::core::upgrade::{read_one, write_one};
-use libp2p::request_response::{ProtocolName, ProtocolSupport, RequestResponse, RequestResponseCodec,
-                               RequestResponseConfig, RequestResponseEvent, ResponseChannel};
+use libp2p::request_response::handler::RequestProtocol;
+use libp2p::request_response::{ProtocolName, ProtocolSupport, RequestId, RequestResponse, RequestResponseCodec,
+                               RequestResponseConfig, RequestResponseEvent, RequestResponseMessage, ResponseChannel};
+use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
+use libp2p::NetworkBehaviour;
+use libp2p::PeerId;
+use log::{debug, error};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
 use std::io;
 
-pub type AdexRequestResponse = RequestResponse<Codec>;
-pub type AdexRequestResponseEvent = RequestResponseEvent<PeerRequest, PeerResponse>;
-pub type AdexResponseChannel = ResponseChannel<PeerResponse>;
+pub type RequestResponseReceiver = mpsc::UnboundedReceiver<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
+pub type RequestResponseSender = mpsc::UnboundedSender<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
 
 /// Build a request-response network behaviour.
-pub fn build_request_response_behaviour() -> AdexRequestResponse {
+pub fn build_request_response_behaviour() -> RequestResponseBehaviour {
     let config = RequestResponseConfig::default();
     let protocol = iter::once((Protocol::Version1, ProtocolSupport::Full));
-    RequestResponse::new(Codec, protocol, config)
+    let inner = RequestResponse::new(Codec, protocol, config);
+
+    let (tx, rx) = mpsc::unbounded();
+    let pending_requests = HashMap::new();
+    let events = VecDeque::new();
+    RequestResponseBehaviour {
+        tx,
+        rx,
+        pending_requests,
+        events,
+        inner,
+    }
+}
+
+pub enum RequestResponseBehaviourEvent {
+    InboundRequest {
+        peer_id: PeerId,
+        request: PeerRequest,
+        response_channel: ResponseChannel<PeerResponse>,
+    },
+}
+
+#[derive(NetworkBehaviour)]
+#[behaviour(out_event = "RequestResponseBehaviourEvent")]
+#[behaviour(poll_method = "poll_event")]
+pub struct RequestResponseBehaviour {
+    #[behaviour(ignore)]
+    rx: RequestResponseReceiver,
+    #[behaviour(ignore)]
+    tx: RequestResponseSender,
+    #[behaviour(ignore)]
+    pending_requests: HashMap<RequestId, oneshot::Sender<PeerResponse>>,
+    /// Events that need to be yielded to the outside when polling.
+    #[behaviour(ignore)]
+    events: VecDeque<RequestResponseBehaviourEvent>,
+    /// The inner RequestResponse network behaviour.
+    inner: RequestResponse<Codec>,
+}
+
+impl RequestResponseBehaviour {
+    pub fn sender(&self) -> RequestResponseSender { self.tx.clone() }
+
+    pub fn send_response(&mut self, ch: ResponseChannel<PeerResponse>, rs: PeerResponse) {
+        self.inner.send_response(ch, rs)
+    }
+
+    pub fn send_request(
+        &mut self,
+        peer_id: &PeerId,
+        request: PeerRequest,
+        response_tx: oneshot::Sender<PeerResponse>,
+    ) -> RequestId {
+        let request_id = self.inner.send_request(&peer_id, request);
+        assert!(self.pending_requests.insert(request_id.clone(), response_tx).is_none());
+        request_id
+    }
+
+    fn poll_event(
+        &mut self,
+        cx: &mut Context,
+        _params: &mut impl PollParameters,
+    ) -> Poll<NetworkBehaviourAction<RequestProtocol<Codec>, RequestResponseBehaviourEvent>> {
+        // poll the `rx`
+        match self.rx.poll_next_unpin(cx) {
+            // received a request, forward it through the network and put to the `pending_requests`
+            Poll::Ready(Some((peer_id, request, response_tx))) => {
+                let _request_id = self.send_request(&peer_id, request, response_tx);
+            },
+            // the channel was closed
+            Poll::Ready(None) => panic!("request-response channel has been closed"),
+            Poll::Pending => (),
+        }
+
+        if let Some(event) = self.events.pop_front() {
+            // forward a pending event to the top
+            return Poll::Ready(NetworkBehaviourAction::GenerateEvent(event));
+        }
+
+        Poll::Pending
+    }
+
+    fn process_request(
+        &mut self,
+        peer_id: PeerId,
+        request: PeerRequest,
+        response_channel: ResponseChannel<PeerResponse>,
+    ) {
+        self.events.push_back(RequestResponseBehaviourEvent::InboundRequest {
+            peer_id,
+            request,
+            response_channel,
+        })
+    }
+
+    fn process_response(&mut self, request_id: RequestId, response: PeerResponse) {
+        match self.pending_requests.remove(&request_id) {
+            Some(tx) => {
+                if let Err(e) = tx.send(response) {
+                    error!("{:?}. Request {:?} is not processed", e, request_id);
+                }
+            },
+            _ => error!("Received unknown request {:?}", request_id),
+        }
+    }
+}
+
+impl NetworkBehaviourEventProcess<RequestResponseEvent<PeerRequest, PeerResponse>> for RequestResponseBehaviour {
+    fn inject_event(&mut self, event: RequestResponseEvent<PeerRequest, PeerResponse>) {
+        let (peer_id, message) = match event {
+            RequestResponseEvent::Message { peer, message } => (peer, message),
+            RequestResponseEvent::InboundFailure { error, .. } => {
+                error!("Error on receive a request: {:?}", error);
+                return;
+            },
+            RequestResponseEvent::OutboundFailure {
+                peer,
+                request_id,
+                error,
+            } => {
+                error!(
+                    "Error on send request {:?} to peer {:?}: {:?}",
+                    request_id, peer, error
+                );
+                let err_response = PeerResponse::Err {
+                    err: format!("{:?}", error),
+                };
+                self.process_response(request_id, err_response);
+                return;
+            },
+        };
+
+        match message {
+            RequestResponseMessage::Request { request, channel } => {
+                debug!("Received a request from {:?} peer", peer_id);
+                self.process_request(peer_id, request, channel)
+            },
+            RequestResponseMessage::Response { request_id, response } => {
+                debug!("Received a response to the {:?} request from peer {:?}", request_id, peer_id);
+                self.process_response(request_id, response)
+            },
+        }
+    }
 }
 
 #[derive(Clone)]

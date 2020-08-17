@@ -19,7 +19,7 @@ struct Node {
 impl Node {
     fn spawn<F>(ip: String, port: u16, seednodes: Option<Vec<String>>, on_event: F) -> Node
     where
-        F: Fn(AdexBehaviourEvent) + Send + 'static,
+        F: Fn(mpsc::UnboundedSender<AdexBehaviorCmd>, AdexBehaviourEvent) + Send + 'static,
     {
         let my_address = ip.parse().unwrap();
 
@@ -28,13 +28,15 @@ impl Node {
         let mut priv_key = secret.serialize();
 
         let (cmd_tx, mut event_rx, _my_peer_id) =
-            start_gossipsub(my_address, port, spawn_boxed, seednodes, &mut priv_key);
+            start_gossipsub(my_address, port, spawn_boxed, seednodes, &mut priv_key, true);
 
         // spawn a response future
+        let cmd_tx_fut = cmd_tx.clone();
         spawn(async move {
             loop {
+                let cmd_tx_fut = cmd_tx_fut.clone();
                 match event_rx.next().await {
-                    Some(r) => on_event(r),
+                    Some(r) => on_event(cmd_tx_fut, r),
                     _ => {
                         println!("Finish response future");
                         break;
@@ -70,35 +72,36 @@ impl Node {
 
 #[test]
 fn test_request_response_ok() {
-    std::env::set_var("RUST_LOG", "debug");
-    // let _ = env_logger::try_init();
-    let _ = env_logger::builder().is_test(true).try_init();
+    let _ = env_logger::try_init();
 
     let request_received = Arc::new(AtomicBool::new(false));
     let request_received_cpy = request_received.clone();
-    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |event| {
-        let (request, response_tx) = match event {
+    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |cmd_tx, event| {
+        let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
-                request, response_tx, ..
-            } => (request, response_tx),
+                request,
+                response_channel,
+                ..
+            } => (request, response_channel),
             _ => return,
         };
 
         request_received_cpy.store(true, Ordering::Relaxed);
         assert_eq!(request, b"test request");
 
-        assert_eq!(
-            response_tx.send(AdexResponse::Ok {
-                response: b"test response".to_vec()
-            }),
-            Ok(())
-        );
+        let res = AdexResponse::Ok {
+            response: b"test response".to_vec(),
+        };
+        cmd_tx
+            .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+            .unwrap();
     });
+
     let mut node2 = Node::spawn(
         "127.0.0.1".into(),
         57784,
         Some(vec!["/ip4/127.0.0.1/tcp/57783".into()]),
-        |_| (),
+        |_, _| (),
     );
 
     block_on(async { node2.wait_peers(1).await });
