@@ -5,7 +5,7 @@ use futures::channel::{mpsc, oneshot};
 use futures::{Future, SinkExt, StreamExt};
 use secp256k1::SecretKey;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 fn spawn_boxed(fut: Box<dyn Future<Output = ()> + Send + Unpin + 'static>) { spawn(fut); }
@@ -125,4 +125,115 @@ fn test_request_response_ok() {
     });
 
     assert!(request_received.load(Ordering::Relaxed));
+}
+
+#[test]
+fn test_request_response_ok_three_peers() {
+    let _ = env_logger::try_init();
+
+    #[derive(Default)]
+    struct RequestHandler {
+        requests: u8,
+    }
+
+    impl RequestHandler {
+        fn handle(&mut self, cmd_tx: mpsc::UnboundedSender<AdexBehaviorCmd>, event: AdexBehaviourEvent) {
+            let (request, response_channel) = match event {
+                AdexBehaviourEvent::PeerRequest {
+                    request,
+                    response_channel,
+                    ..
+                } => (request, response_channel),
+                _ => return,
+            };
+
+            self.requests += 1;
+
+            assert_eq!(request, b"test request");
+
+            // the first time we should respond the none
+            if self.requests == 1 {
+                let res = AdexResponse::None;
+                cmd_tx
+                    .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+                    .unwrap();
+                return;
+            }
+
+            // the second time we should respond an error
+            if self.requests == 2 {
+                let res = AdexResponse::Err {
+                    error: "test error".into(),
+                };
+                cmd_tx
+                    .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+                    .unwrap();
+                return;
+            }
+
+            // the third time we should respond an ok
+            if self.requests == 3 {
+                let res = AdexResponse::Ok {
+                    response: format!("success {} request", self.requests).as_bytes().to_vec(),
+                };
+                cmd_tx
+                    .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+                    .unwrap();
+                return;
+            }
+
+            panic!("Request received more than 3 times");
+        }
+    }
+
+    let request_handler = Arc::new(Mutex::new(RequestHandler::default()));
+
+    let handler = request_handler.clone();
+    let _receiver1 = Node::spawn("127.0.0.1".into(), 57790, None, move |cmd_tx, event| {
+        let mut handler = handler.lock().unwrap();
+        handler.handle(cmd_tx, event)
+    });
+
+    let handler = request_handler.clone();
+    let _receiver2 = Node::spawn("127.0.0.1".into(), 57791, None, move |cmd_tx, event| {
+        let mut handler = handler.lock().unwrap();
+        handler.handle(cmd_tx, event)
+    });
+
+    let handler = request_handler.clone();
+    let _receiver3 = Node::spawn("127.0.0.1".into(), 57792, None, move |cmd_tx, event| {
+        let mut handler = handler.lock().unwrap();
+        handler.handle(cmd_tx, event)
+    });
+
+    let mut sender = Node::spawn(
+        "127.0.0.1".into(),
+        57784,
+        Some(vec![
+            "/ip4/127.0.0.1/tcp/57790".into(),
+            "/ip4/127.0.0.1/tcp/57791".into(),
+            "/ip4/127.0.0.1/tcp/57792".into(),
+        ]),
+        |_, _| (),
+    );
+
+    block_on(async { sender.wait_peers(3).await });
+
+    let (response_tx, response_rx) = oneshot::channel();
+    block_on(async move {
+        sender
+            .send_cmd(AdexBehaviorCmd::RequestAnyPeer {
+                req: b"test request".to_vec(),
+                response_tx,
+            })
+            .await;
+
+        let res = response_rx.await;
+        assert_eq!(
+            res,
+            Ok(AdexResponse::Ok {
+                response: b"success 3 request".to_vec()
+            })
+        );
+    });
 }

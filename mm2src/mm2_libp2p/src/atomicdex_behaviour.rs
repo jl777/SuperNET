@@ -242,19 +242,11 @@ impl AtomicDexBehavior {
                 self.gossipsub.send_messages_to_peers(msgs, peer_ids);
             },
             AdexBehaviorCmd::RequestAnyPeer { req, response_tx } => {
-                // temporary get a first peer to send to him the request
-                if let Some(peer_id) = self
-                    .gossipsub
-                    .get_peers_connections()
-                    .into_iter()
-                    .next()
-                    .map(|(peer_id, _connection_points)| peer_id)
-                {
-                    // spawn the `request_any_peers` future
-                    let future = request_any_peers(vec![peer_id], req, self.request_response.sender(), response_tx);
-                    self.spawn(future);
-                }
-                // else the response_tx will be dropped
+                let n = self.gossipsub.get_min_relays_number();
+                let relays = self.gossipsub.get_random_mesh_relays(n);
+                // spawn the `request_any_peers` future
+                let future = request_any_peers(relays, req, self.request_response.sender(), response_tx);
+                self.spawn(future);
             },
             AdexBehaviorCmd::SendResponse { res, response_channel } => {
                 self.request_response.send_response(response_channel.into(), res.into());
@@ -522,7 +514,7 @@ async fn request_any_peers(
                 debug!("Received None from peer {:?}, request next peer", peer);
             },
             PeerResponse::Err { err } => {
-                error!("Received error {:?} from peer {:?}", err, peer);
+                error!("Received error {:?} from peer {:?}, request next peer", err, peer);
             },
         };
     }
