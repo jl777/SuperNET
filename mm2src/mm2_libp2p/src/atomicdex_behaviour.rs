@@ -219,7 +219,9 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
 
 // TODO: in this impl we might want to save ping statistics and possibly choose the peers to which we have good ping
 impl NetworkBehaviourEventProcess<PingEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, _event: PingEvent) {}
+    fn inject_event(&mut self, event: PingEvent) {
+        println!("Ping event: {:?}", event);
+    }
 }
 
 /// Creates and spawns new AdexBehavior Swarm returning:

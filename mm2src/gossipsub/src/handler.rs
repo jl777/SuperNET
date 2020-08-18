@@ -234,11 +234,14 @@ impl ProtocolsHandler for GossipsubHandler {
                 },
                 Some(OutboundSubstreamState::PendingSend(mut substream, message)) => {
                     match Sink::poll_ready(Pin::new(&mut substream), cx) {
-                        Poll::Ready(Ok(())) => match Sink::start_send(Pin::new(&mut substream), message) {
+                        Poll::Ready(Ok(())) => match Sink::start_send(Pin::new(&mut substream), message.clone()) {
                             Ok(()) => self.outbound_substream = Some(OutboundSubstreamState::PendingFlush(substream)),
                             Err(e) => {
                                 if let io::ErrorKind::PermissionDenied = e.kind() {
-                                    error!("Message over the maximum transmission limit was not sent.");
+                                    error!(
+                                        "Message over the maximum transmission limit was not sent. Message: {:?}",
+                                        message
+                                    );
                                     self.outbound_substream = Some(OutboundSubstreamState::WaitingOutput(substream));
                                 } else {
                                     return Poll::Ready(ProtocolsHandlerEvent::Close(e));
