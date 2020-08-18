@@ -85,7 +85,7 @@ impl GossipsubHandler {
             inbound_substream: None,
             outbound_substream: None,
             send_queue: SmallVec::new(),
-            keep_alive: KeepAlive::No,
+            keep_alive: KeepAlive::Yes,
         }
     }
 }
@@ -97,7 +97,7 @@ impl Default for GossipsubHandler {
             inbound_substream: None,
             outbound_substream: None,
             send_queue: SmallVec::new(),
-            keep_alive: KeepAlive::No,
+            keep_alive: KeepAlive::Yes,
         }
     }
 }

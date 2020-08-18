@@ -102,8 +102,8 @@ pub struct AtomicDexBehavior {
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
-    gossipsub: Gossipsub,
     ping: Ping,
+    gossipsub: Gossipsub,
 }
 
 impl AtomicDexBehavior {
