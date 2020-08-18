@@ -244,7 +244,7 @@ fn test_request_response_none() {
 
     let request_received = Arc::new(AtomicBool::new(false));
     let request_received_cpy = request_received.clone();
-    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |cmd_tx, event| {
+    let _node1 = Node::spawn("127.0.0.1".into(), 57786, None, move |cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -265,8 +265,8 @@ fn test_request_response_none() {
 
     let mut node2 = Node::spawn(
         "127.0.0.1".into(),
-        57784,
-        Some(vec!["/ip4/127.0.0.1/tcp/57783".into()]),
+        57785,
+        Some(vec!["/ip4/127.0.0.1/tcp/57786".into()]),
         |_, _| (),
     );
 
