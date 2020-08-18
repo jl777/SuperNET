@@ -92,11 +92,13 @@ pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_r
                     propagate_message(&ctx, message_id, peer_id);
                 }
             },
+            /*
             Some(GossipsubEvent::Subscribed { peer_id, topic }) => {
                 if i_am_relayer {
                     lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 }
             },
+            */
             None => break,
             _ => (),
         }
