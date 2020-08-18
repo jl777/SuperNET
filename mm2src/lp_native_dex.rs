@@ -46,7 +46,7 @@ use crate::common::executor::{spawn, spawn_boxed, Timer};
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
-use crate::mm2::lp_network::{gossip_event_process_loop, request_response_event_process_loop, start_client_p2p_loop,
+use crate::mm2::lp_network::{p2p_event_process_loop, start_client_p2p_loop,
                              P2PContext};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler};
@@ -606,7 +606,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     let seednodes: Option<Vec<String>> = try_s!(json::from_value(ctx.conf["seednodes"].clone()));
 
     let key_pair = ctx.secp256k1_key_pair.as_option().unwrap();
-    let (cmd_tx, event_rx, request_tx, peer_id) = start_gossipsub(
+    let (cmd_tx, event_rx, peer_id) = start_gossipsub(
         myipaddr,
         mypubport,
         spawn_boxed,
@@ -617,8 +617,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     try_s!(ctx.peer_id.pin(peer_id.to_string()));
     let p2p_context = P2PContext::new(cmd_tx);
     p2p_context.store_to_mm_arc(&ctx);
-    spawn(gossip_event_process_loop(ctx.clone(), event_rx, i_am_seed));
-    spawn(request_response_event_process_loop(ctx.clone(), request_tx, i_am_seed));
+    spawn(p2p_event_process_loop(ctx.clone(), event_rx, i_am_seed));
     /*
     if i_am_seed {
         log!("Before relayer node");
