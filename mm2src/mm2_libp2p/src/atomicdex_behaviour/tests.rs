@@ -237,3 +237,53 @@ fn test_request_response_ok_three_peers() {
         );
     });
 }
+
+#[test]
+fn test_request_response_none() {
+    let _ = env_logger::try_init();
+
+    let request_received = Arc::new(AtomicBool::new(false));
+    let request_received_cpy = request_received.clone();
+    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |cmd_tx, event| {
+        let (request, response_channel) = match event {
+            AdexBehaviourEvent::PeerRequest {
+                request,
+                response_channel,
+                ..
+            } => (request, response_channel),
+            _ => return,
+        };
+
+        request_received_cpy.store(true, Ordering::Relaxed);
+        assert_eq!(request, b"test request");
+
+        let res = AdexResponse::None;
+        cmd_tx
+            .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+            .unwrap();
+    });
+
+    let mut node2 = Node::spawn(
+        "127.0.0.1".into(),
+        57784,
+        Some(vec!["/ip4/127.0.0.1/tcp/57783".into()]),
+        |_, _| (),
+    );
+
+    block_on(async { node2.wait_peers(1).await });
+
+    let (response_tx, response_rx) = oneshot::channel();
+    block_on(async move {
+        node2
+            .send_cmd(AdexBehaviorCmd::RequestAnyPeer {
+                req: b"test request".to_vec(),
+                response_tx,
+            })
+            .await;
+
+        let res = response_rx.await;
+        assert_eq!(res, Ok(AdexResponse::None));
+    });
+
+    assert!(request_received.load(Ordering::Relaxed));
+}
