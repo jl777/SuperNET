@@ -90,7 +90,7 @@ pub enum AdexBehaviorCmd {
         msgs: Vec<(String, Vec<u8>)>,
         peers: Vec<String>,
     },
-    /// Request peers until a response is received.
+    /// Request peers sequential until a response is received.
     /// Note the request will be sent to relays only because they subscribe on all topics.
     RequestAnyPeer {
         req: Vec<u8>,
@@ -150,7 +150,7 @@ impl From<AdexResponse> for PeerResponse {
     }
 }
 
-/// The structure consists of some GossipsubEvent and RequestResponse events.
+/// The structure consists of GossipsubEvent and RequestResponse events.
 /// It is used to prevent the network events from being used outside the network implementation.
 #[derive(Debug)]
 pub enum AdexBehaviourEvent {
@@ -177,7 +177,7 @@ pub enum AdexBehaviourEvent {
         peer_id: PeerId,
         /// The serialized data.
         request: Vec<u8>,
-        /// A channel for sending a response to an inbound request.
+        /// A channel for sending a response to this request.
         /// The channel is used to identify the peer on the network that is waiting for an answer to this request.
         /// See [`AdexBehaviorCmd::SendResponse`].
         response_channel: AdexResponseChannel,
@@ -210,7 +210,8 @@ pub struct AtomicDexBehavior {
 }
 
 impl AtomicDexBehavior {
-    fn notify_on_event<T: Send + 'static>(&self, mut tx: UnboundedSender<T>, event: T) {
+    fn notify_on_event(&self, event: AdexBehaviourEvent) {
+        let mut tx = self.event_tx.clone();
         self.spawn(async move {
             if let Err(e) = tx.send(event).await {
                 error!("{}", e);
@@ -328,7 +329,7 @@ impl AtomicDexBehavior {
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_event(self.event_tx.clone(), event.into()); }
+    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_event(event.into()); }
 }
 
 impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBehavior {
@@ -345,7 +346,7 @@ impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBe
                     response_channel: response_channel.into(),
                 };
                 // forward the event to the AdexBehaviourCmd handler
-                self.notify_on_event(self.event_tx.clone(), event);
+                self.notify_on_event(event);
             },
         }
     }
@@ -465,9 +466,16 @@ pub fn start_gossipsub(
     (cmd_tx, event_rx, local_peer_id)
 }
 
-/// The addr is expected to be in "/ip{X}/{IP}/{PORT}" format
+/// If te `addr` is in the "/ip4/{addr}/tcp/{port}" format then parse the `addr` immediately to the `Multiaddr`,
+/// else construct the "/ip4/{addr}/tcp/{port}" from `addr` and `port` values.
 #[cfg(test)]
-fn parse_relay_address(addr: String, _port: u16) -> Multiaddr { addr.parse().unwrap() }
+fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
+    if addr.contains("/ip4/") && addr.contains("/tcp/") {
+        addr.parse().unwrap()
+    } else {
+        format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap()
+    }
+}
 
 /// The addr is expected to be an IP of the relay
 #[cfg(not(test))]
@@ -480,11 +488,7 @@ async fn request_any_peer(
     mut request_response_tx: RequestResponseSender,
     response_tx: oneshot::Sender<AdexResponse>,
 ) {
-    debug!(
-        "start request_any_peer loop: peers {}, request size {}",
-        peers.len(),
-        request_data.len()
-    );
+    debug!("start request_any_peer loop: peers {}", peers.len());
     for peer in peers {
         // Use the internal receiver to receive a response to this request.
         let (internal_response_tx, internal_response_rx) = oneshot::channel();

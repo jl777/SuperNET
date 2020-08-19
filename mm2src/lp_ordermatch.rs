@@ -130,7 +130,7 @@ async fn process_order_keep_alive(
     }
 
     log!("Couldn't find an order " [uuid] ", try request it from peers");
-    match request_order(ctx.clone(), uuid, from_pubkey.to_string()).await {
+    match request_order(ctx.clone(), uuid, from_pubkey).await {
         Ok(Some(mut order)) => {
             if order.timestamp < keep_alive.timestamp {
                 // a peer may not received the keep_alive yet
@@ -148,8 +148,8 @@ async fn process_order_keep_alive(
     false
 }
 
-async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: String) -> Result<Option<PricePingRequest>, String> {
-    let get_order = OrdermatchRequest::GetOrder { uuid, from_pubkey };
+async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Option<PricePingRequest>, String> {
+    let get_order = OrdermatchRequest::GetOrder { uuid, from_pubkey: from_pubkey.to_string() };
     let req = P2PRequest::Ordermatch(get_order);
     let response = match try_s!(request_any_peer(ctx, req).await) {
         Some((response, _pubkey)) => response,
@@ -161,7 +161,7 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: String) -> Result<Op
             initial_message,
             from_peer,
         }) => (initial_message, from_peer),
-        // r => ERR!("OrdermatchResponse::OrderInitialMessage expected, found {:?}", r),
+        // r => return ERR!("OrdermatchResponse::OrderInitialMessage expected, found {:?}", r),
     };
 
     let (message, _sig, pubkey) = try_s!(decode_signed::<new_protocol::OrdermatchMessage>(&initial_message));
@@ -169,6 +169,10 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: String) -> Result<Op
         new_protocol::OrdermatchMessage::MakerOrderCreated(order) => order,
         msg => return ERR!("Expected MakerOrderCreated on GetOrder request, found {:?}", msg),
     };
+
+    if pubkey.to_hex() != from_pubkey {
+        return ERR!("pubkey.to_hex() != from_pubkey");
+    }
 
     let req: PricePingRequest = (
         order,
@@ -332,16 +336,7 @@ pub enum OrdermatchResponse {
     },
 }
 
-// async fn process_request_order(ctx: &MmArc, uuid: &Uuid, from_pubkey: &str) -> Result<Vec<u8>, String> {
-//     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
-//     log!("process_request_order locked");
-//     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-//     find_order_by_uuid_and_pubkey(&mut orderbook, uuid, from_pubkey)
-//         .map(|order| )
-//     log!("process_request_order unlocked");
-// }
-
-pub async fn process_request(
+pub async fn process_peer_request(
     ctx: MmArc,
     request: OrdermatchRequest,
     _pubkey: PublicKey,

@@ -138,7 +138,7 @@ async fn process_p2p_request(
 
     let (request, _sig, pubkey) = try_s!(decode_signed::<P2PRequest>(&request));
     let result = match request {
-        P2PRequest::Ordermatch(req) => lp_ordermatch::process_request(ctx.clone(), req, pubkey)
+        P2PRequest::Ordermatch(req) => lp_ordermatch::process_peer_request(ctx.clone(), req, pubkey)
             .await
             .map(|x| x.map(P2PResponse::Ordermatch)),
     };
