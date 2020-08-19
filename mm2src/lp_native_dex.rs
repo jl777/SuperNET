@@ -46,8 +46,7 @@ use crate::common::executor::{spawn, spawn_boxed, Timer};
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
-use crate::mm2::lp_network::{p2p_event_process_loop, start_client_p2p_loop,
-                             P2PContext};
+use crate::mm2::lp_network::{p2p_event_process_loop, start_client_p2p_loop, P2PContext};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};

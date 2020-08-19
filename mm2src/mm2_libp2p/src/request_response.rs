@@ -144,10 +144,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeerRequest, PeerResponse
                 request_id,
                 error,
             } => {
-                error!(
-                    "Error on send request {:?} to peer {:?}: {:?}",
-                    request_id, peer, error
-                );
+                error!("Error on send request {:?} to peer {:?}: {:?}", request_id, peer, error);
                 let err_response = PeerResponse::Err {
                     err: format!("{:?}", error),
                 };
@@ -162,7 +159,10 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeerRequest, PeerResponse
                 self.process_request(peer_id, request, channel)
             },
             RequestResponseMessage::Response { request_id, response } => {
-                debug!("Received a response to the {:?} request from peer {:?}", request_id, peer_id);
+                debug!(
+                    "Received a response to the {:?} request from peer {:?}",
+                    request_id, peer_id
+                );
                 self.process_response(request_id, response)
             },
         }

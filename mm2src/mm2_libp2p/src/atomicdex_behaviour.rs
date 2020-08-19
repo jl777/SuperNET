@@ -244,8 +244,8 @@ impl AtomicDexBehavior {
             AdexBehaviorCmd::RequestAnyPeer { req, response_tx } => {
                 let n = self.gossipsub.get_min_relays_number();
                 let relays = self.gossipsub.get_random_mesh_relays(n);
-                // spawn the `request_any_peers` future
-                let future = request_any_peers(relays, req, self.request_response.sender(), response_tx);
+                // spawn the `request_any_peer` future
+                let future = request_any_peer(relays, req, self.request_response.sender(), response_tx);
                 self.spawn(future);
             },
             AdexBehaviorCmd::SendResponse { res, response_channel } => {
@@ -474,13 +474,17 @@ fn parse_relay_address(addr: String, _port: u16) -> Multiaddr { addr.parse().unw
 fn parse_relay_address(addr: String, port: u16) -> Multiaddr { format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap() }
 
 /// Request the peers sequential until a `PeerResponse::Ok()` will not be received.
-async fn request_any_peers(
+async fn request_any_peer(
     peers: Vec<PeerId>,
     request_data: Vec<u8>,
     mut request_response_tx: RequestResponseSender,
     response_tx: oneshot::Sender<AdexResponse>,
 ) {
-    debug!("start request_any_peers loop: peers {}, request size {}", peers.len(), request_data.len());
+    debug!(
+        "start request_any_peer loop: peers {}, request size {}",
+        peers.len(),
+        request_data.len()
+    );
     for peer in peers {
         // Use the internal receiver to receive a response to this request.
         let (internal_response_tx, internal_response_rx) = oneshot::channel();
