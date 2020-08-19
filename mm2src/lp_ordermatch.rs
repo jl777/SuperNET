@@ -130,7 +130,7 @@ async fn process_order_keep_alive(
     }
 
     log!("Couldn't find an order " [uuid] ", try request it from peers");
-    match request_order(ctx.clone(), uuid.clone(), from_pubkey.to_string()).await {
+    match request_order(ctx.clone(), uuid, from_pubkey.to_string()).await {
         Ok(Some(mut order)) => {
             if order.timestamp < keep_alive.timestamp {
                 // a peer may not received the keep_alive yet
@@ -342,18 +342,34 @@ pub enum OrdermatchResponse {
 // }
 
 pub async fn process_request(
-    _ctx: MmArc,
+    ctx: MmArc,
     request: OrdermatchRequest,
     _pubkey: PublicKey,
 ) -> Result<Option<OrdermatchResponse>, String> {
     println!("Got ordermatching request {:?}", request);
-    // match request {
-    //     // new_protocol::OrdermatchRequest::GetOrder{uuid, from_pubkey} => {
-    //     //     process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await;
-    //     // },
-    //     OrdermatchRequest::Test => Ok(Some(OrdermatchResponse::TestResult)),
-    // }
-    unimplemented!()
+    match request {
+        OrdermatchRequest::GetOrder { uuid, from_pubkey } => process_get_order_request(ctx, uuid, from_pubkey).await,
+    }
+}
+
+async fn process_get_order_request(
+    ctx: MmArc,
+    uuid: Uuid,
+    from_pubkey: String,
+) -> Result<Option<OrdermatchResponse>, String> {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+    match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, &from_pubkey) {
+        Some(order) => {
+            let initial_message = order.initial_message.clone();
+            let from_peer = order.peer_id.clone();
+            Ok(Some(OrdermatchResponse::OrderInitialMessage {
+                initial_message,
+                from_peer,
+            }))
+        },
+        None => Ok(None),
+    }
 }
 
 fn alb_ordered_pair(base: &str, rel: &str) -> String {
