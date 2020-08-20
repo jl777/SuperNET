@@ -1,10 +1,14 @@
-use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageId, Topic};
+use crate::request_response::{build_request_response_behaviour, PeerRequest, PeerResponse, RequestResponseBehaviour,
+                              RequestResponseBehaviourEvent, RequestResponseSender};
+use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageId, Topic,
+                          TopicHash};
 use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
                         oneshot},
               future::poll_fn,
               Future, SinkExt, StreamExt};
 use lazy_static::lazy_static;
 use libp2p::core::{ConnectedPoint, Multiaddr, Transport};
+use libp2p::request_response::ResponseChannel;
 use libp2p::{identity,
              ping::{Ping, PingConfig, PingEvent},
              swarm::NetworkBehaviourEventProcess,
@@ -17,7 +21,10 @@ use std::{collections::hash_map::{DefaultHasher, HashMap},
 use tokio::runtime::Runtime;
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
-pub type GossipEventRx = UnboundedReceiver<GossipsubEvent>;
+pub type AdexEventRx = UnboundedReceiver<AdexBehaviourEvent>;
+use log::{debug, error};
+
+#[cfg(test)] mod tests;
 
 struct SwarmRuntime(Runtime);
 
@@ -62,6 +69,17 @@ pub async fn get_gossip_topic_peers(mut cmd_tx: AdexCmdTx) -> HashMap<String, Ve
 }
 
 #[derive(Debug)]
+pub struct AdexResponseChannel(ResponseChannel<PeerResponse>);
+
+impl From<ResponseChannel<PeerResponse>> for AdexResponseChannel {
+    fn from(res: ResponseChannel<PeerResponse>) -> Self { AdexResponseChannel(res) }
+}
+
+impl From<AdexResponseChannel> for ResponseChannel<PeerResponse> {
+    fn from(res: AdexResponseChannel) -> Self { res.0 }
+}
+
+#[derive(Debug)]
 pub enum AdexBehaviorCmd {
     Subscribe {
         /// Subscribe to this topic
@@ -74,6 +92,19 @@ pub enum AdexBehaviorCmd {
     SendToPeers {
         msgs: Vec<(String, Vec<u8>)>,
         peers: Vec<String>,
+    },
+    /// Request peers sequential until a response is received.
+    /// Note the request will be sent to relays only because they subscribe on all topics.
+    RequestAnyPeer {
+        req: Vec<u8>,
+        response_tx: oneshot::Sender<AdexResponse>,
+    },
+    /// Send a response using a `response_channel`.
+    SendResponse {
+        /// Response to a request.
+        res: AdexResponse,
+        /// Pass the same `response_channel` as that was obtained from [`AdexBehaviourEvent::PeerRequest`].
+        response_channel: AdexResponseChannel,
     },
     GetPeersInfo {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
@@ -93,28 +124,106 @@ pub enum AdexBehaviorCmd {
     },
 }
 
+/// The structure is the same as `PeerResponse`,
+/// but is used to prevent `PeerResponse` from being used outside the network implementation.
+#[derive(Debug, Eq, PartialEq)]
+pub enum AdexResponse {
+    Ok { response: Vec<u8> },
+    None,
+    Err { error: String },
+}
+
+impl From<PeerResponse> for AdexResponse {
+    fn from(res: PeerResponse) -> Self {
+        match res {
+            PeerResponse::Ok { res } => AdexResponse::Ok { response: res },
+            PeerResponse::None => AdexResponse::None,
+            PeerResponse::Err { err } => AdexResponse::Err { error: err },
+        }
+    }
+}
+
+impl From<AdexResponse> for PeerResponse {
+    fn from(res: AdexResponse) -> Self {
+        match res {
+            AdexResponse::Ok { response } => PeerResponse::Ok { res: response },
+            AdexResponse::None => PeerResponse::None,
+            AdexResponse::Err { error } => PeerResponse::Err { err: error },
+        }
+    }
+}
+
+/// The structure consists of GossipsubEvent and RequestResponse events.
+/// It is used to prevent the network events from being used outside the network implementation.
+#[derive(Debug)]
+pub enum AdexBehaviourEvent {
+    /// A message has been received.
+    /// Derived from GossipsubEvent.
+    Message(PeerId, MessageId, GossipsubMessage),
+    /// A remote subscribed to a topic.
+    Subscribed {
+        /// Remote that has subscribed.
+        peer_id: PeerId,
+        /// The topic it has subscribed to.
+        topic: TopicHash,
+    },
+    /// A remote unsubscribed from a topic.
+    Unsubscribed {
+        /// Remote that has unsubscribed.
+        peer_id: PeerId,
+        /// The topic it has subscribed from.
+        topic: TopicHash,
+    },
+    /// A remote peer sent a request and waits for a response.
+    PeerRequest {
+        /// Remote that sent this request.
+        peer_id: PeerId,
+        /// The serialized data.
+        request: Vec<u8>,
+        /// A channel for sending a response to this request.
+        /// The channel is used to identify the peer on the network that is waiting for an answer to this request.
+        /// See [`AdexBehaviorCmd::SendResponse`].
+        response_channel: AdexResponseChannel,
+    },
+}
+
+impl From<GossipsubEvent> for AdexBehaviourEvent {
+    fn from(event: GossipsubEvent) -> Self {
+        match event {
+            GossipsubEvent::Message(peer_id, message_id, gossipsub_message) => {
+                AdexBehaviourEvent::Message(peer_id, message_id, gossipsub_message)
+            },
+            GossipsubEvent::Subscribed { peer_id, topic } => AdexBehaviourEvent::Subscribed { peer_id, topic },
+            GossipsubEvent::Unsubscribed { peer_id, topic } => AdexBehaviourEvent::Unsubscribed { peer_id, topic },
+        }
+    }
+}
+
 /// AtomicDEX libp2p Network behaviour implementation
 #[derive(NetworkBehaviour)]
 pub struct AtomicDexBehavior {
     #[behaviour(ignore)]
-    event_tx: UnboundedSender<GossipsubEvent>,
+    event_tx: UnboundedSender<AdexBehaviourEvent>,
     #[behaviour(ignore)]
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
-    ping: Ping,
     gossipsub: Gossipsub,
+    request_response: RequestResponseBehaviour,
+    ping: Ping,
 }
 
 impl AtomicDexBehavior {
-    fn notify_on_gossip_event(&self, event: GossipsubEvent) {
+    fn notify_on_adex_event(&self, event: AdexBehaviourEvent) {
         let mut tx = self.event_tx.clone();
-        (self.spawn_fn)(Box::new(Box::pin(async move {
+        self.spawn(async move {
             if let Err(e) = tx.send(event).await {
-                println!("{}", e);
+                error!("{}", e);
             }
-        })))
+        });
     }
+
+    fn spawn(&self, fut: impl Future<Output = ()> + Send + 'static) { (self.spawn_fn)(Box::new(Box::pin(fut))) }
 
     fn process_cmd(&mut self, cmd: AdexBehaviorCmd) {
         match cmd {
@@ -136,6 +245,16 @@ impl AtomicDexBehavior {
                 }
 
                 self.gossipsub.send_messages_to_peers(msgs, peer_ids);
+            },
+            AdexBehaviorCmd::RequestAnyPeer { req, response_tx } => {
+                let n = self.gossipsub.get_min_relays_number();
+                let relays = self.gossipsub.get_random_mesh_relays(n);
+                // spawn the `request_any_peer` future
+                let future = request_any_peer(relays, req, self.request_response.sender(), response_tx);
+                self.spawn(future);
+            },
+            AdexBehaviorCmd::SendResponse { res, response_channel } => {
+                self.request_response.send_response(response_channel.into(), res.into());
             },
             AdexBehaviorCmd::GetPeersInfo { result_tx } => {
                 let result = self
@@ -214,7 +333,27 @@ impl AtomicDexBehavior {
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_gossip_event(event); }
+    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_adex_event(event.into()); }
+}
+
+impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBehavior {
+    fn inject_event(&mut self, event: RequestResponseBehaviourEvent) {
+        match event {
+            RequestResponseBehaviourEvent::InboundRequest {
+                peer_id,
+                request,
+                response_channel,
+            } => {
+                let event = AdexBehaviourEvent::PeerRequest {
+                    peer_id,
+                    request: request.req,
+                    response_channel: response_channel.into(),
+                };
+                // forward the event to the AdexBehaviourCmd handler
+                self.notify_on_adex_event(event);
+            },
+        }
+    }
 }
 
 // TODO: in this impl we might want to save ping statistics and possibly choose the peers to which we have good ping
@@ -235,11 +374,7 @@ pub fn start_gossipsub(
     to_dial: Option<Vec<String>>,
     my_privkey: &mut [u8],
     i_am_relay: bool,
-) -> (
-    UnboundedSender<AdexBehaviorCmd>,
-    UnboundedReceiver<GossipsubEvent>,
-    PeerId,
-) {
+) -> (UnboundedSender<AdexBehaviorCmd>, AdexEventRx, PeerId) {
     // Create a random PeerId
     let privkey = identity::secp256k1::SecretKey::from_bytes(my_privkey).unwrap();
     let local_key = identity::Keypair::Secp256k1(privkey.into());
@@ -267,7 +402,7 @@ pub fn start_gossipsub(
     let relayers: Vec<Multiaddr> = to_dial
         .unwrap_or_default()
         .into_iter()
-        .map(|addr| format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap())
+        .map(|addr| parse_relay_address(addr, port))
         .collect();
 
     // Create a Swarm to manage peers and events
@@ -292,13 +427,19 @@ pub fn start_gossipsub(
             .build();
         // build a gossipsub network behaviour
         let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config, relayers.clone());
+
+        // build a request-response network behaviour
+        let request_response = build_request_response_behaviour();
+
         // use default ping config with 15s interval, 20s timeout and 1 max failure
         let ping = Ping::new(PingConfig::new());
+
         let adex_behavior = AtomicDexBehavior {
             event_tx,
             spawn_fn,
             cmd_rx,
             gossipsub,
+            request_response,
             ping,
         };
         libp2p::swarm::SwarmBuilder::new(transport, adex_behavior, local_peer_id.clone())
@@ -338,4 +479,71 @@ pub fn start_gossipsub(
     SWARM_RUNTIME.0.spawn(polling_fut);
 
     (cmd_tx, event_rx, local_peer_id)
+}
+
+/// If te `addr` is in the "/ip4/{addr}/tcp/{port}" format then parse the `addr` immediately to the `Multiaddr`,
+/// else construct the "/ip4/{addr}/tcp/{port}" from `addr` and `port` values.
+#[cfg(test)]
+fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
+    if addr.contains("/ip4/") && addr.contains("/tcp/") {
+        addr.parse().unwrap()
+    } else {
+        format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap()
+    }
+}
+
+/// The addr is expected to be an IP of the relay
+#[cfg(not(test))]
+fn parse_relay_address(addr: String, port: u16) -> Multiaddr { format!("/ip4/{}/tcp/{}", addr, port).parse().unwrap() }
+
+/// Request the peers sequential until a `PeerResponse::Ok()` will not be received.
+async fn request_any_peer(
+    peers: Vec<PeerId>,
+    request_data: Vec<u8>,
+    mut request_response_tx: RequestResponseSender,
+    response_tx: oneshot::Sender<AdexResponse>,
+) {
+    debug!("start request_any_peer loop: peers {}", peers.len());
+    for peer in peers {
+        // Use the internal receiver to receive a response to this request.
+        let (internal_response_tx, internal_response_rx) = oneshot::channel();
+        let request = PeerRequest {
+            req: request_data.clone(),
+        };
+        assert!(request_response_tx
+            .send((peer.clone(), request, internal_response_tx))
+            .await
+            .is_ok());
+
+        let response = match internal_response_rx.await {
+            Ok(response) => response,
+            Err(e) => {
+                error!("Error on request the peer {:?}: \"{:?}\". Request next peer", peer, e);
+                // request the next peer
+                continue;
+            },
+        };
+
+        match response {
+            PeerResponse::Ok { res } => {
+                let response = AdexResponse::Ok { response: res };
+                debug!("Received a response from peer {:?}, stop the request loop", peer);
+                if let Err(e) = response_tx.send(response) {
+                    error!("{:?}", e);
+                }
+                return;
+            },
+            PeerResponse::None => {
+                debug!("Received None from peer {:?}, request next peer", peer);
+            },
+            PeerResponse::Err { err } => {
+                error!("Received error {:?} from peer {:?}, request next peer", err, peer);
+            },
+        };
+    }
+
+    debug!("None of the peers responded to the request");
+    if let Err(e) = response_tx.send(AdexResponse::None) {
+        error!("{:?}", e);
+    };
 }

@@ -24,12 +24,13 @@ use common::executor::{spawn, Timer};
 use common::mm_ctx::MmArc;
 use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
 use crossbeam::channel;
+use futures::channel::oneshot;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
-use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexCmdTx, GossipEventRx},
-                 GossipsubEvent, MessageId, PeerId, TOPIC_SEPARATOR};
+use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse},
+                 decode_signed, encode_and_sign, GossipsubMessage, MessageId, PeerId, PublicKey, TOPIC_SEPARATOR};
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
@@ -39,6 +40,17 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
+use mm2_libp2p::atomicdex_behaviour::AdexResponseChannel;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum P2PRequest {
+    Ordermatch(lp_ordermatch::OrdermatchRequest),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum P2PResponse {
+    Ordermatch(lp_ordermatch::OrdermatchResponse),
+}
 
 pub struct P2PContext {
     pub cmd_tx: AdexCmdTx,
@@ -61,48 +73,91 @@ impl P2PContext {
     }
 }
 
-pub async fn gossip_event_process_loop(ctx: MmArc, mut rx: GossipEventRx, i_am_relayer: bool) {
+pub async fn p2p_event_process_loop(ctx: MmArc, mut rx: AdexEventRx, i_am_relayer: bool) {
     while !ctx.is_stopping() {
         match rx.next().await {
-            Some(GossipsubEvent::Message(peer_id, message_id, message)) => {
-                let mut to_propagate = false;
-                for topic in message.topics {
-                    let mut split = topic.as_str().split(TOPIC_SEPARATOR);
-                    match split.next() {
-                        Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
-                            if lp_ordermatch::process_msg(
-                                ctx.clone(),
-                                topic.as_str(),
-                                peer_id.to_string(),
-                                &message.data,
-                            )
-                            .await
-                            {
-                                to_propagate = true;
-                            }
-                        },
-                        Some(lp_swap::SWAP_PREFIX) => {
-                            lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data);
-                            to_propagate = true;
-                        },
-                        None | Some(_) => (),
-                    }
-                }
-                if to_propagate && i_am_relayer {
-                    propagate_message(&ctx, message_id, peer_id);
-                }
+            Some(AdexBehaviourEvent::Message(peer_id, message_id, message)) => {
+                process_p2p_message(ctx.clone(), peer_id, message_id, message, i_am_relayer).await
             },
             /*
-            Some(GossipsubEvent::Subscribed { peer_id, topic }) => {
+            Some(AdexBehaviourEvent::Subscribed { peer_id, topic }) => {
                 if i_am_relayer {
                     lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 }
             },
             */
+            Some(AdexBehaviourEvent::PeerRequest {
+                peer_id,
+                request,
+                response_channel,
+            }) => {
+                if let Err(e) = process_p2p_request(ctx.clone(), peer_id, request, response_channel).await {
+                    log!("Error on process P2P request: "[e]);
+                }
+            },
             None => break,
             _ => (),
         }
     }
+}
+
+async fn process_p2p_message(
+    ctx: MmArc,
+    peer_id: PeerId,
+    message_id: MessageId,
+    message: GossipsubMessage,
+    i_am_relayer: bool,
+) {
+    let mut to_propagate = false;
+    for topic in message.topics {
+        let mut split = topic.as_str().split(TOPIC_SEPARATOR);
+        match split.next() {
+            Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
+                if lp_ordermatch::process_msg(ctx.clone(), topic.as_str(), peer_id.to_string(), &message.data).await {
+                    to_propagate = true;
+                }
+            },
+            Some(lp_swap::SWAP_PREFIX) => {
+                lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data);
+                to_propagate = true;
+            },
+            None | Some(_) => (),
+        }
+    }
+    if to_propagate && i_am_relayer {
+        propagate_message(&ctx, message_id, peer_id);
+    }
+}
+
+async fn process_p2p_request(
+    ctx: MmArc,
+    _peer_id: PeerId,
+    request: Vec<u8>,
+    response_channel: AdexResponseChannel,
+) -> Result<(), String> {
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let secret = &*key_pair.private().secret;
+
+    let (request, _sig, pubkey) = try_s!(decode_signed::<P2PRequest>(&request));
+    let result = match request {
+        P2PRequest::Ordermatch(req) => lp_ordermatch::process_peer_request(ctx.clone(), req, pubkey)
+            .await
+            .map(|x| x.map(P2PResponse::Ordermatch)),
+    };
+
+    let res = match result {
+        Ok(Some(response)) => {
+            let encoded = try_s!(encode_and_sign(&response, secret));
+            AdexResponse::Ok { response: encoded }
+        },
+        Ok(None) => AdexResponse::None,
+        Err(e) => AdexResponse::Err { error: e },
+    };
+
+    let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
+    let cmd = AdexBehaviorCmd::SendResponse { res, response_channel };
+    tx.send(cmd).await.unwrap();
+    Ok(())
 }
 
 #[cfg(feature = "native")]
@@ -128,6 +183,29 @@ pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<
         let cmd = AdexBehaviorCmd::SendToPeers { msgs, peers };
         tx.send(cmd).await.unwrap();
     });
+}
+
+#[cfg(feature = "native")]
+pub async fn request_any_peer(ctx: MmArc, req: P2PRequest) -> Result<Option<(P2PResponse, PublicKey)>, String> {
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let secret = &*key_pair.private().secret;
+    let encoded = try_s!(encode_and_sign(&req, secret));
+
+    let (response_tx, response_rx) = oneshot::channel();
+    let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
+    let cmd = AdexBehaviorCmd::RequestAnyPeer {
+        req: encoded,
+        response_tx,
+    };
+    tx.send(cmd).await.unwrap();
+    match try_s!(response_rx.await) {
+        AdexResponse::Ok { response } => {
+            let (request, _sig, pubkey) = try_s!(decode_signed::<P2PResponse>(&response));
+            Ok(Some((request, pubkey)))
+        },
+        AdexResponse::None => Ok(None),
+        AdexResponse::Err { error } => Err(error),
+    }
 }
 
 #[cfg(feature = "native")]

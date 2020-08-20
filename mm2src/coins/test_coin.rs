@@ -8,7 +8,7 @@ use mocktopus::macros::*;
 use serde_json::Value as Json;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
-/// in specific test to emulate the required behavior
+/// in specific test to emulate the required behaviour
 #[derive(Clone, Debug)]
 pub struct TestCoin {}
 

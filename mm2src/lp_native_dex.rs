@@ -46,7 +46,7 @@ use crate::common::executor::{spawn, spawn_boxed, Timer};
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
-use crate::mm2::lp_network::{gossip_event_process_loop, start_client_p2p_loop, P2PContext};
+use crate::mm2::lp_network::{p2p_event_process_loop, start_client_p2p_loop, P2PContext};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
@@ -616,7 +616,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     try_s!(ctx.peer_id.pin(peer_id.to_string()));
     let p2p_context = P2PContext::new(cmd_tx);
     p2p_context.store_to_mm_arc(&ctx);
-    spawn(gossip_event_process_loop(ctx.clone(), event_rx, i_am_seed));
+    spawn(p2p_event_process_loop(ctx.clone(), event_rx, i_am_seed));
     /*
     if i_am_seed {
         log!("Before relayer node");

@@ -988,24 +988,23 @@ impl Gossipsub {
         gossip_peers[..n].to_vec()
     }
 
-    /// Helper function to get a set of `n` random known relayer peers
+    /// The helper function to get a set of `n` random peers from the `relays` hashset
     /// filtered by the function `f`.
-    fn get_random_relays(&self, n: usize, mut f: impl FnMut(&PeerId) -> bool) -> Vec<PeerId> {
-        let mut relayers: Vec<_> = self.connected_relayers.iter().cloned().filter(|p| f(p)).collect();
+    fn get_random_relays(relays: &HashSet<PeerId>, n: usize, mut f: impl FnMut(&PeerId) -> bool) -> Vec<PeerId> {
+        let mut relays: Vec<_> = relays.iter().cloned().filter(|p| f(p)).collect();
 
         // if we have less than needed, return them
-        if relayers.len() <= n {
-            debug!("RANDOM RELAYERS: Got {:?} peers", relayers.len());
-            return relayers.to_vec();
+        if relays.len() <= n {
+            debug!("RANDOM RELAYERS: Got {:?} peers", relays.len());
+            return relays;
         }
 
         // we have more peers than needed, shuffle them and return n of them
         let mut rng = thread_rng();
-        relayers.partial_shuffle(&mut rng, n);
-
+        relays.partial_shuffle(&mut rng, n);
         debug!("RANDOM RELAYERS: Got {:?} peers", n);
 
-        relayers[..n].to_vec()
+        relays[..n].to_vec()
     }
 
     // adds a control action to control_pool
@@ -1039,6 +1038,13 @@ impl Gossipsub {
                 }),
             });
         }
+    }
+
+    pub fn get_min_relays_number(&self) -> usize { self.config.mesh_n_low }
+
+    pub fn get_random_mesh_relays(&self, n: usize) -> Vec<PeerId> {
+        // get any `n` relays
+        Self::get_random_relays(&self.relayers_mesh, n, |_| true)
     }
 
     pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
@@ -1104,7 +1110,9 @@ impl Gossipsub {
                 self.config.mesh_n_low,
             );
             let required = self.config.mesh_n - self.relayers_mesh.len();
-            let to_add = self.get_random_relays(required, |p| !self.relayers_mesh.contains(p));
+            // get `n` relays that are not in the `relayers_mesh`
+            let to_add =
+                Self::get_random_relays(&self.connected_relayers, required, |p| !self.relayers_mesh.contains(p));
             self.relayers_mesh.extend(to_add);
         }
 
