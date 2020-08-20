@@ -149,7 +149,10 @@ async fn process_order_keep_alive(
 }
 
 async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Option<PricePingRequest>, String> {
-    let get_order = OrdermatchRequest::GetOrder { uuid, from_pubkey: from_pubkey.to_string() };
+    let get_order = OrdermatchRequest::GetOrder {
+        uuid,
+        from_pubkey: from_pubkey.to_string(),
+    };
     let req = P2PRequest::Ordermatch(get_order);
     let response = match try_s!(request_any_peer(ctx, req).await) {
         Some((response, _pubkey)) => response,
