@@ -1331,6 +1331,9 @@ impl NetworkBehaviour for Gossipsub {
                 NetworkBehaviourAction::ReportObservedAddr { address } => {
                     return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address });
                 },
+                NetworkBehaviourAction::DisconnectPeer { peer_id, handler } => {
+                    return Poll::Ready(NetworkBehaviourAction::DisconnectPeer { peer_id, handler });
+                },
             }
         }
 

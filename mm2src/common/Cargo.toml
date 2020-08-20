@@ -19,7 +19,7 @@ doctest = false
 [dependencies]
 arrayref = "0.3"
 async-std = "1.5.0"
-atomic = "0.4"
+atomic = "^0.4.6"
 backtrace = "0.3"
 base64 = "0.10.0"
 bigdecimal = { version = "0.1", features = ["serde"] }

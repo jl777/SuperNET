@@ -7,22 +7,25 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
               future::poll_fn,
               Future, SinkExt, StreamExt};
 use lazy_static::lazy_static;
-use libp2p::core::{ConnectedPoint, Multiaddr, Transport};
-use libp2p::request_response::ResponseChannel;
-use libp2p::{identity,
+use libp2p::{core::{ConnectedPoint, Multiaddr, Transport},
+             identity,
              ping::{Ping, PingConfig, PingEvent},
-             swarm::NetworkBehaviourEventProcess,
+             request_response::ResponseChannel,
+             swarm::{DisconnectPeerHandler, NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters},
              NetworkBehaviour, PeerId};
-use std::{collections::hash_map::{DefaultHasher, HashMap},
+use log::{debug, error, info};
+use std::{collections::{hash_map::{DefaultHasher, HashMap},
+                        VecDeque},
           hash::{Hash, Hasher},
           net::IpAddr,
+          num::NonZeroU32,
           pin::Pin,
           task::{Context, Poll}};
 use tokio::runtime::Runtime;
+use void::Void;
 
 pub type AdexCmdTx = UnboundedSender<AdexBehaviorCmd>;
 pub type AdexEventRx = UnboundedReceiver<AdexBehaviourEvent>;
-use log::{debug, error};
 
 #[cfg(test)] mod tests;
 
@@ -199,6 +202,41 @@ impl From<GossipsubEvent> for AdexBehaviourEvent {
     }
 }
 
+#[derive(NetworkBehaviour)]
+#[behaviour(out_event = "Void")]
+#[behaviour(poll_method = "poll_event")]
+pub struct AdexPing {
+    ping: Ping,
+    #[behaviour(ignore)]
+    events: VecDeque<NetworkBehaviourAction<Void, Void>>,
+}
+
+impl NetworkBehaviourEventProcess<PingEvent> for AdexPing {
+    fn inject_event(&mut self, event: PingEvent) {
+        if let Err(e) = event.result {
+            info!("Ping error {}. Disconnecting peer {}", e, event.peer);
+            self.events.push_back(NetworkBehaviourAction::DisconnectPeer {
+                peer_id: event.peer,
+                handler: DisconnectPeerHandler::All,
+            });
+        }
+    }
+}
+
+impl AdexPing {
+    fn poll_event(
+        &mut self,
+        _cx: &mut Context,
+        _params: &mut impl PollParameters,
+    ) -> Poll<NetworkBehaviourAction<Void, Void>> {
+        if let Some(event) = self.events.pop_front() {
+            return Poll::Ready(event);
+        }
+
+        Poll::Pending
+    }
+}
+
 /// AtomicDEX libp2p Network behaviour implementation
 #[derive(NetworkBehaviour)]
 pub struct AtomicDexBehavior {
@@ -210,7 +248,7 @@ pub struct AtomicDexBehavior {
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
-    ping: Ping,
+    ping: AdexPing,
 }
 
 impl AtomicDexBehavior {
@@ -304,7 +342,7 @@ impl AtomicDexBehavior {
                     })
                     .collect();
                 if result_tx.send(result).is_err() {
-                    println!("Result rx is dropped");
+                    error!("Result rx is dropped");
                 }
             },
             AdexBehaviorCmd::GetGossipTopicPeers { result_tx } => {
@@ -319,7 +357,7 @@ impl AtomicDexBehavior {
                     })
                     .collect();
                 if result_tx.send(result).is_err() {
-                    println!("Result rx is dropped");
+                    error!("Result rx is dropped");
                 }
             },
             AdexBehaviorCmd::PropagateMessage {
@@ -334,6 +372,10 @@ impl AtomicDexBehavior {
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
     fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_adex_event(event.into()); }
+}
+
+impl NetworkBehaviourEventProcess<Void> for AtomicDexBehavior {
+    fn inject_event(&mut self, _event: Void) {}
 }
 
 impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBehavior {
@@ -353,13 +395,6 @@ impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBe
                 self.notify_on_adex_event(event);
             },
         }
-    }
-}
-
-// TODO: in this impl we might want to save ping statistics and possibly choose the peers to which we have good ping
-impl NetworkBehaviourEventProcess<PingEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: PingEvent) {
-        println!("Ping event: {:?}", event);
     }
 }
 
@@ -432,7 +467,10 @@ pub fn start_gossipsub(
         let request_response = build_request_response_behaviour();
 
         // use default ping config with 15s interval, 20s timeout and 1 max failure
-        let ping = Ping::new(PingConfig::new());
+        let ping = AdexPing {
+            ping: Ping::new(PingConfig::new().with_max_failures(unsafe { NonZeroU32::new_unchecked(2) })),
+            events: VecDeque::new(),
+        };
 
         let adex_behavior = AtomicDexBehavior {
             event_tx,
