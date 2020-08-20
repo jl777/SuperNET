@@ -18,6 +18,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::io;
 
+const MAX_BUFFER_SIZE: usize = 1024 * 1024 - 100;
+
 pub type RequestResponseReceiver = mpsc::UnboundedReceiver<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
 pub type RequestResponseSender = mpsc::UnboundedSender<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
 
@@ -246,7 +248,7 @@ where
     T: AsyncRead + Unpin + Send,
     M: DeserializeOwned,
 {
-    match read_one(io, 1024).await {
+    match read_one(io, MAX_BUFFER_SIZE).await {
         Ok(data) => Ok(try_io!(decode_message(&data))),
         Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
     }
@@ -258,5 +260,11 @@ where
     M: Serialize,
 {
     let data = try_io!(encode_message(msg));
+    if data.len() > MAX_BUFFER_SIZE {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Try to send data size over maximum",
+        ));
+    }
     write_one(io, data).await
 }

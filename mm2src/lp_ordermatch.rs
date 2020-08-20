@@ -47,8 +47,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_peer, send_msgs_to_peers, subscribe_to_topic,
-                              P2PRequest, P2PResponse},
+use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_peer, send_msgs_to_peers, subscribe_to_topic, P2PRequest},
                  lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
@@ -136,7 +135,7 @@ async fn process_order_keep_alive(
                 // a peer may not received the keep_alive yet
                 order.timestamp = keep_alive.timestamp;
             }
-            insert_or_update_order(&ctx, order, uuid).await;
+            insert_or_update_order_impl(&mut orderbook, order, uuid);
             return true;
         },
         Ok(None) => log!("None of peers responded to the GetOrder request"),
@@ -154,17 +153,12 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
         from_pubkey: from_pubkey.to_string(),
     };
     let req = P2PRequest::Ordermatch(get_order);
-    let response = match try_s!(request_any_peer(ctx, req).await) {
+    let new_protocol::OrderInitialMessage {
+        initial_message,
+        from_peer,
+    } = match try_s!(request_any_peer(ctx, req).await) {
         Some((response, _pubkey)) => response,
         None => return Ok(None),
-    };
-
-    let (initial_message, from_peer) = match response {
-        P2PResponse::Ordermatch(OrdermatchResponse::OrderInitialMessage {
-            initial_message,
-            from_peer,
-        }) => (initial_message, from_peer),
-        // r => return ERR!("OrdermatchResponse::OrderInitialMessage expected, found {:?}", r),
     };
 
     let (message, _sig, pubkey) = try_s!(decode_signed::<new_protocol::OrdermatchMessage>(&initial_message));
@@ -202,9 +196,15 @@ async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::Mak
     }
 }
 
+/// Insert or update an order `req`.
+/// Note this function locks the [`OrdermatchContext::orderbook`] async mutex.
 async fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+    insert_or_update_order_impl(&mut orderbook, req, uuid)
+}
+
+fn insert_or_update_order_impl(orderbook: &mut Orderbook, req: PricePingRequest, uuid: Uuid) {
     match orderbook.entry((req.base.clone(), req.rel.clone())) {
         Entry::Vacant(pair_orders) => {
             if req.balance > 0.into() && req.price > 0.into() {
@@ -325,46 +325,37 @@ pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg
 #[derive(Debug, Deserialize, Serialize)]
 pub enum OrdermatchRequest {
     /// Get an order using uuid and the order maker's pubkey.
-    /// Actual we expect to receive [`OrdermatchResponse::OrderInitialMessage`] that will be parsed into [`PricePingRequest`].
+    /// Actual we expect to receive [`OrderInitialMessage`] that will be parsed into [`OrdermatchMessage::MakerOrderCreated`].
     GetOrder { uuid: Uuid, from_pubkey: String },
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum OrdermatchResponse {
-    /// The response on the [`OrdermatchRequest::GetOrder`] request.
-    /// The response consists of an initial message [`OrdermatchMessage::MakerOrderCreated`] that should be parsed into [`PricePingRequest`].
-    OrderInitialMessage {
-        initial_message: Vec<u8>,
-        from_peer: String,
-    },
 }
 
 pub async fn process_peer_request(
     ctx: MmArc,
     request: OrdermatchRequest,
     _pubkey: PublicKey,
-) -> Result<Option<OrdermatchResponse>, String> {
+) -> Result<Option<Vec<u8>>, String> {
     println!("Got ordermatching request {:?}", request);
     match request {
         OrdermatchRequest::GetOrder { uuid, from_pubkey } => process_get_order_request(ctx, uuid, from_pubkey).await,
     }
 }
 
-async fn process_get_order_request(
-    ctx: MmArc,
-    uuid: Uuid,
-    from_pubkey: String,
-) -> Result<Option<OrdermatchResponse>, String> {
+async fn process_get_order_request(ctx: MmArc, uuid: Uuid, from_pubkey: String) -> Result<Option<Vec<u8>>, String> {
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let secret = &*key_pair.private().secret;
+
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, &from_pubkey) {
         Some(order) => {
             let initial_message = order.initial_message.clone();
             let from_peer = order.peer_id.clone();
-            Ok(Some(OrdermatchResponse::OrderInitialMessage {
+            let response = new_protocol::OrderInitialMessage {
                 initial_message,
                 from_peer,
-            }))
+            };
+            let encoded = try_s!(encode_and_sign(&response, secret));
+            Ok(Some(encoded))
         },
         None => Ok(None),
     }
@@ -1322,12 +1313,14 @@ fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &
     broadcast_p2p_msg(ctx, topic, encoded_msg);
 }
 
+/// A map from (base, rel).
+type Orderbook = HashMap<(String, String), HashMap<Uuid, PricePingRequest>>;
+
 struct OrdermatchContext {
     pub my_maker_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     pub my_taker_orders: AsyncMutex<HashMap<Uuid, TakerOrder>>,
     pub my_cancelled_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
-    /// A map from (base, rel)
-    pub orderbook: AsyncMutex<HashMap<(String, String), HashMap<Uuid, PricePingRequest>>>,
+    pub orderbook: AsyncMutex<Orderbook>,
     pub inactive_orders: AsyncMutex<HashMap<Uuid, PricePingRequest>>,
 }
 
@@ -2963,6 +2956,14 @@ mod new_protocol {
         TakerConnect(TakerConnect),
         MakerConnected(MakerConnected),
         RepeatOrder(RepeatOrder),
+    }
+
+    /// Get an order using uuid and the order maker's pubkey.
+    /// Actual we expect to receive [`OrdermatchMessage::MakerOrderCreated`] that will be parsed into [`PricePingRequest`].
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct OrderInitialMessage {
+        pub initial_message: Vec<u8>,
+        pub from_peer: String,
     }
 
     impl From<MakerOrderKeepAlive> for OrdermatchMessage {

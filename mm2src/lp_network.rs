@@ -41,15 +41,11 @@ use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
 use mm2_libp2p::atomicdex_behaviour::AdexResponseChannel;
+use serde::de;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum P2PRequest {
     Ordermatch(lp_ordermatch::OrdermatchRequest),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum P2PResponse {
-    Ordermatch(lp_ordermatch::OrdermatchResponse),
 }
 
 pub struct P2PContext {
@@ -135,21 +131,13 @@ async fn process_p2p_request(
     request: Vec<u8>,
     response_channel: AdexResponseChannel,
 ) -> Result<(), String> {
-    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
-    let secret = &*key_pair.private().secret;
-
     let (request, _sig, pubkey) = try_s!(decode_signed::<P2PRequest>(&request));
     let result = match request {
-        P2PRequest::Ordermatch(req) => lp_ordermatch::process_peer_request(ctx.clone(), req, pubkey)
-            .await
-            .map(|x| x.map(P2PResponse::Ordermatch)),
+        P2PRequest::Ordermatch(req) => lp_ordermatch::process_peer_request(ctx.clone(), req, pubkey).await,
     };
 
     let res = match result {
-        Ok(Some(response)) => {
-            let encoded = try_s!(encode_and_sign(&response, secret));
-            AdexResponse::Ok { response: encoded }
-        },
+        Ok(Some(response)) => AdexResponse::Ok { response },
         Ok(None) => AdexResponse::None,
         Err(e) => AdexResponse::Err { error: e },
     };
@@ -186,7 +174,10 @@ pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<
 }
 
 #[cfg(feature = "native")]
-pub async fn request_any_peer(ctx: MmArc, req: P2PRequest) -> Result<Option<(P2PResponse, PublicKey)>, String> {
+pub async fn request_any_peer<T: de::DeserializeOwned>(
+    ctx: MmArc,
+    req: P2PRequest,
+) -> Result<Option<(T, PublicKey)>, String> {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let secret = &*key_pair.private().secret;
     let encoded = try_s!(encode_and_sign(&req, secret));
@@ -200,7 +191,7 @@ pub async fn request_any_peer(ctx: MmArc, req: P2PRequest) -> Result<Option<(P2P
     tx.send(cmd).await.unwrap();
     match try_s!(response_rx.await) {
         AdexResponse::Ok { response } => {
-            let (request, _sig, pubkey) = try_s!(decode_signed::<P2PResponse>(&response));
+            let (request, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
             Ok(Some((request, pubkey)))
         },
         AdexResponse::None => Ok(None),
