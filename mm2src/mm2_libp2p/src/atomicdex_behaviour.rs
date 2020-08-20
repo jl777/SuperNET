@@ -9,7 +9,10 @@ use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
 use lazy_static::lazy_static;
 use libp2p::core::{ConnectedPoint, Multiaddr, Transport};
 use libp2p::request_response::ResponseChannel;
-use libp2p::{identity, swarm::NetworkBehaviourEventProcess, NetworkBehaviour, PeerId};
+use libp2p::{identity,
+             ping::{Ping, PingConfig, PingEvent},
+             swarm::NetworkBehaviourEventProcess,
+             NetworkBehaviour, PeerId};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
           net::IpAddr,
@@ -207,10 +210,11 @@ pub struct AtomicDexBehavior {
     cmd_rx: UnboundedReceiver<AdexBehaviorCmd>,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
+    ping: Ping,
 }
 
 impl AtomicDexBehavior {
-    fn notify_on_event(&self, event: AdexBehaviourEvent) {
+    fn notify_on_adex_event(&self, event: AdexBehaviourEvent) {
         let mut tx = self.event_tx.clone();
         self.spawn(async move {
             if let Err(e) = tx.send(event).await {
@@ -329,7 +333,7 @@ impl AtomicDexBehavior {
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehavior {
-    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_event(event.into()); }
+    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_adex_event(event.into()); }
 }
 
 impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBehavior {
@@ -346,9 +350,16 @@ impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBe
                     response_channel: response_channel.into(),
                 };
                 // forward the event to the AdexBehaviourCmd handler
-                self.notify_on_event(event);
+                self.notify_on_adex_event(event);
             },
         }
+    }
+}
+
+// TODO: in this impl we might want to save ping statistics and possibly choose the peers to which we have good ping
+impl NetworkBehaviourEventProcess<PingEvent> for AtomicDexBehavior {
+    fn inject_event(&mut self, event: PingEvent) {
+        println!("Ping event: {:?}", event);
     }
 }
 
@@ -420,12 +431,16 @@ pub fn start_gossipsub(
         // build a request-response network behaviour
         let request_response = build_request_response_behaviour();
 
+        // use default ping config with 15s interval, 20s timeout and 1 max failure
+        let ping = Ping::new(PingConfig::new());
+
         let adex_behavior = AtomicDexBehavior {
             event_tx,
             spawn_fn,
             cmd_rx,
             gossipsub,
             request_response,
+            ping,
         };
         libp2p::swarm::SwarmBuilder::new(transport, adex_behavior, local_peer_id.clone())
             .executor(Box::new(&*SWARM_RUNTIME))

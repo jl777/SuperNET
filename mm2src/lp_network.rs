@@ -79,11 +79,13 @@ pub async fn p2p_event_process_loop(ctx: MmArc, mut rx: AdexEventRx, i_am_relaye
             Some(AdexBehaviourEvent::Message(peer_id, message_id, message)) => {
                 process_p2p_message(ctx.clone(), peer_id, message_id, message, i_am_relayer).await
             },
+            /*
             Some(AdexBehaviourEvent::Subscribed { peer_id, topic }) => {
                 if i_am_relayer {
                     lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
                 }
             },
+            */
             Some(AdexBehaviourEvent::PeerRequest {
                 peer_id,
                 request,

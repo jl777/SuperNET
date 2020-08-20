@@ -1288,12 +1288,12 @@ async fn broadcast_maker_keep_alives(ctx: &MmArc) {
     let max_broadcast_num = my_maker_orders.len() / 20;
     for order in my_maker_orders.values_mut() {
         if let Some(keep_alive_at) = order.keep_alive_sent_at {
-            if now - keep_alive_at < MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+            if now < keep_alive_at + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
                 continue;
             }
         }
 
-        if now - order.created_at < MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+        if now < order.created_at + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
             continue;
         }
 
