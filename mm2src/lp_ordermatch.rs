@@ -83,7 +83,7 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
 }
 
 fn find_order_by_uuid_and_pubkey<'a>(
-    orderbook: &'a mut HashMap<(String, String), HashMap<Uuid, PricePingRequest>>,
+    orderbook: &'a mut Orderbook,
     uuid: &Uuid,
     from_pubkey: &str,
 ) -> Option<&'a mut PricePingRequest> {
@@ -95,7 +95,7 @@ fn find_order_by_uuid_and_pubkey<'a>(
 }
 
 fn find_order_by_uuid<'a>(
-    orderbook: &'a mut HashMap<(String, String), HashMap<Uuid, PricePingRequest>>,
+    orderbook: &'a mut Orderbook,
     uuid: &Uuid,
 ) -> Option<&'a mut PricePingRequest> {
     orderbook
@@ -130,11 +130,7 @@ async fn process_order_keep_alive(
 
     log!("Couldn't find an order " [uuid] ", try request it from peers");
     match request_order(ctx.clone(), uuid, from_pubkey).await {
-        Ok(Some(mut order)) => {
-            if order.timestamp < keep_alive.timestamp {
-                // a peer may not received the keep_alive yet
-                order.timestamp = keep_alive.timestamp;
-            }
+        Ok(Some(order)) => {
             insert_or_update_order_impl(&mut orderbook, order, uuid);
             return true;
         },
@@ -322,7 +318,7 @@ pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Eq, Debug, Deserialize, PartialEq, Serialize)]
 pub enum OrdermatchRequest {
     /// Get an order using uuid and the order maker's pubkey.
     /// Actual we expect to receive [`OrderInitialMessage`] that will be parsed into [`OrdermatchMessage::MakerOrderCreated`].
@@ -523,6 +519,7 @@ pub enum TakerAction {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[cfg_attr(test, derive(Default))]
 pub struct OrderConfirmationsSettings {
     pub base_confs: u64,
     pub base_nota: bool,
@@ -1316,6 +1313,7 @@ fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &
 /// A map from (base, rel).
 type Orderbook = HashMap<(String, String), HashMap<Uuid, PricePingRequest>>;
 
+#[cfg_attr(test, derive(Default))]
 struct OrdermatchContext {
     pub my_maker_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     pub my_taker_orders: AsyncMutex<HashMap<Uuid, TakerOrder>>,
@@ -1324,6 +1322,7 @@ struct OrdermatchContext {
     pub inactive_orders: AsyncMutex<HashMap<Uuid, PricePingRequest>>,
 }
 
+#[cfg_attr(test, mockable)]
 impl OrdermatchContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx(ctx: &MmArc) -> Result<Arc<OrdermatchContext>, String> {
@@ -1953,7 +1952,7 @@ fn price_ping_sig_hash(timestamp: u32, pubsecp: &[u8], pubkey: &[u8], base: &[u8
     sha256(&input)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 struct PricePingRequest {
     method: String,
     pubkey: String,

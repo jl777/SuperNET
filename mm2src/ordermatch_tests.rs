@@ -1,7 +1,13 @@
 use super::*;
+use crate::mm2::lp_network::P2PContext;
 use coins::{MmCoin, TestCoin};
-use common::{mm_ctx::{MmArc, MmCtxBuilder},
+use common::{executor::spawn,
+             mm_ctx::{MmArc, MmCtx, MmCtxBuilder},
              privkey::key_pair_from_seed};
+use futures::channel::mpsc;
+use futures::StreamExt;
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviorCmd, AdexResponse};
+use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
 use std::collections::HashSet;
 
@@ -1328,4 +1334,109 @@ fn test_choose_taker_confs_settings_sell_action() {
     assert_eq!(settings.taker_coin_confs, 1);
     assert!(settings.maker_coin_nota);
     assert_eq!(settings.maker_coin_confs, 2);
+}
+
+fn make_ctx_for_tests() -> (MmArc, String, [u8; 32]) {
+    let ctx = MmArc(Arc::new(MmCtx::default()));
+    ctx.secp256k1_key_pair
+        .pin(key_pair_from_seed("passphrase").unwrap())
+        .unwrap();
+    let secret = (&*ctx.secp256k1_key_pair().private().secret).clone();
+    let pubkey = hex::encode(&**ctx.secp256k1_key_pair().public());
+    (ctx, pubkey, secret)
+}
+
+pub fn request_any_peer_mock() -> (
+    mpsc::UnboundedSender<AdexBehaviorCmd>,
+    mpsc::UnboundedReceiver<AdexBehaviorCmd>,
+) {
+    let (cmd_tx, cmd_rx) = mpsc::unbounded();
+    let cmd_sender = cmd_tx.clone();
+    P2PContext::fetch_from_mm_arc.mock_safe(move |_| {
+        MockResult::Return(Arc::new(P2PContext {
+            cmd_tx: cmd_sender.clone(),
+        }))
+    });
+    (cmd_tx, cmd_rx)
+}
+
+#[test]
+fn test_process_order_keep_alive_requested_from_peer() {
+    let ordermatch_ctx = Arc::new(OrdermatchContext::default());
+    let ordermatch_ctx_clone = ordermatch_ctx.clone();
+    OrdermatchContext::from_ctx.mock_safe(move |_| MockResult::Return(Ok(ordermatch_ctx_clone.clone())));
+    let (_, mut cmd_rx) = request_any_peer_mock();
+
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let uuid = Uuid::new_v4();
+    let peer = PeerId::random().to_string();
+
+    let order = new_protocol::MakerOrderCreated {
+        uuid: uuid.clone().into(),
+        base: "RICK".into(),
+        rel: "MORTY".into(),
+        price: 1000000.into(),
+        max_volume: 2000000.into(),
+        min_volume: 2000000.into(),
+        conf_settings: OrderConfirmationsSettings::default(),
+    };
+
+    // create an initial_message and encode it with the secret
+    let initial_order_message = encode_and_sign(
+        &new_protocol::OrdermatchMessage::MakerOrderCreated(order.clone()),
+        &secret,
+    )
+    .unwrap();
+
+    let expected_request = P2PRequest::Ordermatch(OrdermatchRequest::GetOrder {
+        uuid: uuid.clone(),
+        from_pubkey: pubkey.clone(),
+    });
+    let from_peer = peer.clone();
+    let initial_message = initial_order_message.clone();
+    spawn(async move {
+        let cmd = cmd_rx.next().await.unwrap();
+        let (req, response_tx) = if let AdexBehaviorCmd::RequestAnyPeer { req, response_tx } = cmd {
+            (req, response_tx)
+        } else {
+            panic!("Unexpected cmd");
+        };
+
+        // check if the received request is expected
+        let (actual, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        assert_eq!(actual, expected_request);
+
+        // create a response with the initial_message and random from_peer
+        let response = new_protocol::OrderInitialMessage {
+            initial_message,
+            from_peer,
+        };
+
+        // encode the response with the secret
+        let encoded = encode_and_sign(&response, &secret).unwrap();
+        // send the encoded response through the response channel
+        response_tx.send(AdexResponse::Ok { response: encoded }).unwrap();
+    });
+
+    let keep_alive = new_protocol::MakerOrderKeepAlive {
+        uuid: uuid.clone().into(),
+        timestamp: now_ms(),
+    };
+
+    // process_order_keep_alive() should return true because an order should be requested from a peer.
+    assert!(block_on(process_order_keep_alive(
+        &ctx,
+        &pubkey,
+        "orbk/RICK:MORTY",
+        &keep_alive
+    )));
+
+    let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    // try to find the order within OrdermatchContext::orderbook and check if this order equals to the expected
+    let actual = find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, &pubkey).unwrap();
+    let expected: PricePingRequest = (order, initial_order_message, pubkey, peer).into();
+
+    // the exepcted.timestamp may be greater than actual.timestamp because of two now_ms() calls
+    actual.timestamp = expected.timestamp;
+    assert_eq!(actual, &expected);
 }

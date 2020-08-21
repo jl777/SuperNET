@@ -31,6 +31,7 @@ use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
 use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse},
                  decode_signed, encode_and_sign, GossipsubMessage, MessageId, PeerId, PublicKey, TOPIC_SEPARATOR};
+#[cfg(test)] use mocktopus::macros::*;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
@@ -43,7 +44,7 @@ use crate::mm2::{lp_ordermatch, lp_swap};
 use mm2_libp2p::atomicdex_behaviour::AdexResponseChannel;
 use serde::de;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Eq, Debug, Deserialize, PartialEq, Serialize)]
 pub enum P2PRequest {
     Ordermatch(lp_ordermatch::OrdermatchRequest),
 }
@@ -52,6 +53,7 @@ pub struct P2PContext {
     pub cmd_tx: AdexCmdTx,
 }
 
+#[cfg_attr(test, mockable)]
 impl P2PContext {
     pub fn new(cmd_tx: AdexCmdTx) -> Self { P2PContext { cmd_tx } }
 
