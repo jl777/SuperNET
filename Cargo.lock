@@ -205,7 +205,7 @@ dependencies = [
  "fnv",
  "futures 0.3.5",
  "futures_codec",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "libp2p-plaintext",
  "libp2p-swarm",
  "libp2p-yamux",
@@ -2255,7 +2255,7 @@ dependencies = [
  "bytes 0.5.5",
  "futures 0.3.5",
  "lazy_static",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "libp2p-core-derive",
  "libp2p-dns",
  "libp2p-mplex",
@@ -2266,45 +2266,11 @@ dependencies = [
  "libp2p-tcp",
  "libp2p-websocket",
  "multihash",
- "parity-multiaddr 0.9.1 (git+https://github.com/KomodoPlatform/rust-libp2p.git)",
+ "parity-multiaddr",
  "parking_lot 0.10.2",
  "pin-project",
  "smallvec 1.4.0",
  "wasm-timer",
-]
-
-[[package]]
-name = "libp2p-core"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ca8d5a64a5d19b45e00e8f24afda6b8e1b605fb25ad7bcf62a42ecf19d7ff3"
-dependencies = [
- "asn1_der",
- "bs58",
- "ed25519-dalek",
- "either",
- "fnv",
- "futures 0.3.5",
- "futures-timer 3.0.2",
- "lazy_static",
- "libsecp256k1 0.3.5",
- "log 0.4.8",
- "multihash",
- "multistream-select 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multiaddr 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "parking_lot 0.10.2",
- "pin-project",
- "prost",
- "prost-build",
- "rand 0.7.3",
- "ring",
- "rw-stream-sink",
- "sha2 0.8.2",
- "smallvec 1.4.0",
- "thiserror",
- "unsigned-varint 0.4.0",
- "void",
- "zeroize",
 ]
 
 [[package]]
@@ -2323,8 +2289,8 @@ dependencies = [
  "libsecp256k1 0.3.5",
  "log 0.4.8",
  "multihash",
- "multistream-select 0.8.2 (git+https://github.com/KomodoPlatform/rust-libp2p.git)",
- "parity-multiaddr 0.9.1 (git+https://github.com/KomodoPlatform/rust-libp2p.git)",
+ "multistream-select",
+ "parity-multiaddr",
  "parking_lot 0.10.2",
  "pin-project",
  "prost",
@@ -2355,7 +2321,7 @@ version = "0.21.0"
 source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc104d54f3801254bd17061646e8"
 dependencies = [
  "futures 0.3.5",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "log 0.4.8",
 ]
 
@@ -2368,7 +2334,7 @@ dependencies = [
  "fnv",
  "futures 0.3.5",
  "futures_codec",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "log 0.4.8",
  "parking_lot 0.10.2",
  "unsigned-varint 0.4.0",
@@ -2380,7 +2346,7 @@ version = "0.21.0"
 source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc104d54f3801254bd17061646e8"
 dependencies = [
  "futures 0.3.5",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "libp2p-swarm",
  "log 0.4.8",
  "rand 0.7.3",
@@ -2390,14 +2356,13 @@ dependencies = [
 
 [[package]]
 name = "libp2p-plaintext"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53f0308a97f6fdd37a2bc388070e471c3ce9d92aa45c99d75c87c2dc5d5cac96"
+version = "0.21.0"
+source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc104d54f3801254bd17061646e8"
 dependencies = [
  "bytes 0.5.5",
  "futures 0.3.5",
  "futures_codec",
- "libp2p-core 0.20.0",
+ "libp2p-core",
  "log 0.4.8",
  "prost",
  "prost-build",
@@ -2413,7 +2378,7 @@ source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc10
 dependencies = [
  "async-trait",
  "futures 0.3.5",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "libp2p-swarm",
  "smallvec 1.4.0",
  "wasm-timer",
@@ -2430,7 +2395,7 @@ dependencies = [
  "hmac 0.7.1",
  "js-sys",
  "lazy_static",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "log 0.4.8",
  "parity-send-wrapper",
  "pin-project",
@@ -2454,7 +2419,7 @@ version = "0.21.0"
 source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc104d54f3801254bd17061646e8"
 dependencies = [
  "futures 0.3.5",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "log 0.4.8",
  "rand 0.7.3",
  "smallvec 1.4.0",
@@ -2471,7 +2436,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "get_if_addrs",
  "ipnet",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "log 0.4.8",
  "socket2",
  "tokio 0.2.22",
@@ -2485,7 +2450,7 @@ dependencies = [
  "async-tls",
  "either",
  "futures 0.3.5",
- "libp2p-core 0.21.0",
+ "libp2p-core",
  "log 0.4.8",
  "quicksink",
  "rustls 0.18.1",
@@ -2498,12 +2463,11 @@ dependencies = [
 
 [[package]]
 name = "libp2p-yamux"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46ae9bf2f7d8a4be9c7e9b61df9de9dc1bd66419d669098f22f81f8d9571029a"
+version = "0.21.0"
+source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc104d54f3801254bd17061646e8"
 dependencies = [
  "futures 0.3.5",
- "libp2p-core 0.20.0",
+ "libp2p-core",
  "parking_lot 0.10.2",
  "thiserror",
  "yamux",
@@ -2897,20 +2861,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "multistream-select"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9157e87afbc2ef0d84cc0345423d715f445edde00141c93721c162de35a05e5"
-dependencies = [
- "bytes 0.5.5",
- "futures 0.3.5",
- "log 0.4.8",
- "pin-project",
- "smallvec 1.4.0",
- "unsigned-varint 0.4.0",
-]
-
-[[package]]
 name = "native-tls"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3099,24 +3049,6 @@ dependencies = [
 name = "parity-multiaddr"
 version = "0.9.1"
 source = "git+https://github.com/KomodoPlatform/rust-libp2p.git#a999a753fb70fc104d54f3801254bd17061646e8"
-dependencies = [
- "arrayref",
- "bs58",
- "byteorder",
- "data-encoding",
- "multihash",
- "percent-encoding 2.1.0",
- "serde",
- "static_assertions",
- "unsigned-varint 0.4.0",
- "url 2.1.1",
-]
-
-[[package]]
-name = "parity-multiaddr"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc20af3143a62c16e7c9e92ea5c6ae49f7d271d97d4d8fe73afc28f0514a3d0f"
 dependencies = [
  "arrayref",
  "bs58",
