@@ -1361,6 +1361,114 @@ pub fn request_any_peer_mock() -> (
 }
 
 #[test]
+fn test_process_get_orderbook_request() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let ordermatch_ctx = Arc::new(OrdermatchContext::default());
+    let ordermatch_ctx_clone = ordermatch_ctx.clone();
+    OrdermatchContext::from_ctx.mock_safe(move |_| MockResult::Return(Ok(ordermatch_ctx_clone.clone())));
+
+    let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    let peer = PeerId::random().to_string();
+
+    let order1 = new_protocol::MakerOrderCreated {
+        uuid: Uuid::new_v4().into(),
+        base: "RICK".into(),
+        rel: "MORTY".into(),
+        price: 1000000.into(),
+        max_volume: 2000000.into(),
+        min_volume: 2000000.into(),
+        conf_settings: OrderConfirmationsSettings::default(),
+    };
+    let order2 = new_protocol::MakerOrderCreated {
+        uuid: Uuid::new_v4().into(),
+        base: "RICK".into(),
+        rel: "MORTY".into(),
+        price: 500000.into(),
+        max_volume: 2000000.into(),
+        min_volume: 2000000.into(),
+        conf_settings: OrderConfirmationsSettings::default(),
+    };
+
+    // create an initial_message and encode it with the secret
+    let initial_message1 = encode_and_sign(
+        &new_protocol::OrdermatchMessage::MakerOrderCreated(order1.clone()),
+        &secret,
+    )
+    .unwrap();
+
+    let initial_message2 = encode_and_sign(
+        &new_protocol::OrdermatchMessage::MakerOrderCreated(order2.clone()),
+        &secret,
+    )
+    .unwrap();
+
+    // the first ping request has best MORTY:RICK price (1000000 highest price), therefore is the best bid
+    let price_ping_request1: PricePingRequest = (order1, initial_message1, pubkey.clone(), peer.clone()).into();
+    // the second ping request has best RICK:MORTY price (500000 lowest price), therefore is the best ask
+    let price_ping_request2: PricePingRequest = (order2, initial_message2, pubkey.clone(), peer.clone()).into();
+
+    insert_or_update_order_impl(
+        &mut orderbook,
+        price_ping_request1.clone(),
+        price_ping_request1.uuid.unwrap().clone(),
+    );
+    insert_or_update_order_impl(
+        &mut orderbook,
+        price_ping_request2.clone(),
+        price_ping_request2.uuid.unwrap().clone(),
+    );
+
+    // avoid dead lock on orderbook as process_get_orderbook_request also acquires it
+    drop(orderbook);
+
+    // test RICK:MORTY orderbook
+
+    let encoded = block_on(process_get_orderbook_request(
+        ctx.clone(),
+        "RICK".into(),
+        "MORTY".into(),
+        // get one best ask
+        Some(1),
+        // get one best bid
+        Some(1),
+    ))
+    .unwrap()
+    .unwrap();
+
+    let (orderbook, _, _) = decode_signed::<new_protocol::Orderbook>(&encoded).unwrap();
+    assert!(orderbook.bids.is_empty());
+    let asks: Vec<PricePingRequest> = orderbook
+        .asks
+        .into_iter()
+        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer).unwrap())
+        .collect();
+    assert_eq!(asks, vec![price_ping_request2]);
+
+    // test MORTY:RICK orderbook
+
+    let encoded = block_on(process_get_orderbook_request(
+        ctx,
+        "MORTY".into(),
+        "RICK".into(),
+        // get one best ask
+        Some(1),
+        // get one best bid
+        Some(1),
+    ))
+    .unwrap()
+    .unwrap();
+    let (orderbook, _, _) = decode_signed::<new_protocol::Orderbook>(&encoded).unwrap();
+    assert!(orderbook.asks.is_empty());
+
+    let bids: Vec<PricePingRequest> = orderbook
+        .bids
+        .into_iter()
+        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer).unwrap())
+        .collect();
+    assert_eq!(bids, vec![price_ping_request1]);
+}
+
+#[test]
 fn test_process_order_keep_alive_requested_from_peer() {
     let ordermatch_ctx = Arc::new(OrdermatchContext::default());
     let ordermatch_ctx_clone = ordermatch_ctx.clone();

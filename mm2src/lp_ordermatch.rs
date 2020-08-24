@@ -39,6 +39,7 @@ use num_traits::identities::Zero;
 use primitives::hash::H256;
 use rpc::v1::types::H256 as H256Json;
 use serde_json::{self as json, Value as Json};
+use std::cmp::Ordering;
 use std::collections::hash_map::{Entry, HashMap};
 use std::collections::HashSet;
 use std::fmt;
@@ -94,10 +95,7 @@ fn find_order_by_uuid_and_pubkey<'a>(
         .find(|order| order.uuid == Some(*uuid) && order.pubsecp == from_pubkey)
 }
 
-fn find_order_by_uuid<'a>(
-    orderbook: &'a mut Orderbook,
-    uuid: &Uuid,
-) -> Option<&'a mut PricePingRequest> {
+fn find_order_by_uuid<'a>(orderbook: &'a mut Orderbook, uuid: &Uuid) -> Option<&'a mut PricePingRequest> {
     orderbook
         .values_mut()
         .flatten()
@@ -157,24 +155,46 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
         None => return Ok(None),
     };
 
-    let (message, _sig, pubkey) = try_s!(decode_signed::<new_protocol::OrdermatchMessage>(&initial_message));
-    let order = match message {
-        new_protocol::OrdermatchMessage::MakerOrderCreated(order) => order,
-        msg => return ERR!("Expected MakerOrderCreated on GetOrder request, found {:?}", msg),
+    let order = try_s!(PricePingRequest::from_initial_msg(initial_message, from_peer));
+    Ok(Some(order))
+}
+
+async fn request_orderbook(
+    ctx: MmArc,
+    base: &str,
+    rel: &str,
+    asks_num: Option<usize>,
+    bids_num: Option<usize>,
+) -> Result<Option<Orderbook>, String> {
+    let get_orderbook = OrdermatchRequest::GetOrderbook {
+        base: base.to_string(),
+        rel: rel.to_string(),
+        asks_num,
+        bids_num,
     };
 
-    if pubkey.to_hex() != from_pubkey {
-        return ERR!("pubkey.to_hex() != from_pubkey");
+    let new_protocol::Orderbook { asks, bids } =
+        match try_s!(request_any_peer::<new_protocol::Orderbook>(ctx, P2PRequest::Ordermatch(get_orderbook)).await) {
+            Some((orderbook, _pubkey)) => orderbook,
+            None => return Ok(None),
+        };
+
+    let mut orderbook = HashMap::new();
+
+    for ask in asks {
+        let order = try_s!(PricePingRequest::from_initial_msg(ask.initial_message, ask.from_peer));
+        // TODO will the PricePingRequest::uuid be non-option field?
+        let uuid = order.uuid.unwrap();
+        insert_or_update_order_impl(&mut orderbook, order, uuid);
     }
 
-    let req: PricePingRequest = (
-        order,
-        initial_message,
-        hex::encode(pubkey.to_bytes().as_slice()),
-        from_peer,
-    )
-        .into();
-    Ok(Some(req))
+    for bid in bids {
+        let order = try_s!(PricePingRequest::from_initial_msg(bid.initial_message, bid.from_peer));
+        let uuid = order.uuid.unwrap();
+        insert_or_update_order_impl(&mut orderbook, order, uuid);
+    }
+
+    Ok(Some(orderbook))
 }
 
 async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive, order: &MakerOrder) {
@@ -323,6 +343,15 @@ pub enum OrdermatchRequest {
     /// Get an order using uuid and the order maker's pubkey.
     /// Actual we expect to receive [`OrderInitialMessage`] that will be parsed into [`OrdermatchMessage::MakerOrderCreated`].
     GetOrder { uuid: Uuid, from_pubkey: String },
+    /// Get an orderbook for the given pair.
+    GetOrderbook {
+        base: String,
+        rel: String,
+        /// Get the given number of best asks if the `asks_num` is some, else get all of the asks.
+        asks_num: Option<usize>,
+        /// Get the given number of best bids if the `bids_num` is some, else get all of the bids.
+        bids_num: Option<usize>,
+    },
 }
 
 pub async fn process_peer_request(
@@ -333,6 +362,12 @@ pub async fn process_peer_request(
     println!("Got ordermatching request {:?}", request);
     match request {
         OrdermatchRequest::GetOrder { uuid, from_pubkey } => process_get_order_request(ctx, uuid, from_pubkey).await,
+        OrdermatchRequest::GetOrderbook {
+            base,
+            rel,
+            asks_num,
+            bids_num,
+        } => process_get_orderbook_request(ctx, base, rel, asks_num, bids_num).await,
     }
 }
 
@@ -355,6 +390,64 @@ async fn process_get_order_request(ctx: MmArc, uuid: Uuid, from_pubkey: String) 
         },
         None => Ok(None),
     }
+}
+
+async fn process_get_orderbook_request(
+    ctx: MmArc,
+    base: String,
+    rel: String,
+    asks_num: Option<usize>,
+    bids_num: Option<usize>,
+) -> Result<Option<Vec<u8>>, String> {
+    fn get_n_orders<F>(
+        orders: &HashMap<Uuid, PricePingRequest>,
+        n: Option<usize>,
+        sort_by: F,
+    ) -> Vec<new_protocol::OrderInitialMessage>
+    where
+        F: FnMut(&PricePingRequest, &PricePingRequest) -> Ordering,
+    {
+        let mut orders: Vec<PricePingRequest> = orders.iter().map(|(_uuid, order)| order.clone()).collect();
+        // sort the orders by price
+        // TODO add ordered_orders to the OrdermatchContext to optimize this
+        orders.sort_by(sort_by);
+        let orders = match n {
+            Some(n) => orders.into_iter().take(n).collect(),
+            None => orders,
+        };
+
+        orders
+            .into_iter()
+            .map(|order| new_protocol::OrderInitialMessage {
+                initial_message: order.initial_message,
+                from_peer: order.peer_id,
+            })
+            .collect()
+    }
+
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let secret = &*key_pair.private().secret;
+
+    let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
+    let orderbook = ordermatch_ctx.orderbook.lock().await;
+
+    // get best `asks_num` asks that means asks with the highest prices
+    let asks = match orderbook.get(&(base.clone(), rel.clone())) {
+        // sort the orders from smallest to largest prices
+        Some(asks) => get_n_orders(asks, asks_num, |x, y| x.price.cmp(&y.price)),
+        None => Vec::new(),
+    };
+
+    // get best `bids_num` bids that means bids with the highest prices
+    let bids = match orderbook.get(&(rel.clone(), base.clone())) {
+        // sort the orders from largest to smallest prices
+        Some(asks) => get_n_orders(asks, bids_num, |x, y| y.price.cmp(&x.price)),
+        None => Vec::new(),
+    };
+
+    let response = new_protocol::Orderbook { asks, bids };
+    let encoded = try_s!(encode_and_sign(&response, secret));
+    Ok(Some(encoded))
 }
 
 fn alb_ordered_pair(base: &str, rel: &str) -> String {
@@ -1952,7 +2045,7 @@ fn price_ping_sig_hash(timestamp: u32, pubsecp: &[u8], pubkey: &[u8], base: &[u8
     sha256(&input)
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 struct PricePingRequest {
     method: String,
     pubkey: String,
@@ -2020,6 +2113,23 @@ impl PricePingRequest {
             peer_id: ctx.peer_id.or(&|| panic!()).clone(),
             initial_message: vec![],
         })
+    }
+
+    fn from_initial_msg(initial_message: Vec<u8>, from_peer: String) -> Result<PricePingRequest, String> {
+        let (message, _sig, pubkey) = try_s!(decode_signed::<new_protocol::OrdermatchMessage>(&initial_message));
+        let order = match message {
+            new_protocol::OrdermatchMessage::MakerOrderCreated(order) => order,
+            msg => return ERR!("Expected MakerOrderCreated, found {:?}", msg),
+        };
+
+        let req: PricePingRequest = (
+            order,
+            initial_message,
+            hex::encode(pubkey.to_bytes().as_slice()),
+            from_peer,
+        )
+            .into();
+        Ok(req)
     }
 }
 
@@ -2963,6 +3073,12 @@ mod new_protocol {
     pub struct OrderInitialMessage {
         pub initial_message: Vec<u8>,
         pub from_peer: String,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct Orderbook {
+        pub asks: Vec<OrderInitialMessage>,
+        pub bids: Vec<OrderInitialMessage>,
     }
 
     impl From<MakerOrderKeepAlive> for OrdermatchMessage {
