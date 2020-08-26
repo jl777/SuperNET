@@ -100,7 +100,7 @@ pub enum AdexBehaviorCmd {
     /// Note the request will be sent to relays only because they subscribe on all topics.
     RequestAnyPeer {
         req: Vec<u8>,
-        response_tx: oneshot::Sender<AdexResponse>,
+        response_tx: oneshot::Sender<ResponseOnRequestAnyPeer>,
     },
     /// Send a response using a `response_channel`.
     SendResponse {
@@ -154,6 +154,16 @@ impl From<AdexResponse> for PeerResponse {
             AdexResponse::Err { error } => PeerResponse::Err { err: error },
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ResponseOnRequestAnyPeer {
+    pub response: Option<(PeerId, Vec<u8>)>,
+}
+
+#[derive(Debug)]
+pub struct ResponsesOnRequestPeers {
+    responses: Vec<(PeerId, AdexResponse)>,
 }
 
 /// The structure consists of GossipsubEvent and RequestResponse events.
@@ -539,7 +549,7 @@ async fn request_any_peer(
     peers: Vec<PeerId>,
     request_data: Vec<u8>,
     mut request_response_tx: RequestResponseSender,
-    response_tx: oneshot::Sender<AdexResponse>,
+    response_tx: oneshot::Sender<ResponseOnRequestAnyPeer>,
 ) {
     debug!("start request_any_peer loop: peers {}", peers.len());
     for peer in peers {
@@ -564,10 +574,10 @@ async fn request_any_peer(
 
         match response {
             PeerResponse::Ok { res } => {
-                let response = AdexResponse::Ok { response: res };
+                let response = ResponseOnRequestAnyPeer { response: Some((peer.clone(), res)) };
                 debug!("Received a response from peer {:?}, stop the request loop", peer);
-                if let Err(e) = response_tx.send(response) {
-                    error!("{:?}", e);
+                if response_tx.send(response).is_err() {
+                    error!("Response oneshot channel was closed");
                 }
                 return;
             },
@@ -581,7 +591,7 @@ async fn request_any_peer(
     }
 
     debug!("None of the peers responded to the request");
-    if let Err(e) = response_tx.send(AdexResponse::None) {
-        error!("{:?}", e);
+    if response_tx.send(ResponseOnRequestAnyPeer { response: None }).is_err() {
+        error!("Response oneshot channel was closed");
     };
 }

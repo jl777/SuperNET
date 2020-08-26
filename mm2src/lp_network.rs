@@ -41,7 +41,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
-use mm2_libp2p::atomicdex_behaviour::AdexResponseChannel;
+use mm2_libp2p::atomicdex_behaviour::{AdexResponseChannel, ResponseOnRequestAnyPeer};
 use serde::de;
 
 #[derive(Eq, Debug, Deserialize, PartialEq, Serialize)]
@@ -179,7 +179,7 @@ pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<
 pub async fn request_any_peer<T: de::DeserializeOwned>(
     ctx: MmArc,
     req: P2PRequest,
-) -> Result<Option<(T, PublicKey)>, String> {
+) -> Result<Option<(T, PeerId, PublicKey)>, String> {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let secret = &*key_pair.private().secret;
     let encoded = try_s!(encode_and_sign(&req, secret));
@@ -191,13 +191,13 @@ pub async fn request_any_peer<T: de::DeserializeOwned>(
         response_tx,
     };
     tx.send(cmd).await.unwrap();
-    match try_s!(response_rx.await) {
-        AdexResponse::Ok { response } => {
-            let (request, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
-            Ok(Some((request, pubkey)))
+    let ResponseOnRequestAnyPeer { response } = try_s!(response_rx.await);
+    match response {
+        Some((from_peer, response)) => {
+            let (response, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
+            Ok(Some((response, from_peer, pubkey)))
         },
-        AdexResponse::None => Ok(None),
-        AdexResponse::Err { error } => Err(error),
+        None => Ok(None),
     }
 }
 

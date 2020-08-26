@@ -128,7 +128,7 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
         initial_message,
         from_peer,
     } = match try_s!(request_any_peer(ctx, req).await) {
-        Some((response, _pubkey)) => response,
+        Some((response, _from_peer, _pubkey)) => response,
         None => return Ok(None),
     };
 
@@ -154,8 +154,8 @@ async fn request_orderbook(
     };
 
     let new_protocol::Orderbook { asks, bids } =
-        match try_s!(request_any_peer::<new_protocol::Orderbook>(ctx, P2PRequest::Ordermatch(get_orderbook)).await) {
-            Some((orderbook, _pubkey)) => orderbook,
+        match try_s!(request_any_peer(ctx, P2PRequest::Ordermatch(get_orderbook)).await) {
+            Some((orderbook, _from_peer, _pubkey)) => orderbook,
             None => return Ok(None),
         };
 

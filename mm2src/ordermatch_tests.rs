@@ -6,7 +6,7 @@ use common::{executor::spawn,
              privkey::key_pair_from_seed};
 use futures::channel::mpsc;
 use futures::StreamExt;
-use mm2_libp2p::atomicdex_behaviour::{AdexBehaviorCmd, AdexResponse};
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviorCmd, ResponseOnRequestAnyPeer};
 use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
 use std::collections::HashSet;
@@ -1515,7 +1515,11 @@ fn test_process_order_keep_alive_requested_from_peer() {
         // encode the response with the secret
         let encoded = encode_and_sign(&response, &secret).unwrap();
         // send the encoded response through the response channel
-        response_tx.send(AdexResponse::Ok { response: encoded }).unwrap();
+        response_tx
+            .send(ResponseOnRequestAnyPeer {
+                response: Some((PeerId::random(), encoded)),
+            })
+            .unwrap();
     });
 
     let keep_alive = new_protocol::MakerOrderKeepAlive {
