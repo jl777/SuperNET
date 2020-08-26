@@ -1662,7 +1662,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                 .iter()
                 .filter_map(|(uuid, order)| {
                     if now_ms() / 1000 > order.timestamp + MAKER_ORDER_TIMEOUT {
-                        Some(uuid.clone())
+                        Some(*uuid)
                     } else {
                         None
                     }

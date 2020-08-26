@@ -1,8 +1,10 @@
 use super::start_gossipsub;
-use crate::atomicdex_behaviour::{AdexBehaviorCmd, AdexBehaviourEvent, AdexResponse};
+use crate::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexResponse, ResponseOnRequestAnyPeer,
+                                 ResponsesOnRequestPeers};
 use async_std::task::{block_on, spawn};
 use futures::channel::{mpsc, oneshot};
 use futures::{Future, SinkExt, StreamExt};
+use libp2p::PeerId;
 use secp256k1::SecretKey;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -13,13 +15,14 @@ fn spawn_boxed(fut: Box<dyn Future<Output = ()> + Send + Unpin + 'static>) { spa
 struct Node {
     #[allow(dead_code)]
     secret: SecretKey,
-    cmd_tx: mpsc::UnboundedSender<AdexBehaviorCmd>,
+    peer_id: PeerId,
+    cmd_tx: mpsc::UnboundedSender<AdexBehaviourCmd>,
 }
 
 impl Node {
     fn spawn<F>(ip: String, port: u16, seednodes: Option<Vec<String>>, on_event: F) -> Node
     where
-        F: Fn(mpsc::UnboundedSender<AdexBehaviorCmd>, AdexBehaviourEvent) + Send + 'static,
+        F: Fn(mpsc::UnboundedSender<AdexBehaviourCmd>, AdexBehaviourEvent) + Send + 'static,
     {
         let my_address = ip.parse().unwrap();
 
@@ -27,7 +30,7 @@ impl Node {
         let secret = SecretKey::random(&mut rng);
         let mut priv_key = secret.serialize();
 
-        let (cmd_tx, mut event_rx, _my_peer_id) =
+        let (cmd_tx, mut event_rx, peer_id) =
             start_gossipsub(my_address, port, spawn_boxed, seednodes, &mut priv_key, true);
 
         // spawn a response future
@@ -45,16 +48,20 @@ impl Node {
             }
         });
 
-        Node { secret, cmd_tx }
+        Node {
+            secret,
+            peer_id,
+            cmd_tx,
+        }
     }
 
-    async fn send_cmd(&mut self, cmd: AdexBehaviorCmd) { self.cmd_tx.send(cmd).await.unwrap(); }
+    async fn send_cmd(&mut self, cmd: AdexBehaviourCmd) { self.cmd_tx.send(cmd).await.unwrap(); }
 
     async fn wait_peers(&mut self, number: usize) {
         loop {
             let (tx, rx) = oneshot::channel();
             self.cmd_tx
-                .send(AdexBehaviorCmd::GetPeersInfo { result_tx: tx })
+                .send(AdexBehaviourCmd::GetPeersInfo { result_tx: tx })
                 .await
                 .unwrap();
             match rx.await {
@@ -76,7 +83,7 @@ fn test_request_response_ok() {
 
     let request_received = Arc::new(AtomicBool::new(false));
     let request_received_cpy = request_received.clone();
-    let _node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |cmd_tx, event| {
+    let node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -93,7 +100,7 @@ fn test_request_response_ok() {
             response: b"test response".to_vec(),
         };
         cmd_tx
-            .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
 
@@ -109,19 +116,14 @@ fn test_request_response_ok() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         node2
-            .send_cmd(AdexBehaviorCmd::RequestAnyPeer {
+            .send_cmd(AdexBehaviourCmd::RequestAnyPeer {
                 req: b"test request".to_vec(),
                 response_tx,
             })
             .await;
 
-        let res = response_rx.await;
-        assert_eq!(
-            res,
-            Ok(AdexResponse::Ok {
-                response: b"test response".to_vec()
-            })
-        );
+        let ResponseOnRequestAnyPeer { response } = response_rx.await.unwrap();
+        assert_eq!(response, Some((node1.peer_id, b"test response".to_vec())));
     });
 
     assert!(request_received.load(Ordering::Relaxed));
@@ -137,7 +139,7 @@ fn test_request_response_ok_three_peers() {
     }
 
     impl RequestHandler {
-        fn handle(&mut self, cmd_tx: mpsc::UnboundedSender<AdexBehaviorCmd>, event: AdexBehaviourEvent) {
+        fn handle(&mut self, cmd_tx: mpsc::UnboundedSender<AdexBehaviourCmd>, event: AdexBehaviourEvent) {
             let (request, response_channel) = match event {
                 AdexBehaviourEvent::PeerRequest {
                     request,
@@ -155,7 +157,7 @@ fn test_request_response_ok_three_peers() {
             if self.requests == 1 {
                 let res = AdexResponse::None;
                 cmd_tx
-                    .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+                    .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
                     .unwrap();
                 return;
             }
@@ -166,7 +168,7 @@ fn test_request_response_ok_three_peers() {
                     error: "test error".into(),
                 };
                 cmd_tx
-                    .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+                    .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
                     .unwrap();
                 return;
             }
@@ -177,7 +179,7 @@ fn test_request_response_ok_three_peers() {
                     response: format!("success {} request", self.requests).as_bytes().to_vec(),
                 };
                 cmd_tx
-                    .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+                    .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
                     .unwrap();
                 return;
             }
@@ -222,19 +224,15 @@ fn test_request_response_ok_three_peers() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         sender
-            .send_cmd(AdexBehaviorCmd::RequestAnyPeer {
+            .send_cmd(AdexBehaviourCmd::RequestAnyPeer {
                 req: b"test request".to_vec(),
                 response_tx,
             })
             .await;
 
-        let res = response_rx.await;
-        assert_eq!(
-            res,
-            Ok(AdexResponse::Ok {
-                response: b"success 3 request".to_vec()
-            })
-        );
+        let ResponseOnRequestAnyPeer { response } = response_rx.await.unwrap();
+        let (_peer_id, res) = response.unwrap();
+        assert_eq!(res, b"success 3 request".to_vec());
     });
 }
 
@@ -259,7 +257,7 @@ fn test_request_response_none() {
 
         let res = AdexResponse::None;
         cmd_tx
-            .unbounded_send(AdexBehaviorCmd::SendResponse { res, response_channel })
+            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
 
@@ -275,15 +273,116 @@ fn test_request_response_none() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         node2
-            .send_cmd(AdexBehaviorCmd::RequestAnyPeer {
+            .send_cmd(AdexBehaviourCmd::RequestAnyPeer {
                 req: b"test request".to_vec(),
                 response_tx,
             })
             .await;
 
-        let res = response_rx.await;
-        assert_eq!(res, Ok(AdexResponse::None));
+        let ResponseOnRequestAnyPeer { response } = response_rx.await.unwrap();
+        assert_eq!(response, None);
     });
 
     assert!(request_received.load(Ordering::Relaxed));
+}
+
+#[test]
+fn test_request_peers_ok_three_peers() {
+    let _ = env_logger::try_init();
+
+    let receiver1 = Node::spawn("127.0.0.1".into(), 57800, None, move |cmd_tx, event| {
+        let (request, response_channel) = match event {
+            AdexBehaviourEvent::PeerRequest {
+                request,
+                response_channel,
+                ..
+            } => (request, response_channel),
+            _ => return,
+        };
+
+        assert_eq!(request, b"test request");
+
+        let res = AdexResponse::None;
+        cmd_tx
+            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .unwrap();
+    });
+
+    let receiver2 = Node::spawn("127.0.0.1".into(), 57801, None, move |cmd_tx, event| {
+        let (request, response_channel) = match event {
+            AdexBehaviourEvent::PeerRequest {
+                request,
+                response_channel,
+                ..
+            } => (request, response_channel),
+            _ => return,
+        };
+
+        assert_eq!(request, b"test request");
+
+        let res = AdexResponse::Err {
+            error: "test error".into(),
+        };
+        cmd_tx
+            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .unwrap();
+    });
+
+    let receiver3 = Node::spawn("127.0.0.1".into(), 57802, None, move |cmd_tx, event| {
+        let (request, response_channel) = match event {
+            AdexBehaviourEvent::PeerRequest {
+                request,
+                response_channel,
+                ..
+            } => (request, response_channel),
+            _ => return,
+        };
+
+        assert_eq!(request, b"test request");
+
+        let res = AdexResponse::Ok {
+            response: b"test response".to_vec(),
+        };
+        cmd_tx
+            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .unwrap();
+    });
+
+    let mut sender = Node::spawn(
+        "127.0.0.1".into(),
+        57784,
+        Some(vec![
+            "/ip4/127.0.0.1/tcp/57800".into(),
+            "/ip4/127.0.0.1/tcp/57801".into(),
+            "/ip4/127.0.0.1/tcp/57802".into(),
+        ]),
+        |_, _| (),
+    );
+
+    block_on(async { sender.wait_peers(3).await });
+
+    let (response_tx, response_rx) = oneshot::channel();
+    block_on(async move {
+        sender
+            .send_cmd(AdexBehaviourCmd::RequestPeers {
+                req: b"test request".to_vec(),
+                response_tx,
+            })
+            .await;
+
+        let mut expected = vec![
+            (receiver1.peer_id, AdexResponse::None),
+            (receiver2.peer_id, AdexResponse::Err {
+                error: "test error".into(),
+            }),
+            (receiver3.peer_id, AdexResponse::Ok {
+                response: b"test response".to_vec(),
+            }),
+        ];
+        expected.sort_by(|x, y| x.0.cmp(&y.0));
+
+        let ResponsesOnRequestPeers { mut responses } = response_rx.await.unwrap();
+        responses.sort_by(|x, y| x.0.cmp(&y.0));
+        assert_eq!(responses, expected);
+    });
 }

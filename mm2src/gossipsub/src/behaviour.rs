@@ -1040,11 +1040,9 @@ impl Gossipsub {
         }
     }
 
-    pub fn get_min_relays_number(&self) -> usize { self.config.mesh_n_low }
-
-    pub fn get_random_mesh_relays(&self, n: usize) -> Vec<PeerId> {
-        // get any `n` relays
-        Self::get_random_relays(&self.relayers_mesh, n, |_| true)
+    pub fn get_mesh_relays(&self) -> Vec<PeerId> {
+        // get all relays
+        Self::get_random_relays(&self.relayers_mesh, self.relayers_mesh.len(), |_| true)
     }
 
     pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {

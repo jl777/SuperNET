@@ -6,7 +6,7 @@ use common::{executor::spawn,
              privkey::key_pair_from_seed};
 use futures::channel::mpsc;
 use futures::StreamExt;
-use mm2_libp2p::atomicdex_behaviour::{AdexBehaviorCmd, ResponseOnRequestAnyPeer};
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, ResponseOnRequestAnyPeer};
 use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
 use std::collections::HashSet;
@@ -1347,8 +1347,8 @@ fn make_ctx_for_tests() -> (MmArc, String, [u8; 32]) {
 }
 
 pub fn request_any_peer_mock() -> (
-    mpsc::UnboundedSender<AdexBehaviorCmd>,
-    mpsc::UnboundedReceiver<AdexBehaviorCmd>,
+    mpsc::UnboundedSender<AdexBehaviourCmd>,
+    mpsc::UnboundedReceiver<AdexBehaviourCmd>,
 ) {
     let (cmd_tx, cmd_rx) = mpsc::unbounded();
     let cmd_sender = cmd_tx.clone();
@@ -1496,7 +1496,7 @@ fn test_process_order_keep_alive_requested_from_peer() {
     let initial_message = initial_order_message.clone();
     spawn(async move {
         let cmd = cmd_rx.next().await.unwrap();
-        let (req, response_tx) = if let AdexBehaviorCmd::RequestAnyPeer { req, response_tx } = cmd {
+        let (req, response_tx) = if let AdexBehaviourCmd::RequestAnyPeer { req, response_tx } = cmd {
             (req, response_tx)
         } else {
             panic!("Unexpected cmd");
