@@ -28,6 +28,7 @@ use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{from_dec_to_ratio, from_ratio_to_dec, Fraction, MmNumber};
 use common::{bits256, block_on, json_dir_entries, new_uuid, now_ms, remove_file, write};
+use either::Either;
 use futures::{compat::Future01CompatExt, lock::Mutex as AsyncMutex};
 use gstuff::slurp;
 use http::Response;
@@ -39,9 +40,8 @@ use num_traits::identities::Zero;
 use primitives::hash::H256;
 use rpc::v1::types::H256 as H256Json;
 use serde_json::{self as json, Value as Json};
-use std::cmp::Ordering;
 use std::collections::hash_map::{Entry, HashMap};
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::fmt;
 use std::fs::DirEntry;
 use std::path::PathBuf;
@@ -83,26 +83,6 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
     }
 }
 
-fn find_order_by_uuid_and_pubkey<'a>(
-    orderbook: &'a mut Orderbook,
-    uuid: &Uuid,
-    from_pubkey: &str,
-) -> Option<&'a mut PricePingRequest> {
-    orderbook
-        .values_mut()
-        .flatten()
-        .map(|(_, order)| order)
-        .find(|order| order.uuid == Some(*uuid) && order.pubsecp == from_pubkey)
-}
-
-fn find_order_by_uuid<'a>(orderbook: &'a mut Orderbook, uuid: &Uuid) -> Option<&'a mut PricePingRequest> {
-    orderbook
-        .values_mut()
-        .flatten()
-        .map(|(_, order)| order)
-        .find(|order| order.uuid == Some(*uuid))
-}
-
 async fn process_order_keep_alive(
     ctx: &MmArc,
     from_pubkey: &str,
@@ -112,24 +92,21 @@ async fn process_order_keep_alive(
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     let uuid = keep_alive.uuid.into();
-    if let Some(order) = find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, from_pubkey) {
+    if let Some(order) = orderbook.find_order_by_uuid_and_pubkey(&uuid, from_pubkey) {
         order.timestamp = keep_alive.timestamp;
         return true;
     }
 
     if let Some(mut order) = ordermatch_ctx.inactive_orders.lock().await.remove(&uuid) {
         order.timestamp = keep_alive.timestamp;
-        orderbook
-            .entry((order.base.clone(), order.rel.clone()))
-            .or_insert_with(HashMap::new)
-            .insert(uuid, order);
+        orderbook.insert_or_update_order(uuid, order);
         return true;
     }
 
     log!("Couldn't find an order " [uuid] ", try request it from peers");
     match request_order(ctx.clone(), uuid, from_pubkey).await {
         Ok(Some(order)) => {
-            insert_or_update_order_impl(&mut orderbook, order, uuid);
+            orderbook.insert_or_update_order(uuid, order);
             return true;
         },
         Ok(None) => log!("None of peers responded to the GetOrder request"),
@@ -159,13 +136,16 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
     Ok(Some(order))
 }
 
+struct AskOrders(Vec<PricePingRequest>);
+struct BidOrders(Vec<PricePingRequest>);
+
 async fn request_orderbook(
     ctx: MmArc,
     base: &str,
     rel: &str,
     asks_num: Option<usize>,
     bids_num: Option<usize>,
-) -> Result<Option<Orderbook>, String> {
+) -> Result<Option<(AskOrders, BidOrders)>, String> {
     let get_orderbook = OrdermatchRequest::GetOrderbook {
         base: base.to_string(),
         rel: rel.to_string(),
@@ -179,22 +159,16 @@ async fn request_orderbook(
             None => return Ok(None),
         };
 
-    let mut orderbook = HashMap::new();
+    let asks = try_s!(asks
+        .into_iter()
+        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer))
+        .collect());
+    let bids = try_s!(bids
+        .into_iter()
+        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer))
+        .collect());
 
-    for ask in asks {
-        let order = try_s!(PricePingRequest::from_initial_msg(ask.initial_message, ask.from_peer));
-        // TODO will the PricePingRequest::uuid be non-option field?
-        let uuid = order.uuid.unwrap();
-        insert_or_update_order_impl(&mut orderbook, order, uuid);
-    }
-
-    for bid in bids {
-        let order = try_s!(PricePingRequest::from_initial_msg(bid.initial_message, bid.from_peer));
-        let uuid = order.uuid.unwrap();
-        insert_or_update_order_impl(&mut orderbook, order, uuid);
-    }
-
-    Ok(Some(orderbook))
+    Ok(Some((AskOrders(asks), BidOrders(bids))))
 }
 
 async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive, order: &MakerOrder) {
@@ -202,7 +176,7 @@ async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::Mak
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
 
     let uuid = keep_alive.uuid.into();
-    match find_order_by_uuid(&mut orderbook, &uuid) {
+    match orderbook.find_order_by_uuid(&uuid) {
         Some(order) => order.timestamp = keep_alive.timestamp,
         None => {
             // avoid dead lock on orderbook as maker_order_created_p2p_notify also acquires it
@@ -217,45 +191,19 @@ async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::Mak
 async fn insert_or_update_order(ctx: &MmArc, req: PricePingRequest, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    insert_or_update_order_impl(&mut orderbook, req, uuid)
-}
-
-fn insert_or_update_order_impl(orderbook: &mut Orderbook, req: PricePingRequest, uuid: Uuid) {
-    match orderbook.entry((req.base.clone(), req.rel.clone())) {
-        Entry::Vacant(pair_orders) => {
-            if req.balance > 0.into() && req.price > 0.into() {
-                let mut orders = HashMap::new();
-                orders.insert(uuid, req);
-                pair_orders.insert(orders);
-            }
-        },
-        Entry::Occupied(mut pair_orders) => match pair_orders.get_mut().entry(uuid) {
-            Entry::Vacant(order) => {
-                if req.balance > 0.into() && req.price > 0.into() {
-                    order.insert(req);
-                }
-            },
-            Entry::Occupied(mut order) => {
-                if req.balance > 0.into() {
-                    order.insert(req);
-                } else {
-                    order.remove();
-                }
-            },
-        },
-    }
+    orderbook.insert_or_update_order(uuid, req)
 }
 
 async fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    for (_, orders) in orderbook.iter_mut() {
-        if let Entry::Occupied(order) = orders.entry(uuid) {
-            if order.get().pubsecp == pubkey {
-                order.remove();
-            }
-        }
+    match orderbook.order_set.get(&uuid) {
+        // don't remove the order if the pubkey is not equal
+        Some(order) if order.pubsecp != pubkey => return,
+        Some(_) => (),
+        None => return,
     }
+    orderbook.remove_order(uuid);
 }
 
 fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
@@ -266,7 +214,7 @@ fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
 async fn process_repeat_order(ctx: &MmArc, from_peer: String, uuid: Uuid) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    if let Some(order) = find_order_by_uuid(&mut orderbook, &uuid) {
+    if let Some(order) = orderbook.find_order_by_uuid(&uuid) {
         let peers = vec![from_peer];
         let topic = orderbook_topic(&order.base, &order.rel);
         let msg = order.initial_message.clone();
@@ -280,9 +228,7 @@ async fn process_repeat_order(ctx: &MmArc, from_peer: String, uuid: Uuid) -> boo
 async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    for (_, orders) in orderbook.iter_mut() {
-        orders.remove(&uuid);
-    }
+    orderbook.remove_order(uuid);
 }
 
 /// Attempts to decode a message and process it returning whether the message is valid and worth rebroadcasting
@@ -377,7 +323,7 @@ async fn process_get_order_request(ctx: MmArc, uuid: Uuid, from_pubkey: String) 
 
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    match find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, &from_pubkey) {
+    match orderbook.find_order_by_uuid_and_pubkey(&uuid, &from_pubkey) {
         Some(order) => {
             let initial_message = order.initial_message.clone();
             let from_peer = order.peer_id.clone();
@@ -399,30 +345,39 @@ async fn process_get_orderbook_request(
     asks_num: Option<usize>,
     bids_num: Option<usize>,
 ) -> Result<Option<Vec<u8>>, String> {
-    fn get_n_orders<F>(
-        orders: &HashMap<Uuid, PricePingRequest>,
+    enum PriceOrdering {
+        LowestToHighest,
+        HighestToLowest,
+    }
+    fn get_n_orders(
+        orderbook: &Orderbook,
+        base: String,
+        rel: String,
         n: Option<usize>,
-        sort_by: F,
-    ) -> Vec<new_protocol::OrderInitialMessage>
-    where
-        F: FnMut(&PricePingRequest, &PricePingRequest) -> Ordering,
-    {
-        let mut orders: Vec<PricePingRequest> = orders.iter().map(|(_uuid, order)| order.clone()).collect();
-        // sort the orders by price
-        // TODO add ordered_orders to the OrdermatchContext to optimize this
-        orders.sort_by(sort_by);
-        let orders = match n {
-            Some(n) => orders.into_iter().take(n).collect(),
-            None => orders,
+        ordering: PriceOrdering,
+    ) -> Vec<new_protocol::OrderInitialMessage> {
+        let order_uuids = match orderbook.ordered.get(&(base, rel)) {
+            Some(uuids) => uuids,
+            None => return Vec::new(),
         };
 
-        orders
-            .into_iter()
-            .map(|order| new_protocol::OrderInitialMessage {
-                initial_message: order.initial_message,
-                from_peer: order.peer_id,
-            })
-            .collect()
+        let n = n.unwrap_or_else(|| order_uuids.len());
+        match ordering {
+            PriceOrdering::LowestToHighest => Either::Left(order_uuids.iter()),
+            PriceOrdering::HighestToLowest => Either::Right(order_uuids.iter().rev()),
+        }
+        .take(n)
+        .map(|OrderedByPriceOrder { uuid, .. }| {
+            let order = orderbook
+                .order_set
+                .get(uuid)
+                .expect("Orderbook::ordered contains an uuid that is not in Orderbook::order_set");
+            new_protocol::OrderInitialMessage {
+                initial_message: order.initial_message.clone(),
+                from_peer: order.peer_id.clone(),
+            }
+        })
+        .collect()
     }
 
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
@@ -431,19 +386,16 @@ async fn process_get_orderbook_request(
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = ordermatch_ctx.orderbook.lock().await;
 
-    // get best `asks_num` asks that means asks with the highest prices
-    let asks = match orderbook.get(&(base.clone(), rel.clone())) {
-        // sort the orders from smallest to largest prices
-        Some(asks) => get_n_orders(asks, asks_num, |x, y| x.price.cmp(&y.price)),
-        None => Vec::new(),
-    };
-
-    // get best `bids_num` bids that means bids with the highest prices
-    let bids = match orderbook.get(&(rel.clone(), base.clone())) {
-        // sort the orders from largest to smallest prices
-        Some(asks) => get_n_orders(asks, bids_num, |x, y| y.price.cmp(&x.price)),
-        None => Vec::new(),
-    };
+    // get best `asks_num` asks that means asks with the highest prices (from lowest to highest prices)
+    let asks = get_n_orders(
+        &orderbook,
+        base.clone(),
+        rel.clone(),
+        asks_num,
+        PriceOrdering::LowestToHighest,
+    );
+    // get best `bids_num` bids that means bids with the highest prices (from highest to lowest prices)
+    let bids = get_n_orders(&orderbook, rel, base, bids_num, PriceOrdering::HighestToLowest);
 
     let response = new_protocol::Orderbook { asks, bids };
     let encoded = try_s!(encode_and_sign(&response, secret));
@@ -467,6 +419,7 @@ fn test_alb_ordered_pair() {
     assert_eq!("KMD:QTUM", alb_ordered_pair("QTUM", "KMD"));
 }
 
+#[allow(dead_code)]
 fn parse_orderbook_pair_from_topic(topic: &str) -> Option<(&str, &str)> {
     let mut split = topic.split(|maybe_sep| maybe_sep == TOPIC_SEPARATOR);
     match split.next() {
@@ -535,31 +488,6 @@ async fn maker_order_cancelled_p2p_notify(ctx: MmArc, order: &MakerOrder) {
     delete_my_order(&ctx, order.uuid).await;
     println!("maker_order_cancelled_p2p_notify called, message {:?}", message);
     broadcast_ordermatch_message(&ctx, orderbook_topic(&order.base, &order.rel), message);
-}
-
-pub async fn handle_peer_subscribed(ctx: MmArc, peer: &str, topic: &str) {
-    let pair = match parse_orderbook_pair_from_topic(topic) {
-        Some(p) => p,
-        None => return,
-    };
-    let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
-    let orderbook = ordermatch_ctx.orderbook.lock().await;
-    let mut messages = vec![];
-    if let Some(orders) = orderbook.get(&(pair.0.to_owned(), pair.1.to_owned())) {
-        for (_, order) in orders.iter() {
-            messages.push((topic.to_owned(), order.initial_message.clone()));
-        }
-    }
-
-    if let Some(orders) = orderbook.get(&(pair.1.to_owned(), pair.0.to_owned())) {
-        for (_, order) in orders.iter() {
-            messages.push((topic.to_owned(), order.initial_message.clone()));
-        }
-    }
-    if !messages.is_empty() {
-        let peers = vec![peer.to_owned()];
-        send_msgs_to_peers(&ctx, messages, peers);
-    }
 }
 
 pub struct BalanceUpdateOrdermatchHandler {
@@ -1403,10 +1331,92 @@ fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &
     broadcast_p2p_msg(ctx, topic, encoded_msg);
 }
 
-/// A map from (base, rel).
-type Orderbook = HashMap<(String, String), HashMap<Uuid, PricePingRequest>>;
+/// The order is ordered by [`PricePingRequest::price`] and [`PricePingRequest::uuid`].
+#[derive(Eq, Ord, PartialEq, PartialOrd)]
+struct OrderedByPriceOrder {
+    price: BigDecimal,
+    uuid: Uuid,
+}
 
-#[cfg_attr(test, derive(Default))]
+#[derive(Default)]
+struct Orderbook {
+    /// A map from (base, rel).
+    ordered: HashMap<(String, String), BTreeSet<OrderedByPriceOrder>>,
+    /// A map from (base, rel).
+    unordered: HashMap<(String, String), HashSet<Uuid>>,
+    order_set: HashMap<Uuid, PricePingRequest>,
+}
+
+impl Orderbook {
+    fn find_order_by_uuid_and_pubkey(&mut self, uuid: &Uuid, from_pubkey: &str) -> Option<&mut PricePingRequest> {
+        self.order_set.get_mut(uuid).and_then(|order| {
+            if order.pubsecp == from_pubkey {
+                Some(order)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn find_order_by_uuid(&mut self, uuid: &Uuid) -> Option<&mut PricePingRequest> { self.order_set.get_mut(uuid) }
+
+    fn insert_or_update_order(&mut self, uuid: Uuid, req: PricePingRequest) {
+        if req.balance <= 0.into() || req.price <= 0.into() {
+            self.remove_order(uuid);
+            return;
+        } // else insert the order
+
+        let base_rel = (req.base.clone(), req.rel.clone());
+
+        self.ordered
+            .entry(base_rel.clone())
+            .or_insert_with(BTreeSet::new)
+            .insert(OrderedByPriceOrder {
+                price: req.price.clone(),
+                uuid,
+            });
+
+        self.unordered
+            .entry(base_rel)
+            .or_insert_with(HashSet::new)
+            .insert(uuid.clone());
+
+        self.order_set.insert(uuid, req);
+    }
+
+    fn remove_order(&mut self, uuid: Uuid) -> Option<PricePingRequest> {
+        let order = match self.order_set.remove(&uuid) {
+            Some(order) => order,
+            None => return None,
+        };
+        let base_rel = (order.base.clone(), order.rel.clone());
+
+        // create an `order_to_delete` that allows to find and remove an element from `self.ordered` by hash
+        let order_to_delete = OrderedByPriceOrder {
+            price: order.price.clone(),
+            uuid,
+        };
+
+        if let Some(orders) = self.ordered.get_mut(&base_rel) {
+            orders.remove(&order_to_delete);
+            if orders.is_empty() {
+                self.ordered.remove(&base_rel);
+            }
+        }
+
+        if let Some(orders) = self.unordered.get_mut(&base_rel) {
+            // use the same uuid to remove an order
+            orders.remove(&order_to_delete.uuid);
+            if orders.is_empty() {
+                self.unordered.remove(&base_rel);
+            }
+        }
+
+        Some(order)
+    }
+}
+
+#[derive(Default)]
 struct OrdermatchContext {
     pub my_maker_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     pub my_taker_orders: AsyncMutex<HashMap<Uuid, TakerOrder>>,
@@ -1420,13 +1430,7 @@ impl OrdermatchContext {
     /// Obtains a reference to this crate context, creating it if necessary.
     fn from_ctx(ctx: &MmArc) -> Result<Arc<OrdermatchContext>, String> {
         Ok(try_s!(from_ctx(&ctx.ordermatch_ctx, move || {
-            Ok(OrdermatchContext {
-                my_taker_orders: AsyncMutex::new(HashMap::default()),
-                my_maker_orders: AsyncMutex::new(HashMap::default()),
-                my_cancelled_orders: AsyncMutex::new(HashMap::default()),
-                orderbook: AsyncMutex::new(HashMap::default()),
-                inactive_orders: AsyncMutex::new(HashMap::default()),
-            })
+            Ok(OrdermatchContext::default())
         })))
     }
 
@@ -1652,27 +1656,23 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             // receiving keep alive again
             let mut orderbook = ordermatch_ctx.orderbook.lock().await;
             let mut inactive = ordermatch_ctx.inactive_orders.lock().await;
-            *orderbook = orderbook
-                .drain()
-                .filter_map(|((base, rel), mut pair_orderbook)| {
-                    pair_orderbook = pair_orderbook
-                        .drain()
-                        .filter_map(|(pubkey, order)| {
-                            if now_ms() / 1000 > order.timestamp + MAKER_ORDER_TIMEOUT {
-                                inactive.insert(pubkey, order);
-                                None
-                            } else {
-                                Some((pubkey, order))
-                            }
-                        })
-                        .collect();
-                    if pair_orderbook.is_empty() {
-                        None
+
+            let inactive_uuids: Vec<Uuid> = orderbook
+                .order_set
+                .iter()
+                .filter_map(|(uuid, order)| {
+                    if now_ms() / 1000 > order.timestamp + MAKER_ORDER_TIMEOUT {
+                        Some(uuid.clone())
                     } else {
-                        Some(((base, rel), pair_orderbook))
+                        None
                     }
                 })
                 .collect();
+
+            for uuid in inactive_uuids {
+                let order = orderbook.remove_order(uuid.clone()).unwrap();
+                inactive.insert(uuid, order);
+            }
         }
 
         Timer::sleep(0.777).await;
@@ -2162,29 +2162,7 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
         let uuid = req.uuid.unwrap_or_else(|| Uuid::from_bytes(bytes));
         let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(ctx));
         let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-        match orderbook.entry((req.base.clone(), req.rel.clone())) {
-            Entry::Vacant(pair_orders) => {
-                if req.balance > 0.into() && req.price > 0.into() {
-                    let mut orders = HashMap::new();
-                    orders.insert(uuid, req);
-                    pair_orders.insert(orders);
-                }
-            },
-            Entry::Occupied(mut pair_orders) => match pair_orders.get_mut().entry(uuid) {
-                Entry::Vacant(order) => {
-                    if req.balance > 0.into() && req.price > 0.into() {
-                        order.insert(req);
-                    }
-                },
-                Entry::Occupied(mut order) => {
-                    if req.balance > 0.into() {
-                        order.insert(req);
-                    } else {
-                        order.remove();
-                    }
-                },
-            },
-        }
+        orderbook.insert_or_update_order(uuid, req);
         Ok(())
     } else {
         ERR!("price ping invalid signature")
@@ -2824,10 +2802,15 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = ordermatch_ctx.orderbook.lock().await;
     let my_pubsecp = hex::encode(&**ctx.secp256k1_key_pair().public());
-    let asks = match orderbook.get(&(req.base.clone(), req.rel.clone())) {
-        Some(asks) => {
-            let mut orderbook_entries = vec![];
-            for (uuid, ask) in asks.iter() {
+
+    let asks = match orderbook.unordered.get(&(req.base.clone(), req.rel.clone())) {
+        Some(uuids) => {
+            let mut orderbook_entries = Vec::new();
+            for uuid in uuids {
+                let ask = orderbook.order_set.get(uuid).ok_or(ERRL!(
+                    "Orderbook::unordered contains {:?} uuid that is not in Orderbook::order_set",
+                    uuid
+                ))?;
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.base.clone(),
                     address: try_s!(base_coin.address_from_pubkey_str(&ask.pubsecp)),
@@ -2862,42 +2845,46 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
             }
             orderbook_entries
         },
-        None => vec![],
+        None => Vec::new(),
     };
-    let bids = match orderbook.get(&(req.rel.clone(), req.base.clone())) {
-        Some(asks) => {
+
+    let bids = match orderbook.unordered.get(&(req.rel.clone(), req.base.clone())) {
+        Some(uuids) => {
             let mut orderbook_entries = vec![];
-            for (uuid, ask) in asks.iter() {
-                log!("Ask size {}"(std::mem::size_of_val(ask)));
+            for uuid in uuids {
+                let bid = orderbook.order_set.get(uuid).ok_or(ERRL!(
+                    "Orderbook::unordered contains {:?} uuid that is not in Orderbook::order_set",
+                    uuid
+                ))?;
                 let price_mm = MmNumber::from(1i32)
-                    / ask
+                    / bid
                         .price_rat
                         .clone()
-                        .unwrap_or_else(|| from_dec_to_ratio(ask.price.clone()).into());
+                        .unwrap_or_else(|| from_dec_to_ratio(bid.price.clone()).into());
                 orderbook_entries.push(OrderbookEntry {
                     coin: req.rel.clone(),
-                    address: try_s!(rel_coin.address_from_pubkey_str(&ask.pubsecp)),
+                    address: try_s!(rel_coin.address_from_pubkey_str(&bid.pubsecp)),
                     // NB: 1/x can not be represented as a decimal and introduces a rounding error
                     // cf. https://github.com/KomodoPlatform/atomicDEX-API/issues/495#issuecomment-516365682
-                    price: BigDecimal::from(1) / &ask.price,
+                    price: BigDecimal::from(1) / &bid.price,
                     price_rat: price_mm.to_ratio(),
                     price_fraction: price_mm.to_fraction(),
-                    max_volume: ask.balance.clone(),
-                    max_volume_rat: ask
+                    max_volume: bid.balance.clone(),
+                    max_volume_rat: bid
                         .balance_rat
                         .as_ref()
                         .map(|p| p.to_ratio())
-                        .unwrap_or_else(|| from_dec_to_ratio(ask.balance.clone())),
-                    max_volume_fraction: ask
+                        .unwrap_or_else(|| from_dec_to_ratio(bid.balance.clone())),
+                    max_volume_fraction: bid
                         .balance_rat
                         .as_ref()
                         .map(|p| p.to_fraction())
-                        .unwrap_or_else(|| from_dec_to_ratio(ask.balance.clone()).into()),
-                    pubkey: ask.pubkey.clone(),
-                    age: (now_ms() as i64 / 1000) - ask.timestamp as i64,
+                        .unwrap_or_else(|| from_dec_to_ratio(bid.balance.clone()).into()),
+                    pubkey: bid.pubkey.clone(),
+                    age: (now_ms() as i64 / 1000) - bid.timestamp as i64,
                     zcredits: 0,
                     uuid: *uuid,
-                    is_mine: my_pubsecp == ask.pubsecp,
+                    is_mine: my_pubsecp == bid.pubsecp,
                 })
             }
             orderbook_entries

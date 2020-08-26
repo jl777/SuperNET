@@ -1407,16 +1407,8 @@ fn test_process_get_orderbook_request() {
     // the second ping request has best RICK:MORTY price (500000 lowest price), therefore is the best ask
     let price_ping_request2: PricePingRequest = (order2, initial_message2, pubkey.clone(), peer.clone()).into();
 
-    insert_or_update_order_impl(
-        &mut orderbook,
-        price_ping_request1.clone(),
-        price_ping_request1.uuid.unwrap().clone(),
-    );
-    insert_or_update_order_impl(
-        &mut orderbook,
-        price_ping_request2.clone(),
-        price_ping_request2.uuid.unwrap().clone(),
-    );
+    orderbook.insert_or_update_order(price_ping_request1.uuid.unwrap().clone(), price_ping_request1.clone());
+    orderbook.insert_or_update_order(price_ping_request2.uuid.unwrap().clone(), price_ping_request2.clone());
 
     // avoid dead lock on orderbook as process_get_orderbook_request also acquires it
     drop(orderbook);
@@ -1541,7 +1533,7 @@ fn test_process_order_keep_alive_requested_from_peer() {
 
     let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
     // try to find the order within OrdermatchContext::orderbook and check if this order equals to the expected
-    let actual = find_order_by_uuid_and_pubkey(&mut orderbook, &uuid, &pubkey).unwrap();
+    let actual = orderbook.find_order_by_uuid_and_pubkey(&uuid, &pubkey).unwrap();
     let expected: PricePingRequest = (order, initial_order_message, pubkey, peer).into();
 
     // the exepcted.timestamp may be greater than actual.timestamp because of two now_ms() calls
