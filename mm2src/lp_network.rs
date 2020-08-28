@@ -41,7 +41,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
-use mm2_libp2p::atomicdex_behaviour::{AdexResponseChannel, ResponseOnRequestAnyPeer, ResponsesOnRequestPeers};
+use mm2_libp2p::atomicdex_behaviour::{AdexResponseChannel, ResponseOnRequestAnyRelay, ResponsesOnRequestRelays};
 use serde::de;
 
 #[derive(Eq, Debug, Deserialize, PartialEq, Serialize)]
@@ -174,7 +174,7 @@ pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<
 }
 
 #[cfg(feature = "native")]
-pub async fn request_any_peer<T: de::DeserializeOwned>(
+pub async fn request_any_relay<T: de::DeserializeOwned>(
     ctx: MmArc,
     req: P2PRequest,
 ) -> Result<Option<(T, PeerId, PublicKey)>, String> {
@@ -184,12 +184,12 @@ pub async fn request_any_peer<T: de::DeserializeOwned>(
 
     let (response_tx, response_rx) = oneshot::channel();
     let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
-    let cmd = AdexBehaviourCmd::RequestAnyPeer {
+    let cmd = AdexBehaviourCmd::RequestAnyRelay {
         req: encoded,
         response_tx,
     };
     tx.send(cmd).await.unwrap();
-    let ResponseOnRequestAnyPeer { response } = try_s!(response_rx.await);
+    let ResponseOnRequestAnyRelay { response } = try_s!(response_rx.await);
     match response {
         Some((from_peer, response)) => {
             let (response, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
@@ -199,39 +199,39 @@ pub async fn request_any_peer<T: de::DeserializeOwned>(
     }
 }
 
-pub enum PeerDecodedResponse<T> {
+pub enum RelayDecodedResponse<T> {
     Ok((T, PublicKey)),
     None,
     Err(String),
 }
 
 #[cfg(feature = "native")]
-pub async fn request_peers<T: de::DeserializeOwned>(
+pub async fn request_relays<T: de::DeserializeOwned>(
     ctx: MmArc,
     req: P2PRequest,
-) -> Result<Vec<(PeerId, PeerDecodedResponse<T>)>, String> {
+) -> Result<Vec<(PeerId, RelayDecodedResponse<T>)>, String> {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let secret = &*key_pair.private().secret;
     let encoded = try_s!(encode_and_sign(&req, secret));
 
     let (response_tx, response_rx) = oneshot::channel();
     let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
-    let cmd = AdexBehaviourCmd::RequestPeers {
+    let cmd = AdexBehaviourCmd::RequestRelays {
         req: encoded,
         response_tx,
     };
     tx.send(cmd).await.unwrap();
-    let ResponsesOnRequestPeers { responses } = try_s!(response_rx.await);
+    let ResponsesOnRequestRelays { responses } = try_s!(response_rx.await);
     Ok(responses
         .into_iter()
         .map(|(peer_id, res)| {
             let res = match res {
                 AdexResponse::Ok { response } => match decode_signed::<T>(&response) {
-                    Ok((res, _sig, pubkey)) => PeerDecodedResponse::Ok((res, pubkey)),
-                    Err(e) => PeerDecodedResponse::Err(ERRL!("{}", e)),
+                    Ok((res, _sig, pubkey)) => RelayDecodedResponse::Ok((res, pubkey)),
+                    Err(e) => RelayDecodedResponse::Err(ERRL!("{}", e)),
                 },
-                AdexResponse::None => PeerDecodedResponse::None,
-                AdexResponse::Err { error } => PeerDecodedResponse::Err(error),
+                AdexResponse::None => RelayDecodedResponse::None,
+                AdexResponse::Err { error } => RelayDecodedResponse::Err(error),
             };
             (peer_id, res)
         })

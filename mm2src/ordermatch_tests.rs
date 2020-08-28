@@ -6,8 +6,8 @@ use common::{executor::spawn,
              privkey::key_pair_from_seed};
 use futures::channel::mpsc;
 use futures::StreamExt;
-use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse, ResponseOnRequestAnyPeer,
-                                      ResponsesOnRequestPeers};
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse, ResponseOnRequestAnyRelay,
+                                      ResponsesOnRequestRelays};
 use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
 use rand::Rng;
@@ -1557,7 +1557,7 @@ fn test_request_and_fill_orderbook() {
 
     spawn(async move {
         let cmd = cmd_rx.next().await.unwrap();
-        let (req, response_tx) = if let AdexBehaviourCmd::RequestPeers { req, response_tx } = cmd {
+        let (req, response_tx) = if let AdexBehaviourCmd::RequestRelays { req, response_tx } = cmd {
             (req, response_tx)
         } else {
             panic!("Unexpected cmd");
@@ -1590,7 +1590,7 @@ fn test_request_and_fill_orderbook() {
         responses.push((peer2, response));
 
         // send the responses through the response channel
-        response_tx.send(ResponsesOnRequestPeers { responses }).unwrap();
+        response_tx.send(ResponsesOnRequestRelays { responses }).unwrap();
     });
 
     block_on(request_and_fill_orderbook(&ctx, "RICK", "MORTY", Some(3), None)).unwrap();
@@ -1668,7 +1668,7 @@ fn test_process_order_keep_alive_requested_from_peer() {
     let initial_message = initial_order_message.clone();
     spawn(async move {
         let cmd = cmd_rx.next().await.unwrap();
-        let (req, response_tx) = if let AdexBehaviourCmd::RequestAnyPeer { req, response_tx } = cmd {
+        let (req, response_tx) = if let AdexBehaviourCmd::RequestAnyRelay { req, response_tx } = cmd {
             (req, response_tx)
         } else {
             panic!("Unexpected cmd");
@@ -1688,7 +1688,7 @@ fn test_process_order_keep_alive_requested_from_peer() {
         let encoded = encode_and_sign(&response, &secret).unwrap();
         // send the encoded response through the response channel
         response_tx
-            .send(ResponseOnRequestAnyPeer {
+            .send(ResponseOnRequestAnyRelay {
                 response: Some((PeerId::random(), encoded)),
             })
             .unwrap();

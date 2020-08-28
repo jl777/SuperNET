@@ -48,8 +48,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_peer, request_peers, send_msgs_to_peers,
-                              subscribe_to_topic, P2PRequest, PeerDecodedResponse},
+use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_relay, request_relays, send_msgs_to_peers,
+                              subscribe_to_topic, P2PRequest, RelayDecodedResponse},
                  lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
@@ -128,7 +128,7 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
     let new_protocol::OrderInitialMessage {
         initial_message,
         from_peer,
-    } = match try_s!(request_any_peer(ctx, req).await) {
+    } = match try_s!(request_any_relay(ctx, req).await) {
         Some((response, _from_peer, _pubkey)) => response,
         None => return Ok(None),
     };
@@ -176,18 +176,18 @@ async fn request_and_fill_orderbook(
     };
 
     let responses =
-        try_s!(request_peers::<new_protocol::Orderbook>(ctx.clone(), P2PRequest::Ordermatch(get_orderbook)).await);
+        try_s!(request_relays::<new_protocol::Orderbook>(ctx.clone(), P2PRequest::Ordermatch(get_orderbook)).await);
 
     let mut asks = Vec::new();
     let mut bids = Vec::new();
     for (peer_id, peer_response) in responses {
         match peer_response {
-            PeerDecodedResponse::Ok((orderbook, _pubkey)) => {
+            RelayDecodedResponse::Ok((orderbook, _pubkey)) => {
                 asks.extend(process_initial_messages(orderbook.asks));
                 bids.extend(process_initial_messages(orderbook.bids));
             },
-            PeerDecodedResponse::None => (),
-            PeerDecodedResponse::Err(e) => log!("Received error from peer " [peer_id] ": " [e]),
+            RelayDecodedResponse::None => (),
+            RelayDecodedResponse::Err(e) => log!("Received error from peer " [peer_id] ": " [e]),
         }
     }
 

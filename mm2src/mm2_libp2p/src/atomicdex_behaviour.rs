@@ -96,15 +96,15 @@ pub enum AdexBehaviourCmd {
         msgs: Vec<(String, Vec<u8>)>,
         peers: Vec<String>,
     },
-    /// Request peers sequential until a response is received.
-    /// Note the request will be sent to relays only because they subscribe on all topics.
-    RequestAnyPeer {
+    /// Request relays sequential until a response is received.
+    RequestAnyRelay {
         req: Vec<u8>,
-        response_tx: oneshot::Sender<ResponseOnRequestAnyPeer>,
+        response_tx: oneshot::Sender<ResponseOnRequestAnyRelay>,
     },
-    RequestPeers {
+    /// Request relays and collect all their responses.
+    RequestRelays {
         req: Vec<u8>,
-        response_tx: oneshot::Sender<ResponsesOnRequestPeers>,
+        response_tx: oneshot::Sender<ResponsesOnRequestRelays>,
     },
     /// Send a response using a `response_channel`.
     SendResponse {
@@ -161,12 +161,12 @@ impl From<AdexResponse> for PeerResponse {
 }
 
 #[derive(Debug)]
-pub struct ResponseOnRequestAnyPeer {
+pub struct ResponseOnRequestAnyRelay {
     pub response: Option<(PeerId, Vec<u8>)>,
 }
 
 #[derive(Debug)]
-pub struct ResponsesOnRequestPeers {
+pub struct ResponsesOnRequestRelays {
     pub responses: Vec<(PeerId, AdexResponse)>,
 }
 
@@ -298,15 +298,15 @@ impl AtomicDexBehaviour {
 
                 self.gossipsub.send_messages_to_peers(msgs, peer_ids);
             },
-            AdexBehaviourCmd::RequestAnyPeer { req, response_tx } => {
+            AdexBehaviourCmd::RequestAnyRelay { req, response_tx } => {
                 let relays = self.gossipsub.get_mesh_relays();
                 // spawn the `request_any_peer` future
                 let future = request_any_peer(relays, req, self.request_response.sender(), response_tx);
                 self.spawn(future);
             },
-            AdexBehaviourCmd::RequestPeers { req, response_tx } => {
+            AdexBehaviourCmd::RequestRelays { req, response_tx } => {
                 let relays = self.gossipsub.get_mesh_relays();
-                // spawn the `request_any_peer` future
+                // spawn the `request_peers` future
                 let future = request_peers(relays, req, self.request_response.sender(), response_tx);
                 self.spawn(future);
             },
@@ -558,13 +558,13 @@ async fn request_any_peer(
     peers: Vec<PeerId>,
     request_data: Vec<u8>,
     request_response_tx: RequestResponseSender,
-    response_tx: oneshot::Sender<ResponseOnRequestAnyPeer>,
+    response_tx: oneshot::Sender<ResponseOnRequestAnyRelay>,
 ) {
     debug!("start request_any_peer loop: peers {}", peers.len());
     for peer in peers {
         match request_one_peer(peer.clone(), request_data.clone(), request_response_tx.clone()).await {
             PeerResponse::Ok { res } => {
-                let response = ResponseOnRequestAnyPeer {
+                let response = ResponseOnRequestAnyRelay {
                     response: Some((peer.clone(), res)),
                 };
                 debug!("Received a response from peer {:?}, stop the request loop", peer);
@@ -583,17 +583,17 @@ async fn request_any_peer(
     }
 
     debug!("None of the peers responded to the request");
-    if response_tx.send(ResponseOnRequestAnyPeer { response: None }).is_err() {
+    if response_tx.send(ResponseOnRequestAnyRelay { response: None }).is_err() {
         error!("Response oneshot channel was closed");
     };
 }
 
-/// Request the peers sequential until a `PeerResponse::Ok()` will not be received.
+/// Request the peers and collect all their responses.
 async fn request_peers(
     peers: Vec<PeerId>,
     request_data: Vec<u8>,
     request_response_tx: RequestResponseSender,
-    response_tx: oneshot::Sender<ResponsesOnRequestPeers>,
+    response_tx: oneshot::Sender<ResponsesOnRequestRelays>,
 ) {
     debug!("start request_any_peer loop: peers {}", peers.len());
     let mut futures = Vec::with_capacity(peers.len());
@@ -615,7 +615,7 @@ async fn request_peers(
         })
         .collect();
 
-    if response_tx.send(ResponsesOnRequestPeers { responses }).is_err() {
+    if response_tx.send(ResponsesOnRequestRelays { responses }).is_err() {
         error!("Response oneshot channel was closed");
     };
 }

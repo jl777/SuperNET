@@ -1,5 +1,5 @@
 use super::start_gossipsub;
-use crate::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexResponse, ResponseOnRequestAnyPeer,
+use crate::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexResponse, ResponseOnRequestAnyRelay,
                                  ResponsesOnRequestPeers};
 use async_std::task::{block_on, spawn};
 use futures::channel::{mpsc, oneshot};
@@ -116,13 +116,13 @@ fn test_request_response_ok() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         node2
-            .send_cmd(AdexBehaviourCmd::RequestAnyPeer {
+            .send_cmd(AdexBehaviourCmd::RequestAnyRelay {
                 req: b"test request".to_vec(),
                 response_tx,
             })
             .await;
 
-        let ResponseOnRequestAnyPeer { response } = response_rx.await.unwrap();
+        let ResponseOnRequestAnyRelay { response } = response_rx.await.unwrap();
         assert_eq!(response, Some((node1.peer_id, b"test response".to_vec())));
     });
 
@@ -224,13 +224,13 @@ fn test_request_response_ok_three_peers() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         sender
-            .send_cmd(AdexBehaviourCmd::RequestAnyPeer {
+            .send_cmd(AdexBehaviourCmd::RequestAnyRelay {
                 req: b"test request".to_vec(),
                 response_tx,
             })
             .await;
 
-        let ResponseOnRequestAnyPeer { response } = response_rx.await.unwrap();
+        let ResponseOnRequestAnyRelay { response } = response_rx.await.unwrap();
         let (_peer_id, res) = response.unwrap();
         assert_eq!(res, b"success 3 request".to_vec());
     });
@@ -273,13 +273,13 @@ fn test_request_response_none() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         node2
-            .send_cmd(AdexBehaviourCmd::RequestAnyPeer {
+            .send_cmd(AdexBehaviourCmd::RequestAnyRelay {
                 req: b"test request".to_vec(),
                 response_tx,
             })
             .await;
 
-        let ResponseOnRequestAnyPeer { response } = response_rx.await.unwrap();
+        let ResponseOnRequestAnyRelay { response } = response_rx.await.unwrap();
         assert_eq!(response, None);
     });
 
