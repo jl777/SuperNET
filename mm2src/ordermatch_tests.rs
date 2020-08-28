@@ -6,9 +6,11 @@ use common::{executor::spawn,
              privkey::key_pair_from_seed};
 use futures::channel::mpsc;
 use futures::StreamExt;
-use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, ResponseOnRequestAnyPeer};
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse, ResponseOnRequestAnyPeer,
+                                      ResponsesOnRequestPeers};
 use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
+use rand::Rng;
 use std::collections::HashSet;
 
 #[test]
@@ -1346,7 +1348,42 @@ fn make_ctx_for_tests() -> (MmArc, String, [u8; 32]) {
     (ctx, pubkey, secret)
 }
 
-pub fn request_any_peer_mock() -> (
+fn make_random_orders(
+    pubkey: String,
+    secret: &[u8; 32],
+    peer_id: String,
+    base: String,
+    rel: String,
+    n: usize,
+) -> Vec<PricePingRequest> {
+    let mut rng = rand::thread_rng();
+    let mut orders = Vec::with_capacity(n);
+    for _i in 0..n {
+        let numer: u64 = rng.gen_range(2000, 10000000);
+        let order = new_protocol::MakerOrderCreated {
+            uuid: Uuid::new_v4().into(),
+            base: base.clone(),
+            rel: rel.clone(),
+            price: (numer, 1000000).into(),
+            max_volume: 1.into(),
+            min_volume: 0.into(),
+            conf_settings: OrderConfirmationsSettings::default(),
+        };
+
+        // create an initial_message and encode it with the secret
+        let initial_message = encode_and_sign(
+            &new_protocol::OrdermatchMessage::MakerOrderCreated(order.clone()),
+            &secret,
+        )
+        .unwrap();
+
+        orders.push((order, initial_message, pubkey.clone(), peer_id.clone()).into());
+    }
+
+    orders
+}
+
+fn p2p_context_mock() -> (
     mpsc::UnboundedSender<AdexBehaviourCmd>,
     mpsc::UnboundedReceiver<AdexBehaviourCmd>,
 ) {
@@ -1461,11 +1498,146 @@ fn test_process_get_orderbook_request() {
 }
 
 #[test]
+fn test_request_and_fill_orderbook() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let (_, mut cmd_rx) = p2p_context_mock();
+
+    let peer1 = PeerId::random();
+    let peer2 = PeerId::random();
+    let asks1 = make_random_orders(
+        pubkey.clone(),
+        &secret,
+        peer1.to_string(),
+        "RICK".into(),
+        "MORTY".into(),
+        2,
+    );
+    let asks2 = make_random_orders(
+        pubkey.clone(),
+        &secret,
+        peer2.to_string(),
+        "RICK".into(),
+        "MORTY".into(),
+        2,
+    );
+    let bids1 = make_random_orders(
+        pubkey.clone(),
+        &secret,
+        peer1.to_string(),
+        "MORTY".into(),
+        "RICK".into(),
+        2,
+    );
+    let bids2 = make_random_orders(
+        pubkey.clone(),
+        &secret,
+        peer2.to_string(),
+        "MORTY".into(),
+        "RICK".into(),
+        2,
+    );
+
+    let expected_request = P2PRequest::Ordermatch(OrdermatchRequest::GetOrderbook {
+        base: "RICK".into(),
+        rel: "MORTY".into(),
+        asks_num: Some(3),
+        bids_num: None,
+    });
+
+    let mut expected_asks = asks1.clone();
+    expected_asks.extend(asks2.clone().into_iter());
+    expected_asks.sort_by(|x, y| x.price.cmp(&y.price));
+    // must be the same as asks_num
+    expected_asks.truncate(3);
+
+    let mut expected_bids = bids1.clone();
+    expected_bids.extend(bids2.clone().into_iter());
+    expected_bids.sort_by(|x, y| y.price.cmp(&x.price));
+    // keep all of the bids, because bids_num is None
+
+    spawn(async move {
+        let cmd = cmd_rx.next().await.unwrap();
+        let (req, response_tx) = if let AdexBehaviourCmd::RequestPeers { req, response_tx } = cmd {
+            (req, response_tx)
+        } else {
+            panic!("Unexpected cmd");
+        };
+
+        // check if the received request is expected
+        let (actual, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        assert_eq!(actual, expected_request);
+
+        let mut responses = Vec::new();
+
+        // make, encode and push a response from peer1
+        let orderbook = new_protocol::Orderbook {
+            asks: asks1.into_iter().map(|ask| ask.into()).collect(),
+            bids: bids1.into_iter().map(|bid| bid.into()).collect(),
+        };
+        let encoded = encode_and_sign(&orderbook, &secret).unwrap();
+        let response = AdexResponse::Ok { response: encoded };
+
+        responses.push((peer1, response));
+
+        // make, encode and push a response from peer2
+        let orderbook = new_protocol::Orderbook {
+            asks: asks2.into_iter().map(|ask| ask.into()).collect(),
+            bids: bids2.into_iter().map(|bid| bid.into()).collect(),
+        };
+        let encoded = encode_and_sign(&orderbook, &secret).unwrap();
+        let response = AdexResponse::Ok { response: encoded };
+
+        responses.push((peer2, response));
+
+        // send the responses through the response channel
+        response_tx.send(ResponsesOnRequestPeers { responses }).unwrap();
+    });
+
+    block_on(request_and_fill_orderbook(ctx.clone(), "RICK", "MORTY", Some(3), None)).unwrap();
+
+    // check if the best asks and bids are in the orderbook
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    let asks: Vec<PricePingRequest> = orderbook
+        .ordered
+        .get(&("RICK".into(), "MORTY".into()))
+        .unwrap()
+        .iter()
+        // the best asks are with the lowest prices (from lowest to highest prices)
+        .map(|OrderedByPriceOrder { uuid, .. }| {
+            orderbook
+                .order_set
+                .get(uuid)
+                .expect("Orderbook::ordered contains an uuid that is not in Orderbook::order_set")
+                .clone()
+        })
+        .collect();
+    let bids: Vec<PricePingRequest> = orderbook
+        .ordered
+        .get(&("MORTY".into(), "RICK".into()))
+        .unwrap()
+        .iter()
+        // the best bids are with the highest prices (from highest to lowest prices)
+        .rev()
+        .map(|OrderedByPriceOrder { uuid, .. }| {
+            orderbook
+                .order_set
+                .get(uuid)
+                .expect("Orderbook::ordered contains an uuid that is not in Orderbook::order_set")
+                .clone()
+        })
+        .collect();
+
+    assert_eq!(asks, expected_asks);
+    assert_eq!(bids, expected_bids);
+}
+
+#[test]
 fn test_process_order_keep_alive_requested_from_peer() {
     let ordermatch_ctx = Arc::new(OrdermatchContext::default());
     let ordermatch_ctx_clone = ordermatch_ctx.clone();
     OrdermatchContext::from_ctx.mock_safe(move |_| MockResult::Return(Ok(ordermatch_ctx_clone.clone())));
-    let (_, mut cmd_rx) = request_any_peer_mock();
+    let (_, mut cmd_rx) = p2p_context_mock();
 
     let (ctx, pubkey, secret) = make_ctx_for_tests();
     let uuid = Uuid::new_v4();

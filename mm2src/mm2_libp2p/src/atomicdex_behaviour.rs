@@ -167,7 +167,7 @@ pub struct ResponseOnRequestAnyPeer {
 
 #[derive(Debug)]
 pub struct ResponsesOnRequestPeers {
-    responses: Vec<(PeerId, AdexResponse)>,
+    pub responses: Vec<(PeerId, AdexResponse)>,
 }
 
 /// The structure consists of GossipsubEvent and RequestResponse events.

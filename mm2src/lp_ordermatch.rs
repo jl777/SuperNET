@@ -48,7 +48,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_peer, send_msgs_to_peers, subscribe_to_topic, P2PRequest},
+use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_peer, request_peers, send_msgs_to_peers,
+                              subscribe_to_topic, P2PRequest, PeerDecodedResponse},
                  lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
@@ -136,16 +137,31 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
     Ok(Some(order))
 }
 
-struct AskOrders(Vec<PricePingRequest>);
-struct BidOrders(Vec<PricePingRequest>);
-
-async fn request_orderbook(
+async fn request_and_fill_orderbook(
     ctx: MmArc,
     base: &str,
     rel: &str,
     asks_num: Option<usize>,
     bids_num: Option<usize>,
-) -> Result<Option<(AskOrders, BidOrders)>, String> {
+) -> Result<(), String> {
+    // The function converts the given Vec<OrderInitialMessage> to Iter<Item = PricePingRequest>.
+    fn process_initial_messages(
+        initial_msgs: Vec<new_protocol::OrderInitialMessage>,
+    ) -> impl Iterator<Item = PricePingRequest> {
+        initial_msgs.into_iter().filter_map(
+            |new_protocol::OrderInitialMessage {
+                 initial_message,
+                 from_peer,
+             }| match PricePingRequest::from_initial_msg(initial_message, from_peer) {
+                Ok(order) => Some(order),
+                Err(e) => {
+                    log!("Error on parse PricePingRequest from initial message: "[e]);
+                    None
+                },
+            },
+        )
+    }
+
     let get_orderbook = OrdermatchRequest::GetOrderbook {
         base: base.to_string(),
         rel: rel.to_string(),
@@ -153,22 +169,46 @@ async fn request_orderbook(
         bids_num,
     };
 
-    let new_protocol::Orderbook { asks, bids } =
-        match try_s!(request_any_peer(ctx, P2PRequest::Ordermatch(get_orderbook)).await) {
-            Some((orderbook, _from_peer, _pubkey)) => orderbook,
-            None => return Ok(None),
-        };
+    let responses =
+        try_s!(request_peers::<new_protocol::Orderbook>(ctx.clone(), P2PRequest::Ordermatch(get_orderbook)).await);
 
-    let asks = try_s!(asks
-        .into_iter()
-        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer))
-        .collect());
-    let bids = try_s!(bids
-        .into_iter()
-        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer))
-        .collect());
+    let mut asks = Vec::new();
+    let mut bids = Vec::new();
+    for (peer_id, peer_response) in responses {
+        match peer_response {
+            PeerDecodedResponse::Ok((orderbook, _pubkey)) => {
+                asks.extend(process_initial_messages(orderbook.asks));
+                bids.extend(process_initial_messages(orderbook.bids));
+            },
+            PeerDecodedResponse::None => (),
+            PeerDecodedResponse::Err(e) => log!("Received error from peer " [peer_id] ": " [e]),
+        }
+    }
 
-    Ok(Some((AskOrders(asks), BidOrders(bids))))
+    // the best asks are with the lowest prices (from lowest to highest prices)
+    asks.sort_by(|x, y| x.price.cmp(&y.price));
+    if let Some(n) = asks_num {
+        // truncate excess asks
+        asks.truncate(n)
+    }
+    // the best bids are with the highest prices (from highest to lowest prices)
+    bids.sort_by(|x, y| y.price.cmp(&x.price));
+    if let Some(n) = bids_num {
+        // truncate excess bids
+        bids.truncate(n)
+    }
+
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let mut orderbook = ordermatch_ctx.orderbook.lock().await;
+
+    for ask in asks {
+        orderbook.insert_or_update_order(ask.uuid.clone().unwrap(), ask);
+    }
+    for bid in bids {
+        orderbook.insert_or_update_order(bid.uuid.clone().unwrap(), bid);
+    }
+
+    Ok(())
 }
 
 async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive, order: &MakerOrder) {
@@ -325,12 +365,7 @@ async fn process_get_order_request(ctx: MmArc, uuid: Uuid, from_pubkey: String) 
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     match orderbook.find_order_by_uuid_and_pubkey(&uuid, &from_pubkey) {
         Some(order) => {
-            let initial_message = order.initial_message.clone();
-            let from_peer = order.peer_id.clone();
-            let response = new_protocol::OrderInitialMessage {
-                initial_message,
-                from_peer,
-            };
+            let response :new_protocol::OrderInitialMessage=  order.clone().into();
             let encoded = try_s!(encode_and_sign(&response, secret));
             Ok(Some(encoded))
         },
@@ -3034,7 +3069,7 @@ fn choose_taker_confs_and_notas(
 }
 
 mod new_protocol {
-    use super::{MatchBy as SuperMatchBy, TakerAction};
+    use super::{MatchBy as SuperMatchBy, PricePingRequest, TakerAction};
     use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
     use common::mm_number::MmNumber;
     use compact_uuid::CompactUuid;
@@ -3060,6 +3095,15 @@ mod new_protocol {
     pub struct OrderInitialMessage {
         pub initial_message: Vec<u8>,
         pub from_peer: String,
+    }
+
+    impl From<PricePingRequest> for OrderInitialMessage {
+        fn from(order: PricePingRequest) -> Self {
+            OrderInitialMessage {
+                initial_message: order.initial_message,
+                from_peer: order.peer_id,
+            }
+        }
     }
 
     #[derive(Debug, Deserialize, Serialize)]
