@@ -191,15 +191,15 @@ async fn request_and_fill_orderbook(
         }
     }
 
-    // the best asks are with the lowest prices (from lowest to highest prices)
-    asks.sort_by(|x, y| x.price.cmp(&y.price));
     if let Some(n) = asks_num {
+        // the best asks are with the lowest prices (from lowest to highest prices)
+        asks.sort_by(|x, y| x.price.cmp(&y.price));
         // truncate excess asks
         asks.truncate(n)
     }
-    // the best bids are with the highest prices (from highest to lowest prices)
-    bids.sort_by(|x, y| y.price.cmp(&x.price));
     if let Some(n) = bids_num {
+        // the best bids are with the highest prices (from highest to lowest prices)
+        bids.sort_by(|x, y| y.price.cmp(&x.price));
         // truncate excess bids
         bids.truncate(n)
     }
@@ -2802,10 +2802,8 @@ async fn subscribe_to_orderbook_topic(ctx: &MmArc, base: &str, rel: &str) -> Res
         let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(ctx));
         let mut topics_subscribed_to = ordermatch_ctx.topics_subscribed_to.lock().await;
 
-        let is_subscribed = topics_subscribed_to.contains(&topic);
-        // insert the topic to the container because we will subscribe to this below
-        topics_subscribed_to.insert(topic.clone());
-        is_subscribed
+        // if we are subscribed to the topic already, this action will return true, else false
+        !topics_subscribed_to.insert(topic.clone())
     };
 
     if !is_subscribed {
