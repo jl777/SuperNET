@@ -1,6 +1,6 @@
 use super::start_gossipsub;
 use crate::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexResponse, ResponseOnRequestAnyRelay,
-                                 ResponsesOnRequestPeers};
+                                 ResponsesOnRequestRelays};
 use async_std::task::{block_on, spawn};
 use futures::channel::{mpsc, oneshot};
 use futures::{Future, SinkExt, StreamExt};
@@ -364,7 +364,7 @@ fn test_request_peers_ok_three_peers() {
     let (response_tx, response_rx) = oneshot::channel();
     block_on(async move {
         sender
-            .send_cmd(AdexBehaviourCmd::RequestPeers {
+            .send_cmd(AdexBehaviourCmd::RequestRelays {
                 req: b"test request".to_vec(),
                 response_tx,
             })
@@ -381,7 +381,7 @@ fn test_request_peers_ok_three_peers() {
         ];
         expected.sort_by(|x, y| x.0.cmp(&y.0));
 
-        let ResponsesOnRequestPeers { mut responses } = response_rx.await.unwrap();
+        let ResponsesOnRequestRelays { mut responses } = response_rx.await.unwrap();
         responses.sort_by(|x, y| x.0.cmp(&y.0));
         assert_eq!(responses, expected);
     });

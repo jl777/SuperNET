@@ -624,10 +624,10 @@ async fn request_one_peer(peer: PeerId, req: Vec<u8>, mut request_response_tx: R
     // Use the internal receiver to receive a response to this request.
     let (internal_response_tx, internal_response_rx) = oneshot::channel();
     let request = PeerRequest { req };
-    assert!(request_response_tx
+    request_response_tx
         .send((peer.clone(), request, internal_response_tx))
         .await
-        .is_ok());
+        .unwrap();
 
     match internal_response_rx.await {
         Ok(response) => response,

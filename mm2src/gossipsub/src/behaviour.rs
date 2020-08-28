@@ -1041,8 +1041,7 @@ impl Gossipsub {
     }
 
     pub fn get_mesh_relays(&self) -> Vec<PeerId> {
-        // get all relays
-        Self::get_random_relays(&self.relayers_mesh, self.relayers_mesh.len(), |_| true)
+        self.relayers_mesh.iter().cloned().collect()
     }
 
     pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
