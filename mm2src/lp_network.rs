@@ -77,13 +77,6 @@ pub async fn p2p_event_process_loop(ctx: MmArc, mut rx: AdexEventRx, i_am_relaye
             Some(AdexBehaviourEvent::Message(peer_id, message_id, message)) => {
                 process_p2p_message(ctx.clone(), peer_id, message_id, message, i_am_relayer).await
             },
-            /*
-            Some(AdexBehaviourEvent::Subscribed { peer_id, topic }) => {
-                if i_am_relayer {
-                    lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
-                }
-            },
-            */
             Some(AdexBehaviourEvent::PeerRequest {
                 peer_id,
                 request,
@@ -159,6 +152,11 @@ pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
     });
 }
 
+/// Subscribe to the given `topic`.
+///
+/// # Safety
+///
+/// The function locks the [`MmCtx::p2p_ctx`] mutext.
 #[cfg(feature = "native")]
 pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();

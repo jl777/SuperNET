@@ -1593,7 +1593,7 @@ fn test_request_and_fill_orderbook() {
         response_tx.send(ResponsesOnRequestPeers { responses }).unwrap();
     });
 
-    block_on(request_and_fill_orderbook(ctx.clone(), "RICK", "MORTY", Some(3), None)).unwrap();
+    block_on(request_and_fill_orderbook(&ctx, "RICK", "MORTY", Some(3), None)).unwrap();
 
     // check if the best asks and bids are in the orderbook
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();

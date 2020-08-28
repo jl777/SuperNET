@@ -137,8 +137,14 @@ async fn request_order(ctx: MmArc, uuid: Uuid, from_pubkey: &str) -> Result<Opti
     Ok(Some(order))
 }
 
+/// Request best asks and bids for the given `base` and `rel` coins from relays.
+/// Set `asks_num` and/or `bids_num` to get corresponding number of best asks and bids or None to get all of the available orders.
+///
+/// # Safety
+///
+/// The function locks [`MmCtx::p2p_ctx`] and [`MmCtx::ordermatch_ctx`]
 async fn request_and_fill_orderbook(
-    ctx: MmArc,
+    ctx: &MmArc,
     base: &str,
     rel: &str,
     asks_num: Option<usize>,
@@ -365,7 +371,7 @@ async fn process_get_order_request(ctx: MmArc, uuid: Uuid, from_pubkey: String) 
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
     match orderbook.find_order_by_uuid_and_pubkey(&uuid, &from_pubkey) {
         Some(order) => {
-            let response :new_protocol::OrderInitialMessage=  order.clone().into();
+            let response: new_protocol::OrderInitialMessage = order.clone().into();
             let encoded = try_s!(encode_and_sign(&response, secret));
             Ok(Some(encoded))
         },
@@ -1458,6 +1464,7 @@ struct OrdermatchContext {
     pub my_cancelled_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     pub orderbook: AsyncMutex<Orderbook>,
     pub inactive_orders: AsyncMutex<HashMap<Uuid, PricePingRequest>>,
+    pub topics_subscribed_to: AsyncMutex<HashSet<String>>,
 }
 
 #[cfg_attr(test, mockable)]
@@ -2033,8 +2040,7 @@ pub async fn lp_auto_buy(
         Some("sell") => TakerAction::Sell,
         _ => return ERR!("Auto buy must be called only from buy/sell RPC methods"),
     };
-    let topic = orderbook_topic(&input.base, &input.rel);
-    subscribe_to_topic(ctx, topic.clone()).await;
+    try_s!(subscribe_to_orderbook_topic(&ctx, &input.base, &input.rel).await);
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_taker_orders = ordermatch_ctx.my_taker_orders.lock().await;
     let our_public_id = try_s!(ctx.public_id());
@@ -2046,8 +2052,8 @@ pub async fn lp_auto_buy(
         rel_nota: input.rel_nota.unwrap_or_else(|| rel_coin.requires_notarization()),
     };
     let request_builder = TakerRequestBuilder::default()
-        .with_base_coin(input.base)
-        .with_rel_coin(input.rel)
+        .with_base_coin(input.base.clone())
+        .with_rel_coin(input.rel.clone())
         .with_base_amount(input.volume)
         .with_rel_amount(rel_volume)
         .with_action(action)
@@ -2055,7 +2061,7 @@ pub async fn lp_auto_buy(
         .with_conf_settings(conf_settings)
         .with_sender_pubkey(H256Json::from(our_public_id.bytes));
     let request = try_s!(request_builder.build());
-    broadcast_ordermatch_message(&ctx, topic, request.clone());
+    broadcast_ordermatch_message(&ctx, orderbook_topic(&input.base, &input.rel), request.clone());
     let result = json!({ "result": request }).to_string();
     let order = TakerOrder {
         created_at: now_ms(),
@@ -2275,7 +2281,6 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     };
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
 
-    let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let conf_settings = OrderConfirmationsSettings {
         base_confs: req.base_confs.unwrap_or_else(|| base_coin.required_confirmations()),
         base_nota: req.base_nota.unwrap_or_else(|| base_coin.requires_notarization()),
@@ -2290,8 +2295,10 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         .with_conf_settings(conf_settings);
 
     let new_order = try_s!(builder.build());
-    subscribe_to_topic(&ctx, orderbook_topic(&new_order.base, &new_order.rel)).await;
+    try_s!(subscribe_to_orderbook_topic(&ctx, &new_order.base, &new_order.rel).await);
     maker_order_created_p2p_notify(ctx.clone(), &new_order).await;
+
+    let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_orders = ordermatch_ctx.my_maker_orders.lock().await;
     if req.cancel_previous {
         let mut cancelled = vec![];
@@ -2781,6 +2788,34 @@ pub async fn cancel_all_orders(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>
         .map_err(|e| ERRL!("{}", e))
 }
 
+/// Subscribe to an orderbook topic (see [`orderbook_topic`]) and request and fill orderbook for the given pair of coins.
+///
+/// # Safety
+///
+/// The function locks [`MmCtx::p2p_ctx`] and [`MmCtx::ordermatch_ctx`]
+async fn subscribe_to_orderbook_topic(ctx: &MmArc, base: &str, rel: &str) -> Result<(), String> {
+    const ASKS_NUMBER: Option<usize> = Some(20);
+    const BIDS_NUMBER: Option<usize> = Some(20);
+
+    let topic = orderbook_topic(base, rel);
+    let is_subscribed = {
+        let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(ctx));
+        let mut topics_subscribed_to = ordermatch_ctx.topics_subscribed_to.lock().await;
+
+        let is_subscribed = topics_subscribed_to.contains(&topic);
+        // insert the topic to the container because we will subscribe to this below
+        topics_subscribed_to.insert(topic.clone());
+        is_subscribed
+    };
+
+    if !is_subscribed {
+        subscribe_to_topic(&ctx, topic).await;
+        try_s!(request_and_fill_orderbook(&ctx, base, rel, ASKS_NUMBER, BIDS_NUMBER).await);
+    }
+
+    Ok(())
+}
+
 #[derive(Serialize)]
 pub struct OrderbookEntry {
     coin: String,
@@ -2832,8 +2867,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &req.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
-    subscribe_to_topic(&ctx, orderbook_topic(&req.base, &req.rel)).await;
-    Timer::sleep(3.).await;
+    try_s!(subscribe_to_orderbook_topic(&ctx, &req.base, &req.rel).await);
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = ordermatch_ctx.orderbook.lock().await;
     let my_pubsecp = hex::encode(&**ctx.secp256k1_key_pair().public());
