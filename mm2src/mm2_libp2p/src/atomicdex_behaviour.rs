@@ -99,12 +99,12 @@ pub enum AdexBehaviourCmd {
     /// Request relays sequential until a response is received.
     RequestAnyRelay {
         req: Vec<u8>,
-        response_tx: oneshot::Sender<ResponseOnRequestAnyRelay>,
+        response_tx: oneshot::Sender<Option<(PeerId, Vec<u8>)>>,
     },
     /// Request relays and collect all their responses.
     RequestRelays {
         req: Vec<u8>,
-        response_tx: oneshot::Sender<ResponsesOnRequestRelays>,
+        response_tx: oneshot::Sender<Vec<(PeerId, AdexResponse)>>,
     },
     /// Send a response using a `response_channel`.
     SendResponse {
@@ -158,16 +158,6 @@ impl From<AdexResponse> for PeerResponse {
             AdexResponse::Err { error } => PeerResponse::Err { err: error },
         }
     }
-}
-
-#[derive(Debug)]
-pub struct ResponseOnRequestAnyRelay {
-    pub response: Option<(PeerId, Vec<u8>)>,
-}
-
-#[derive(Debug)]
-pub struct ResponsesOnRequestRelays {
-    pub responses: Vec<(PeerId, AdexResponse)>,
 }
 
 /// The structure consists of GossipsubEvent and RequestResponse events.
@@ -558,17 +548,14 @@ async fn request_any_peer(
     peers: Vec<PeerId>,
     request_data: Vec<u8>,
     request_response_tx: RequestResponseSender,
-    response_tx: oneshot::Sender<ResponseOnRequestAnyRelay>,
+    response_tx: oneshot::Sender<Option<(PeerId, Vec<u8>)>>,
 ) {
     debug!("start request_any_peer loop: peers {}", peers.len());
     for peer in peers {
         match request_one_peer(peer.clone(), request_data.clone(), request_response_tx.clone()).await {
             PeerResponse::Ok { res } => {
-                let response = ResponseOnRequestAnyRelay {
-                    response: Some((peer.clone(), res)),
-                };
                 debug!("Received a response from peer {:?}, stop the request loop", peer);
-                if response_tx.send(response).is_err() {
+                if response_tx.send(Some((peer, res))).is_err() {
                     error!("Response oneshot channel was closed");
                 }
                 return;
@@ -583,7 +570,7 @@ async fn request_any_peer(
     }
 
     debug!("None of the peers responded to the request");
-    if response_tx.send(ResponseOnRequestAnyRelay { response: None }).is_err() {
+    if response_tx.send(None).is_err() {
         error!("Response oneshot channel was closed");
     };
 }
@@ -593,7 +580,7 @@ async fn request_peers(
     peers: Vec<PeerId>,
     request_data: Vec<u8>,
     request_response_tx: RequestResponseSender,
-    response_tx: oneshot::Sender<ResponsesOnRequestRelays>,
+    response_tx: oneshot::Sender<Vec<(PeerId, AdexResponse)>>,
 ) {
     debug!("start request_any_peer loop: peers {}", peers.len());
     let mut futures = Vec::with_capacity(peers.len());
@@ -615,7 +602,7 @@ async fn request_peers(
         })
         .collect();
 
-    if response_tx.send(ResponsesOnRequestRelays { responses }).is_err() {
+    if response_tx.send(responses).is_err() {
         error!("Response oneshot channel was closed");
     };
 }

@@ -6,8 +6,7 @@ use common::{executor::spawn,
              privkey::key_pair_from_seed};
 use futures::channel::mpsc;
 use futures::StreamExt;
-use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse, ResponseOnRequestAnyRelay,
-                                      ResponsesOnRequestRelays};
+use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse};
 use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
 use rand::Rng;
@@ -1590,7 +1589,7 @@ fn test_request_and_fill_orderbook() {
         responses.push((peer2, response));
 
         // send the responses through the response channel
-        response_tx.send(ResponsesOnRequestRelays { responses }).unwrap();
+        response_tx.send(responses).unwrap();
     });
 
     block_on(request_and_fill_orderbook(&ctx, "RICK", "MORTY", Some(3), None)).unwrap();
@@ -1687,11 +1686,7 @@ fn test_process_order_keep_alive_requested_from_peer() {
         // encode the response with the secret
         let encoded = encode_and_sign(&response, &secret).unwrap();
         // send the encoded response through the response channel
-        response_tx
-            .send(ResponseOnRequestAnyRelay {
-                response: Some((PeerId::random(), encoded)),
-            })
-            .unwrap();
+        response_tx.send(Some((PeerId::random(), encoded))).unwrap();
     });
 
     let keep_alive = new_protocol::MakerOrderKeepAlive {
@@ -1744,9 +1739,7 @@ fn test_subscribe_to_ordermatch_topic_not_subscribed() {
             bids: Vec::new(),
         };
         let encoded = encode_and_sign(&response, &secret).unwrap();
-        let response = ResponsesOnRequestRelays {
-            responses: vec![(PeerId::random(), AdexResponse::Ok { response: encoded })],
-        };
+        let response = vec![(PeerId::random(), AdexResponse::Ok { response: encoded })];
         response_tx.send(response).unwrap();
     });
 
@@ -1796,9 +1789,7 @@ fn test_subscribe_to_ordermatch_topic_subscribed_not_filled() {
             bids: Vec::new(),
         };
         let encoded = encode_and_sign(&response, &secret).unwrap();
-        let response = ResponsesOnRequestRelays {
-            responses: vec![(PeerId::random(), AdexResponse::Ok { response: encoded })],
-        };
+        let response = vec![(PeerId::random(), AdexResponse::Ok { response: encoded })];
         response_tx.send(response).unwrap();
     });
 

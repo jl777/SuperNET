@@ -41,7 +41,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
-use mm2_libp2p::atomicdex_behaviour::{AdexResponseChannel, ResponseOnRequestAnyRelay, ResponsesOnRequestRelays};
+use mm2_libp2p::atomicdex_behaviour::AdexResponseChannel;
 use serde::de;
 
 #[derive(Eq, Debug, Deserialize, PartialEq, Serialize)]
@@ -189,8 +189,7 @@ pub async fn request_any_relay<T: de::DeserializeOwned>(
         response_tx,
     };
     tx.send(cmd).await.unwrap();
-    let ResponseOnRequestAnyRelay { response } = try_s!(response_rx.await);
-    match response {
+    match try_s!(response_rx.await) {
         Some((from_peer, response)) => {
             let (response, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
             Ok(Some((response, from_peer, pubkey)))
@@ -221,8 +220,7 @@ pub async fn request_relays<T: de::DeserializeOwned>(
         response_tx,
     };
     tx.send(cmd).await.unwrap();
-    let ResponsesOnRequestRelays { responses } = try_s!(response_rx.await);
-    Ok(responses
+    Ok(try_s!(response_rx.await)
         .into_iter()
         .map(|(peer_id, res)| {
             let res = match res {

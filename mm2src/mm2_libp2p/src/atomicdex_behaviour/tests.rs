@@ -1,6 +1,5 @@
 use super::start_gossipsub;
-use crate::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexResponse, ResponseOnRequestAnyRelay,
-                                 ResponsesOnRequestRelays};
+use crate::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexResponse};
 use async_std::task::{block_on, spawn};
 use futures::channel::{mpsc, oneshot};
 use futures::{Future, SinkExt, StreamExt};
@@ -122,7 +121,7 @@ fn test_request_response_ok() {
             })
             .await;
 
-        let ResponseOnRequestAnyRelay { response } = response_rx.await.unwrap();
+        let response = response_rx.await.unwrap();
         assert_eq!(response, Some((node1.peer_id, b"test response".to_vec())));
     });
 
@@ -230,8 +229,7 @@ fn test_request_response_ok_three_peers() {
             })
             .await;
 
-        let ResponseOnRequestAnyRelay { response } = response_rx.await.unwrap();
-        let (_peer_id, res) = response.unwrap();
+        let (_peer_id, res) = response_rx.await.unwrap().unwrap();
         assert_eq!(res, b"success 3 request".to_vec());
     });
 }
@@ -279,8 +277,7 @@ fn test_request_response_none() {
             })
             .await;
 
-        let ResponseOnRequestAnyRelay { response } = response_rx.await.unwrap();
-        assert_eq!(response, None);
+        assert_eq!(response_rx.await.unwrap(), None);
     });
 
     assert!(request_received.load(Ordering::Relaxed));
@@ -381,7 +378,7 @@ fn test_request_peers_ok_three_peers() {
         ];
         expected.sort_by(|x, y| x.0.cmp(&y.0));
 
-        let ResponsesOnRequestRelays { mut responses } = response_rx.await.unwrap();
+        let mut responses = response_rx.await.unwrap();
         responses.sort_by(|x, y| x.0.cmp(&y.0));
         assert_eq!(responses, expected);
     });
