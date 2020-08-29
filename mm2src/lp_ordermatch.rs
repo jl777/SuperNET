@@ -60,6 +60,7 @@ const MIN_ORDER_KEEP_ALIVE_INTERVAL: u64 = 20;
 const MAKER_ORDER_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 3;
 const TAKER_ORDER_TIMEOUT: u64 = 30;
 const ORDER_MATCH_TIMEOUT: u64 = 30;
+const ORDERBOOK_REQUESTING_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 2;
 
 impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PricePingRequest {
     fn from(tuple: (new_protocol::MakerOrderCreated, Vec<u8>, String, String)) -> PricePingRequest {
@@ -213,6 +214,10 @@ async fn request_and_fill_orderbook(
     for bid in bids {
         orderbook.insert_or_update_order(bid.uuid.clone().unwrap(), bid);
     }
+
+    orderbook
+        .topics_subscribed_to
+        .insert(orderbook_topic(base, rel), OrderbookRequestingState::Requested);
 
     Ok(())
 }
@@ -1379,6 +1384,14 @@ struct OrderedByPriceOrder {
     uuid: Uuid,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+enum OrderbookRequestingState {
+    /// The orderbook was requested from relays.
+    Requested,
+    /// We subscribed to a topic at `subscribed_at` time, but the orderbook was not requested.
+    NotRequested { subscribed_at: u64 },
+}
+
 #[derive(Default)]
 struct Orderbook {
     /// A map from (base, rel).
@@ -1386,6 +1399,7 @@ struct Orderbook {
     /// A map from (base, rel).
     unordered: HashMap<(String, String), HashSet<Uuid>>,
     order_set: HashMap<Uuid, PricePingRequest>,
+    topics_subscribed_to: HashMap<String, OrderbookRequestingState>,
 }
 
 impl Orderbook {
@@ -1464,7 +1478,6 @@ struct OrdermatchContext {
     pub my_cancelled_orders: AsyncMutex<HashMap<Uuid, MakerOrder>>,
     pub orderbook: AsyncMutex<Orderbook>,
     pub inactive_orders: AsyncMutex<HashMap<Uuid, PricePingRequest>>,
-    pub topics_subscribed_to: AsyncMutex<HashSet<String>>,
 }
 
 #[cfg_attr(test, mockable)]
@@ -2040,7 +2053,8 @@ pub async fn lp_auto_buy(
         Some("sell") => TakerAction::Sell,
         _ => return ERR!("Auto buy must be called only from buy/sell RPC methods"),
     };
-    try_s!(subscribe_to_orderbook_topic(&ctx, &input.base, &input.rel).await);
+    let request_orderbook = false;
+    try_s!(subscribe_to_orderbook_topic(&ctx, &input.base, &input.rel, request_orderbook).await);
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
     let mut my_taker_orders = ordermatch_ctx.my_taker_orders.lock().await;
     let our_public_id = try_s!(ctx.public_id());
@@ -2295,7 +2309,8 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         .with_conf_settings(conf_settings);
 
     let new_order = try_s!(builder.build());
-    try_s!(subscribe_to_orderbook_topic(&ctx, &new_order.base, &new_order.rel).await);
+    let request_orderbook = false;
+    try_s!(subscribe_to_orderbook_topic(&ctx, &new_order.base, &new_order.rel, request_orderbook).await);
     maker_order_created_p2p_notify(ctx.clone(), &new_order).await;
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(&ctx));
@@ -2788,26 +2803,60 @@ pub async fn cancel_all_orders(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>
         .map_err(|e| ERRL!("{}", e))
 }
 
-/// Subscribe to an orderbook topic (see [`orderbook_topic`]) and request and fill orderbook for the given pair of coins.
+/// Subscribe to an orderbook topic (see [`orderbook_topic`]).
+/// If the `request_orderbook` is true and the orderbook for the given pair of coins is not requested yet (or is not filled up yet),
+/// request and fill the orderbook.
 ///
 /// # Safety
 ///
 /// The function locks [`MmCtx::p2p_ctx`] and [`MmCtx::ordermatch_ctx`]
-async fn subscribe_to_orderbook_topic(ctx: &MmArc, base: &str, rel: &str) -> Result<(), String> {
+async fn subscribe_to_orderbook_topic(
+    ctx: &MmArc,
+    base: &str,
+    rel: &str,
+    request_orderbook: bool,
+) -> Result<(), String> {
     const ASKS_NUMBER: Option<usize> = Some(20);
     const BIDS_NUMBER: Option<usize> = Some(20);
 
+    let current_timestamp = now_ms() / 1000;
     let topic = orderbook_topic(base, rel);
-    let is_subscribed = {
-        let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(ctx));
-        let mut topics_subscribed_to = ordermatch_ctx.topics_subscribed_to.lock().await;
+    let is_orderbook_filled = {
+        let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(ctx));
+        let mut orderbook = ordermatch_ctx.orderbook.lock().await;
 
-        // if we are subscribed to the topic already, this action will return true, else false
-        !topics_subscribed_to.insert(topic.clone())
+        match orderbook.topics_subscribed_to.entry(topic.clone()) {
+            Entry::Vacant(e) => {
+                // we weren't subscribed to the topic yet
+                e.insert(OrderbookRequestingState::NotRequested {
+                    subscribed_at: current_timestamp,
+                });
+                subscribe_to_topic(&ctx, topic.clone()).await;
+                // orderbook is not filled
+                false
+            },
+            Entry::Occupied(e) => match e.get() {
+                OrderbookRequestingState::Requested => {
+                    // We is subscribed to the topic and the orderbook was requested already
+                    true
+                },
+                OrderbookRequestingState::NotRequested { subscribed_at }
+                    if *subscribed_at + ORDERBOOK_REQUESTING_TIMEOUT < current_timestamp =>
+                {
+                    // We is subscribed to the topic. Also we didn't request the orderbook,
+                    // but enough time has passed for the orderbook to fill by OrdermatchMessage::MakerOrderKeepAlive messages.
+                    true
+                }
+                OrderbookRequestingState::NotRequested { .. } => {
+                    // We is subscribed to the topic. Also we didn't request the orderbook,
+                    // and the orderbook has not filled up yet.
+                    false
+                },
+            },
+        }
     };
 
-    if !is_subscribed {
-        subscribe_to_topic(&ctx, topic).await;
+    if !is_orderbook_filled && request_orderbook {
         try_s!(request_and_fill_orderbook(&ctx, base, rel, ASKS_NUMBER, BIDS_NUMBER).await);
     }
 
@@ -2865,7 +2914,8 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &req.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
-    try_s!(subscribe_to_orderbook_topic(&ctx, &req.base, &req.rel).await);
+    let request_orderbook = true;
+    try_s!(subscribe_to_orderbook_topic(&ctx, &req.base, &req.rel, request_orderbook).await);
     let ordermatch_ctx: Arc<OrdermatchContext> = try_s!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = ordermatch_ctx.orderbook.lock().await;
     let my_pubsecp = hex::encode(&**ctx.secp256k1_key_pair().public());

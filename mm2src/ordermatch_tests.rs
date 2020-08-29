@@ -1716,3 +1716,136 @@ fn test_process_order_keep_alive_requested_from_peer() {
     actual.timestamp = expected.timestamp;
     assert_eq!(actual, &expected);
 }
+
+#[test]
+fn test_subscribe_to_ordermatch_topic_not_subscribed() {
+    let (ctx, _pubkey, secret) = make_ctx_for_tests();
+    let (_, mut cmd_rx) = p2p_context_mock();
+
+    spawn(async move {
+        match cmd_rx.next().await.unwrap() {
+            AdexBehaviourCmd::Subscribe { .. } => (),
+            _ => panic!("AdexBehaviourCmd::Subscribe expected first"),
+        }
+
+        let (req, response_tx) = match cmd_rx.next().await.unwrap() {
+            AdexBehaviourCmd::RequestRelays { req, response_tx } => (req, response_tx),
+            _ => panic!("AdexBehaviourCmd::RequestRelays expected"),
+        };
+
+        let (request, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        match request {
+            P2PRequest::Ordermatch(OrdermatchRequest::GetOrderbook { .. }) => (),
+            _ => panic!(),
+        }
+
+        let response = new_protocol::Orderbook {
+            asks: Vec::new(),
+            bids: Vec::new(),
+        };
+        let encoded = encode_and_sign(&response, &secret).unwrap();
+        let response = ResponsesOnRequestRelays {
+            responses: vec![(PeerId::random(), AdexResponse::Ok { response: encoded })],
+        };
+        response_tx.send(response).unwrap();
+    });
+
+    block_on(subscribe_to_orderbook_topic(&ctx, "RICK", "MORTY", true)).unwrap();
+
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+
+    let actual = orderbook
+        .topics_subscribed_to
+        .get(&orderbook_topic("RICK", "MORTY"))
+        .cloned();
+    let expected = Some(OrderbookRequestingState::Requested);
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_subscribe_to_ordermatch_topic_subscribed_not_filled() {
+    let (ctx, _pubkey, secret) = make_ctx_for_tests();
+    let (_, mut cmd_rx) = p2p_context_mock();
+
+    {
+        let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+        let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
+        // not enough time has passed for the orderbook to be filled
+        let subscribed_at = now_ms() / 1000 - ORDERBOOK_REQUESTING_TIMEOUT + 1;
+        orderbook.topics_subscribed_to.insert(
+            orderbook_topic("RICK", "MORTY"),
+            OrderbookRequestingState::NotRequested { subscribed_at },
+        );
+    }
+
+    spawn(async move {
+        let (req, response_tx) = match cmd_rx.next().await.unwrap() {
+            AdexBehaviourCmd::RequestRelays { req, response_tx } => (req, response_tx),
+            _ => panic!("AdexBehaviourCmd::RequestRelays expected"),
+        };
+
+        let (request, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        match request {
+            P2PRequest::Ordermatch(OrdermatchRequest::GetOrderbook { .. }) => (),
+            _ => panic!(),
+        }
+
+        let response = new_protocol::Orderbook {
+            asks: Vec::new(),
+            bids: Vec::new(),
+        };
+        let encoded = encode_and_sign(&response, &secret).unwrap();
+        let response = ResponsesOnRequestRelays {
+            responses: vec![(PeerId::random(), AdexResponse::Ok { response: encoded })],
+        };
+        response_tx.send(response).unwrap();
+    });
+
+    block_on(subscribe_to_orderbook_topic(&ctx, "RICK", "MORTY", true)).unwrap();
+
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+
+    let actual = orderbook
+        .topics_subscribed_to
+        .get(&orderbook_topic("RICK", "MORTY"))
+        .cloned();
+    let expected = Some(OrderbookRequestingState::Requested);
+    assert_eq!(actual, expected);
+
+    // orderbook.topics_subscribed_to.insert(orderbook_topic("RICK", "MORTY"), OrderbookSubscriptionState::NotRequested {subscribed_at: now_ms() - 41});
+}
+
+#[test]
+fn test_subscribe_to_ordermatch_topic_subscribed_filled() {
+    let (ctx, _pubkey, _secret) = make_ctx_for_tests();
+    let (_, mut cmd_rx) = p2p_context_mock();
+
+    // enough time has passed for the orderbook to be filled
+    let subscribed_at = now_ms() / 1000 - ORDERBOOK_REQUESTING_TIMEOUT - 1;
+    {
+        let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+        let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
+        orderbook.topics_subscribed_to.insert(
+            orderbook_topic("RICK", "MORTY"),
+            OrderbookRequestingState::NotRequested { subscribed_at },
+        );
+    }
+
+    spawn(async move {
+        assert!(cmd_rx.next().await.is_none(), "No commands expected");
+    });
+
+    block_on(subscribe_to_orderbook_topic(&ctx, "RICK", "MORTY", true)).unwrap();
+
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+
+    let actual = orderbook
+        .topics_subscribed_to
+        .get(&orderbook_topic("RICK", "MORTY"))
+        .cloned();
+    let expected = Some(OrderbookRequestingState::NotRequested { subscribed_at });
+    assert_eq!(actual, expected);
+}
