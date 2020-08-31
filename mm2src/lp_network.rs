@@ -165,15 +165,6 @@ pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
 }
 
 #[cfg(feature = "native")]
-pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<String>) {
-    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
-    spawn(async move {
-        let cmd = AdexBehaviourCmd::SendToPeers { msgs, peers };
-        tx.send(cmd).await.unwrap();
-    });
-}
-
-#[cfg(feature = "native")]
 pub async fn request_any_relay<T: de::DeserializeOwned>(
     ctx: MmArc,
     req: P2PRequest,

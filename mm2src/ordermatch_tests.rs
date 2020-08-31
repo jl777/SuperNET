@@ -1698,7 +1698,6 @@ fn test_process_order_keep_alive_requested_from_peer() {
     assert!(block_on(process_order_keep_alive(
         &ctx,
         &pubkey,
-        "orbk/RICK:MORTY",
         &keep_alive
     )));
 

@@ -48,8 +48,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_relay, request_relays, send_msgs_to_peers,
-                              subscribe_to_topic, P2PRequest, RelayDecodedResponse},
+use crate::mm2::{lp_network::{broadcast_p2p_msg, request_any_relay, request_relays, subscribe_to_topic, P2PRequest,
+                              RelayDecodedResponse},
                  lp_swap::{check_balance_for_maker_swap, check_balance_for_taker_swap, get_locked_amount,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
@@ -88,7 +88,6 @@ impl From<(new_protocol::MakerOrderCreated, Vec<u8>, String, String)> for PriceP
 async fn process_order_keep_alive(
     ctx: &MmArc,
     from_pubkey: &str,
-    topic: &str,
     keep_alive: &new_protocol::MakerOrderKeepAlive,
 ) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
@@ -115,8 +114,7 @@ async fn process_order_keep_alive(
         Err(e) => log!("Error on GetOrder request: "(e)),
     }
 
-    log!("try to broadcast the RepeatOrder");
-    broadcast_repeat_order(ctx, topic.into(), keep_alive.uuid.into());
+    log!("Skip the order " [uuid]);
     false
 }
 
@@ -257,25 +255,6 @@ async fn delete_order(ctx: &MmArc, pubkey: &str, uuid: Uuid) {
     orderbook.remove_order(uuid);
 }
 
-fn broadcast_repeat_order(ctx: &MmArc, topic: String, uuid: Uuid) {
-    let msg = new_protocol::OrdermatchMessage::RepeatOrder(new_protocol::RepeatOrder { uuid: uuid.into() });
-    broadcast_ordermatch_message(ctx, topic, msg);
-}
-
-async fn process_repeat_order(ctx: &MmArc, from_peer: String, uuid: Uuid) -> bool {
-    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-    let mut orderbook = ordermatch_ctx.orderbook.lock().await;
-    if let Some(order) = orderbook.find_order_by_uuid(&uuid) {
-        let peers = vec![from_peer];
-        let topic = orderbook_topic(&order.base, &order.rel);
-        let msg = order.initial_message.clone();
-        send_msgs_to_peers(ctx, vec![(topic, msg)], peers);
-        return false;
-    }
-
-    true
-}
-
 async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
@@ -283,7 +262,7 @@ async fn delete_my_order(ctx: &MmArc, uuid: Uuid) {
 }
 
 /// Attempts to decode a message and process it returning whether the message is valid and worth rebroadcasting
-pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg: &[u8]) -> bool {
+pub async fn process_msg(ctx: MmArc, _initial_topic: &str, from_peer: String, msg: &[u8]) -> bool {
     match decode_signed::<new_protocol::OrdermatchMessage>(msg) {
         Ok((message, _sig, pubkey)) => match message {
             new_protocol::OrdermatchMessage::MakerOrderCreated(created_msg) => {
@@ -299,7 +278,7 @@ pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg
                 true
             },
             new_protocol::OrdermatchMessage::MakerOrderKeepAlive(keep_alive) => {
-                process_order_keep_alive(&ctx, &pubkey.to_hex(), initial_topic, &keep_alive).await
+                process_order_keep_alive(&ctx, &pubkey.to_hex(), &keep_alive).await
             },
             new_protocol::OrdermatchMessage::TakerRequest(taker_request) => {
                 let msg = TakerRequest::from_new_proto_and_pubkey(taker_request, pubkey.unprefixed().into());
@@ -322,9 +301,6 @@ pub async fn process_msg(ctx: MmArc, initial_topic: &str, from_peer: String, msg
             new_protocol::OrdermatchMessage::MakerOrderCancelled(cancelled_msg) => {
                 delete_order(&ctx, &pubkey.to_hex(), cancelled_msg.uuid.into()).await;
                 true
-            },
-            new_protocol::OrdermatchMessage::RepeatOrder(repeat_order) => {
-                process_repeat_order(&ctx, from_peer, repeat_order.uuid.into()).await
             },
             _ => unimplemented!(),
         },
@@ -1707,7 +1683,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
         {
             // remove "timed out" orders from orderbook
             // ones that didn't receive an update for 30 seconds or more
-            // store them in inactive orders temporary to avoid RepeatOrder request to network in case we start
+            // store them in inactive orders temporary in order not to request them from relays in case we start
             // receiving keep alive again
             let mut orderbook = ordermatch_ctx.orderbook.lock().await;
             let mut inactive = ordermatch_ctx.inactive_orders.lock().await;
@@ -2837,18 +2813,18 @@ async fn subscribe_to_orderbook_topic(
             },
             Entry::Occupied(e) => match e.get() {
                 OrderbookRequestingState::Requested => {
-                    // We is subscribed to the topic and the orderbook was requested already
+                    // We are subscribed to the topic and the orderbook was requested already
                     true
                 },
                 OrderbookRequestingState::NotRequested { subscribed_at }
                     if *subscribed_at + ORDERBOOK_REQUESTING_TIMEOUT < current_timestamp =>
                 {
-                    // We is subscribed to the topic. Also we didn't request the orderbook,
+                    // We are subscribed to the topic. Also we didn't request the orderbook,
                     // but enough time has passed for the orderbook to fill by OrdermatchMessage::MakerOrderKeepAlive messages.
                     true
                 }
                 OrderbookRequestingState::NotRequested { .. } => {
-                    // We is subscribed to the topic. Also we didn't request the orderbook,
+                    // We are subscribed to the topic. Also we didn't request the orderbook,
                     // and the orderbook has not filled up yet.
                     false
                 },
@@ -3168,7 +3144,6 @@ mod new_protocol {
         MakerReserved(MakerReserved),
         TakerConnect(TakerConnect),
         MakerConnected(MakerConnected),
-        RepeatOrder(RepeatOrder),
     }
 
     /// Get an order using uuid and the order maker's pubkey.
@@ -3300,11 +3275,6 @@ mod new_protocol {
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct MakerOrderCancelled {
-        pub uuid: CompactUuid,
-    }
-
-    #[derive(Debug, Deserialize, Serialize)]
-    pub struct RepeatOrder {
         pub uuid: CompactUuid,
     }
 

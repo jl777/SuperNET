@@ -92,10 +92,6 @@ pub enum AdexBehaviourCmd {
         topic: String,
         msg: Vec<u8>,
     },
-    SendToPeers {
-        msgs: Vec<(String, Vec<u8>)>,
-        peers: Vec<String>,
-    },
     /// Request relays sequential until a response is received.
     RequestAnyRelay {
         req: Vec<u8>,
@@ -275,18 +271,6 @@ impl AtomicDexBehaviour {
             },
             AdexBehaviourCmd::PublishMsg { topic, msg } => {
                 self.gossipsub.publish(&Topic::new(topic), msg);
-            },
-            AdexBehaviourCmd::SendToPeers { msgs, peers } => {
-                let mut peer_ids = Vec::with_capacity(peers.len());
-                for peer in peers {
-                    let peer_id: PeerId = match peer.parse() {
-                        Ok(p) => p,
-                        Err(_) => continue,
-                    };
-                    peer_ids.push(peer_id);
-                }
-
-                self.gossipsub.send_messages_to_peers(msgs, peer_ids);
             },
             AdexBehaviourCmd::RequestAnyRelay { req, response_tx } => {
                 let relays = self.gossipsub.get_mesh_relays();
