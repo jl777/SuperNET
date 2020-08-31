@@ -29,7 +29,7 @@ use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
-use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviorCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse},
+use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse},
                  decode_signed, encode_and_sign, GossipsubMessage, MessageId, PeerId, PublicKey, TOPIC_SEPARATOR};
 #[cfg(test)] use mocktopus::macros::*;
 use serde_bencode::de::from_bytes as bdecode;
@@ -77,13 +77,6 @@ pub async fn p2p_event_process_loop(ctx: MmArc, mut rx: AdexEventRx, i_am_relaye
             Some(AdexBehaviourEvent::Message(peer_id, message_id, message)) => {
                 process_p2p_message(ctx.clone(), peer_id, message_id, message, i_am_relayer).await
             },
-            /*
-            Some(AdexBehaviourEvent::Subscribed { peer_id, topic }) => {
-                if i_am_relayer {
-                    lp_ordermatch::handle_peer_subscribed(ctx.clone(), &peer_id.to_string(), topic.as_str()).await;
-                }
-            },
-            */
             Some(AdexBehaviourEvent::PeerRequest {
                 peer_id,
                 request,
@@ -145,7 +138,7 @@ async fn process_p2p_request(
     };
 
     let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
-    let cmd = AdexBehaviorCmd::SendResponse { res, response_channel };
+    let cmd = AdexBehaviourCmd::SendResponse { res, response_channel };
     tx.send(cmd).await.unwrap();
     Ok(())
 }
@@ -154,58 +147,91 @@ async fn process_p2p_request(
 pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
     spawn(async move {
-        let cmd = AdexBehaviorCmd::PublishMsg { topic, msg };
+        let cmd = AdexBehaviourCmd::PublishMsg { topic, msg };
         tx.send(cmd).await.unwrap();
     });
 }
 
+/// Subscribe to the given `topic`.
+///
+/// # Safety
+///
+/// The function locks the [`MmCtx::p2p_ctx`] mutext.
 #[cfg(feature = "native")]
 pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
-    let cmd = AdexBehaviorCmd::Subscribe { topic };
+    let cmd = AdexBehaviourCmd::Subscribe { topic };
     tx.send(cmd).await.unwrap();
 }
 
 #[cfg(feature = "native")]
-pub fn send_msgs_to_peers(ctx: &MmArc, msgs: Vec<(String, Vec<u8>)>, peers: Vec<String>) {
-    let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
-    spawn(async move {
-        let cmd = AdexBehaviorCmd::SendToPeers { msgs, peers };
-        tx.send(cmd).await.unwrap();
-    });
-}
-
-#[cfg(feature = "native")]
-pub async fn request_any_peer<T: de::DeserializeOwned>(
+pub async fn request_any_relay<T: de::DeserializeOwned>(
     ctx: MmArc,
     req: P2PRequest,
-) -> Result<Option<(T, PublicKey)>, String> {
+) -> Result<Option<(T, PeerId, PublicKey)>, String> {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let secret = &*key_pair.private().secret;
     let encoded = try_s!(encode_and_sign(&req, secret));
 
     let (response_tx, response_rx) = oneshot::channel();
     let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
-    let cmd = AdexBehaviorCmd::RequestAnyPeer {
+    let cmd = AdexBehaviourCmd::RequestAnyRelay {
         req: encoded,
         response_tx,
     };
     tx.send(cmd).await.unwrap();
     match try_s!(response_rx.await) {
-        AdexResponse::Ok { response } => {
-            let (request, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
-            Ok(Some((request, pubkey)))
+        Some((from_peer, response)) => {
+            let (response, _sig, pubkey) = try_s!(decode_signed::<T>(&response));
+            Ok(Some((response, from_peer, pubkey)))
         },
-        AdexResponse::None => Ok(None),
-        AdexResponse::Err { error } => Err(error),
+        None => Ok(None),
     }
+}
+
+pub enum RelayDecodedResponse<T> {
+    Ok((T, PublicKey)),
+    None,
+    Err(String),
+}
+
+#[cfg(feature = "native")]
+pub async fn request_relays<T: de::DeserializeOwned>(
+    ctx: MmArc,
+    req: P2PRequest,
+) -> Result<Vec<(PeerId, RelayDecodedResponse<T>)>, String> {
+    let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
+    let secret = &*key_pair.private().secret;
+    let encoded = try_s!(encode_and_sign(&req, secret));
+
+    let (response_tx, response_rx) = oneshot::channel();
+    let mut tx = P2PContext::fetch_from_mm_arc(&ctx).cmd_tx.clone();
+    let cmd = AdexBehaviourCmd::RequestRelays {
+        req: encoded,
+        response_tx,
+    };
+    tx.send(cmd).await.unwrap();
+    Ok(try_s!(response_rx.await)
+        .into_iter()
+        .map(|(peer_id, res)| {
+            let res = match res {
+                AdexResponse::Ok { response } => match decode_signed::<T>(&response) {
+                    Ok((res, _sig, pubkey)) => RelayDecodedResponse::Ok((res, pubkey)),
+                    Err(e) => RelayDecodedResponse::Err(ERRL!("{}", e)),
+                },
+                AdexResponse::None => RelayDecodedResponse::None,
+                AdexResponse::Err { error } => RelayDecodedResponse::Err(error),
+            };
+            (peer_id, res)
+        })
+        .collect())
 }
 
 #[cfg(feature = "native")]
 pub fn propagate_message(ctx: &MmArc, message_id: MessageId, propagation_source: PeerId) {
     let mut tx = P2PContext::fetch_from_mm_arc(ctx).cmd_tx.clone();
     spawn(async move {
-        let cmd = AdexBehaviorCmd::PropagateMessage {
+        let cmd = AdexBehaviourCmd::PropagateMessage {
             message_id,
             propagation_source,
         };

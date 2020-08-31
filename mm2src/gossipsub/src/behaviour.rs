@@ -927,38 +927,6 @@ impl Gossipsub {
         debug!("Completed forwarding message");
     }
 
-    pub fn send_messages_to_peers(
-        &mut self,
-        messages: impl IntoIterator<Item = (String, impl Into<Vec<u8>>)>,
-        recipient_peers: impl IntoIterator<Item = PeerId>,
-    ) {
-        let messages = messages
-            .into_iter()
-            .map(|(topic, data)| GossipsubMessage {
-                source: self.local_peer_id.clone(),
-                data: data.into(),
-                // To be interoperable with the go-implementation this is treated as a 64-bit
-                // big-endian uint.
-                sequence_number: rand::random(),
-                topics: vec![TopicHash::from_raw(topic)],
-            })
-            .collect();
-        let event = Arc::new(GossipsubRpc {
-            subscriptions: Vec::new(),
-            messages,
-            control_msgs: Vec::new(),
-        });
-
-        for peer in recipient_peers {
-            debug!("Sending messages: {:?} to peer {:?}", event.messages, peer);
-            self.events.push_back(NetworkBehaviourAction::NotifyHandler {
-                peer_id: peer.clone(),
-                event: event.clone(),
-                handler: NotifyHandler::All,
-            });
-        }
-    }
-
     /// Helper function to get a set of `n` random gossipsub peers for a `topic_hash`
     /// filtered by the function `f`.
     fn get_random_peers(
@@ -1040,12 +1008,7 @@ impl Gossipsub {
         }
     }
 
-    pub fn get_min_relays_number(&self) -> usize { self.config.mesh_n_low }
-
-    pub fn get_random_mesh_relays(&self, n: usize) -> Vec<PeerId> {
-        // get any `n` relays
-        Self::get_random_relays(&self.relayers_mesh, n, |_| true)
-    }
+    pub fn get_mesh_relays(&self) -> Vec<PeerId> { self.relayers_mesh.iter().cloned().collect() }
 
     pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
         self.mesh.get(&topic).cloned().unwrap_or_else(|| vec![])
