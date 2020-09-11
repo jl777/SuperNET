@@ -29,9 +29,11 @@ use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
 use futures::{SinkExt, StreamExt};
 use futures01::{future, Future};
-use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse},
+use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse,
+                                       AdexResponseChannel},
                  decode_signed, encode_and_sign, GossipsubMessage, MessageId, PeerId, PublicKey, TOPIC_SEPARATOR};
 #[cfg(test)] use mocktopus::macros::*;
+use serde::de;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
@@ -41,8 +43,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
-use mm2_libp2p::atomicdex_behaviour::AdexResponseChannel;
-use serde::de;
 
 #[derive(Eq, Debug, Deserialize, PartialEq, Serialize)]
 pub enum P2PRequest {
@@ -75,7 +75,13 @@ pub async fn p2p_event_process_loop(ctx: MmArc, mut rx: AdexEventRx, i_am_relaye
     while !ctx.is_stopping() {
         match rx.next().await {
             Some(AdexBehaviourEvent::Message(peer_id, message_id, message)) => {
-                process_p2p_message(ctx.clone(), peer_id, message_id, message, i_am_relayer).await
+                spawn(process_p2p_message(
+                    ctx.clone(),
+                    peer_id,
+                    message_id,
+                    message,
+                    i_am_relayer,
+                ));
             },
             Some(AdexBehaviourEvent::PeerRequest {
                 peer_id,

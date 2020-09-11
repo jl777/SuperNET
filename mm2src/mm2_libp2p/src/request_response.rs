@@ -22,12 +22,13 @@ const MAX_BUFFER_SIZE: usize = 1024 * 1024 - 100;
 
 pub type RequestResponseReceiver = mpsc::UnboundedReceiver<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
 pub type RequestResponseSender = mpsc::UnboundedSender<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
+type ReqResCodec = Codec<Protocol, PeerRequest, PeerResponse>;
 
 /// Build a request-response network behaviour.
 pub fn build_request_response_behaviour() -> RequestResponseBehaviour {
     let config = RequestResponseConfig::default();
     let protocol = iter::once((Protocol::Version1, ProtocolSupport::Full));
-    let inner = RequestResponse::new(Codec, protocol, config);
+    let inner = RequestResponse::new(Codec::default(), protocol, config);
 
     let (tx, rx) = mpsc::unbounded();
     let pending_requests = HashMap::new();
@@ -63,7 +64,7 @@ pub struct RequestResponseBehaviour {
     #[behaviour(ignore)]
     events: VecDeque<RequestResponseBehaviourEvent>,
     /// The inner RequestResponse network behaviour.
-    inner: RequestResponse<Codec>,
+    inner: RequestResponse<Codec<Protocol, PeerRequest, PeerResponse>>,
 }
 
 impl RequestResponseBehaviour {
@@ -88,7 +89,7 @@ impl RequestResponseBehaviour {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<RequestProtocol<Codec>, RequestResponseBehaviourEvent>> {
+    ) -> Poll<NetworkBehaviourAction<RequestProtocol<ReqResCodec>, RequestResponseBehaviourEvent>> {
         // poll the `rx`
         match self.rx.poll_next_unpin(cx) {
             // received a request, forward it through the network and put to the `pending_requests`
@@ -156,7 +157,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeerRequest, PeerResponse
         };
 
         match message {
-            RequestResponseMessage::Request { request, channel } => {
+            RequestResponseMessage::Request { request, channel, .. } => {
                 debug!("Received a request from {:?} peer", peer_id);
                 self.process_request(peer_id, request, channel)
             },
@@ -172,7 +173,17 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeerRequest, PeerResponse
 }
 
 #[derive(Clone)]
-pub struct Codec;
+pub struct Codec<Proto, Req, Res> {
+    phantom: std::marker::PhantomData<(Proto, Req, Res)>,
+}
+
+impl<Proto, Req, Res> Default for Codec<Proto, Req, Res> {
+    fn default() -> Self {
+        Codec {
+            phantom: Default::default(),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Protocol {
@@ -184,7 +195,7 @@ pub struct PeerRequest {
     pub req: Vec<u8>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum PeerResponse {
     Ok { res: Vec<u8> },
     None,
@@ -209,10 +220,15 @@ impl ProtocolName for Protocol {
 }
 
 #[async_trait]
-impl RequestResponseCodec for Codec {
-    type Protocol = Protocol;
-    type Request = PeerRequest;
-    type Response = PeerResponse;
+impl<
+        Proto: Clone + ProtocolName + Send + Sync,
+        Req: DeserializeOwned + Serialize + Send + Sync,
+        Res: DeserializeOwned + Serialize + Send + Sync,
+    > RequestResponseCodec for Codec<Proto, Req, Res>
+{
+    type Protocol = Proto;
+    type Request = Req;
+    type Response = Res;
 
     async fn read_request<T>(&mut self, _protocol: &Self::Protocol, io: &mut T) -> io::Result<Self::Request>
     where
