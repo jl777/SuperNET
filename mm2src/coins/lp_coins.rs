@@ -867,19 +867,29 @@ pub enum HistorySyncState {
     Finished,
 }
 
+fn ten() -> usize { 10 }
+
+#[derive(Deserialize)]
+struct MyTxHistoryRequest {
+    coin: String,
+    from_id: Option<BytesJson>,
+    #[serde(default)]
+    max: bool,
+    #[serde(default = "ten")]
+    limit: usize,
+}
+
 /// Returns the transaction history of selected coin. Returns no more than `limit` records (default: 10).
-/// Skips the first `skip` records (default: 0).
+/// Skips the first records up to from_id (skipping the from_id too).
 /// Transactions are sorted by number of confirmations in ascending order.
 pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
-    let ticker = try_h!(req["coin"].as_str().ok_or("No 'coin' field")).to_owned();
-    let coin = match lp_coinfind(&ctx, &ticker) {
+    let request: MyTxHistoryRequest = try_h!(json::from_value(req));
+    let coin = match lp_coinfind(&ctx, &request.coin) {
         // Should switch to lp_coinfindᵃ when my_tx_history is async.
         Ok(Some(t)) => t,
-        Ok(None) => return rpc_err_response(500, &fomat!("No such coin: "(ticker))),
-        Err(err) => return rpc_err_response(500, &fomat!("!lp_coinfind(" (ticker) "): " (err))),
+        Ok(None) => return rpc_err_response(500, &fomat!("No such coin: "(request.coin))),
+        Err(err) => return rpc_err_response(500, &fomat!("!lp_coinfind(" (request.coin) "): " (err))),
     };
-    let limit = req["limit"].as_u64().unwrap_or(10);
-    let from_id: Option<BytesJson> = try_h!(json::from_value(req["from_id"].clone()));
     let file_path = coin.tx_history_path(&ctx);
     let content = slurp(&file_path);
     let history: Vec<TransactionDetails> = match json::from_slice(&content) {
@@ -892,8 +902,10 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
         },
     };
     let total_records = history.len();
+    let limit = if request.max { total_records } else { request.limit };
+
     Box::new(coin.current_block().and_then(move |block_number| {
-        let skip = match &from_id {
+        let skip = match &request.from_id {
             Some(id) => {
                 try_h!(history
                     .iter()
@@ -903,7 +915,7 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
             },
             None => 0,
         };
-        let history = history.into_iter().skip(skip).take(limit as usize);
+        let history = history.into_iter().skip(skip).take(limit);
         let history: Vec<Json> = history
             .map(|item| {
                 let tx_block = item.block_height;
@@ -925,7 +937,7 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
                     "transactions": history,
                     "limit": limit,
                     "skipped": skip,
-                    "from_id": from_id,
+                    "from_id": request.from_id,
                     "total": total_records,
                     "current_block": block_number,
                     "sync_status": coin.history_sync_status(),
