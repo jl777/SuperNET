@@ -57,7 +57,8 @@ mod docker_tests {
 
     use bitcrypto::ChecksumType;
     use coins::utxo::rpc_clients::{UtxoRpcClientEnum, UtxoRpcClientOps};
-    use coins::utxo::{coin_daemon_data_dir, dhash160, utxo_coin_from_conf_and_request, zcash_params_path, UtxoCoin};
+    use coins::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin};
+    use coins::utxo::{coin_daemon_data_dir, dhash160, zcash_params_path, UtxoCoinCommonOps};
     use coins::{FoundSwapTxSpend, MarketCoinOps, SwapOps};
     use common::block_on;
     use common::{file_lock::FileLock,
@@ -161,7 +162,7 @@ mod docker_tests {
             let priv_key = unwrap!(hex::decode(
                 "809465b17d0a4ddb3e4c69e8f23c2cabad868f51f8bed5c765ad1d6516c3306f"
             ));
-            let coin = unwrap!(block_on(utxo_coin_from_conf_and_request(
+            let coin = unwrap!(block_on(utxo_standard_coin_from_conf_and_request(
                 &ctx,
                 &self.ticker,
                 &conf,
@@ -170,7 +171,7 @@ mod docker_tests {
             )));
             let timeout = now_ms() + 30000;
             loop {
-                match coin.rpc_client().get_block_count().wait() {
+                match coin.as_ref().rpc_client.get_block_count().wait() {
                     Ok(n) => {
                         if n > 1 {
                             break;
@@ -234,7 +235,7 @@ mod docker_tests {
     }
 
     // generate random privkey, create a coin and fill it's address with 1000 coins
-    fn generate_coin_with_random_privkey(ticker: &str, balance: u64) -> (MmArc, UtxoCoin, [u8; 32]) {
+    fn generate_coin_with_random_privkey(ticker: &str, balance: u64) -> (MmArc, UtxoStandardCoin, [u8; 32]) {
         // prevent concurrent initialization since daemon RPC returns errors if send_to_address
         // is called concurrently (insufficient funds) and it also may return other errors
         // if previous transaction is not confirmed yet
@@ -244,19 +245,17 @@ mod docker_tests {
         let conf = json!({"asset":ticker,"txversion":4,"overwintered":1,"txfee":1000});
         let req = json!({"method":"enable"});
         let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
-        let coin = unwrap!(block_on(utxo_coin_from_conf_and_request(
+        let coin = unwrap!(block_on(utxo_standard_coin_from_conf_and_request(
             &ctx, ticker, &conf, &req, &priv_key
         )));
-        // TODO check what is it
         fill_address(&coin, &coin.my_address().unwrap(), balance, timeout);
         (ctx, coin, priv_key)
     }
 
-    fn fill_address(coin: &UtxoCoin, address: &str, amount: u64, timeout: u64) {
-        if let UtxoRpcClientEnum::Native(client) = &coin.rpc_client() {
-            // TODO check it
+    fn fill_address(coin: &UtxoStandardCoin, address: &str, amount: u64, timeout: u64) {
+        if let UtxoRpcClientEnum::Native(client) = &coin.as_ref().rpc_client {
             unwrap!(client
-                .import_address(&coin.my_address().unwrap(), &unwrap!(coin.my_address()), false)
+                .import_address(&coin.my_address().unwrap(), &coin.my_address().unwrap(), false)
                 .wait());
             let hash = client.send_to_address(address, &amount.into()).wait().unwrap();
             let tx_bytes = client.get_transaction_bytes(hash).wait().unwrap();
@@ -412,8 +411,8 @@ mod docker_tests {
     fn order_should_be_cancelled_when_entire_balance_is_withdrawn() {
         let (_ctx, _, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_bob = unwrap!(MarketMakerIt::start(
             json! ({
@@ -520,8 +519,8 @@ mod docker_tests {
         let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_bob = unwrap!(MarketMakerIt::start(
             json! ({
@@ -615,8 +614,8 @@ mod docker_tests {
         let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_bob = unwrap!(MarketMakerIt::start(
             json! ({
@@ -713,8 +712,8 @@ mod docker_tests {
         let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_bob = unwrap!(MarketMakerIt::start(
             json! ({
@@ -810,8 +809,8 @@ mod docker_tests {
     fn test_buy_max() {
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 1);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_alice = unwrap!(MarketMakerIt::start(
             json! ({
@@ -868,8 +867,8 @@ mod docker_tests {
     fn test_get_max_taker_vol() {
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 1);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_alice = unwrap!(MarketMakerIt::start(
             json! ({
@@ -907,8 +906,8 @@ mod docker_tests {
     fn test_set_price_max() {
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_alice = unwrap!(MarketMakerIt::start(
             json! ({
@@ -965,8 +964,8 @@ mod docker_tests {
         let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
         let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000);
         let coins = json! ([
-            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000},
-            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000},
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
         let mut mm_bob = unwrap!(MarketMakerIt::start(
             json! ({

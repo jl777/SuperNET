@@ -59,6 +59,10 @@ macro_rules! try_fus {
     };
 }
 
+#[doc(hidden)]
+#[cfg(test)]
+pub mod coins_tests;
+
 // validate_address implementation for coin that has address_from_str method
 macro_rules! validate_address_impl {
     ($self: ident, $address: expr) => {{
@@ -70,11 +74,12 @@ macro_rules! validate_address_impl {
     }};
 }
 
-#[doc(hidden)] pub mod coins_tests;
 pub mod eth;
 use self::eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, SignedEthTx};
 pub mod utxo;
-use self::utxo::{utxo_coin_from_conf_and_request, UtxoCoin, UtxoFeeDetails, UtxoTx};
+use self::utxo::qrc20::{qrc20_addr_from_str, qrc20_coin_from_conf_and_request, Qrc20Coin, Qrc20FeeDetails};
+use self::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin};
+use self::utxo::{UtxoFeeDetails, UtxoTx};
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
@@ -265,9 +270,14 @@ pub enum WithdrawFee {
         amount: BigDecimal,
     },
     EthGas {
-        // in gwei
+        /// in gwei
         gas_price: BigDecimal,
         gas: u64,
+    },
+    Qrc20Gas {
+        /// in satoshi
+        gas_limit: u64,
+        gas_price: u64,
     },
 }
 
@@ -288,6 +298,7 @@ pub struct WithdrawRequest {
 pub enum TxFeeDetails {
     Utxo(UtxoFeeDetails),
     Eth(EthTxFeeDetails),
+    Qrc20(Qrc20FeeDetails),
 }
 
 impl Into<TxFeeDetails> for EthTxFeeDetails {
@@ -296,6 +307,10 @@ impl Into<TxFeeDetails> for EthTxFeeDetails {
 
 impl Into<TxFeeDetails> for UtxoFeeDetails {
     fn into(self: UtxoFeeDetails) -> TxFeeDetails { TxFeeDetails::Utxo(self) }
+}
+
+impl Into<TxFeeDetails> for Qrc20FeeDetails {
+    fn into(self: Qrc20FeeDetails) -> TxFeeDetails { TxFeeDetails::Qrc20(self) }
 }
 
 /// Transaction details
@@ -371,6 +386,9 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
     fn is_asset_chain(&self) -> bool;
 
     fn can_i_spend_other_payment(&self) -> Box<dyn Future<Item = (), Error = String> + Send>;
+
+    /// The coin can be initialized, but it cannot participate in the swaps.
+    fn wallet_only(&self) -> bool;
 
     fn withdraw(&self, req: WithdrawRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send>;
 
@@ -449,17 +467,21 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 
     /// set requires notarization
     fn set_requires_notarization(&self, requires_nota: bool);
+
+    /// Get unspendable balance (sum of non-mature output values).
+    fn my_unspendable_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send>;
 }
 
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {
-    UtxoCoin(UtxoCoin),
+    UtxoCoin(UtxoStandardCoin),
+    Qrc20Coin(Qrc20Coin),
     EthCoin(EthCoin),
     Test(TestCoin),
 }
 
-impl From<UtxoCoin> for MmCoinEnum {
-    fn from(c: UtxoCoin) -> MmCoinEnum { MmCoinEnum::UtxoCoin(c) }
+impl From<UtxoStandardCoin> for MmCoinEnum {
+    fn from(c: UtxoStandardCoin) -> MmCoinEnum { MmCoinEnum::UtxoCoin(c) }
 }
 
 impl From<EthCoin> for MmCoinEnum {
@@ -470,12 +492,17 @@ impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
 }
 
+impl From<Qrc20Coin> for MmCoinEnum {
+    fn from(c: Qrc20Coin) -> MmCoinEnum { MmCoinEnum::Qrc20Coin(c) }
+}
+
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for MmCoinEnum {
     type Target = dyn MmCoin;
     fn deref(&self) -> &dyn MmCoin {
         match self {
             MmCoinEnum::UtxoCoin(ref c) => c,
+            MmCoinEnum::Qrc20Coin(ref c) => c,
             MmCoinEnum::EthCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
         }
@@ -496,6 +523,15 @@ impl CoinsContext {
             })
         })))
     }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type", content = "protocol_data")]
+pub enum CoinProtocol {
+    UTXO,
+    QRC20 { platform: String, contract_address: String },
+    ETH,
+    ERC20 { platform: String, contract_address: String },
 }
 
 pub type RpcTransportEventHandlerShared = Arc<dyn RpcTransportEventHandler + Send + Sync + 'static>;
@@ -654,10 +690,30 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
     }
     let secret = &*ctx.secp256k1_key_pair().private().secret;
 
-    let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
-        try_s!(utxo_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
-    } else {
-        try_s!(eth_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
+    if coins_en["protocol"].is_null() {
+        return ERR!(
+            r#""protocol" field is missing in coins file. The file format is deprecated, please execute ./mm2 update_config command to convert it or download a new one"#
+        );
+    }
+    let protocol: CoinProtocol = try_s!(json::from_value(coins_en["protocol"].clone()));
+
+    let coin: MmCoinEnum = match &protocol {
+        CoinProtocol::UTXO => {
+            try_s!(utxo_standard_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
+        },
+        CoinProtocol::ETH | CoinProtocol::ERC20 { .. } => {
+            try_s!(eth_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret, protocol).await).into()
+        },
+        CoinProtocol::QRC20 {
+            platform,
+            contract_address,
+        } => {
+            let contract_address = try_s!(qrc20_addr_from_str(&contract_address));
+            try_s!(
+                qrc20_coin_from_conf_and_request(ctx, ticker, &platform, coins_en, req, secret, contract_address).await
+            )
+            .into()
+        },
     };
 
     let block_count = try_s!(coin.current_block().compat().await);
@@ -992,4 +1048,45 @@ pub async fn show_priv_key(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, S
         }
     })));
     Ok(try_s!(Response::builder().body(res)))
+}
+
+pub fn update_coins_config(mut config: Json) -> Result<Json, String> {
+    let coins = match config.as_array_mut() {
+        Some(c) => c,
+        _ => return ERR!("Coins config must be an array"),
+    };
+
+    for coin in coins {
+        // the coin_as_str is used only to be formatted
+        let coin_as_str = format!("{}", coin);
+        let coin = try_s!(coin
+            .as_object_mut()
+            .ok_or(ERRL!("Expected object, found {:?}", coin_as_str)));
+        if coin.contains_key("protocol") {
+            // the coin is up-to-date
+            continue;
+        }
+        let protocol = match coin.remove("etomic") {
+            Some(etomic) => {
+                let etomic = etomic
+                    .as_str()
+                    .ok_or(ERRL!("Expected etomic as string, found {:?}", etomic))?;
+                if etomic == "0x0000000000000000000000000000000000000000" {
+                    CoinProtocol::ETH
+                } else {
+                    let contract_address = etomic.to_owned();
+                    CoinProtocol::ERC20 {
+                        platform: "ETH".into(),
+                        contract_address,
+                    }
+                }
+            },
+            _ => CoinProtocol::UTXO,
+        };
+
+        let protocol = json::to_value(protocol).map_err(|e| ERRL!("Error {:?} on process {:?}", e, coin_as_str))?;
+        coin.insert("protocol".into(), protocol);
+    }
+
+    Ok(config)
 }
