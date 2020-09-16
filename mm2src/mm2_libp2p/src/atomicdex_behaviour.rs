@@ -431,7 +431,7 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
         let to_connect = swarm
             .peers_exchange
             .get_random_peers(to_connect_num, |peer| !connected_relayers.contains(peer));
-        if to_connect.is_empty() {
+        if to_connect.is_empty() && connected_relayers.is_empty() {
             for addr in bootstrap_addresses {
                 if let Err(e) = libp2p::Swarm::dial_addr(swarm, addr.clone()) {
                     error!("Addr {} dial error {}", addr, e);
@@ -511,7 +511,7 @@ pub fn start_gossipsub(
     let transport = transport
         .upgrade(libp2p::core::upgrade::Version::V1)
         .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-        .multiplex(libp2p::mplex::MplexConfig::new())
+        .multiplex(libp2p::yamux::Config::default())
         .map(|(peer, muxer), _| (peer, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
         .timeout(std::time::Duration::from_secs(20));
 

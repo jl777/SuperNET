@@ -6,7 +6,7 @@ use libp2p::{multiaddr::Multiaddr,
                                 RequestResponseConfig, RequestResponseEvent, RequestResponseMessage},
              swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters},
              NetworkBehaviour, PeerId};
-use log::error;
+use log::{error, info};
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{de::Deserializer, ser::Serializer, Deserialize, Serialize};
 use std::{collections::{HashMap, VecDeque},
@@ -31,7 +31,7 @@ impl ProtocolName for PeersExchangeProtocol {
 type PeersExchangeCodec = Codec<PeersExchangeProtocol, PeersExchangeRequest, PeersExchangeResponse>;
 
 const REQUEST_PEERS_INITIAL_DELAY: u64 = 10;
-const REQUEST_PEERS_INTERVAL: u64 = 60;
+const REQUEST_PEERS_INTERVAL: u64 = 10;
 const MAX_PEERS: usize = 100;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -150,6 +150,7 @@ impl PeersExchange {
         const DEFAULT_PEERS_NUM: usize = 20;
         let mut rng = thread_rng();
         if let Some(from_peer) = self.known_peers.choose(&mut rng) {
+            info!("Try to request {} peers from peer {}", DEFAULT_PEERS_NUM, from_peer);
             let request = PeersExchangeRequest::GetKnownPeers { num: DEFAULT_PEERS_NUM };
             self.request_response.send_request(from_peer, request);
         }
@@ -196,9 +197,12 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeersExchangeRequest, Pee
                     },
                 },
                 RequestResponseMessage::Response { response, .. } => match response {
-                    PeersExchangeResponse::KnownPeers { peers } => peers.into_iter().for_each(|(peer, addresses)| {
-                        self.add_peer_addresses(&peer.0, addresses);
-                    }),
+                    PeersExchangeResponse::KnownPeers { peers } => {
+                        info!("Got peers {:?}", peers);
+                        peers.into_iter().for_each(|(peer, addresses)| {
+                            self.add_peer_addresses(&peer.0, addresses);
+                        });
+                    },
                 },
             },
             RequestResponseEvent::OutboundFailure {

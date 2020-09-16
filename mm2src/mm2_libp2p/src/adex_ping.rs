@@ -1,7 +1,7 @@
 use libp2p::{ping::{Ping, PingConfig, PingEvent},
              swarm::{DisconnectPeerHandler, NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters},
              NetworkBehaviour};
-use log::info;
+use log::error;
 use std::{collections::VecDeque,
           num::NonZeroU32,
           task::{Context, Poll}};
@@ -23,7 +23,7 @@ pub struct AdexPing {
 impl NetworkBehaviourEventProcess<PingEvent> for AdexPing {
     fn inject_event(&mut self, event: PingEvent) {
         if let Err(e) = event.result {
-            info!("Ping error {}. Disconnecting peer {}", e, event.peer);
+            error!("Ping error {}. Disconnecting peer {}", e, event.peer);
             self.events.push_back(NetworkBehaviourAction::DisconnectPeer {
                 peer_id: event.peer,
                 handler: DisconnectPeerHandler::All,
