@@ -43,7 +43,7 @@ impl From<PeerId> for PeerIdSerde {
 
 impl Serialize for PeerIdSerde {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_bytes(self.0.as_bytes())
+        self.0.clone().into_bytes().serialize(serializer)
     }
 }
 
@@ -167,6 +167,14 @@ impl PeersExchange {
             .collect()
     }
 
+    pub fn is_known_peer(&self, peer: &PeerId) -> bool { self.known_peers.contains(peer) }
+
+    pub fn add_known_peer(&mut self, peer: PeerId) {
+        if !self.is_known_peer(&peer) {
+            self.known_peers.push(peer)
+        }
+    }
+
     fn poll(
         &mut self,
         cx: &mut Context,
@@ -222,5 +230,19 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeersExchangeRequest, Pee
                 );
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::peers_exchange::PeerIdSerde;
+    use crate::PeerId;
+
+    #[test]
+    fn test_peer_id_serde() {
+        let peer_id = PeerIdSerde(PeerId::random());
+        let serialized = rmp_serde::to_vec(&peer_id).unwrap();
+        let deserialized: PeerIdSerde = rmp_serde::from_read_ref(&serialized).unwrap();
+        assert_eq!(peer_id.0, deserialized.0);
     }
 }

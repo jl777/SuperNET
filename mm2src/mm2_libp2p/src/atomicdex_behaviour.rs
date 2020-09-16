@@ -451,13 +451,19 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
         let to_disconnect_num = connected_relayers.len() - mesh_n;
         let relayers_mesh = swarm.gossipsub.get_relayers_mesh();
         let not_in_mesh: Vec<_> = connected_relayers
-            .into_iter()
+            .iter()
             .filter(|peer| !relayers_mesh.contains(peer))
             .collect();
         for peer in not_in_mesh.choose_multiple(&mut rng, to_disconnect_num) {
-            if Swarm::disconnect_peer_id(swarm, peer.clone()).is_err() {
+            if Swarm::disconnect_peer_id(swarm, (*peer).clone()).is_err() {
                 error!("Peer {} disconnect error", peer);
             }
+        }
+    }
+
+    for relayer in connected_relayers {
+        if !swarm.peers_exchange.is_known_peer(&relayer) {
+            swarm.peers_exchange.add_known_peer(relayer);
         }
     }
 }
