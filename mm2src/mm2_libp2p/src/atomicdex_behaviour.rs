@@ -466,11 +466,9 @@ fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
     let global_listeners: Vec<_> = Swarm::listeners(&swarm)
         .filter(|listener| {
             for protocol in listener.iter() {
-                match protocol {
-                    Protocol::Ip4(ip) => return ip.is_global(),
-                    Protocol::Ip6(ip) => return ip.is_global(),
-                    _ => (),
-                };
+                if let Protocol::Ip4(ip) = protocol {
+                    return ip.is_global();
+                }
             }
             false
         })
