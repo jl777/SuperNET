@@ -60,6 +60,10 @@ macro_rules! try_fus {
     };
 }
 
+#[doc(hidden)]
+#[cfg(test)]
+pub mod coins_tests;
+
 // validate_address implementation for coin that has address_from_str method
 macro_rules! validate_address_impl {
     ($self: ident, $address: expr) => {{
@@ -71,11 +75,12 @@ macro_rules! validate_address_impl {
     }};
 }
 
-#[doc(hidden)] pub mod coins_tests;
 pub mod eth;
 use self::eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, SignedEthTx};
 pub mod utxo;
-use self::utxo::{utxo_coin_from_conf_and_request, UtxoCoin, UtxoFeeDetails, UtxoTx};
+use self::utxo::qrc20::{qrc20_addr_from_str, qrc20_coin_from_conf_and_request, Qrc20Coin, Qrc20FeeDetails};
+use self::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin};
+use self::utxo::{UtxoFeeDetails, UtxoTx};
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
@@ -266,9 +271,14 @@ pub enum WithdrawFee {
         amount: BigDecimal,
     },
     EthGas {
-        // in gwei
+        /// in gwei
         gas_price: BigDecimal,
         gas: u64,
+    },
+    Qrc20Gas {
+        /// in satoshi
+        gas_limit: u64,
+        gas_price: u64,
     },
 }
 
@@ -289,6 +299,7 @@ pub struct WithdrawRequest {
 pub enum TxFeeDetails {
     Utxo(UtxoFeeDetails),
     Eth(EthTxFeeDetails),
+    Qrc20(Qrc20FeeDetails),
 }
 
 impl Into<TxFeeDetails> for EthTxFeeDetails {
@@ -297,6 +308,10 @@ impl Into<TxFeeDetails> for EthTxFeeDetails {
 
 impl Into<TxFeeDetails> for UtxoFeeDetails {
     fn into(self: UtxoFeeDetails) -> TxFeeDetails { TxFeeDetails::Utxo(self) }
+}
+
+impl Into<TxFeeDetails> for Qrc20FeeDetails {
+    fn into(self: Qrc20FeeDetails) -> TxFeeDetails { TxFeeDetails::Qrc20(self) }
 }
 
 /// Transaction details
@@ -372,6 +387,9 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
     fn is_asset_chain(&self) -> bool;
 
     fn can_i_spend_other_payment(&self) -> Box<dyn Future<Item = (), Error = String> + Send>;
+
+    /// The coin can be initialized, but it cannot participate in the swaps.
+    fn wallet_only(&self) -> bool;
 
     fn withdraw(&self, req: WithdrawRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send>;
 
@@ -450,17 +468,21 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 
     /// set requires notarization
     fn set_requires_notarization(&self, requires_nota: bool);
+
+    /// Get unspendable balance (sum of non-mature output values).
+    fn my_unspendable_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send>;
 }
 
 #[derive(Clone, Debug)]
 pub enum MmCoinEnum {
-    UtxoCoin(UtxoCoin),
+    UtxoCoin(UtxoStandardCoin),
+    Qrc20Coin(Qrc20Coin),
     EthCoin(EthCoin),
     Test(TestCoin),
 }
 
-impl From<UtxoCoin> for MmCoinEnum {
-    fn from(c: UtxoCoin) -> MmCoinEnum { MmCoinEnum::UtxoCoin(c) }
+impl From<UtxoStandardCoin> for MmCoinEnum {
+    fn from(c: UtxoStandardCoin) -> MmCoinEnum { MmCoinEnum::UtxoCoin(c) }
 }
 
 impl From<EthCoin> for MmCoinEnum {
@@ -471,12 +493,17 @@ impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
 }
 
+impl From<Qrc20Coin> for MmCoinEnum {
+    fn from(c: Qrc20Coin) -> MmCoinEnum { MmCoinEnum::Qrc20Coin(c) }
+}
+
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for MmCoinEnum {
     type Target = dyn MmCoin;
     fn deref(&self) -> &dyn MmCoin {
         match self {
             MmCoinEnum::UtxoCoin(ref c) => c,
+            MmCoinEnum::Qrc20Coin(ref c) => c,
             MmCoinEnum::EthCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
         }
@@ -503,6 +530,15 @@ impl CoinsContext {
             })
         })))
     }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type", content = "protocol_data")]
+pub enum CoinProtocol {
+    UTXO,
+    QRC20 { platform: String, contract_address: String },
+    ETH,
+    ERC20 { platform: String, contract_address: String },
 }
 
 pub type RpcTransportEventHandlerShared = Arc<dyn RpcTransportEventHandler + Send + Sync + 'static>;
@@ -669,10 +705,30 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
     }
     let secret = &*ctx.secp256k1_key_pair().private().secret;
 
-    let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
-        try_s!(utxo_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
-    } else {
-        try_s!(eth_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
+    if coins_en["protocol"].is_null() {
+        return ERR!(
+            r#""protocol" field is missing in coins file. The file format is deprecated, please execute ./mm2 update_config command to convert it or download a new one"#
+        );
+    }
+    let protocol: CoinProtocol = try_s!(json::from_value(coins_en["protocol"].clone()));
+
+    let coin: MmCoinEnum = match &protocol {
+        CoinProtocol::UTXO => {
+            try_s!(utxo_standard_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
+        },
+        CoinProtocol::ETH | CoinProtocol::ERC20 { .. } => {
+            try_s!(eth_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret, protocol).await).into()
+        },
+        CoinProtocol::QRC20 {
+            platform,
+            contract_address,
+        } => {
+            let contract_address = try_s!(qrc20_addr_from_str(&contract_address));
+            try_s!(
+                qrc20_coin_from_conf_and_request(ctx, ticker, &platform, coins_en, req, secret, contract_address).await
+            )
+            .into()
+        },
     };
 
     let block_count = try_s!(coin.current_block().compat().await);
@@ -750,6 +806,22 @@ pub async fn convert_address(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>,
     Ok(try_s!(Response::builder().body(body)))
 }
 
+pub async fn kmd_rewards_info(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
+    let coin = match lp_coinfindᵃ(&ctx, "KMD").await {
+        // Use lp_coinfindᵃ when async.
+        Ok(Some(MmCoinEnum::UtxoCoin(t))) => t,
+        Ok(Some(_)) => return ERR!("KMD was expected to be UTXO"),
+        Ok(None) => return ERR!("KMD is not activated"),
+        Err(err) => return ERR!("!lp_coinfind({}): KMD", err),
+    };
+
+    let res = json!({
+        "result": try_s!(utxo::kmd_rewards_info(&coin).await),
+    });
+    let res = try_s!(json::to_vec(&res));
+    Ok(try_s!(Response::builder().body(res)))
+}
+
 #[derive(Deserialize)]
 struct ValidateAddressReq {
     coin: String,
@@ -812,19 +884,29 @@ pub enum HistorySyncState {
     Finished,
 }
 
+fn ten() -> usize { 10 }
+
+#[derive(Deserialize)]
+struct MyTxHistoryRequest {
+    coin: String,
+    from_id: Option<BytesJson>,
+    #[serde(default)]
+    max: bool,
+    #[serde(default = "ten")]
+    limit: usize,
+}
+
 /// Returns the transaction history of selected coin. Returns no more than `limit` records (default: 10).
-/// Skips the first `skip` records (default: 0).
+/// Skips the first records up to from_id (skipping the from_id too).
 /// Transactions are sorted by number of confirmations in ascending order.
 pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
-    let ticker = try_h!(req["coin"].as_str().ok_or("No 'coin' field")).to_owned();
-    let coin = match lp_coinfind(&ctx, &ticker) {
+    let request: MyTxHistoryRequest = try_h!(json::from_value(req));
+    let coin = match lp_coinfind(&ctx, &request.coin) {
         // Should switch to lp_coinfindᵃ when my_tx_history is async.
         Ok(Some(t)) => t,
-        Ok(None) => return rpc_err_response(500, &fomat!("No such coin: "(ticker))),
-        Err(err) => return rpc_err_response(500, &fomat!("!lp_coinfind(" (ticker) "): " (err))),
+        Ok(None) => return rpc_err_response(500, &fomat!("No such coin: "(request.coin))),
+        Err(err) => return rpc_err_response(500, &fomat!("!lp_coinfind(" (request.coin) "): " (err))),
     };
-    let limit = req["limit"].as_u64().unwrap_or(10);
-    let from_id: Option<BytesJson> = try_h!(json::from_value(req["from_id"].clone()));
     let file_path = coin.tx_history_path(&ctx);
     let content = slurp(&file_path);
     let history: Vec<TransactionDetails> = match json::from_slice(&content) {
@@ -837,8 +919,10 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
         },
     };
     let total_records = history.len();
+    let limit = if request.max { total_records } else { request.limit };
+
     Box::new(coin.current_block().and_then(move |block_number| {
-        let skip = match &from_id {
+        let skip = match &request.from_id {
             Some(id) => {
                 try_h!(history
                     .iter()
@@ -848,7 +932,7 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
             },
             None => 0,
         };
-        let history = history.into_iter().skip(skip).take(limit as usize);
+        let history = history.into_iter().skip(skip).take(limit);
         let history: Vec<Json> = history
             .map(|item| {
                 let tx_block = item.block_height;
@@ -870,7 +954,7 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
                     "transactions": history,
                     "limit": limit,
                     "skipped": skip,
-                    "from_id": from_id,
+                    "from_id": request.from_id,
                     "total": total_records,
                     "current_block": block_number,
                     "sync_status": coin.history_sync_status(),
@@ -1020,4 +1104,45 @@ pub async fn check_balance_update_loop(ctx: MmArc, ticker: String) {
 pub fn register_balance_update_handler(ctx: MmArc, handler: Box<dyn BalanceUpdateEventHandler + Send + Sync>) {
     let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
     unwrap!(coins_ctx.balance_update_handlers.spinlock(100)).push(handler);
+}
+
+pub fn update_coins_config(mut config: Json) -> Result<Json, String> {
+    let coins = match config.as_array_mut() {
+        Some(c) => c,
+        _ => return ERR!("Coins config must be an array"),
+    };
+
+    for coin in coins {
+        // the coin_as_str is used only to be formatted
+        let coin_as_str = format!("{}", coin);
+        let coin = try_s!(coin
+            .as_object_mut()
+            .ok_or(ERRL!("Expected object, found {:?}", coin_as_str)));
+        if coin.contains_key("protocol") {
+            // the coin is up-to-date
+            continue;
+        }
+        let protocol = match coin.remove("etomic") {
+            Some(etomic) => {
+                let etomic = etomic
+                    .as_str()
+                    .ok_or(ERRL!("Expected etomic as string, found {:?}", etomic))?;
+                if etomic == "0x0000000000000000000000000000000000000000" {
+                    CoinProtocol::ETH
+                } else {
+                    let contract_address = etomic.to_owned();
+                    CoinProtocol::ERC20 {
+                        platform: "ETH".into(),
+                        contract_address,
+                    }
+                }
+            },
+            _ => CoinProtocol::UTXO,
+        };
+
+        let protocol = json::to_value(protocol).map_err(|e| ERRL!("Error {:?} on process {:?}", e, coin_as_str))?;
+        coin.insert("protocol".into(), protocol);
+    }
+
+    Ok(config)
 }

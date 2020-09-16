@@ -18,8 +18,8 @@ doctest = false
 
 [dependencies]
 arrayref = "0.3"
-async-std = "1.5.0"
-atomic = "^0.4.6"
+async-std = {version = "1.5", features = ["unstable"]}
+atomic = "ˆ0.4.6"
 backtrace = "0.3"
 base64 = "0.10.0"
 bigdecimal = { version = "0.1", features = ["serde"] }
@@ -65,7 +65,7 @@ serde = "1"
 serde_bencode = "0.2"
 serde_bytes = "0.11"
 serde_derive = "1"
-serde_json = "1"
+serde_json = { version = "1.0", features = ["preserve_order"] }
 term = "0.5"
 tokio = { version = "0.1", optional = true }
 tokio-core = { version = "0.1", optional = true }

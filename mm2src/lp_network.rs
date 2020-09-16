@@ -22,7 +22,7 @@ use bytes::Bytes;
 use common::executor::{spawn, Timer};
 #[cfg(not(feature = "native"))] use common::helperᶜ;
 use common::mm_ctx::MmArc;
-use common::{lp_queue_command, now_float, now_ms, HyRes, QueuedCommand};
+use common::{lp_queue_command, now_ms, HyRes, P2PMessage, QueuedCommand};
 use crossbeam::channel;
 use futures::channel::oneshot;
 use futures::compat::Future01CompatExt;
@@ -35,12 +35,13 @@ use mm2_libp2p::{atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, Ade
 #[cfg(test)] use mocktopus::macros::*;
 use serde::de;
 use serde_bencode::de::from_bytes as bdecode;
-use serde_bencode::ser::to_bytes as bencode;
 use serde_json::{self as json, Value as Json};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, TcpListener, TcpStream};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+use tokio::net::TcpListener as AsyncTcpListener;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
 
@@ -425,12 +426,22 @@ pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
                             false
                         },
                     }
-                })
-                .collect(),
-            Err(channel::RecvTimeoutError::Timeout) => clients,
-            Err(channel::RecvTimeoutError::Disconnected) => panic!("seednode_p2p_channel is disconnected"),
-        };
-    }
+                }
+            };
+            tokio::spawn(async move {
+                // selecting over the read and write parts processing loops in order to
+                // drop both parts and close connection in case of errors
+                futures::select! {
+                    read = Box::pin(read_loop).fuse() => (),
+                    write = Box::pin(write_loop).fuse() => (),
+                };
+            });
+        }
+    };
+    // creating separate tokio 0.2 runtime as TcpListener requires it and doesn't work with
+    // shared tokio 0.1 core
+    let mut runtime = tokio::runtime::Runtime::new().unwrap();
+    runtime.block_on(fut);
 }
 
 #[cfg(feature = "native")]
@@ -590,6 +601,7 @@ fn start_queue_tap(ctx: MmArc) -> Result<(), String> {
     Ok(())
 }
 
+/*
 /// Poll the native helpers for messages coming from the seed nodes.
 #[cfg(feature = "native")]
 pub async fn p2p_tapʰ(req: Bytes) -> Result<Vec<u8>, String> {
@@ -628,7 +640,7 @@ pub async fn broadcast_p2p_msgʰ(req: Bytes) -> Result<Vec<u8>, String> {
     ctx.broadcast_p2p_msg("test".into(), args.msg.into_bytes());
     Ok(Vec::new())
 }
-
+*/
 /// Tells the native helpers to start the client_p2p_loop, collecting messages from the seed nodes.
 #[cfg(feature = "native")]
 pub async fn start_client_p2p_loopʰ(req: Bytes) -> Result<Vec<u8>, String> {
@@ -698,8 +710,8 @@ fn client_p2p_loop(ctx: MmArc, addrs: Vec<String>) {
                     if !conn.buf.is_empty() {
                         let msgs = conn.buf.split('\n');
                         for msg in msgs {
-                            if !msg.is_empty() {
-                                commands.push(msg.to_string())
+                            if msg.len() > 1 {
+                                commands.push(P2PMessage::from_string_with_default_addr(msg.to_owned()));
                             }
                         }
                         conn.buf.clear();

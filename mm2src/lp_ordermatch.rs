@@ -2013,6 +2013,12 @@ pub async fn buy(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
     let base_coin = try_s!(lp_coinfindᵃ(&ctx, &input.base).await);
     let base_coin: MmCoinEnum = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
+    if base_coin.wallet_only() {
+        return ERR!("Base coin is wallet only");
+    }
+    if rel_coin.wallet_only() {
+        return ERR!("Rel coin is wallet only");
+    }
     let my_amount = &input.volume * &input.price;
     try_s!(check_balance_for_taker_swap(&ctx, &rel_coin, &base_coin, my_amount, None).await);
     try_s!(base_coin.can_i_spend_other_payment().compat().await);
@@ -2029,6 +2035,12 @@ pub async fn sell(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let base_coin = try_s!(base_coin.ok_or("Base coin is not found or inactive"));
     let rel_coin = try_s!(lp_coinfindᵃ(&ctx, &input.rel).await);
     let rel_coin = try_s!(rel_coin.ok_or("Rel coin is not found or inactive"));
+    if base_coin.wallet_only() {
+        return ERR!("Base coin is wallet only");
+    }
+    if rel_coin.wallet_only() {
+        return ERR!("Rel coin is wallet only");
+    }
     try_s!(check_balance_for_taker_swap(&ctx, &base_coin, &rel_coin, input.volume.clone(), None).await);
     try_s!(rel_coin.can_i_spend_other_payment().compat().await);
     let res = try_s!(lp_auto_buy(&ctx, &base_coin, &rel_coin, input).await).into_bytes();
@@ -2241,12 +2253,12 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
 }
 
 fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String> {
-    let req_string = try_s!(json::to_string(req));
+    let msg = P2PMessage::from_serialize_with_default_addr(&req);
+    let req_value = try_s!(json::to_value(req));
+    let ctxʹ = ctx.clone();
 
     // TODO this is required to process the set price message on our own node, it's the easiest way now
     //      there might be a better way of doing this so we should consider refactoring
-    let req_value = try_s!(json::to_value(req));
-    let ctxʹ = ctx.clone();
     spawn(async move {
         let rc = lp_post_price_recv(&ctxʹ, req_value).await;
         if let Err(err) = rc {
@@ -2294,6 +2306,13 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         Some(coin) => coin,
         None => return ERR!("Rel coin {} is not found", req.rel),
     };
+
+    if base_coin.wallet_only() {
+        return ERR!("Base coin is wallet only");
+    }
+    if rel_coin.wallet_only() {
+        return ERR!("Rel coin is wallet only");
+    }
 
     let my_balance = try_s!(base_coin.my_balance().compat().await);
     let volume = if req.max {

@@ -186,6 +186,8 @@ impl MmCoin for TestCoin {
 
     fn can_i_spend_other_payment(&self) -> Box<dyn Future<Item = (), Error = String> + Send> { unimplemented!() }
 
+    fn wallet_only(&self) -> bool { unimplemented!() }
+
     fn withdraw(&self, req: WithdrawRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send> {
         unimplemented!()
     }
@@ -214,4 +216,6 @@ impl MmCoin for TestCoin {
     fn set_required_confirmations(&self, _confirmations: u64) { unimplemented!() }
 
     fn set_requires_notarization(&self, _requires_nota: bool) { unimplemented!() }
+
+    fn my_unspendable_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send> { unimplemented!() }
 }
