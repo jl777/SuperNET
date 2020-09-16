@@ -2253,9 +2253,9 @@ pub async fn lp_post_price_recv(ctx: &MmArc, req: Json) -> Result<(), String> {
 }
 
 fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String> {
-    let msg = P2PMessage::from_serialize_with_default_addr(&req);
     let req_value = try_s!(json::to_value(req));
     let ctxʹ = ctx.clone();
+    ctx.broadcast_p2p_msg(orderbook_topic(&req.base, &req.rel), try_s!(json::to_vec(&req_value)));
 
     // TODO this is required to process the set price message on our own node, it's the easiest way now
     //      there might be a better way of doing this so we should consider refactoring
@@ -2266,7 +2266,6 @@ fn lp_send_price_ping(req: &PricePingRequest, ctx: &MmArc) -> Result<(), String>
         }
     });
 
-    ctx.broadcast_p2p_msg(orderbook_topic(&req.base, &req.rel), req_string.into_bytes());
     Ok(())
 }
 

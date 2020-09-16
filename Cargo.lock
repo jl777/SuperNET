@@ -698,6 +698,7 @@ dependencies = [
 name = "coins"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "base64 0.10.1",
  "bigdecimal",
  "bitcrypto",
@@ -2893,6 +2894,7 @@ dependencies = [
  "serialization_derive",
  "term 0.5.1",
  "testcontainers",
+ "tokio 0.2.22",
  "tokio-core",
  "unwrap",
  "uuid",
@@ -4193,6 +4195,7 @@ version = "1.0.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec2c5d7e739bc07a3e73381a39d61fdb5f671c60c1df26a130690665803d8226"
 dependencies = [
+ "indexmap",
  "itoa",
  "ryu",
  "serde",

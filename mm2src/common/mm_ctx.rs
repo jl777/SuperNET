@@ -23,13 +23,12 @@ use std::sync::{Arc, Mutex, Weak};
 use crate::executor::Timer;
 use crate::log::{self, LogState};
 use crate::mm_metrics::{prometheus, MetricsArc};
-use crate::{bits256, block_on, small_rng, P2PMessage, QueuedCommand};
+use crate::{bits256, small_rng, P2PMessage, QueuedCommand};
 
 /// Default interval to export and record metrics to log.
 const EXPORT_METRICS_INTERVAL: f64 = 5. * 60.;
 
 type StopListenerCallback = Box<dyn FnMut() -> Result<(), String>>;
-use futures::SinkExt;
 
 /// MarketMaker state, shared between the various MarketMaker threads.
 ///

@@ -19,7 +19,7 @@
 #![allow(uncommon_codepoints)]
 
 use bytes::Bytes;
-use common::executor::{spawn, Timer};
+use common::executor::spawn;
 #[cfg(not(feature = "native"))] use common::helperᶜ;
 use common::mm_ctx::MmArc;
 use common::{lp_queue_command, now_ms, HyRes, P2PMessage, QueuedCommand};
@@ -37,11 +37,9 @@ use serde::de;
 use serde_bencode::de::from_bytes as bdecode;
 use serde_json::{self as json, Value as Json};
 use std::io::{BufRead, BufReader, Write};
-use std::net::{IpAddr, TcpListener, TcpStream};
+use std::net::{IpAddr, TcpStream};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-use tokio::net::TcpListener as AsyncTcpListener;
 
 use crate::mm2::{lp_ordermatch, lp_swap};
 
@@ -349,99 +347,6 @@ fn rpc_reply_to_peer(handler: HyRes, cmd: QueuedCommand) {
         Box::new(future::ok(()))
     });
     spawn(f.compat().map(|_| ()))
-}
-
-/// The loop processing seednode activity as message relayer/rebroadcaster
-/// Non-blocking mode should be enabled on listener for this to work
-#[allow(dead_code)]
-pub fn seednode_loop(ctx: MmArc, listener: TcpListener) {
-    let mut clients = vec![];
-    loop {
-        if ctx.is_stopping() {
-            break;
-        }
-
-        match listener.accept() {
-            Ok((stream, addr)) => {
-                ctx.log.log(
-                    "😀",
-                    &[&"incoming_connection", &addr.to_string().as_str()],
-                    "New connection...",
-                );
-                match stream.set_nonblocking(true) {
-                    Ok(_) => clients.push((BufReader::new(stream), addr, String::new())),
-                    Err(e) => ctx.log.log(
-                        "😟",
-                        &[&"incoming_connection", &addr.to_string().as_str()],
-                        &format!("Error {} setting nonblocking mode", e),
-                    ),
-                }
-            },
-            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => (),
-            Err(e) => panic!("encountered IO error: {}", e),
-        }
-
-        let mut commands = Vec::new();
-        clients = clients
-            .drain_filter(|(client, addr, buf)| match client.read_line(buf) {
-                Ok(_) => {
-                    if !buf.is_empty() {
-                        let msgs = buf.split('\n');
-                        for msg in msgs {
-                            if !msg.is_empty() {
-                                commands.push(msg.to_string())
-                            }
-                        }
-                        buf.clear();
-                    }
-                    true
-                },
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => true,
-                Err(e) => {
-                    ctx.log.log(
-                        "😟",
-                        &[&"incoming_connection", &addr.to_string().as_str()],
-                        &format!("Error {} reading from socket, dropping connection", e),
-                    );
-                    false
-                },
-            })
-            .collect();
-        for msg in commands {
-            unwrap!(lp_queue_command(&ctx, msg));
-        }
-
-        clients = match ctx.seednode_p2p_channel.1.recv_timeout(Duration::from_millis(1)) {
-            Ok(mut msg) => clients
-                .drain_filter(|(client, addr, _)| {
-                    msg.push(b'\n');
-                    match client.get_mut().write(&msg) {
-                        Ok(_) => true,
-                        Err(e) => {
-                            ctx.log.log(
-                                "😟",
-                                &[&"incoming_connection", &addr.to_string().as_str()],
-                                &format!("Error {} writing to socket, dropping connection", e),
-                            );
-                            false
-                        },
-                    }
-                }
-            };
-            tokio::spawn(async move {
-                // selecting over the read and write parts processing loops in order to
-                // drop both parts and close connection in case of errors
-                futures::select! {
-                    read = Box::pin(read_loop).fuse() => (),
-                    write = Box::pin(write_loop).fuse() => (),
-                };
-            });
-        }
-    };
-    // creating separate tokio 0.2 runtime as TcpListener requires it and doesn't work with
-    // shared tokio 0.1 core
-    let mut runtime = tokio::runtime::Runtime::new().unwrap();
-    runtime.block_on(fut);
 }
 
 #[cfg(feature = "native")]
