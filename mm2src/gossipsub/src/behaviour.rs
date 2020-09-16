@@ -278,7 +278,7 @@ impl Gossipsub {
         self.mcache.put(message.clone());
         self.received.put(msg_id.clone(), ());
 
-        info!("Published message: {:?}", msg_id);
+        debug!("Published message: {:?}", msg_id);
 
         let event = Arc::new(GossipsubRpc {
             subscriptions: Vec::new(),
