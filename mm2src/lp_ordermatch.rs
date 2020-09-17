@@ -239,18 +239,13 @@ async fn request_and_fill_orderbook(
     Ok(())
 }
 
-async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive, order: &MakerOrder) {
+async fn process_my_order_keep_alive(ctx: &MmArc, keep_alive: &new_protocol::MakerOrderKeepAlive) {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock().await;
 
     let uuid = keep_alive.uuid.into();
-    match orderbook.find_order_by_uuid(&uuid) {
-        Some(order) => order.timestamp = keep_alive.timestamp,
-        None => {
-            // avoid dead lock on orderbook as maker_order_created_p2p_notify also acquires it
-            drop(orderbook);
-            maker_order_created_p2p_notify(ctx.clone(), order).await;
-        },
+    if let Some(mut order) = orderbook.find_order_by_uuid(&uuid) {
+        order.timestamp = keep_alive.timestamp;
     }
 }
 
@@ -972,7 +967,6 @@ pub struct MakerOrder {
     started_swaps: Vec<Uuid>,
     uuid: Uuid,
     conf_settings: Option<OrderConfirmationsSettings>,
-    keep_alive_sent_at: Option<u64>,
 }
 
 struct MakerOrderBuilder {
@@ -1147,7 +1141,6 @@ impl MakerOrderBuilder {
             started_swaps: Vec::new(),
             uuid: new_uuid(),
             conf_settings: self.conf_settings,
-            keep_alive_sent_at: None,
         })
     }
 }
@@ -1191,7 +1184,6 @@ impl Into<MakerOrder> for TakerOrder {
                 started_swaps: Vec::new(),
                 uuid: self.request.uuid,
                 conf_settings: self.request.conf_settings,
-                keep_alive_sent_at: None,
             },
             // The "buy" taker order is recreated with reversed pair as Maker order is always considered as "sell"
             TakerAction::Buy => MakerOrder {
@@ -1205,7 +1197,6 @@ impl Into<MakerOrder> for TakerOrder {
                 started_swaps: Vec::new(),
                 uuid: self.request.uuid,
                 conf_settings: self.request.conf_settings.map(|s| s.reversed()),
-                keep_alive_sent_at: None,
             },
         }
     }
@@ -1337,39 +1328,37 @@ impl Into<new_protocol::OrdermatchMessage> for MakerConnected {
     }
 }
 
-pub trait OrdermatchEventHandler {
-    fn maker_order_created(&self, order: &MakerOrder);
-
-    fn maker_order_updated(&self, order: &MakerOrder);
-
-    fn maker_order_cancelled(&self, order: &MakerOrder);
-}
-
-async fn broadcast_maker_keep_alives(ctx: &MmArc) {
+async fn broadcast_maker_keep_alives(ctx: &MmArc, keep_alives_sent_at: &mut HashMap<Uuid, u64>) {
     let now = now_ms();
     let ordermatch_ctx: Arc<OrdermatchContext> = OrdermatchContext::from_ctx(&ctx).unwrap();
     let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     let mut broadcast_num = 0;
     let max_broadcast_num = my_maker_orders.len() / 20;
     for order in my_maker_orders.values_mut() {
-        if let Some(keep_alive_at) = order.keep_alive_sent_at {
-            if now < keep_alive_at + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
-                continue;
-            }
-        }
-
         if now < order.created_at + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
             continue;
         }
 
-        let msg = new_protocol::MakerOrderKeepAlive {
-            uuid: order.uuid.into(),
-            timestamp: now / 1000,
-        };
-        order.keep_alive_sent_at = Some(now);
-        process_my_order_keep_alive(ctx, &msg, order).await;
-        let topic = orderbook_topic(&order.base, &order.rel);
-        broadcast_ordermatch_message(ctx, topic, msg);
+        match keep_alives_sent_at.entry(order.uuid) {
+            Entry::Occupied(mut e) => {
+                if now < e.get() + MIN_ORDER_KEEP_ALIVE_INTERVAL * 1000 {
+                    continue;
+                }
+                *e.get_mut() = now;
+                let topic = orderbook_topic(&order.base, &order.rel);
+                let msg = new_protocol::MakerOrderKeepAlive {
+                    uuid: order.uuid.into(),
+                    timestamp: now / 1000,
+                };
+                process_my_order_keep_alive(ctx, &msg).await;
+                broadcast_ordermatch_message(ctx, topic, msg);
+            },
+            Entry::Vacant(e) => {
+                e.insert(now);
+                maker_order_created_p2p_notify(ctx.clone(), order).await;
+            },
+        }
+
         broadcast_num += 1;
         if broadcast_num >= max_broadcast_num {
             break;
@@ -1646,6 +1635,7 @@ fn lp_connected_alice(ctx: MmArc, taker_request: TakerRequest, taker_match: Take
 }
 
 pub async fn lp_ordermatch_loop(ctx: MmArc) {
+    let mut keep_alives_sent_at = HashMap::new();
     loop {
         if ctx.is_stopping() {
             break;
@@ -1709,7 +1699,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             }
         }
 
-        broadcast_maker_keep_alives(&ctx).await;
+        broadcast_maker_keep_alives(&ctx, &mut keep_alives_sent_at).await;
 
         {
             // remove "timed out" orders from inactive_orders

@@ -25,7 +25,6 @@ fn test_match_maker_order_and_taker_request() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
 
     let request = TakerRequest {
@@ -59,7 +58,6 @@ fn test_match_maker_order_and_taker_request() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
 
     let request = TakerRequest {
@@ -93,7 +91,6 @@ fn test_match_maker_order_and_taker_request() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
 
     let request = TakerRequest {
@@ -127,7 +124,6 @@ fn test_match_maker_order_and_taker_request() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
 
     let request = TakerRequest {
@@ -161,7 +157,6 @@ fn test_match_maker_order_and_taker_request() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
 
     let request = TakerRequest {
@@ -195,7 +190,6 @@ fn test_match_maker_order_and_taker_request() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
 
     let request = TakerRequest {
@@ -232,7 +226,6 @@ fn test_maker_order_available_amount() {
         started_swaps: Vec::new(),
         uuid: Uuid::new_v4(),
         conf_settings: None,
-        keep_alive_sent_at: None,
     };
     maker.matches.insert(Uuid::new_v4(), MakerMatch {
         request: TakerRequest {
@@ -769,7 +762,6 @@ fn prepare_for_cancel_by(ctx: &MmArc) {
         price: 0.into(),
         started_swaps: vec![],
         conf_settings: None,
-        keep_alive_sent_at: None,
     });
     maker_orders.insert(Uuid::from_bytes([1; 16]), MakerOrder {
         uuid: Uuid::from_bytes([1; 16]),
@@ -782,7 +774,6 @@ fn prepare_for_cancel_by(ctx: &MmArc) {
         price: 0.into(),
         started_swaps: vec![],
         conf_settings: None,
-        keep_alive_sent_at: None,
     });
     maker_orders.insert(Uuid::from_bytes([2; 16]), MakerOrder {
         uuid: Uuid::from_bytes([2; 16]),
@@ -795,7 +786,6 @@ fn prepare_for_cancel_by(ctx: &MmArc) {
         price: 0.into(),
         started_swaps: vec![],
         conf_settings: None,
-        keep_alive_sent_at: None,
     });
     taker_orders.insert(Uuid::from_bytes([3; 16]), TakerOrder {
         matches: HashMap::new(),

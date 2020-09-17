@@ -88,6 +88,8 @@ pub struct Gossipsub {
     heartbeat: Interval,
 
     peer_connections: HashMap<PeerId, Vec<ConnectedPoint>>,
+
+    connected_addresses: Vec<Multiaddr>,
 }
 
 impl Gossipsub {
@@ -123,6 +125,7 @@ impl Gossipsub {
             connected_relayers: HashSet::new(),
             relayers_mesh: HashSet::new(),
             included_to_relayers_mesh: HashSet::new(),
+            connected_addresses: Vec::new(),
         }
     }
 
@@ -1121,6 +1124,8 @@ impl Gossipsub {
     pub fn is_relay(&self) -> bool { self.config.i_am_relay }
 
     pub fn connected_relayers(&self) -> Vec<PeerId> { self.connected_relayers.iter().cloned().collect() }
+
+    pub fn is_connected_to_addr(&self, addr: &Multiaddr) -> bool { self.connected_addresses.contains(addr) }
 }
 
 impl NetworkBehaviour for Gossipsub {
@@ -1232,12 +1237,15 @@ impl NetworkBehaviour for Gossipsub {
             .entry(peer_id.clone())
             .or_insert_with(Default::default)
             .push(point.clone());
+        self.connected_addresses.push(point.get_remote_address().clone());
     }
 
     fn inject_connection_closed(&mut self, peer_id: &PeerId, _: &ConnectionId, disconnected_point: &ConnectedPoint) {
         if let Some(connected_points) = self.peer_connections.get_mut(peer_id) {
             connected_points.retain(|point| point != disconnected_point);
         }
+        self.connected_addresses
+            .retain(|addr| addr != disconnected_point.get_remote_address());
     }
 
     fn inject_event(&mut self, propagation_source: PeerId, _: ConnectionId, event: GossipsubRpc) {

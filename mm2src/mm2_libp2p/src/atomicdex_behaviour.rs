@@ -17,7 +17,7 @@ use libp2p::{core::{ConnectedPoint, Multiaddr, Transport},
              request_response::ResponseChannel,
              swarm::{ExpandedSwarm, NetworkBehaviourEventProcess, Swarm},
              NetworkBehaviour, PeerId};
-use log::{debug, error};
+use log::{debug, error, info};
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
@@ -431,17 +431,24 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
         let to_connect = swarm
             .peers_exchange
             .get_random_peers(to_connect_num, |peer| !connected_relayers.contains(peer));
-        if to_connect.is_empty() && connected_relayers.is_empty() {
-            for addr in bootstrap_addresses {
-                if let Err(e) = libp2p::Swarm::dial_addr(swarm, addr.clone()) {
+
+        // choose some random bootstrap addresses to connect if peers exchange returned not enough peers
+        if to_connect.len() < to_connect_num {
+            let connect_bootstrap_num = to_connect_num - to_connect.len();
+            for addr in bootstrap_addresses
+                .iter()
+                .filter(|addr| !swarm.gossipsub.is_connected_to_addr(addr))
+                .collect::<Vec<_>>()
+                .choose_multiple(&mut thread_rng(), connect_bootstrap_num)
+            {
+                if let Err(e) = libp2p::Swarm::dial_addr(swarm, (*addr).clone()) {
                     error!("Addr {} dial error {}", addr, e);
                 }
             }
-        } else {
-            for peer in to_connect {
-                if let Err(e) = libp2p::Swarm::dial(swarm, &peer) {
-                    error!("Peer {} dial error {}", peer, e);
-                }
+        }
+        for peer in to_connect {
+            if let Err(e) = libp2p::Swarm::dial(swarm, &peer) {
+                error!("Peer {} dial error {}", peer, e);
             }
         }
     }
@@ -455,6 +462,7 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
             .filter(|peer| !relayers_mesh.contains(peer))
             .collect();
         for peer in not_in_mesh.choose_multiple(&mut rng, to_disconnect_num) {
+            info!("Disconnecting peer {}", peer);
             if Swarm::disconnect_peer_id(swarm, (*peer).clone()).is_err() {
                 error!("Peer {} disconnect error", peer);
             }
