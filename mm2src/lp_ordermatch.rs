@@ -1351,7 +1351,7 @@ async fn broadcast_maker_keep_alives(ctx: &MmArc, keep_alives_sent_at: &mut Hash
                     timestamp: now / 1000,
                 };
                 process_my_order_keep_alive(ctx, &msg).await;
-                broadcast_ordermatch_message(ctx, topic, msg);
+                broadcast_ordermatch_message(ctx, topic, msg.into());
             },
             Entry::Vacant(e) => {
                 e.insert(now);
@@ -1366,8 +1366,7 @@ async fn broadcast_maker_keep_alives(ctx: &MmArc, keep_alives_sent_at: &mut Hash
     }
 }
 
-fn broadcast_ordermatch_message<T: Into<new_protocol::OrdermatchMessage>>(ctx: &MmArc, topic: String, msg: T) {
-    let msg = msg.into();
+fn broadcast_ordermatch_message(ctx: &MmArc, topic: String, msg: new_protocol::OrdermatchMessage) {
     let key_pair = ctx.secp256k1_key_pair.or(&&|| panic!());
     let encoded_msg = encode_and_sign(&msg, &*key_pair.private().secret).unwrap();
     broadcast_p2p_msg(ctx, topic, encoded_msg);
@@ -1771,7 +1770,7 @@ async fn process_maker_reserved(ctx: MmArc, reserved_msg: MakerReserved) {
             maker_order_uuid: reserved_msg.maker_order_uuid,
         };
         let topic = orderbook_topic(&my_order.request.base, &my_order.request.rel);
-        broadcast_ordermatch_message(&ctx, topic, connect.clone());
+        broadcast_ordermatch_message(&ctx, topic, connect.clone().into());
         let taker_match = TakerMatch {
             reserved: reserved_msg,
             connect,
@@ -1867,7 +1866,7 @@ async fn process_taker_request(ctx: MmArc, taker_request: TakerRequest) {
                 };
                 let topic = orderbook_topic(&order.base, &order.rel);
                 println!("Request matched sending reserved {:?}", reserved);
-                broadcast_ordermatch_message(&ctx, topic, reserved.clone());
+                broadcast_ordermatch_message(&ctx, topic, reserved.clone().into());
                 let maker_match = MakerMatch {
                     request: taker_request,
                     reserved,
@@ -1920,7 +1919,7 @@ async fn process_taker_connect(ctx: MmArc, sender_pubkey: H256Json, connect_msg:
             method: "connected".into(),
         };
         let topic = orderbook_topic(&my_order.base, &my_order.rel);
-        broadcast_ordermatch_message(&ctx, topic, connected.clone());
+        broadcast_ordermatch_message(&ctx, topic, connected.clone().into());
         order_match.connect = Some(connect_msg);
         order_match.connected = Some(connected);
         my_order.started_swaps.push(order_match.request.uuid);
@@ -2093,7 +2092,7 @@ pub async fn lp_auto_buy(
         .with_conf_settings(conf_settings)
         .with_sender_pubkey(H256Json::from(our_public_id.bytes));
     let request = try_s!(request_builder.build());
-    broadcast_ordermatch_message(&ctx, orderbook_topic(&input.base, &input.rel), request.clone());
+    broadcast_ordermatch_message(&ctx, orderbook_topic(&input.base, &input.rel), request.clone().into());
     let result = json!({ "result": request }).to_string();
     let order = TakerOrder {
         created_at: now_ms(),
@@ -2547,7 +2546,6 @@ pub async fn cancel_order(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
             if !order.get().is_cancellable() {
                 return ERR!("Order {} is being matched now, can't cancel", req.uuid);
             }
-            let _cancelled_orders = ordermatch_ctx.my_cancelled_orders.lock().await;
             let order = order.remove();
             maker_order_cancelled_p2p_notify(ctx, &order).await;
             let res = json!({
@@ -2728,19 +2726,19 @@ pub enum CancelBy {
 
 pub async fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<Uuid>, Vec<Uuid>), String> {
     let mut cancelled = vec![];
+    let mut cancelled_maker_orders = vec![];
     let mut currently_matching = vec![];
 
     let ordermatch_ctx = try_s!(OrdermatchContext::from_ctx(ctx));
     let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
     let mut taker_orders = ordermatch_ctx.my_taker_orders.lock().await;
-    let mut my_cancelled_orders = ordermatch_ctx.my_cancelled_orders.lock().await;
 
     macro_rules! cancel_maker_if_true {
         ($e: expr, $uuid: ident, $order: ident) => {
             if $e {
                 if $order.is_cancellable() {
                     delete_my_maker_order(&ctx, &$order);
-                    my_cancelled_orders.insert($uuid, $order);
+                    cancelled_maker_orders.push($order);
                     cancelled.push($uuid);
                     None
                 } else {
@@ -2808,6 +2806,9 @@ pub async fn cancel_orders_by(ctx: &MmArc, cancel_by: CancelBy) -> Result<(Vec<U
                 .collect();
         },
     };
+    for order in cancelled_maker_orders {
+        maker_order_cancelled_p2p_notify(ctx.clone(), &order).await;
+    }
     Ok((cancelled, currently_matching))
 }
 

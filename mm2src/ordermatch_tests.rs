@@ -746,7 +746,11 @@ fn test_taker_order_cancellable() {
     assert!(!order.is_cancellable());
 }
 
-fn prepare_for_cancel_by(ctx: &MmArc) {
+fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::UnboundedReceiver<AdexBehaviourCmd> {
+    let (tx, rx) = mpsc::unbounded();
+    let p2p_ctx = P2PContext::new(tx);
+    p2p_ctx.store_to_mm_arc(ctx);
+
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(ctx));
     let mut maker_orders = block_on(ordermatch_ctx.my_maker_orders.lock());
     let mut taker_orders = block_on(ordermatch_ctx.my_taker_orders.lock());
@@ -807,17 +811,21 @@ fn prepare_for_cancel_by(ctx: &MmArc) {
         },
         order_type: OrderType::GoodTillCancelled,
     });
+    rx
 }
 
 #[test]
 fn test_cancel_by_single_coin() {
-    let ctx = MmCtxBuilder::default().into_mm_arc();
-    prepare_for_cancel_by(&ctx);
+    let ctx = MmCtxBuilder::default()
+        .with_secp256k1_key_pair(key_pair_from_seed("123").unwrap())
+        .into_mm_arc();
+    let rx = prepare_for_cancel_by(&ctx);
 
     delete_my_maker_order.mock_safe(|_, _| MockResult::Return(()));
     delete_my_taker_order.mock_safe(|_, _| MockResult::Return(()));
 
     let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::Coin { ticker: "RICK".into() })).unwrap();
+    block_on(rx.take(2).collect::<Vec<_>>());
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([2; 16])));
@@ -826,8 +834,10 @@ fn test_cancel_by_single_coin() {
 
 #[test]
 fn test_cancel_by_pair() {
-    let ctx = MmCtxBuilder::default().into_mm_arc();
-    prepare_for_cancel_by(&ctx);
+    let ctx = MmCtxBuilder::default()
+        .with_secp256k1_key_pair(key_pair_from_seed("123").unwrap())
+        .into_mm_arc();
+    let rx = prepare_for_cancel_by(&ctx);
 
     delete_my_maker_order.mock_safe(|_, _| MockResult::Return(()));
     delete_my_taker_order.mock_safe(|_, _| MockResult::Return(()));
@@ -837,6 +847,7 @@ fn test_cancel_by_pair() {
         rel: "MORTY".into(),
     }))
     .unwrap();
+    block_on(rx.take(1).collect::<Vec<_>>());
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(!cancelled.contains(&Uuid::from_bytes([2; 16])));
@@ -845,13 +856,16 @@ fn test_cancel_by_pair() {
 
 #[test]
 fn test_cancel_by_all() {
-    let ctx = MmCtxBuilder::default().into_mm_arc();
-    prepare_for_cancel_by(&ctx);
+    let ctx = MmCtxBuilder::default()
+        .with_secp256k1_key_pair(key_pair_from_seed("123").unwrap())
+        .into_mm_arc();
+    let rx = prepare_for_cancel_by(&ctx);
 
     delete_my_maker_order.mock_safe(|_, _| MockResult::Return(()));
     delete_my_taker_order.mock_safe(|_, _| MockResult::Return(()));
 
     let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::All)).unwrap();
+    block_on(rx.take(3).collect::<Vec<_>>());
     assert!(cancelled.contains(&Uuid::from_bytes([0; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([1; 16])));
     assert!(cancelled.contains(&Uuid::from_bytes([2; 16])));
