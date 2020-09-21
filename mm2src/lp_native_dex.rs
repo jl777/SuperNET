@@ -31,7 +31,6 @@ use mm2_libp2p::start_gossipsub;
 use rand::rngs::SmallRng;
 use rand::{random, Rng, SeedableRng};
 use serde_json::{self as json, Value as Json};
-use std::borrow::Cow;
 use std::ffi::CString;
 use std::fs;
 use std::io::{Read, Write};
@@ -46,7 +45,7 @@ use crate::common::executor::{spawn, spawn_boxed, Timer};
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
-use crate::mm2::lp_network::{p2p_event_process_loop, start_client_p2p_loop, P2PContext};
+use crate::mm2::lp_network::{p2p_event_process_loop, P2PContext};
 use crate::mm2::lp_ordermatch::{lp_ordermatch_loop, lp_trade_command, migrate_saved_orders, orders_kick_start,
                                 BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
@@ -103,69 +102,6 @@ pub fn lp_ports(netid: u16) -> Result<(u16, u16, u16), String> {
         LP_RPCPORT
     };
     Ok((other_ports + 10, other_ports + 20, other_ports + 30))
-}
-
-/// Setup the peer-to-peer network.
-#[allow(dead_code)]
-pub async fn lp_initpeers(ctx: &MmArc, netid: u16, seednodes: Option<Vec<String>>) -> Result<(), String> {
-    // Pick our ports.
-    let (_pullport, pubport, _busport) = try_s!(lp_ports(netid));
-
-    type IP<'a> = Cow<'a, str>;
-
-    /// True if the node is a liquid provider (e.g. Bob, Maker).  
-    /// NB: We want the peers to be equal, freely functioning as either a Bob or an Alice, and I wonder how the p2p LP flags are affected by that.
-    type IsLp = bool;
-
-    let seeds: Vec<(IP, IsLp)> = if let Some(seednodes) = seednodes {
-        for _seednode in seednodes.iter() {
-            // A custom `seednode` is often used in automatic or manual tests
-            // in order to directly give the Taker the address of the Maker.
-            // We don't want to unnecessarily spam the friendlist of a public seed node,
-            // but for a custom `seednode` we invoke the `investigate_peer`,
-            // facilitating direct `peers` communication between the two.
-            // try_s!(peers::investigate_peer (&ctx, &seednode, pubport + 1));
-        }
-        seednodes.into_iter().map(|ip| (Cow::Owned(ip), true)).collect()
-    } else if netid > 0 && netid < 9 {
-        vec![(format!("5.9.253.{}", 195 + netid).into(), true)]
-    } else if netid == 0 {
-        // Default production netid is 0.
-        P2P_SEED_NODES
-            .iter()
-            .map(|ip| (Cow::Borrowed(&ip[..]), false))
-            .collect()
-    } else if netid == 9999 {
-        // MM2 testing netid is 9999.
-        P2P_SEED_NODES_9999
-            .iter()
-            .map(|ip| (Cow::Borrowed(&ip[..]), false))
-            .collect()
-    } else if netid == 9000 {
-        // A public seed node helps NAT traversal on netid 9000.
-        vec![(Cow::Borrowed("195.201.42.102"), false)]
-    } else {
-        // If we're using a non-default netid then we should skip adding the hardcoded seed nodes.
-        Vec::new()
-    };
-
-    let i_am_seed = ctx.conf["i_am_seed"].as_bool().unwrap_or(false);
-
-    let mut seed_ips = Vec::with_capacity(seeds.len());
-    for (seed_ip, _is_lp) in seeds {
-        seed_ips.push(try_s!(seed_ip.parse()));
-    }
-    *try_s!(ctx.seeds.lock()) = seed_ips.clone();
-    if !i_am_seed {
-        if seed_ips.is_empty() {
-            return ERR!("At least 1 IP must be provided");
-        }
-        // let seed_ips = seeds.iter().map(|(ip, _)| fomat!((ip) ":" (pubport))).collect();
-        try_s!(start_client_p2p_loop(ctx.clone(), seed_ips.iter().map(|ip| ip.to_string()).collect(), pubport).await);
-    }
-    // try_s! (peers::initialize (&ctx, netid, pubport + 1) .await);
-
-    Ok(())
 }
 
 /// Invokes `OS_ensure_directory`,

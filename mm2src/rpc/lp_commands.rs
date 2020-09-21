@@ -161,63 +161,6 @@ pub async fn my_balance(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Stri
     Ok(try_s!(Response::builder().body(res)))
 }
 
-/*
-AP: Passphrase call is not documented and not used as of now, commented out
-
-/// JSON structure passed to the "passphrase" RPC call.
-/// cf. https://docs.komodoplatform.com/barterDEX/barterDEX-API.html#passphrase
-#[derive(Clone, Deserialize, Debug)]
-struct PassphraseReq {
-    passphrase: String,
-    /// Optional because we're checking the `passphrase` hash first.
-    userpass: Option<String>,
-    /// Defaults to "cli" (in `lp_passphrase_init`).
-    gui: Option<String>,
-    seednodes: Option<Vec<String>>
-}
-
-pub fn passphrase (ctx: MmArc, req: Json) -> HyRes {
-    let matching_userpass = super::auth (&req, &ctx) .is_ok();
-    let req: PassphraseReq = try_h! (json::from_value (req));
-
-    let mut passhash: bits256 = unsafe {zeroed()};
-    unsafe {lp::vcalc_sha256 (null_mut(), passhash.bytes.as_mut_ptr(), req.passphrase.as_ptr() as *mut u8, req.passphrase.len() as i32)};
-    let matching_passphrase = unsafe {passhash.bytes == lp::G.LP_passhash.bytes};
-    if !matching_passphrase {
-        log! ({"passphrase] passhash {} != G {}", passhash, unsafe {bits256::from (lp::G.LP_passhash)}});
-        if !matching_userpass {return rpc_err_response (500, "authentication error")}
-    }
-
-    unsafe {lp::G.USERPASS_COUNTER = 1}
-
-    unsafe {try_h! (lp_passphrase_init (Some (&req.passphrase), req.gui.as_ref().map (|s| &s[..])))};
-
-    let mut coins = Vec::new();
-    try_h! (unsafe {coins_iter (&mut |coin| {
-        let coin_json = lp::LP_coinjson (coin, lp::LP_showwif);
-        let cjs = lp::jprint (coin_json, 1);
-        let cjs_copy = Vec::from (CStr::from_ptr (cjs) .to_bytes());
-        free (cjs as *mut c_void);
-        lp::free_json (coin_json);
-        let rcjs: Json = try_s! (json::from_slice (&cjs_copy));
-        coins.push (rcjs);
-        Ok(())
-    })});
-
-    let retjson = json! ({
-        "result": "success",
-        "userpass": try_h! (unsafe {CStr::from_ptr (lp::G.USERPASS.as_ptr())} .to_str()),
-        "mypubkey": fomat! ((unsafe {bits256::from (lp::G.LP_mypub25519.bytes)})),
-        "pubsecp": hex::encode (unsafe {&lp::G.LP_pubsecp[..]}),
-        "KMD": try_h! (bitcoin_address ("KMD", 60, unsafe {lp::G.LP_myrmd160})),
-        "BTC": try_h! (bitcoin_address ("BTC", 0, unsafe {lp::G.LP_myrmd160})),
-        "NXT": try_h! (unsafe {CStr::from_ptr (lp::G.LP_NXTaddr.as_ptr())} .to_str()),
-        "coins": coins
-    });
-
-    rpc_response (200, try_h! (json::to_string (&retjson)))
-}
-*/
 pub fn stop(ctx: MmArc) -> HyRes {
     // Should delay the shutdown a bit in order not to trip the "stop" RPC call in unit tests.
     // Stopping immediately leads to the "stop" RPC call failing with the "errno 10054" sometimes.
@@ -273,7 +216,7 @@ pub async fn get_peers_info(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_peers_info;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.clone();
+    let cmd_tx = ctx.cmd_tx.lock().await.clone();
     let result = get_peers_info(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -286,7 +229,7 @@ pub async fn get_gossip_mesh(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_gossip_mesh;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.clone();
+    let cmd_tx = ctx.cmd_tx.lock().await.clone();
     let result = get_gossip_mesh(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -299,7 +242,7 @@ pub async fn get_gossip_peer_topics(ctx: MmArc) -> Result<Response<Vec<u8>>, Str
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_gossip_peer_topics;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.clone();
+    let cmd_tx = ctx.cmd_tx.lock().await.clone();
     let result = get_gossip_peer_topics(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -312,7 +255,7 @@ pub async fn get_gossip_topic_peers(ctx: MmArc) -> Result<Response<Vec<u8>>, Str
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_gossip_topic_peers;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.clone();
+    let cmd_tx = ctx.cmd_tx.lock().await.clone();
     let result = get_gossip_topic_peers(cmd_tx).await;
     let result = json!({
         "result": result,

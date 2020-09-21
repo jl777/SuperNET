@@ -1287,29 +1287,6 @@ pub struct QueuedCommand {
     // retstrp: *mut *mut c_char,
 }
 
-/// Register an RPC command that came internally or from the peer-to-peer bus.
-pub fn lp_queue_command(ctx: &mm_ctx::MmArc, msg: P2PMessage) -> Result<(), String> {
-    // If we're helping a WASM then leave a copy of the broadcast for them.
-    if let Some(ref mut cq) = *try_s!(ctx.command_queueʰ.lock()) {
-        // Monotonic increment.
-        let now = if let Some(last) = cq.last() {
-            (last.0 + 1).max(now_ms())
-        } else {
-            now_ms()
-        };
-        cq.push((now, msg.clone()))
-    }
-
-    let cmd = QueuedCommand {
-        msg,
-        queue_id: 0,
-        response_sock: -1,
-        stats_json_only: 0,
-    };
-    try_s!(ctx.command_queue.unbounded_send(cmd));
-    Ok(())
-}
-
 pub fn var(name: &str) -> Result<String, String> {
     /// Obtains the environment variable `name` from the host, copying it into `rbuf`.
     /// Returns the length of the value copied to `rbuf` or -1 if there was an error.

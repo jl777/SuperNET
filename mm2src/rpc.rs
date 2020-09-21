@@ -23,19 +23,16 @@
 use bytes::Bytes;
 use coins::{convert_address, get_enabled_coins, get_trade_fee, kmd_rewards_info, my_tx_history, send_raw_transaction,
             set_required_confirmations, set_requires_notarization, show_priv_key, validate_address, withdraw};
-#[cfg(feature = "native")]
-use common::for_tests::common_wait_for_log_re;
 use common::lift_body::LiftBody;
-#[cfg(feature = "native")] use common::mm_ctx::ctx2helpers;
 use common::mm_ctx::MmArc;
 #[cfg(feature = "native")]
-use common::wio::{slurp_reqʰ, CORE, CPUPOOL, HTTP};
+use common::wio::{CORE, CPUPOOL, HTTP};
 use common::{err_to_rpc_json_string, err_tp_rpc_json, HyRes};
 use futures::compat::{Compat, Future01CompatExt};
 use futures::future::{join_all, FutureExt, TryFutureExt};
 use futures01::{self, Future, Stream};
 use gstuff;
-use http::header::{HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_LENGTH, CONTENT_TYPE};
+use http::header::{HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN};
 use http::request::Parts;
 use http::{Method, Request, Response};
 #[cfg(feature = "native")] use hyper::{self, service::Service};
@@ -44,7 +41,6 @@ use std::future::Future as Future03;
 use std::net::SocketAddr;
 #[cfg(feature = "native")] use tokio_core::net::TcpListener;
 
-use crate::mm2::lp_network;
 use crate::mm2::lp_ordermatch::{buy, cancel_all_orders, cancel_order, my_orders, order_status, orderbook, sell,
                                 set_price};
 use crate::mm2::lp_swap::{coins_needed_for_kick_start, import_swaps, list_banned_pubkeys, max_taker_vol,
@@ -83,83 +79,6 @@ macro_rules! unwrap_or_err_response {
             Err(err) => return rpc_err_response(500, &ERRL!("{}", err)),
         }
     };
-}
-
-/// Handle bencoded helper requests.
-///
-/// Example of a helper request (resulting in the "Missing Field: `conf`" error):
-///
-///     curl -v http://127.0.0.1:7783/helper/ctx2helpers \
-///       -X POST -H 'X-Helper-Checksum: 815441984' -H 'Content-Type: application/octet-stream' \
-///       -d 'd18:secp256k1_key_pair38:.0..Z......g)e.Q.@..d.sn<.v..>0.P....Ie'
-///
-#[cfg(feature = "native")]
-async fn helpers(
-    ctx: MmArc,
-    client: SocketAddr,
-    req: Parts,
-    reqᵇ: Box<dyn Stream<Item = Bytes, Error = String> + Send>,
-) -> Result<Response<Vec<u8>>, String> {
-    let ct = try_s!(req.headers.get(CONTENT_TYPE).ok_or("No Content-Type"));
-    if ct.as_bytes() != b"application/octet-stream" {
-        return ERR!("Unexpected Content-Type");
-    }
-
-    if !client.ip().is_loopback() {
-        return ERR!("Not local");
-    }
-
-    let reqᵇ = try_s!(reqᵇ.concat2().compat().await);
-    //log! ("helpers] " [=req] ", " (gstuff::binprint (&reqᵇ, b'.')));
-
-    let method = req.uri.path();
-    if !method.starts_with("/helper/") {
-        return ERR!("Bad method");
-    }
-    let method = &method[8..];
-
-    let crc32 = try_s!(req.headers.get("X-Helper-Checksum").ok_or("No checksum"));
-    let crc32 = try_s!(crc32.to_str());
-    let crc32: u32 = if crc32.starts_with('-') {
-        // https://www.npmjs.com/package/crc-32 returns signed values
-        let i: i32 = try_s!(crc32.parse());
-        i as u32 // Intended as a wrapping conversion.
-    } else {
-        try_s!(crc32.parse())
-    };
-
-    let mut hasher = crc32fast::Hasher::default();
-    hasher.update(&reqᵇ);
-    let expected_checksum = hasher.finalize();
-    //log! ([=expected_checksum] ", " [=crc32]);
-    if crc32 != expected_checksum {
-        return ERR!("Damaged goods");
-    }
-
-    let res = match method {
-        // "broadcast_p2p_msg" => try_s! (lp_network::broadcast_p2p_msgʰ (reqᵇ) .await),
-        // "p2p_tap" => try_s! (lp_network::p2p_tapʰ (reqᵇ) .await),
-        "common_wait_for_log_re" => try_s!(common_wait_for_log_re(reqᵇ).await),
-        "ctx2helpers" => try_s!(ctx2helpers(ctx, reqᵇ).await),
-        "peers_initialize" => try_s!(peers::peers_initialize(reqᵇ).await),
-        "peers_send" => try_s!(peers::peers_send(reqᵇ).await),
-        "peers_recv" => try_s!(peers::peers_recv(reqᵇ).await),
-        "peers_drop_send_handler" => try_s!(peers::peers_drop_send_handlerʰ(reqᵇ).await),
-        "start_client_p2p_loop" => try_s!(lp_network::start_client_p2p_loopʰ(reqᵇ).await),
-        "start_seednode_loop" => try_s!(lp_network::start_seednode_loopʰ(reqᵇ).await),
-        "slurp_req" => try_s!(slurp_reqʰ(reqᵇ).await),
-        _ => return ERR!("Unknown helper: {}", method),
-    };
-
-    let mut hasher = crc32fast::Hasher::default();
-    hasher.update(&res);
-
-    let res = try_s!(Response::builder()
-        .header(CONTENT_TYPE, "application/octet-stream")
-        .header(CONTENT_LENGTH, res.len())
-        .header("X-Helper-Checksum", hasher.finalize())
-        .body(res));
-    Ok(res)
 }
 
 struct RpcService {
@@ -286,14 +205,6 @@ async fn rpc_serviceʹ(
 ) -> Result<Response<Vec<u8>>, String> {
     if req.method != Method::POST {
         return ERR!("Only POST requests are supported!");
-    }
-
-    #[cfg(feature = "native")]
-    {
-        // Checksum *tags* the helper requests and serves as a sanity check.
-        if req.headers.contains_key("X-Helper-Checksum") {
-            return helpers(ctx, client, req, reqᵇ).await;
-        }
     }
 
     let reqᵇ = try_s!(reqᵇ.concat2().compat().await);

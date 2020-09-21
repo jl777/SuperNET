@@ -1,6 +1,5 @@
 use bytes::Bytes;
-use crossbeam::{channel, Receiver, Sender};
-use futures::{channel::mpsc, compat::Compat};
+use futures::compat::Compat;
 use gstuff::Constructible;
 #[cfg(not(feature = "native"))] use http::Response;
 use keys::{DisplayLayout, KeyPair, Private};
@@ -23,7 +22,7 @@ use std::sync::{Arc, Mutex, Weak};
 use crate::executor::Timer;
 use crate::log::{self, LogState};
 use crate::mm_metrics::{prometheus, MetricsArc};
-use crate::{bits256, small_rng, P2PMessage, QueuedCommand};
+use crate::{bits256, small_rng};
 
 /// Default interval to export and record metrics to log.
 const EXPORT_METRICS_INTERVAL: f64 = 5. * 60.;
@@ -85,17 +84,6 @@ pub struct MmCtx {
     pub coins_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
     /// The context belonging to the `prices` mod: `PricesContext`.
     pub prices_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
-    /// Seednode P2P message bus channel.
-    pub seednode_p2p_channel: Mutex<Vec<mpsc::UnboundedSender<P2PMessage>>>,
-    /// Standard node P2P message bus channel.
-    pub client_p2p_channel: (Sender<Vec<u8>>, Receiver<Vec<u8>>),
-    /// `lp_queue_command` shares messages with `lp_command_q_loop` via this channel.  
-    /// The messages are usually the JSON broadcasts from the seed nodes.
-    pub command_queue: mpsc::UnboundedSender<QueuedCommand>,
-    /// The end of the `command_queue` channel taken by `lp_command_q_loop`.
-    pub command_queueʳ: Mutex<Option<mpsc::UnboundedReceiver<QueuedCommand>>>,
-    /// Broadcast `lp_queue_command` messages saved for WASM.
-    pub command_queueʰ: Mutex<Option<Vec<(u64, P2PMessage)>>>,
     /// RIPEMD160(SHA256(x)) where x is secp256k1 pubkey derived from passphrase.
     /// Replacement of `lp::G.LP_myrmd160`.
     pub rmd160: Constructible<H160>,
@@ -113,7 +101,6 @@ pub struct MmCtx {
 }
 impl MmCtx {
     pub fn with_log_state(log: LogState) -> MmCtx {
-        let (command_queue, command_queueʳ) = mpsc::unbounded();
         MmCtx {
             conf: Json::Object(json::Map::new()),
             log: log::LogArc::new(log),
@@ -131,11 +118,6 @@ impl MmCtx {
             http_fallback_ctx: Mutex::new(None),
             coins_ctx: Mutex::new(None),
             prices_ctx: Mutex::new(None),
-            seednode_p2p_channel: Mutex::new(Vec::with_capacity(1000)),
-            client_p2p_channel: channel::unbounded(),
-            command_queue,
-            command_queueʳ: Mutex::new(Some(command_queueʳ)),
-            command_queueʰ: Mutex::new(None),
             rmd160: Constructible::default(),
             seeds: Mutex::new(Vec::new()),
             secp256k1_key_pair: Constructible::default(),

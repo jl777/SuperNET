@@ -4,7 +4,7 @@ use crate::{adex_ping::AdexPing,
                                RequestResponseBehaviourEvent, RequestResponseSender}};
 use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageId, Topic,
                           TopicHash};
-use futures::{channel::{mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
+use futures::{channel::{mpsc::{channel, Receiver, Sender},
                         oneshot},
               future::{join_all, poll_fn},
               Future, SinkExt, StreamExt};
@@ -29,8 +29,8 @@ use tokio::runtime::Runtime;
 use void::Void;
 use wasm_timer::{Instant, Interval};
 
-pub type AdexCmdTx = UnboundedSender<AdexBehaviourCmd>;
-pub type AdexEventRx = UnboundedReceiver<AdexBehaviourEvent>;
+pub type AdexCmdTx = Sender<AdexBehaviourCmd>;
+pub type AdexEventRx = Receiver<AdexBehaviourEvent>;
 
 #[cfg(test)] mod tests;
 
@@ -220,11 +220,11 @@ impl From<GossipsubEvent> for AdexBehaviourEvent {
 #[derive(NetworkBehaviour)]
 pub struct AtomicDexBehaviour {
     #[behaviour(ignore)]
-    event_tx: UnboundedSender<AdexBehaviourEvent>,
+    event_tx: Sender<AdexBehaviourEvent>,
     #[behaviour(ignore)]
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
-    cmd_rx: UnboundedReceiver<AdexBehaviourCmd>,
+    cmd_rx: Receiver<AdexBehaviourCmd>,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
     peers_exchange: PeersExchange,
@@ -232,13 +232,10 @@ pub struct AtomicDexBehaviour {
 }
 
 impl AtomicDexBehaviour {
-    fn notify_on_adex_event(&self, event: AdexBehaviourEvent) {
-        let mut tx = self.event_tx.clone();
-        self.spawn(async move {
-            if let Err(e) = tx.send(event).await {
-                error!("{}", e);
-            }
-        });
+    fn notify_on_adex_event(&mut self, event: AdexBehaviourEvent) {
+        if let Err(e) = self.event_tx.try_send(event) {
+            error!("notify_on_adex_event error {}", e);
+        }
     }
 
     fn spawn(&self, fut: impl Future<Output = ()> + Send + 'static) { (self.spawn_fn)(Box::new(Box::pin(fut))) }
@@ -502,7 +499,7 @@ pub fn start_gossipsub(
     to_dial: Option<Vec<String>>,
     my_privkey: &mut [u8],
     i_am_relay: bool,
-) -> (UnboundedSender<AdexBehaviourCmd>, AdexEventRx, PeerId) {
+) -> (Sender<AdexBehaviourCmd>, AdexEventRx, PeerId) {
     let privkey = identity::secp256k1::SecretKey::from_bytes(my_privkey).unwrap();
     let local_key = identity::Keypair::Secp256k1(privkey.into());
     let local_peer_id = PeerId::from(local_key.public());
@@ -527,8 +524,8 @@ pub fn start_gossipsub(
         .map(|(peer, muxer), _| (peer, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
         .timeout(std::time::Duration::from_secs(20));
 
-    let (cmd_tx, cmd_rx) = unbounded();
-    let (event_tx, event_rx) = unbounded();
+    let (cmd_tx, cmd_rx) = channel(10);
+    let (event_tx, event_rx) = channel(10);
 
     let bootstrap: Vec<Multiaddr> = to_dial
         .unwrap_or_default()

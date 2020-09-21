@@ -4,8 +4,7 @@ use coins::{MmCoin, TestCoin};
 use common::{executor::spawn,
              mm_ctx::{MmArc, MmCtx, MmCtxBuilder},
              privkey::key_pair_from_seed};
-use futures::channel::mpsc;
-use futures::StreamExt;
+use futures::{channel::mpsc, lock::Mutex as AsyncMutex, StreamExt};
 use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse};
 use mm2_libp2p::PeerId;
 use mocktopus::mocking::*;
@@ -746,8 +745,8 @@ fn test_taker_order_cancellable() {
     assert!(!order.is_cancellable());
 }
 
-fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::UnboundedReceiver<AdexBehaviourCmd> {
-    let (tx, rx) = mpsc::unbounded();
+fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::Receiver<AdexBehaviourCmd> {
+    let (tx, rx) = mpsc::channel(10);
     let p2p_ctx = P2PContext::new(tx);
     p2p_ctx.store_to_mm_arc(ctx);
 
@@ -1386,15 +1385,12 @@ fn make_random_orders(
     orders
 }
 
-fn p2p_context_mock() -> (
-    mpsc::UnboundedSender<AdexBehaviourCmd>,
-    mpsc::UnboundedReceiver<AdexBehaviourCmd>,
-) {
-    let (cmd_tx, cmd_rx) = mpsc::unbounded();
+fn p2p_context_mock() -> (mpsc::Sender<AdexBehaviourCmd>, mpsc::Receiver<AdexBehaviourCmd>) {
+    let (cmd_tx, cmd_rx) = mpsc::channel(10);
     let cmd_sender = cmd_tx.clone();
     P2PContext::fetch_from_mm_arc.mock_safe(move |_| {
         MockResult::Return(Arc::new(P2PContext {
-            cmd_tx: cmd_sender.clone(),
+            cmd_tx: AsyncMutex::new(cmd_sender.clone()),
         }))
     });
     (cmd_tx, cmd_rx)

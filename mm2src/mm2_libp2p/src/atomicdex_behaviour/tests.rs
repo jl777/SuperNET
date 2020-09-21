@@ -15,13 +15,13 @@ struct Node {
     #[allow(dead_code)]
     secret: SecretKey,
     peer_id: PeerId,
-    cmd_tx: mpsc::UnboundedSender<AdexBehaviourCmd>,
+    cmd_tx: mpsc::Sender<AdexBehaviourCmd>,
 }
 
 impl Node {
     fn spawn<F>(ip: String, port: u16, seednodes: Option<Vec<String>>, on_event: F) -> Node
     where
-        F: Fn(mpsc::UnboundedSender<AdexBehaviourCmd>, AdexBehaviourEvent) + Send + 'static,
+        F: Fn(mpsc::Sender<AdexBehaviourCmd>, AdexBehaviourEvent) + Send + 'static,
     {
         let my_address = ip.parse().unwrap();
 
@@ -82,7 +82,7 @@ fn test_request_response_ok() {
 
     let request_received = Arc::new(AtomicBool::new(false));
     let request_received_cpy = request_received.clone();
-    let node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |cmd_tx, event| {
+    let node1 = Node::spawn("127.0.0.1".into(), 57783, None, move |mut cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -99,7 +99,7 @@ fn test_request_response_ok() {
             response: b"test response".to_vec(),
         };
         cmd_tx
-            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
 
@@ -138,7 +138,7 @@ fn test_request_response_ok_three_peers() {
     }
 
     impl RequestHandler {
-        fn handle(&mut self, cmd_tx: mpsc::UnboundedSender<AdexBehaviourCmd>, event: AdexBehaviourEvent) {
+        fn handle(&mut self, mut cmd_tx: mpsc::Sender<AdexBehaviourCmd>, event: AdexBehaviourEvent) {
             let (request, response_channel) = match event {
                 AdexBehaviourEvent::PeerRequest {
                     request,
@@ -156,7 +156,7 @@ fn test_request_response_ok_three_peers() {
             if self.requests == 1 {
                 let res = AdexResponse::None;
                 cmd_tx
-                    .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+                    .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
                     .unwrap();
                 return;
             }
@@ -167,7 +167,7 @@ fn test_request_response_ok_three_peers() {
                     error: "test error".into(),
                 };
                 cmd_tx
-                    .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+                    .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
                     .unwrap();
                 return;
             }
@@ -178,7 +178,7 @@ fn test_request_response_ok_three_peers() {
                     response: format!("success {} request", self.requests).as_bytes().to_vec(),
                 };
                 cmd_tx
-                    .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+                    .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
                     .unwrap();
                 return;
             }
@@ -240,7 +240,7 @@ fn test_request_response_none() {
 
     let request_received = Arc::new(AtomicBool::new(false));
     let request_received_cpy = request_received.clone();
-    let _node1 = Node::spawn("127.0.0.1".into(), 57786, None, move |cmd_tx, event| {
+    let _node1 = Node::spawn("127.0.0.1".into(), 57786, None, move |mut cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -255,7 +255,7 @@ fn test_request_response_none() {
 
         let res = AdexResponse::None;
         cmd_tx
-            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
 
@@ -287,7 +287,7 @@ fn test_request_response_none() {
 fn test_request_peers_ok_three_peers() {
     let _ = env_logger::try_init();
 
-    let receiver1 = Node::spawn("127.0.0.1".into(), 57800, None, move |cmd_tx, event| {
+    let receiver1 = Node::spawn("127.0.0.1".into(), 57800, None, move |mut cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -301,11 +301,11 @@ fn test_request_peers_ok_three_peers() {
 
         let res = AdexResponse::None;
         cmd_tx
-            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
 
-    let receiver2 = Node::spawn("127.0.0.1".into(), 57801, None, move |cmd_tx, event| {
+    let receiver2 = Node::spawn("127.0.0.1".into(), 57801, None, move |mut cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -321,11 +321,11 @@ fn test_request_peers_ok_three_peers() {
             error: "test error".into(),
         };
         cmd_tx
-            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
 
-    let receiver3 = Node::spawn("127.0.0.1".into(), 57802, None, move |cmd_tx, event| {
+    let receiver3 = Node::spawn("127.0.0.1".into(), 57802, None, move |mut cmd_tx, event| {
         let (request, response_channel) = match event {
             AdexBehaviourEvent::PeerRequest {
                 request,
@@ -341,10 +341,9 @@ fn test_request_peers_ok_three_peers() {
             response: b"test response".to_vec(),
         };
         cmd_tx
-            .unbounded_send(AdexBehaviourCmd::SendResponse { res, response_channel })
+            .try_send(AdexBehaviourCmd::SendResponse { res, response_channel })
             .unwrap();
     });
-
     let mut sender = Node::spawn(
         "127.0.0.1".into(),
         57784,
