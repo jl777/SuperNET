@@ -40,6 +40,7 @@ pub const PEERS_TOPIC: &str = "PEERS";
 const CONNECTED_RELAYS_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 const ANNOUNCE_INTERVAL: Duration = Duration::from_secs(600);
 const ANNOUNCE_INITIAL_DELAY: Duration = Duration::from_secs(60);
+const CHANNEL_BUF_SIZE: usize = 100;
 
 impl libp2p::core::Executor for &SwarmRuntime {
     fn exec(&self, future: Pin<Box<dyn Future<Output = ()> + Send>>) { self.0.spawn(future); }
@@ -524,8 +525,8 @@ pub fn start_gossipsub(
         .map(|(peer, muxer), _| (peer, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
         .timeout(std::time::Duration::from_secs(20));
 
-    let (cmd_tx, cmd_rx) = channel(10);
-    let (event_tx, event_rx) = channel(10);
+    let (cmd_tx, cmd_rx) = channel(CHANNEL_BUF_SIZE);
+    let (event_tx, event_rx) = channel(CHANNEL_BUF_SIZE);
 
     let bootstrap: Vec<Multiaddr> = to_dial
         .unwrap_or_default()
