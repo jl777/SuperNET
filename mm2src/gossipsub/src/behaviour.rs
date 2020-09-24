@@ -1236,6 +1236,7 @@ impl NetworkBehaviour for Gossipsub {
         self.relayers_mesh.remove(id);
         self.connected_relayers.remove(id);
         self.included_to_relayers_mesh.remove(id);
+        self.peer_connections.remove(id);
         // remove peer from peer_topics
         let was_in = self.peer_topics.remove(id);
         debug_assert!(was_in.is_some());
@@ -1250,9 +1251,16 @@ impl NetworkBehaviour for Gossipsub {
     }
 
     fn inject_connection_closed(&mut self, peer_id: &PeerId, _: &ConnectionId, disconnected_point: &ConnectedPoint) {
+        let mut clean = false;
+
         if let Some(connected_points) = self.peer_connections.get_mut(peer_id) {
             connected_points.retain(|point| point != disconnected_point);
+            clean = connected_points.is_empty();
         }
+        if clean {
+            self.peer_connections.remove(peer_id);
+        }
+
         self.connected_addresses
             .retain(|addr| addr != disconnected_point.get_remote_address());
     }
