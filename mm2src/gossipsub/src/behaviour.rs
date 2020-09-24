@@ -546,8 +546,12 @@ impl Gossipsub {
             );
             if is_included {
                 if self.connected_relayers.contains(peer_id) {
-                    debug!("Adding peer {:?} to relayers_mesh", peer_id);
-                    self.relayers_mesh.insert(peer_id.clone());
+                    if self.relayers_mesh.len() > self.config.mesh_n_high {
+                        self.notify_excluded_from_relay_mesh(peer_id.clone());
+                    } else {
+                        debug!("Adding peer {:?} to relayers_mesh", peer_id);
+                        self.relayers_mesh.insert(peer_id.clone());
+                    }
                 } else {
                     debug!("Adding peer {:?} to included_to_relayers_mesh", peer_id);
                     self.included_to_relayers_mesh.insert(peer_id.clone());
@@ -1062,15 +1066,7 @@ impl Gossipsub {
     /// Adds peers to relayers mesh and notifies them they are added
     fn add_peers_to_relayers_mesh(&mut self, peers: Vec<PeerId>) {
         for peer in &peers {
-            self.events.push_back(NetworkBehaviourAction::NotifyHandler {
-                peer_id: peer.clone(),
-                handler: NotifyHandler::All,
-                event: Arc::new(GossipsubRpc {
-                    subscriptions: Vec::new(),
-                    messages: Vec::new(),
-                    control_msgs: vec![GossipsubControlAction::IncludedToRelayersMesh(true)],
-                }),
-            });
+            self.notify_included_to_relay_mesh(peer.clone());
         }
         self.relayers_mesh.extend(peers);
     }
@@ -1094,16 +1090,32 @@ impl Gossipsub {
             .collect();
 
         for peer in removed {
-            self.events.push_back(NetworkBehaviourAction::NotifyHandler {
-                peer_id: peer,
-                handler: NotifyHandler::All,
-                event: Arc::new(GossipsubRpc {
-                    subscriptions: Vec::new(),
-                    messages: Vec::new(),
-                    control_msgs: vec![GossipsubControlAction::IncludedToRelayersMesh(false)],
-                }),
-            });
+            self.notify_excluded_from_relay_mesh(peer)
         }
+    }
+
+    fn notify_included_to_relay_mesh(&mut self, peer: PeerId) {
+        self.events.push_back(NetworkBehaviourAction::NotifyHandler {
+            peer_id: peer,
+            handler: NotifyHandler::All,
+            event: Arc::new(GossipsubRpc {
+                subscriptions: Vec::new(),
+                messages: Vec::new(),
+                control_msgs: vec![GossipsubControlAction::IncludedToRelayersMesh(true)],
+            }),
+        });
+    }
+
+    fn notify_excluded_from_relay_mesh(&mut self, peer: PeerId) {
+        self.events.push_back(NetworkBehaviourAction::NotifyHandler {
+            peer_id: peer,
+            handler: NotifyHandler::All,
+            event: Arc::new(GossipsubRpc {
+                subscriptions: Vec::new(),
+                messages: Vec::new(),
+                control_msgs: vec![GossipsubControlAction::IncludedToRelayersMesh(false)],
+            }),
+        });
     }
 
     fn maintain_relayers_mesh(&mut self) {

@@ -864,4 +864,30 @@ mod tests {
         gs.handle_included_to_relayers_mesh(&peers[0], false);
         assert!(!gs.relayers_mesh.contains(&peers[0]));
     }
+
+    #[test]
+    fn test_process_included_to_relayers_mesh_n_high_exceeded() {
+        let peer_no = 14;
+        let config = GossipsubConfigBuilder::default().i_am_relay(true).build();
+        let (mut gs, peers, _) = build_and_inject_nodes(peer_no, vec![], config, false);
+        for (i, peer) in peers.iter().enumerate() {
+            gs.connected_relayers.insert(peer.clone());
+            if i < 13 {
+                gs.relayers_mesh.insert(peer.clone());
+            }
+        }
+
+        gs.handle_included_to_relayers_mesh(&peers[13], true);
+        assert!(!gs.relayers_mesh.contains(&peers[13]));
+
+        match gs.events.pop_back().unwrap() {
+            NetworkBehaviourAction::NotifyHandler { event, peer_id, .. } => {
+                assert_eq!(event.control_msgs, vec![
+                    GossipsubControlAction::IncludedToRelayersMesh(false)
+                ]);
+                assert_eq!(peer_id, peers[13]);
+            },
+            _ => panic!("Invalid NetworkBehaviourAction variant"),
+        }
+    }
 }
