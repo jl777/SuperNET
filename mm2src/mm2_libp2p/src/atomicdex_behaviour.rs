@@ -80,6 +80,13 @@ pub async fn get_gossip_topic_peers(mut cmd_tx: AdexCmdTx) -> HashMap<String, Ve
     rx.await.expect("Tx should be present")
 }
 
+pub async fn get_relay_mesh(mut cmd_tx: AdexCmdTx) -> Vec<String> {
+    let (result_tx, rx) = oneshot::channel();
+    let cmd = AdexBehaviourCmd::GetRelayMesh { result_tx };
+    cmd_tx.send(cmd).await.expect("Rx should be present");
+    rx.await.expect("Tx should be present")
+}
+
 #[derive(Debug)]
 pub struct AdexResponseChannel(ResponseChannel<PeerResponse>);
 
@@ -135,6 +142,9 @@ pub enum AdexBehaviourCmd {
     },
     GetGossipTopicPeers {
         result_tx: oneshot::Sender<HashMap<String, Vec<String>>>,
+    },
+    GetRelayMesh {
+        result_tx: oneshot::Sender<Vec<String>>,
     },
     PropagateMessage {
         message_id: MessageId,
@@ -251,7 +261,7 @@ impl AtomicDexBehaviour {
                 self.gossipsub.publish(&Topic::new(topic), msg);
             },
             AdexBehaviourCmd::RequestAnyRelay { req, response_tx } => {
-                let relays = self.gossipsub.get_relayers_mesh();
+                let relays = self.gossipsub.get_relay_mesh();
                 // spawn the `request_any_peer` future
                 let future = request_any_peer(relays, req, self.request_response.sender(), response_tx);
                 self.spawn(future);
@@ -275,7 +285,7 @@ impl AtomicDexBehaviour {
                 self.spawn(future);
             },
             AdexBehaviourCmd::RequestRelays { req, response_tx } => {
-                let relays = self.gossipsub.get_relayers_mesh();
+                let relays = self.gossipsub.get_relay_mesh();
                 // spawn the `request_peers` future
                 let future = request_peers(relays, req, self.request_response.sender(), response_tx);
                 self.spawn(future);
@@ -344,6 +354,17 @@ impl AtomicDexBehaviour {
                         let peers = peers.iter().map(|peer| peer.to_string()).collect();
                         (topic, peers)
                     })
+                    .collect();
+                if result_tx.send(result).is_err() {
+                    error!("Result rx is dropped");
+                }
+            },
+            AdexBehaviourCmd::GetRelayMesh { result_tx } => {
+                let result = self
+                    .gossipsub
+                    .get_relay_mesh()
+                    .into_iter()
+                    .map(|peer| peer.to_string())
                     .collect();
                 if result_tx.send(result).is_err() {
                     error!("Result rx is dropped");
@@ -454,7 +475,7 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
     if connected_relayers.len() > mesh_n_high {
         let mut rng = thread_rng();
         let to_disconnect_num = connected_relayers.len() - mesh_n;
-        let relayers_mesh = swarm.gossipsub.get_relayers_mesh();
+        let relayers_mesh = swarm.gossipsub.get_relay_mesh();
         let not_in_mesh: Vec<_> = connected_relayers
             .iter()
             .filter(|peer| !relayers_mesh.contains(peer))

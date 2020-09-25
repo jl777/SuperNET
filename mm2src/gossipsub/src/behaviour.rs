@@ -531,6 +531,7 @@ impl Gossipsub {
             info!("IAmRelayer: Adding peer: {:?} to the relayers list", peer_id);
             self.connected_relayers.insert(peer_id.clone());
             if self.relayers_mesh.len() < self.config.mesh_n_low {
+                info!("IAmRelayer: Adding peer: {:?} to the relay mesh", peer_id);
                 self.add_peers_to_relayers_mesh(vec![peer_id.clone()]);
             }
         }
@@ -1041,8 +1042,6 @@ impl Gossipsub {
         }
     }
 
-    pub fn get_relayers_mesh(&self) -> Vec<PeerId> { self.relayers_mesh.iter().cloned().collect() }
-
     pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
         self.mesh.get(&topic).cloned().unwrap_or_else(|| vec![])
     }
@@ -1056,6 +1055,8 @@ impl Gossipsub {
     pub fn get_peers_connections(&self) -> HashMap<PeerId, Vec<ConnectedPoint>> { self.peer_connections.clone() }
 
     pub fn get_mesh(&self) -> &HashMap<TopicHash, Vec<PeerId>> { &self.mesh }
+
+    pub fn get_relay_mesh(&self) -> Vec<PeerId> { self.relayers_mesh.iter().cloned().collect() }
 
     pub fn get_all_topic_peers(&self) -> &HashMap<TopicHash, Vec<PeerId>> { &self.topic_peers }
 
@@ -1120,7 +1121,7 @@ impl Gossipsub {
 
     fn maintain_relayers_mesh(&mut self) {
         if self.relayers_mesh.len() < self.config.mesh_n_low {
-            debug!(
+            info!(
                 "HEARTBEAT: relayers low. Contains: {:?} needs: {:?}",
                 self.relayers_mesh.len(),
                 self.config.mesh_n,
@@ -1133,7 +1134,7 @@ impl Gossipsub {
         }
 
         if self.relayers_mesh.len() > self.config.mesh_n_high {
-            debug!(
+            info!(
                 "HEARTBEAT: relayers high. Contains: {:?} needs: {:?}",
                 self.relayers_mesh.len(),
                 self.config.mesh_n,
