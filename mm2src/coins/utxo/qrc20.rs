@@ -694,12 +694,14 @@ async fn qrc20_withdraw(coin: Qrc20Coin, req: WithdrawRequest) -> Result<Transac
 
     let _utxo_lock = UTXO_LOCK.lock().await;
 
-    // the qrc20_amount is used only within smart contract calls
-    let qrc20_amount = if req.max {
+    // the qrc20_amount_sat is used only within smart contract calls
+    let (qrc20_amount_sat, qrc20_amount) = if req.max {
         let balance = try_s!(coin.my_balance().compat().await);
-        try_s!(wei_from_big_decimal(&balance, coin.utxo_arc.decimals))
+        let balance_sat = try_s!(wei_from_big_decimal(&balance, coin.utxo_arc.decimals));
+        (balance_sat, balance)
     } else {
-        try_s!(wei_from_big_decimal(&req.amount, coin.utxo_arc.decimals))
+        let amount_sat = try_s!(wei_from_big_decimal(&req.amount, coin.utxo_arc.decimals));
+        (amount_sat, req.amount)
     };
 
     let (gas_limit, gas_price) = match req.fee {
@@ -710,7 +712,7 @@ async fn qrc20_withdraw(coin: Qrc20Coin, req: WithdrawRequest) -> Result<Transac
 
     let script_pubkey = try_s!(generate_token_transfer_script_pubkey(
         to_addr.clone(),
-        qrc20_amount,
+        qrc20_amount_sat,
         gas_limit,
         gas_price,
         &coin.contract_address
@@ -758,18 +760,18 @@ async fn qrc20_withdraw(coin: Qrc20Coin, req: WithdrawRequest) -> Result<Transac
         total_gas_fee: utxo_common::big_decimal_from_sat(gas_fee as i64, coin.utxo_arc.decimals),
     };
     let received_by_me = if to_addr == coin.utxo_arc.my_address {
-        req.amount.clone()
+        qrc20_amount.clone()
     } else {
         0.into()
     };
-    let my_balance_change = &received_by_me - &req.amount;
+    let my_balance_change = &received_by_me - &qrc20_amount;
     let my_address = try_s!(coin.my_address());
     let to_address = try_s!(coin.display_address(&to_addr));
     Ok(TransactionDetails {
         from: vec![my_address],
         to: vec![to_address],
-        total_amount: req.amount.clone(),
-        spent_by_me: req.amount,
+        total_amount: qrc20_amount.clone(),
+        spent_by_me: qrc20_amount,
         received_by_me,
         my_balance_change,
         tx_hash: signed.hash().reversed().to_vec().into(),
