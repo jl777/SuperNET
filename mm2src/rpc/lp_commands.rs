@@ -67,7 +67,7 @@ pub async fn disable_coin(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, St
             .map_err(|e| ERRL!("{}", e));
     }
 
-    try_s!(disable_coin_impl(&ctx, &ticker));
+    try_s!(disable_coin_impl(&ctx, &ticker).await);
     let res = json!({
         "result": {
             "coin": ticker,
@@ -272,6 +272,15 @@ pub async fn get_relay_mesh(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     let result = get_relay_mesh(cmd_tx).await;
     let result = json!({
         "result": result,
+    });
+    let res = try_s!(json::to_vec(&result));
+    Ok(try_s!(Response::builder().body(res)))
+}
+
+pub async fn get_my_peer_id(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
+    let peer_id = try_s!(ctx.peer_id.ok_or("Peer ID is not initialized"));
+    let result = json!({
+        "result": peer_id,
     });
     let res = try_s!(json::to_vec(&result));
     Ok(try_s!(Response::builder().body(res)))

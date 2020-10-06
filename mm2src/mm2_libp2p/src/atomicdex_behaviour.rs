@@ -17,6 +17,7 @@ use libp2p::{core::{ConnectedPoint, Multiaddr, Transport},
              request_response::ResponseChannel,
              swarm::{ExpandedSwarm, NetworkBehaviourEventProcess, Swarm},
              NetworkBehaviour, PeerId};
+use libp2p_floodsub::{Floodsub, FloodsubEvent, Topic as FloodsubTopic};
 use log::{debug, error, info};
 use rand::{seq::SliceRandom, thread_rng};
 use std::{collections::hash_map::{DefaultHasher, HashMap},
@@ -236,6 +237,7 @@ pub struct AtomicDexBehaviour {
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
     cmd_rx: Receiver<AdexBehaviourCmd>,
+    floodsub: Floodsub,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
     peers_exchange: PeersExchange,
@@ -381,25 +383,31 @@ impl AtomicDexBehaviour {
 
     fn announce_listeners(&mut self, listeners: Vec<Multiaddr>) {
         let serialized = rmp_serde::to_vec(&listeners).expect("Vec<Multiaddr> serialization should never fail");
-        self.gossipsub.publish(&Topic::new(PEERS_TOPIC.to_owned()), serialized);
+        self.floodsub.publish(FloodsubTopic::new(PEERS_TOPIC), serialized);
     }
+
+    pub fn connected_relays_len(&self) -> usize { self.gossipsub.connected_relays_len() }
+
+    pub fn relay_mesh_len(&self) -> usize { self.gossipsub.relay_mesh_len() }
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehaviour {
-    fn inject_event(&mut self, event: GossipsubEvent) {
-        if let GossipsubEvent::Message(propagation_source, message_id, message) = &event {
+    fn inject_event(&mut self, event: GossipsubEvent) { self.notify_on_adex_event(event.into()); }
+}
+
+impl NetworkBehaviourEventProcess<FloodsubEvent> for AtomicDexBehaviour {
+    fn inject_event(&mut self, event: FloodsubEvent) {
+        if let FloodsubEvent::Message(message) = &event {
             for topic in &message.topics {
-                if topic == &TopicHash::from_raw(PEERS_TOPIC) {
+                if topic == &FloodsubTopic::new(PEERS_TOPIC) {
                     let addresses: Vec<Multiaddr> = match rmp_serde::from_read_ref(&message.data) {
                         Ok(a) => a,
                         Err(_) => return,
                     };
                     self.peers_exchange.add_peer_addresses(&message.source, addresses);
-                    self.gossipsub.propagate_message(message_id, propagation_source);
                 }
             }
         }
-        self.notify_on_adex_event(event.into());
     }
 }
 
@@ -444,7 +452,8 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
     let connected_relayers = swarm.gossipsub.connected_relayers();
     let mesh_n_low = swarm.gossipsub.get_config().mesh_n_low;
     let mesh_n = swarm.gossipsub.get_config().mesh_n;
-    let mesh_n_high = swarm.gossipsub.get_config().mesh_n_high;
+    // allow 2 * mesh_n_high connections to other nodes
+    let max_n = swarm.gossipsub.get_config().mesh_n_high * 2;
     if connected_relayers.len() < mesh_n_low {
         let to_connect_num = mesh_n - connected_relayers.len();
         let to_connect = swarm
@@ -472,9 +481,9 @@ fn maintain_connection_to_relayers(swarm: &mut AtomicDexSwarm, bootstrap_address
         }
     }
 
-    if connected_relayers.len() > mesh_n_high {
+    if connected_relayers.len() > max_n {
         let mut rng = thread_rng();
-        let to_disconnect_num = connected_relayers.len() - mesh_n;
+        let to_disconnect_num = connected_relayers.len() - max_n;
         let relayers_mesh = swarm.gossipsub.get_relay_mesh();
         let not_in_mesh: Vec<_> = connected_relayers
             .iter()
@@ -521,6 +530,7 @@ pub fn start_gossipsub(
     to_dial: Option<Vec<String>>,
     my_privkey: &mut [u8],
     i_am_relay: bool,
+    on_poll: impl Fn(&AtomicDexSwarm) -> () + Send + 'static,
 ) -> (Sender<AdexBehaviourCmd>, AdexEventRx, PeerId) {
     let privkey = identity::secp256k1::SecretKey::from_bytes(my_privkey).unwrap();
     let local_key = identity::Keypair::Secp256k1(privkey.into());
@@ -542,7 +552,7 @@ pub fn start_gossipsub(
     let transport = transport
         .upgrade(libp2p::core::upgrade::Version::V1)
         .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-        .multiplex(libp2p::yamux::Config::default())
+        .multiplex(libp2p::mplex::MplexConfig::default())
         .map(|(peer, muxer), _| (peer, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
         .timeout(std::time::Duration::from_secs(20));
 
@@ -583,6 +593,8 @@ pub fn start_gossipsub(
         // build a gossipsub network behaviour
         let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
 
+        let floodsub = Floodsub::new(local_peer_id.clone());
+
         // build a request-response network behaviour
         let request_response = build_request_response_behaviour();
 
@@ -594,6 +606,7 @@ pub fn start_gossipsub(
             spawn_fn,
             cmd_rx,
             gossipsub,
+            floodsub,
             request_response,
             peers_exchange: PeersExchange::new(),
             ping,
@@ -602,7 +615,7 @@ pub fn start_gossipsub(
             .executor(Box::new(&*SWARM_RUNTIME))
             .build()
     };
-    swarm.gossipsub.subscribe(Topic::new(PEERS_TOPIC.to_owned()));
+    swarm.floodsub.subscribe(FloodsubTopic::new(PEERS_TOPIC.to_owned()));
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
     libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
     for relayer in &bootstrap {
@@ -643,6 +656,7 @@ pub fn start_gossipsub(
         while let Poll::Ready(Some(())) = check_connected_relays_interval.poll_next_unpin(cx) {
             maintain_connection_to_relayers(&mut swarm, &bootstrap);
         }
+        on_poll(&swarm);
         Poll::Pending
     });
 

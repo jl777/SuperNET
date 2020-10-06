@@ -553,8 +553,7 @@ mod tests {
         // test the filter
         let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 5, |_| false);
         assert!(random_peers.len() == 0, "Expected 0 peers to be returned");
-        let random_peers =
-            Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 10, { |peer| peers.contains(peer) });
+        let random_peers = Gossipsub::get_random_peers(&gs.topic_peers, &topic_hash, 10, |peer| peers.contains(peer));
         assert!(random_peers.len() == 10, "Expected 10 peers to be returned");
     }
 
@@ -684,7 +683,7 @@ mod tests {
             build_and_inject_nodes(20, vec![String::from("topic1")], GossipsubConfig::default(), true);
 
         let msg_id = MessageId(String::from("known id"));
-        gs.received.put(msg_id.clone(), ());
+        gs.received.put(msg_id.clone(), SmallVec::new());
 
         let events_before = gs.events.len();
         gs.handle_ihave(&peers[7], vec![(topic_hashes[0].clone(), vec![msg_id])]);
