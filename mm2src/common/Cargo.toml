@@ -6,7 +6,7 @@ edition = "2018"
 
 [features]
 native = [
-  "hyper", "hyper-rustls", "libc", "ring", "tokio01", "tokio02", "tokio-core"
+  "hyper", "hyper-rustls", "libc", "tokio"
 ]
 
 w-bindgen = ["wasm-bindgen", "web-sys"]
@@ -31,15 +31,14 @@ crossbeam = "0.7"
 findshlibs = "0.5"
 fomat-macros = "0.2"
 futures01 = { version = "0.1", package = "futures" }
-futures = { version = "0.3.1", package = "futures", features = ["compat", "async-await"] }
+futures = { version = "0.3", package = "futures", features = ["compat", "async-await"] }
 futures-cpupool = "0.1"
 gstuff = { version = "0.6", features = ["nightly"] }
 hdrhistogram = "7.0"
 hex = "0.3.2"
-http = "0.1"
+http = "0.2"
 http-body = "0.1"
-hyper = { version = "0.12", optional = true }
-hyper-tls = { version = "0.3" }
+hyper = { version = "0.13", optional = true }
 hyper-rustls = { version = "0.20", optional = true }
 itertools = "0.8"
 keys = { git = "https://github.com/artemii235/parity-bitcoin.git" }
@@ -57,19 +56,13 @@ parking_lot_core = { version = "0.6", features = ["nightly"] }
 primitives = { git = "https://github.com/artemii235/parity-bitcoin.git" }
 rand = { version = "0.7", features = ["std", "small_rng"] }
 regex = "1"
-# To build `ring` on Windows we might need `perl` and `yasm` in the PATH
-# (though I haven't checked this in a while).
-# Download http://www.tortall.net/projects/yasm/releases/yasm-1.3.0-win64.exe and rename to `yasm.exe`.
-ring = { version = "0.16", optional = true }
 serde = "1"
 serde_bencode = "0.2"
 serde_bytes = "0.11"
 serde_derive = "1"
-serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_json = { version = "1.0", features = ["raw_value", "preserve_order"] }
 term = "0.5"
-tokio01 = { version = "0.1", package = "tokio", optional = true }
-tokio02 = { version = "0.2.22", package = "tokio", features = ["io-util", "rt-threaded", "stream", "tcp"], optional = true }
-tokio-core = { version = "0.1", optional = true }
+tokio = { version = "0.2.22", features = ["io-util", "rt-threaded", "stream", "tcp"], optional = true }
 unwrap = "1.2"
 uuid = { version = "0.7", features = ["serde", "v4"] }
 wasm-bindgen = { version = "0.2.50", features = ["serde-serialize", "nightly"], optional = true }
@@ -100,6 +93,5 @@ num_cpus = "1.10"
 regex = "1"
 sysinfo = "0.9"
 tar = "0.4"
-tokio02 = { version = "0.2.22", package = "tokio" }
 unwrap = "1.2.1"
 winapi = "0.3"

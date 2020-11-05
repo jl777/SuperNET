@@ -1,3 +1,4 @@
+use crate::{log, now_ms};
 use futures01::Future;
 use serde::de::DeserializeOwned;
 use serde_json::{self as json, Value as Json};
@@ -45,7 +46,7 @@ macro_rules! rpc_func_from {
 }
 
 /// Address of server from which an Rpc response was received
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct JsonRpcRemoteAddr(pub String);
 
 impl fmt::Debug for JsonRpcRemoteAddr {
@@ -86,7 +87,7 @@ pub struct JsonRpcResponse {
     pub error: Json,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct JsonRpcError {
     /// Additional member contains an instance info that implements the JsonRpcClient trait.
     /// The info is used in particular to supplement the error info.
@@ -97,7 +98,7 @@ pub struct JsonRpcError {
     pub error: JsonRpcErrorType,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum JsonRpcErrorType {
     /// Error from transport layer
     Transport(String),
@@ -127,10 +128,12 @@ pub trait JsonRpcClient {
 
     fn send_request<T: DeserializeOwned + Send + 'static>(&self, request: JsonRpcRequest) -> RpcRes<T> {
         let client_info = self.client_info();
-        Box::new(
-            self.transport(request.clone())
-                .then(move |result| process_transport_result(result, client_info, request)),
-        )
+        let start = now_ms();
+        Box::new(self.transport(request.clone()).then(move |result| {
+            let end = now_ms();
+            log!("Request " [request] " to " (client_info) " took " (end - start) " ms");
+            process_transport_result(result, client_info, request)
+        }))
     }
 }
 

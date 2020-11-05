@@ -22,11 +22,10 @@
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
 use coins::register_balance_update_handler;
-use futures01::Future;
 use mm2_libp2p::start_gossipsub;
 use rand::rngs::SmallRng;
 use rand::{random, Rng, SeedableRng};
-use serde_json::{self as json, Value as Json};
+use serde_json::{self as json};
 use std::ffi::CString;
 use std::fs;
 use std::io::{Read, Write};
@@ -36,36 +35,16 @@ use std::path::Path;
 use std::str;
 use std::str::from_utf8;
 
+use crate::common::executor::{spawn, spawn_boxed, Timer};
 #[cfg(feature = "native")] use crate::common::lp;
 use crate::common::mm_ctx::{MmArc, MmCtx};
 use crate::common::privkey::key_pair_from_seed;
-use crate::common::{block_on,
-                    executor::{spawn, spawn_boxed, Timer},
-                    wio::CORE};
 use crate::common::{slurp_url, MM_DATETIME, MM_VERSION};
 use crate::mm2::lp_network::{p2p_event_process_loop, P2PContext};
-use crate::mm2::lp_ordermatch::{broadcast_maker_keep_alives_loop, lp_ordermatch_loop, lp_trade_command,
-                                migrate_saved_orders, orders_kick_start, BalanceUpdateOrdermatchHandler};
+use crate::mm2::lp_ordermatch::{broadcast_maker_keep_alives_loop, lp_ordermatch_loop, migrate_saved_orders,
+                                orders_kick_start, BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
 use crate::mm2::rpc::spawn_rpc;
-
-/// Process a previously queued command that wasn't handled by the RPC `dispatcher`.  
-/// NB: It might be preferable to port more commands into the RPC `dispatcher`, rather than `lp_command_process`, because:  
-/// 1) It allows us to more easily test such commands through the local HTTP endpoint;  
-/// 2) It allows the command handler to run asynchronously and use more time wihtout slowing down the queue loop;  
-/// 3) By being present in the `dispatcher` table the commands are easier to find and to be accounted for;  
-/// 4) No need for `unsafe`, `CJSON` and `*mut c_char` there.
-#[allow(dead_code)]
-pub fn lp_command_process(ctx: MmArc, json: Json) {
-    if !json["result"].is_null() || !json["error"].is_null() {
-        return;
-    }
-
-    if std::env::var("LOG_COMMANDS").is_ok() {
-        log!("Got command: "[json]);
-    }
-    lp_trade_command(ctx, json);
-}
 
 // TODO: Use MM2-nightly seed nodes.
 //       MM1 nodes no longer compatible due to the UTXO reforms in particular.
@@ -410,7 +389,7 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
                 None => return ERR!("Can't fetch the real IP"),
             };
             log! ({"lp_init] Trying to fetch the real IP from '{}' ...", url});
-            let (status, _headers, ip) = match slurp_url(url).wait() {
+            let (status, _headers, ip) = match slurp_url(url).await {
                 Ok(t) => t,
                 Err(err) => {
                     log! ({"lp_init] Failed to fetch IP from '{}': {}", url, err});
@@ -508,9 +487,9 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     spawn(p2p_event_process_loop(ctx.clone(), event_rx, i_am_seed));
     /*
     if i_am_seed {
-        log!("Before relayer node");
-        let (tx, peer_id) = relayer_node(ctx.clone(), myipaddr, mypubport, seednodes.clone());
-        log!("After relayer node");
+        log!("Before relay node");
+        let (tx, peer_id) = relay_node(ctx.clone(), myipaddr, mypubport, seednodes.clone());
+        log!("After relay node");
         try_s!(ctx.gossip_sub_cmd_queue.pin(tx));
         try_s!(ctx.peer_id.pin(peer_id));
     }

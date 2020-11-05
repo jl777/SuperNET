@@ -5,7 +5,7 @@ use super::{ban_pubkey, broadcast_my_swap_status, dex_fee_amount, get_locked_amo
             RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings, SwapError, SwapMsg,
             SwapsContext, WAIT_CONFIRM_INTERVAL};
 use crate::mm2::lp_network::subscribe_to_topic;
-use crate::mm2::lp_swap::{broadcast_message, NegotiationDataMsg};
+use crate::mm2::lp_swap::{broadcast_swap_message_every, NegotiationDataMsg};
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfindᵃ, FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
@@ -20,8 +20,9 @@ use rpc::v1::types::{H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use serde_json::{self as json, Value as Json};
 use std::path::PathBuf;
 use std::sync::{atomic::Ordering, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use uuid::Uuid;
 
-pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &str) -> PathBuf {
+pub fn stats_taker_swap_file_path(ctx: &MmArc, uuid: &Uuid) -> PathBuf {
     ctx.dbdir()
         .join("SWAPS")
         .join("STATS")
@@ -124,7 +125,7 @@ impl TakerSavedEvent {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TakerSavedSwap {
-    pub uuid: String,
+    pub uuid: Uuid,
     pub events: Vec<TakerSavedEvent>,
     maker_amount: Option<BigDecimal>,
     maker_coin: Option<String>,
@@ -208,12 +209,12 @@ pub enum RunTakerSwapInput {
     KickStart {
         maker_coin: MmCoinEnum,
         taker_coin: MmCoinEnum,
-        swap_uuid: String,
+        swap_uuid: Uuid,
     },
 }
 
 impl RunTakerSwapInput {
-    fn uuid(&self) -> &str {
+    fn uuid(&self) -> &Uuid {
         match self {
             RunTakerSwapInput::StartNew(swap) => &swap.uuid,
             RunTakerSwapInput::KickStart { swap_uuid, .. } => &swap_uuid,
@@ -288,11 +289,11 @@ pub async fn run_taker_swap(swap: RunTakerSwapInput, ctx: MmArc) {
     let ctx = swap.ctx.clone();
     subscribe_to_topic(&ctx, swap_topic(&swap.uuid)).await;
     let mut status = ctx.log.status_handle();
-    let uuid = swap.uuid.clone();
+    let uuid = swap.uuid.to_string();
     let running_swap = Arc::new(swap);
     let weak_ref = Arc::downgrade(&running_swap);
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
-    swap_ctx.init_msg_store(running_swap.uuid.clone(), running_swap.maker);
+    swap_ctx.init_msg_store(running_swap.uuid, running_swap.maker);
     unwrap!(swap_ctx.running_swaps.lock()).push(weak_ref);
     let shutdown_rx = swap_ctx.shutdown_rx.clone();
     let swap_for_log = running_swap.clone();
@@ -320,7 +321,7 @@ pub async fn run_taker_swap(swap: RunTakerSwapInput, ctx: MmArc) {
                             event.clone().into(),
                         )
                     }
-                    status.status(&[&"swap", &("uuid", &uuid[..])], &event.status_str());
+                    status.status(&[&"swap", &("uuid", uuid.as_str())], &event.status_str());
                     unwrap!(running_swap.apply_event(event), "!apply_event");
                 }
                 match res.0 {
@@ -328,7 +329,7 @@ pub async fn run_taker_swap(swap: RunTakerSwapInput, ctx: MmArc) {
                         command = c;
                     },
                     None => {
-                        if let Err(e) = broadcast_my_swap_status(&uuid, &ctx) {
+                        if let Err(e) = broadcast_my_swap_status(&running_swap.uuid, &ctx) {
                             log!("!broadcast_my_swap_status(" (uuid) "): " (e));
                         }
                         break;
@@ -361,7 +362,7 @@ pub struct TakerSwapData {
     taker_payment_requires_nota: Option<bool>,
     taker_payment_lock: u64,
     /// Allows to recognize one SWAP from the other in the logs. #274.
-    uuid: String,
+    uuid: Uuid,
     started_at: u64,
     maker_payment_wait: u64,
     maker_coin_start_block: u64,
@@ -389,7 +390,7 @@ pub struct TakerSwap {
     taker_amount: BigDecimal,
     my_persistent_pub: H264,
     maker: bits256,
-    uuid: String,
+    uuid: Uuid,
     maker_payment_lock: Atomic<u64>,
     maker_payment_confirmed: Atomic<bool>,
     errors: PaMutex<Vec<SwapError>>,
@@ -570,7 +571,7 @@ impl TakerSwap {
         maker_amount: BigDecimal,
         taker_amount: BigDecimal,
         my_persistent_pub: H264,
-        uuid: String,
+        uuid: Uuid,
         conf_settings: SwapConfirmationsSettings,
         maker_coin: MmCoinEnum,
         taker_coin: MmCoinEnum,
@@ -660,7 +661,7 @@ impl TakerSwap {
             taker_payment_requires_nota: Some(self.conf_settings.taker_coin_nota),
             taker_payment_lock: started_at + self.payment_locktime,
             my_persistent_pub: self.my_persistent_pub.clone().into(),
-            uuid: self.uuid.clone(),
+            uuid: self.uuid,
             maker_payment_wait: started_at + (self.payment_locktime * 2) / 5,
             maker_coin_start_block,
             taker_coin_start_block,
@@ -670,7 +671,15 @@ impl TakerSwap {
     }
 
     async fn negotiate(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
-        let maker_data = match recv_swap_msg(self.ctx.clone(), |store| store.negotiation.take(), &self.uuid, 90).await {
+        const NEGOTIATE_TIMEOUT: u64 = 90;
+
+        let recv_fut = recv_swap_msg(
+            self.ctx.clone(),
+            |store| store.negotiation.take(),
+            &self.uuid,
+            NEGOTIATE_TIMEOUT,
+        );
+        let maker_data = match recv_fut.await {
             Ok(d) => d,
             Err(e) => {
                 return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
@@ -704,8 +713,19 @@ impl TakerSwap {
             payment_locktime: self.r().data.taker_payment_lock,
             persistent_pubkey: self.my_persistent_pub.to_vec(),
         });
-        broadcast_message(&self.ctx, swap_topic(&self.uuid), taker_data);
-        let negotiated = match recv_swap_msg(self.ctx.clone(), |store| store.negotiated.take(), &self.uuid, 90).await {
+        let send_abort_handle = broadcast_swap_message_every(
+            self.ctx.clone(),
+            swap_topic(&self.uuid),
+            taker_data,
+            NEGOTIATE_TIMEOUT as f64 / 6.,
+        );
+        let recv_fut = recv_swap_msg(
+            self.ctx.clone(),
+            |store| store.negotiated.take(),
+            &self.uuid,
+            NEGOTIATE_TIMEOUT,
+        );
+        let negotiated = match recv_fut.await {
             Ok(d) => d,
             Err(e) => {
                 return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
@@ -713,6 +733,7 @@ impl TakerSwap {
                 )]))
             },
         };
+        drop(send_abort_handle);
 
         if !negotiated {
             return Ok((Some(TakerSwapCommand::Finish), vec![TakerSwapEvent::NegotiateFailed(
@@ -780,11 +801,23 @@ impl TakerSwap {
     }
 
     async fn wait_for_maker_payment(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
+        const MAKER_PAYMENT_WAIT_TIMEOUT: u64 = 180;
         let tx_hex = self.r().taker_fee.as_ref().unwrap().tx_hex.0.clone();
         let msg = SwapMsg::TakerFee(tx_hex);
-        broadcast_message(&self.ctx, swap_topic(&self.uuid), msg);
+        let abort_send_handle = broadcast_swap_message_every(
+            self.ctx.clone(),
+            swap_topic(&self.uuid),
+            msg,
+            MAKER_PAYMENT_WAIT_TIMEOUT as f64 / 6.,
+        );
 
-        let payload = match recv_swap_msg(self.ctx.clone(), |store| store.maker_payment.take(), &self.uuid, 180).await {
+        let recv_fut = recv_swap_msg(
+            self.ctx.clone(),
+            |store| store.maker_payment.take(),
+            &self.uuid,
+            MAKER_PAYMENT_WAIT_TIMEOUT,
+        );
+        let payload = match recv_fut.await {
             Ok(p) => p,
             Err(e) => {
                 return Ok((Some(TakerSwapCommand::Finish), vec![
@@ -794,6 +827,7 @@ impl TakerSwap {
                 ]))
             },
         };
+        drop(abort_send_handle);
         let maker_payment = match self.maker_coin.tx_enum_from_bytes(&payload) {
             Ok(p) => p,
             Err(e) => {
@@ -813,7 +847,7 @@ impl TakerSwap {
             match self.maker_coin.tx_details_by_hash(&hash).compat().await {
                 Ok(details) => break details,
                 Err(e) => {
-                    if attempts >= 3 {
+                    if attempts >= 6 {
                         return Ok((Some(TakerSwapCommand::Finish), vec![
                             TakerSwapEvent::MakerPaymentValidateFailed(
                                 ERRL!("!maker_coin.tx_details_by_hash: {}", e).into(),
@@ -938,7 +972,7 @@ impl TakerSwap {
     async fn wait_for_taker_payment_spend(&self) -> Result<(Option<TakerSwapCommand>, Vec<TakerSwapEvent>), String> {
         let tx_hex = self.r().taker_payment.as_ref().unwrap().tx_hex.0.clone();
         let msg = SwapMsg::TakerPayment(tx_hex);
-        broadcast_message(&self.ctx, swap_topic(&self.uuid), msg);
+        let send_abort_handle = broadcast_swap_message_every(self.ctx.clone(), swap_topic(&self.uuid), msg, 600.);
 
         let wait_duration = (self.r().data.lock_duration * 4) / 5;
         let wait_taker_payment = self.r().data.started_at + wait_duration;
@@ -980,6 +1014,7 @@ impl TakerSwap {
                 ]))
             },
         };
+        drop(send_abort_handle);
         let hash = tx.tx_hash();
         log!({"Taker payment spend tx {:02x}", hash});
         // we can attempt to get the details in loop here as transaction was already sent and
@@ -1094,7 +1129,7 @@ impl TakerSwap {
         ctx: MmArc,
         maker_coin: MmCoinEnum,
         taker_coin: MmCoinEnum,
-        swap_uuid: &str,
+        swap_uuid: &Uuid,
     ) -> Result<(Self, Option<TakerSwapCommand>), String> {
         let path = my_swap_file_path(&ctx, swap_uuid);
         let saved: SavedSwap = try_s!(json::from_slice(&try_s!(slurp(&path))));
@@ -1337,7 +1372,7 @@ impl AtomicSwap for TakerSwap {
         }
     }
 
-    fn uuid(&self) -> &str { &self.uuid }
+    fn uuid(&self) -> &Uuid { &self.uuid }
 
     fn maker_coin(&self) -> &str { self.maker_coin.ticker() }
 
@@ -1349,7 +1384,7 @@ pub async fn check_balance_for_taker_swap(
     my_coin: &MmCoinEnum,
     other_coin: &MmCoinEnum,
     volume: MmNumber,
-    swap_uuid: Option<&str>,
+    swap_uuid: Option<&Uuid>,
 ) -> Result<(), String> {
     let miner_fee = try_s!(my_coin.get_trade_fee().compat().await);
     log!("check_balance_for_taker_swap miner fee "[miner_fee.amount.to_fraction()]);

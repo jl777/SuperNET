@@ -6,7 +6,7 @@ use common::{executor::spawn,
              privkey::key_pair_from_seed};
 use futures::{channel::mpsc, lock::Mutex as AsyncMutex, StreamExt};
 use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse};
-use mm2_libp2p::PeerId;
+use mm2_libp2p::{decode_message, PeerId};
 use mocktopus::mocking::*;
 use rand::Rng;
 use std::collections::HashSet;
@@ -42,7 +42,7 @@ fn test_match_maker_order_and_taker_request() {
         conf_settings: None,
     };
 
-    let actual = match_order_and_request(&maker, &request);
+    let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::Matched((10.into(), 10.into()));
     assert_eq!(expected, actual);
 
@@ -75,7 +75,7 @@ fn test_match_maker_order_and_taker_request() {
         conf_settings: None,
     };
 
-    let actual = match_order_and_request(&maker, &request);
+    let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::Matched((10.into(), 5.into()));
     assert_eq!(expected, actual);
 
@@ -108,7 +108,7 @@ fn test_match_maker_order_and_taker_request() {
         conf_settings: None,
     };
 
-    let actual = match_order_and_request(&maker, &request);
+    let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::NotMatched;
     assert_eq!(expected, actual);
 
@@ -141,7 +141,7 @@ fn test_match_maker_order_and_taker_request() {
         conf_settings: None,
     };
 
-    let actual = match_order_and_request(&maker, &request);
+    let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::Matched((10.into(), 5.into()));
     assert_eq!(expected, actual);
 
@@ -174,7 +174,7 @@ fn test_match_maker_order_and_taker_request() {
         conf_settings: None,
     };
 
-    let actual = match_order_and_request(&maker, &request);
+    let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::Matched((20.into(), 10.into()));
     assert_eq!(expected, actual);
 
@@ -207,8 +207,36 @@ fn test_match_maker_order_and_taker_request() {
         conf_settings: None,
     };
 
-    let actual = match_order_and_request(&maker, &request);
+    let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::Matched((1.into(), 1.into()));
+    assert_eq!(expected, actual);
+}
+
+// https://github.com/KomodoPlatform/atomicDEX-API/pull/739#discussion_r517275495
+#[test]
+fn maker_order_match_with_request_zero_volumes() {
+    let maker_order = MakerOrderBuilder::default()
+        .with_max_base_vol(1.into())
+        .with_price(1.into())
+        .build_unchecked();
+
+    // default taker request has empty coins and zero amounts so it should pass to the price calculation stage (division)
+    let taker_request = TakerRequestBuilder::default()
+        .with_rel_amount(1.into())
+        .build_unchecked();
+
+    let expected = OrderMatchResult::NotMatched;
+    let actual = maker_order.match_with_request(&taker_request);
+    assert_eq!(expected, actual);
+
+    // default taker request has empty coins and zero amounts so it should pass to the price calculation stage (division)
+    let taker_request = TakerRequestBuilder::default()
+        .with_base_amount(1.into())
+        .with_action(TakerAction::Sell)
+        .build_unchecked();
+
+    let expected = OrderMatchResult::NotMatched;
+    let actual = maker_order.match_with_request(&taker_request);
     assert_eq!(expected, actual);
 }
 
@@ -953,8 +981,8 @@ fn lp_connect_start_bob_should_not_be_invoked_if_order_match_already_connected()
         })
     });
 
-    let connect_json: Json = json::from_str(r#"{"taker_order_uuid":"2f9afe84-7a89-4194-8947-45fba563118f","maker_order_uuid":"5f6516ea-ccaa-453a-9e37-e1c2c0d527e3","method":"connect","sender_pubkey":"031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3","dest_pub_key":"c6a78589e18b482aea046975e6d0acbdea7bf7dbf04d9d5bd67fda917815e3ed"}"#).unwrap();
-    lp_trade_command(ctx, connect_json);
+    let connect: TakerConnect = json::from_str(r#"{"taker_order_uuid":"2f9afe84-7a89-4194-8947-45fba563118f","maker_order_uuid":"5f6516ea-ccaa-453a-9e37-e1c2c0d527e3","method":"connect","sender_pubkey":"031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3","dest_pub_key":"c6a78589e18b482aea046975e6d0acbdea7bf7dbf04d9d5bd67fda917815e3ed"}"#).unwrap();
+    block_on(process_taker_connect(ctx, connect.sender_pubkey.clone(), connect));
     assert!(unsafe { !CONNECT_START_CALLED });
 }
 
@@ -970,8 +998,10 @@ fn should_process_request_only_once() {
         .into_mm_arc();
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     block_on(ordermatch_ctx.my_maker_orders.lock()).insert(maker_order.uuid, maker_order);
-    let request_json = json!({"base":"ETH","rel":"JST","base_amount":"0.1","base_amount_rat":[[1,[1]],[1,[10]]],"rel_amount":"0.2","rel_amount_rat":[[1,[1]],[1,[5]]],"action":"Buy","uuid":"2f9afe84-7a89-4194-8947-45fba563118f","method":"request","sender_pubkey":"031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3","dest_pub_key":"0000000000000000000000000000000000000000000000000000000000000000","match_by":{"type":"Any"}});
-    lp_trade_command(ctx, request_json);
+    let request: TakerRequest = json::from_str(
+        r#"{"base":"ETH","rel":"JST","base_amount":"0.1","base_amount_rat":[[1,[1]],[1,[10]]],"rel_amount":"0.2","rel_amount_rat":[[1,[1]],[1,[5]]],"action":"Buy","uuid":"2f9afe84-7a89-4194-8947-45fba563118f","method":"request","sender_pubkey":"031d4256c4bc9f99ac88bf3dba21773132281f65f9bf23a59928bce08961e2f3","dest_pub_key":"0000000000000000000000000000000000000000000000000000000000000000","match_by":{"type":"Any"}}"#,
+    ).unwrap();
+    block_on(process_taker_request(ctx, request));
     let maker_orders = block_on(ordermatch_ctx.my_maker_orders.lock());
     let order = maker_orders.get(&uuid).unwrap();
     // when new request is processed match is replaced with new instance resetting
@@ -1367,9 +1397,9 @@ fn make_random_orders(
             uuid: Uuid::new_v4().into(),
             base: base.clone(),
             rel: rel.clone(),
-            price: (numer, 1000000).into(),
-            max_volume: 1.into(),
-            min_volume: 0.into(),
+            price: BigRational::new(numer.into(), 1000000.into()),
+            max_volume: BigRational::from_integer(1.into()),
+            min_volume: BigRational::from_integer(0.into()),
             conf_settings: OrderConfirmationsSettings::default(),
         };
 
@@ -1411,18 +1441,18 @@ fn test_process_get_orderbook_request() {
         uuid: Uuid::new_v4().into(),
         base: "RICK".into(),
         rel: "MORTY".into(),
-        price: 1000000.into(),
-        max_volume: 2000000.into(),
-        min_volume: 2000000.into(),
+        price: BigRational::from_integer(1000000.into()),
+        max_volume: BigRational::from_integer(2000000.into()),
+        min_volume: BigRational::from_integer(2000000.into()),
         conf_settings: OrderConfirmationsSettings::default(),
     };
     let order2 = new_protocol::MakerOrderCreated {
         uuid: Uuid::new_v4().into(),
         base: "RICK".into(),
         rel: "MORTY".into(),
-        price: 500000.into(),
-        max_volume: 2000000.into(),
-        min_volume: 2000000.into(),
+        price: BigRational::from_integer(500000.into()),
+        max_volume: BigRational::from_integer(2000000.into()),
+        min_volume: BigRational::from_integer(2000000.into()),
         conf_settings: OrderConfirmationsSettings::default(),
     };
 
@@ -1464,12 +1494,12 @@ fn test_process_get_orderbook_request() {
     .unwrap()
     .unwrap();
 
-    let (orderbook, _, _) = decode_signed::<new_protocol::Orderbook>(&encoded).unwrap();
+    let orderbook = decode_message::<new_protocol::Orderbook>(&encoded).unwrap();
     assert!(orderbook.bids.is_empty());
     let asks: Vec<PricePingRequest> = orderbook
         .asks
         .into_iter()
-        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer).unwrap())
+        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, Vec::new(), order.from_peer).unwrap())
         .collect();
     assert_eq!(asks, vec![price_ping_request2]);
 
@@ -1486,13 +1516,13 @@ fn test_process_get_orderbook_request() {
     ))
     .unwrap()
     .unwrap();
-    let (orderbook, _, _) = decode_signed::<new_protocol::Orderbook>(&encoded).unwrap();
+    let orderbook = decode_message::<new_protocol::Orderbook>(&encoded).unwrap();
     assert!(orderbook.asks.is_empty());
 
     let bids: Vec<PricePingRequest> = orderbook
         .bids
         .into_iter()
-        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, order.from_peer).unwrap())
+        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, Vec::new(), order.from_peer).unwrap())
         .collect();
     assert_eq!(bids, vec![price_ping_request1]);
 }
@@ -1564,7 +1594,7 @@ fn test_request_and_fill_orderbook() {
         };
 
         // check if the received request is expected
-        let (actual, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        let actual = decode_message::<P2PRequest>(&req).unwrap();
         assert_eq!(actual, expected_request);
 
         let mut responses = Vec::new();
@@ -1574,7 +1604,7 @@ fn test_request_and_fill_orderbook() {
             asks: asks1.into_iter().map(|ask| ask.into()).collect(),
             bids: bids1.into_iter().map(|bid| bid.into()).collect(),
         };
-        let encoded = encode_and_sign(&orderbook, &secret).unwrap();
+        let encoded = encode_message(&orderbook).unwrap();
         let response = AdexResponse::Ok { response: encoded };
 
         responses.push((peer1, response));
@@ -1584,7 +1614,7 @@ fn test_request_and_fill_orderbook() {
             asks: asks2.into_iter().map(|ask| ask.into()).collect(),
             bids: bids2.into_iter().map(|bid| bid.into()).collect(),
         };
-        let encoded = encode_and_sign(&orderbook, &secret).unwrap();
+        let encoded = encode_message(&orderbook).unwrap();
         let response = AdexResponse::Ok { response: encoded };
 
         responses.push((peer2, response));
@@ -1647,9 +1677,9 @@ fn test_process_order_keep_alive_requested_from_peer() {
         uuid: uuid.clone().into(),
         base: "RICK".into(),
         rel: "MORTY".into(),
-        price: 1000000.into(),
-        max_volume: 2000000.into(),
-        min_volume: 2000000.into(),
+        price: BigRational::from_integer(1000000.into()),
+        max_volume: BigRational::from_integer(2000000.into()),
+        min_volume: BigRational::from_integer(2000000.into()),
         conf_settings: OrderConfirmationsSettings::default(),
     };
 
@@ -1675,17 +1705,18 @@ fn test_process_order_keep_alive_requested_from_peer() {
         };
 
         // check if the received request is expected
-        let (actual, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        let actual = decode_message::<P2PRequest>(&req).unwrap();
         assert_eq!(actual, expected_request);
 
         // create a response with the initial_message and random from_peer
         let response = new_protocol::OrderInitialMessage {
             initial_message,
             from_peer: from_peer.clone(),
+            update_messages: Vec::new(),
         };
 
         let response = AdexResponse::Ok {
-            response: encode_and_sign(&response, &secret).unwrap(),
+            response: encode_message(&response).unwrap(),
         };
         response_tx.send(vec![(PeerId::random(), response)]).unwrap();
     });
@@ -1714,8 +1745,53 @@ fn test_process_order_keep_alive_requested_from_peer() {
 }
 
 #[test]
+fn test_process_get_order_request() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let ordermatch_ctx = Arc::new(OrdermatchContext::default());
+    let ordermatch_ctx_clone = ordermatch_ctx.clone();
+    OrdermatchContext::from_ctx.mock_safe(move |_| MockResult::Return(Ok(ordermatch_ctx_clone.clone())));
+
+    let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    let peer = PeerId::random().to_string();
+
+    let order = new_protocol::MakerOrderCreated {
+        uuid: Uuid::new_v4().into(),
+        base: "RICK".into(),
+        rel: "MORTY".into(),
+        price: BigRational::from_integer(1000000.into()),
+        max_volume: BigRational::from_integer(2000000.into()),
+        min_volume: BigRational::from_integer(2000000.into()),
+        conf_settings: OrderConfirmationsSettings::default(),
+    };
+    // create an initial_message and encode it with the secret
+    let initial_message = encode_and_sign(
+        &new_protocol::OrdermatchMessage::MakerOrderCreated(order.clone()),
+        &secret,
+    )
+    .unwrap();
+    let price_ping_request: PricePingRequest = (order, initial_message, pubkey.clone(), peer.clone()).into();
+    orderbook.insert_or_update_order(price_ping_request.uuid.unwrap(), price_ping_request.clone());
+
+    // avoid dead lock on orderbook as process_get_orderbook_request also acquires it
+    drop(orderbook);
+
+    let encoded = block_on(process_get_order_request(
+        ctx.clone(),
+        price_ping_request.uuid.unwrap(),
+        pubkey.clone(),
+    ))
+    .unwrap()
+    .unwrap();
+
+    let order = decode_message::<new_protocol::OrderInitialMessage>(&encoded).unwrap();
+    let actual_price_ping_request =
+        PricePingRequest::from_initial_msg(order.initial_message, order.update_messages, order.from_peer).unwrap();
+    assert_eq!(actual_price_ping_request, price_ping_request);
+}
+
+#[test]
 fn test_subscribe_to_ordermatch_topic_not_subscribed() {
-    let (ctx, _pubkey, secret) = make_ctx_for_tests();
+    let (ctx, _pubkey, _secret) = make_ctx_for_tests();
     let (_, mut cmd_rx) = p2p_context_mock();
 
     spawn(async move {
@@ -1729,7 +1805,7 @@ fn test_subscribe_to_ordermatch_topic_not_subscribed() {
             _ => panic!("AdexBehaviourCmd::RequestRelays expected"),
         };
 
-        let (request, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        let request = decode_message::<P2PRequest>(&req).unwrap();
         match request {
             P2PRequest::Ordermatch(OrdermatchRequest::GetOrderbook { .. }) => (),
             _ => panic!(),
@@ -1739,7 +1815,7 @@ fn test_subscribe_to_ordermatch_topic_not_subscribed() {
             asks: Vec::new(),
             bids: Vec::new(),
         };
-        let encoded = encode_and_sign(&response, &secret).unwrap();
+        let encoded = encode_message(&response).unwrap();
         let response = vec![(PeerId::random(), AdexResponse::Ok { response: encoded })];
         response_tx.send(response).unwrap();
     });
@@ -1759,7 +1835,7 @@ fn test_subscribe_to_ordermatch_topic_not_subscribed() {
 
 #[test]
 fn test_subscribe_to_ordermatch_topic_subscribed_not_filled() {
-    let (ctx, _pubkey, secret) = make_ctx_for_tests();
+    let (ctx, _pubkey, _secret) = make_ctx_for_tests();
     let (_, mut cmd_rx) = p2p_context_mock();
 
     {
@@ -1779,7 +1855,7 @@ fn test_subscribe_to_ordermatch_topic_subscribed_not_filled() {
             _ => panic!("AdexBehaviourCmd::RequestRelays expected"),
         };
 
-        let (request, _, _) = decode_signed::<P2PRequest>(&req).unwrap();
+        let request = decode_message::<P2PRequest>(&req).unwrap();
         match request {
             P2PRequest::Ordermatch(OrdermatchRequest::GetOrderbook { .. }) => (),
             _ => panic!(),
@@ -1789,7 +1865,7 @@ fn test_subscribe_to_ordermatch_topic_subscribed_not_filled() {
             asks: Vec::new(),
             bids: Vec::new(),
         };
-        let encoded = encode_and_sign(&response, &secret).unwrap();
+        let encoded = encode_message(&response).unwrap();
         let response = vec![(PeerId::random(), AdexResponse::Ok { response: encoded })];
         response_tx.send(response).unwrap();
     });
@@ -1840,4 +1916,46 @@ fn test_subscribe_to_ordermatch_topic_subscribed_filled() {
         .cloned();
     let expected = Some(OrderbookRequestingState::NotRequested { subscribed_at });
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_taker_request_can_match_with_maker_pubkey() {
+    let maker_pubkey = H256Json::default();
+
+    // default has MatchBy::Any
+    let mut request = TakerRequestBuilder::default().build_unchecked();
+    assert!(request.can_match_with_maker_pubkey(&maker_pubkey));
+
+    // the uuids of orders is checked in another method
+    request.match_by = MatchBy::Orders(HashSet::new());
+    assert!(request.can_match_with_maker_pubkey(&maker_pubkey));
+
+    let mut set = HashSet::new();
+    set.insert(maker_pubkey.clone());
+    request.match_by = MatchBy::Pubkeys(set);
+    assert!(request.can_match_with_maker_pubkey(&maker_pubkey));
+
+    request.match_by = MatchBy::Pubkeys(HashSet::new());
+    assert!(!request.can_match_with_maker_pubkey(&maker_pubkey));
+}
+
+#[test]
+fn test_taker_request_can_match_with_uuid() {
+    let uuid = Uuid::new_v4();
+
+    // default has MatchBy::Any
+    let mut request = TakerRequestBuilder::default().build_unchecked();
+    assert!(request.can_match_with_uuid(&uuid));
+
+    // the uuids of orders is checked in another method
+    request.match_by = MatchBy::Pubkeys(HashSet::new());
+    assert!(request.can_match_with_uuid(&uuid));
+
+    let mut set = HashSet::new();
+    set.insert(uuid);
+    request.match_by = MatchBy::Orders(set);
+    assert!(request.can_match_with_uuid(&uuid));
+
+    request.match_by = MatchBy::Orders(HashSet::new());
+    assert!(!request.can_match_with_uuid(&uuid));
 }

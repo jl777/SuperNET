@@ -24,6 +24,7 @@ use std::env::{self, var};
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
+use uuid::Uuid;
 
 // TODO: Consider and/or try moving the integration tests into separate Rust files.
 // "Tests in your src files should be unit tests, and tests in tests/ should be integration-style tests."
@@ -1264,7 +1265,7 @@ fn test_swap_status() {
         "userpass": mm.userpass,
         "method": "my_swap_status",
         "params": {
-            "uuid":"random",
+            "uuid":Uuid::new_v4(),
         }
     }))));
 
@@ -1279,7 +1280,7 @@ fn test_swap_status() {
         "userpass": mm.userpass,
         "method": "stats_swap_status",
         "params": {
-            "uuid":"random",
+            "uuid":Uuid::new_v4(),
         }
     }))));
 
@@ -2400,7 +2401,7 @@ fn check_too_low_volume_order_creation_fails(mm: &MarketMakerIt, base: &str, rel
 #[test]
 #[cfg(feature = "native")]
 // https://github.com/KomodoPlatform/atomicDEX-API/issues/481
-fn setprice_buy_sell_min_volume() {
+fn setprice_buy_sell_too_low_volume() {
     let bob_passphrase = unwrap!(get_passphrase(&".env.seed", "BOB_PASSPHRASE"));
 
     let coins = json! ([
@@ -2442,6 +2443,127 @@ fn setprice_buy_sell_min_volume() {
     check_too_low_volume_order_creation_fails(&mm, "MORTY", "ETH");
     check_too_low_volume_order_creation_fails(&mm, "ETH", "MORTY");
     check_too_low_volume_order_creation_fails(&mm, "JST", "MORTY");
+}
+
+#[test]
+#[cfg(feature = "native")]
+// https://github.com/KomodoPlatform/atomicDEX-API/issues/473
+fn setprice_min_volume_should_be_displayed_in_orderbook() {
+    let bob_passphrase = unwrap!(get_passphrase(&".env.seed", "BOB_PASSPHRASE"));
+
+    let coins = json! ([
+        {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"MORTY","asset":"MORTY","rpcport":11608,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"ETH","name":"ethereum","protocol":{"type":"ETH"}},
+        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}}
+    ]);
+
+    let mut mm_bob = unwrap!(MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": bob_passphrase,
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+        }),
+        "pass".into(),
+        match var("LOCAL_THREAD_MM") {
+            Ok(ref e) if e == "bob" => Some(local_start()),
+            _ => None,
+        }
+    ));
+
+    let (_dump_log, _dump_dashboard) = mm_dump(&mm_bob.log_path);
+    log!({"Bob log path: {}", mm_bob.log_path.display()});
+    unwrap!(block_on(
+        mm_bob.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
+
+    let mut mm_alice = unwrap!(MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
+            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
+            "passphrase": "alice passphrase",
+            "coins": coins,
+            "seednodes": [fomat!((mm_bob.ip))],
+            "rpc_password": "pass",
+        }),
+        "pass".into(),
+        match var("LOCAL_THREAD_MM") {
+            Ok(ref e) if e == "alice" => Some(local_start()),
+            _ => None,
+        }
+    ));
+
+    let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
+    log!({"Alice log path: {}", mm_alice.log_path.display()});
+
+    unwrap!(block_on(
+        mm_alice.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
+
+    log! ({"enable_coins (bob): {:?}", block_on (enable_coins_eth_electrum (&mm_bob, vec!["http://195.201.0.6:8565"]))});
+    log! ({"enable_coins (alice): {:?}", block_on (enable_coins_eth_electrum (&mm_alice, vec!["http://195.201.0.6:8565"]))});
+
+    // issue orderbook call on Alice side to trigger subscription to a topic
+    unwrap!(block_on(mm_alice.rpc(json! ({
+        "userpass": mm_alice.userpass,
+        "method": "orderbook",
+        "base": "ETH",
+        "rel": "JST",
+    }))));
+
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
+        "userpass": mm_bob.userpass,
+        "method": "setprice",
+        "base": "ETH",
+        "rel": "JST",
+        "price": "1",
+        "volume": "10",
+        "min_volume": "1",
+    }))));
+    assert!(rc.0.is_success(), "!setprice: {}", rc.1);
+
+    log!("Get ETH/JST orderbook on Bob side");
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
+        "userpass": mm_bob.userpass,
+        "method": "orderbook",
+        "base": "ETH",
+        "rel": "JST",
+    }))));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("orderbook "[orderbook]);
+    let asks = orderbook["asks"].as_array().unwrap();
+    assert_eq!(asks.len(), 1, "Bob ETH/JST orderbook must have exactly 1 ask");
+
+    let min_volume = asks[0]["min_volume"].as_str().unwrap();
+    assert_eq!(min_volume, "1", "Bob ETH/JST ask must display correct min_volume");
+
+    log!("Get ETH/JST orderbook on Alice side");
+    let rc = unwrap!(block_on(mm_alice.rpc(json! ({
+        "userpass": mm_alice.userpass,
+        "method": "orderbook",
+        "base": "ETH",
+        "rel": "JST",
+    }))));
+    assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+    let orderbook: Json = unwrap!(json::from_str(&rc.1));
+    log!("orderbook "[orderbook]);
+    let asks = orderbook["asks"].as_array().unwrap();
+    assert_eq!(asks.len(), 1, "Alice ETH/JST orderbook must have exactly 1 ask");
+
+    let min_volume = asks[0]["min_volume"].as_str().unwrap();
+    assert_eq!(min_volume, "1", "Alice ETH/JST ask must display correct min_volume");
 }
 
 #[test]
@@ -2508,6 +2630,196 @@ fn test_fill_or_kill_taker_order_should_not_transform_to_maker() {
     let my_taker_orders: HashMap<String, Json> = unwrap!(json::from_value(my_orders["result"]["taker_orders"].clone()));
     assert!(my_maker_orders.is_empty(), "maker_orders must be empty");
     assert!(my_taker_orders.is_empty(), "taker_orders must be empty");
+}
+
+#[test]
+#[cfg(feature = "native")]
+fn test_gtc_taker_order_should_transform_to_maker() {
+    let bob_passphrase = unwrap!(get_passphrase(&".env.client", "BOB_PASSPHRASE"));
+
+    let coins = json! ([
+        {"coin":"RICK","asset":"RICK","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"MORTY","asset":"MORTY","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"ETH","name":"ethereum","protocol":{"type":"ETH"}},
+        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}}
+    ]);
+
+    let mut mm_bob = unwrap!(MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 8999,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": bob_passphrase,
+            "coins": coins,
+            "rpc_password": "password",
+            "i_am_seed": true,
+        }),
+        "password".into(),
+        local_start!("bob")
+    ));
+
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_bob.mm_dump();
+    log! ({"Bob log path: {}", mm_bob.log_path.display()});
+    unwrap!(block_on(
+        mm_bob.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
+    log!([block_on(enable_coins_eth_electrum(&mm_bob, vec![
+        "http://195.201.0.6:8565"
+    ]))]);
+
+    log!("Issue bob ETH/JST sell request");
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
+        "userpass": mm_bob.userpass,
+        "method": "sell",
+        "base": "ETH",
+        "rel": "JST",
+        "price": 1,
+        "volume": 0.1,
+        "order_type": {
+            "type": "GoodTillCancelled"
+        }
+    }))));
+    assert!(rc.0.is_success(), "!setprice: {}", rc.1);
+    let rc_json: Json = json::from_str(&rc.1).unwrap();
+    let uuid: Uuid = json::from_value(rc_json["result"]["uuid"].clone()).unwrap();
+
+    log!("Wait for 40 seconds for Bob order to be converted to maker");
+    thread::sleep(Duration::from_secs(40));
+
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
+        "userpass": mm_bob.userpass,
+        "method": "my_orders",
+    }))));
+    assert!(rc.0.is_success(), "!my_orders: {}", rc.1);
+    let my_orders: Json = unwrap!(json::from_str(&rc.1));
+    let my_maker_orders: HashMap<String, Json> = unwrap!(json::from_value(my_orders["result"]["maker_orders"].clone()));
+    let my_taker_orders: HashMap<String, Json> = unwrap!(json::from_value(my_orders["result"]["taker_orders"].clone()));
+    assert_eq!(1, my_maker_orders.len(), "maker_orders must have exactly 1 order");
+    assert!(my_taker_orders.is_empty(), "taker_orders must be empty");
+    let order_path = mm_bob.folder.join(format!(
+        "DB/05aab5342166f8594baf17a7d9bef5d567443327/ORDERS/MY/MAKER/{}.json",
+        uuid
+    ));
+    log!("Order path "(order_path.display()));
+    assert!(order_path.exists());
+}
+
+#[test]
+#[cfg(feature = "native")]
+fn test_set_price_must_save_order_to_db() {
+    let bob_passphrase = unwrap!(get_passphrase(&".env.client", "BOB_PASSPHRASE"));
+
+    let coins = json! ([
+        {"coin":"RICK","asset":"RICK","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"MORTY","asset":"MORTY","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"ETH","name":"ethereum","protocol":{"type":"ETH"}},
+        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}}
+    ]);
+
+    let mut mm_bob = unwrap!(MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 8999,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": bob_passphrase,
+            "coins": coins,
+            "rpc_password": "password",
+            "i_am_seed": true,
+        }),
+        "password".into(),
+        local_start!("bob")
+    ));
+
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_bob.mm_dump();
+    log! ({"Bob log path: {}", mm_bob.log_path.display()});
+    unwrap!(block_on(
+        mm_bob.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
+    log!([block_on(enable_coins_eth_electrum(&mm_bob, vec![
+        "http://195.201.0.6:8565"
+    ]))]);
+
+    log!("Issue bob ETH/JST sell request");
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
+        "userpass": mm_bob.userpass,
+        "method": "setprice",
+        "base": "ETH",
+        "rel": "JST",
+        "price": 1,
+        "volume": 0.1
+    }))));
+    assert!(rc.0.is_success(), "!setprice: {}", rc.1);
+    let rc_json: Json = json::from_str(&rc.1).unwrap();
+    let uuid: Uuid = json::from_value(rc_json["result"]["uuid"].clone()).unwrap();
+    let order_path = mm_bob.folder.join(format!(
+        "DB/05aab5342166f8594baf17a7d9bef5d567443327/ORDERS/MY/MAKER/{}.json",
+        uuid
+    ));
+    assert!(order_path.exists());
+}
+
+#[test]
+#[cfg(feature = "native")]
+fn test_set_price_response_format() {
+    let bob_passphrase = unwrap!(get_passphrase(&".env.client", "BOB_PASSPHRASE"));
+
+    let coins = json! ([
+        {"coin":"RICK","asset":"RICK","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"MORTY","asset":"MORTY","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"ETH","name":"ethereum","protocol":{"type":"ETH"}},
+        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}}
+    ]);
+
+    let mut mm_bob = unwrap!(MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 8999,
+            "dht": "on",  // Enable DHT without delay.
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "canbind": env::var ("BOB_TRADE_PORT") .ok().map (|s| unwrap! (s.parse::<i64>())),
+            "passphrase": bob_passphrase,
+            "coins": coins,
+            "rpc_password": "password",
+            "i_am_seed": true,
+        }),
+        "password".into(),
+        local_start!("bob")
+    ));
+
+    let (_bob_dump_log, _bob_dump_dashboard) = mm_bob.mm_dump();
+    log! ({"Bob log path: {}", mm_bob.log_path.display()});
+    unwrap!(block_on(
+        mm_bob.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+    ));
+    log!([block_on(enable_coins_eth_electrum(&mm_bob, vec![
+        "http://195.201.0.6:8565"
+    ]))]);
+
+    log!("Issue bob ETH/JST sell request");
+    let rc = unwrap!(block_on(mm_bob.rpc(json! ({
+        "userpass": mm_bob.userpass,
+        "method": "setprice",
+        "base": "ETH",
+        "rel": "JST",
+        "price": 1,
+        "volume": 0.1
+    }))));
+    assert!(rc.0.is_success(), "!setprice: {}", rc.1);
+    let rc_json: Json = json::from_str(&rc.1).unwrap();
+    let _: BigDecimal = json::from_value(rc_json["result"]["max_base_vol"].clone()).unwrap();
+    let _: BigDecimal = json::from_value(rc_json["result"]["min_base_vol"].clone()).unwrap();
+    let _: BigDecimal = json::from_value(rc_json["result"]["price"].clone()).unwrap();
+
+    let _: BigRational = json::from_value(rc_json["result"]["max_base_vol_rat"].clone()).unwrap();
+    let _: BigRational = json::from_value(rc_json["result"]["min_base_vol_rat"].clone()).unwrap();
+    let _: BigRational = json::from_value(rc_json["result"]["price_rat"].clone()).unwrap();
 }
 
 #[test]

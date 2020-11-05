@@ -33,16 +33,16 @@ use async_trait::async_trait;
 use base64::{encode_config as base64_encode, URL_SAFE};
 use bigdecimal::BigDecimal;
 pub use bitcrypto::{dhash160, sha256, ChecksumType};
-use chain::{TransactionInput, TransactionOutput};
+use chain::{OutPoint, TransactionInput, TransactionOutput};
 use common::executor::{spawn, Timer};
 use common::jsonrpc_client::JsonRpcError;
 use common::mm_ctx::MmArc;
 use common::mm_metrics::MetricsArc;
-use common::{first_char_to_upper, small_rng, MM_VERSION};
+use common::{first_char_to_upper, now_ms, small_rng, MM_VERSION};
 #[cfg(feature = "native")] use dirs::home_dir;
 use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
-use futures::lock::Mutex as AsyncMutex;
+use futures::lock::{Mutex as AsyncMutex, MutexGuard as AsyncMutexGuard};
 use futures::stream::StreamExt;
 use futures01::Future;
 use keys::bytes::Bytes;
@@ -55,6 +55,7 @@ use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H256 as 
 use script::{Builder, Opcode, Script, SignatureVersion, TransactionInputSigner};
 use serde_json::{self as json, Value as Json};
 use serialization::serialize;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::num::NonZeroU64;
 use std::ops::Deref;
@@ -182,6 +183,113 @@ impl Default for UtxoAddressFormat {
     fn default() -> Self { UtxoAddressFormat::Standard }
 }
 
+/// The cache of recently send transactions used to track the spent UTXOs and replace them with new outputs
+/// The daemon needs some time to update the listunspent list for address which makes it return already spent UTXOs
+/// This cache helps to prevent UTXO reuse in such cases
+pub struct RecentlySpentOutPoints {
+    /// Maps UnspentInfo A to a set of UnspentInfos which `spent` A
+    input_to_output_map: HashMap<UnspentInfo, HashSet<UnspentInfo>>,
+    /// Maps UnspentInfo A to a set of UnspentInfos that `were spent by` A
+    output_to_input_map: HashMap<UnspentInfo, HashSet<UnspentInfo>>,
+    /// Cache includes only outputs having script_pubkey == for_script_pubkey
+    for_script_pubkey: Bytes,
+}
+
+impl RecentlySpentOutPoints {
+    fn new(for_script_pubkey: Bytes) -> Self {
+        RecentlySpentOutPoints {
+            input_to_output_map: HashMap::new(),
+            output_to_input_map: HashMap::new(),
+            for_script_pubkey,
+        }
+    }
+
+    pub fn add_spent(&mut self, mut inputs: Vec<UnspentInfo>, spend_tx_hash: H256, outputs: Vec<TransactionOutput>) {
+        // reset the height for all inputs as spent cache is not aware about block height of spent output
+        inputs.iter_mut().for_each(|input| input.height = None);
+        let inputs: HashSet<_> = inputs.into_iter().collect();
+        let to_replace: HashSet<_> = outputs
+            .iter()
+            .enumerate()
+            .filter_map(|(index, output)| {
+                if output.script_pubkey == self.for_script_pubkey {
+                    Some(UnspentInfo {
+                        outpoint: OutPoint {
+                            hash: spend_tx_hash.clone(),
+                            index: index as u32,
+                        },
+                        value: output.value,
+                        height: None,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let mut prev_inputs_spent = HashSet::new();
+
+        // check if inputs are already in spending cached chain
+        for input in &inputs {
+            if let Some(prev_inputs) = self.output_to_input_map.get(input) {
+                for prev_input in prev_inputs {
+                    if let Some(outputs) = self.input_to_output_map.get_mut(prev_input) {
+                        prev_inputs_spent.insert(prev_input.clone());
+                        outputs.remove(input);
+                        for replace in &to_replace {
+                            outputs.insert(replace.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        prev_inputs_spent.extend(inputs.clone());
+        for output in &to_replace {
+            self.output_to_input_map
+                .insert(output.clone(), prev_inputs_spent.clone());
+        }
+
+        for input in inputs {
+            self.input_to_output_map.insert(input, to_replace.clone());
+        }
+    }
+
+    pub fn replace_spent_outputs_with_cache(&self, mut outputs: HashSet<UnspentInfo>) -> HashSet<UnspentInfo> {
+        let mut replacement_unspents = HashSet::new();
+        // reset the height for all outputs as spent cache is not aware about block height of a just sent tx
+        outputs = outputs
+            .into_iter()
+            .map(|mut output| {
+                output.height = None;
+                output
+            })
+            .collect();
+        outputs = outputs
+            .into_iter()
+            .filter(|unspent| {
+                let outs = self.input_to_output_map.get(&unspent);
+                match outs {
+                    Some(outs) => {
+                        for out in outs.iter() {
+                            if !replacement_unspents.contains(out) {
+                                replacement_unspents.insert(out.clone());
+                            }
+                        }
+                        false
+                    },
+                    None => true,
+                }
+            })
+            .collect();
+        if replacement_unspents.is_empty() {
+            return outputs;
+        }
+        outputs.extend(replacement_unspents);
+        self.replace_spent_outputs_with_cache(outputs)
+    }
+}
+
 #[derive(Debug)]
 pub struct UtxoCoinFields {
     ticker: String,
@@ -226,7 +334,7 @@ pub struct UtxoCoinFields {
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
-    my_address: Address,
+    pub my_address: Address,
     /// The address format indicates how to parse and display UTXO addresses over RPC calls
     address_format: UtxoAddressFormat,
     /// Is current coin KMD asset chain?
@@ -261,6 +369,10 @@ pub struct UtxoCoinFields {
     mature_confirmations: u32,
     /// Path to the TX cache directory
     tx_cache_directory: Option<PathBuf>,
+    /// The cache of recently send transactions used to track the spent UTXOs and replace them with new outputs
+    /// The daemon needs some time to update the listunspent list for address which makes it return already spent UTXOs
+    /// This cache helps to prevent UTXO reuse in such cases
+    pub recently_spent_outpoints: AsyncMutex<RecentlySpentOutPoints>,
 }
 
 #[async_trait]
@@ -378,6 +490,13 @@ pub trait UtxoArcCommonOps {
     ) -> Box<dyn Future<Item = VerboseTransactionFrom, Error = String> + Send>;
 
     async fn request_tx_history(&self, metrics: MetricsArc) -> RequestTxHistoryResult;
+
+    /// Returns available unspents in ascending order + RecentlySpentOutPoints MutexGuard for further interaction
+    /// (e.g. to add new transaction to it).
+    async fn list_unspent_ordered(
+        &self,
+        address: &Address,
+    ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'_, RecentlySpentOutPoints>), String>;
 }
 
 pub enum RequestTxHistoryResult {
@@ -618,6 +737,8 @@ pub async fn utxo_arc_from_conf_and_request(
         try_s!(json::from_value(conf["address_format"].clone()))
     };
 
+    let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
+
     let rpc_client = match req["method"].as_str() {
         Some("enable") => {
             if cfg!(feature = "native") {
@@ -640,6 +761,10 @@ pub async fn utxo_arc_from_conf_and_request(
                     uri: fomat!("http://127.0.0.1:"(rpc_port)),
                     auth: format!("Basic {}", base64_encode(&auth_str, URL_SAFE)),
                     event_handlers,
+                    request_id: 0u64.into(),
+                    list_unspent_in_progress: false.into(),
+                    list_unspent_subs: AsyncMutex::new(Vec::new()),
+                    coin_decimals: decimals,
                 });
 
                 UtxoRpcClientEnum::Native(NativeClient(client))
@@ -738,8 +863,6 @@ pub async fn utxo_arc_from_conf_and_request(
         },
     };
 
-    let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
-
     let (signature_version, fork_id) = if ticker == "BCH" {
         (SignatureVersion::ForkId, 0x40)
     } else {
@@ -769,6 +892,8 @@ pub async fn utxo_arc_from_conf_and_request(
         .unwrap_or(MATURE_CONFIRMATIONS_DEFAULT);
     let tx_cache_directory = Some(ctx.dbdir().join("TX_CACHE"));
 
+    let my_script_pubkey = Builder::build_p2pkh(&my_address.hash).to_bytes();
+
     let coin = UtxoCoinFields {
         ticker: ticker.into(),
         decimals,
@@ -786,7 +911,7 @@ pub async fn utxo_arc_from_conf_and_request(
         segwit: conf["segwit"].as_bool().unwrap_or(false),
         wif_prefix,
         tx_version,
-        my_address: my_address.clone(),
+        my_address,
         address_format,
         asset_chain,
         tx_fee,
@@ -804,6 +929,7 @@ pub async fn utxo_arc_from_conf_and_request(
         dust_amount,
         mature_confirmations,
         tx_cache_directory,
+        recently_spent_outpoints: AsyncMutex::new(RecentlySpentOutPoints::new(my_script_pubkey)),
     };
     Ok(UtxoArc(Arc::new(coin)))
 }
@@ -1042,12 +1168,7 @@ where
     }
 
     let rpc_client = &coin.as_ref().rpc_client;
-    let mut unspents = try_s!(
-        rpc_client
-            .list_unspent_ordered(&coin.as_ref().my_address)
-            .compat()
-            .await
-    );
+    let mut unspents = try_s!(rpc_client.list_unspent(&coin.as_ref().my_address).compat().await);
     // list_unspent_ordered() returns ordered from lowest to highest by value unspent outputs.
     // reverse it to reorder from highest to lowest outputs.
     unspents.reverse();
@@ -1151,17 +1272,28 @@ async fn send_outputs_from_my_address_impl<T>(coin: T, outputs: Vec<TransactionO
 where
     T: AsRef<UtxoArc> + UtxoArcCommonOps,
 {
-    let _utxo_lock = UTXO_LOCK.lock().await;
-    let unspents = try_s!(
-        coin.ordered_mature_unspents(&coin.as_ref().my_address)
-            .map_err(|e| ERRL!("{}", e))
-            .compat()
-            .await
-    );
+    let before_list_unspent_ordered = now_ms();
+    let (unspents, mut recently_sent_txs) = try_s!(coin.list_unspent_ordered(&coin.as_ref().my_address).await);
+    let after_list_unspent_ordered = now_ms();
+    log!("list_unspent_ordered took "(
+        after_list_unspent_ordered - before_list_unspent_ordered
+    ));
+
     let (unsigned, _) = try_s!(
         coin.generate_transaction(unspents, outputs, FeePolicy::SendExact, None, None)
             .await
     );
+
+    let spent_unspents = unsigned
+        .inputs
+        .iter()
+        .map(|input| UnspentInfo {
+            outpoint: input.previous_output.clone(),
+            value: input.amount,
+            height: None,
+        })
+        .collect();
+
     let prev_script = Builder::build_p2pkh(&coin.as_ref().my_address.hash);
     let signed = try_s!(sign_tx(
         unsigned,
@@ -1170,14 +1302,26 @@ where
         coin.as_ref().signature_version,
         coin.as_ref().fork_id
     ));
-    try_s!(
+
+    let before_send_transaction = now_ms();
+    let hash = try_s!(
         coin.as_ref()
             .rpc_client
-            .send_transaction(&signed, coin.as_ref().my_address.clone())
+            .send_transaction(&signed)
             .map_err(|e| ERRL!("{}", e))
             .compat()
             .await
     );
+    let after_send_transaction = now_ms();
+    log!("send_transaction took "(
+        after_send_transaction - before_send_transaction
+    ));
+
+    let before = now_ms();
+    recently_sent_txs.add_spent(spent_unspents, signed.hash(), signed.outputs.clone());
+    let after = now_ms();
+    log!("add_spent took "(after - before));
+
     Ok(signed)
 }
 
