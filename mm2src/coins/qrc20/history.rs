@@ -93,13 +93,7 @@ impl Qrc20Coin {
             };
             {
                 let coins_ctx = unwrap!(CoinsContext::from_ctx(&ctx));
-                let coins = match coins_ctx.coins.spinlock(22) {
-                    Ok(guard) => guard,
-                    Err(_err) => {
-                        thread::sleep(Duration::from_millis(99));
-                        continue;
-                    },
-                };
+                let coins = block_on(coins_ctx.coins.lock());
                 if !coins.contains_key(&self.utxo.ticker) {
                     ctx.log.log("", &[&"tx_history", &self.utxo.ticker], "Loop stopped");
                     break;

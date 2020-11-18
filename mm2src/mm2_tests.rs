@@ -5,10 +5,10 @@ use super::lp_main;
 use bigdecimal::BigDecimal;
 #[cfg(not(feature = "native"))] use common::call_back;
 use common::executor::Timer;
-use common::for_tests::enable_qrc20;
 #[cfg(feature = "native")] use common::for_tests::mm_dump;
 use common::for_tests::{enable_electrum, enable_native, from_env_file, get_passphrase, mm_spat, LocalStart,
                         MarketMakerIt, RaiiDump};
+use common::for_tests::{enable_qrc20, find_metrics_in_json};
 use common::mm_metrics::{MetricType, MetricsJson};
 use common::mm_number::Fraction;
 use common::privkey::key_pair_from_seed;

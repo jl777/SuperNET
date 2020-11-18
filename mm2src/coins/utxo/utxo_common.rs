@@ -2089,7 +2089,7 @@ pub async fn list_unspent_ordered<'a, T>(
     address: &Address,
 ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'a, RecentlySpentOutPoints>), String>
 where
-    T: AsRef<UtxoArc>,
+    T: AsRef<UtxoCoinFields>,
 {
     let before_list_unspent = now_ms();
     let mut unspents = try_s!(

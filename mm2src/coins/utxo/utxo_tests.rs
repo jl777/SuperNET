@@ -1438,7 +1438,8 @@ fn test_ordered_mature_unspents_from_cache_impl(
     verbose.height = cached_height;
 
     // prepare mocks
-    ElectrumClient::list_unspent_ordered.mock_safe(move |_, _| {
+    /*
+    utxo_common::list_unspent_ordered.mock_safe(move |_, _| {
         let unspents = vec![UnspentInfo {
             outpoint: OutPoint {
                 hash: H256::from_reversed_str(TX_HASH),
@@ -1449,6 +1450,7 @@ fn test_ordered_mature_unspents_from_cache_impl(
         }];
         MockResult::Return(Box::new(futures01::future::ok(unspents)))
     });
+    */
     ElectrumClient::get_block_count
         .mock_safe(move |_| MockResult::Return(Box::new(futures01::future::ok(block_count))));
     UtxoStandardCoin::get_verbose_transaction_from_cache_or_rpc.mock_safe(move |_, txid| {

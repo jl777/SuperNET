@@ -123,6 +123,13 @@ impl UtxoCommonOps for UtxoStandardCoin {
     async fn cache_transaction_if_possible(&self, tx: &RpcTransaction) -> Result<(), String> {
         utxo_common::cache_transaction_if_possible(&self.utxo_arc, tx).await
     }
+
+    async fn list_unspent_ordered<'a>(
+        &'a self,
+        address: &Address,
+    ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'a, RecentlySpentOutPoints>), String> {
+        utxo_common::list_unspent_ordered(self, address).await
+    }
 }
 
 #[async_trait]
@@ -133,13 +140,6 @@ impl UtxoStandardOps for UtxoStandardCoin {
 
     async fn request_tx_history(&self, metrics: MetricsArc) -> RequestTxHistoryResult {
         utxo_common::request_tx_history(self, metrics).await
-    }
-
-    async fn list_unspent_ordered<'a>(
-        &'a self,
-        address: &Address,
-    ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'a, RecentlySpentOutPoints>), String> {
-        utxo_common::list_unspent_ordered(self, address).await
     }
 }
 

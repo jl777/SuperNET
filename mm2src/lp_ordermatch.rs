@@ -2621,7 +2621,7 @@ struct LpautobuyResult<'a> {
     order_type: OrderType,
 }
 
-pub fn lp_auto_buy(
+pub async fn lp_auto_buy(
     ctx: &MmArc,
     base_coin: &MmCoinEnum,
     rel_coin: &MmCoinEnum,
@@ -2658,7 +2658,12 @@ pub fn lp_auto_buy(
         .with_conf_settings(conf_settings)
         .with_sender_pubkey(H256Json::from(our_public_id.bytes));
     let request = try_s!(request_builder.build());
-    ctx.broadcast_p2p_msg(P2PMessage::from_serialize_with_default_addr(&request));
+    broadcast_ordermatch_message(
+        &ctx,
+        vec![orderbook_topic_from_base_rel(&input.base, &input.rel)],
+        request.clone().into(),
+    );
+
     let result = json!({ "result": LpautobuyResult {
         request: &request,
         order_type: input.order_type,

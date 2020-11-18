@@ -434,6 +434,13 @@ pub trait UtxoCommonOps {
 
     /// Cache transaction if the coin supports `TX_CACHE` and tx height is set and not zero.
     async fn cache_transaction_if_possible(&self, tx: &RpcTransaction) -> Result<(), String>;
+
+    /// Returns available unspents in ascending order + RecentlySpentOutPoints MutexGuard for further interaction
+    /// (e.g. to add new transaction to it).
+    async fn list_unspent_ordered(
+        &self,
+        address: &Address,
+    ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'_, RecentlySpentOutPoints>), String>;
 }
 
 #[async_trait]
@@ -442,13 +449,6 @@ pub trait UtxoStandardOps {
     async fn tx_details_by_hash(&self, hash: &[u8]) -> Result<TransactionDetails, String>;
 
     async fn request_tx_history(&self, metrics: MetricsArc) -> RequestTxHistoryResult;
-
-    /// Returns available unspents in ascending order + RecentlySpentOutPoints MutexGuard for further interaction
-    /// (e.g. to add new transaction to it).
-    async fn list_unspent_ordered(
-        &self,
-        address: &Address,
-    ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'_, RecentlySpentOutPoints>), String>;
 }
 
 #[derive(Clone, Debug)]

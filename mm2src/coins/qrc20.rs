@@ -3,8 +3,8 @@ use crate::qrc20::rpc_electrum::{ContractCallResult, LogEntry, Qrc20RpcOps, TxHi
 use crate::utxo::rpc_clients::{ElectrumClient, UnspentInfo, UtxoRpcClientEnum, UtxoRpcClientOps};
 use crate::utxo::utxo_common::{self, big_decimal_from_sat};
 use crate::utxo::{qtum, sign_tx, utxo_fields_from_conf_and_request, ActualTxFee, AdditionalTxData, FeePolicy,
-                  GenerateTransactionError, UtxoAddressFormat, UtxoCoinFields, UtxoCommonOps, UtxoTx,
-                  VerboseTransactionFrom, UTXO_LOCK};
+                  GenerateTransactionError, RecentlySpentOutPoints, UtxoAddressFormat, UtxoCoinFields, UtxoCommonOps,
+                  UtxoTx, VerboseTransactionFrom, UTXO_LOCK};
 use crate::{FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionDetails,
             TransactionEnum, TransactionFut, ValidateAddressResult, WithdrawFee, WithdrawRequest};
 use async_trait::async_trait;
@@ -18,11 +18,12 @@ use common::mm_ctx::MmArc;
 use ethabi::{Function, Token};
 use ethereum_types::{H160, U256};
 use futures::compat::Future01CompatExt;
+use futures::lock::MutexGuard as AsyncMutexGuard;
 use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
 use gstuff::now_ms;
 use keys::bytes::Bytes as ScriptBytes;
-use keys::{Address as UtxoAddress, Public};
+use keys::{Address as UtxoAddress, Address, Public};
 #[cfg(test)] use mocktopus::macros::*;
 use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H160 as H160Json, H256 as H256Json};
 use script::{Builder as ScriptBuilder, Opcode, Script, TransactionInputSigner};
@@ -331,13 +332,7 @@ impl Qrc20Coin {
         let _utxo_lock = UTXO_LOCK.lock().await;
 
         let GenerateQrc20TxResult { signed, .. } = try_s!(self.generate_qrc20_transaction(outputs).await);
-        let _tx = try_s!(
-            self.utxo
-                .rpc_client
-                .send_transaction(&signed, self.utxo.my_address.clone())
-                .compat()
-                .await
-        );
+        let _tx = try_s!(self.utxo.rpc_client.send_transaction(&signed).compat().await);
         Ok(signed.into())
     }
 
@@ -504,6 +499,13 @@ impl UtxoCommonOps for Qrc20Coin {
 
     async fn cache_transaction_if_possible(&self, tx: &RpcTransaction) -> Result<(), String> {
         utxo_common::cache_transaction_if_possible(&self.utxo, tx).await
+    }
+
+    async fn list_unspent_ordered<'a>(
+        &'a self,
+        address: &Address,
+    ) -> Result<(Vec<UnspentInfo>, AsyncMutexGuard<'a, RecentlySpentOutPoints>), String> {
+        utxo_common::list_unspent_ordered(self, address).await
     }
 }
 

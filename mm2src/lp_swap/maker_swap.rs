@@ -5,11 +5,12 @@ use super::{ban_pubkey, broadcast_my_swap_status, broadcast_swap_message_every, 
             LockedAmount, MySwapInfo, RecoveredSwap, RecoveredSwapAction, SavedSwap, SwapConfirmationsSettings,
             SwapError, SwapMsg, SwapsContext, WAIT_CONFIRM_INTERVAL};
 
+use crate::mm2::lp_swap::TransactionIdentifier;
 use crate::mm2::{lp_network::subscribe_to_topic, lp_swap::NegotiationDataMsg};
 use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use bitcrypto::dhash160;
-use coins::{FoundSwapTxSpend, MmCoinEnum, TradeFee, TransactionDetails};
+use coins::{FoundSwapTxSpend, MmCoinEnum, TradeFee};
 use common::{bits256, executor::Timer, file_lock::FileLock, mm_ctx::MmArc, mm_number::MmNumber, now_ms, slurp, write,
              MM_VERSION};
 use futures::{compat::Future01CompatExt, select, FutureExt};
@@ -522,8 +523,6 @@ impl MakerSwap {
             tx_hex: transaction.tx_hex().into(),
             tx_hash,
         };
-        let after_tx_details = now_ms();
-        log!("tx_details_by_hash took "(after_tx_details - before_tx_details));
 
         Ok((Some(MakerSwapCommand::WaitForTakerPayment), vec![
             MakerSwapEvent::MakerPaymentSent(tx_ident),
