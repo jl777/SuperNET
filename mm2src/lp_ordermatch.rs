@@ -1104,7 +1104,7 @@ impl Default for MatchBy {
     fn default() -> Self { MatchBy::Any }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "type", content = "data")]
 enum OrderType {
     FillOrKill,
@@ -2614,7 +2614,14 @@ struct TakerMatch {
     last_updated: u64,
 }
 
-pub async fn lp_auto_buy(
+#[derive(Serialize)]
+struct LpautobuyResult<'a> {
+    #[serde(flatten)]
+    request: &'a TakerRequest,
+    order_type: OrderType,
+}
+
+pub fn lp_auto_buy(
     ctx: &MmArc,
     base_coin: &MmCoinEnum,
     rel_coin: &MmCoinEnum,
@@ -2651,12 +2658,11 @@ pub async fn lp_auto_buy(
         .with_conf_settings(conf_settings)
         .with_sender_pubkey(H256Json::from(our_public_id.bytes));
     let request = try_s!(request_builder.build());
-    broadcast_ordermatch_message(
-        &ctx,
-        vec![orderbook_topic_from_base_rel(&input.base, &input.rel)],
-        request.clone().into(),
-    );
-    let result = json!({ "result": request }).to_string();
+    ctx.broadcast_p2p_msg(P2PMessage::from_serialize_with_default_addr(&request));
+    let result = json!({ "result": LpautobuyResult {
+        request: &request,
+        order_type: input.order_type,
+    } });
     let order = TakerOrder {
         created_at: now_ms(),
         matches: HashMap::new(),
@@ -2666,7 +2672,7 @@ pub async fn lp_auto_buy(
     save_my_taker_order(ctx, &order);
     my_taker_orders.insert(order.request.uuid, order);
     drop(my_taker_orders);
-    Ok(result)
+    Ok(result.to_string())
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
