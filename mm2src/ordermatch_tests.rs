@@ -1,5 +1,6 @@
 use super::*;
 use crate::mm2::lp_network::P2PContext;
+use crate::mm2::lp_ordermatch::new_protocol::PubkeyKeepAlive;
 use coins::{MmCoin, TestCoin};
 use common::{executor::spawn,
              mm_ctx::{MmArc, MmCtx, MmCtxBuilder},
@@ -8,8 +9,9 @@ use futures::{channel::mpsc, lock::Mutex as AsyncMutex, StreamExt};
 use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexResponse};
 use mm2_libp2p::{decode_message, PeerId};
 use mocktopus::mocking::*;
-use rand::Rng;
+use rand::{seq::SliceRandom, thread_rng, Rng};
 use std::collections::HashSet;
+use std::iter::{self, FromIterator};
 
 #[test]
 fn test_match_maker_order_and_taker_request() {
@@ -30,13 +32,10 @@ fn test_match_maker_order_and_taker_request() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 20.into(),
-        rel_amount_rat: Some(BigRational::from_integer(20.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -63,13 +62,10 @@ fn test_match_maker_order_and_taker_request() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 20.into(),
-        rel_amount_rat: Some(BigRational::from_integer(20.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -96,13 +92,10 @@ fn test_match_maker_order_and_taker_request() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 2.into(),
-        rel_amount_rat: Some(BigRational::from_integer(2.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -129,13 +122,10 @@ fn test_match_maker_order_and_taker_request() {
         base: "REL".into(),
         rel: "BASE".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 5.into(),
-        base_amount_rat: Some(BigRational::from_integer(5.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -162,13 +152,10 @@ fn test_match_maker_order_and_taker_request() {
         base: "REL".into(),
         rel: "BASE".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -195,13 +182,10 @@ fn test_match_maker_order_and_taker_request() {
         base: "REL".into(),
         rel: "BASE".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
-        rel_amount: "0.9".parse().unwrap(),
-        rel_amount_rat: Some(BigRational::new(9.into(), 10.into())),
+        rel_amount: "0.9".into(),
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -260,24 +244,18 @@ fn test_maker_order_available_amount() {
             base: "BASE".into(),
             rel: "REL".into(),
             base_amount: 5.into(),
-            base_amount_rat: None,
             rel_amount: 5.into(),
-            rel_amount_rat: None,
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
-            method: "request".into(),
             action: TakerAction::Buy,
             match_by: MatchBy::Any,
             conf_settings: None,
         },
         reserved: MakerReserved {
-            method: "reserved".into(),
             base: "BASE".into(),
             rel: "REL".into(),
             base_amount: 5.into(),
-            base_amount_rat: Some(BigRational::from_integer(5.into())),
             rel_amount: 5.into(),
-            rel_amount_rat: Some(BigRational::from_integer(5.into())),
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
             maker_order_uuid: Uuid::new_v4(),
@@ -294,24 +272,18 @@ fn test_maker_order_available_amount() {
             base: "BASE".into(),
             rel: "REL".into(),
             base_amount: 1.into(),
-            base_amount_rat: Some(BigRational::from_integer(1.into())),
             rel_amount: 1.into(),
-            rel_amount_rat: Some(BigRational::from_integer(1.into())),
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
-            method: "request".into(),
             action: TakerAction::Buy,
             match_by: MatchBy::Any,
             conf_settings: None,
         },
         reserved: MakerReserved {
-            method: "reserved".into(),
             base: "BASE".into(),
             rel: "REL".into(),
             base_amount: 1.into(),
-            base_amount_rat: Some(BigRational::from_integer(1.into())),
             rel_amount: 1.into(),
-            rel_amount_rat: Some(BigRational::from_integer(1.into())),
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
             maker_order_uuid: Uuid::new_v4(),
@@ -336,13 +308,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -356,13 +325,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "BASE".into(),
         rel: "REL".into(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -376,13 +342,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -396,13 +359,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "REL".into(),
         rel: "BASE".into(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -416,13 +376,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
-        rel_amount: "0.9".parse().unwrap(),
-        rel_amount_rat: Some(BigRational::new(9.into(), 10.into())),
+        rel_amount: "0.9".into(),
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -436,13 +393,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "REL".into(),
         rel: "BASE".into(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 1.into(),
-        rel_amount_rat: Some(BigRational::from_integer(1.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -456,13 +410,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
-        rel_amount: "0.9".parse().unwrap(),
-        rel_amount_rat: Some(BigRational::new(9.into(), 10.into())),
+        rel_amount: "0.9".into(),
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -476,13 +427,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "REL".into(),
         rel: "BASE".into(),
-        base_amount: "0.8".parse().unwrap(),
-        base_amount_rat: Some(BigRational::new(8.into(), 10.into())),
+        base_amount: "0.8".into(),
         rel_amount: 1.into(),
-        rel_amount_rat: Some(BigRational::from_integer(1.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -496,13 +444,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 2.into(),
-        rel_amount_rat: Some(BigRational::from_integer(2.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -516,13 +461,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "BASE".into(),
         rel: "REL".into(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 1.into(),
-        rel_amount_rat: Some(BigRational::from_integer(1.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -536,13 +478,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: None,
         rel_amount: 2.into(),
-        rel_amount_rat: None,
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -556,13 +495,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "BASE".into(),
         rel: "REL".into(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 1.into(),
-        rel_amount_rat: Some(BigRational::from_integer(1.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -576,13 +512,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 2.into(),
-        rel_amount_rat: Some(BigRational::from_integer(2.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -596,13 +529,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "BASE".into(),
         rel: "REL".into(),
         base_amount: 1.into(),
-        base_amount_rat: None,
         rel_amount: 1.into(),
-        rel_amount_rat: None,
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -616,13 +546,10 @@ fn test_taker_match_reserved() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 2.into(),
-        rel_amount_rat: Some(BigRational::from_integer(2.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -636,13 +563,10 @@ fn test_taker_match_reserved() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "BASE".into(),
         rel: "REL".into(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 3.into(),
-        rel_amount_rat: Some(BigRational::from_integer(3.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -659,14 +583,10 @@ fn test_taker_match_reserved() {
             rel: "MORTY".into(),
             base_amount:
                 "0.3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333"
-                    .parse()
-                    .unwrap(),
-            base_amount_rat: Some(BigRational::new(1.into(), 3.into())),
+                    .into(),
             rel_amount: 1.into(),
-            rel_amount_rat: Some(BigRational::from_integer(1.into())),
             action: TakerAction::Buy,
             uuid,
-            method: "request".into(),
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
             match_by: MatchBy::Any,
@@ -679,13 +599,10 @@ fn test_taker_match_reserved() {
     let reserved = MakerReserved {
         base: "RICK".into(),
         rel: "MORTY".into(),
-        base_amount: "0.3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333".parse().unwrap(),
-        base_amount_rat: None,
-        rel_amount: "0.777777776666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666588888889".parse().unwrap(),
-        rel_amount_rat: None,
+        base_amount: "0.3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333".into(),
+        rel_amount: "0.777777776666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666588888889".into(),
         taker_order_uuid: uuid,
         maker_order_uuid: uuid,
-        method: "reserved".into(),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         conf_settings: None,
@@ -700,13 +617,10 @@ fn test_taker_order_cancellable() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 2.into(),
-        rel_amount_rat: Some(BigRational::from_integer(2.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -725,13 +639,10 @@ fn test_taker_order_cancellable() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid: Uuid::new_v4(),
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 1.into(),
-        base_amount_rat: Some(BigRational::from_integer(1.into())),
         rel_amount: 2.into(),
-        rel_amount_rat: Some(BigRational::from_integer(2.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
@@ -747,13 +658,10 @@ fn test_taker_order_cancellable() {
     order.matches.insert(Uuid::new_v4(), TakerMatch {
         last_updated: now_ms(),
         reserved: MakerReserved {
-            method: "reserved".into(),
             base: "BASE".into(),
             rel: "REL".into(),
             base_amount: 1.into(),
-            base_amount_rat: Some(BigRational::from_integer(1.into())),
             rel_amount: 3.into(),
-            rel_amount_rat: Some(BigRational::from_integer(3.into())),
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
             maker_order_uuid: Uuid::new_v4(),
@@ -761,7 +669,6 @@ fn test_taker_order_cancellable() {
             conf_settings: None,
         },
         connect: TakerConnect {
-            method: "connect".into(),
             sender_pubkey: H256Json::default(),
             dest_pub_key: H256Json::default(),
             maker_order_uuid: Uuid::new_v4(),
@@ -827,11 +734,8 @@ fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::Receiver<AdexBehaviourCmd> {
             uuid: Uuid::from_bytes([3; 16]),
             action: TakerAction::Buy,
             base_amount: 0.into(),
-            base_amount_rat: Some(BigRational::from_integer(0.into())),
             rel_amount: 0.into(),
-            rel_amount_rat: Some(BigRational::from_integer(0.into())),
             dest_pub_key: H256Json::default(),
-            method: "request".into(),
             sender_pubkey: H256Json::default(),
             match_by: MatchBy::Any,
             conf_settings: None,
@@ -910,13 +814,10 @@ fn test_taker_order_match_by() {
         base: "BASE".into(),
         rel: "REL".into(),
         uuid,
-        method: "request".into(),
         dest_pub_key: H256Json::default(),
         sender_pubkey: H256Json::default(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         action: TakerAction::Buy,
         match_by: MatchBy::Orders(not_matching_uuids),
         conf_settings: None,
@@ -930,13 +831,10 @@ fn test_taker_order_match_by() {
     };
 
     let reserved = MakerReserved {
-        method: "reserved".into(),
         base: "BASE".into(),
         rel: "REL".into(),
         base_amount: 10.into(),
-        base_amount_rat: Some(BigRational::from_integer(10.into())),
         rel_amount: 10.into(),
-        rel_amount_rat: Some(BigRational::from_integer(10.into())),
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         maker_order_uuid: Uuid::new_v4(),
@@ -1381,14 +1279,7 @@ fn make_ctx_for_tests() -> (MmArc, String, [u8; 32]) {
     (ctx, pubkey, secret)
 }
 
-fn make_random_orders(
-    pubkey: String,
-    secret: &[u8; 32],
-    peer_id: String,
-    base: String,
-    rel: String,
-    n: usize,
-) -> Vec<PricePingRequest> {
+fn make_random_orders(pubkey: String, secret: &[u8; 32], base: String, rel: String, n: usize) -> Vec<OrderbookItem> {
     let mut rng = rand::thread_rng();
     let mut orders = Vec::with_capacity(n);
     for _i in 0..n {
@@ -1401,6 +1292,7 @@ fn make_random_orders(
             max_volume: BigRational::from_integer(1.into()),
             min_volume: BigRational::from_integer(0.into()),
             conf_settings: OrderConfirmationsSettings::default(),
+            created_at: now_ms() / 1000,
         };
 
         // create an initial_message and encode it with the secret
@@ -1410,7 +1302,7 @@ fn make_random_orders(
         )
         .unwrap();
 
-        orders.push((order, initial_message, pubkey.clone(), peer_id.clone()).into());
+        orders.push((order, pubkey.clone()).into());
     }
 
     orders
@@ -1427,6 +1319,7 @@ fn p2p_context_mock() -> (mpsc::Sender<AdexBehaviourCmd>, mpsc::Receiver<AdexBeh
     (cmd_tx, cmd_rx)
 }
 
+/*
 #[test]
 fn test_process_get_orderbook_request() {
     let (ctx, pubkey, secret) = make_ctx_for_tests();
@@ -1470,12 +1363,12 @@ fn test_process_get_orderbook_request() {
     .unwrap();
 
     // the first ping request has best MORTY:RICK price (1000000 highest price), therefore is the best bid
-    let price_ping_request1: PricePingRequest = (order1, initial_message1, pubkey.clone(), peer.clone()).into();
+    let price_ping_request1: OrderbookItem = (order1, pubkey.clone()).into();
     // the second ping request has best RICK:MORTY price (500000 lowest price), therefore is the best ask
-    let price_ping_request2: PricePingRequest = (order2, initial_message2, pubkey.clone(), peer.clone()).into();
+    let price_ping_request2: OrderbookItem = (order2, pubkey.clone()).into();
 
-    orderbook.insert_or_update_order(price_ping_request1.uuid.unwrap().clone(), price_ping_request1.clone());
-    orderbook.insert_or_update_order(price_ping_request2.uuid.unwrap().clone(), price_ping_request2.clone());
+    orderbook.insert_or_update_order(price_ping_request1.clone());
+    orderbook.insert_or_update_order(price_ping_request2.clone());
 
     // avoid dead lock on orderbook as process_get_orderbook_request also acquires it
     drop(orderbook);
@@ -1496,10 +1389,10 @@ fn test_process_get_orderbook_request() {
 
     let orderbook = decode_message::<new_protocol::Orderbook>(&encoded).unwrap();
     assert!(orderbook.bids.is_empty());
-    let asks: Vec<PricePingRequest> = orderbook
+    let asks: Vec<OrderbookItem> = orderbook
         .asks
         .into_iter()
-        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, Vec::new(), order.from_peer).unwrap())
+        .map(|order| OrderbookItem::from_initial_msg(order.initial_message, order.from_peer).unwrap())
         .collect();
     assert_eq!(asks, vec![price_ping_request2]);
 
@@ -1519,10 +1412,10 @@ fn test_process_get_orderbook_request() {
     let orderbook = decode_message::<new_protocol::Orderbook>(&encoded).unwrap();
     assert!(orderbook.asks.is_empty());
 
-    let bids: Vec<PricePingRequest> = orderbook
+    let bids: Vec<OrderbookItem> = orderbook
         .bids
         .into_iter()
-        .map(|order| PricePingRequest::from_initial_msg(order.initial_message, Vec::new(), order.from_peer).unwrap())
+        .map(|order| OrderbookItem::from_initial_msg(order.initial_message, order.from_peer).unwrap())
         .collect();
     assert_eq!(bids, vec![price_ping_request1]);
 }
@@ -1628,7 +1521,7 @@ fn test_request_and_fill_orderbook() {
     // check if the best asks and bids are in the orderbook
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
     let orderbook = block_on(ordermatch_ctx.orderbook.lock());
-    let asks: Vec<PricePingRequest> = orderbook
+    let asks: Vec<OrderbookItem> = orderbook
         .ordered
         .get(&("RICK".into(), "MORTY".into()))
         .unwrap()
@@ -1642,7 +1535,7 @@ fn test_request_and_fill_orderbook() {
                 .clone()
         })
         .collect();
-    let bids: Vec<PricePingRequest> = orderbook
+    let bids: Vec<OrderbookItem> = orderbook
         .ordered
         .get(&("MORTY".into(), "RICK".into()))
         .unwrap()
@@ -1690,8 +1583,8 @@ fn test_process_order_keep_alive_requested_from_peer() {
     )
     .unwrap();
 
-    let expected_request = P2PRequest::Ordermatch(OrdermatchRequest::GetOrder {
-        uuid: uuid.clone(),
+    let expected_request = P2PRequest::Ordermatch(OrdermatchRequest::GetOrders {
+        pairs: vec![("RICK".into(), "MORTY".into())],
         from_pubkey: pubkey.clone(),
     });
     let from_peer = peer.clone();
@@ -1709,11 +1602,11 @@ fn test_process_order_keep_alive_requested_from_peer() {
         assert_eq!(actual, expected_request);
 
         // create a response with the initial_message and random from_peer
-        let response = new_protocol::OrderInitialMessage {
+        let response = vec![new_protocol::OrderInitialMessage {
             initial_message,
             from_peer: from_peer.clone(),
             update_messages: Vec::new(),
-        };
+        }];
 
         let response = AdexResponse::Ok {
             response: encode_message(&response).unwrap(),
@@ -1721,13 +1614,13 @@ fn test_process_order_keep_alive_requested_from_peer() {
         response_tx.send(vec![(PeerId::random(), response)]).unwrap();
     });
 
-    let keep_alive = new_protocol::MakerOrderKeepAlive {
-        uuid: uuid.clone().into(),
+    let keep_alive = new_protocol::MakerOrdersKeepAlive {
         timestamp: now_ms(),
+        num_orders: HashMap::from_iter(iter::once((("RICK".into(), "MORTY".into()), 1))),
     };
 
-    // process_order_keep_alive() should return true because an order should be requested from a peer.
-    assert!(block_on(process_order_keep_alive(
+    // process_order_keep_alive() should return true because an order was successfully requested from a peer.
+    assert!(block_on(process_orders_keep_alive(
         ctx,
         peer.clone(),
         pubkey.clone(),
@@ -1737,10 +1630,8 @@ fn test_process_order_keep_alive_requested_from_peer() {
     let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
     // try to find the order within OrdermatchContext::orderbook and check if this order equals to the expected
     let actual = orderbook.find_order_by_uuid_and_pubkey(&uuid, &pubkey).unwrap();
-    let expected: PricePingRequest = (order, initial_order_message, pubkey, peer).into();
+    let expected: OrderbookItem = (order, pubkey).into();
 
-    // the expected.timestamp may be greater than actual.timestamp because of two now_ms() calls
-    actual.timestamp = expected.timestamp;
     assert_eq!(actual, &expected);
 }
 
@@ -1752,7 +1643,6 @@ fn test_process_get_order_request() {
     OrdermatchContext::from_ctx.mock_safe(move |_| MockResult::Return(Ok(ordermatch_ctx_clone.clone())));
 
     let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
-    let peer = PeerId::random().to_string();
 
     let order = new_protocol::MakerOrderCreated {
         uuid: Uuid::new_v4().into(),
@@ -1769,23 +1659,22 @@ fn test_process_get_order_request() {
         &secret,
     )
     .unwrap();
-    let price_ping_request: PricePingRequest = (order, initial_message, pubkey.clone(), peer.clone()).into();
-    orderbook.insert_or_update_order(price_ping_request.uuid.unwrap(), price_ping_request.clone());
+    let price_ping_request: OrderbookItem = (order, pubkey.clone()).into();
+    orderbook.insert_or_update_order(price_ping_request.clone());
 
     // avoid dead lock on orderbook as process_get_orderbook_request also acquires it
     drop(orderbook);
 
     let encoded = block_on(process_get_order_request(
         ctx.clone(),
-        price_ping_request.uuid.unwrap(),
+        price_ping_request.uuid,
         pubkey.clone(),
     ))
     .unwrap()
     .unwrap();
 
     let order = decode_message::<new_protocol::OrderInitialMessage>(&encoded).unwrap();
-    let actual_price_ping_request =
-        PricePingRequest::from_initial_msg(order.initial_message, order.update_messages, order.from_peer).unwrap();
+    let actual_price_ping_request = OrderbookItem::from_initial_msg(order.initial_message, order.from_peer).unwrap();
     assert_eq!(actual_price_ping_request, price_ping_request);
 }
 
@@ -1917,7 +1806,7 @@ fn test_subscribe_to_ordermatch_topic_subscribed_filled() {
     let expected = Some(OrderbookRequestingState::NotRequested { subscribed_at });
     assert_eq!(actual, expected);
 }
-
+*/
 #[test]
 fn test_taker_request_can_match_with_maker_pubkey() {
     let maker_pubkey = H256Json::default();
@@ -1958,4 +1847,300 @@ fn test_taker_request_can_match_with_uuid() {
 
     request.match_by = MatchBy::Orders(HashSet::new());
     assert!(!request.can_match_with_uuid(&uuid));
+}
+
+#[test]
+fn test_orderbook_insert_or_update_order() {
+    let (_, pubkey, secret) = make_ctx_for_tests();
+    let mut orderbook = Orderbook::default();
+    let order = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 1).remove(0);
+    orderbook.insert_or_update_order_update_trie(order.clone());
+}
+
+fn all_orders_trie_root_by_pub(ctx: &MmArc, pubkey: &str) -> H64 {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    orderbook.pubkeys_state.get(pubkey).unwrap().all_orders_trie_root
+}
+
+fn pair_trie_root_by_pub(ctx: &MmArc, pubkey: &str, pair: &str) -> H64 {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    *orderbook
+        .pubkeys_state
+        .get(pubkey)
+        .unwrap()
+        .order_pairs_trie_roots
+        .get(pair)
+        .unwrap()
+}
+
+fn clone_orderbook_memory_db(ctx: &MmArc) -> MemoryDB<Blake2Hasher64> {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    orderbook.memory_db.clone()
+}
+
+fn remove_order(ctx: &MmArc, uuid: Uuid) {
+    let ordermatch_ctx = OrdermatchContext::from_ctx(ctx).unwrap();
+    let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    orderbook.remove_order_trie_update(uuid);
+}
+
+#[test]
+fn test_process_sync_pubkey_orderbook_state_after_new_orders_added() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let orders = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 100);
+
+    for order in orders {
+        block_on(insert_or_update_order(&ctx, order));
+    }
+
+    let alb_ordered_pair = alb_ordered_pair("C1", "C2");
+    let current_root_hash = all_orders_trie_root_by_pub(&ctx, &pubkey);
+    let pair_trie_root = pair_trie_root_by_pub(&ctx, &pubkey, &alb_ordered_pair);
+
+    let prev_pairs_state = HashMap::from_iter(iter::once((alb_ordered_pair.clone(), pair_trie_root)));
+
+    let mut old_mem_db = clone_orderbook_memory_db(&ctx);
+
+    let new_orders = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 100);
+    for order in new_orders {
+        block_on(insert_or_update_order(&ctx, order.clone()));
+    }
+
+    let expected_root_hash = all_orders_trie_root_by_pub(&ctx, &pubkey);
+    let mut result = block_on(process_sync_pubkey_orderbook_state(
+        ctx.clone(),
+        pubkey.clone(),
+        current_root_hash,
+        expected_root_hash,
+        prev_pairs_state,
+    ))
+    .unwrap()
+    .unwrap();
+
+    // check all orders trie root first
+    let delta = match result.all_orders_diff {
+        DeltaOrFullTrie::Delta(delta) => delta,
+        DeltaOrFullTrie::FullTrie(_) => panic!("Must be DeltaOrFullTrie::Delta"),
+    };
+
+    let actual_root_hash = delta_trie_root::<Layout, _, _, _, _, _>(
+        &mut old_mem_db,
+        current_root_hash,
+        delta.into_iter().map(|(pair, hash)| (pair.into_bytes(), hash)),
+    )
+    .unwrap();
+    assert_eq!(expected_root_hash, actual_root_hash);
+
+    // check pair trie root
+    let expected_root_hash = pair_trie_root_by_pub(&ctx, &pubkey, &alb_ordered_pair);
+
+    let delta = match result.pair_orders_diff.remove(&alb_ordered_pair).unwrap() {
+        DeltaOrFullTrie::Delta(delta) => delta,
+        DeltaOrFullTrie::FullTrie(_) => panic!("Must be DeltaOrFullTrie::Delta"),
+    };
+
+    let actual_root_hash = delta_trie_root::<Layout, _, _, _, _, _>(
+        &mut old_mem_db,
+        pair_trie_root,
+        delta
+            .into_iter()
+            .map(|(uuid, order)| (*uuid.as_bytes(), order.map(|o| encode_message(&o).unwrap()))),
+    )
+    .unwrap();
+    assert_eq!(expected_root_hash, actual_root_hash);
+}
+
+#[test]
+fn test_diff_should_not_be_written_if_hash_not_changed_on_insert() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let orders = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 100);
+
+    for order in orders.clone() {
+        block_on(insert_or_update_order(&ctx, order));
+    }
+
+    let alb_ordered_pair = alb_ordered_pair("C1", "C2");
+    let current_root_hash = all_orders_trie_root_by_pub(&ctx, &pubkey);
+    let pair_trie_root = pair_trie_root_by_pub(&ctx, &pubkey, &alb_ordered_pair);
+    for order in orders.clone() {
+        block_on(insert_or_update_order(&ctx, order));
+    }
+
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    let pubkey_state = orderbook.pubkeys_state.get(&pubkey).unwrap();
+    assert!(!pubkey_state
+        .order_pairs_trie_state_history
+        .contains_key(&current_root_hash));
+    assert!(!pubkey_state
+        .order_pairs_trie_state_history
+        .contains_key(&pair_trie_root));
+}
+
+#[test]
+fn test_process_sync_pubkey_orderbook_state_after_orders_removed() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let orders = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 100);
+
+    for order in orders.clone() {
+        block_on(insert_or_update_order(&ctx, order));
+    }
+
+    let alb_ordered_pair = alb_ordered_pair("C1", "C2");
+    let current_root_hash = all_orders_trie_root_by_pub(&ctx, &pubkey);
+    let pair_trie_root = pair_trie_root_by_pub(&ctx, &pubkey, &alb_ordered_pair);
+
+    let prev_pairs_state = HashMap::from_iter(iter::once((alb_ordered_pair.clone(), pair_trie_root)));
+
+    let mut old_mem_db = clone_orderbook_memory_db(&ctx);
+
+    // pick 10 orders at random and remove them
+    let mut rng = thread_rng();
+    let to_remove = orders.choose_multiple(&mut rng, 10);
+    for order in to_remove {
+        remove_order(&ctx, order.uuid);
+    }
+
+    let expected_root_hash = all_orders_trie_root_by_pub(&ctx, &pubkey);
+    let mut result = block_on(process_sync_pubkey_orderbook_state(
+        ctx.clone(),
+        pubkey.clone(),
+        current_root_hash,
+        expected_root_hash,
+        prev_pairs_state,
+    ))
+    .unwrap()
+    .unwrap();
+
+    // check all orders trie root first
+    let delta = match result.all_orders_diff {
+        DeltaOrFullTrie::Delta(delta) => delta,
+        DeltaOrFullTrie::FullTrie(_) => panic!("Must be DeltaOrFullTrie::Delta"),
+    };
+
+    let actual_root_hash = delta_trie_root::<Layout, _, _, _, _, _>(
+        &mut old_mem_db,
+        current_root_hash,
+        delta.into_iter().map(|(pair, hash)| (pair.into_bytes(), hash)),
+    )
+    .unwrap();
+    assert_eq!(expected_root_hash, actual_root_hash);
+
+    // check pair trie root
+    let expected_root_hash = pair_trie_root_by_pub(&ctx, &pubkey, &alb_ordered_pair);
+
+    let delta = match result.pair_orders_diff.remove(&alb_ordered_pair).unwrap() {
+        DeltaOrFullTrie::Delta(delta) => delta,
+        DeltaOrFullTrie::FullTrie(_) => panic!("Must be DeltaOrFullTrie::Delta"),
+    };
+
+    let actual_root_hash = delta_trie_root::<Layout, _, _, _, _, _>(
+        &mut old_mem_db,
+        pair_trie_root,
+        delta
+            .into_iter()
+            .map(|(uuid, order)| (*uuid.as_bytes(), order.map(|o| encode_message(&o).unwrap()))),
+    )
+    .unwrap();
+    assert_eq!(expected_root_hash, actual_root_hash);
+}
+
+#[test]
+fn test_diff_should_not_be_written_if_hash_not_changed_on_remove() {
+    let (ctx, pubkey, secret) = make_ctx_for_tests();
+    let orders = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 100);
+
+    for order in orders.clone() {
+        block_on(insert_or_update_order(&ctx, order));
+    }
+
+    let to_remove: Vec<_> = orders
+        .choose_multiple(&mut thread_rng(), 10)
+        .map(|order| order.uuid)
+        .collect();
+    for uuid in &to_remove {
+        remove_order(&ctx, *uuid);
+    }
+    for uuid in &to_remove {
+        remove_order(&ctx, *uuid);
+    }
+
+    let alb_ordered_pair = alb_ordered_pair("C1", "C2");
+    let current_root_hash = all_orders_trie_root_by_pub(&ctx, &pubkey);
+    let pair_trie_root = pair_trie_root_by_pub(&ctx, &pubkey, &alb_ordered_pair);
+
+    let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
+    let orderbook = block_on(ordermatch_ctx.orderbook.lock());
+    let pubkey_state = orderbook.pubkeys_state.get(&pubkey).unwrap();
+    assert!(!pubkey_state
+        .order_pairs_trie_state_history
+        .contains_key(&current_root_hash));
+    assert!(!pubkey_state
+        .order_pairs_trie_state_history
+        .contains_key(&pair_trie_root));
+}
+
+#[test]
+fn test_orderbook_pubkey_sync_request() {
+    let mut orderbook = Orderbook::default();
+    orderbook.topics_subscribed_to.insert(
+        orderbook_topic_from_base_rel("C1", "C2"),
+        OrderbookRequestingState::Requested,
+    );
+    let pairs = vec!["C1:C2".into(), "C2:C3".into()];
+    let pubkey = "pubkey";
+    let message = PubkeyKeepAlive {
+        orders_trie_root: [1; 8],
+        timestamp: now_ms() / 1000,
+    };
+
+    let request = orderbook.process_keep_alive(pubkey, pairs, message).unwrap();
+    match request {
+        OrdermatchRequest::SyncPubkeyOrderbookState { pairs_trie_roots, .. } => {
+            assert!(pairs_trie_roots.contains_key("C1:C2"));
+            assert!(!pairs_trie_roots.contains_key("C2:C3"));
+        },
+        _ => panic!("Invalid request {:?}", request),
+    }
+}
+
+#[test]
+fn test_trie_diff_avoid_cycle_on_insertion() {
+    let mut history = TrieDiffHistory::<String, String>::default();
+    history.insert_new_diff([1; 8], TrieDiff {
+        delta: vec![],
+        next_root: [2; 8],
+    });
+
+    history.insert_new_diff([2; 8], TrieDiff {
+        delta: vec![],
+        next_root: [3; 8],
+    });
+
+    history.insert_new_diff([3; 8], TrieDiff {
+        delta: vec![],
+        next_root: [4; 8],
+    });
+
+    history.insert_new_diff([4; 8], TrieDiff {
+        delta: vec![],
+        next_root: [5; 8],
+    });
+
+    history.insert_new_diff([5; 8], TrieDiff {
+        delta: vec![],
+        next_root: [2; 8],
+    });
+
+    let expected = TrieDiffHistory {
+        inner: HashMap::from_iter(iter::once(([1; 8], TrieDiff {
+            delta: vec![],
+            next_root: [2; 8],
+        }))),
+    };
+
+    assert_eq!(expected, history);
 }

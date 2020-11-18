@@ -1,9 +1,9 @@
-use super::{MatchBy as SuperMatchBy, PricePingRequest, TakerAction};
+use super::{MatchBy as SuperMatchBy, OrderbookItem, TakerAction};
 use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
 use common::mm_number::MmNumber;
 use compact_uuid::CompactUuid;
 use num_rational::BigRational;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -11,7 +11,7 @@ use uuid::Uuid;
 pub enum OrdermatchMessage {
     MakerOrderCreated(MakerOrderCreated),
     MakerOrderUpdated(MakerOrderUpdated),
-    MakerOrderKeepAlive(MakerOrderKeepAlive),
+    PubkeyKeepAlive(PubkeyKeepAlive),
     MakerOrderCancelled(MakerOrderCancelled),
     TakerRequest(TakerRequest),
     MakerReserved(MakerReserved),
@@ -19,33 +19,8 @@ pub enum OrdermatchMessage {
     MakerConnected(MakerConnected),
 }
 
-/// Get an order using uuid and the order maker's pubkey.
-/// Actual we expect to receive [`OrdermatchMessage::MakerOrderCreated`] that will be parsed into [`PricePingRequest`].
-#[derive(Debug, Deserialize, Serialize)]
-pub struct OrderInitialMessage {
-    pub initial_message: Vec<u8>,
-    pub update_messages: Vec<Vec<u8>>,
-    pub from_peer: String,
-}
-
-impl From<PricePingRequest> for OrderInitialMessage {
-    fn from(order: PricePingRequest) -> Self {
-        OrderInitialMessage {
-            initial_message: order.initial_message,
-            update_messages: order.update_messages,
-            from_peer: order.peer_id,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Orderbook {
-    pub asks: Vec<OrderInitialMessage>,
-    pub bids: Vec<OrderInitialMessage>,
-}
-
-impl From<MakerOrderKeepAlive> for OrdermatchMessage {
-    fn from(keep_alive: MakerOrderKeepAlive) -> Self { OrdermatchMessage::MakerOrderKeepAlive(keep_alive) }
+impl From<PubkeyKeepAlive> for OrdermatchMessage {
+    fn from(keep_alive: PubkeyKeepAlive) -> Self { OrdermatchMessage::PubkeyKeepAlive(keep_alive) }
 }
 
 impl From<MakerOrderUpdated> for OrdermatchMessage {
@@ -141,12 +116,13 @@ pub struct MakerOrderCreated {
     pub price: BigRational,
     pub max_volume: BigRational,
     pub min_volume: BigRational,
+    pub created_at: u64,
     pub conf_settings: OrderConfirmationsSettings,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct MakerOrderKeepAlive {
-    pub uuid: CompactUuid,
+pub struct PubkeyKeepAlive {
+    pub orders_trie_root: [u8; 8],
     pub timestamp: u64,
 }
 

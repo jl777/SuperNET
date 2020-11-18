@@ -99,12 +99,14 @@ async fn process_p2p_message(
     i_am_relay: bool,
 ) {
     let mut to_propagate = false;
+    let mut orderbook_pairs = vec![];
+
     for topic in message.topics {
         let mut split = topic.as_str().split(TOPIC_SEPARATOR);
         match split.next() {
             Some(lp_ordermatch::ORDERBOOK_PREFIX) => {
-                if lp_ordermatch::process_msg(ctx.clone(), topic.as_str(), peer_id.to_string(), &message.data).await {
-                    to_propagate = true;
+                if let Some(pair) = split.next() {
+                    orderbook_pairs.push(pair.to_string());
                 }
             },
             Some(lp_swap::SWAP_PREFIX) => {
@@ -114,6 +116,14 @@ async fn process_p2p_message(
             None | Some(_) => (),
         }
     }
+
+    if !orderbook_pairs.is_empty() {
+        let process_fut = lp_ordermatch::process_msg(ctx.clone(), orderbook_pairs, peer_id.to_string(), &message.data);
+        if process_fut.await {
+            to_propagate = true;
+        }
+    }
+
     if to_propagate && i_am_relay {
         propagate_message(&ctx, message_id, peer_id);
     }
@@ -143,10 +153,10 @@ async fn process_p2p_request(
 }
 
 #[cfg(feature = "native")]
-pub fn broadcast_p2p_msg(ctx: &MmArc, topic: String, msg: Vec<u8>) {
+pub fn broadcast_p2p_msg(ctx: &MmArc, topics: Vec<String>, msg: Vec<u8>) {
     let ctx = ctx.clone();
     spawn(async move {
-        let cmd = AdexBehaviourCmd::PublishMsg { topic, msg };
+        let cmd = AdexBehaviourCmd::PublishMsg { topics, msg };
         let p2p_ctx = P2PContext::fetch_from_mm_arc(&ctx);
         if let Err(e) = p2p_ctx.cmd_tx.lock().await.try_send(cmd) {
             log!("broadcast_p2p_msg cmd_tx.send error "[e]);
