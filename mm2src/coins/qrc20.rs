@@ -329,8 +329,8 @@ impl Qrc20Coin {
     /// Generate and send a transaction with the specified UTXO outputs.
     /// Note this function locks the `UTXO_LOCK`.
     pub async fn send_contract_calls(&self, outputs: Vec<ContractCallOutput>) -> Result<TransactionEnum, String> {
-        /// TODO: we need to somehow refactor it using RecentlySpentOutpoints cache
-        /// Move over all QRC20 tokens should share the same cache with each other and base QTUM coin
+        // TODO: we need to somehow refactor it using RecentlySpentOutpoints cache
+        // Move over all QRC20 tokens should share the same cache with each other and base QTUM coin
         let _utxo_lock = UTXO_LOCK.lock().await;
 
         let GenerateQrc20TxResult { signed, .. } = try_s!(self.generate_qrc20_transaction(outputs).await);
