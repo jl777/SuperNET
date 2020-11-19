@@ -17,11 +17,11 @@
 //  marketmaker
 //
 
+#![allow(uncommon_codepoints)]
 #![feature(integer_atomics)]
 #![feature(non_ascii_idents)]
 #![feature(async_closure)]
 #![feature(hash_raw_entry)]
-#![allow(uncommon_codepoints)]
 
 #[macro_use] extern crate common;
 #[macro_use] extern crate fomat_macros;
@@ -683,6 +683,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
     if coins_en.is_null() {
         ctx.log.log(
             "😅",
+            #[allow(clippy::unnecessary_cast)]
             &[&("coin" as &str), &ticker, &("no-conf" as &str)],
             &fomat! ("Warning, coin " (ticker) " is used without a corresponding configuration."),
         );

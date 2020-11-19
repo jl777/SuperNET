@@ -2084,6 +2084,7 @@ fn p2sh_spend(
     })
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub async fn list_unspent_ordered<'a, T>(
     coin: &'a T,
     address: &Address,

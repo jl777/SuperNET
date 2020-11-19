@@ -35,7 +35,7 @@ fn save_my_taker_swap_event(ctx: &MmArc, swap: &TakerSwap, event: TakerSavedEven
     let content = try_s!(slurp(&path));
     let swap: SavedSwap = if content.is_empty() {
         SavedSwap::Taker(TakerSavedSwap {
-            uuid: swap.uuid.clone(),
+            uuid: swap.uuid,
             maker_amount: Some(swap.maker_amount.clone()),
             maker_coin: Some(swap.maker_coin.ticker().to_owned()),
             taker_amount: Some(swap.taker_amount.clone()),
@@ -478,12 +478,10 @@ impl TakerSwapEvent {
     }
 
     fn should_ban_maker(&self) -> bool {
-        match self {
+        matches!(self,
             TakerSwapEvent::NegotiateFailed(_)
             | TakerSwapEvent::MakerPaymentValidateFailed(_)
-            | TakerSwapEvent::TakerPaymentWaitForSpendFailed(_) => true,
-            _ => false,
-        }
+            | TakerSwapEvent::TakerPaymentWaitForSpendFailed(_))
     }
 }
 

@@ -17,8 +17,9 @@
 //  lp_ordermatch.rs
 //  marketmaker
 //
-#![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
+// TODO remove after refactoring
+#![allow(dead_code, unused_variables)]
 
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
@@ -29,8 +30,7 @@ use coins::{lp_coinfindᵃ, BalanceTradeFeeUpdatedHandler, MmCoinEnum, TradeFee}
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_number::{Fraction, MmNumber};
-use common::{bits256, block_on, json_dir_entries, new_uuid, now_ms, remove_file, write};
-use either::Either;
+use common::{bits256, json_dir_entries, new_uuid, now_ms, remove_file, write};
 use futures::{compat::Future01CompatExt, lock::Mutex as AsyncMutex, StreamExt};
 use gstuff::slurp;
 use hash256_std_hasher::Hash256StdHasher;
@@ -54,8 +54,7 @@ use std::sync::Arc;
 use trie_db::NodeCodec as NodeCodecT;
 use uuid::Uuid;
 
-use crate::mm2::{lp_network::{broadcast_p2p_msg, request_one_peer, request_relays, subscribe_to_topic, P2PRequest,
-                              PeerDecodedResponse},
+use crate::mm2::{lp_network::{broadcast_p2p_msg, request_one_peer, subscribe_to_topic, P2PRequest},
                  lp_swap::{calc_max_maker_vol, check_balance_for_maker_swap, check_balance_for_taker_swap,
                            is_pubkey_banned, lp_atomic_locktime, run_maker_swap, run_taker_swap,
                            AtomicLocktimeVersion, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
@@ -77,6 +76,7 @@ const MAKER_ORDER_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 3;
 const TAKER_ORDER_TIMEOUT: u64 = 30;
 const ORDER_MATCH_TIMEOUT: u64 = 30;
 const ORDERBOOK_REQUESTING_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 2;
+#[allow(dead_code)]
 const INACTIVE_ORDER_TIMEOUT: u64 = 240;
 const MIN_TRADING_VOL: &str = "0.00777";
 
@@ -162,8 +162,8 @@ async fn process_orders_keep_alive(
             .expect("Pubkey state always exists at this point")
             .order_pairs_trie_roots
             .get(&pair)
-            .map(|val| *val)
-            .unwrap_or(H64::default());
+            .copied()
+            .unwrap_or_default();
         let new_root = match diff {
             DeltaOrFullTrie::Delta(delta) => {
                 let delta = delta.into_iter().map(|(uuid, order)| {
@@ -210,10 +210,8 @@ async fn process_orders_keep_alive(
 
 async fn process_maker_order_updated(
     ctx: MmArc,
-    propagated_from_peer: String,
     from_pubkey: String,
     updated_msg: new_protocol::MakerOrderUpdated,
-    serialized: Vec<u8>,
 ) -> bool {
     let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).expect("from_ctx failed");
     let uuid = updated_msg.uuid();
@@ -392,7 +390,7 @@ pub async fn process_msg(ctx: MmArc, topics: Vec<String>, from_peer: String, msg
                 true
             },
             new_protocol::OrdermatchMessage::MakerOrderUpdated(updated_msg) => {
-                process_maker_order_updated(ctx, from_peer, pubkey.to_hex(), updated_msg, msg.to_owned()).await
+                process_maker_order_updated(ctx, pubkey.to_hex(), updated_msg).await
             },
         },
         Err(e) => {
@@ -1651,6 +1649,7 @@ struct OrderedByPriceOrder {
 #[derive(Clone, Debug, PartialEq)]
 enum OrderbookRequestingState {
     /// The orderbook was requested from relays.
+    #[allow(dead_code)]
     Requested,
     /// We subscribed to a topic at `subscribed_at` time, but the orderbook was not requested.
     NotRequested { subscribed_at: u64 },
@@ -1803,9 +1802,7 @@ impl Orderbook {
         })
     }
 
-    fn find_order_by_uuid(&self, uuid: &Uuid) -> Option<OrderbookItem> {
-        self.order_set.get(uuid).map(|order| order.clone())
-    }
+    fn find_order_by_uuid(&self, uuid: &Uuid) -> Option<OrderbookItem> { self.order_set.get(uuid).cloned() }
 
     fn insert_or_update_order_update_trie(&mut self, order: OrderbookItem) {
         let zero = BigRational::from_integer(0.into());
@@ -1848,10 +1845,10 @@ impl Orderbook {
         }
 
         let old_root = pubkey_state.all_orders_trie_root;
-        let delta = vec![(alb_ordered.clone(), Some(pair_root.clone()))];
+        let delta = vec![(alb_ordered.clone(), Some(*pair_root))];
 
         if old_root == H64::default() {
-            let to_populate = vec![(alb_ordered.into_bytes(), pair_root.clone())];
+            let to_populate = vec![(alb_ordered.into_bytes(), *pair_root)];
             if let Err(e) = populate_pubkey_trie::<Layout>(
                 &mut self.memory_db,
                 &mut pubkey_state.all_orders_trie_root,
@@ -1861,7 +1858,7 @@ impl Orderbook {
                 return;
             };
         } else {
-            let delta_bytes = vec![(alb_ordered.into_bytes(), Some(pair_root.clone()))];
+            let delta_bytes = vec![(alb_ordered.into_bytes(), Some(*pair_root))];
             pubkey_state.all_orders_trie_root =
                 match delta_trie_root::<Layout, _, _, _, _, _>(&mut self.memory_db, old_root, delta_bytes) {
                     Ok(root) => root,
@@ -2293,7 +2290,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                         uuids_to_remove.push(*uuid);
                     }
                     keys_to_remove.push(state.all_orders_trie_root);
-                    for (_, root) in &state.order_pairs_trie_roots {
+                    for root in state.order_pairs_trie_roots.values() {
                         keys_to_remove.push(*root);
                     }
                 }

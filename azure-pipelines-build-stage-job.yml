@@ -56,7 +56,7 @@ jobs:
       - bash: |
           cargo clippy --features native -- -D warnings
         displayName: 'Check Clippy warnings'
-        condition: false
+        condition: eq( variables['Agent.OS'], 'Linux' )
       - bash: |
           cargo +nightly fmt -- --check
         displayName: 'Check rustfmt warnings'

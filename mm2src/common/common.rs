@@ -10,13 +10,13 @@
 //!                     |
 //!                   binary
 
+#![allow(uncommon_codepoints)]
 #![feature(non_ascii_idents, integer_atomics, panic_info_message)]
 #![feature(async_closure)]
 #![feature(hash_raw_entry)]
 #![feature(optin_builtin_traits)]
 #![feature(drain_filter)]
 #![feature(const_fn)]
-#![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
@@ -709,7 +709,7 @@ pub mod wio {
         let (sx, rx) = futures::channel::oneshot::channel();
         CORE.0.spawn(async move {
             let res = f.await;
-            if let Err(_) = sx.send(res) {
+            if sx.send(res).is_err() {
                 log!("drive03 receiver is dropped");
             };
         });

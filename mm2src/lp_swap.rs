@@ -54,7 +54,6 @@
 //  lp_swap.rs
 //  marketmaker
 //
-#![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
 use crate::mm2::lp_network::broadcast_p2p_msg;

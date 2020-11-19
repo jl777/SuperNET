@@ -1,4 +1,3 @@
-#![allow(uncommon_codepoints)]
 #![cfg_attr(not(feature = "native"), allow(unused_variables))]
 
 use super::lp_main;

@@ -1,9 +1,9 @@
-use super::{MatchBy as SuperMatchBy, OrderbookItem, TakerAction};
+use super::{MatchBy as SuperMatchBy, TakerAction};
 use crate::mm2::lp_ordermatch::OrderConfirmationsSettings;
 use common::mm_number::MmNumber;
 use compact_uuid::CompactUuid;
 use num_rational::BigRational;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -149,6 +149,7 @@ impl MakerOrderUpdated {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_new_price(mut self, new_price: BigRational) -> Self {
         self.new_price = Some(new_price);
         self
@@ -159,6 +160,7 @@ impl MakerOrderUpdated {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_new_min_volume(mut self, new_min_volume: BigRational) -> Self {
         self.new_min_volume = Some(new_min_volume);
         self

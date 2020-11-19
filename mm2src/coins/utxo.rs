@@ -619,12 +619,12 @@ fn confpath(coins_en: &Json) -> Result<PathBuf, String> {
 
         return Ok(data_dir.join(&confname[..]));
     }
-    let (confpathˢ, rel_to_home) = if confpathˢ.starts_with("~/") {
-        (&confpathˢ[2..], true)
-    } else if confpathˢ.starts_with("USERHOME/") {
-        (&confpathˢ[9..], true)
-    } else {
-        (confpathˢ, false)
+    let (confpathˢ, rel_to_home) = match confpathˢ.strip_prefix("~/") {
+        Some(stripped) => (stripped, true),
+        None => match confpathˢ.strip_prefix("USERHOME/") {
+            Some(stripped) => (stripped, true),
+            None => (confpathˢ, false),
+        },
     };
 
     if rel_to_home {
@@ -1319,7 +1319,7 @@ where
     ));
 
     let before_send_transaction = now_ms();
-    let hash = try_s!(
+    try_s!(
         coin.as_ref()
             .rpc_client
             .send_transaction(&signed)

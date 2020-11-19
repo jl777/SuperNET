@@ -24,7 +24,6 @@ use std::process::{Child, Command};
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
-use term;
 
 use crate::executor::Timer;
 #[cfg(not(feature = "native"))] use crate::helperᶜ;
@@ -175,7 +174,7 @@ impl MarketMakerIt {
                     attempts += 1;
                     continue;
                 }
-                mm_ips.insert(ip.clone(), true);
+                mm_ips.insert(ip, true);
                 conf["myipaddr"] = format!("{}", ip).into();
                 conf["rpcip"] = format!("{}", ip).into();
                 break ip;
@@ -187,7 +186,7 @@ impl MarketMakerIt {
             if mm_ips.contains_key(&ip) {
                 log! ({"MarketMakerIt] Warning, IP {} was already used.", ip})
             }
-            mm_ips.insert(ip.clone(), true);
+            mm_ips.insert(ip, true);
             ip
         };
 

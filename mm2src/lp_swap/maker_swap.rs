@@ -37,7 +37,7 @@ fn save_my_maker_swap_event(ctx: &MmArc, swap: &MakerSwap, event: MakerSavedEven
     let content = try_s!(slurp(&path));
     let swap: SavedSwap = if content.is_empty() {
         SavedSwap::Maker(MakerSavedSwap {
-            uuid: swap.uuid.clone(),
+            uuid: swap.uuid,
             maker_amount: Some(swap.maker_amount.clone()),
             maker_coin: Some(swap.maker_coin.ticker().to_owned()),
             taker_amount: Some(swap.taker_amount.clone()),
@@ -1014,12 +1014,10 @@ impl MakerSwapEvent {
     }
 
     fn should_ban_taker(&self) -> bool {
-        match self {
+        matches!(self,
             MakerSwapEvent::NegotiateFailed(_)
             | MakerSwapEvent::TakerFeeValidateFailed(_)
-            | MakerSwapEvent::TakerPaymentValidateFailed(_) => true,
-            _ => false,
-        }
+            | MakerSwapEvent::TakerPaymentValidateFailed(_))
     }
 }
 
@@ -1242,7 +1240,7 @@ pub async fn run_maker_swap(swap: RunMakerSwapInput, ctx: MmArc) {
     let running_swap = Arc::new(swap);
     let weak_ref = Arc::downgrade(&running_swap);
     let swap_ctx = unwrap!(SwapsContext::from_ctx(&ctx));
-    swap_ctx.init_msg_store(running_swap.uuid.clone(), running_swap.taker);
+    swap_ctx.init_msg_store(running_swap.uuid, running_swap.taker);
     unwrap!(swap_ctx.running_swaps.lock()).push(weak_ref);
     let shutdown_rx = swap_ctx.shutdown_rx.clone();
     let swap_for_log = running_swap.clone();

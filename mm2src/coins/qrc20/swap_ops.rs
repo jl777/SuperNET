@@ -238,7 +238,7 @@ impl Qrc20Coin {
         let history = try_s!(
             HistoryBuilder::new(self.clone())
                 .from_block(search_from_block)
-                .address(receiver.clone())
+                .address(receiver)
                 // current function could be called much later than end of the swap
                 .order(HistoryOrder::OldestToNewest)
                 .build_utxo_lazy()
@@ -358,7 +358,7 @@ impl Qrc20Coin {
             let history = try_s!(
                 HistoryBuilder::new(self.clone())
                     .from_block(from_block)
-                    .address(receiver.clone())
+                    .address(receiver)
                     .order(HistoryOrder::NewestToOldest)
                     .build_utxo_lazy()
                     .await
