@@ -1438,10 +1438,7 @@ fn test_ordered_mature_unspents_from_cache_impl(
     verbose.height = cached_height;
 
     // prepare mocks
-    UtxoStandardCoin::list_unspent_ordered.mock_safe(move |_, _| {
-        // https://docs.rs/mocktopus/0.7.6/mocktopus/index.html#returning-reference-to-value-created-inside-mock
-        let mutex = Box::leak(Box::new(AsyncMutex::new(RecentlySpentOutPoints::new(vec![].into()))));
-
+    UtxoStandardCoin::list_unspent_ordered.mock_safe(move |coin, _| {
         let unspents = vec![UnspentInfo {
             outpoint: OutPoint {
                 hash: H256::from_reversed_str(TX_HASH),
@@ -1450,7 +1447,10 @@ fn test_ordered_mature_unspents_from_cache_impl(
             value: 1000000000,
             height: unspent_height,
         }];
-        MockResult::Return(Box::pin(futures::future::ok((unspents, block_on(mutex.lock())))))
+        MockResult::Return(Box::pin(futures::future::ok((
+            unspents,
+            block_on(coin.as_ref().recently_spent_outpoints.lock()),
+        ))))
     });
     ElectrumClient::get_block_count
         .mock_safe(move |_| MockResult::Return(Box::new(futures01::future::ok(block_count))));

@@ -33,8 +33,9 @@ pub async fn utxo_standard_coin_from_conf_and_request(
     Ok(inner.into())
 }
 
-#[cfg_attr(test, mockable)]
+// if mockable is placed before async_trait there is `munmap_chunk(): invalid pointer` error on async fn mocking attempt
 #[async_trait]
+#[cfg_attr(test, mockable)]
 impl UtxoCommonOps for UtxoStandardCoin {
     async fn get_tx_fee(&self) -> Result<ActualTxFee, JsonRpcError> { utxo_common::get_tx_fee(&self.utxo_arc).await }
 
