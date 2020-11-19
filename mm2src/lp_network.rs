@@ -16,8 +16,6 @@
 //  lp_network.rs
 //  marketmaker
 //
-#![allow(uncommon_codepoints)]
-
 use common::executor::spawn;
 #[cfg(not(feature = "native"))] use common::helperᶜ;
 use common::mm_ctx::MmArc;
@@ -208,6 +206,7 @@ pub enum PeerDecodedResponse<T> {
     Err(String),
 }
 
+#[allow(dead_code)]
 #[cfg(feature = "native")]
 pub async fn request_relays<T: de::DeserializeOwned>(
     ctx: MmArc,
