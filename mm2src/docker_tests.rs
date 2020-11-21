@@ -422,8 +422,8 @@ mod docker_tests {
     #[test]
     fn test_one_hundred_maker_payments_in_a_row_native() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
-        let (_ctx, coin, _) = generate_coin_with_random_privkey("MYCOIN", 1000);
-        fill_address(&coin, &coin.my_address().unwrap(), 2, timeout);
+        let (_ctx, coin, _) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
+        fill_address(&coin, &coin.my_address().unwrap(), 2.into(), timeout);
         let secret = [0; 32];
 
         let time_lock = (now_ms() / 1000) as u32 - 3600;
@@ -587,7 +587,7 @@ mod docker_tests {
 
     #[test]
     fn order_should_be_updated_when_balance_is_decreased_alice_subscribes_after_update() {
-        let (_ctx, _, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
+        let (_ctx, _, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
         let coins = json! ([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -730,7 +730,7 @@ mod docker_tests {
 
     #[test]
     fn order_should_be_updated_when_balance_is_decreased_alice_subscribes_before_update() {
-        let (_ctx, _, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
+        let (_ctx, _, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
         let coins = json! ([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -888,8 +888,8 @@ mod docker_tests {
 
     #[test]
     fn test_order_should_be_updated_when_matched_partially() {
-        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 2000);
-        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000);
+        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 2000.into());
+        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
         let coins = json! ([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -1697,8 +1697,8 @@ mod docker_tests {
 
     #[test]
     fn test_maker_order_should_kick_start_and_appear_in_orderbook_on_restart() {
-        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000);
-        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000);
+        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
         let coins = json! ([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
