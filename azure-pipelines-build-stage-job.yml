@@ -44,7 +44,7 @@ jobs:
         displayName: 'Build MM2 Debug'
       # Explicit --test-threads=16 makes testing process slightly faster on agents that have <16 CPU cores.
       - bash: |
-          cargo test --features native --all -- --test-threads=16
+          cargo +nightly test --features native --all -- --test-threads=16
         displayName: 'Test MM2'
         timeoutInMinutes: 22
         env:
@@ -52,7 +52,6 @@ jobs:
           BOB_USERPASS: $(${{ parameters.bob_userpass }})
           ALICE_PASSPHRASE: $(${{ parameters.alice_passphrase }})
           ALICE_USERPASS: $(${{ parameters.alice_userpass }})
-        enabled: false
       - bash: |
           cargo +nightly clippy --features native -- -D warnings
         displayName: 'Check Clippy warnings'
