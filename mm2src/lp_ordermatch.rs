@@ -2588,6 +2588,9 @@ pub async fn lp_auto_buy(
     rel_coin: &MmCoinEnum,
     input: AutoBuyInput,
 ) -> Result<String, String> {
+    log!("Received autobuy "[input]);
+    log!("Received autobuy price "(input.price.to_decimal()) " " [input.price.to_fraction()]);
+    log!("Received autobuy volume "(input.volume.to_decimal()) " " [input.volume.to_fraction()]);
     if input.price < MmNumber::from(BigRational::new(1.into(), 100_000_000.into())) {
         return ERR!("Price is too low, minimum is 0.00000001");
     }
@@ -2637,6 +2640,7 @@ pub async fn lp_auto_buy(
     };
     save_my_taker_order(ctx, &order);
     my_taker_orders.insert(order.request.uuid, order);
+    log!("Autobuy result "(result));
     drop(my_taker_orders);
     Ok(result.to_string())
 }
@@ -3377,7 +3381,7 @@ async fn subscribe_to_orderbook_topic(
     Ok(())
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct OrderbookEntry {
     coin: String,
     address: String,
@@ -3398,7 +3402,7 @@ pub struct OrderbookEntry {
     is_mine: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct OrderbookResponse {
     #[serde(rename = "askdepth")]
     ask_depth: u32,
@@ -3521,6 +3525,8 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         rel: req.rel,
         timestamp: now_ms() / 1000,
     };
+    let response_str = try_s!(json::to_string(&response));
+    log!("Orderbook response "(response_str));
     let responseʲ = try_s!(json::to_vec(&response));
     Ok(try_s!(Response::builder().body(responseʲ)))
 }
