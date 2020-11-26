@@ -40,6 +40,7 @@ use mm2_libp2p::{decode_signed, encode_and_sign, encode_message, pub_sub_topic, 
 #[cfg(test)] use mocktopus::macros::*;
 use num_rational::BigRational;
 use num_traits::identities::Zero;
+use parity_util_mem::malloc_size;
 use rpc::v1::types::H256 as H256Json;
 use serde_json::{self as json, Value as Json};
 use sp_trie::{delta_trie_root, DBValue, HashDBT, MemoryDB, Trie, TrieConfiguration, TrieDB, TrieDBMut, TrieHash,
@@ -79,9 +80,11 @@ const ORDERBOOK_REQUESTING_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 2;
 #[allow(dead_code)]
 const INACTIVE_ORDER_TIMEOUT: u64 = 240;
 const MIN_TRADING_VOL: &str = "0.00777";
+const MAX_ORDERS_NUMBER_IN_ORDERBOOK_RESPONSE: usize = 1000;
 
 /// Alphabetically ordered orderbook pair
 type AlbOrderedOrderbookPair = String;
+type PubkeyOrders = Vec<(Uuid, OrderbookItem)>;
 
 impl From<(new_protocol::MakerOrderCreated, String)> for OrderbookItem {
     fn from(tuple: (new_protocol::MakerOrderCreated, String)) -> OrderbookItem {
@@ -104,8 +107,8 @@ fn process_pubkey_full_trie(
     orderbook: &mut Orderbook,
     pubkey: &str,
     alb_pair: &str,
-    new_trie_orders: Vec<(Uuid, OrderbookItem)>,
-) -> Result<H64, String> {
+    new_trie_orders: PubkeyOrders,
+) -> H64 {
     remove_and_purge_pubkey_pair_orders(orderbook, pubkey, alb_pair);
 
     for (_uuid, order) in new_trie_orders {
@@ -117,7 +120,7 @@ fn process_pubkey_full_trie(
         .get(alb_pair)
         .copied()
         .unwrap_or_else(H64::default);
-    Ok(new_root)
+    new_root
 }
 
 fn process_trie_delta(
@@ -125,7 +128,7 @@ fn process_trie_delta(
     pubkey: &str,
     alb_pair: &str,
     delta_orders: HashMap<Uuid, Option<OrderbookItem>>,
-) -> Result<H64, String> {
+) -> H64 {
     for (uuid, order) in delta_orders {
         match order {
             Some(order) => orderbook.insert_or_update_order_update_trie(order),
@@ -143,7 +146,7 @@ fn process_trie_delta(
             .unwrap_or_else(H64::default),
         None => H64::default(),
     };
-    Ok(new_root)
+    new_root
 }
 
 async fn process_orders_keep_alive(
@@ -243,14 +246,14 @@ async fn request_and_fill_orderbook(ctx: &MmArc, base: &str, rel: &str) -> Resul
     };
 
     let alb_pair = alb_ordered_pair(base, rel);
-    for (pubkey, item) in pubkey_orders {
-        let _new_root = try_s!(process_pubkey_full_trie(
-            &mut orderbook,
-            &pubkey,
-            &alb_pair,
-            item.orders
-        ));
+    for (pubkey, GetOrderbookPubkeyItem { orders, .. }) in pubkey_orders {
+        let _new_root = process_pubkey_full_trie(&mut orderbook, &pubkey, &alb_pair, orders);
     }
+
+    let topic = orderbook_topic_from_base_rel(base, rel);
+    orderbook
+        .topics_subscribed_to
+        .insert(topic, OrderbookRequestingState::Requested);
 
     Ok(())
 }
@@ -318,7 +321,9 @@ fn remove_and_purge_pubkey_pair_orders(orderbook: &mut Orderbook, pubkey: &str, 
         orderbook.remove_order(order);
     }
 
-    orderbook.memory_db.remove_and_purge(&pair_root, EMPTY_PREFIX);
+    if orderbook.memory_db.remove_and_purge(&pair_root, EMPTY_PREFIX).is_none() {
+        log!("Warning: couldn't find "[pair_root]" hash root in memory_db");
+    }
 }
 
 /// Attempts to decode a message and process it returning whether the message is valid and worth rebroadcasting
@@ -436,7 +441,7 @@ struct GetOrderbookPubkeyItem {
     /// last signed OrdermatchMessage payload
     last_signed_pubkey_payload: Vec<u8>,
     /// Requested orders.
-    orders: Vec<(Uuid, OrderbookItem)>,
+    orders: PubkeyOrders,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -446,18 +451,19 @@ struct GetOrderbookRes {
 }
 
 async fn process_get_orderbook_request(ctx: MmArc, base: String, rel: String) -> Result<Option<Vec<u8>>, String> {
-    fn get_pubkeys_orders(
-        orderbook: &Orderbook,
-        base: String,
-        rel: String,
-    ) -> HashMap<String, Vec<(Uuid, OrderbookItem)>> {
-        let order_uuids = match orderbook.unordered.get(&(base, rel)) {
-            Some(uuids) => uuids,
-            None => return HashMap::new(),
-        };
+    fn get_pubkeys_orders(orderbook: &Orderbook, base: String, rel: String) -> (usize, HashMap<String, PubkeyOrders>) {
+        let asks = orderbook.unordered.get(&(base.clone(), rel.clone()));
+        let bids = orderbook.unordered.get(&(rel, base));
+
+        let asks_num = asks.map(|x| x.len()).unwrap_or(0);
+        let bids_num = bids.map(|x| x.len()).unwrap_or(0);
+        let total_orders_number = asks_num + bids_num;
+
+        // flatten Option(asks) and Option(bids) to avoid cloning
+        let orders = asks.iter().chain(bids.iter()).copied().flatten();
 
         let mut uuids_by_pubkey = HashMap::new();
-        for uuid in order_uuids.iter() {
+        for uuid in orders {
             let order = orderbook
                 .order_set
                 .get(uuid)
@@ -466,13 +472,18 @@ async fn process_get_orderbook_request(ctx: MmArc, base: String, rel: String) ->
             uuids.push((*uuid, order.clone()))
         }
 
-        uuids_by_pubkey
+        (total_orders_number, uuids_by_pubkey)
     }
 
     let ordermatch_ctx = unwrap!(OrdermatchContext::from_ctx(&ctx));
     let orderbook = ordermatch_ctx.orderbook.lock().await;
 
-    let orders_to_send: Result<HashMap<_, _>, String> = get_pubkeys_orders(&orderbook, base, rel)
+    let (total_orders_number, orders) = get_pubkeys_orders(&orderbook, base, rel);
+    if total_orders_number > MAX_ORDERS_NUMBER_IN_ORDERBOOK_RESPONSE {
+        return ERR!("Orderbook too large");
+    }
+
+    let orders_to_send: Result<HashMap<_, _>, String> = orders
         .into_iter()
         .map(|(pubkey, orders)| {
             let pubkey_state = orderbook.pubkeys_state.get(&pubkey).ok_or(ERRL!(
@@ -552,14 +563,10 @@ impl<Key: Clone + Eq + std::hash::Hash + TryFromBytes, Value: Clone + TryFromByt
         if let Some(delta) = history.get(&from_hash) {
             let mut current_delta = delta;
             let mut total_delta = HashMap::new();
-            for (key, new_value) in &delta.delta {
-                total_delta.insert(key.clone(), new_value.clone());
-            }
+            total_delta.extend(delta.delta.iter().cloned());
             while let Some(cur) = history.get(&current_delta.next_root) {
                 current_delta = cur;
-                for (key, new_value) in &current_delta.delta {
-                    total_delta.insert(key.clone(), new_value.clone());
-                }
+                total_delta.extend(current_delta.delta.iter().cloned());
             }
             if current_delta.next_root == actual_trie_root {
                 return Ok(DeltaOrFullTrie::Delta(total_delta));
@@ -1570,12 +1577,12 @@ pub async fn broadcast_maker_orders_keep_alive_loop(ctx: MmArc) {
 
         let mut trie_roots = HashMap::new();
         let mut topics = HashSet::new();
-        for (alb_pair, root) in state.trie_roots.clone() {
-            if root == H64::default() && root == hashed_null_node::<Layout>() {
+        for (alb_pair, root) in state.trie_roots.iter() {
+            if *root == H64::default() && *root == hashed_null_node::<Layout>() {
                 continue;
             }
-            topics.insert(orderbook_topic_from_ordered_pair(&alb_pair));
-            trie_roots.insert(alb_pair, root);
+            topics.insert(orderbook_topic_from_ordered_pair(alb_pair));
+            trie_roots.insert(alb_pair.clone(), *root);
         }
 
         let message = new_protocol::PubkeyKeepAlive {
@@ -1731,6 +1738,26 @@ fn populate_trie<'db, T: TrieConfiguration>(
         try_s!(t.insert(key, val));
     }
     Ok(t)
+}
+
+fn collect_orderbook_metrics(ctx: &MmArc, orderbook: &Orderbook) {
+    fn history_committed_changes(history: &HashMap<AlbOrderedOrderbookPair, TrieOrderHistory>) -> i64 {
+        let total = history
+            .iter()
+            .fold(0usize, |total, (_alb_pair, history)| total + history.inner.len());
+        total as i64
+    }
+
+    let memory_db_size = malloc_size(&orderbook.memory_db);
+    mm_gauge!(ctx.metrics, "orderbook.len", orderbook.order_set.len() as i64);
+    mm_gauge!(ctx.metrics, "orderbook.memory_db", memory_db_size as i64);
+    // mm_gauge!(ctx.metrics, "inactive_orders.len", inactive.len() as i64);
+
+    // TODO remove metrics below after testing
+    for (pubkey, pubkey_state) in orderbook.pubkeys_state.iter() {
+        mm_gauge!(ctx.metrics, "orders_uuids", pubkey_state.orders_uuids.len() as i64, "pubkey" => pubkey.clone());
+        mm_gauge!(ctx.metrics, "history.commited_changes", history_committed_changes(&pubkey_state.order_pairs_trie_state_history), "pubkey" => pubkey.clone());
+    }
 }
 
 #[derive(Default)]
@@ -1932,11 +1959,7 @@ impl Orderbook {
                 continue;
             }
 
-            let actual_trie_root = pubkey_state
-                .trie_roots
-                .entry(alb_pair.clone())
-                .or_insert_with(H64::default);
-
+            let actual_trie_root = order_pair_root_mut(&mut pubkey_state.trie_roots, &alb_pair);
             if *actual_trie_root != trie_root {
                 trie_roots_to_request.insert(alb_pair, trie_root);
             }
@@ -1948,7 +1971,7 @@ impl Orderbook {
         }
 
         Some(OrdermatchRequest::SyncPubkeyOrderbookState {
-            pubkey: from_pubkey.into(),
+            pubkey: from_pubkey.to_owned(),
             trie_roots: trie_roots_to_request,
         })
     }
@@ -2207,8 +2230,8 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
             for key in keys_to_remove {
                 orderbook.memory_db.remove_and_purge(&key, EMPTY_PREFIX);
             }
-            mm_gauge!(ctx.metrics, "orderbook.len", orderbook.order_set.len() as i64);
-            // mm_gauge!(ctx.metrics, "inactive_orders.len", inactive.len() as i64);
+
+            collect_orderbook_metrics(&ctx, &orderbook);
         }
 
         {
@@ -3335,7 +3358,7 @@ async fn subscribe_to_orderbook_topic(
                     if *subscribed_at + ORDERBOOK_REQUESTING_TIMEOUT < current_timestamp =>
                 {
                     // We are subscribed to the topic. Also we didn't request the orderbook,
-                    // but enough time has passed for the orderbook to fill by OrdermatchMessage::MakerOrderKeepAlive messages.
+                    // but enough time has passed for the orderbook to fill by OrdermatchRequest::SyncPubkeyOrderbookState.
                     true
                 }
                 OrderbookRequestingState::NotRequested { .. } => {
