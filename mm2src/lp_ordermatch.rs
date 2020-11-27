@@ -2105,8 +2105,8 @@ fn lp_connected_alice(ctx: MmArc, taker_request: TakerRequest, taker_match: Take
 
         let privkey = &ctx.secp256k1_key_pair().private().secret;
         let my_persistent_pub = unwrap!(compressed_pub_key_from_priv_raw(&privkey[..], ChecksumType::DSHA256));
-        let maker_amount = taker_match.reserved.get_base_amount().to_decimal();
-        let taker_amount = taker_match.reserved.get_rel_amount().to_decimal();
+        let maker_amount = taker_match.reserved.get_base_amount().clone();
+        let taker_amount = taker_match.reserved.get_rel_amount().clone();
         let uuid = taker_match.reserved.taker_order_uuid;
 
         let my_conf_settings =
