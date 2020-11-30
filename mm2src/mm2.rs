@@ -22,6 +22,7 @@
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 
+use common::crash_reports::init_crash_reports;
 use common::mm_ctx::MmCtxBuilder;
 use common::{block_on, double_panic_crash, safe_slurp, MM_DATETIME, MM_VERSION};
 
@@ -35,9 +36,6 @@ use std::ffi::OsString;
 use std::process::exit;
 use std::ptr::null;
 use std::str;
-
-#[path = "crash_reports.rs"] pub mod crash_reports;
-use self::crash_reports::init_crash_reports;
 
 #[path = "lp_native_dex.rs"] mod lp_native_dex;
 use self::lp_native_dex::{lp_init, lp_ports};

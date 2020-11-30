@@ -135,7 +135,6 @@ trie-root = "0.16.0"
 unwrap = "1.2"
 uuid = { version = "0.7", features = ["serde", "v4"] }
 wasm-timer = "0.2.4"
-winapi = "0.3"
 
 wasm-bindgen = { version = "0.2.50", features = ["serde-serialize", "nightly"], optional = true }
 js-sys = { version = "0.3.27", optional = true }

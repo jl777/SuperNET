@@ -3049,7 +3049,6 @@ dependencies = [
  "wasm-bindgen-test",
  "wasm-timer",
  "web-sys",
- "winapi 0.3.8",
 ]
 
 [[package]]
