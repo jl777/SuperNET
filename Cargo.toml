@@ -153,6 +153,7 @@ libsecp256k1 = "0.2.2"
 mocktopus = "0.7.0"
 rand4 = { version = "0.4", package = "rand" }
 testcontainers = { git = "https://github.com/artemii235/testcontainers-rs.git" }
+winapi = "0.3"
 
 [workspace]
 members = [
