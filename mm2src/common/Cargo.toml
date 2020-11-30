@@ -67,6 +67,7 @@ tokio = { version = "0.2.22", features = ["io-util", "rt-threaded", "stream", "t
 unwrap = "1.2"
 uuid = { version = "0.7", features = ["serde", "v4"] }
 wasm-bindgen = { version = "0.2.50", features = ["serde-serialize", "nightly"], optional = true }
+winapi = "0.3"
 
 [dependencies.web-sys]
 version = "0.3.4"
@@ -95,4 +96,3 @@ regex = "1"
 sysinfo = "0.9"
 tar = "0.4"
 unwrap = "1.2.1"
-winapi = "0.3"
