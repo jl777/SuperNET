@@ -60,7 +60,7 @@ jobs:
             -w $PWD \
             -e HOME=/root \
             mm2_builder \
-            /bin/bash -c "source /root/.cargo/env && cargo +nightly build --features native -vv --target-dir target-xenial"
+            /bin/bash -c "source /root/.cargo/env && cargo build --features native -vv --target-dir target-xenial"
           else
             cargo +nightly build --features native -vv
           fi
@@ -97,7 +97,7 @@ jobs:
             -w $PWD \
             -e HOME=/root \
             mm2_builder \
-            /bin/bash -c "source /root/.cargo/env && cargo +nightly build --features native --release -vv --target-dir target-xenial"
+            /bin/bash -c "source /root/.cargo/env && cargo build --features native --release -vv --target-dir target-xenial"
           else
             cargo +nightly build --features native --release -vv
           fi
