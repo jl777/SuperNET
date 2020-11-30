@@ -983,7 +983,7 @@ pub mod unified_log {
         fn append(&self, record: &Record) -> Result<(), Box<dyn std::error::Error + Sync + Send>> {
             let mut buf = Vec::new();
             self.pattern.encode(&mut simple::SimpleWriter(&mut buf), record)?;
-            let as_string = String::from_utf8(buf).map_err(|e| Box::new(e))?;
+            let as_string = String::from_utf8(buf).map_err(Box::new)?;
             chunk2log(as_string);
             Ok(())
         }
