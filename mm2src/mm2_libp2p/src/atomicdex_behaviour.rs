@@ -1,5 +1,5 @@
 use crate::{adex_ping::AdexPing,
-            peers_exchange::PeersExchange,
+            peers_exchange::{PeerAddresses, PeersExchange},
             request_response::{build_request_response_behaviour, PeerRequest, PeerResponse, RequestResponseBehaviour,
                                RequestResponseBehaviourEvent, RequestResponseSender}};
 use atomicdex_gossipsub::{Gossipsub, GossipsubConfigBuilder, GossipsubEvent, GossipsubMessage, MessageId, Topic,
@@ -381,8 +381,8 @@ impl AtomicDexBehaviour {
         }
     }
 
-    fn announce_listeners(&mut self, listeners: Vec<Multiaddr>) {
-        let serialized = rmp_serde::to_vec(&listeners).expect("Vec<Multiaddr> serialization should never fail");
+    fn announce_listeners(&mut self, listeners: PeerAddresses) {
+        let serialized = rmp_serde::to_vec(&listeners).expect("PeerAddresses serialization should never fail");
         self.floodsub.publish(FloodsubTopic::new(PEERS_TOPIC), serialized);
     }
 
@@ -400,7 +400,7 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for AtomicDexBehaviour {
         if let FloodsubEvent::Message(message) = &event {
             for topic in &message.topics {
                 if topic == &FloodsubTopic::new(PEERS_TOPIC) {
-                    let addresses: Vec<Multiaddr> = match rmp_serde::from_read_ref(&message.data) {
+                    let addresses: PeerAddresses = match rmp_serde::from_read_ref(&message.data) {
                         Ok(a) => a,
                         Err(_) => return,
                     };
@@ -476,6 +476,9 @@ fn maintain_connection_to_relays(swarm: &mut AtomicDexSwarm, bootstrap_addresses
         }
         for (peer, addresses) in to_connect {
             for addr in addresses {
+                if swarm.gossipsub.is_connected_to_addr(&addr) {
+                    continue;
+                }
                 if let Err(e) = libp2p::Swarm::dial_addr(swarm, addr.clone()) {
                     error!("Peer {} address {} dial error {}", peer, addr, e);
                 }
@@ -507,7 +510,7 @@ fn maintain_connection_to_relays(swarm: &mut AtomicDexSwarm, bootstrap_addresses
 }
 
 fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
-    let global_listeners: Vec<_> = Swarm::listeners(&swarm)
+    let global_listeners: PeerAddresses = Swarm::listeners(&swarm)
         .filter(|listener| {
             for protocol in listener.iter() {
                 if let Protocol::Ip4(ip) = protocol {
