@@ -619,7 +619,9 @@ pub fn start_gossipsub(
     };
     swarm.floodsub.subscribe(FloodsubTopic::new(PEERS_TOPIC.to_owned()));
     let addr = format!("/ip4/{}/tcp/{}", ip, port);
-    libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
+    if i_am_relay {
+        libp2p::Swarm::listen_on(&mut swarm, addr.parse().unwrap()).unwrap();
+    }
     for relay in bootstrap.choose_multiple(&mut thread_rng(), mesh_n) {
         match libp2p::Swarm::dial_addr(&mut swarm, relay.clone()) {
             Ok(_) => info!("Dialed {}", relay),
