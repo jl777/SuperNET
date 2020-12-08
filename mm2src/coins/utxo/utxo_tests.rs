@@ -1,6 +1,6 @@
 use super::rpc_clients::{ElectrumProtocol, ListSinceBlockRes, NetworkInfo};
 use super::*;
-use crate::utxo::rpc_clients::UtxoRpcClientOps;
+use crate::utxo::rpc_clients::{GetAddressInfoRes, UtxoRpcClientOps, ValidateAddressRes};
 use crate::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin, UTXO_STANDARD_DUST};
 use crate::{SwapOps, WithdrawFee};
 use bigdecimal::BigDecimal;
@@ -1744,4 +1744,210 @@ fn test_native_client_unspents_filtered_using_tx_cache_single_several_chained_tx
         height: None,
     };
     assert_eq!(vec![expected_unspent], unspents_ordered);
+}
+
+#[test]
+fn validate_address_res_format() {
+    let btc_017_and_above_response = json!({
+      "isvalid": true,
+      "address": "1JsAjr6d21j9T8EMsYnQ6GXf1mM523JAv1",
+      "scriptPubKey": "76a914c3f710deb7320b0efa6edb14e3ebeeb9155fa90d88ac",
+      "isscript": false,
+      "iswitness": false
+    });
+
+    let _: ValidateAddressRes = json::from_value(btc_017_and_above_response).unwrap();
+
+    let btc_016_response = json!({
+      "isvalid": true,
+      "address": "RT9MpMyucqXiX8bZLimXBnrrn2ofmdGNKd",
+      "scriptPubKey": "76a914c3f710deb7320b0efa6edb14e3ebeeb9155fa90d88ac",
+      "ismine": false,
+      "iswatchonly": true,
+      "isscript": false,
+      "account": "RT9MpMyucqXiX8bZLimXBnrrn2ofmdGNKd",
+      "timestamp": 0
+    });
+
+    let _: ValidateAddressRes = json::from_value(btc_016_response).unwrap();
+}
+
+#[test]
+fn get_address_info_format() {
+    let response = json!({
+      "address": "Ld6814QT6fyChvvX3gmhNHbRDyiMBvPr9s",
+      "scriptPubKey": "76a914c3f710deb7320b0efa6edb14e3ebeeb9155fa90d88ac",
+      "ismine": false,
+      "solvable": false,
+      "iswatchonly": true,
+      "isscript": false,
+      "iswitness": false,
+      "label": "Ld6814QT6fyChvvX3gmhNHbRDyiMBvPr9s",
+      "ischange": false,
+      "timestamp": 0,
+      "labels": [
+        {
+          "name": "Ld6814QT6fyChvvX3gmhNHbRDyiMBvPr9s",
+          "purpose": "receive"
+        }
+      ]
+    });
+
+    let _: GetAddressInfoRes = json::from_value(response).unwrap();
+}
+
+#[test]
+fn test_native_is_address_imported_validate_address_is_mine() {
+    let client = native_client_for_test();
+    NativeClientImpl::validate_address.mock_safe(|_, _| {
+        let result = ValidateAddressRes {
+            is_valid: false,
+            address: "".to_string(),
+            script_pub_key: Default::default(),
+            seg_id: None,
+            is_mine: Some(true),
+            is_watch_only: Some(false),
+            is_script: false,
+            account: None,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    let address = "";
+    let imported = block_on(client.is_address_imported(address)).unwrap();
+    assert!(imported);
+}
+
+#[test]
+fn test_native_is_address_imported_validate_address_is_watch_only() {
+    let client = native_client_for_test();
+    NativeClientImpl::validate_address.mock_safe(|_, _| {
+        let result = ValidateAddressRes {
+            is_valid: false,
+            address: "".to_string(),
+            script_pub_key: Default::default(),
+            seg_id: None,
+            is_mine: Some(false),
+            is_watch_only: Some(true),
+            is_script: false,
+            account: None,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    let address = "";
+    let imported = block_on(client.is_address_imported(address)).unwrap();
+    assert!(imported);
+}
+
+#[test]
+fn test_native_is_address_imported_validate_address_false() {
+    let client = native_client_for_test();
+    NativeClientImpl::validate_address.mock_safe(|_, _| {
+        let result = ValidateAddressRes {
+            is_valid: false,
+            address: "".to_string(),
+            script_pub_key: Default::default(),
+            seg_id: None,
+            is_mine: Some(false),
+            is_watch_only: Some(false),
+            is_script: false,
+            account: None,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    let address = "";
+    let imported = block_on(client.is_address_imported(address)).unwrap();
+    assert!(!imported);
+}
+
+#[test]
+fn test_native_is_address_imported_fallback_to_address_info_is_mine() {
+    let client = native_client_for_test();
+    NativeClientImpl::validate_address.mock_safe(|_, _| {
+        let result = ValidateAddressRes {
+            is_valid: false,
+            address: "".to_string(),
+            script_pub_key: Default::default(),
+            seg_id: None,
+            is_mine: None,
+            is_watch_only: None,
+            is_script: false,
+            account: None,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    NativeClientImpl::get_address_info.mock_safe(|_, _| {
+        let result = GetAddressInfoRes {
+            is_mine: true,
+            is_watch_only: false,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    let address = "";
+    let imported = block_on(client.is_address_imported(address)).unwrap();
+    assert!(imported);
+}
+
+#[test]
+fn test_native_is_address_imported_fallback_to_address_info_is_watch_only() {
+    let client = native_client_for_test();
+    NativeClientImpl::validate_address.mock_safe(|_, _| {
+        let result = ValidateAddressRes {
+            is_valid: false,
+            address: "".to_string(),
+            script_pub_key: Default::default(),
+            seg_id: None,
+            is_mine: None,
+            is_watch_only: None,
+            is_script: false,
+            account: None,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    NativeClientImpl::get_address_info.mock_safe(|_, _| {
+        let result = GetAddressInfoRes {
+            is_mine: false,
+            is_watch_only: true,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    let address = "";
+    let imported = block_on(client.is_address_imported(address)).unwrap();
+    assert!(imported);
+}
+
+#[test]
+fn test_native_is_address_imported_fallback_to_address_info_false() {
+    let client = native_client_for_test();
+    NativeClientImpl::validate_address.mock_safe(|_, _| {
+        let result = ValidateAddressRes {
+            is_valid: false,
+            address: "".to_string(),
+            script_pub_key: Default::default(),
+            seg_id: None,
+            is_mine: None,
+            is_watch_only: None,
+            is_script: false,
+            account: None,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    NativeClientImpl::get_address_info.mock_safe(|_, _| {
+        let result = GetAddressInfoRes {
+            is_mine: false,
+            is_watch_only: false,
+        };
+        MockResult::Return(Box::new(futures01::future::ok(result)))
+    });
+
+    let address = "";
+    let imported = block_on(client.is_address_imported(address)).unwrap();
+    assert!(!imported);
 }

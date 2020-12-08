@@ -944,9 +944,9 @@ where
                     hash,
                     checksum_type: coin.as_ref().checksum_type,
                 };
-                let target_addr = try_s!(coin.display_address(&target_addr));
-                let validate_address = try_s!(client.validate_address(target_addr.clone()).compat().await);
-                if !validate_address.is_watch_only {
+                let target_addr = target_addr.to_string();
+                let is_imported = try_s!(client.is_address_imported(&target_addr).await);
+                if !is_imported {
                     return Ok(None);
                 }
                 let received_by_addr = try_s!(client.list_received_by_address(0, true, true).compat().await);

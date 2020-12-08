@@ -234,9 +234,9 @@ pub struct ValidateAddressRes {
     #[serde(rename = "segid")]
     pub seg_id: Option<u32>,
     #[serde(rename = "ismine")]
-    pub is_mine: bool,
+    pub is_mine: Option<bool>,
     #[serde(rename = "iswatchonly")]
-    pub is_watch_only: bool,
+    pub is_watch_only: Option<bool>,
     #[serde(rename = "isscript")]
     pub is_script: bool,
     pub account: Option<String>,
@@ -323,6 +323,15 @@ pub struct NetworkInfo {
     warnings: String,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct GetAddressInfoRes {
+    // as of now we are interested in ismine and iswatchonly fields only, but this response contains much more info
+    #[serde(rename = "ismine")]
+    pub is_mine: bool,
+    #[serde(rename = "iswatchonly")]
+    pub is_watch_only: bool,
+}
+
 #[derive(Debug)]
 pub enum EstimateFeeMethod {
     /// estimatefee, deprecated in many coins: https://bitcoincore.org/en/doc/0.16.0/rpc/util/estimatefee/
@@ -334,7 +343,7 @@ pub enum EstimateFeeMethod {
 pub type RpcReqSub<T> = async_oneshot::Sender<Result<T, JsonRpcError>>;
 
 /// RPC client for UTXO based coins
-/// https://bitcoin.org/en/developer-reference#rpc-quick-reference - Bitcoin RPC API reference
+/// https://developer.bitcoin.org/reference/rpc/index.html - Bitcoin RPC API reference
 /// Other coins have additional methods or miss some of these
 /// This description will be updated with more info
 #[derive(Debug)]
@@ -466,7 +475,7 @@ impl UtxoRpcClientOps for NativeClient {
         Box::new(self.send_raw_transaction(tx_bytes).map_err(|e| ERRL!("{}", e)))
     }
 
-    /// https://bitcoin.org/en/developer-reference#sendrawtransaction
+    /// https://developer.bitcoin.org/reference/rpc/sendrawtransaction
     fn send_raw_transaction(&self, tx: BytesJson) -> RpcRes<H256Json> { rpc_func!(self, "sendrawtransaction", tx) }
 
     fn get_transaction_bytes(&self, txid: H256Json) -> RpcRes<BytesJson> { self.get_raw_transaction_bytes(txid) }
@@ -572,7 +581,7 @@ impl UtxoRpcClientOps for NativeClient {
 
 #[cfg_attr(test, mockable)]
 impl NativeClient {
-    /// https://bitcoin.org/en/developer-reference#listunspent
+    /// https://developer.bitcoin.org/reference/rpc/listunspent
     pub fn list_unspent_impl(
         &self,
         min_conf: i32,
@@ -610,13 +619,13 @@ impl NativeClient {
 
 #[cfg_attr(test, mockable)]
 impl NativeClientImpl {
-    /// https://bitcoin.org/en/developer-reference#importaddress
+    /// https://developer.bitcoin.org/reference/rpc/importaddress
     pub fn import_address(&self, address: &str, label: &str, rescan: bool) -> RpcRes<()> {
         rpc_func!(self, "importaddress", address, label, rescan)
     }
 
-    /// https://bitcoin.org/en/developer-reference#validateaddress
-    pub fn validate_address(&self, address: String) -> RpcRes<ValidateAddressRes> {
+    /// https://developer.bitcoin.org/reference/rpc/validateaddress
+    pub fn validate_address(&self, address: &str) -> RpcRes<ValidateAddressRes> {
         rpc_func!(self, "validateaddress", address)
     }
 
@@ -639,31 +648,31 @@ impl NativeClientImpl {
         rpc_func!(self, "getblock", height, verbose)
     }
 
-    /// https://bitcoin.org/en/developer-reference#getblockcount
+    /// https://developer.bitcoin.org/reference/rpc/getblockcount.html
     pub fn get_block_count(&self) -> RpcRes<u64> { rpc_func!(self, "getblockcount") }
 
-    /// https://bitcoin.org/en/developer-reference#getrawtransaction
+    /// https://developer.bitcoin.org/reference/rpc/getrawtransaction.html
     /// Always returns verbose transaction
     fn get_raw_transaction_verbose(&self, txid: H256Json) -> RpcRes<RpcTransaction> {
         let verbose = 1;
         rpc_func!(self, "getrawtransaction", txid, verbose)
     }
 
-    /// https://bitcoin.org/en/developer-reference#getrawtransaction
+    /// https://developer.bitcoin.org/reference/rpc/getrawtransaction.html
     /// Always returns transaction bytes
     fn get_raw_transaction_bytes(&self, txid: H256Json) -> RpcRes<BytesJson> {
         let verbose = 0;
         rpc_func!(self, "getrawtransaction", txid, verbose)
     }
 
-    /// https://bitcoin.org/en/developer-reference#estimatefee
+    /// https://developer.bitcoin.org/reference/rpc/estimatefee.html
     /// Always estimate fee for transaction to be confirmed in next block
     fn estimate_fee(&self) -> RpcRes<f64> {
         let n_blocks = 1;
         rpc_func!(self, "estimatefee", n_blocks)
     }
 
-    /// https://bitcoincore.org/en/doc/0.18.0/rpc/util/estimatesmartfee/
+    /// https://developer.bitcoin.org/reference/rpc/estimatesmartfee.html
     /// Always estimate fee for transaction to be confirmed in next block
     pub fn estimate_smart_fee(&self, mode: &Option<EstimateFeeMode>) -> RpcRes<EstimateSmartFeeRes> {
         let n_blocks = 1;
@@ -673,14 +682,14 @@ impl NativeClientImpl {
         }
     }
 
-    /// https://bitcoin.org/en/developer-reference#listtransactions
+    /// https://developer.bitcoin.org/reference/rpc/listtransactions.html
     pub fn list_transactions(&self, count: u64, from: u64) -> RpcRes<Vec<ListTransactionsItem>> {
         let account = "*";
         let watch_only = true;
         rpc_func!(self, "listtransactions", account, count, from, watch_only)
     }
 
-    /// https://bitcoin.org/en/developer-reference#listreceivedbyaddress
+    /// https://developer.bitcoin.org/reference/rpc/listreceivedbyaddress.html
     pub fn list_received_by_address(
         &self,
         min_conf: u64,
@@ -722,7 +731,7 @@ impl NativeClientImpl {
         })
     }
 
-    /// https://bitcoin.org/en/developer-reference#listsinceblock
+    /// https://developer.bitcoin.org/reference/rpc/listsinceblock.html
     /// uses default target confirmations 1 and always includes watch_only addresses
     fn list_since_block(&self, block_hash: H256Json) -> RpcRes<ListSinceBlockRes> {
         let target_confirmations = 1;
@@ -736,16 +745,37 @@ impl NativeClientImpl {
         )
     }
 
-    /// https://bitcoin.org/en/developer-reference#getblockhash
+    /// https://developer.bitcoin.org/reference/rpc/getblockhash.html
     fn get_block_hash(&self, block_number: u64) -> RpcRes<H256Json> { rpc_func!(self, "getblockhash", block_number) }
 
-    /// https://bitcoin.org/en/developer-reference#sendtoaddress
+    /// https://developer.bitcoin.org/reference/rpc/sendtoaddress.html
     pub fn send_to_address(&self, addr: &str, amount: &BigDecimal) -> RpcRes<H256Json> {
         rpc_func!(self, "sendtoaddress", addr, amount)
     }
 
-    /// https://bitcoin.org/en/developer-reference#getnetworkinfo
+    /// https://developer.bitcoin.org/reference/rpc/getnetworkinfo.html
     pub fn get_network_info(&self) -> RpcRes<NetworkInfo> { rpc_func!(self, "getnetworkinfo") }
+
+    /// https://developer.bitcoin.org/reference/rpc/getaddressinfo.html
+    pub fn get_address_info(&self, address: &str) -> RpcRes<GetAddressInfoRes> {
+        rpc_func!(self, "getaddressinfo", address)
+    }
+}
+
+impl NativeClientImpl {
+    /// Check whether input address is imported to daemon
+    pub async fn is_address_imported(&self, address: &str) -> Result<bool, String> {
+        let validate_res = try_s!(self.validate_address(address).compat().await);
+        match (validate_res.is_mine, validate_res.is_watch_only) {
+            (Some(is_mine), Some(is_watch_only)) => Ok(is_mine || is_watch_only),
+            // ignoring (Some(_), None) and (None, Some(_)) variants, there seem to be no known daemons that return is_mine,
+            // but do not return is_watch_only, so it's ok to fallback to getaddressinfo
+            _ => {
+                let address_info = try_s!(self.get_address_info(address).compat().await);
+                Ok(address_info.is_mine || address_info.is_watch_only)
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
