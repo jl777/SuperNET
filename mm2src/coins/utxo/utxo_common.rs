@@ -2092,7 +2092,6 @@ pub async fn list_unspent_ordered<'a, T>(
 where
     T: AsRef<UtxoCoinFields>,
 {
-    let before_list_unspent = now_ms();
     let mut unspents = try_s!(
         coin.as_ref()
             .rpc_client
@@ -2101,15 +2100,7 @@ where
             .compat()
             .await
     );
-    let after_list_unspent = now_ms();
-    log!("list_unspent took "(after_list_unspent - before_list_unspent));
-
-    let before = now_ms();
     let recently_spent = coin.as_ref().recently_spent_outpoints.lock().await;
-    let after = now_ms();
-    log!("recently_spent lock took "(after - before));
-
-    let before = now_ms();
     unspents = recently_spent
         .replace_spent_outputs_with_cache(unspents.into_iter().collect())
         .into_iter()
@@ -2124,7 +2115,5 @@ where
     // dedup just in case we add duplicates of same unspent out
     // all duplicates will be removed because vector in sorted before dedup
     unspents.dedup_by(|one, another| one.outpoint == another.outpoint);
-    let after = now_ms();
-    log!("replace_spent_outputs_with_cache + sort + dedup took "(after - before));
     Ok((unspents, recently_spent))
 }

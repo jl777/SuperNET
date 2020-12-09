@@ -80,7 +80,6 @@ crossbeam = "0.7"
 dirs = { version = "1", optional = true }
 either = "1.6"
 enum-primitive-derive = "0.1"
-env_logger = "0.7.1"
 fomat-macros = "0.2"
 futures01 = { version = "0.1", package = "futures" }
 futures-cpupool = "0.1"

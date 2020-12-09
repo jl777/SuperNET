@@ -37,7 +37,7 @@ use common::executor::{spawn, Timer};
 use common::jsonrpc_client::JsonRpcError;
 use common::mm_ctx::MmArc;
 use common::mm_metrics::MetricsArc;
-use common::{first_char_to_upper, now_ms, small_rng, MM_VERSION};
+use common::{first_char_to_upper, small_rng, MM_VERSION};
 #[cfg(feature = "native")] use dirs::home_dir;
 use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
@@ -460,6 +460,15 @@ impl Deref for UtxoArc {
 
 impl From<UtxoCoinFields> for UtxoArc {
     fn from(coin: UtxoCoinFields) -> UtxoArc { UtxoArc(Arc::new(coin)) }
+}
+
+impl From<Arc<UtxoCoinFields>> for UtxoArc {
+    fn from(arc: Arc<UtxoCoinFields>) -> UtxoArc { UtxoArc(arc) }
+}
+
+impl UtxoArc {
+    /// Returns weak reference to the inner UtxoCoinFields
+    fn downgrade(&self) -> Weak<UtxoCoinFields> { Arc::downgrade(&self.0) }
 }
 
 // We can use a shared UTXO lock for all UTXO coins at 1 time.
@@ -1288,15 +1297,23 @@ async fn send_outputs_from_my_address_impl<T>(coin: T, outputs: Vec<TransactionO
 where
     T: AsRef<UtxoCoinFields> + UtxoCommonOps,
 {
-    let before_list_unspent_ordered = now_ms();
-    let (unspents, mut recently_sent_txs) = try_s!(coin.list_unspent_ordered(&coin.as_ref().my_address).await);
-    let after_list_unspent_ordered = now_ms();
-    log!("list_unspent_ordered took "(
-        after_list_unspent_ordered - before_list_unspent_ordered
-    ));
+    let (unspents, recently_sent_txs) = try_s!(coin.list_unspent_ordered(&coin.as_ref().my_address).await);
+    generate_and_send_tx(&coin, unspents, outputs, FeePolicy::SendExact, recently_sent_txs).await
+}
 
+/// Generates and sends tx using unspents and outputs adding new record to the recently_spent in case of success
+async fn generate_and_send_tx<T>(
+    coin: &T,
+    unspents: Vec<UnspentInfo>,
+    outputs: Vec<TransactionOutput>,
+    fee_policy: FeePolicy,
+    mut recently_spent: AsyncMutexGuard<'_, RecentlySpentOutPoints>,
+) -> Result<UtxoTx, String>
+where
+    T: AsRef<UtxoCoinFields> + UtxoCommonOps,
+{
     let (unsigned, _) = try_s!(
-        coin.generate_transaction(unspents, outputs, FeePolicy::SendExact, None, None)
+        coin.generate_transaction(unspents, outputs, fee_policy, None, None)
             .await
     );
 
@@ -1319,7 +1336,6 @@ where
         coin.as_ref().fork_id
     ));
 
-    let before_send_transaction = now_ms();
     try_s!(
         coin.as_ref()
             .rpc_client
@@ -1328,15 +1344,8 @@ where
             .compat()
             .await
     );
-    let after_send_transaction = now_ms();
-    log!("send_transaction took "(
-        after_send_transaction - before_send_transaction
-    ));
 
-    let before = now_ms();
-    recently_sent_txs.add_spent(spent_unspents, signed.hash(), signed.outputs.clone());
-    let after = now_ms();
-    log!("add_spent took "(after - before));
+    recently_spent.add_spent(spent_unspents, signed.hash(), signed.outputs.clone());
 
     Ok(signed)
 }
