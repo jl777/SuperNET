@@ -2212,4 +2212,69 @@ mod docker_tests {
         let (unspents, _) = block_on(coin.list_unspent_ordered(&coin.as_ref().my_address)).unwrap();
         assert_eq!(unspents.len(), 1);
     }
+
+    #[test]
+    fn test_utxo_merge_max_merge_at_once() {
+        let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
+        let (_ctx, coin, privkey) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
+        // fill several times to have more UTXOs on address
+        fill_address(&coin, &coin.my_address().unwrap(), 2.into(), timeout);
+        fill_address(&coin, &coin.my_address().unwrap(), 2.into(), timeout);
+        fill_address(&coin, &coin.my_address().unwrap(), 2.into(), timeout);
+        fill_address(&coin, &coin.my_address().unwrap(), 2.into(), timeout);
+
+        let coins = json! ([
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+        ]);
+        let mut mm_bob = unwrap!(MarketMakerIt::start(
+            json! ({
+                "gui": "nogui",
+                "netid": 9000,
+                "dht": "on",  // Enable DHT without delay.
+                "passphrase": format!("0x{}", hex::encode(privkey)),
+                "coins": coins,
+                "rpc_password": "pass",
+                "i_am_seed": true,
+            }),
+            "pass".to_string(),
+            None,
+        ));
+        let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
+        unwrap!(block_on(
+            mm_bob.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))
+        ));
+
+        let native = block_on(mm_bob.rpc(json! ({
+            "userpass": mm_bob.userpass,
+            "method": "enable",
+            "coin": "MYCOIN",
+            "mm2": 1,
+            "utxo_merge_params": {
+                "merge_at": 3,
+                "check_every": 1,
+                "max_merge_at_once": 4,
+            }
+        })))
+        .unwrap();
+        assert!(native.0.is_success(), "'enable' failed: {}", native.1);
+        log!("Enable result "(native.1));
+
+        unwrap!(block_on(mm_bob.wait_for_log(4., |log| {
+            log.contains("Starting UTXO merge loop for coin MYCOIN")
+        })));
+
+        unwrap!(block_on(mm_bob.wait_for_log(4., |log| {
+            log.contains("Trying to merge 4 UTXOs of coin MYCOIN")
+        })));
+
+        unwrap!(block_on(mm_bob.wait_for_log(4., |log| {
+            log.contains("UTXO merge successful for coin MYCOIN, tx_hash")
+        })));
+
+        thread::sleep(Duration::from_secs(2));
+        let (unspents, _) = block_on(coin.list_unspent_ordered(&coin.as_ref().my_address)).unwrap();
+        // 4 utxos are merged of 5 so the resulting unspents len must be 2
+        assert_eq!(unspents.len(), 2);
+    }
 }

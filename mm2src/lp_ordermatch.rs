@@ -1207,6 +1207,10 @@ enum MakerOrderBuildError {
         threshold: MmNumber,
     },
     ConfSettingsNotSet,
+    MaxBaseVolBelowMinBaseVol {
+        min: MmNumber,
+        max: MmNumber,
+    },
 }
 
 impl fmt::Display for MakerOrderBuildError {
@@ -1240,6 +1244,12 @@ impl fmt::Display for MakerOrderBuildError {
                 threshold.to_decimal()
             ),
             MakerOrderBuildError::ConfSettingsNotSet => write!(f, "Confirmation settings must be set"),
+            MakerOrderBuildError::MaxBaseVolBelowMinBaseVol { min, max } => write!(
+                f,
+                "Max base vol {} is below min base vol: {}",
+                max.to_decimal(),
+                min.to_decimal()
+            ),
         }
     }
 }
@@ -1318,6 +1328,13 @@ impl MakerOrderBuilder {
             return Err(MakerOrderBuildError::MinBaseVolTooLow {
                 actual: self.min_base_vol,
                 threshold: min_vol,
+            });
+        }
+
+        if self.max_base_vol < self.min_base_vol {
+            return Err(MakerOrderBuildError::MaxBaseVolBelowMinBaseVol {
+                min: self.min_base_vol,
+                max: self.max_base_vol,
             });
         }
 

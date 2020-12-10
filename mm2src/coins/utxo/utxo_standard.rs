@@ -29,11 +29,15 @@ impl From<UtxoStandardCoin> for UtxoArc {
 
 fn ten_f64() -> f64 { 10. }
 
+fn one_hundred() -> usize { 100 }
+
 #[derive(Debug, Deserialize)]
 struct UtxoMergeParams {
     merge_at: usize,
     #[serde(default = "ten_f64")]
     check_every: f64,
+    #[serde(default = "one_hundred")]
+    max_merge_at_once: usize,
 }
 
 pub async fn utxo_standard_coin_from_conf_and_request(
@@ -47,7 +51,12 @@ pub async fn utxo_standard_coin_from_conf_and_request(
     let merge_params: Option<UtxoMergeParams> = try_s!(json::from_value(req["utxo_merge_params"].clone()));
     if let Some(merge_params) = merge_params {
         let weak = inner.downgrade();
-        let merge_loop = merge_utxo_loop(weak, merge_params.merge_at, merge_params.check_every);
+        let merge_loop = merge_utxo_loop(
+            weak,
+            merge_params.merge_at,
+            merge_params.check_every,
+            merge_params.max_merge_at_once,
+        );
         info!("Starting UTXO merge loop for coin {}", ticker);
         spawn(merge_loop);
     }
@@ -412,7 +421,7 @@ impl MmCoin for UtxoStandardCoin {
     }
 }
 
-async fn merge_utxo_loop(weak: Weak<UtxoCoinFields>, merge_at: usize, check_every: f64) {
+async fn merge_utxo_loop(weak: Weak<UtxoCoinFields>, merge_at: usize, check_every: f64, max_merge_at_once: usize) {
     loop {
         Timer::sleep(check_every).await;
 
@@ -431,6 +440,7 @@ async fn merge_utxo_loop(weak: Weak<UtxoCoinFields>, merge_at: usize, check_ever
             },
         };
         if unspents.len() >= merge_at {
+            let unspents: Vec<_> = unspents.into_iter().take(max_merge_at_once).collect();
             info!("Trying to merge {} UTXOs of coin {}", unspents.len(), ticker);
             let value = unspents.iter().fold(0, |sum, unspent| sum + unspent.value);
             let script_pubkey = Builder::build_p2pkh(&coin.as_ref().my_address.hash).to_bytes();
