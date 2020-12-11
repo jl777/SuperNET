@@ -217,7 +217,7 @@ impl PeersExchange {
             None => return false,
         }
 
-        if let Some(_) = components.next() {
+        if components.next().is_some() {
             return false;
         }
         true
