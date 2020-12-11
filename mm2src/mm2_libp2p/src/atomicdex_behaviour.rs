@@ -519,9 +519,12 @@ fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
             }
             false
         })
+        .take(1)
         .cloned()
         .collect();
-    swarm.announce_listeners(global_listeners);
+    if !global_listeners.is_empty() {
+        swarm.announce_listeners(global_listeners);
+    }
 }
 
 /// Creates and spawns new AdexBehaviour Swarm returning:
@@ -610,7 +613,7 @@ pub fn start_gossipsub(
             gossipsub,
             floodsub,
             request_response,
-            peers_exchange: PeersExchange::new(),
+            peers_exchange: PeersExchange::new(port),
             ping,
         };
         libp2p::swarm::SwarmBuilder::new(transport, adex_behavior, local_peer_id.clone())
