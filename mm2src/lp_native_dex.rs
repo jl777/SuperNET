@@ -537,7 +537,12 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     let ctx_id = try_s!(ctx.ffi_handle());
 
     spawn_rpc(ctx_id);
-
+    let ctxʹ = ctx.clone();
+    spawn(async move {
+        if let Err(err) = ctxʹ.init_metrics() {
+            log!("Warning: couldn't initialize metrics system: "(err));
+        }
+    });
     // In the mobile version we might depend on `lp_init` staying around until the context stops.
     loop {
         if ctx.is_stopping() {
