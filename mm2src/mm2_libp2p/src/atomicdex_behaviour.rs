@@ -659,7 +659,7 @@ pub fn start_gossipsub(
             .max_transmit_size(1024 * 1024 - 100)
             .build();
         // build a gossipsub network behaviour
-        let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
+        let mut gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
 
         let floodsub = Floodsub::new(local_peer_id.clone(), netid != NETID_7777);
 
@@ -669,6 +669,7 @@ pub fn start_gossipsub(
                 let peer_id = PeerId::from_str(peer_id).expect("valid peer id");
                 let multiaddr = parse_relay_address((*address).to_owned(), port);
                 peers_exchange.add_peer_addresses(&peer_id, HashSet::from_iter(iter::once(multiaddr)));
+                gossipsub.add_explicit_relay(peer_id);
             }
         }
 

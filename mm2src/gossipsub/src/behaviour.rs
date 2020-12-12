@@ -95,6 +95,9 @@ pub struct Gossipsub {
     peer_connections: HashMap<PeerId, Vec<ConnectedPoint>>,
 
     connected_addresses: Vec<Multiaddr>,
+
+    /// The relay list which are forcefully kept in relay mesh
+    explicit_relay_list: Vec<PeerId>,
 }
 
 impl Gossipsub {
@@ -135,7 +138,13 @@ impl Gossipsub {
             relays_mesh: HashMap::new(),
             included_to_relays_mesh: HashSet::new(),
             connected_addresses: Vec::new(),
+            explicit_relay_list: Vec::new(),
         }
+    }
+
+    pub fn add_explicit_relay(&mut self, peer_id: PeerId) {
+        info!("Adding peer {} to explicit relay list", peer_id);
+        self.explicit_relay_list.push(peer_id);
     }
 
     /// Subscribe to a topic.
@@ -1118,6 +1127,22 @@ impl Gossipsub {
     fn clean_up_relays_mesh(&mut self) {
         let mesh_n = self.config.mesh_n;
         let mut removed = Vec::with_capacity(self.relays_mesh.len() - mesh_n);
+        let explicit_relay_list = self.explicit_relay_list.clone();
+        // perform 2 filter iterations to not keep excessive number of explicit peers in mesh
+        self.relays_mesh = self
+            .relays_mesh
+            .drain()
+            .enumerate()
+            .filter_map(|(i, peer)| {
+                if i < mesh_n || explicit_relay_list.contains(&peer.0) {
+                    Some(peer)
+                } else {
+                    removed.push(peer);
+                    None
+                }
+            })
+            .collect();
+
         self.relays_mesh = self
             .relays_mesh
             .drain()
