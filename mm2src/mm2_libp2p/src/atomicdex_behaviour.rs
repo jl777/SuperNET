@@ -20,8 +20,10 @@ use libp2p::{core::{ConnectedPoint, Multiaddr, Transport},
 use libp2p_floodsub::{Floodsub, FloodsubEvent, Topic as FloodsubTopic};
 use log::{debug, error, info};
 use rand::{seq::SliceRandom, thread_rng};
+use std::collections::HashSet;
 use std::{collections::hash_map::{DefaultHasher, HashMap},
           hash::{Hash, Hasher},
+          iter::{self, FromIterator},
           net::IpAddr,
           pin::Pin,
           task::{Context, Poll},
@@ -42,6 +44,7 @@ const CONNECTED_RELAYS_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 const ANNOUNCE_INTERVAL: Duration = Duration::from_secs(600);
 const ANNOUNCE_INITIAL_DELAY: Duration = Duration::from_secs(60);
 const CHANNEL_BUF_SIZE: usize = 1024 * 8;
+const NETID_7777: u16 = 7777;
 
 impl libp2p::core::Executor for &SwarmRuntime {
     fn exec(&self, future: Pin<Box<dyn Future<Output = ()> + Send>>) { self.0.spawn(future); }
@@ -237,6 +240,8 @@ pub struct AtomicDexBehaviour {
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     #[behaviour(ignore)]
     cmd_rx: Receiver<AdexBehaviourCmd>,
+    #[behaviour(ignore)]
+    netid: u16,
     floodsub: Floodsub,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
@@ -397,14 +402,17 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehaviour {
 
 impl NetworkBehaviourEventProcess<FloodsubEvent> for AtomicDexBehaviour {
     fn inject_event(&mut self, event: FloodsubEvent) {
-        if let FloodsubEvent::Message(message) = &event {
-            for topic in &message.topics {
-                if topic == &FloodsubTopic::new(PEERS_TOPIC) {
-                    let addresses: PeerAddresses = match rmp_serde::from_read_ref(&message.data) {
-                        Ok(a) => a,
-                        Err(_) => return,
-                    };
-                    self.peers_exchange.add_peer_addresses(&message.source, addresses);
+        // do not process peer announce on 7777 temporary
+        if self.netid != NETID_7777 {
+            if let FloodsubEvent::Message(message) = &event {
+                for topic in &message.topics {
+                    if topic == &FloodsubTopic::new(PEERS_TOPIC) {
+                        let addresses: PeerAddresses = match rmp_serde::from_read_ref(&message.data) {
+                            Ok(a) => a,
+                            Err(_) => return,
+                        };
+                        self.peers_exchange.add_peer_addresses(&message.source, addresses);
+                    }
                 }
             }
         }
@@ -527,6 +535,24 @@ fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
     }
 }
 
+const ALL_NETID_7777_SEEDNODES: &[&str] = &[
+    "168.119.236.241",
+    "168.119.236.249",
+    "168.119.236.240",
+    "168.119.236.239",
+    "168.119.236.251",
+    "168.119.237.8",
+    "168.119.236.233",
+    "168.119.236.243",
+    "168.119.236.246",
+    "168.119.237.13",
+    "195.201.91.96",
+    "195.201.91.53",
+    "168.119.174.126",
+    "46.4.78.11",
+    "46.4.87.18",
+];
+
 /// Creates and spawns new AdexBehaviour Swarm returning:
 /// 1. tx to send control commands
 /// 2. rx emitting gossip events to processing side
@@ -534,12 +560,21 @@ fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
 pub fn start_gossipsub(
     ip: IpAddr,
     port: u16,
+    netid: u16,
+    force_key: Option<[u8; 32]>,
     spawn_fn: fn(Box<dyn Future<Output = ()> + Send + Unpin + 'static>) -> (),
     to_dial: Vec<String>,
     i_am_relay: bool,
     on_poll: impl Fn(&AtomicDexSwarm) + Send + 'static,
 ) -> (Sender<AdexBehaviourCmd>, AdexEventRx, PeerId) {
-    let local_key = identity::Keypair::generate_ed25519();
+    let local_key = match force_key {
+        Some(mut key) => {
+            let secret = identity::ed25519::SecretKey::from_bytes(&mut key).expect("Secret length is 32 bytes");
+            let keypair = identity::ed25519::Keypair::from(secret);
+            identity::Keypair::Ed25519(keypair)
+        },
+        None => identity::Keypair::generate_ed25519(),
+    };
     let local_peer_id = PeerId::from(local_key.public());
     info!("Local peer id: {:?}", local_peer_id);
 
@@ -598,7 +633,15 @@ pub fn start_gossipsub(
         // build a gossipsub network behaviour
         let gossipsub = Gossipsub::new(local_peer_id.clone(), gossipsub_config);
 
-        let floodsub = Floodsub::new(local_peer_id.clone());
+        let floodsub = Floodsub::new(local_peer_id.clone(), netid != NETID_7777);
+
+        let mut peers_exchange = PeersExchange::new(port);
+        if netid == NETID_7777 {
+            for address in ALL_NETID_7777_SEEDNODES {
+                let multiaddr = parse_relay_address((*address).to_owned(), port);
+                peers_exchange.add_peer_addresses(&PeerId::random(), HashSet::from_iter(iter::once(multiaddr)));
+            }
+        }
 
         // build a request-response network behaviour
         let request_response = build_request_response_behaviour();
@@ -613,8 +656,9 @@ pub fn start_gossipsub(
             gossipsub,
             floodsub,
             request_response,
-            peers_exchange: PeersExchange::new(port),
+            peers_exchange,
             ping,
+            netid,
         };
         libp2p::swarm::SwarmBuilder::new(transport, adex_behavior, local_peer_id.clone())
             .executor(Box::new(&*SWARM_RUNTIME))

@@ -44,6 +44,7 @@ use crate::mm2::lp_ordermatch::{broadcast_maker_orders_keep_alive_loop, lp_order
                                 BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
 use crate::mm2::rpc::spawn_rpc;
+use bitcrypto::sha256;
 
 pub fn lp_ports(netid: u16) -> Result<(u16, u16, u16), String> {
     const LP_RPCPORT: u16 = 7783;
@@ -478,15 +479,29 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
     };
 
     let ctx_on_poll = ctx.clone();
-    let (cmd_tx, event_rx, peer_id) =
-        start_gossipsub(myipaddr, mypubport, spawn_boxed, seednodes, i_am_seed, move |swarm| {
+    let force_p2p_key = if i_am_seed {
+        let key = sha256(&*ctx.secp256k1_key_pair().private().secret);
+        Some(key.take())
+    } else {
+        None
+    };
+    let (cmd_tx, event_rx, peer_id) = start_gossipsub(
+        myipaddr,
+        mypubport,
+        ctx.netid(),
+        force_p2p_key,
+        spawn_boxed,
+        seednodes,
+        i_am_seed,
+        move |swarm| {
             mm_gauge!(
                 ctx_on_poll.metrics,
                 "p2p.connected_relays.len",
                 swarm.connected_relays_len() as i64
             );
             mm_gauge!(ctx_on_poll.metrics, "p2p.relay_mesh.len", swarm.relay_mesh_len() as i64);
-        });
+        },
+    );
     try_s!(ctx.peer_id.pin(peer_id.to_string()));
     let p2p_context = P2PContext::new(cmd_tx);
     p2p_context.store_to_mm_arc(&ctx);
