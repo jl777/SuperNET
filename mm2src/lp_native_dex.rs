@@ -500,6 +500,13 @@ pub async fn lp_init(mypubport: u16, ctx: MmArc) -> Result<(), String> {
                 swarm.connected_relays_len() as i64
             );
             mm_gauge!(ctx_on_poll.metrics, "p2p.relay_mesh.len", swarm.relay_mesh_len() as i64);
+            let (period, received_msgs) = swarm.received_messages_in_period();
+            mm_gauge!(
+                ctx_on_poll.metrics,
+                "p2p.received_messages.period_in_secs",
+                period.as_secs() as i64
+            );
+            mm_gauge!(ctx_on_poll.metrics, "p2p.received_messages.count", received_msgs as i64);
         },
     );
     try_s!(ctx.peer_id.pin(peer_id.to_string()));

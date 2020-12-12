@@ -395,6 +395,8 @@ impl AtomicDexBehaviour {
     pub fn connected_relays_len(&self) -> usize { self.gossipsub.connected_relays_len() }
 
     pub fn relay_mesh_len(&self) -> usize { self.gossipsub.relay_mesh_len() }
+
+    pub fn received_messages_in_period(&self) -> (Duration, usize) { self.gossipsub.get_received_messages_in_period() }
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehaviour {
@@ -585,6 +587,7 @@ const ALL_NETID_7777_SEEDNODES: &[(&str, &str)] = &[
 /// 1. tx to send control commands
 /// 2. rx emitting gossip events to processing side
 /// 3. our peer_id
+#[allow(clippy::too_many_arguments)]
 pub fn start_gossipsub(
     ip: IpAddr,
     port: u16,
