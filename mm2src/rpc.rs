@@ -19,8 +19,9 @@
 #![cfg_attr(not(feature = "native"), allow(unused_imports))]
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
-use coins::{convert_address, get_enabled_coins, get_trade_fee, kmd_rewards_info, my_tx_history, send_raw_transaction,
-            set_required_confirmations, set_requires_notarization, show_priv_key, validate_address, withdraw};
+use coins::{convert_address, convert_utxo_address, get_enabled_coins, get_trade_fee, kmd_rewards_info, my_tx_history,
+            send_raw_transaction, set_required_confirmations, set_requires_notarization, show_priv_key,
+            validate_address, withdraw};
 use common::mm_ctx::MmArc;
 #[cfg(feature = "native")] use common::wio::{CORE, CPUPOOL};
 use common::{err_to_rpc_json_string, err_tp_rpc_json, HyRes};
@@ -121,6 +122,7 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
         "cancel_order" => hyres(cancel_order(ctx, req)),
         "coins_needed_for_kick_start" => hyres(coins_needed_for_kick_start(ctx)),
         "convertaddress" => hyres(convert_address(ctx, req)),
+        "convert_utxo_address" => hyres(convert_utxo_address(ctx, req)),
         "disable_coin" => hyres(disable_coin(ctx, req)),
         "electrum" => hyres(electrum(ctx, req)),
         "enable" => hyres(enable(ctx, req)),

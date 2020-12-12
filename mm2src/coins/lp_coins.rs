@@ -1146,3 +1146,30 @@ pub fn update_coins_config(mut config: Json) -> Result<Json, String> {
 
     Ok(config)
 }
+
+#[derive(Deserialize)]
+struct ConvertUtxoAddressReq {
+    address: String,
+    to_coin: String,
+}
+
+pub async fn convert_utxo_address(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let req: ConvertUtxoAddressReq = try_s!(json::from_value(req));
+    let mut addr: utxo::Address = try_s!(req.address.parse());
+    let coin = match lp_coinfindᵃ(&ctx, &req.to_coin).await {
+        Ok(Some(c)) => c,
+        _ => return ERR!("Coin {} is not activated", req.to_coin),
+    };
+    let coin = match coin {
+        MmCoinEnum::UtxoCoin(utxo) => utxo,
+        _ => return ERR!("Coin {} is not utxo", req.to_coin),
+    };
+    addr.prefix = coin.as_ref().my_address.prefix;
+    addr.t_addr_prefix = coin.as_ref().my_address.t_addr_prefix;
+    addr.checksum_type = coin.as_ref().my_address.checksum_type;
+
+    let response = try_s!(json::to_vec(&json!({
+        "result": addr.to_string(),
+    })));
+    Ok(try_s!(Response::builder().body(response)))
+}
