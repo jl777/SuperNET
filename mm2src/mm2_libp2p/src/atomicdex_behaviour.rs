@@ -26,6 +26,7 @@ use std::{collections::hash_map::{DefaultHasher, HashMap},
           iter::{self, FromIterator},
           net::IpAddr,
           pin::Pin,
+          str::FromStr,
           task::{Context, Poll},
           time::Duration};
 use tokio::runtime::Runtime;
@@ -535,22 +536,49 @@ fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
     }
 }
 
-const ALL_NETID_7777_SEEDNODES: &[&str] = &[
-    "168.119.236.241",
-    "168.119.236.249",
-    "168.119.236.240",
-    "168.119.236.239",
-    "168.119.236.251",
-    "168.119.237.8",
-    "168.119.236.233",
-    "168.119.236.243",
-    "168.119.236.246",
-    "168.119.237.13",
-    "195.201.91.96",
-    "195.201.91.53",
-    "168.119.174.126",
-    "46.4.78.11",
-    "46.4.87.18",
+const ALL_NETID_7777_SEEDNODES: &[(&str, &str)] = &[
+    (
+        "12D3KooWEsuiKcQaBaKEzuMtT6uFjs89P1E8MK3wGRZbeuCbCw6P",
+        "168.119.236.241",
+    ),
+    (
+        "12D3KooWKxavLCJVrQ5Gk1kd9m6cohctGQBmiKPS9XQFoXEoyGmS",
+        "168.119.236.249",
+    ),
+    (
+        "12D3KooWAToxtunEBWCoAHjefSv74Nsmxranw8juy3eKEdrQyGRF",
+        "168.119.236.240",
+    ),
+    (
+        "12D3KooWSmEi8ypaVzFA1AGde2RjxNW5Pvxw3qa2fVe48PjNs63R",
+        "168.119.236.239",
+    ),
+    (
+        "12D3KooWHKkHiNhZtKceQehHhPqwU5W1jXpoVBgS1qst899GjvTm",
+        "168.119.236.251",
+    ),
+    ("12D3KooWMrjLmrv8hNgAoVf1RfumfjyPStzd4nv5XL47zN4ZKisb", "168.119.237.8"),
+    (
+        "12D3KooWL6yrrNACb7t7RPyTEPxKmq8jtrcbkcNd6H5G2hK7bXaL",
+        "168.119.236.233",
+    ),
+    (
+        "12D3KooWHBeCnJdzNk51G4mLnao9cDsjuqiMTEo5wMFXrd25bd1F",
+        "168.119.236.243",
+    ),
+    (
+        "12D3KooW9soGyPfX6kcyh3uVXNHq1y2dPmQNt2veKgdLXkBiCVKq",
+        "168.119.236.246",
+    ),
+    ("12D3KooWPR2RoPi19vQtLugjCdvVmCcGLP2iXAzbDfP3tp81ZL4d", "168.119.237.13"),
+    ("12D3KooWKu8pMTgteWacwFjN7zRWWHb3bctyTvHU3xx5x4x6qDYY", "195.201.91.96"),
+    ("12D3KooWJWBnkVsVNjiqUEPjLyHpiSmQVAJ5t6qt1Txv5ctJi9Xd", "195.201.91.53"),
+    (
+        "12D3KooWGrUpCAbkxhPRioNs64sbUmPmpEcou6hYfrqQvxfWDEuf",
+        "168.119.174.126",
+    ),
+    ("12D3KooWEaZpH61H4yuQkaNG5AsyGdpBhKRppaLdAY52a774ab5u", "46.4.78.11"),
+    ("12D3KooWAd5gPXwX7eDvKWwkr2FZGfoJceKDCA53SHmTFFVkrN7Q", "46.4.87.18"),
 ];
 
 /// Creates and spawns new AdexBehaviour Swarm returning:
@@ -637,9 +665,10 @@ pub fn start_gossipsub(
 
         let mut peers_exchange = PeersExchange::new(port);
         if netid == NETID_7777 {
-            for address in ALL_NETID_7777_SEEDNODES {
+            for (peer_id, address) in ALL_NETID_7777_SEEDNODES {
+                let peer_id = PeerId::from_str(peer_id).expect("valid peer id");
                 let multiaddr = parse_relay_address((*address).to_owned(), port);
-                peers_exchange.add_peer_addresses(&PeerId::random(), HashSet::from_iter(iter::once(multiaddr)));
+                peers_exchange.add_peer_addresses(&peer_id, HashSet::from_iter(iter::once(multiaddr)));
             }
         }
 
