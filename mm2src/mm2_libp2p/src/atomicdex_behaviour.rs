@@ -397,6 +397,8 @@ impl AtomicDexBehaviour {
     pub fn relay_mesh_len(&self) -> usize { self.gossipsub.relay_mesh_len() }
 
     pub fn received_messages_in_period(&self) -> (Duration, usize) { self.gossipsub.get_received_messages_in_period() }
+
+    pub fn connected_peers_len(&self) -> usize { self.gossipsub.get_num_peers() }
 }
 
 impl NetworkBehaviourEventProcess<GossipsubEvent> for AtomicDexBehaviour {
