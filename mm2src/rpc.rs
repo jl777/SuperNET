@@ -37,8 +37,9 @@ use std::net::SocketAddr;
 
 use crate::mm2::lp_ordermatch::{buy, cancel_all_orders, cancel_order, my_orders, order_status, orderbook, sell,
                                 set_price};
-use crate::mm2::lp_swap::{coins_needed_for_kick_start, import_swaps, list_banned_pubkeys, max_taker_vol,
-                          my_recent_swaps, my_swap_status, recover_funds_of_swap, stats_swap_status, unban_pubkeys};
+use crate::mm2::lp_swap::{active_swaps_rpc, coins_needed_for_kick_start, import_swaps, list_banned_pubkeys,
+                          max_taker_vol, my_recent_swaps, my_swap_status, recover_funds_of_swap, stats_swap_status,
+                          unban_pubkeys};
 
 #[path = "rpc/lp_commands.rs"] pub mod lp_commands;
 use self::lp_commands::*;
@@ -117,6 +118,7 @@ pub fn dispatcher(req: Json, ctx: MmArc) -> DispatcherRes {
     DispatcherRes::Match(match &method[..] {
         // Sorted alphanumerically (on the first latter) for readability.
         // "autoprice" => lp_autoprice (ctx, req),
+        "active_swaps" => hyres(active_swaps_rpc(ctx, req)),
         "buy" => hyres(buy(ctx, req)),
         "cancel_all_orders" => hyres(cancel_all_orders(ctx, req)),
         "cancel_order" => hyres(cancel_order(ctx, req)),

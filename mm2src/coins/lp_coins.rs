@@ -36,7 +36,7 @@ use bigdecimal::BigDecimal;
 use common::executor::{spawn, Timer};
 use common::mm_ctx::{from_ctx, MmArc};
 use common::mm_metrics::MetricsWeak;
-use common::{block_on, rpc_err_response, rpc_response, HyRes};
+use common::{block_on, calc_total_pages, rpc_err_response, rpc_response, HyRes};
 use futures::compat::Future01CompatExt;
 use futures::lock::Mutex as AsyncMutex;
 use futures01::Future;
@@ -46,6 +46,7 @@ use rpc::v1::types::Bytes as BytesJson;
 use serde_json::{self as json, Value as Json};
 use std::collections::hash_map::{HashMap, RawEntryMut};
 use std::fmt;
+use std::num::NonZeroUsize;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -886,6 +887,7 @@ struct MyTxHistoryRequest {
     max: bool,
     #[serde(default = "ten")]
     limit: usize,
+    page_number: Option<NonZeroUsize>,
 }
 
 /// Returns the transaction history of selected coin. Returns no more than `limit` records (default: 10).
@@ -922,7 +924,10 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
                     .ok_or(format!("from_id {:02x} is not found", id)))
                     + 1
             },
-            None => 0,
+            None => match request.page_number {
+                Some(page_n) => (page_n.get() - 1) * request.limit,
+                None => 0,
+            },
         };
         let history = history.into_iter().skip(skip).take(limit);
         let history: Vec<Json> = history
@@ -950,6 +955,8 @@ pub fn my_tx_history(ctx: MmArc, req: Json) -> HyRes {
                     "total": total_records,
                     "current_block": block_number,
                     "sync_status": coin.history_sync_status(),
+                    "page_number": request.page_number,
+                    "total_pages": calc_total_pages(total_records, request.limit),
                 }
             })
             .to_string(),

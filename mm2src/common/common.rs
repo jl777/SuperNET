@@ -2127,3 +2127,25 @@ fn test_median() {
     let actual = median(&mut input);
     assert_eq!(expected, actual);
 }
+
+pub fn calc_total_pages(entries_len: usize, limit: usize) -> usize {
+    if limit == 0 {
+        return 0;
+    }
+    let pages_num = entries_len / limit;
+    if entries_len % limit == 0 {
+        pages_num
+    } else {
+        pages_num + 1
+    }
+}
+
+#[test]
+fn test_calc_total_pages() {
+    assert_eq!(0, calc_total_pages(0, 0));
+    assert_eq!(0, calc_total_pages(0, 1));
+    assert_eq!(0, calc_total_pages(0, 100));
+    assert_eq!(1, calc_total_pages(1, 1));
+    assert_eq!(2, calc_total_pages(16, 8));
+    assert_eq!(2, calc_total_pages(15, 8));
+}
