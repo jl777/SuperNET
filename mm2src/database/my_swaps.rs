@@ -1,5 +1,5 @@
 /// This module contains code to work with my_swaps table in MM2 SQLite DB
-use crate::mm2::lp_swap::{my_swaps_dir, MyRecentSwapsReq, SavedSwap};
+use crate::mm2::lp_swap::{my_swaps_dir, MySwapsFilter, PagingOptions, SavedSwap};
 use common::{log::{debug, error},
              mm_ctx::MmArc,
              read_dir,
@@ -146,36 +146,37 @@ fn offset_by_uuid(
     Ok(offset.try_into().expect("row index should be always above zero"))
 }
 
-/// Adds where clauses determined by MyRecentSwapsReq
-fn apply_my_recent_swaps_filter(builder: &mut SqlBuilder, params: &mut Vec<(&str, String)>, req: &MyRecentSwapsReq) {
-    if let Some(my_coin) = &req.my_coin {
+/// Adds where clauses determined by MySwapsFilter
+fn apply_my_swaps_filter(builder: &mut SqlBuilder, params: &mut Vec<(&str, String)>, filter: &MySwapsFilter) {
+    if let Some(my_coin) = &filter.my_coin {
         builder.and_where("my_coin = :my_coin");
         params.push((":my_coin", my_coin.clone()));
     }
 
-    if let Some(other_coin) = &req.other_coin {
+    if let Some(other_coin) = &filter.other_coin {
         builder.and_where("other_coin = :other_coin");
         params.push((":other_coin", other_coin.clone()));
     }
 
-    if let Some(from_timestamp) = &req.from_timestamp {
+    if let Some(from_timestamp) = &filter.from_timestamp {
         builder.and_where("started_at >= :from_timestamp");
         params.push((":from_timestamp", from_timestamp.to_string()));
     }
 
-    if let Some(to_timestamp) = &req.to_timestamp {
+    if let Some(to_timestamp) = &filter.to_timestamp {
         builder.and_where("started_at < :to_timestamp");
         params.push((":to_timestamp", to_timestamp.to_string()));
     }
 }
 
-pub fn select_uuids_for_recent_swaps_req(
+pub fn select_uuids_by_my_swaps_filter(
     conn: &Connection,
-    req: &MyRecentSwapsReq,
+    filter: &MySwapsFilter,
+    paging_options: Option<&PagingOptions>,
 ) -> SqlResult<RecentSwapsSelectSqlResult, SelectRecentSwapsUuidsErr> {
     let mut query_builder = SqlBuilder::select_from(MY_SWAPS_TABLE);
     let mut params = vec![];
-    apply_my_recent_swaps_filter(&mut query_builder, &mut params, req);
+    apply_my_swaps_filter(&mut query_builder, &mut params, filter);
 
     // count total records matching the filter
     let mut count_builder = query_builder.clone();
@@ -191,20 +192,23 @@ pub fn select_uuids_for_recent_swaps_req(
         return Ok(RecentSwapsSelectSqlResult::default());
     }
 
-    // calculate offset, page_number is ignored if from_uuid is set
-    let skipped = match req.from_uuid {
-        Some(uuid) => offset_by_uuid(conn, &query_builder, &params, &uuid)?,
-        None => match req.page_number {
-            Some(page) => (page.get() - 1) * req.limit,
-            None => 0,
-        },
-    };
-
     // query the uuids finally
     query_builder.field("uuid");
     query_builder.order_desc("started_at");
-    query_builder.limit(req.limit);
-    query_builder.offset(skipped);
+
+    let skipped = match paging_options {
+        Some(paging) => {
+            // calculate offset, page_number is ignored if from_uuid is set
+            let offset = match paging.from_uuid {
+                Some(uuid) => offset_by_uuid(conn, &query_builder, &params, &uuid)?,
+                None => (paging.page_number.get() - 1) * paging.limit,
+            };
+            query_builder.limit(paging.limit);
+            query_builder.offset(offset);
+            offset
+        },
+        None => 0,
+    };
 
     let uuids_query = query_builder.sql().expect("SQL query builder should never fail here");
     debug!("Trying to execute SQL query {} with params {:?}", uuids_query, params);
