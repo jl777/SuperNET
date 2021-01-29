@@ -56,7 +56,7 @@
 //
 #![cfg_attr(not(feature = "native"), allow(dead_code))]
 
-use crate::mm2::{database::my_swaps::{insert_new_swap, select_uuids_for_recent_swaps_req},
+use crate::mm2::{database::my_swaps::{insert_new_swap, select_uuids_by_my_swaps_filter},
                  lp_network::broadcast_p2p_msg};
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
@@ -770,25 +770,64 @@ pub fn save_stats_swap_status(ctx: &MmArc, data: Json) {
     unwrap!(save_stats_swap(ctx, &swap));
 }
 
-fn ten() -> usize { 10 }
+const fn ten() -> usize { 10 }
+
+fn one() -> NonZeroUsize { NonZeroUsize::new(1).unwrap() }
 
 #[derive(Debug, Deserialize)]
-pub struct MyRecentSwapsReq {
-    #[serde(default = "ten")]
-    pub limit: usize,
-    pub from_uuid: Option<Uuid>,
-    pub page_number: Option<NonZeroUsize>,
+pub struct MySwapsFilter {
     pub my_coin: Option<String>,
     pub other_coin: Option<String>,
     pub from_timestamp: Option<u64>,
     pub to_timestamp: Option<u64>,
 }
 
-/// Returns the data of recent swaps of `my` node. Returns no more than `limit` records (default: 10).
-/// Skips the first `skip` records (default: 0).
+/// Returns *all* uuids of swaps, which match the selected filter.
+pub fn all_swaps_uuids_by_filter(ctx: MmArc, req: Json) -> HyRes {
+    let filter: MySwapsFilter = try_h!(json::from_value(req));
+    let db_result = try_h!(select_uuids_by_my_swaps_filter(ctx.sqlite_connection(), &filter, None));
+
+    rpc_response(
+        200,
+        json!({
+            "result": {
+                "uuids": db_result.uuids,
+                "my_coin": filter.my_coin,
+                "other_coin": filter.other_coin,
+                "from_timestamp": filter.from_timestamp,
+                "to_timestamp": filter.to_timestamp,
+                "found_records": db_result.uuids.len(),
+            },
+        })
+        .to_string(),
+    )
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PagingOptions {
+    #[serde(default = "ten")]
+    pub limit: usize,
+    #[serde(default = "one")]
+    pub page_number: NonZeroUsize,
+    pub from_uuid: Option<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MyRecentSwapsReq {
+    #[serde(flatten)]
+    paging_options: PagingOptions,
+    #[serde(flatten)]
+    filter: MySwapsFilter,
+}
+
+/// Returns the data of recent swaps of `my` node.
 pub fn my_recent_swaps(ctx: MmArc, req: Json) -> HyRes {
     let req: MyRecentSwapsReq = try_h!(json::from_value(req));
-    let db_result = try_h!(select_uuids_for_recent_swaps_req(ctx.sqlite_connection(), &req));
+    let db_result = try_h!(select_uuids_by_my_swaps_filter(
+        ctx.sqlite_connection(),
+        &req.filter,
+        Some(&req.paging_options),
+    ));
 
     // iterate over uuids trying to parse the corresponding files content and add to result vector
     let swaps: Vec<Json> = db_result
@@ -806,25 +845,17 @@ pub fn my_recent_swaps(ctx: MmArc, req: Json) -> HyRes {
         })
         .collect();
 
-    let page_number = match req.page_number {
-        Some(number) => Json::from(number.get()),
-        None => match req.from_uuid {
-            Some(_) => Json::Null,
-            None => Json::from(1),
-        },
-    };
-
     rpc_response(
         200,
         json!({
             "result": {
                 "swaps": swaps,
-                "from_uuid": req.from_uuid,
+                "from_uuid": req.paging_options.from_uuid,
                 "skipped": db_result.skipped,
-                "limit": req.limit,
+                "limit": req.paging_options.limit,
                 "total": db_result.total_count,
-                "page_number": page_number,
-                "total_pages": calc_total_pages(db_result.total_count, req.limit),
+                "page_number": req.paging_options.page_number,
+                "total_pages": calc_total_pages(db_result.total_count, req.paging_options.limit),
                 "found_records": db_result.uuids.len(),
             },
         })
