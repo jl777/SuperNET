@@ -373,6 +373,8 @@ pub struct UtxoCoinFields {
     /// The daemon needs some time to update the listunspent list for address which makes it return already spent UTXOs
     /// This cache helps to prevent UTXO reuse in such cases
     pub recently_spent_outpoints: AsyncMutex<RecentlySpentOutPoints>,
+    /// The number of blocks used for estimate_fee/estimate_smart_fee RPC calls
+    pub estimate_fee_blocks: u32,
 }
 
 #[cfg_attr(test, mockable)]
@@ -777,6 +779,7 @@ pub trait UtxoCoinBuilder {
         let mtp_block_count = self.mtp_block_count();
         let estimate_fee_mode = self.estimate_fee_mode();
         let dust_amount = self.dust_amount();
+        let estimate_fee_blocks = self.estimate_fee_blocks();
 
         let _my_script_pubkey = Builder::build_p2pkh(&my_address.hash).to_bytes();
         let coin = UtxoCoinFields {
@@ -813,6 +816,7 @@ pub trait UtxoCoinBuilder {
             mature_confirmations,
             tx_cache_directory,
             recently_spent_outpoints: AsyncMutex::new(RecentlySpentOutPoints::new(my_script_pubkey)),
+            estimate_fee_blocks,
         };
         Ok(coin)
     }
@@ -973,6 +977,8 @@ pub trait UtxoCoinBuilder {
     }
 
     fn dust_amount(&self) -> u64 { json::from_value(self.conf()["dust"].clone()).unwrap_or(UTXO_DUST_AMOUNT) }
+
+    fn estimate_fee_blocks(&self) -> u32 { json::from_value(self.conf()["estimate_fee_blocks"].clone()).unwrap_or(1) }
 
     fn network(&self) -> Result<BlockchainNetwork, String> {
         let conf = self.conf();
