@@ -3507,7 +3507,7 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let orderbook = ordermatch_ctx.orderbook.lock().await;
     let my_pubsecp = hex::encode(&**ctx.secp256k1_key_pair().public());
 
-    let asks = match orderbook.unordered.get(&(req.base.clone(), req.rel.clone())) {
+    let mut asks = match orderbook.unordered.get(&(req.base.clone(), req.rel.clone())) {
         Some(uuids) => {
             let mut orderbook_entries = Vec::new();
             for uuid in uuids {
@@ -3542,8 +3542,9 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         },
         None => Vec::new(),
     };
+    asks.sort_unstable_by(|ask1, ask2| ask2.price_rat.cmp(&ask1.price_rat));
 
-    let bids = match orderbook.unordered.get(&(req.rel.clone(), req.base.clone())) {
+    let mut bids = match orderbook.unordered.get(&(req.rel.clone(), req.base.clone())) {
         Some(uuids) => {
             let mut orderbook_entries = vec![];
             for uuid in uuids {
@@ -3579,6 +3580,8 @@ pub async fn orderbook(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
         },
         None => vec![],
     };
+    bids.sort_unstable_by(|bid1, bid2| bid2.price_rat.cmp(&bid1.price_rat));
+
     let response = OrderbookResponse {
         num_asks: asks.len(),
         num_bids: bids.len(),
