@@ -795,8 +795,9 @@ async fn trade_base_rel_electrum(pairs: Vec<(&'static str, &'static str)>) {
     wait_log_re!(mm_bob, 22., ">>>>>>>>> DEX stats ");
     wait_log_re!(mm_alice, 22., ">>>>>>>>> DEX stats ");
 
-    // wait until bob starts listening on the p2p port
-    wait_log_re!(mm_bob, 22., "Listening on");
+    // wait until bob starts listening on the p2p port and sleep for 1 second
+    wait_log_re!(mm_bob, 22., "INFO Listening on");
+    Timer::sleep(1.).await;
 
     // Enable coins on Bob side. Print the replies in case we need the address.
     let rc = enable_coins_eth_electrum(&mm_bob, vec!["http://195.201.0.6:8565"]).await;
@@ -3245,7 +3246,7 @@ fn test_withdraw_cashaddresses() {
         "userpass": mm.userpass,
         "method": "electrum",
         "coin": "BCH",
-        "servers": [{"url":"blackie.c3-soft.com:60001"}],
+        "servers": [{"url":"blackie.c3-soft.com:60001"},{"url":"bch0.kister.net:50001"},{"url":"testnet.imaginary.cash:50001"}],
         "mm2": 1,
     }))));
 
