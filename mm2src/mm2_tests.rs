@@ -3246,7 +3246,7 @@ fn test_withdraw_cashaddresses() {
         "userpass": mm.userpass,
         "method": "electrum",
         "coin": "BCH",
-        "servers": [{"url":"blackie.c3-soft.com:60001"},{"url":"bch0.kister.net:50001"},{"url":"testnet.imaginary.cash:50001"}],
+        "servers": [{"url":"blackie.c3-soft.com:60001"},{"url":"testnet.imaginary.cash:50001"}],
         "mm2": 1,
     }))));
 
