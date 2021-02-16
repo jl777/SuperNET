@@ -325,10 +325,11 @@ fn remove_and_purge_pubkey_pair_orders(orderbook: &mut Orderbook, pubkey: &str, 
         orderbook.remove_order(order);
     }
 
-    if orderbook.memory_db.remove_and_purge(&pair_root, EMPTY_PREFIX).is_none() {
-        if pair_root != H64::default() && pair_root != hashed_null_node::<Layout>() {
-            log::warn!("Warning: couldn't find {:?} hash root in memory_db", pair_root);
-        }
+    if orderbook.memory_db.remove_and_purge(&pair_root, EMPTY_PREFIX).is_none()
+        && pair_root != H64::default()
+        && pair_root != hashed_null_node::<Layout>()
+    {
+        log::warn!("Warning: couldn't find {:?} hash root in memory_db", pair_root);
     }
 }
 
