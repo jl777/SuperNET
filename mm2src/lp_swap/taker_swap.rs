@@ -1592,7 +1592,17 @@ pub async fn max_taker_vol(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, S
         Err(err) => return ERR!("!lp_coinfind({}): {}", req.coin, err),
     };
     let other_coin = req.trade_with.as_ref().unwrap_or(&req.coin);
-    let max_vol = try_s!(calc_max_taker_vol(&ctx, &coin, other_coin, FeeApproxStage::TradePreimage).await);
+    let fut = calc_max_taker_vol(&ctx, &coin, other_coin, FeeApproxStage::TradePreimage);
+    let max_vol = match fut.await {
+        Ok(max_vol) => max_vol,
+        Err(CheckBalanceError::NotSufficientBalance(err)) => {
+            warn!("{}", err);
+            MmNumber::from(0)
+        },
+        Err(CheckBalanceError::Other(err)) => {
+            return ERR!("{}", err);
+        },
+    };
 
     let res = try_s!(json::to_vec(&json!({
         "result": max_vol.to_fraction()
@@ -1684,15 +1694,19 @@ pub fn max_taker_vol_from_available(
     let fee_threshold = dex_fee_threshold(min_tx_amount.clone());
     let dex_fee_rate = dex_fee_rate(base, rel);
     let threshold_coef = &(&MmNumber::from(1) + &dex_fee_rate) / &dex_fee_rate;
-    let mut max_vol = if available > &fee_threshold * &threshold_coef {
+    let max_vol = if available > &fee_threshold * &threshold_coef {
         available / (MmNumber::from(1) + dex_fee_rate)
     } else {
         available - fee_threshold
     };
 
     if &max_vol <= min_tx_amount {
-        warn!("max_vol {} <= min_tx_amount {}", max_vol, min_tx_amount);
-        max_vol = 0.into();
+        let err = ERRL!(
+            "Max taker volume {:?} less than minimum transaction amount {:?}",
+            max_vol.to_fraction(),
+            min_tx_amount.to_fraction()
+        );
+        return Err(CheckBalanceError::NotSufficientBalance(err));
     }
     Ok(max_vol)
 }
@@ -2154,7 +2168,7 @@ mod taker_swap_tests {
             assert_eq!(max_taker_vol + dex_fee, available);
         }
 
-        // these `availables` must return 0
+        // these `availables` must return an error
         let availables = vec![
             "0.0001999",
             "0.00011",
@@ -2167,11 +2181,8 @@ mod taker_swap_tests {
         ];
         for available in availables {
             let available = MmNumber::from(available);
-            assert!(
-                max_taker_vol_from_available(available.clone(), "KMD", "MORTY", &dex_fee_threshold)
-                    .unwrap()
-                    .is_zero()
-            );
+            max_taker_vol_from_available(available.clone(), "KMD", "MORTY", &dex_fee_threshold)
+                .expect_err("!max_taker_vol_from_available success but should be error");
         }
     }
 }
