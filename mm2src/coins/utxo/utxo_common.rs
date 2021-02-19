@@ -31,7 +31,7 @@ pub use chain::Transaction as UtxoTx;
 
 use self::rpc_clients::{electrum_script_hash, UnspentInfo, UtxoRpcClientEnum};
 use crate::utxo::rpc_clients::UtxoRpcClientOps;
-use crate::{FeeApproxStage, TradePreimageError, TradePreimageValue, ValidateAddressResult};
+use crate::{CanRefundHtlc, FeeApproxStage, TradePreimageError, TradePreimageValue, ValidateAddressResult};
 use common::{block_on, Traceable};
 
 macro_rules! true_or {
@@ -536,18 +536,8 @@ pub fn p2sh_spending_tx(
     outputs: Vec<TransactionOutput>,
     script_data: Script,
     sequence: u32,
+    lock_time: u32,
 ) -> Result<UtxoTx, String> {
-    // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
-    // Implication for users: GetMedianTimePast() always trails behind the current time,
-    // so a transaction locktime set to the present time will be rejected by nodes running this
-    // release until the median time moves forward.
-    // To compensate, subtract one hour (3,600 seconds) from your locktimes to allow those
-    // transactions to be included in mempools at approximately the expected time.
-    let lock_time = if coin.conf.ticker == "KMD" {
-        (now_ms() / 1000) as u32 - 3600 + 2 * 777
-    } else {
-        (now_ms() / 1000) as u32 - 3600
-    };
     let n_time = if coin.conf.is_pos {
         Some((now_ms() / 1000) as u32)
     } else {
@@ -731,8 +721,14 @@ where
             value: prev_tx.outputs[0].value - fee,
             script_pubkey: Builder::build_p2pkh(&coin.as_ref().key_pair.public().address_hash()).to_bytes(),
         };
-        let transaction =
-            try_s!(coin.p2sh_spending_tx(prev_tx, redeem_script.into(), vec![output], script_data, SEQUENCE_FINAL,));
+        let transaction = try_s!(coin.p2sh_spending_tx(
+            prev_tx,
+            redeem_script.into(),
+            vec![output],
+            script_data,
+            SEQUENCE_FINAL,
+            time_lock
+        ));
         let tx_fut = coin.as_ref().rpc_client.send_transaction(&transaction).compat();
         try_s!(tx_fut.await);
         Ok(transaction.into())
@@ -768,8 +764,14 @@ where
             value: prev_tx.outputs[0].value - fee,
             script_pubkey: Builder::build_p2pkh(&coin.as_ref().key_pair.public().address_hash()).to_bytes(),
         };
-        let transaction =
-            try_s!(coin.p2sh_spending_tx(prev_tx, redeem_script.into(), vec![output], script_data, SEQUENCE_FINAL,));
+        let transaction = try_s!(coin.p2sh_spending_tx(
+            prev_tx,
+            redeem_script.into(),
+            vec![output],
+            script_data,
+            SEQUENCE_FINAL,
+            time_lock
+        ));
         let tx_fut = coin.as_ref().rpc_client.send_transaction(&transaction).compat();
         try_s!(tx_fut.await);
         Ok(transaction.into())
@@ -808,6 +810,7 @@ where
             vec![output],
             script_data,
             SEQUENCE_FINAL - 1,
+            time_lock,
         ));
         let tx_fut = coin.as_ref().rpc_client.send_transaction(&transaction).compat();
         try_s!(tx_fut.await);
@@ -847,6 +850,7 @@ where
             vec![output],
             script_data,
             SEQUENCE_FINAL - 1,
+            time_lock,
         ));
         let tx_fut = coin.as_ref().rpc_client.send_transaction(&transaction).compat();
         try_s!(tx_fut.await);
@@ -2465,6 +2469,26 @@ where
             }
         }
     }
+}
+
+pub fn can_refund_htlc<T>(coin: &T, locktime: u64) -> Box<dyn Future<Item = CanRefundHtlc, Error = String> + Send + '_>
+where
+    T: UtxoCommonOps,
+{
+    let now = now_ms() / 1000;
+    if now < locktime {
+        let to_wait = locktime - now + 1;
+        return Box::new(futures01::future::ok(CanRefundHtlc::HaveToWait(to_wait)));
+    }
+    Box::new(coin.get_current_mtp().compat().map(move |mtp| {
+        let mtp = mtp as u64;
+        if locktime < mtp {
+            CanRefundHtlc::CanRefundNow
+        } else {
+            let to_wait = locktime - mtp + 1;
+            CanRefundHtlc::HaveToWait(to_wait)
+        }
+    }))
 }
 
 #[test]

@@ -480,6 +480,7 @@ impl UtxoCommonOps for Qrc20Coin {
         outputs: Vec<TransactionOutput>,
         script_data: Script,
         sequence: u32,
+        lock_time: u32,
     ) -> Result<UtxoTx, String> {
         utxo_common::p2sh_spending_tx(
             &self.utxo,
@@ -488,6 +489,7 @@ impl UtxoCommonOps for Qrc20Coin {
             outputs,
             script_data,
             sequence,
+            lock_time,
         )
     }
 
