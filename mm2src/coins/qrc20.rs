@@ -3,7 +3,7 @@ use crate::qrc20::rpc_clients::{LogEntry, Qrc20ElectrumOps, Qrc20NativeOps, Qrc2
                                 ViewContractCallType};
 use crate::utxo::qtum::QtumBasedCoin;
 use crate::utxo::rpc_clients::{ElectrumClient, NativeClient, UnspentInfo, UtxoRpcClientEnum, UtxoRpcClientOps};
-use crate::utxo::utxo_common::{self, big_decimal_from_sat};
+use crate::utxo::utxo_common::{self, big_decimal_from_sat, check_all_inputs_signed_by_pub};
 use crate::utxo::{coin_daemon_data_dir, qtum, sign_tx, ActualTxFee, AdditionalTxData, FeePolicy,
                   GenerateTransactionError, RecentlySpentOutPoints, UtxoCoinBuilder, UtxoCoinFields, UtxoCommonOps,
                   UtxoTx, VerboseTransactionFrom, UTXO_LOCK};
@@ -684,18 +684,28 @@ impl SwapOps for Qrc20Coin {
     fn validate_fee(
         &self,
         fee_tx: &TransactionEnum,
+        expected_sender: &[u8],
         fee_addr: &[u8],
         amount: &BigDecimal,
+        min_block_number: u64,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        let fee_tx_hash: H256Json = match fee_tx {
-            TransactionEnum::UtxoTx(tx) => tx.hash().reversed().into(),
+        let fee_tx = match fee_tx {
+            TransactionEnum::UtxoTx(tx) => tx,
             _ => panic!("Unexpected TransactionEnum"),
         };
+        let fee_tx_hash = fee_tx.hash().reversed().into();
+        if !try_fus!(check_all_inputs_signed_by_pub(&fee_tx, expected_sender)) {
+            return Box::new(futures01::future::err(ERRL!("The dex fee was sent from wrong address")));
+        }
         let fee_addr = try_fus!(self.contract_address_from_raw_pubkey(fee_addr));
         let expected_value = try_fus!(wei_from_big_decimal(amount, self.utxo.decimals));
 
         let selfi = self.clone();
-        let fut = async move { selfi.validate_fee_impl(fee_tx_hash, fee_addr, expected_value).await };
+        let fut = async move {
+            selfi
+                .validate_fee_impl(fee_tx_hash, fee_addr, expected_value, min_block_number)
+                .await
+        };
         Box::new(fut.boxed().compat())
     }
 

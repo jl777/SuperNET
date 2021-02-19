@@ -233,10 +233,19 @@ impl SwapOps for UtxoStandardCoin {
     fn validate_fee(
         &self,
         fee_tx: &TransactionEnum,
+        expected_sender: &[u8],
         fee_addr: &[u8],
         amount: &BigDecimal,
+        min_block_number: u64,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        utxo_common::validate_fee(self.clone(), fee_tx, fee_addr, amount)
+        utxo_common::validate_fee(
+            self.clone(),
+            fee_tx,
+            fee_addr,
+            expected_sender,
+            amount,
+            min_block_number,
+        )
     }
 
     fn validate_maker_payment(
