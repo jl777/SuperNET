@@ -2260,12 +2260,10 @@ fn test_show_priv_key() {
 #[test]
 #[cfg(feature = "native")]
 // https://github.com/KomodoPlatform/atomicDEX-API/issues/586
-fn electrum_and_enable_required_confirmations_and_nota() {
+fn test_electrum_and_enable_response() {
     let coins = json! ([
-        {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
-        {"coin":"MORTY","asset":"MORTY","rpcport":11608,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
+        {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"},"mature_confirmations":101},
         {"coin":"ETH","name":"ethereum","protocol":{"type":"ETH"}},
-        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}}
     ]);
 
     let mut mm = unwrap!(MarketMakerIt::start(
@@ -2312,6 +2310,7 @@ fn electrum_and_enable_required_confirmations_and_nota() {
     let rick_response: Json = unwrap!(json::from_str(&electrum_rick.1));
     assert_eq!(rick_response["required_confirmations"], Json::from(10));
     assert_eq!(rick_response["requires_notarization"], Json::from(true));
+    assert_eq!(rick_response["mature_confirmations"], Json::from(101));
 
     // should change requires notarization at runtime
     let requires_nota_rick = unwrap!(block_on(mm.rpc(json! ({
@@ -2355,6 +2354,8 @@ fn electrum_and_enable_required_confirmations_and_nota() {
     assert_eq!(eth_response["required_confirmations"], Json::from(10));
     // requires_notarization doesn't take any effect on ETH/ERC20 coins
     assert_eq!(eth_response["requires_notarization"], Json::from(false));
+    // check if there is no `mature_confirmations` field
+    assert_eq!(eth_response.get("mature_confirmations"), None);
 }
 
 fn check_too_low_volume_order_creation_fails(mm: &MarketMakerIt, base: &str, rel: &str) {
