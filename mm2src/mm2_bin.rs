@@ -13,7 +13,6 @@
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serialization_derive;
-#[macro_use] extern crate unwrap;
 
 #[path = "mm2.rs"] mod mm2;
 
