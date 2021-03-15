@@ -46,7 +46,10 @@ pub async fn process_best_orders_p2p_request(
         None => return Ok(None),
     };
     let mut result = HashMap::new();
-    let pairs = tickers.iter().map(|ticker| (coin.clone(), ticker.clone()));
+    let pairs = tickers.iter().map(|ticker| match action {
+        BestOrdersAction::Buy => (coin.clone(), ticker.clone()),
+        BestOrdersAction::Sell => (ticker.clone(), coin.clone()),
+    });
     for pair in pairs {
         let orders = match orderbook.ordered.get(&pair) {
             Some(orders) => orders,
@@ -65,6 +68,7 @@ pub async fn process_best_orders_p2p_request(
                         BestOrdersAction::Sell => &o.min_volume * &o.price,
                     };
                     if min_volume > required_volume {
+                        log::debug!("Order {} min_vol {:?} > {:?}", o.uuid, min_volume, required_volume);
                         continue;
                     }
 
@@ -90,7 +94,10 @@ pub async fn process_best_orders_p2p_request(
                 },
             };
         }
-        result.insert(pair.1, best_orders);
+        match action {
+            BestOrdersAction::Buy => result.insert(pair.1, best_orders),
+            BestOrdersAction::Sell => result.insert(pair.0, best_orders),
+        };
     }
     let response = BestOrdersRes { orders: result };
     let encoded = rmp_serde::to_vec(&response).expect("rmp_serde::to_vec should not fail here");
