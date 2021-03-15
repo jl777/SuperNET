@@ -5327,6 +5327,8 @@ fn test_best_orders() {
         ("MORTY", "RICK", "0.8", "0.9", None),
         ("MORTY", "RICK", "0.9", "0.9", None),
         ("ETH", "RICK", "0.8", "0.9", None),
+        ("MORTY", "ETH", "0.8", "0.8", None),
+        ("MORTY", "ETH", "0.7", "0.8", Some("0.8")),
     ];
     for (base, rel, price, volume, min_volume) in bob_orders.iter() {
         let rc = block_on(mm_bob.rpc(json! ({
@@ -5426,6 +5428,23 @@ fn test_best_orders() {
 
     let best_eth_orders = response.result.get("ETH").unwrap();
     assert_eq!(expected_price, best_eth_orders[0].price);
+
+    let rc = block_on(mm_alice.rpc(json! ({
+        "userpass": mm_alice.userpass,
+        "method": "best_orders",
+        "coin": "ETH",
+        "action": "sell",
+        "volume": "0.1",
+    })))
+    .unwrap();
+    assert!(rc.0.is_success(), "!best_orders: {}", rc.1);
+    let response: BestOrdersResponse = json::from_str(&rc.1).unwrap();
+
+    let expected_price: BigDecimal = "1.25".parse().unwrap();
+
+    let best_morty_orders = response.result.get("MORTY").unwrap();
+    assert_eq!(expected_price, best_morty_orders[0].price);
+    assert_eq!(1, best_morty_orders.len());
 
     block_on(mm_bob.stop()).unwrap();
     block_on(mm_alice.stop()).unwrap();
