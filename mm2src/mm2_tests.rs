@@ -5556,6 +5556,7 @@ fn test_best_orders() {
 
     let best_morty_orders = response.result.get("MORTY").unwrap();
     assert_eq!(expected_price, best_morty_orders[0].price);
+    assert_eq!("MORTY", best_morty_orders[0].coin);
     assert_eq!(1, best_morty_orders.len());
 
     block_on(mm_bob.stop()).unwrap();

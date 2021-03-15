@@ -2922,7 +2922,7 @@ impl OrderbookItem {
         let rel_min_volume = min_vol_mm.clone().into();
 
         RpcOrderbookEntry {
-            coin: self.rel.clone(),
+            coin: self.base.clone(),
             address,
             price: price_mm.to_decimal(),
             price_rat: price_mm.to_ratio(),
