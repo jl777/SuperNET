@@ -20,7 +20,7 @@ pub fn qrc20_coin_for_test(priv_key: &[u8]) -> (MmArc, Qrc20Coin) {
         "wiftype":128,
         "segwit":true,
         "mm2":1,
-        "mature_confirmations":500,
+        "mature_confirmations":2000,
         "dust":72800,
     });
     let req = json!({
@@ -603,6 +603,7 @@ fn test_get_trade_fee() {
     let expected = TradeFee {
         coin: "QTUM".into(),
         amount: expected_trade_fee_amount.into(),
+        paid_from_trading_vol: false,
     };
     assert_eq!(actual_trade_fee, expected);
 }
@@ -636,6 +637,7 @@ fn test_sender_trade_preimage_zero_allowance() {
     let expected = TradeFee {
         coin: "QTUM".to_owned(),
         amount: (erc20_payment_fee_with_one_approve + sender_refund_fee).into(),
+        paid_from_trading_vol: false,
     };
     assert_eq!(actual, expected);
 }
@@ -672,6 +674,7 @@ fn test_sender_trade_preimage_with_allowance() {
     let expected = TradeFee {
         coin: "QTUM".to_owned(),
         amount: (erc20_payment_fee_without_approve + sender_refund_fee.clone()).into(),
+        paid_from_trading_vol: false,
     };
     assert_eq!(actual, expected);
 
@@ -683,6 +686,7 @@ fn test_sender_trade_preimage_with_allowance() {
     let expected = TradeFee {
         coin: "QTUM".to_owned(),
         amount: (erc20_payment_fee_with_two_approves + sender_refund_fee).into(),
+        paid_from_trading_vol: false,
     };
     assert_eq!(actual, expected);
 }
@@ -709,6 +713,7 @@ fn test_receiver_trade_preimage() {
     let expected = TradeFee {
         coin: "QTUM".to_owned(),
         amount: expected_receiver_fee.into(),
+        paid_from_trading_vol: false,
     };
     assert_eq!(actual, expected);
 }
@@ -741,6 +746,7 @@ fn test_taker_fee_tx_fee() {
     let expected = TradeFee {
         coin: "QTUM".to_owned(),
         amount: expected_receiver_fee.into(),
+        paid_from_trading_vol: false,
     };
     assert_eq!(actual, expected);
 }
@@ -760,7 +766,7 @@ fn test_coin_from_conf_without_decimals() {
         "wiftype":128,
         "segwit":true,
         "mm2":1,
-        "mature_confirmations":500,
+        "mature_confirmations":2000,
     });
     let req = json!({
         "method": "electrum",
