@@ -81,7 +81,6 @@ const MAKER_ORDER_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 3;
 const TAKER_ORDER_TIMEOUT: u64 = 30;
 const ORDER_MATCH_TIMEOUT: u64 = 30;
 const ORDERBOOK_REQUESTING_TIMEOUT: u64 = MIN_ORDER_KEEP_ALIVE_INTERVAL * 2;
-const MIN_TRADING_VOL: &str = "0.00777";
 const MAX_ORDERS_NUMBER_IN_ORDERBOOK_RESPONSE: usize = 1000;
 
 /// Alphabetically ordered orderbook pair
@@ -958,6 +957,11 @@ enum TakerOrderBuildError {
         actual: MmNumber,
         threshold: MmNumber,
     },
+    /// Max vol below min base vol
+    MaxBaseVolBelowMinBaseVol {
+        max: MmNumber,
+        min: MmNumber,
+    },
     SenderPubkeyIsZero,
     ConfsSettingsNotSet,
 }
@@ -983,6 +987,12 @@ impl fmt::Display for TakerOrderBuildError {
                 "Min volume {} is too low, required: {}",
                 actual.to_decimal(),
                 threshold.to_decimal()
+            ),
+            TakerOrderBuildError::MaxBaseVolBelowMinBaseVol { min, max } => write!(
+                f,
+                "Max base vol {} is below min base vol: {}",
+                max.to_decimal(),
+                min.to_decimal()
             ),
             TakerOrderBuildError::SenderPubkeyIsZero => write!(f, "Sender pubkey can not be zero"),
             TakerOrderBuildError::ConfsSettingsNotSet => write!(f, "Confirmation settings must be set"),
@@ -1054,11 +1064,8 @@ impl<'a> TakerOrderBuilder<'a> {
 
     /// Validate fields and build
     fn build(self) -> Result<TakerOrder, TakerOrderBuildError> {
-        let min_vol_threshold = MmNumber::from(MIN_TRADING_VOL);
-        let min_tx_multiplier = MmNumber::from(10);
-        let min_base_amount =
-            (&self.base_coin.min_tx_amount().into() * &min_tx_multiplier).max(min_vol_threshold.clone());
-        let min_rel_amount = (&self.rel_coin.min_tx_amount().into() * &min_tx_multiplier).max(min_vol_threshold);
+        let min_base_amount = self.base_coin.min_trading_vol();
+        let min_rel_amount = self.rel_coin.min_trading_vol();
 
         if self.base_coin.ticker() == self.rel_coin.ticker() {
             return Err(TakerOrderBuildError::BaseEqualRel);
@@ -1086,12 +1093,23 @@ impl<'a> TakerOrderBuilder<'a> {
             return Err(TakerOrderBuildError::ConfsSettingsNotSet);
         }
 
-        let min_volume = self.min_volume.unwrap_or_else(|| min_base_amount.clone());
+        let price = &self.rel_amount / &self.base_amount;
+        let base_min_by_rel = &min_rel_amount / &price;
+        let base_min_vol_threshold = min_base_amount.max(base_min_by_rel);
 
-        if min_volume < min_base_amount {
+        let min_volume = self.min_volume.unwrap_or_else(|| base_min_vol_threshold.clone());
+
+        if min_volume < base_min_vol_threshold {
             return Err(TakerOrderBuildError::MinVolumeTooLow {
                 actual: min_volume,
-                threshold: min_base_amount,
+                threshold: base_min_vol_threshold,
+            });
+        }
+
+        if self.base_amount < min_volume {
+            return Err(TakerOrderBuildError::MaxBaseVolBelowMinBaseVol {
+                max: self.base_amount,
+                min: min_volume,
             });
         }
 
@@ -1363,11 +1381,8 @@ impl<'a> MakerOrderBuilder<'a> {
     /// Validate fields and build
     fn build(self) -> Result<MakerOrder, MakerOrderBuildError> {
         let min_price = MmNumber::from(BigRational::new(1.into(), 100_000_000.into()));
-        let min_vol_threshold = MmNumber::from(MIN_TRADING_VOL);
-        let min_tx_multiplier = MmNumber::from(10);
-        let min_base_amount =
-            (&self.base_coin.min_tx_amount().into() * &min_tx_multiplier).max(min_vol_threshold.clone());
-        let min_rel_amount = (&self.rel_coin.min_tx_amount().into() * &min_tx_multiplier).max(min_vol_threshold);
+        let min_base_amount = self.base_coin.min_trading_vol();
+        let min_rel_amount = self.rel_coin.min_trading_vol();
 
         if self.base_coin.ticker() == self.rel_coin.ticker() {
             return Err(MakerOrderBuildError::BaseEqualRel);
@@ -1395,11 +1410,14 @@ impl<'a> MakerOrderBuilder<'a> {
             });
         }
 
-        let min_base_vol = self.min_base_vol.unwrap_or_else(|| min_base_amount.clone());
-        if min_base_vol < min_base_amount {
+        let base_min_by_rel = &min_rel_amount / &self.price;
+        let base_min_vol_threshold = min_base_amount.max(base_min_by_rel);
+
+        let min_base_vol = self.min_base_vol.unwrap_or_else(|| base_min_vol_threshold.clone());
+        if min_base_vol < base_min_vol_threshold {
             return Err(MakerOrderBuildError::MinBaseVolTooLow {
                 actual: min_base_vol,
-                threshold: min_base_amount,
+                threshold: base_min_vol_threshold,
             });
         }
 
@@ -1435,7 +1453,7 @@ impl<'a> MakerOrderBuilder<'a> {
             rel: self.rel_coin.ticker().to_owned(),
             created_at: now_ms(),
             max_base_vol: self.max_base_vol,
-            min_base_vol: self.min_base_vol.unwrap_or(MIN_TRADING_VOL.into()),
+            min_base_vol: self.min_base_vol.unwrap_or(self.base_coin.min_trading_vol()),
             price: self.price,
             matches: HashMap::new(),
             started_swaps: Vec::new(),
