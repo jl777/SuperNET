@@ -1391,7 +1391,7 @@ fn test_qtum_unspendable_balance_failed_once() {
     let conf = json!({"coin":"tQTUM","rpcport":13889,"pubtype":120,"p2shtype":110});
     let req = json!({
         "method": "electrum",
-        "servers": [{"url":"electrum1.cipig.net:10071"}],
+        "servers": [{"url":"95.217.83.126:10001"}],
     });
 
     let ctx = MmCtxBuilder::new().into_mm_arc();
@@ -1438,7 +1438,7 @@ fn test_qtum_unspendable_balance_failed() {
     let conf = json!({"coin":"tQTUM","rpcport":13889,"pubtype":120,"p2shtype":110});
     let req = json!({
         "method": "electrum",
-        "servers": [{"url":"electrum1.cipig.net:10071"}],
+        "servers": [{"url":"95.217.83.126:10001"}],
     });
 
     let ctx = MmCtxBuilder::new().into_mm_arc();
@@ -1483,7 +1483,7 @@ fn test_qtum_my_balance() {
     let conf = json!({"coin":"tQTUM","rpcport":13889,"pubtype":120,"p2shtype":110});
     let req = json!({
         "method": "electrum",
-        "servers": [{"url":"electrum1.cipig.net:10071"}],
+        "servers": [{"url":"95.217.83.126:10001"}],
     });
 
     let ctx = MmCtxBuilder::new().into_mm_arc();
