@@ -58,7 +58,7 @@
 use crate::mm2::lp_network::broadcast_p2p_msg;
 use async_std::sync as async_std_sync;
 use bigdecimal::BigDecimal;
-use coins::{lp_coinfind, MmCoinEnum, TradeFee, TradePreimageError, TransactionEnum};
+use coins::{is_wallet_only_ticker, lp_coinfind, MmCoinEnum, TradeFee, TradePreimageError, TransactionEnum};
 use common::{bits256, block_on, calc_total_pages,
              executor::{spawn, Timer},
              log::{error, info},
@@ -1235,6 +1235,12 @@ construct_detailed!(DetailedRequiredBalance, required_balance);
 
 pub async fn trade_preimage(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
     let req: TradePreimageRequest = try_s!(json::from_value(req));
+    if is_wallet_only_ticker(&ctx, &req.base) {
+        return ERR!("Base Coin {} is wallet only", req.base);
+    }
+    if is_wallet_only_ticker(&ctx, &req.rel) {
+        return ERR!("Rel Coin {} is wallet only", req.rel);
+    }
     let result: TradePreimageResponse = match req.swap_method {
         TradePreimageMethod::SetPrice => try_s!(maker_swap_trade_preimage(&ctx, req).await).into(),
         TradePreimageMethod::Buy | TradePreimageMethod::Sell => {
