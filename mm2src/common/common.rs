@@ -18,7 +18,6 @@
 #![feature(optin_builtin_traits)]
 #![feature(drain_filter)]
 #![feature(const_fn)]
-#![feature(negative_impls)]
 #![cfg_attr(target_arch = "wasm32", allow(unused_imports))]
 #![cfg_attr(target_arch = "wasm32", allow(dead_code))]
 
