@@ -1160,12 +1160,6 @@ async fn qrc20_withdraw(coin: Qrc20Coin, req: WithdrawRequest) -> WithdrawResult
         (amount, qrc20_balance.clone())
     } else {
         let amount_sat = wei_from_big_decimal(&req.amount, coin.utxo.decimals)?;
-        if amount_sat.is_zero() {
-            return MmError::err(WithdrawError::AmountIsTooSmall {
-                amount: req.amount.clone(),
-            });
-        }
-
         if req.amount > qrc20_balance {
             return MmError::err(WithdrawError::NotSufficientBalance {
                 coin: coin.ticker().to_owned(),

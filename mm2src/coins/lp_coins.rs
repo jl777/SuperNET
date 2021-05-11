@@ -613,8 +613,8 @@ pub enum WithdrawError {
     },
     #[display(fmt = "Balance is zero")]
     ZeroBalanceToWithdrawMax,
-    #[display(fmt = "The amount {} is too small", amount)]
-    AmountIsTooSmall { amount: BigDecimal },
+    #[display(fmt = "The amount {} is too small, required at least {}", amount, threshold)]
+    AmountTooLow { amount: BigDecimal, threshold: BigDecimal },
     #[display(fmt = "Invalid address: {}", _0)]
     InvalidAddress(String),
     #[display(fmt = "Invalid fee policy: {}", _0)]
@@ -632,7 +632,7 @@ impl HttpStatusCode for WithdrawError {
         match self {
             WithdrawError::NotSufficientBalance { .. }
             | WithdrawError::ZeroBalanceToWithdrawMax
-            | WithdrawError::AmountIsTooSmall { .. }
+            | WithdrawError::AmountTooLow { .. }
             | WithdrawError::InvalidAddress(_)
             | WithdrawError::InvalidFeePolicy(_)
             | WithdrawError::NoSuchCoin { .. } => StatusCode::BAD_REQUEST,
@@ -675,9 +675,10 @@ impl WithdrawError {
                 }
             },
             GenerateTxError::EmptyOutputs => WithdrawError::InternalError(gen_tx_err.to_string()),
-            GenerateTxError::OutputValueLessThanDust { value, .. } => {
+            GenerateTxError::OutputValueLessThanDust { value, dust } => {
                 let amount = big_decimal_from_sat_unsigned(value, decimals);
-                WithdrawError::AmountIsTooSmall { amount }
+                let threshold = big_decimal_from_sat_unsigned(dust, decimals);
+                WithdrawError::AmountTooLow { amount, threshold }
             },
             GenerateTxError::DeductFeeFromOutputFailed {
                 output_value, required, ..
