@@ -522,8 +522,9 @@ pub mod withdraw_error {
 
     #[derive(Debug, Deserialize, PartialEq)]
     #[serde(deny_unknown_fields)]
-    pub struct AmountIsTooSmall {
+    pub struct AmountTooLow {
         pub amount: BigDecimal,
+        pub threshold: BigDecimal,
     }
 }
 

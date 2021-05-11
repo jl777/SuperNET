@@ -559,10 +559,14 @@ async fn withdraw_impl(ctx: MmArc, coin: EthCoin, req: WithdrawRequest) -> Withd
         },
     };
     let total_fee = gas * gas_price;
+    let total_fee_dec = u256_to_big_decimal(total_fee, coin.decimals)?;
 
     if req.max && coin.coin_type == EthCoinType::Eth {
         if eth_value < total_fee || wei_amount < total_fee {
-            return MmError::err(WithdrawError::AmountIsTooSmall { amount: eth_value_dec });
+            return MmError::err(WithdrawError::AmountTooLow {
+                amount: eth_value_dec,
+                threshold: total_fee_dec,
+            });
         }
         eth_value -= total_fee;
         wei_amount -= total_fee;
