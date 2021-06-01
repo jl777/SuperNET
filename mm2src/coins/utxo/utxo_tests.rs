@@ -2581,7 +2581,7 @@ fn send_and_refund_dex_fee() {
         value: 9000,
         script_pubkey: Builder::build_p2pkh(&keypair.public().address_hash()).into(),
     };
-    let refund = p2sh_spending_tx(
+    let refund = block_on(p2sh_spending_tx(
         &coin,
         transaction,
         dex_fee_script.into(),
@@ -2589,7 +2589,7 @@ fn send_and_refund_dex_fee() {
         script_data,
         SEQUENCE_FINAL - 1,
         lock_time,
-    )
+    ))
     .unwrap();
 
     let tx = serialize(&refund);
@@ -2639,7 +2639,7 @@ fn send_and_redeem_dex_fee() {
         value: 9000,
         script_pubkey: Builder::build_p2pkh(&keypair.public().address_hash()).into(),
     };
-    let refund = p2sh_spending_tx(
+    let refund = block_on(p2sh_spending_tx(
         &coin,
         transaction,
         dex_fee_script.into(),
@@ -2647,7 +2647,7 @@ fn send_and_redeem_dex_fee() {
         script_data,
         SEQUENCE_FINAL,
         lock_time,
-    )
+    ))
     .unwrap();
 
     let tx = serialize(&refund);
