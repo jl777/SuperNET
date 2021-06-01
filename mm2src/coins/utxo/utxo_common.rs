@@ -15,7 +15,7 @@ use futures::compat::Future01CompatExt;
 use futures::future::{FutureExt, TryFutureExt};
 use futures01::future::Either;
 use keys::bytes::Bytes;
-use keys::{Address, AddressHash, KeyPair, Public, Type};
+use keys::{Address, AddressHash, KeyPair, Public, SegwitAddress, Type};
 use primitives::hash::H512;
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use script::{Builder, Opcode, Script, ScriptAddress, SignatureVersion, TransactionInputSigner,
@@ -215,6 +215,14 @@ where
 pub fn display_address(conf: &UtxoCoinConf, address: &Address) -> Result<String, String> {
     match &conf.address_format {
         UtxoAddressFormat::Standard => Ok(address.to_string()),
+        UtxoAddressFormat::Segwit => {
+            let bech32_hrp = &conf.bech32_hrp;
+            match bech32_hrp {
+                Some(hrp) => Ok(SegwitAddress::new(&address.hash, hrp.clone()).to_string()),
+                None => ERR!("Cannot display segwit address for a coin with no bech32_hrp in config"),
+            }
+        },
+
         UtxoAddressFormat::CashAddress { network } => address
             .to_cashaddress(&network, conf.pub_addr_prefix, conf.p2sh_addr_prefix)
             .and_then(|cashaddress| cashaddress.encode()),
@@ -232,6 +240,7 @@ pub fn address_from_str(conf: &UtxoCoinConf, address: &str) -> Result<Address, S
                 Ok(_) => ERR!("Legacy address format activated for {}, but cashaddress format used instead. Try to call 'convertaddress'", conf.ticker),
                 Err(_) => ERR!("{}", e),
             }),
+        UtxoAddressFormat::Segwit => ERR!("Segwit address format is not supported in this function. Try SegwitAddress::from_str"),
         UtxoAddressFormat::CashAddress { .. } => Address::from_cashaddress(
             &address,
             conf.checksum_type,
@@ -1200,7 +1209,7 @@ where
 pub fn my_balance(coin: &UtxoCoinFields) -> BalanceFut<CoinBalance> {
     Box::new(
         coin.rpc_client
-            .display_balance(coin.my_address.clone(), coin.decimals)
+            .display_balance(coin.my_address.clone(), &coin.conf.address_format, coin.decimals)
             .map_to_mm_fut(BalanceError::from)
             // at the moment standard UTXO coins do not have an unspendable balance
             .map(|spendable| CoinBalance {
@@ -1423,6 +1432,13 @@ where
     let from_address = try_s!(address_from_any_format(&coin.as_ref().conf, from));
     match to_address_format {
         UtxoAddressFormat::Standard => Ok(from_address.to_string()),
+        UtxoAddressFormat::Segwit => {
+            let bech32_hrp = &coin.as_ref().conf.bech32_hrp;
+            match bech32_hrp {
+                Some(hrp) => Ok(SegwitAddress::new(&from_address.hash, hrp.clone()).to_string()),
+                None => ERR!("Cannot convert to a segwit address for a coin with no bech32_hrp in config"),
+            }
+        },
         UtxoAddressFormat::CashAddress { network } => Ok(try_s!(from_address
             .to_cashaddress(
                 &network,

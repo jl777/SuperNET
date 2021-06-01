@@ -216,6 +216,10 @@ pub enum UtxoAddressFormat {
     /// In Bitcoin Cash context the standard format also known as 'legacy'.
     #[serde(rename = "standard")]
     Standard,
+    /// Segwit Address
+    /// https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+    #[serde(rename = "segwit")]
+    Segwit,
     /// Bitcoin Cash specific address format.
     /// https://github.com/bitcoincashorg/bitcoincash.org/blob/master/spec/cashaddr.md
     #[serde(rename = "cashaddress")]
@@ -224,6 +228,10 @@ pub enum UtxoAddressFormat {
 
 impl Default for UtxoAddressFormat {
     fn default() -> Self { UtxoAddressFormat::Standard }
+}
+
+impl UtxoAddressFormat {
+    fn is_segwit(&self) -> bool { matches!(*self, UtxoAddressFormat::Segwit) }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -367,6 +375,8 @@ pub struct UtxoCoinConf {
     pub wif_prefix: u8,
     pub pub_t_addr_prefix: u8,
     pub p2sh_t_addr_prefix: u8,
+    // https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Segwit_address_format
+    pub bech32_hrp: Option<String>,
     /// True if coins uses Proof of Stake consensus algo
     /// Proof of Work is expected by default
     /// https://en.bitcoin.it/wiki/Proof_of_Stake
@@ -827,6 +837,8 @@ impl<'a> UtxoConfBuilder<'a> {
 
         let wif_prefix = self.wif_prefix();
 
+        let bech32_hrp = self.bech32_hrp();
+
         let address_format = try_s!(self.address_format());
 
         let asset_chain = self.asset_chain();
@@ -863,6 +875,7 @@ impl<'a> UtxoConfBuilder<'a> {
             p2sh_addr_prefix,
             pub_t_addr_prefix,
             p2sh_t_addr_prefix,
+            bech32_hrp,
             segwit,
             wif_prefix,
             tx_version,
@@ -916,12 +929,20 @@ impl<'a> UtxoConfBuilder<'a> {
         wiftype as u8
     }
 
+    fn bech32_hrp(&self) -> Option<String> { json::from_value(self.conf["bech32_hrp"].clone()).unwrap_or(None) }
+
     fn address_format(&self) -> Result<UtxoAddressFormat, String> {
-        let conf = self.conf;
-        if conf["address_format"].is_null() {
-            Ok(UtxoAddressFormat::Standard)
+        let mut format: Option<UtxoAddressFormat> = try_s!(json::from_value(self.req["address_format"].clone()));
+        if format.is_none() {
+            format = try_s!(json::from_value(self.conf["address_format"].clone()))
+        }
+
+        let address_format = format.unwrap_or(UtxoAddressFormat::Standard);
+
+        if address_format.is_segwit() && !self.segwit() {
+            ERR!("Cannot use Segwit address format for coin without segwit support")
         } else {
-            json::from_value(self.conf["address_format"].clone()).map_err(|e| ERRL!("{}", e))
+            Ok(address_format)
         }
     }
 

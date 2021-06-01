@@ -1,7 +1,7 @@
 #![cfg_attr(target_arch = "wasm32", allow(unused_macros))]
 #![cfg_attr(target_arch = "wasm32", allow(dead_code))]
 
-use crate::utxo::sat_from_big_decimal;
+use crate::utxo::{sat_from_big_decimal, UtxoAddressFormat};
 use crate::{NumConversError, RpcTransportEventHandler, RpcTransportEventHandlerShared};
 use bigdecimal::BigDecimal;
 use chain::{BlockHeader, OutPoint, Transaction as UtxoTx};
@@ -223,7 +223,8 @@ pub trait UtxoRpcClientOps: fmt::Debug + Send + Sync + 'static {
 
     fn get_block_count(&self) -> UtxoRpcFut<u64>;
 
-    fn display_balance(&self, address: Address, decimals: u8) -> RpcRes<BigDecimal>;
+    fn display_balance(&self, address: Address, address_format: &UtxoAddressFormat, decimals: u8)
+        -> RpcRes<BigDecimal>;
 
     /// returns fee estimation per KByte in satoshis
     fn estimate_fee_sat(
@@ -585,7 +586,12 @@ impl UtxoRpcClientOps for NativeClient {
         Box::new(self.0.get_block_count().map_to_mm_fut(UtxoRpcError::from))
     }
 
-    fn display_balance(&self, address: Address, _decimals: u8) -> RpcRes<BigDecimal> {
+    fn display_balance(
+        &self,
+        address: Address,
+        _address_format: &UtxoAddressFormat,
+        _decimals: u8,
+    ) -> RpcRes<BigDecimal> {
         Box::new(
             self.list_unspent_impl(0, std::i32::MAX, vec![address.to_string()])
                 .map(|unspents| {
@@ -1503,8 +1509,16 @@ impl UtxoRpcClientOps for ElectrumClient {
         )
     }
 
-    fn display_balance(&self, address: Address, decimals: u8) -> RpcRes<BigDecimal> {
-        let hash = electrum_script_hash(&Builder::build_p2pkh(&address.hash));
+    fn display_balance(
+        &self,
+        address: Address,
+        address_format: &UtxoAddressFormat,
+        decimals: u8,
+    ) -> RpcRes<BigDecimal> {
+        let hash = match address_format {
+            UtxoAddressFormat::Segwit => electrum_script_hash(&Builder::build_p2wpkh(&address.hash)),
+            _ => electrum_script_hash(&Builder::build_p2pkh(&address.hash)),
+        };
         let hash_str = hex::encode(hash);
         Box::new(self.scripthash_get_balance(&hash_str).map(move |result| {
             BigDecimal::from(result.confirmed + result.unconfirmed) / BigDecimal::from(10u64.pow(decimals as u32))
