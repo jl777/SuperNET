@@ -126,6 +126,7 @@ hyper = { version = "0.13" }
 tokio = { version = "0.2.22", features = ["io-util", "rt-threaded", "stream", "tcp"] }
 
 [dev-dependencies]
+bitcoin-cash-slp = "0.3.1"
 libsecp256k1 = "0.2.2"
 mocktopus = "0.7.0"
 rand4 = { version = "0.4", package = "rand" }

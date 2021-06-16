@@ -380,13 +380,18 @@ impl SwapOps for QtumCoin {
         amount: &BigDecimal,
         min_block_number: u64,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
+        let tx = match fee_tx {
+            TransactionEnum::UtxoTx(tx) => tx.clone(),
+            _ => panic!(),
+        };
         utxo_common::validate_fee(
             self.clone(),
-            fee_tx,
-            fee_addr,
+            tx,
+            utxo_common::DEFAULT_FEE_VOUT,
             expected_sender,
             amount,
             min_block_number,
+            fee_addr,
         )
     }
 
@@ -440,6 +445,7 @@ impl SwapOps for QtumCoin {
             other_pub,
             secret_hash,
             tx,
+            utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
     }
@@ -459,6 +465,7 @@ impl SwapOps for QtumCoin {
             other_pub,
             secret_hash,
             tx,
+            utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
     }
@@ -526,7 +533,13 @@ impl MarketCoinOps for QtumCoin {
         from_block: u64,
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::wait_for_tx_spend(&self.utxo_arc, transaction, wait_until, from_block)
+        utxo_common::wait_for_output_spend(
+            &self.utxo_arc,
+            transaction,
+            utxo_common::DEFAULT_SWAP_VOUT,
+            from_block,
+            wait_until,
+        )
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {

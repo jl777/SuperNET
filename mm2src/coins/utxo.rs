@@ -1728,7 +1728,7 @@ where
 }
 
 /// Creates signed input spending p2pkh output
-fn p2pkh_spend(
+pub fn p2pkh_spend(
     signer: &TransactionInputSigner,
     input_index: usize,
     key_pair: &KeyPair,

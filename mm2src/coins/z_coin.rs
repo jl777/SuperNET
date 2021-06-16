@@ -169,7 +169,13 @@ impl MarketCoinOps for ZCoin {
         from_block: u64,
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::wait_for_tx_spend(self.as_ref(), transaction, wait_until, from_block)
+        utxo_common::wait_for_output_spend(
+            self.as_ref(),
+            transaction,
+            utxo_common::DEFAULT_SWAP_VOUT,
+            from_block,
+            wait_until,
+        )
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
@@ -417,6 +423,7 @@ impl SwapOps for ZCoin {
             other_pub,
             secret_hash,
             tx,
+            utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
     }
@@ -436,6 +443,7 @@ impl SwapOps for ZCoin {
             other_pub,
             secret_hash,
             tx,
+            utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
     }

@@ -34,6 +34,8 @@ use self::rpc_clients::{electrum_script_hash, UnspentInfo, UtxoRpcClientEnum, Ut
 use crate::{CanRefundHtlc, CoinBalance, TradePreimageValue, TxFeeDetails, ValidateAddressResult, WithdrawResult};
 
 const MIN_BTC_TRADING_VOL: &str = "0.00777";
+pub const DEFAULT_SWAP_VOUT: usize = 0;
+pub const DEFAULT_FEE_VOUT: usize = 0;
 
 macro_rules! true_or {
     ($cond: expr, $etype: expr) => {
@@ -576,7 +578,7 @@ where
             sequence,
             previous_output: OutPoint {
                 hash: prev_transaction.hash(),
-                index: 0,
+                index: DEFAULT_SWAP_VOUT as u32,
             },
             amount: prev_transaction.outputs[0].value,
         }],
@@ -594,7 +596,7 @@ where
     };
     let signed_input = try_s!(p2sh_spend(
         &unsigned,
-        0,
+        DEFAULT_SWAP_VOUT,
         &coin.as_ref().key_pair,
         script_data,
         redeem_script.into(),
@@ -954,19 +956,16 @@ pub fn check_all_inputs_signed_by_pub(tx: &UtxoTx, expected_pub: &[u8]) -> Resul
 
 pub fn validate_fee<T>(
     coin: T,
-    fee_tx: &TransactionEnum,
-    fee_addr: &[u8],
+    tx: UtxoTx,
+    output_index: usize,
     sender_pubkey: &[u8],
     amount: &BigDecimal,
     min_block_number: u64,
+    fee_addr: &[u8],
 ) -> Box<dyn Future<Item = (), Error = String> + Send>
 where
     T: AsRef<UtxoCoinFields> + Send + Sync + 'static,
 {
-    let tx = match fee_tx {
-        TransactionEnum::UtxoTx(tx) => tx.clone(),
-        _ => panic!(),
-    };
     let amount = amount.clone();
     let address = try_fus!(address_from_raw_pubkey(
         fee_addr,
@@ -1003,7 +1002,7 @@ where
             );
         }
 
-        match tx.outputs.first() {
+        match tx.outputs.get(output_index) {
             Some(out) => {
                 let expected_script_pubkey = Builder::build_p2pkh(&address.hash).to_bytes();
                 if out.script_pubkey != expected_script_pubkey {
@@ -1022,7 +1021,7 @@ where
                 }
             },
             None => {
-                return ERR!("Provided dex fee tx {:?} has no outputs", tx);
+                return ERR!("Provided dex fee tx {:?} does not have output {}", tx, output_index);
             },
         }
         Ok(())
@@ -1042,14 +1041,18 @@ where
     T: AsRef<UtxoCoinFields> + Clone + Send + Sync + 'static,
 {
     let my_public = coin.as_ref().key_pair.public();
+    let mut tx: UtxoTx = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
+    tx.tx_hash_algo = coin.as_ref().tx_hash_algo;
+
     validate_payment(
         coin.clone(),
-        payment_tx,
-        time_lock,
+        tx,
+        DEFAULT_SWAP_VOUT,
         &try_fus!(Public::from_slice(maker_pub)),
         my_public,
         priv_bn_hash,
         amount,
+        time_lock,
     )
 }
 
@@ -1065,14 +1068,18 @@ where
     T: AsRef<UtxoCoinFields> + Clone + Send + Sync + 'static,
 {
     let my_public = coin.as_ref().key_pair.public();
+    let mut tx: UtxoTx = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
+    tx.tx_hash_algo = coin.as_ref().tx_hash_algo;
+
     validate_payment(
         coin.clone(),
-        payment_tx,
-        time_lock,
+        tx,
+        DEFAULT_SWAP_VOUT,
         &try_fus!(Public::from_slice(taker_pub)),
         my_public,
         priv_bn_hash,
         amount,
+        time_lock,
     )
 }
 
@@ -1142,15 +1149,17 @@ pub fn search_for_swap_tx_spend_my(
     other_pub: &[u8],
     secret_hash: &[u8],
     tx: &[u8],
+    output_index: usize,
     search_from_block: u64,
 ) -> Result<Option<FoundSwapTxSpend>, String> {
-    block_on(search_for_swap_tx_spend(
+    block_on(search_for_swap_output_spend(
         coin,
         time_lock,
         coin.key_pair.public(),
         &try_s!(Public::from_slice(other_pub)),
         secret_hash,
         tx,
+        output_index,
         search_from_block,
     ))
 }
@@ -1161,15 +1170,17 @@ pub fn search_for_swap_tx_spend_other(
     other_pub: &[u8],
     secret_hash: &[u8],
     tx: &[u8],
+    output_index: usize,
     search_from_block: u64,
 ) -> Result<Option<FoundSwapTxSpend>, String> {
-    block_on(search_for_swap_tx_spend(
+    block_on(search_for_swap_output_spend(
         coin,
         time_lock,
         &try_s!(Public::from_slice(other_pub)),
         coin.key_pair.public(),
         secret_hash,
         tx,
+        output_index,
         search_from_block,
     ))
 }
@@ -1259,15 +1270,20 @@ pub fn wait_for_confirmations(
         .wait_for_confirmations(&tx, confirmations as u32, requires_nota, wait_until, check_every)
 }
 
-pub fn wait_for_tx_spend(coin: &UtxoCoinFields, tx_bytes: &[u8], wait_until: u64, from_block: u64) -> TransactionFut {
+pub fn wait_for_output_spend(
+    coin: &UtxoCoinFields,
+    tx_bytes: &[u8],
+    output_index: usize,
+    from_block: u64,
+    wait_until: u64,
+) -> TransactionFut {
     let mut tx: UtxoTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
     tx.tx_hash_algo = coin.tx_hash_algo;
-    let vout = 0;
     let client = coin.rpc_client.clone();
     let tx_hash_algo = coin.tx_hash_algo;
     let fut = async move {
         loop {
-            match client.find_output_spend(&tx, vout, from_block).compat().await {
+            match client.find_output_spend(&tx, output_index, from_block).compat().await {
                 Ok(Some(mut tx)) => {
                     tx.tx_hash_algo = tx_hash_algo;
                     return Ok(tx.into());
@@ -1283,7 +1299,7 @@ pub fn wait_for_tx_spend(coin: &UtxoCoinFields, tx_bytes: &[u8], wait_until: u64
                     "Waited too long until {} for transaction {:?} {} to be spent ",
                     wait_until,
                     tx,
-                    vout
+                    output_index,
                 );
             }
             Timer::sleep(10.).await;
@@ -2472,28 +2488,23 @@ fn address_from_any_format(conf: &UtxoCoinConf, from: &str) -> Result<Address, S
     )
 }
 
-fn validate_payment<T>(
+#[allow(clippy::too_many_arguments)]
+pub fn validate_payment<T>(
     coin: T,
-    payment_tx: &[u8],
-    time_lock: u32,
+    tx: UtxoTx,
+    output_index: usize,
     first_pub0: &Public,
     second_pub0: &Public,
     priv_bn_hash: &[u8],
     amount: BigDecimal,
+    time_lock: u32,
 ) -> Box<dyn Future<Item = (), Error = String> + Send>
 where
     T: AsRef<UtxoCoinFields> + Send + Sync + 'static,
 {
-    let mut tx: UtxoTx = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
-    tx.tx_hash_algo = coin.as_ref().tx_hash_algo;
     let amount = try_fus!(sat_from_big_decimal(&amount, coin.as_ref().decimals));
 
-    let expected_redeem = payment_script(
-        time_lock,
-        priv_bn_hash,
-        &try_fus!(Public::from_slice(first_pub0)),
-        &try_fus!(Public::from_slice(second_pub0)),
-    );
+    let expected_redeem = payment_script(time_lock, priv_bn_hash, first_pub0, second_pub0);
     let fut = async move {
         let mut attempts = 0;
         loop {
@@ -2532,10 +2543,11 @@ where
                 script_pubkey: Builder::build_p2sh(&dhash160(&expected_redeem)).into(),
             };
 
-            if tx.outputs[0] != expected_output {
+            let actual_output = tx.outputs.get(output_index);
+            if actual_output != Some(&expected_output) {
                 return ERR!(
                     "Provided payment tx output doesn't match expected {:?} {:?}",
-                    tx.outputs[0],
+                    actual_output,
                     expected_output
                 );
             }
@@ -2545,13 +2557,15 @@ where
     Box::new(fut.boxed().compat())
 }
 
-async fn search_for_swap_tx_spend(
+#[allow(clippy::too_many_arguments)]
+async fn search_for_swap_output_spend(
     coin: &UtxoCoinFields,
     time_lock: u32,
     first_pub: &Public,
     second_pub: &Public,
     secret_hash: &[u8],
     tx: &[u8],
+    output_index: usize,
     search_from_block: u64,
 ) -> Result<Option<FoundSwapTxSpend>, String> {
     let mut tx: UtxoTx = try_s!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
@@ -2568,7 +2582,7 @@ async fn search_for_swap_tx_spend(
 
     let spend = try_s!(
         coin.rpc_client
-            .find_output_spend(&tx, 0, search_from_block)
+            .find_output_spend(&tx, output_index, search_from_block)
             .compat()
             .await
     );
