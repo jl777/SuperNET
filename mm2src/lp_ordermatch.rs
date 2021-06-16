@@ -1138,7 +1138,7 @@ impl<'a> TakerOrderBuilder<'a> {
             min_volume,
             order_type: self.order_type,
             timeout: self.timeout,
-            save_in_history: true,
+            save_in_history: self.save_in_history,
         })
     }
 
@@ -1508,7 +1508,7 @@ impl<'a> MakerOrderBuilder<'a> {
             uuid: new_uuid(),
             conf_settings: self.conf_settings,
             changes_history: None,
-            save_in_history: true,
+            save_in_history: self.save_in_history,
         })
     }
 
@@ -2451,8 +2451,10 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                             let maker_order: MakerOrder = order.into();
                             my_maker_orders.insert(uuid, maker_order.clone());
                             save_my_maker_order(&ctx, &maker_order);
-                            if let Err(e) = update_was_taker_in_db(&ctx, uuid) {
-                                error!("Error {} on order update", e);
+                            if maker_order.save_in_history {
+                                if let Err(e) = update_was_taker_in_db(&ctx, uuid) {
+                                    error!("Error {} on order update", e);
+                                }
                             }
                             spawn({
                                 let ctx = ctx.clone();
