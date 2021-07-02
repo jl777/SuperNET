@@ -99,6 +99,7 @@ impl From<NumConversError> for ValidateDexFeeError {
     fn from(err: NumConversError) -> ValidateDexFeeError { ValidateDexFeeError::NumConversionErr(err) }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Display)]
 pub enum SpendP2SHError {
     GenerateTxErr(GenerateTxError),
@@ -133,6 +134,7 @@ pub enum SpendHtlcError {
     InvalidSlpDetails,
     NumConversionErr(NumConversError),
     RpcErr(UtxoRpcError),
+    #[allow(clippy::upper_case_acronyms)]
     SpendP2SHErr(SpendP2SHError),
 }
 

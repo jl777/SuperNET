@@ -1259,7 +1259,7 @@ async fn sign_and_send_transaction_impl(
         () => {
             &[&"sign-and-send"]
         };
-    };
+    }
     let _nonce_lock = NONCE_LOCK
         .lock(|start, now| {
             if ctx.is_stopping() {
