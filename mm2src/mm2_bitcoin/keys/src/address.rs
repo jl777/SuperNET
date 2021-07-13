@@ -170,7 +170,16 @@ impl DisplayLayout for Address {
 }
 
 impl fmt::Display for Address {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.layout().to_base58().fmt(f) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.addr_format {
+            AddressFormat::Segwit => {
+                SegwitAddress::new(&self.hash, self.hrp.clone().expect("Segwit address should have an hrp"))
+                    .to_string()
+                    .fmt(f)
+            },
+            _ => self.layout().to_base58().fmt(f),
+        }
+    }
 }
 
 impl FromStr for Address {
@@ -213,6 +222,7 @@ impl Address {
         checksum_type: ChecksumType,
         p2pkh_prefix: u8,
         p2sh_prefix: u8,
+        t_addr_prefix: u8,
     ) -> Result<Address, String> {
         let address = CashAddress::decode(cashaddr)?;
 
@@ -227,9 +237,6 @@ impl Address {
             CashAddrType::P2PKH => p2pkh_prefix,
             CashAddrType::P2SH => p2sh_prefix,
         };
-
-        // Simple UTXO hash specific
-        let t_addr_prefix = 0;
 
         Ok(Address {
             prefix,
@@ -265,7 +272,12 @@ impl Address {
         CashAddress::new(network_prefix, self.hash.clone().take().to_vec(), address_type)
     }
 
-    pub fn from_segwitaddress(segaddr: &str, checksum_type: ChecksumType) -> Result<Address, String> {
+    pub fn from_segwitaddress(
+        segaddr: &str,
+        checksum_type: ChecksumType,
+        prefix: u8,
+        t_addr_prefix: u8,
+    ) -> Result<Address, String> {
         let address = SegwitAddress::from_str(segaddr).map_err(|e| e.to_string())?;
 
         if address.program.len() != 20 {
@@ -274,11 +286,6 @@ impl Address {
 
         let mut hash: AddressHash = Default::default();
         hash.copy_from_slice(address.program.as_slice());
-
-        let prefix = 0;
-
-        // Simple UTXO hash specific
-        let t_addr_prefix = 0;
 
         let hrp = Some(address.hrp);
 
@@ -464,7 +471,7 @@ mod tests {
         ];
 
         for i in 0..3 {
-            let actual_address = Address::from_cashaddress(cashaddresses[i], ChecksumType::DSHA256, 0, 5).unwrap();
+            let actual_address = Address::from_cashaddress(cashaddresses[i], ChecksumType::DSHA256, 0, 5, 0).unwrap();
             let expected_address: Address = expected[i].into();
             // comparing only hashes here as Address::from_cashaddress has a different internal format from into()
             assert_eq!(actual_address.hash, expected_address.hash);
@@ -486,6 +493,7 @@ mod tests {
                 ChecksumType::DSHA256,
                 0,
                 5,
+                0,
             ),
             Err("Expect 20 bytes long hash".into())
         );

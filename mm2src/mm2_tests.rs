@@ -1064,8 +1064,7 @@ async fn trade_base_rel_electrum(
         {"coin":"MORTY","asset":"MORTY","required_confirmations":0,"txversion":4,"overwintered":1,"protocol":{"type":"UTXO"}},
         {"coin":"ETH","name":"ethereum","protocol":{"type":"ETH"}},
         {"coin":"ZOMBIE","asset":"ZOMBIE","fname":"ZOMBIE (TESTCOIN)","txversion":4,"overwintered":1,"mm2":1,"protocol":{"type":"ZHTLC"}},
-        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}},
-        {"coin":"tBTC","name":"tbitcoin","fname":"tBitcoin","pubtype":111,"p2shtype":196,"wiftype":239,"segwit":true,"bech32_hrp":"tb","txfee":0,"estimate_fee_mode":"ECONOMICAL","mm2":1,"required_confirmations":0,"protocol":{"type":"UTXO"},"address_format":{"format":"segwit"}}
+        {"coin":"JST","name":"jst","protocol":{"type":"ERC20","protocol_data":{"platform":"ETH","contract_address":"0x2b294F029Fde858b2c62184e8390591755521d8E"}}}
     ]);
 
     let mut mm_bob = MarketMakerIt::start(
@@ -1133,28 +1132,10 @@ async fn trade_base_rel_electrum(
     wait_log_re!(mm_alice, 22., ">>>>>>>>> DEX stats ");
 
     // Enable coins on Bob side. Print the replies in case we need the address.
-    let mut rc = enable_coins_eth_electrum(&mm_bob, &["http://195.201.0.6:8565"]).await;
-    rc.insert(
-        "tBTC",
-        enable_electrum(&mm_bob, "tBTC", false, &[
-            "electrum1.cipig.net:10068",
-            "electrum2.cipig.net:10068",
-            "electrum3.cipig.net:10068",
-        ])
-        .await,
-    );
+    let rc = enable_coins_eth_electrum(&mm_bob, &["http://195.201.0.6:8565"]).await;
     log! ({"enable_coins (bob): {:?}", rc});
     // Enable coins on Alice side. Print the replies in case we need the address.
-    let mut rc = enable_coins_eth_electrum(&mm_alice, &["http://195.201.0.6:8565"]).await;
-    rc.insert(
-        "tBTC",
-        enable_electrum(&mm_alice, "tBTC", false, &[
-            "electrum1.cipig.net:10068",
-            "electrum2.cipig.net:10068",
-            "electrum3.cipig.net:10068",
-        ])
-        .await,
-    );
+    let rc = enable_coins_eth_electrum(&mm_alice, &["http://195.201.0.6:8565"]).await;
     log! ({"enable_coins (alice): {:?}", rc});
 
     // unwrap! (mm_alice.wait_for_log (999., &|log| log.contains ("set pubkey for ")));
@@ -1328,20 +1309,6 @@ fn trade_test_electrum_and_eth_coins() {
     block_on(trade_base_rel_electrum(pairs, 1, 2, 0.1));
 }
 
-#[test]
-#[cfg(not(target_arch = "wasm32"))]
-fn trade_test_electrum_and_maker_segwit() {
-    let pairs: &[_] = &[("tBTC", "RICK")];
-    block_on(trade_base_rel_electrum(pairs, 1, 1, 0.0001));
-}
-
-#[test]
-#[cfg(not(target_arch = "wasm32"))]
-fn trade_test_electrum_and_taker_segwit() {
-    let pairs: &[_] = &[("RICK", "tBTC")];
-    block_on(trade_base_rel_electrum(pairs, 1, 1, 0.0001));
-}
-
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 pub extern "C" fn trade_test_electrum_and_eth_coins(cb_id: i32) {
@@ -1497,7 +1464,10 @@ fn test_withdraw_and_send() {
     assert!(withdraw.0.is_client_error(), "MORTY withdraw: {}", withdraw.1);
     let res: RpcErrorResponse<String> = json::from_str(&withdraw.1).unwrap();
     assert_eq!(res.error_type, "InvalidAddress");
-    assert!(res.error_data.unwrap().contains("Expected either P2PKH or P2SH"));
+    assert!(res
+        .error_data
+        .unwrap()
+        .contains("Expected a valid P2PKH or P2SH prefix for MORTY"));
 
     // but must allow to withdraw to P2SH addresses if Segwit flag is true
     let withdraw = block_on(mm_alice.rpc(json! ({
@@ -1559,190 +1529,6 @@ fn test_withdraw_and_send() {
     };
     assert_eq!(error.error_type, "AmountTooLow");
     assert_eq!(error.error_data, Some(expected_error));
-
-    block_on(mm_alice.stop()).unwrap();
-}
-
-#[test]
-#[cfg(not(target_arch = "wasm32"))]
-fn test_withdraw_and_send_from_segwit() {
-    let seed = "spice describe gravity federal blast come thank unfair canal monkey style afraid";
-
-    let coins = json! ([
-        {
-            "coin": "tBTC",
-            "name": "tbitcoin",
-            "fname": "tBitcoin",
-            "rpcport": 18332,
-            "pubtype": 111,
-            "p2shtype": 196,
-            "wiftype": 239,
-            "segwit": true,
-            "bech32_hrp": "tb",
-            "txfee": 1000,
-            "mm2": 1,
-            "required_confirmations": 0,
-            "protocol": {
-                "type": "UTXO"
-            }
-        }
-    ]);
-
-    let mm_alice = MarketMakerIt::start(
-        json! ({
-            "gui": "nogui",
-            "netid": 8100,
-            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
-            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
-            "passphrase": seed.to_string(),
-            "coins": coins,
-            "rpc_password": "password",
-            "i_am_seed": true,
-        }),
-        "password".into(),
-        match var("LOCAL_THREAD_MM") {
-            Ok(ref e) if e == "alice" => Some(local_start()),
-            _ => None,
-        },
-    )
-    .unwrap();
-
-    let (_alice_dump_log, _alice_dump_dashboard) = mm_alice.mm_dump();
-    log! ({"Alice log path: {}", mm_alice.log_path.display()});
-
-    // wait until RPC API is active
-
-    // Enable coins. Print the replies in case we need the address.
-    let electrum = block_on(mm_alice.rpc(json!({
-        "userpass": mm_alice.userpass,
-        "method": "electrum",
-        "coin": "tBTC",
-        "servers": [{"url":"electrum1.cipig.net:10068"},{"url":"electrum2.cipig.net:10068"},{"url":"electrum3.cipig.net:10068"}],
-        "mm2": 1,
-        "address_format": {
-            "format": "segwit",
-        },
-    }))).unwrap();
-    assert_eq!(
-        electrum.0,
-        StatusCode::OK,
-        "RPC «electrum» failed with {} {}",
-        electrum.0,
-        electrum.1
-    );
-    log!("enable_coins (alice): "[electrum]);
-
-    let electrum_response: EnableElectrumResponse =
-        json::from_str(&electrum.1).expect("Expected 'EnableElectrumResponse'");
-    let mut enable_res = HashMap::new();
-    enable_res.insert("tBTC", electrum_response);
-
-    // Send from Segwit Address to Segwit Address
-    withdraw_and_send(
-        &mm_alice,
-        "tBTC",
-        "tb1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5",
-        &enable_res,
-        "-0.00002",
-        0.00001,
-    );
-
-    // Wait 5 seconds to avoid double spending
-    thread::sleep(Duration::from_secs(5));
-
-    // Send from Segwit Address to Legacy Address
-    withdraw_and_send(
-        &mm_alice,
-        "tBTC",
-        "mg2vB11K43itMLKgTg61xwi4SXW6Mj9Df3",
-        &enable_res,
-        "-0.00002",
-        0.00001,
-    );
-
-    block_on(mm_alice.stop()).unwrap();
-}
-
-#[test]
-#[cfg(not(target_arch = "wasm32"))]
-fn test_withdraw_and_send_legacy_to_segwit() {
-    let seed = "spice describe gravity federal blast come thank unfair canal monkey style afraid";
-
-    let coins = json! ([
-        {
-            "coin": "tBTC",
-            "name": "tbitcoin",
-            "fname": "tBitcoin",
-            "rpcport": 18332,
-            "pubtype": 111,
-            "p2shtype": 196,
-            "wiftype": 239,
-            "segwit": true,
-            "bech32_hrp": "tb",
-            "txfee": 1000,
-            "mm2": 1,
-            "required_confirmations": 0,
-            "protocol": {
-                "type": "UTXO"
-            }
-        }
-    ]);
-
-    let mm_alice = MarketMakerIt::start(
-        json! ({
-            "gui": "nogui",
-            "netid": 8100,
-            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
-            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
-            "passphrase": seed.to_string(),
-            "coins": coins,
-            "rpc_password": "password",
-            "i_am_seed": true,
-        }),
-        "password".into(),
-        match var("LOCAL_THREAD_MM") {
-            Ok(ref e) if e == "alice" => Some(local_start()),
-            _ => None,
-        },
-    )
-    .unwrap();
-
-    let (_alice_dump_log, _alice_dump_dashboard) = mm_alice.mm_dump();
-    log! ({"Alice log path: {}", mm_alice.log_path.display()});
-
-    // wait until RPC API is active
-
-    // Enable coins. Print the replies in case we need the address.
-    let electrum = block_on(mm_alice.rpc(json!({
-        "userpass": mm_alice.userpass,
-        "method": "electrum",
-        "coin": "tBTC",
-        "servers": [{"url":"electrum1.cipig.net:10068"},{"url":"electrum2.cipig.net:10068"},{"url":"electrum3.cipig.net:10068"}],
-        "mm2": 1,
-    }))).unwrap();
-    assert_eq!(
-        electrum.0,
-        StatusCode::OK,
-        "RPC «electrum» failed with {} {}",
-        electrum.0,
-        electrum.1
-    );
-    log!("enable_coins (alice): "[electrum]);
-
-    let electrum_response: EnableElectrumResponse =
-        json::from_str(&electrum.1).expect("Expected 'EnableElectrumResponse'");
-    let mut enable_res = HashMap::new();
-    enable_res.insert("tBTC", electrum_response);
-
-    // Send from Segwit Address to Segwit Address
-    withdraw_and_send(
-        &mm_alice,
-        "tBTC",
-        "tb1qqk4t2dppvmu9jja0z7nan0h464n5gve8v3dtus",
-        &enable_res,
-        "-0.00002",
-        0.00001,
-    );
 
     block_on(mm_alice.stop()).unwrap();
 }
@@ -4523,7 +4309,8 @@ fn test_common_cashaddresses() {
 #[cfg(not(target_arch = "wasm32"))]
 fn test_convert_utxo_address() {
     let coins = json!([
-        {"coin":"BCH","pubtype":0,"p2shtype":5,"mm2":1,"protocol":{"type":"UTXO"}},
+        {"coin":"BCH","pubtype":0,"p2shtype":5,"mm2":1,"fork_id": "0x40","protocol":{"type":"UTXO"},
+         "address_format":{"format":"cashaddress","network":"bitcoincash"}},
     ]);
 
     let mm = MarketMakerIt::start(
@@ -4545,9 +4332,9 @@ fn test_convert_utxo_address() {
     log!({ "log path: {}", mm.log_path.display() });
 
     let _electrum = block_on(enable_electrum(&mm, "BCH", false, &[
-        "electrum1.cipig.net:10017",
-        "electrum2.cipig.net:10017",
-        "electrum3.cipig.net:10017",
+        "blackie.c3-soft.com:60001",
+        "bch0.kister.net:51001",
+        "testnet.imaginary.cash:50001",
     ]));
 
     // test standard to cashaddress
@@ -4636,6 +4423,136 @@ fn test_convert_utxo_address() {
         "!convertaddress success but should be error: {}",
         rc.1
     );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_convert_segwit_address() {
+    let coins = json! ([
+        {
+            "coin": "tBTC",
+            "name": "tbitcoin",
+            "fname": "tBitcoin",
+            "rpcport": 18332,
+            "pubtype": 111,
+            "p2shtype": 196,
+            "wiftype": 239,
+            "segwit": true,
+            "bech32_hrp": "tb",
+            "txfee": 1000,
+            "mm2": 1,
+            "required_confirmations": 0,
+            "protocol": {
+                "type": "UTXO"
+            }
+        }
+    ]);
+
+    let mm = MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var ("BOB_TRADE_IP") .ok(),
+            "rpcip": env::var ("BOB_TRADE_IP") .ok(),
+            "passphrase": "face pin block number add byte put seek mime test note password sin tab multiple",
+            "coins": coins,
+            "i_am_seed": true,
+            "rpc_password": "pass",
+        }),
+        "pass".into(),
+        local_start!("bob"),
+    )
+    .unwrap();
+    let (_dump_log, _dump_dashboard) = mm.mm_dump();
+    log!({ "log path: {}", mm.log_path.display() });
+
+    let _electrum = block_on(enable_electrum(&mm, "tBTC", false, &[
+        "electrum1.cipig.net:10068",
+        "electrum2.cipig.net:10068",
+        "electrum3.cipig.net:10068",
+    ]));
+
+    // test standard to segwit
+    let rc = block_on(mm.rpc(json! ({
+        "userpass": mm.userpass,
+        "method": "convertaddress",
+        "coin": "tBTC",
+        "from": "mqWYEGxLeK843n3xMTe8EWTFPyoSZjtUXb",
+        "to_address_format":{"format":"segwit"},
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «convertaddress» failed with status «{}»",
+        rc.0
+    );
+    let actual: Json = json::from_str(&rc.1).unwrap();
+
+    let expected = json!({
+        "result": {
+            "address": "tb1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5",
+        },
+    });
+    assert_eq!(actual, expected);
+
+    // test segwit to standard
+    let rc = block_on(mm.rpc(json! ({
+        "userpass": mm.userpass,
+        "method": "convertaddress",
+        "coin": "tBTC",
+        "from": "tb1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5",
+        "to_address_format":{"format":"standard"},
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «convertaddress» failed with status «{}»",
+        rc.0
+    );
+    let actual: Json = json::from_str(&rc.1).unwrap();
+
+    let expected = json!({
+        "result": {
+            "address": "mqWYEGxLeK843n3xMTe8EWTFPyoSZjtUXb",
+        },
+    });
+    assert_eq!(actual, expected);
+
+    // test invalid tBTC standard address
+    let rc = block_on(mm.rpc(json! ({
+        "userpass": mm.userpass,
+        "method": "convertaddress",
+        "coin": "tBTC",
+        "from": "1AzawDsMqHgoGfaLdtfkQbEvXzCjk5oyFx",
+        "to_address_format":{"format":"segwit"},
+    })))
+    .unwrap();
+    assert!(
+        rc.0.is_server_error(),
+        "!convertaddress success but should be error: {}",
+        rc.1
+    );
+    assert!(rc.1.contains("Expected a valid P2PKH or P2SH prefix for tBTC"));
+
+    // test invalid tBTC segwit address
+    let rc = block_on(mm.rpc(json! ({
+        "userpass": mm.userpass,
+        "method": "convertaddress",
+        "coin": "tBTC",
+        "from": "ltc1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5",
+        "to_address_format":{"format":"standard"},
+    })))
+    .unwrap();
+    assert!(
+        rc.0.is_server_error(),
+        "!convertaddress success but should be error: {}",
+        rc.1
+    );
+    assert!(rc
+        .1
+        .contains("Invalid address: ltc1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5"));
 }
 
 #[test]
@@ -5104,7 +5021,7 @@ fn test_validateaddress() {
     assert!(!result["is_valid"].as_bool().unwrap());
     let reason = result["reason"].as_str().unwrap();
     log!((reason));
-    assert!(reason.contains("Expected either P2PKH or P2SH prefix"));
+    assert!(reason.contains("Expected a valid P2PKH or P2SH prefix"));
 
     // test invalid ETH address
 
@@ -5128,6 +5045,129 @@ fn test_validateaddress() {
     let reason = result["reason"].as_str().unwrap();
     log!((reason));
     assert!(reason.contains("Address must be prefixed with 0x"));
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_validateaddress_segwit() {
+    let seed = "spice describe gravity federal blast come thank unfair canal monkey style afraid";
+
+    let coins = json! ([
+        {
+            "coin": "tBTC",
+            "name": "tbitcoin",
+            "fname": "tBitcoin",
+            "rpcport": 18332,
+            "pubtype": 111,
+            "p2shtype": 196,
+            "wiftype": 239,
+            "segwit": true,
+            "bech32_hrp": "tb",
+            "txfee": 1000,
+            "mm2": 1,
+            "required_confirmations": 0,
+            "protocol": {
+                "type": "UTXO"
+            }
+        }
+    ]);
+
+    let mm_alice = MarketMakerIt::start(
+        json! ({
+            "gui": "nogui",
+            "netid": 8100,
+            "myipaddr": env::var ("ALICE_TRADE_IP") .ok(),
+            "rpcip": env::var ("ALICE_TRADE_IP") .ok(),
+            "passphrase": seed.to_string(),
+            "coins": coins,
+            "rpc_password": "password",
+            "i_am_seed": true,
+        }),
+        "password".into(),
+        match var("LOCAL_THREAD_MM") {
+            Ok(ref e) if e == "alice" => Some(local_start()),
+            _ => None,
+        },
+    )
+    .unwrap();
+
+    let (_alice_dump_log, _alice_dump_dashboard) = mm_alice.mm_dump();
+    log! ({"Alice log path: {}", mm_alice.log_path.display()});
+
+    // wait until RPC API is active
+
+    // Enable coins. Print the replies in case we need the address.
+    let electrum = block_on(mm_alice.rpc(json!({
+        "userpass": mm_alice.userpass,
+        "method": "electrum",
+        "coin": "tBTC",
+        "servers": [{"url":"electrum1.cipig.net:10068"},{"url":"electrum2.cipig.net:10068"},{"url":"electrum3.cipig.net:10068"}],
+        "mm2": 1,
+        "address_format": {
+            "format": "segwit",
+        },
+    }))).unwrap();
+    assert_eq!(
+        electrum.0,
+        StatusCode::OK,
+        "RPC «electrum» failed with {} {}",
+        electrum.0,
+        electrum.1
+    );
+    log!("enable_coins (alice): "[electrum]);
+
+    let electrum_response: EnableElectrumResponse =
+        json::from_str(&electrum.1).expect("Expected 'EnableElectrumResponse'");
+    let mut enable_res = HashMap::new();
+    enable_res.insert("tBTC", electrum_response);
+
+    // test valid Segwit address
+    let rc = block_on(mm_alice.rpc(json! ({
+        "userpass": mm_alice.userpass,
+        "method": "validateaddress",
+        "coin": "tBTC",
+        "address": "tb1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5",
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «validateaddress» failed with status «{}»",
+        rc.0
+    );
+    let actual: Json = json::from_str(&rc.1).unwrap();
+
+    let expected = json!({
+        "result": {
+            "is_valid": true,
+        },
+    });
+    assert_eq!(actual, expected);
+
+    // test invalid tBTC Segwit address (invalid hrp)
+    let rc = block_on(mm_alice.rpc(json! ({
+        "userpass": mm_alice.userpass,
+        "method": "validateaddress",
+        "coin": "tBTC",
+        "address": "bc1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5",
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «validateaddress» failed with status «{}»",
+        rc.0
+    );
+
+    let json: Json = json::from_str(&rc.1).unwrap();
+    let result = &json["result"];
+
+    assert!(!result["is_valid"].as_bool().unwrap());
+    let reason = result["reason"].as_str().unwrap();
+    log!((reason));
+    assert!(reason.contains("Invalid address: bc1qdkwjk42dw6pryvs9sl0ht3pn3mxghuma64jst5"));
+
+    block_on(mm_alice.stop()).unwrap();
 }
 
 #[test]
