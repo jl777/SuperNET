@@ -2679,7 +2679,7 @@ where
         prefix: coin.as_ref().conf.p2sh_addr_prefix,
         t_addr_prefix: coin.as_ref().conf.p2sh_t_addr_prefix,
         hrp: coin.as_ref().conf.bech32_hrp.clone(),
-        addr_format: coin.as_ref().my_address.addr_format.clone(),
+        addr_format: UtxoAddressFormat::Standard,
     };
     let result = SwapPaymentOutputsResult {
         payment_address,
