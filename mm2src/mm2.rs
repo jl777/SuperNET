@@ -49,6 +49,7 @@ pub mod database;
 #[path = "lp_network.rs"] pub mod lp_network;
 
 #[path = "lp_ordermatch.rs"] pub mod lp_ordermatch;
+#[path = "lp_stats.rs"] pub mod lp_stats;
 #[path = "lp_swap.rs"] pub mod lp_swap;
 #[path = "rpc.rs"] pub mod rpc;
 

@@ -139,6 +139,11 @@ pub enum AdexBehaviourCmd {
     GetRelayMesh {
         result_tx: oneshot::Sender<Vec<String>>,
     },
+    /// Add a reserved peer to the peer exchange.
+    AddReservedPeer {
+        peer: PeerId,
+        addresses: PeerAddresses,
+    },
     PropagateMessage {
         message_id: MessageId,
         propagation_source: PeerId,
@@ -368,6 +373,10 @@ impl AtomicDexBehaviour {
                     error!("Result rx is dropped");
                 }
             },
+            AdexBehaviourCmd::AddReservedPeer { peer, addresses } => {
+                self.peers_exchange
+                    .add_peer_addresses_to_reserved_peers(&peer, addresses);
+            },
             AdexBehaviourCmd::PropagateMessage {
                 message_id,
                 propagation_source,
@@ -406,7 +415,8 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for AtomicDexBehaviour {
                             Ok(a) => a,
                             Err(_) => return,
                         };
-                        self.peers_exchange.add_peer_addresses(&message.source, addresses);
+                        self.peers_exchange
+                            .add_peer_addresses_to_known_peers(&message.source, addresses);
                     }
                 }
             }
@@ -501,9 +511,11 @@ fn maintain_connection_to_relays(swarm: &mut AtomicDexSwarm, bootstrap_addresses
             .filter(|peer| !relays_mesh.contains(peer))
             .collect();
         for peer in not_in_mesh.choose_multiple(&mut rng, to_disconnect_num) {
-            info!("Disconnecting peer {}", peer);
-            if Swarm::disconnect_peer_id(swarm, **peer).is_err() {
-                error!("Peer {} disconnect error", peer);
+            if !swarm.behaviour().peers_exchange.is_reserved_peer(*peer) {
+                info!("Disconnecting peer {}", peer);
+                if Swarm::disconnect_peer_id(swarm, **peer).is_err() {
+                    error!("Peer {} disconnect error", peer);
+                }
             }
         }
     }
@@ -721,7 +733,7 @@ fn start_gossipsub(
             for (peer_id, address) in ALL_NETID_7777_SEEDNODES {
                 let peer_id = PeerId::from_str(peer_id).expect("valid peer id");
                 let multiaddr = parse_relay_address((*address).to_owned(), network_port);
-                peers_exchange.add_peer_addresses(&peer_id, iter::once(multiaddr).collect());
+                peers_exchange.add_peer_addresses_to_known_peers(&peer_id, iter::once(multiaddr).collect());
                 gossipsub.add_explicit_relay(peer_id);
             }
         }
@@ -836,7 +848,7 @@ fn generate_ed25519_keypair<R: Rng>(rng: &mut R, force_key: Option<[u8; 32]>) ->
 
 /// `addr` is expected to be either `/dns/<DOMAIN>/tcp/<PORT>` or `/ipv4/<IP_ADDR>/tcp/<PORT>` or an IPv4 address.
 #[cfg(target_arch = "wasm32")]
-fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
+pub fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
     let dns = addr.starts_with("/dns") && addr.contains("/tcp/") && addr.ends_with("/ws");
     let ip4 = addr.starts_with("/ip4/") && addr.contains("/tcp/") && addr.ends_with("/ws");
     if dns || ip4 {
@@ -850,7 +862,7 @@ fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
 /// If the `addr` is in the "/ip4/{addr}/tcp/{port}" format then parse the `addr` immediately to the `Multiaddr`,
 /// else construct the "/ip4/{addr}/tcp/{port}" from the `addr` and `port` values.
 #[cfg(all(test, not(target_arch = "wasm32")))]
-fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
+pub fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
     if addr.starts_with("/ip4/") && addr.contains("/tcp/") {
         return addr.parse().unwrap();
     }
@@ -860,7 +872,7 @@ fn parse_relay_address(addr: String, port: u16) -> Multiaddr {
 
 /// The `addr` is expected to be an IP of the relay.
 #[cfg(all(not(test), not(target_arch = "wasm32")))]
-fn parse_relay_address(ipv4_addr: String, port: u16) -> Multiaddr {
+pub fn parse_relay_address(ipv4_addr: String, port: u16) -> Multiaddr {
     format!("/ip4/{}/tcp/{}", ipv4_addr, port).parse().unwrap()
 }
 
