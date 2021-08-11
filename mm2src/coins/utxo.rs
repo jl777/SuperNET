@@ -1714,10 +1714,9 @@ where
             | KmdRewardsAccrueInfo::NotAccruedReason(KmdRewardsNotAccruedReason::TransactionInMempool)
             | KmdRewardsAccrueInfo::NotAccruedReason(KmdRewardsNotAccruedReason::OneHourNotPassedYet) => {
                 let start_at = Some(kmd_interest_accrue_start_at(locktime));
-                let stop_at = match tx_info.height {
-                    Some(height) => Some(kmd_interest_accrue_stop_at(height, locktime)),
-                    _ => None,
-                };
+                let stop_at = tx_info
+                    .height
+                    .map(|height| kmd_interest_accrue_stop_at(height, locktime));
                 (start_at, stop_at)
             },
             _ => (None, None),
@@ -2007,7 +2006,7 @@ pub fn address_by_conf_and_pubkey_str(
     addr_format: UtxoAddressFormat,
 ) -> Result<String, String> {
     let null = Json::Null;
-    let conf_builder = UtxoConfBuilder::new(&conf, &null, coin);
+    let conf_builder = UtxoConfBuilder::new(conf, &null, coin);
     let utxo_conf = try_s!(conf_builder.build());
     let pubkey_bytes = try_s!(hex::decode(pubkey));
     let hash = dhash160(&pubkey_bytes);

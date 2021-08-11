@@ -902,7 +902,7 @@ fn pubkey_from_script_sig(script: &Script) -> Result<H264, String> {
     match script.get_instruction(0) {
         Some(Ok(instruction)) => match instruction.opcode {
             Opcode::OP_PUSHBYTES_70 | Opcode::OP_PUSHBYTES_71 | Opcode::OP_PUSHBYTES_72 => match instruction.data {
-                Some(bytes) => try_s!(Signature::parse_der(&bytes[..bytes.len() - 1])),
+                Some(bytes) => try_s!(Signature::from_der(&bytes[..bytes.len() - 1])),
                 None => return ERR!("No data at instruction 0 of script {:?}", script),
             },
             _ => return ERR!("Unexpected opcode {:?}", instruction.opcode),
@@ -914,7 +914,7 @@ fn pubkey_from_script_sig(script: &Script) -> Result<H264, String> {
     let pubkey = match script.get_instruction(1) {
         Some(Ok(instruction)) => match instruction.opcode {
             Opcode::OP_PUSHBYTES_33 => match instruction.data {
-                Some(bytes) => try_s!(PublicKey::parse_slice(bytes, None)),
+                Some(bytes) => try_s!(PublicKey::from_slice(bytes)),
                 None => return ERR!("No data at instruction 1 of script {:?}", script),
             },
             _ => return ERR!("Unexpected opcode {:?}", instruction.opcode),
@@ -926,7 +926,7 @@ fn pubkey_from_script_sig(script: &Script) -> Result<H264, String> {
     if script.get_instruction(2).is_some() {
         return ERR!("Unexpected instruction at position 2 of script {:?}", script);
     }
-    Ok(pubkey.serialize_compressed().into())
+    Ok(pubkey.serialize().into())
 }
 
 /// Extracts pubkey from witness script
@@ -939,11 +939,11 @@ fn pubkey_from_witness_script(witness_script: &[Bytes]) -> Result<H264, String> 
     if signature.is_empty() {
         return ERR!("Empty signature data in witness script");
     }
-    try_s!(Signature::parse_der(&signature[..signature.len() - 1]));
+    try_s!(Signature::from_der(&signature[..signature.len() - 1]));
 
-    let pubkey = try_s!(PublicKey::parse_slice(&witness_script[1], None));
+    let pubkey = try_s!(PublicKey::from_slice(&witness_script[1]));
 
-    Ok(pubkey.serialize_compressed().into())
+    Ok(pubkey.serialize().into())
 }
 
 pub async fn is_tx_confirmed_before_block<T>(coin: &T, tx: &RpcTransaction, block_number: u64) -> Result<bool, String>
@@ -2136,7 +2136,7 @@ where
     match tx_fee {
         ActualTxFee::Fixed(fee_amount) => {
             let amount = big_decimal_from_sat(fee_amount as i64, decimals);
-            return Ok(amount);
+            Ok(amount)
         },
         // if it's a dynamic fee, we should generate a swap transaction to get an actual trade fee
         ActualTxFee::Dynamic(fee) => {
@@ -2436,7 +2436,7 @@ pub async fn cache_transaction_if_possible(coin: &UtxoCoinFields, tx: &RpcTransa
         None => return Ok(()),
     }
 
-    tx_cache::cache_transaction(&tx_cache_path, &tx)
+    tx_cache::cache_transaction(&tx_cache_path, tx)
         .await
         .map_err(|e| ERRL!("Error {:?} on caching transaction {:?}", e, tx.txid))
 }
@@ -2753,7 +2753,7 @@ pub fn p2sh_spend(
         1 | fork_id,
     );
 
-    let sig = try_s!(script_sig(&sighash, &key_pair, fork_id));
+    let sig = try_s!(script_sig(&sighash, key_pair, fork_id));
 
     let mut resulting_script = Builder::default().push_data(&sig).into_bytes();
     if !script_data.is_empty() {

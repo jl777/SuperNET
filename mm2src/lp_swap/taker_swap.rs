@@ -10,7 +10,6 @@ use super::{broadcast_my_swap_status, broadcast_swap_message_every, check_other_
 use crate::mm2::lp_network::subscribe_to_topic;
 use crate::mm2::lp_ordermatch::{MatchBy, OrderConfirmationsSettings, TakerAction, TakerOrderBuilder};
 use crate::mm2::MM_VERSION;
-use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use coins::{lp_coinfind, CanRefundHtlc, FeeApproxStage, FoundSwapTxSpend, MmCoinEnum, TradeFee, TradePreimageValue};
 use common::executor::Timer;
@@ -27,7 +26,8 @@ use primitives::hash::H264;
 use rpc::v1::types::{Bytes as BytesJson, H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use serde_json::{self as json, Value as Json};
 use std::path::PathBuf;
-use std::sync::{atomic::Ordering, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use uuid::Uuid;
 
 pub fn stats_taker_swap_dir(ctx: &MmArc) -> PathBuf { ctx.dbdir().join("SWAPS").join("STATS").join("TAKER") }
@@ -259,7 +259,7 @@ impl RunTakerSwapInput {
     fn uuid(&self) -> &Uuid {
         match self {
             RunTakerSwapInput::StartNew(swap) => &swap.uuid,
-            RunTakerSwapInput::KickStart { swap_uuid, .. } => &swap_uuid,
+            RunTakerSwapInput::KickStart { swap_uuid, .. } => swap_uuid,
         }
     }
 }
@@ -446,10 +446,10 @@ pub struct TakerSwap {
     maker: bits256,
     uuid: Uuid,
     my_order_uuid: Option<Uuid>,
-    maker_payment_lock: Atomic<u64>,
-    maker_payment_confirmed: Atomic<bool>,
+    maker_payment_lock: AtomicU64,
+    maker_payment_confirmed: AtomicBool,
     errors: PaMutex<Vec<SwapError>>,
-    finished_at: Atomic<u64>,
+    finished_at: AtomicU64,
     mutable: RwLock<TakerSwapMut>,
     conf_settings: SwapConfirmationsSettings,
     payment_locktime: u64,
@@ -668,9 +668,9 @@ impl TakerSwap {
             maker,
             uuid,
             my_order_uuid,
-            maker_payment_confirmed: Atomic::new(false),
-            finished_at: Atomic::new(0),
-            maker_payment_lock: Atomic::new(0),
+            maker_payment_confirmed: AtomicBool::new(false),
+            finished_at: AtomicU64::new(0),
+            maker_payment_lock: AtomicU64::new(0),
             errors: PaMutex::new(Vec::new()),
             conf_settings,
             payment_locktime,
@@ -1758,7 +1758,7 @@ pub async fn calc_max_taker_vol(
         .get_sender_trade_fee(preimage_value, stage.clone())
         .compat()
         .await
-        .mm_err(|e| CheckBalanceError::from_trade_preimage_error(e, &my_coin))?;
+        .mm_err(|e| CheckBalanceError::from_trade_preimage_error(e, my_coin))?;
 
     let max_vol = if my_coin == max_trade_fee.coin {
         // second case
@@ -1768,7 +1768,7 @@ pub async fn calc_max_taker_vol(
             .get_fee_to_send_taker_fee(max_dex_fee.to_decimal(), stage)
             .compat()
             .await
-            .mm_err(|e| CheckBalanceError::from_trade_preimage_error(e, &my_coin))?;
+            .mm_err(|e| CheckBalanceError::from_trade_preimage_error(e, my_coin))?;
         let min_max_possible = &max_possible_2 - &max_fee_to_send_taker_fee.amount;
 
         debug!(
@@ -2132,8 +2132,7 @@ mod taker_swap_tests {
         });
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
-        let (taker_swap, _) =
-            TakerSwap::load_from_saved(ctx.clone(), maker_coin, taker_coin, taker_saved_swap).unwrap();
+        let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
 
         assert_eq!(unsafe { SWAP_CONTRACT_ADDRESS_CALLED }, 2);
         assert_eq!(
@@ -2164,8 +2163,7 @@ mod taker_swap_tests {
         });
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
-        let (taker_swap, _) =
-            TakerSwap::load_from_saved(ctx.clone(), maker_coin, taker_coin, taker_saved_swap).unwrap();
+        let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
 
         assert_eq!(unsafe { SWAP_CONTRACT_ADDRESS_CALLED }, 1);
         let expected_addr = addr_from_str("0xa09ad3cd7e96586ebd05a2607ee56b56fb2db8fd").unwrap();

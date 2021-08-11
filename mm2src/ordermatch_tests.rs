@@ -1428,7 +1428,7 @@ fn make_ctx_for_tests() -> (MmArc, String, [u8; 32]) {
     ctx.secp256k1_key_pair
         .pin(key_pair_from_seed("passphrase").unwrap())
         .unwrap();
-    let secret = (&*ctx.secp256k1_key_pair().private().secret).clone();
+    let secret = *(&*ctx.secp256k1_key_pair().private().secret);
     let pubkey = hex::encode(&**ctx.secp256k1_key_pair().public());
     (ctx, pubkey, secret)
 }
@@ -1494,7 +1494,7 @@ fn make_random_orders_segwit(
 fn pubkey_and_secret_for_test(passphrase: &str) -> (String, [u8; 32]) {
     let key_pair = key_pair_from_seed(passphrase).unwrap();
     let pubkey = hex::encode(&**key_pair.public());
-    let secret = (&*key_pair.private().secret).clone();
+    let secret = *(&*key_pair.private().secret);
     (pubkey, secret)
 }
 
@@ -1636,7 +1636,7 @@ fn test_process_get_orderbook_request_with_old_nodes() {
     for (pubkey, item) in orderbook.pubkey_orders {
         let expected = orders_by_pubkeys
             .get(&pubkey)
-            .expect(&format!("!best_orders_by_pubkeys is expected to contain {:?}", pubkey));
+            .unwrap_or_else(|| panic!("!best_orders_by_pubkeys is expected to contain {:?}", pubkey));
 
         let mut actual: Vec<OrderbookItem> = item.orders.iter().map(|(_uuid, order)| order.clone()).collect();
         actual.sort_unstable_by(|x, y| x.uuid.cmp(&y.uuid));
@@ -1656,7 +1656,7 @@ fn test_process_get_orderbook_request_limit() {
     let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
 
     let orders = make_random_orders(
-        pubkey.clone(),
+        pubkey,
         &secret,
         "RICK".into(),
         "MORTY".into(),
@@ -1701,7 +1701,7 @@ fn test_request_and_fill_orderbook() {
         .iter()
         .map(|(pubkey, secret)| {
             let orders: Vec<_> =
-                make_random_orders(pubkey.clone(), &secret, "RICK".into(), "MORTY".into(), ORDERS_NUMBER)
+                make_random_orders(pubkey.clone(), secret, "RICK".into(), "MORTY".into(), ORDERS_NUMBER)
                     .into_iter()
                     .map(|order| (order.uuid, order))
                     .collect();
@@ -1799,7 +1799,7 @@ fn test_request_and_fill_orderbook() {
         let pubkey_state = orderbook
             .pubkeys_state
             .get(&pubkey)
-            .expect(&format!("!pubkey_state.get() {} pubkey", pubkey));
+            .unwrap_or_else(|| panic!("!pubkey_state.get() {} pubkey", pubkey));
 
         let expected = orders
             .iter()
@@ -1810,7 +1810,7 @@ fn test_request_and_fill_orderbook() {
         let root = pubkey_state
             .trie_roots
             .get(&rick_morty_pair)
-            .expect(&format!("!pubkey_state.trie_roots.get() {}", rick_morty_pair));
+            .unwrap_or_else(|| panic!("!pubkey_state.trie_roots.get() {}", rick_morty_pair));
 
         // check if the root contains only expected orders
         let trie = TrieDB::<Layout>::new(&orderbook.memory_db, root).expect("!TrieDB::new()");
@@ -2134,8 +2134,8 @@ fn test_taker_request_can_match_with_uuid() {
 fn test_orderbook_insert_or_update_order() {
     let (_, pubkey, secret) = make_ctx_for_tests();
     let mut orderbook = Orderbook::default();
-    let order = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 1).remove(0);
-    orderbook.insert_or_update_order_update_trie(order.clone());
+    let order = make_random_orders(pubkey, &secret, "C1".into(), "C2".into(), 1).remove(0);
+    orderbook.insert_or_update_order_update_trie(order);
 }
 
 fn pair_trie_root_by_pub(ctx: &MmArc, pubkey: &str, pair: &str) -> H64 {
@@ -2469,7 +2469,7 @@ fn test_process_sync_pubkey_orderbook_state_points_to_not_uptodate_trie_root() {
 
     let SyncPubkeyOrderbookStateRes {
         mut pair_orders_diff, ..
-    } = block_on(process_sync_pubkey_orderbook_state(ctx.clone(), pubkey, roots))
+    } = block_on(process_sync_pubkey_orderbook_state(ctx, pubkey, roots))
         .expect("!process_sync_pubkey_orderbook_state")
         .expect("Expected MORTY:RICK delta, returned None");
 

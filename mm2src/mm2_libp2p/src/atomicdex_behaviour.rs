@@ -516,7 +516,7 @@ fn maintain_connection_to_relays(swarm: &mut AtomicDexSwarm, bootstrap_addresses
 }
 
 fn announce_my_addresses(swarm: &mut AtomicDexSwarm) {
-    let global_listeners: PeerAddresses = Swarm::listeners(&swarm)
+    let global_listeners: PeerAddresses = Swarm::listeners(swarm)
         .filter(|listener| {
             for protocol in listener.iter() {
                 if let Protocol::Ip4(ip) = protocol {
@@ -736,12 +736,12 @@ fn start_gossipsub(
             event_tx,
             spawn_fn,
             cmd_rx,
-            gossipsub,
+            netid,
             floodsub,
+            gossipsub,
             request_response,
             peers_exchange,
             ping,
-            netid,
         };
         libp2p::swarm::SwarmBuilder::new(transport, adex_behavior, local_peer_id)
             .executor(Box::new(&*SWARM_RUNTIME))
