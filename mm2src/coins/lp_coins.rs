@@ -19,7 +19,6 @@
 
 #![allow(uncommon_codepoints)]
 #![feature(integer_atomics)]
-#![feature(non_ascii_idents)]
 #![feature(async_closure)]
 #![feature(hash_raw_entry)]
 
@@ -45,6 +44,7 @@ use futures::lock::{MappedMutexGuard as AsyncMappedMutexGuard, Mutex as AsyncMut
 use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
 use http::{Response, StatusCode};
+use keys::AddressFormat as UtxoAddressFormat;
 use rpc::v1::types::Bytes as BytesJson;
 use serde::{Deserialize, Deserializer};
 use serde_json::{self as json, Value as Json};
@@ -100,6 +100,7 @@ use tx_history_db::{TxHistoryDb, TxHistoryError, TxHistoryOps, TxHistoryResult};
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 pub mod z_coin;
+use crate::utxo::UnsupportedAddr;
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 use z_coin::{z_coin_from_conf_and_request, ZCoin};
 
@@ -340,8 +341,6 @@ pub trait MarketCoinOps {
 
     fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send>;
 
-    fn address_from_pubkey_str(&self, pubkey: &str) -> Result<String, String>;
-
     fn display_priv_key(&self) -> String;
 
     /// Get the minimum amount to send.
@@ -384,6 +383,18 @@ pub struct WithdrawRequest {
     fee: Option<WithdrawFee>,
 }
 
+impl WithdrawRequest {
+    pub fn new_max(coin: String, to: String) -> WithdrawRequest {
+        WithdrawRequest {
+            coin,
+            to,
+            amount: 0.into(),
+            max: true,
+            fee: None,
+        }
+    }
+}
+
 /// Please note that no type should have the same structure as another type,
 /// because this enum has the `untagged` deserialization.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -416,16 +427,31 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
     }
 }
 
-impl Into<TxFeeDetails> for EthTxFeeDetails {
-    fn into(self: EthTxFeeDetails) -> TxFeeDetails { TxFeeDetails::Eth(self) }
+impl From<EthTxFeeDetails> for TxFeeDetails {
+    fn from(eth_details: EthTxFeeDetails) -> Self { TxFeeDetails::Eth(eth_details) }
 }
 
-impl Into<TxFeeDetails> for UtxoFeeDetails {
-    fn into(self: UtxoFeeDetails) -> TxFeeDetails { TxFeeDetails::Utxo(self) }
+impl From<UtxoFeeDetails> for TxFeeDetails {
+    fn from(utxo_details: UtxoFeeDetails) -> Self { TxFeeDetails::Utxo(utxo_details) }
 }
 
-impl Into<TxFeeDetails> for Qrc20FeeDetails {
-    fn into(self: Qrc20FeeDetails) -> TxFeeDetails { TxFeeDetails::Qrc20(self) }
+impl From<Qrc20FeeDetails> for TxFeeDetails {
+    fn from(qrc20_details: Qrc20FeeDetails) -> Self { TxFeeDetails::Qrc20(qrc20_details) }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct KmdRewardsDetails {
+    amount: BigDecimal,
+    claimed_by_me: bool,
+}
+
+impl KmdRewardsDetails {
+    pub fn claimed_by_me(amount: BigDecimal) -> KmdRewardsDetails {
+        KmdRewardsDetails {
+            amount,
+            claimed_by_me: true,
+        }
+    }
 }
 
 /// Transaction details
@@ -459,6 +485,9 @@ pub struct TransactionDetails {
     coin: String,
     /// Internal MM2 id used for internal transaction identification, for some coins it might be equal to transaction hash
     internal_id: BytesJson,
+    /// Amount of accrued rewards.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    kmd_rewards: Option<KmdRewardsDetails>,
 }
 
 impl TransactionDetails {
@@ -474,6 +503,22 @@ impl TransactionDetails {
         // checking for std::u64::MAX because there was integer overflow
         // in case of electrum returned -1 so there could be records with MAX confirmations
         self.timestamp == 0
+    }
+
+    pub fn should_update_kmd_rewards(&self) -> bool { self.coin == "KMD" && self.kmd_rewards.is_none() }
+
+    pub fn firo_negative_fee(&self) -> bool {
+        match &self.fee_details {
+            Some(TxFeeDetails::Utxo(utxo)) => utxo.amount < 0.into() && self.coin == "FIRO",
+            _ => false,
+        }
+    }
+
+    pub fn should_update(&self) -> bool {
+        self.should_update_block_height()
+            || self.should_update_timestamp()
+            || self.should_update_kmd_rewards()
+            || self.firo_negative_fee()
     }
 }
 
@@ -685,6 +730,10 @@ impl From<CoinFindError> for WithdrawError {
     }
 }
 
+impl From<UnsupportedAddr> for WithdrawError {
+    fn from(e: UnsupportedAddr) -> Self { WithdrawError::InvalidAddress(e.to_string()) }
+}
+
 impl WithdrawError {
     /// Construct [`WithdrawError`] from [`GenerateTxError`] using additional `coin` and `decimals`.
     pub fn from_generate_tx_error(gen_tx_err: GenerateTxError, coin: String, decimals: u8) -> WithdrawError {
@@ -741,7 +790,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 
     /// The coin can be initialized, but it cannot participate in the swaps.
     fn wallet_only(&self, ctx: &MmArc) -> bool {
-        let coin_conf = coin_conf(&ctx, &self.ticker());
+        let coin_conf = coin_conf(ctx, self.ticker());
         coin_conf["wallet_only"].as_bool().unwrap_or(false)
     }
 
@@ -789,7 +838,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
     }
 
     fn save_history_to_file(&self, ctx: &MmArc, history: Vec<TransactionDetails>) -> TxHistoryFut<()> {
-        let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
+        let coins_ctx = CoinsContext::from_ctx(ctx).unwrap();
         let ticker = self.ticker().to_owned();
         let my_address = self.my_address().unwrap_or_default();
 
@@ -836,6 +885,12 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 
     /// The minimum number of confirmations at which a transaction is considered mature.
     fn mature_confirmations(&self) -> Option<u32>;
+
+    /// Get some of the coin config info in serialized format for p2p messaging.
+    fn coin_protocol_info(&self) -> Option<Vec<u8>>;
+
+    /// Check if serialized coin protocol info is supported by current version.
+    fn is_coin_protocol_supported(&self, info: &Option<Vec<u8>>) -> bool;
 }
 
 #[derive(Clone, Debug)]
@@ -942,6 +997,7 @@ impl CoinsContext {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "protocol_data")]
 pub enum CoinProtocol {
@@ -1156,10 +1212,9 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             platform,
             contract_address,
         } => {
-            let contract_address = try_s!(qtum::contract_addr_from_str(&contract_address));
+            let contract_address = try_s!(qtum::contract_addr_from_str(contract_address));
             try_s!(
-                qrc20_coin_from_conf_and_request(ctx, ticker, &platform, &coins_en, req, secret, contract_address)
-                    .await
+                qrc20_coin_from_conf_and_request(ctx, ticker, platform, &coins_en, req, secret, contract_address).await
             )
             .into()
         },
@@ -1211,6 +1266,16 @@ pub async fn lp_coinfind(ctx: &MmArc, ticker: &str) -> Result<Option<MmCoinEnum>
     let cctx = try_s!(CoinsContext::from_ctx(ctx));
     let coins = cctx.coins.lock().await;
     Ok(coins.get(ticker).cloned())
+}
+
+/// Attempts to find a pair of active coins returning None if one is not enabled
+pub async fn find_pair(ctx: &MmArc, base: &str, rel: &str) -> Result<Option<(MmCoinEnum, MmCoinEnum)>, String> {
+    let fut_base = lp_coinfind(ctx, base);
+    let fut_rel = lp_coinfind(ctx, rel);
+
+    futures::future::try_join(fut_base, fut_rel)
+        .map_ok(|(base, rel)| base.zip(rel))
+        .await
 }
 
 #[derive(Display)]
@@ -1307,7 +1372,7 @@ pub async fn send_raw_transaction(ctx: MmArc, req: Json) -> Result<Response<Vec<
         Err(err) => return ERR!("!lp_coinfind({}): {}", ticker, err),
     };
     let bytes_string = try_s!(req["tx_hex"].as_str().ok_or("No 'tx_hex' field"));
-    let res = try_s!(coin.send_raw_tx(&bytes_string).compat().await);
+    let res = try_s!(coin.send_raw_tx(bytes_string).compat().await);
     let body = try_s!(json::to_vec(&json!({ "tx_hash": res })));
     Ok(try_s!(Response::builder().body(body)))
 }
@@ -1442,7 +1507,7 @@ pub async fn get_enabled_coins(ctx: MmArc) -> Result<Response<Vec<u8>>, String> 
 }
 
 pub async fn disable_coin(ctx: &MmArc, ticker: &str) -> Result<(), String> {
-    let coins_ctx = try_s!(CoinsContext::from_ctx(&ctx));
+    let coins_ctx = try_s!(CoinsContext::from_ctx(ctx));
     let mut coins = coins_ctx.coins.lock().await;
     match coins.remove(ticker) {
         Some(_) => Ok(()),
@@ -1616,14 +1681,19 @@ pub async fn convert_utxo_address(ctx: MmArc, req: Json) -> Result<Response<Vec<
     Ok(try_s!(Response::builder().body(response)))
 }
 
-pub fn address_by_coin_conf_and_pubkey_str(coin: &str, conf: &Json, pubkey: &str) -> Result<String, String> {
+pub fn address_by_coin_conf_and_pubkey_str(
+    coin: &str,
+    conf: &Json,
+    pubkey: &str,
+    addr_format: UtxoAddressFormat,
+) -> Result<String, String> {
     let protocol: CoinProtocol = try_s!(json::from_value(conf["protocol"].clone()));
     match protocol {
         CoinProtocol::ERC20 { .. } | CoinProtocol::ETH => eth::addr_from_pubkey_str(pubkey),
         CoinProtocol::UTXO | CoinProtocol::QTUM | CoinProtocol::QRC20 { .. } => {
-            utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey)
+            utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format)
         },
         #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
-        CoinProtocol::ZHTLC => utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey),
+        CoinProtocol::ZHTLC => utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format),
     }
 }

@@ -54,13 +54,13 @@ where
 
     fn upgrade_inbound(self, mut socket: TSocket, _: Self::Info) -> Self::Future {
         Box::pin(async move {
-            let packet = upgrade::read_one(&mut socket, 2048).await?;
+            let packet = upgrade::read_length_prefixed(&mut socket, 2048).await?;
             let rpc = rpc_proto::Rpc::decode(&packet[..])?;
 
             let mut messages = Vec::with_capacity(rpc.publish.len());
             for publish in rpc.publish.into_iter() {
                 messages.push(FloodsubMessage {
-                    source: PeerId::from_bytes(publish.from.unwrap_or_default())
+                    source: PeerId::from_bytes(&publish.from.unwrap_or_default())
                         .map_err(|_| FloodsubDecodeError::InvalidPeerId)?,
                     data: publish.data.unwrap_or_default(),
                     sequence_number: publish.seqno.unwrap_or_default(),
@@ -91,15 +91,15 @@ where
 #[derive(Debug)]
 pub enum FloodsubDecodeError {
     /// Error when reading the packet from the socket.
-    ReadError(upgrade::ReadOneError),
+    ReadError(io::Error),
     /// Error when decoding the raw buffer into a protobuf.
     ProtobufError(prost::DecodeError),
     /// Error when parsing the `PeerId` in the message.
     InvalidPeerId,
 }
 
-impl From<upgrade::ReadOneError> for FloodsubDecodeError {
-    fn from(err: upgrade::ReadOneError) -> Self { FloodsubDecodeError::ReadError(err) }
+impl From<io::Error> for FloodsubDecodeError {
+    fn from(err: io::Error) -> Self { FloodsubDecodeError::ReadError(err) }
 }
 
 impl From<prost::DecodeError> for FloodsubDecodeError {
@@ -153,7 +153,7 @@ where
     fn upgrade_outbound(self, mut socket: TSocket, _: Self::Info) -> Self::Future {
         Box::pin(async move {
             let bytes = self.into_bytes();
-            upgrade::write_one(&mut socket, bytes).await?;
+            upgrade::write_length_prefixed(&mut socket, bytes).await?;
             Ok(())
         })
     }
@@ -167,7 +167,7 @@ impl FloodsubRpc {
                 .messages
                 .into_iter()
                 .map(|msg| rpc_proto::Message {
-                    from: Some(msg.source.into_bytes()),
+                    from: Some(msg.source.to_bytes()),
                     data: Some(msg.data),
                     seqno: Some(msg.sequence_number),
                     topic_ids: msg.topics.into_iter().map(|topic| topic.into()).collect(),

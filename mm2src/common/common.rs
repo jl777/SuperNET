@@ -11,20 +11,19 @@
 //!                   binary
 
 #![allow(uncommon_codepoints)]
-#![feature(non_ascii_idents, integer_atomics, panic_info_message)]
+#![feature(integer_atomics, panic_info_message)]
 #![feature(async_closure)]
 #![feature(hash_raw_entry)]
 #![feature(negative_impls)]
-#![feature(optin_builtin_traits)]
+#![feature(auto_traits)]
 #![feature(drain_filter)]
-#![feature(const_fn)]
 
 #[macro_use] extern crate arrayref;
 #[macro_use] extern crate fomat_macros;
 #[macro_use] extern crate gstuff;
 #[macro_use] extern crate lazy_static;
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate serde_json;
+#[macro_use] pub extern crate serde_derive;
+#[macro_use] pub extern crate serde_json;
 #[cfg(test)]
 #[macro_use]
 extern crate ser_error_derive;
@@ -108,7 +107,6 @@ pub mod seri;
 #[path = "transport/wasm_ws.rs"]
 pub mod wasm_ws;
 
-use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use futures::compat::Future01CompatExt;
 use futures::future::FutureExt;
@@ -136,9 +134,11 @@ use std::ops::{Add, Deref, Div, RangeInclusive};
 use std::os::raw::{c_char, c_void};
 use std::path::{Path, PathBuf};
 use std::ptr::read_volatile;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
+
+pub use serde;
 
 cfg_native! {
     pub use gstuff::{now_float, now_ms};
@@ -499,7 +499,7 @@ fn output_pc_mem_addr(output: &mut dyn FnMut(&str)) {
 pub fn set_panic_hook() {
     use std::panic::{set_hook, PanicInfo};
 
-    thread_local! {static ENTERED: Atomic<bool> = Atomic::new (false);}
+    thread_local! {static ENTERED: AtomicBool = AtomicBool::new(false);}
 
     set_hook(Box::new(|info: &PanicInfo| {
         // Stack tracing and logging might panic (in `println!` for example).
@@ -676,13 +676,13 @@ pub mod wio {
     use std::time::Duration;
     use tokio::runtime::Runtime;
 
-    fn start_core_thread() -> MM2Runtime { MM2Runtime(Runtime::new().unwrap()) }
+    fn start_core_thread() -> Mm2Runtime { Mm2Runtime(Runtime::new().unwrap()) }
 
-    pub struct MM2Runtime(pub Runtime);
+    pub struct Mm2Runtime(pub Runtime);
 
     lazy_static! {
         /// Shared asynchronous reactor.
-        pub static ref CORE: MM2Runtime = start_core_thread();
+        pub static ref CORE: Mm2Runtime = start_core_thread();
         /// Shared CPU pool to run intensive/sleeping requests on a separate thread.
         ///
         /// Deprecated, prefer the futures 0.3 `POOL` instead.
@@ -694,7 +694,7 @@ pub mod wio {
             .create().expect("!ThreadPool"));
     }
 
-    impl<Fut: std::future::Future<Output = ()> + Send + 'static> hyper::rt::Executor<Fut> for &MM2Runtime {
+    impl<Fut: std::future::Future<Output = ()> + Send + 'static> hyper::rt::Executor<Fut> for &Mm2Runtime {
         fn execute(&self, fut: Fut) { self.0.spawn(fut); }
     }
 
@@ -829,7 +829,8 @@ pub mod wio {
     lazy_static! {
         /// NB: With a shared client there is a possibility that keep-alive connections will be reused.
         pub static ref HYPER: Client<HttpsConnector<HttpConnector>> = {
-            let https = HttpsConnector::new();
+            // Please note there was a problem on iOS if [`HttpsConnector::with_native_roots`] is used instead.
+            let https = HttpsConnector::with_webpki_roots();
             Client::builder()
                 .executor(&*CORE)
                 // Hyper had a lot of Keep-Alive bugs over the years and I suspect
@@ -843,7 +844,7 @@ pub mod wio {
                 // Performance of Keep-Alive in the Hyper client is questionable as well,
                 // should measure it on a case-by-case basis when we need it.
                 .pool_max_idle_per_host(0)
-                .build (https)
+                .build(https)
         };
     }
 
@@ -1180,7 +1181,7 @@ pub async fn slurp_url(url: &str) -> SlurpRes {
 #[test]
 fn test_slurp_req() {
     let (status, headers, body) = block_on(slurp_url("https://httpbin.org/get")).unwrap();
-    assert!(status.is_success(), format!("{:?} {:?} {:?}", status, headers, body));
+    assert!(status.is_success(), "{:?} {:?} {:?}", status, headers, body);
 }
 
 /// Fetch URL by HTTPS and parse JSON response
@@ -1722,7 +1723,7 @@ pub fn writeln(line: &str) {
 static mut PROCESS_LOG_TAIL: [u8; 0x10000] = [0; 0x10000];
 
 #[cfg(target_arch = "wasm32")]
-static TAIL_CUR: Atomic<usize> = Atomic::new(0);
+static TAIL_CUR: AtomicUsize = AtomicUsize::new(0);
 
 /// Keep a tail of the log in RAM for the integration tests.
 #[cfg(target_arch = "wasm32")]

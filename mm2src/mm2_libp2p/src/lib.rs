@@ -2,7 +2,7 @@
 
 mod adex_ping;
 pub mod atomicdex_behaviour;
-mod peers_exchange;
+pub mod peers_exchange;
 pub mod request_response;
 mod runtime;
 
@@ -12,9 +12,10 @@ use secp256k1::{Message as SecpMessage, PublicKey as Secp256k1Pubkey, Secp256k1,
 use serde::{de, ser::Serializer, Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-pub use atomicdex_behaviour::{start_gossipsub, NodeType};
+pub use atomicdex_behaviour::{spawn_gossipsub, NodeType};
 pub use atomicdex_gossipsub::{GossipsubEvent, GossipsubMessage, MessageId};
 pub use libp2p::PeerId;
+pub use peers_exchange::PeerAddresses;
 
 lazy_static! {
     static ref SECP_VERIFY: Secp256k1<VerifyOnly> = Secp256k1::verification_only();

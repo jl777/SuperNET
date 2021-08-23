@@ -31,6 +31,7 @@ fn test_match_maker_order_and_taker_request() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
 
     let request = TakerRequest {
@@ -44,6 +45,8 @@ fn test_match_maker_order_and_taker_request() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let actual = maker.match_with_request(&request);
@@ -63,6 +66,7 @@ fn test_match_maker_order_and_taker_request() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
 
     let request = TakerRequest {
@@ -76,6 +80,8 @@ fn test_match_maker_order_and_taker_request() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let actual = maker.match_with_request(&request);
@@ -95,6 +101,7 @@ fn test_match_maker_order_and_taker_request() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
 
     let request = TakerRequest {
@@ -108,6 +115,8 @@ fn test_match_maker_order_and_taker_request() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let actual = maker.match_with_request(&request);
@@ -127,6 +136,7 @@ fn test_match_maker_order_and_taker_request() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
 
     let request = TakerRequest {
@@ -140,6 +150,8 @@ fn test_match_maker_order_and_taker_request() {
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let actual = maker.match_with_request(&request);
@@ -159,6 +171,7 @@ fn test_match_maker_order_and_taker_request() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
 
     let request = TakerRequest {
@@ -172,6 +185,8 @@ fn test_match_maker_order_and_taker_request() {
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let actual = maker.match_with_request(&request);
@@ -191,6 +206,7 @@ fn test_match_maker_order_and_taker_request() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
 
     let request = TakerRequest {
@@ -204,11 +220,87 @@ fn test_match_maker_order_and_taker_request() {
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let actual = maker.match_with_request(&request);
     let expected = OrderMatchResult::Matched((1.into(), 1.into()));
     assert_eq!(expected, actual);
+
+    // The following Taker request has not to be matched since the resulted base amount it greater than `max_base_vol`.
+    // https://github.com/KomodoPlatform/atomicDEX-API/issues/1041#issuecomment-901863864
+    let maker = MakerOrder {
+        max_base_vol: "0.2928826881884105".into(),
+        min_base_vol: 0.into(),
+        price: "2643.01935664".into(),
+        created_at: now_ms(),
+        updated_at: None,
+        base: "ETH-BEP20".to_owned(),
+        rel: "KMD".to_owned(),
+        matches: HashMap::new(),
+        started_swaps: vec![],
+        uuid: Uuid::new_v4(),
+        conf_settings: None,
+        changes_history: None,
+        save_in_history: false,
+    };
+    let request = TakerRequest {
+        base: "KMD".to_owned(),
+        rel: "ETH-BEP20".to_owned(),
+        base_amount: "774.205645538427044180416545".into(),
+        rel_amount: "0.2928826881884105".into(),
+        action: TakerAction::Sell,
+        uuid: Uuid::new_v4(),
+        sender_pubkey: H256Json::default(),
+        dest_pub_key: H256Json::default(),
+        match_by: MatchBy::Any,
+        conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
+    };
+    let actual = maker.match_with_request(&request);
+    assert_eq!(actual, OrderMatchResult::NotMatched);
+
+    // Though the Taker's rel amount is less than the Makers' min base volume '2',
+    // the Maker's price is chosen to calculate the result amounts, so we have:
+    // `base_amount = taker_base_amount/maker_price = 30/10 = 3`
+    // `rel_amount = taker_base_amount = 30`.
+    // The order should be matched.
+    let maker = MakerOrder {
+        max_base_vol: "3".into(),
+        min_base_vol: "2".into(),
+        price: 10.into(),
+        created_at: now_ms(),
+        updated_at: None,
+        base: "BASE".to_owned(),
+        rel: "REL".to_owned(),
+        matches: HashMap::new(),
+        started_swaps: vec![],
+        uuid: Uuid::new_v4(),
+        conf_settings: None,
+        changes_history: None,
+        save_in_history: false,
+    };
+    let request = TakerRequest {
+        base: "REL".to_owned(),
+        rel: "BASE".to_owned(),
+        base_amount: "30".into(),
+        rel_amount: "1.5".into(),
+        action: TakerAction::Sell,
+        uuid: Uuid::new_v4(),
+        sender_pubkey: H256Json::default(),
+        dest_pub_key: H256Json::default(),
+        match_by: MatchBy::Any,
+        conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
+    };
+    let actual = maker.match_with_request(&request);
+    let expected_base_amount = MmNumber::from(3);
+    let expected_rel_amount = MmNumber::from(30);
+    let expected = OrderMatchResult::Matched((expected_base_amount, expected_rel_amount));
+    assert_eq!(actual, expected);
 }
 
 // https://github.com/KomodoPlatform/atomicDEX-API/pull/739#discussion_r517275495
@@ -256,6 +348,7 @@ fn test_maker_order_available_amount() {
         uuid: Uuid::new_v4(),
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     };
     maker.matches.insert(Uuid::new_v4(), MakerMatch {
         request: TakerRequest {
@@ -269,6 +362,8 @@ fn test_maker_order_available_amount() {
             action: TakerAction::Buy,
             match_by: MatchBy::Any,
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         reserved: MakerReserved {
             base: "BASE".into(),
@@ -280,6 +375,8 @@ fn test_maker_order_available_amount() {
             maker_order_uuid: Uuid::new_v4(),
             taker_order_uuid: Uuid::new_v4(),
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         connect: None,
         connected: None,
@@ -297,6 +394,8 @@ fn test_maker_order_available_amount() {
             action: TakerAction::Buy,
             match_by: MatchBy::Any,
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         reserved: MakerReserved {
             base: "BASE".into(),
@@ -308,6 +407,8 @@ fn test_maker_order_available_amount() {
             maker_order_uuid: Uuid::new_v4(),
             taker_order_uuid: Uuid::new_v4(),
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         connect: None,
         connected: None,
@@ -334,6 +435,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -343,6 +446,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -355,6 +459,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -370,6 +476,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -379,6 +487,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -391,6 +500,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -406,6 +517,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -415,6 +528,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -427,6 +541,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -442,6 +558,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Sell,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -451,6 +569,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -463,6 +582,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::NotMatched, order.match_reserved(&reserved));
@@ -478,6 +599,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -487,6 +610,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -499,6 +623,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -514,6 +640,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -523,6 +651,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -535,6 +664,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -550,6 +681,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -559,6 +692,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -571,6 +705,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -586,6 +722,8 @@ fn test_taker_match_reserved() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -595,6 +733,7 @@ fn test_taker_match_reserved() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -607,6 +746,8 @@ fn test_taker_match_reserved() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::NotMatched, order.match_reserved(&reserved));
@@ -626,11 +767,14 @@ fn test_taker_match_reserved() {
             dest_pub_key: H256Json::default(),
             match_by: MatchBy::Any,
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         matches: HashMap::new(),
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -643,6 +787,8 @@ fn test_taker_match_reserved() {
         sender_pubkey: H256Json::default(),
         dest_pub_key: H256Json::default(),
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::Matched, order.match_reserved(&reserved));
@@ -661,6 +807,8 @@ fn test_taker_order_cancellable() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let order = TakerOrder {
@@ -670,6 +818,7 @@ fn test_taker_order_cancellable() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     assert!(order.is_cancellable());
@@ -685,6 +834,8 @@ fn test_taker_order_cancellable() {
         action: TakerAction::Buy,
         match_by: MatchBy::Any,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let mut order = TakerOrder {
@@ -694,6 +845,7 @@ fn test_taker_order_cancellable() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     order.matches.insert(Uuid::new_v4(), TakerMatch {
@@ -708,6 +860,8 @@ fn test_taker_order_cancellable() {
             maker_order_uuid: Uuid::new_v4(),
             taker_order_uuid: Uuid::new_v4(),
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         connect: TakerConnect {
             sender_pubkey: H256Json::default(),
@@ -743,6 +897,7 @@ fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::Receiver<AdexBehaviourCmd> {
         started_swaps: vec![],
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     });
     maker_orders.insert(Uuid::from_bytes([1; 16]), MakerOrder {
         uuid: Uuid::from_bytes([1; 16]),
@@ -757,6 +912,7 @@ fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::Receiver<AdexBehaviourCmd> {
         started_swaps: vec![],
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     });
     maker_orders.insert(Uuid::from_bytes([2; 16]), MakerOrder {
         uuid: Uuid::from_bytes([2; 16]),
@@ -771,6 +927,7 @@ fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::Receiver<AdexBehaviourCmd> {
         started_swaps: vec![],
         conf_settings: None,
         changes_history: None,
+        save_in_history: false,
     });
     taker_orders.insert(Uuid::from_bytes([3; 16]), TakerOrder {
         matches: HashMap::new(),
@@ -786,10 +943,13 @@ fn prepare_for_cancel_by(ctx: &MmArc) -> mpsc::Receiver<AdexBehaviourCmd> {
             sender_pubkey: H256Json::default(),
             match_by: MatchBy::Any,
             conf_settings: None,
+            base_protocol_info: None,
+            rel_protocol_info: None,
         },
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     });
     rx
 }
@@ -879,6 +1039,8 @@ fn test_taker_order_match_by() {
         action: TakerAction::Buy,
         match_by: MatchBy::Orders(not_matching_uuids),
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     let mut order = TakerOrder {
@@ -888,6 +1050,7 @@ fn test_taker_order_match_by() {
         order_type: OrderType::GoodTillCancelled,
         min_volume: 0.into(),
         timeout: 30,
+        save_in_history: false,
     };
 
     let reserved = MakerReserved {
@@ -900,6 +1063,8 @@ fn test_taker_order_match_by() {
         maker_order_uuid: Uuid::new_v4(),
         taker_order_uuid: uuid,
         conf_settings: None,
+        base_protocol_info: None,
+        rel_protocol_info: None,
     };
 
     assert_eq!(MatchReservedResult::NotMatched, order.match_reserved(&reserved));
@@ -1336,7 +1501,7 @@ fn make_ctx_for_tests() -> (MmArc, String, [u8; 32]) {
     ctx.secp256k1_key_pair
         .pin(key_pair_from_seed("passphrase").unwrap())
         .unwrap();
-    let secret = (&*ctx.secp256k1_key_pair().private().secret).clone();
+    let secret = *(&*ctx.secp256k1_key_pair().private().secret);
     let pubkey = hex::encode(&**ctx.secp256k1_key_pair().public());
     (ctx, pubkey, secret)
 }
@@ -1368,7 +1533,7 @@ fn make_random_orders(pubkey: String, _secret: &[u8; 32], base: String, rel: Str
 fn pubkey_and_secret_for_test(passphrase: &str) -> (String, [u8; 32]) {
     let key_pair = key_pair_from_seed(passphrase).unwrap();
     let pubkey = hex::encode(&**key_pair.public());
-    let secret = (&*key_pair.private().secret).clone();
+    let secret = *(&*key_pair.private().secret);
     (pubkey, secret)
 }
 
@@ -1460,7 +1625,7 @@ fn test_process_get_orderbook_request_limit() {
     let mut orderbook = block_on(ordermatch_ctx.orderbook.lock());
 
     let orders = make_random_orders(
-        pubkey.clone(),
+        pubkey,
         &secret,
         "RICK".into(),
         "MORTY".into(),
@@ -1504,7 +1669,7 @@ fn test_request_and_fill_orderbook() {
         .iter()
         .map(|(pubkey, secret)| {
             let orders: Vec<_> =
-                make_random_orders(pubkey.clone(), &secret, "RICK".into(), "MORTY".into(), ORDERS_NUMBER)
+                make_random_orders(pubkey.clone(), secret, "RICK".into(), "MORTY".into(), ORDERS_NUMBER)
                     .into_iter()
                     .map(|order| (order.uuid, order))
                     .collect();
@@ -1601,7 +1766,7 @@ fn test_request_and_fill_orderbook() {
         let pubkey_state = orderbook
             .pubkeys_state
             .get(&pubkey)
-            .expect(&format!("!pubkey_state.get() {} pubkey", pubkey));
+            .unwrap_or_else(|| panic!("!pubkey_state.get() {} pubkey", pubkey));
 
         let expected = orders
             .iter()
@@ -1612,7 +1777,7 @@ fn test_request_and_fill_orderbook() {
         let root = pubkey_state
             .trie_roots
             .get(&rick_morty_pair)
-            .expect(&format!("!pubkey_state.trie_roots.get() {}", rick_morty_pair));
+            .unwrap_or_else(|| panic!("!pubkey_state.trie_roots.get() {}", rick_morty_pair));
 
         // check if the root contains only expected orders
         let trie = TrieDB::<Layout>::new(&orderbook.memory_db, root).expect("!TrieDB::new()");
@@ -1936,8 +2101,8 @@ fn test_taker_request_can_match_with_uuid() {
 fn test_orderbook_insert_or_update_order() {
     let (_, pubkey, secret) = make_ctx_for_tests();
     let mut orderbook = Orderbook::default();
-    let order = make_random_orders(pubkey.clone(), &secret, "C1".into(), "C2".into(), 1).remove(0);
-    orderbook.insert_or_update_order_update_trie(order.clone());
+    let order = make_random_orders(pubkey, &secret, "C1".into(), "C2".into(), 1).remove(0);
+    orderbook.insert_or_update_order_update_trie(order);
 }
 
 fn pair_trie_root_by_pub(ctx: &MmArc, pubkey: &str, pair: &str) -> H64 {
@@ -2271,7 +2436,7 @@ fn test_process_sync_pubkey_orderbook_state_points_to_not_uptodate_trie_root() {
 
     let SyncPubkeyOrderbookStateRes {
         mut pair_orders_diff, ..
-    } = block_on(process_sync_pubkey_orderbook_state(ctx.clone(), pubkey, roots))
+    } = block_on(process_sync_pubkey_orderbook_state(ctx, pubkey, roots))
         .expect("!process_sync_pubkey_orderbook_state")
         .expect("Expected MORTY:RICK delta, returned None");
 

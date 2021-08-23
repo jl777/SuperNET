@@ -350,9 +350,9 @@ impl EthCoinImpl {
     #[cfg(not(target_arch = "wasm32"))]
     fn store_eth_traces(&self, ctx: &MmArc, traces: &SavedTraces) {
         let content = json::to_vec(traces).unwrap();
-        let tmp_file = format!("{}.tmp", self.eth_traces_path(&ctx).display());
+        let tmp_file = format!("{}.tmp", self.eth_traces_path(ctx).display());
         std::fs::write(&tmp_file, content).unwrap();
-        std::fs::rename(tmp_file, self.eth_traces_path(&ctx)).unwrap();
+        std::fs::rename(tmp_file, self.eth_traces_path(ctx)).unwrap();
     }
 
     /// Store ETH traces to local DB
@@ -373,9 +373,9 @@ impl EthCoinImpl {
     #[cfg(not(target_arch = "wasm32"))]
     fn store_erc20_events(&self, ctx: &MmArc, events: &SavedErc20Events) {
         let content = json::to_vec(events).unwrap();
-        let tmp_file = format!("{}.tmp", self.erc20_events_path(&ctx).display());
+        let tmp_file = format!("{}.tmp", self.erc20_events_path(ctx).display());
         std::fs::write(&tmp_file, content).unwrap();
-        std::fs::rename(tmp_file, self.erc20_events_path(&ctx)).unwrap();
+        std::fs::rename(tmp_file, self.erc20_events_path(ctx)).unwrap();
     }
 
     /// Store ERC20 events to local DB
@@ -418,7 +418,7 @@ impl EthCoinImpl {
     fn get_gas_price(&self) -> Web3RpcFut<U256> {
         let fut = if let Some(url) = &self.gas_station_url {
             Either01::A(
-                GasStationData::get_gas_price(&url).map(|price| increase_by_percent_one_gwei(price, GAS_PRICE_PERCENT)),
+                GasStationData::get_gas_price(url).map(|price| increase_by_percent_one_gwei(price, GAS_PRICE_PERCENT)),
             )
         } else {
             Either01::B(self.web3.eth().gas_price().map_to_mm_fut(Web3RpcError::from))
@@ -600,6 +600,7 @@ async fn withdraw_impl(ctx: MmArc, coin: EthCoin, req: WithdrawRequest) -> Withd
         coin: coin.ticker.clone(),
         internal_id: vec![].into(),
         timestamp: now_ms() / 1000,
+        kmd_rewards: None,
     })
 }
 
@@ -1217,8 +1218,6 @@ impl MarketCoinOps for EthCoin {
         )
     }
 
-    fn address_from_pubkey_str(&self, pubkey: &str) -> Result<String, String> { addr_from_pubkey_str(pubkey) }
-
     fn display_priv_key(&self) -> String { format!("{:#02x}", self.key_pair.secret()) }
 
     fn min_tx_amount(&self) -> BigDecimal { BigDecimal::from(0) }
@@ -1258,7 +1257,7 @@ async fn sign_and_send_transaction_impl(
         () => {
             &[&"sign-and-send"]
         };
-    };
+    }
     let _nonce_lock = NONCE_LOCK
         .lock(|start, now| {
             if ctx.is_stopping() {
@@ -1280,11 +1279,11 @@ async fn sign_and_send_transaction_impl(
     let gas_price = try_s!(coin.get_gas_price().compat().await);
     let tx = UnSignedEthTx {
         nonce,
-        value,
-        action,
-        data,
-        gas,
         gas_price,
+        gas,
+        action,
+        value,
+        data,
     };
     let signed = tx.sign(coin.key_pair.secret(), coin.chain_id);
     let bytes = web3::types::Bytes(rlp::encode(&signed).to_vec());
@@ -1873,7 +1872,7 @@ impl EthCoin {
                 break;
             };
             {
-                let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
+                let coins_ctx = CoinsContext::from_ctx(ctx).unwrap();
                 let coins = coins_ctx.coins.lock().await;
                 if !coins.contains_key(&self.ticker) {
                     ctx.log.log("", &[&"tx_history", &self.ticker], "Loop stopped");
@@ -1894,7 +1893,7 @@ impl EthCoin {
                 },
             };
 
-            let mut saved_events = match self.load_saved_erc20_events(&ctx) {
+            let mut saved_events = match self.load_saved_erc20_events(ctx) {
                 Some(events) => events,
                 None => SavedErc20Events {
                     events: vec![],
@@ -1975,7 +1974,7 @@ impl EthCoin {
                 } else {
                     0.into()
                 };
-                self.store_erc20_events(&ctx, &saved_events);
+                self.store_erc20_events(ctx, &saved_events);
             }
 
             if current_block > saved_events.latest_block {
@@ -2034,14 +2033,14 @@ impl EthCoin {
                 saved_events.events.extend(from_events_after_latest);
                 saved_events.events.extend(to_events_after_latest);
                 saved_events.latest_block = current_block;
-                self.store_erc20_events(&ctx, &saved_events);
+                self.store_erc20_events(ctx, &saved_events);
             }
 
             let all_events: HashMap<_, _> = saved_events
                 .events
                 .iter()
                 .filter(|e| e.block_number.is_some() && e.transaction_hash.is_some() && !e.is_removed())
-                .map(|e| (e.transaction_hash.clone().unwrap(), e))
+                .map(|e| (e.transaction_hash.unwrap(), e))
                 .collect();
             let mut all_events: Vec<_> = all_events.into_iter().map(|(_, log)| log).collect();
             all_events.sort_by(|a, b| b.block_number.unwrap().cmp(&a.block_number.unwrap()));
@@ -2142,7 +2141,7 @@ impl EthCoin {
                     },
                 };
                 let fee_coin = match &self.coin_type {
-                    EthCoinType::Eth => &self.ticker(),
+                    EthCoinType::Eth => self.ticker(),
                     EthCoinType::Erc20 { platform, .. } => platform.as_str(),
                 };
                 let fee_details = match receipt {
@@ -2194,6 +2193,7 @@ impl EthCoin {
                     tx_hex: BytesJson(rlp::encode(&raw)),
                     internal_id: BytesJson(internal_id.to_vec()),
                     timestamp: block.timestamp.into(),
+                    kmd_rewards: None,
                 };
 
                 existing_history.push(details);
@@ -2206,7 +2206,7 @@ impl EthCoin {
                         b.block_height.cmp(&a.block_height)
                     }
                 });
-                if let Err(e) = self.save_history_to_file(&ctx, existing_history).compat().await {
+                if let Err(e) = self.save_history_to_file(ctx, existing_history).compat().await {
                     ctx.log.log(
                         "",
                         &[&"tx_history", &self.ticker],
@@ -2250,7 +2250,7 @@ impl EthCoin {
                 break;
             };
             {
-                let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
+                let coins_ctx = CoinsContext::from_ctx(ctx).unwrap();
                 let coins = coins_ctx.coins.lock().await;
                 if !coins.contains_key(&self.ticker) {
                     ctx.log.log("", &[&"tx_history", &self.ticker], "Loop stopped");
@@ -2271,7 +2271,7 @@ impl EthCoin {
                 },
             };
 
-            let mut saved_traces = match self.load_saved_traces(&ctx) {
+            let mut saved_traces = match self.load_saved_traces(ctx) {
                 Some(traces) => traces,
                 None => SavedTraces {
                     traces: vec![],
@@ -2363,7 +2363,7 @@ impl EthCoin {
                 } else {
                     0.into()
                 };
-                self.store_eth_traces(&ctx, &saved_traces);
+                self.store_eth_traces(ctx, &saved_traces);
             }
 
             if current_block > saved_traces.latest_block {
@@ -2421,7 +2421,7 @@ impl EthCoin {
                 saved_traces.traces.extend(to_traces_after_latest);
                 saved_traces.latest_block = current_block;
 
-                self.store_eth_traces(&ctx, &saved_traces);
+                self.store_eth_traces(ctx, &saved_traces);
             }
             saved_traces.traces.sort_by(|a, b| b.block_number.cmp(&a.block_number));
             for trace in saved_traces.traces {
@@ -2497,7 +2497,7 @@ impl EthCoin {
                     },
                 };
                 let fee_coin = match &self.coin_type {
-                    EthCoinType::Eth => &self.ticker(),
+                    EthCoinType::Eth => self.ticker(),
                     EthCoinType::Erc20 { platform, .. } => platform.as_str(),
                 };
                 let fee_details: Option<EthTxFeeDetails> = match receipt {
@@ -2562,6 +2562,7 @@ impl EthCoin {
                     tx_hex: BytesJson(rlp::encode(&raw)),
                     internal_id,
                     timestamp: block.timestamp.into(),
+                    kmd_rewards: None,
                 };
 
                 existing_history.push(details);
@@ -2575,7 +2576,7 @@ impl EthCoin {
                     }
                 });
 
-                if let Err(e) = self.save_history_to_file(&ctx, existing_history.clone()).compat().await {
+                if let Err(e) = self.save_history_to_file(ctx, existing_history.clone()).compat().await {
                     ctx.log.log(
                         "",
                         &[&"tx_history", &self.ticker],
@@ -2914,6 +2915,10 @@ impl MmCoin for EthCoin {
     }
 
     fn mature_confirmations(&self) -> Option<u32> { None }
+
+    fn coin_protocol_info(&self) -> Option<Vec<u8>> { None }
+
+    fn is_coin_protocol_supported(&self, _info: &Option<Vec<u8>>) -> bool { true }
 }
 
 pub trait TryToAddress {
@@ -2934,8 +2939,8 @@ impl<T: TryToAddress> TryToAddress for Option<T> {
 }
 
 pub fn addr_from_raw_pubkey(pubkey: &[u8]) -> Result<Address, String> {
-    let pubkey = try_s!(PublicKey::parse_slice(pubkey, None).map_err(|e| ERRL!("{:?}", e)));
-    let eth_public = Public::from(&pubkey.serialize()[1..65]);
+    let pubkey = try_s!(PublicKey::from_slice(pubkey).map_err(|e| ERRL!("{:?}", e)));
+    let eth_public = Public::from(&pubkey.serialize_uncompressed()[1..65]);
     Ok(public_to_address(&eth_public))
 }
 

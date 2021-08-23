@@ -4,7 +4,6 @@
 #![test_runner(docker_tests_runner)]
 #![feature(drain_filter)]
 #![feature(hash_raw_entry)]
-#![feature(non_ascii_idents)]
 #![feature(map_first_last)]
 #![recursion_limit = "512"]
 
@@ -82,11 +81,13 @@ mod docker_tests {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod docker_tests {
     #[rustfmt::skip]
+    mod qrc20_tests;
+    #[rustfmt::skip]
+    mod slp_tests;
+    #[rustfmt::skip]
     mod swaps_confs_settings_sync_tests;
     #[rustfmt::skip]
     mod swaps_file_lock_tests;
-    #[rustfmt::skip]
-    mod qrc20_tests;
 
     use crate::mm2::lp_swap::dex_fee_amount;
     use crate::mm2::mm2_tests::structs::*;
@@ -96,7 +97,7 @@ mod docker_tests {
     use coins::utxo::rpc_clients::{UnspentInfo, UtxoRpcClientEnum, UtxoRpcClientOps};
     use coins::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin};
     use coins::utxo::{coin_daemon_data_dir, dhash160, zcash_params_path, UtxoCoinFields, UtxoCommonOps};
-    use coins::{FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, TransactionEnum};
+    use coins::{FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, TransactionEnum, WithdrawRequest};
     use common::for_tests::enable_electrum;
     use common::mm_number::MmNumber;
     use common::{block_on, now_ms};
@@ -107,7 +108,7 @@ mod docker_tests {
     use keys::{KeyPair, Private};
     use primitives::hash::H160;
     use qrc20_tests::{qtum_docker_node, QtumDockerOps, QTUM_REGTEST_DOCKER_IMAGE};
-    use secp256k1::{PublicKey, SecretKey};
+    use secp256k1::{PublicKey, Secp256k1, SecretKey};
     use serde_json::{self as json, Value as Json};
     use std::collections::HashMap;
     use std::env;
@@ -122,9 +123,9 @@ mod docker_tests {
     use testcontainers::{Container, Docker, Image};
 
     fn rmd160_from_priv(privkey: [u8; 32]) -> H160 {
-        let secret = SecretKey::parse(&privkey).unwrap();
-        let public = PublicKey::from_secret_key(&secret);
-        dhash160(&public.serialize_compressed())
+        let secret = SecretKey::from_slice(&privkey).unwrap();
+        let public = PublicKey::from_secret_key(&Secp256k1::new(), &secret);
+        dhash160(&public.serialize())
     }
 
     const UTXO_ASSET_DOCKER_IMAGE: &str = "artempikulin/testblockchain";
@@ -272,7 +273,7 @@ mod docker_tests {
             "-v".into(),
             format!("{}:/data/.zcash-params", zcash_params_path().display()),
             "-p".into(),
-            format!("127.0.0.1:{}:{}", port, port).into(),
+            format!("127.0.0.1:{}:{}", port, port),
         ];
         let image = GenericImage::new(UTXO_ASSET_DOCKER_IMAGE)
             .with_args(args)
@@ -331,12 +332,12 @@ mod docker_tests {
 
     /// Generate random privkey, create a coin and fill it's address with the specified balance.
     fn generate_coin_with_random_privkey(ticker: &str, balance: BigDecimal) -> (MmArc, UtxoStandardCoin, [u8; 32]) {
-        let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
-        let (ctx, coin) = utxo_coin_from_privkey(ticker, &priv_key);
-        let timeout = 30; // timeout if test takes more than 120 seconds to run
+        let priv_key = SecretKey::new(&mut rand6::thread_rng());
+        let (ctx, coin) = utxo_coin_from_privkey(ticker, &priv_key[..]);
+        let timeout = 30; // timeout if test takes more than 30 seconds to run
         let my_address = coin.my_address().expect("!my_address");
         fill_address(&coin, &my_address, balance, timeout);
-        (ctx, coin, priv_key)
+        (ctx, coin, *priv_key.as_ref())
     }
 
     fn import_address<T>(coin: &T)
@@ -1413,7 +1414,7 @@ mod docker_tests {
         })))
         .unwrap();
         assert!(!rc.0.is_success(), "buy success, but should fail: {}", rc.1);
-        assert!(rc.1.contains("Not enough MYCOIN1 for swap"), rc.1);
+        assert!(rc.1.contains("Not enough MYCOIN1 for swap"), "{}", rc.1);
         block_on(mm_bob.stop()).unwrap();
         block_on(mm_alice.stop()).unwrap();
     }
@@ -1510,7 +1511,7 @@ mod docker_tests {
         })))
         .unwrap();
         assert!(!rc.0.is_success(), "sell success, but should fail: {}", rc.1);
-        assert!(rc.1.contains("Not enough MYCOIN1 for swap"), rc.1);
+        assert!(rc.1.contains("Not enough MYCOIN1 for swap"), "{}", rc.1);
         block_on(mm_bob.stop()).unwrap();
         block_on(mm_alice.stop()).unwrap();
     }
@@ -1530,7 +1531,7 @@ mod docker_tests {
                 "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -1575,13 +1576,13 @@ mod docker_tests {
 
     #[test]
     fn test_maker_trade_preimage() {
-        let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
+        let priv_key = SecretKey::new(&mut rand6::thread_rng());
 
-        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", &priv_key);
+        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", &priv_key[..]);
         let my_address = mycoin.my_address().expect("!my_address");
         fill_address(&mycoin, &my_address, 10.into(), 30);
 
-        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", &priv_key);
+        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", &priv_key[..]);
         let my_address = mycoin1.my_address().expect("!my_address");
         fill_address(&mycoin1, &my_address, 20.into(), 30);
 
@@ -1594,10 +1595,10 @@ mod docker_tests {
                 "gui": "nogui",
                 "netid": 9000,
                 "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(priv_key)),
+                "passphrase": format!("0x{}", hex::encode(&priv_key[..])),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -1630,8 +1631,8 @@ mod docker_tests {
         let my_coin1_total = TotalTradeFeeForTest::new("MYCOIN1", "0.00002", "0");
 
         let expected = TradePreimageResult::MakerPreimage(MakerPreimage {
-            base_coin_fee: base_coin_fee.clone(),
-            rel_coin_fee: rel_coin_fee.clone(),
+            base_coin_fee,
+            rel_coin_fee,
             volume: Some(volume.to_decimal()),
             volume_rat: Some(volume.to_ratio()),
             volume_fraction: Some(volume.to_fraction()),
@@ -1666,8 +1667,8 @@ mod docker_tests {
         let my_coin_total = TotalTradeFeeForTest::new("MYCOIN", "0.00001", "0");
         let my_coin1_total = TotalTradeFeeForTest::new("MYCOIN1", "0.00002", "0.00002");
         let expected = TradePreimageResult::MakerPreimage(MakerPreimage {
-            base_coin_fee: base_coin_fee.clone(),
-            rel_coin_fee: rel_coin_fee.clone(),
+            base_coin_fee,
+            rel_coin_fee,
             volume: Some(volume.to_decimal()),
             volume_rat: Some(volume.to_ratio()),
             volume_fraction: Some(volume.to_fraction()),
@@ -1701,8 +1702,8 @@ mod docker_tests {
         let total_my_coin1 = TotalTradeFeeForTest::new("MYCOIN1", "0.00002", "0.00002");
 
         let expected = TradePreimageResult::MakerPreimage(MakerPreimage {
-            base_coin_fee: base_coin_fee.clone(),
-            rel_coin_fee: rel_coin_fee.clone(),
+            base_coin_fee,
+            rel_coin_fee,
             volume: None,
             volume_rat: None,
             volume_fraction: None,
@@ -1715,13 +1716,13 @@ mod docker_tests {
 
     #[test]
     fn test_taker_trade_preimage() {
-        let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
+        let priv_key = SecretKey::new(&mut rand6::thread_rng());
 
-        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", &priv_key);
+        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", priv_key.as_ref());
         let my_address = mycoin.my_address().expect("!my_address");
         fill_address(&mycoin, &my_address, 10.into(), 30);
 
-        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", &priv_key);
+        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", priv_key.as_ref());
         let my_address = mycoin1.my_address().expect("!my_address");
         fill_address(&mycoin1, &my_address, 20.into(), 30);
 
@@ -1734,10 +1735,10 @@ mod docker_tests {
                 "gui": "nogui",
                 "netid": 9000,
                 "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(priv_key)),
+                "passphrase": format!("0x{}", hex::encode(priv_key.as_ref())),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -1857,7 +1858,7 @@ mod docker_tests {
             assert_eq!(actual.error_data, Some(expected));
         }
 
-        let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
+        let priv_key = SecretKey::new(&mut rand6::thread_rng());
 
         let coins = json!([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -1868,10 +1869,10 @@ mod docker_tests {
                 "gui": "nogui",
                 "netid": 9000,
                 "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(priv_key)),
+                "passphrase": format!("0x{}", hex::encode(priv_key.as_ref())),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -1948,7 +1949,7 @@ mod docker_tests {
         // vvv Fill the MYCOIN balance vvv
 
         let low_balance = MmNumber::from("0.000015").to_decimal();
-        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", &priv_key);
+        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", priv_key.as_ref());
         let my_address = mycoin.my_address().expect("!my_address");
         fill_address(&mycoin, &my_address, low_balance.clone(), 30);
 
@@ -1977,13 +1978,13 @@ mod docker_tests {
     /// https://github.com/KomodoPlatform/atomicDEX-API/issues/902
     #[test]
     fn test_trade_preimage_additional_validation() {
-        let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
+        let priv_key = SecretKey::new(&mut rand6::thread_rng());
 
-        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", &priv_key);
+        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", priv_key.as_ref());
         let my_address = mycoin1.my_address().expect("!my_address");
         fill_address(&mycoin1, &my_address, 20.into(), 30);
 
-        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", &priv_key);
+        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", priv_key.as_ref());
         let my_address = mycoin.my_address().expect("!my_address");
         fill_address(&mycoin, &my_address, 10.into(), 30);
 
@@ -1996,10 +1997,10 @@ mod docker_tests {
                 "gui": "nogui",
                 "netid": 9000,
                 "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(priv_key)),
+                "passphrase": format!("0x{}", hex::encode(priv_key.as_ref())),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2122,11 +2123,11 @@ mod docker_tests {
 
     #[test]
     fn test_trade_preimage_legacy() {
-        let priv_key = SecretKey::random(&mut rand4::thread_rng()).serialize();
-        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", &priv_key);
+        let priv_key = SecretKey::new(&mut rand6::thread_rng());
+        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", priv_key.as_ref());
         let my_address = mycoin.my_address().expect("!my_address");
         fill_address(&mycoin, &my_address, 10.into(), 30);
-        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", &priv_key);
+        let (_ctx, mycoin1) = utxo_coin_from_privkey("MYCOIN1", priv_key.as_ref());
         let my_address = mycoin1.my_address().expect("!my_address");
         fill_address(&mycoin1, &my_address, 20.into(), 30);
 
@@ -2139,10 +2140,10 @@ mod docker_tests {
                 "gui": "nogui",
                 "netid": 9000,
                 "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(priv_key)),
+                "passphrase": format!("0x{}", hex::encode(priv_key.as_ref())),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2215,7 +2216,7 @@ mod docker_tests {
                 "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2232,12 +2233,13 @@ mod docker_tests {
         })))
         .unwrap();
         assert!(rc.0.is_success(), "!max_taker_vol: {}", rc.1);
-        let json: Json = json::from_str(&rc.1).unwrap();
+        let json: MaxTakerVolResponse = json::from_str(&rc.1).unwrap();
         // the result of equation `max_vol + max_vol / 777 + 0.00002 = 1`
         // derived from `max_vol = balance - locked - trade_fee - fee_to_send_taker_fee - dex_fee(max_vol)`
         // where balance = 1, locked = 0, trade_fee = fee_to_send_taker_fee = 0.00001, dex_fee = max_vol / 777
-        assert_eq!(json["result"]["numer"], Json::from("38849223"));
-        assert_eq!(json["result"]["denom"], Json::from("38900000"));
+        let expected = MmNumber::from((38849223, 38900000)).to_fraction();
+        assert_eq!(json.result, expected);
+        assert_eq!(json.coin, "MYCOIN1");
 
         let rc = block_on(mm_alice.rpc(json! ({
             "userpass": mm_alice.userpass,
@@ -2245,10 +2247,7 @@ mod docker_tests {
             "base": "MYCOIN1",
             "rel": "MYCOIN",
             "price": 1,
-            "volume": {
-                "numer": json["result"]["numer"],
-                "denom": json["result"]["denom"],
-            }
+            "volume": json.result,
         })))
         .unwrap();
         assert!(rc.0.is_success(), "!sell: {}", rc.1);
@@ -2272,7 +2271,7 @@ mod docker_tests {
                 "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2333,7 +2332,7 @@ mod docker_tests {
                 "passphrase": format!("0x{}", hex::encode(priv_key)),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2388,7 +2387,7 @@ mod docker_tests {
                 "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2448,7 +2447,7 @@ mod docker_tests {
                 "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
                 "coins": coins,
                 "rpc_password": "pass",
-                "i_am_see": true,
+                "i_am_seed": true,
             }),
             "pass".to_string(),
             None,
@@ -2645,6 +2644,99 @@ mod docker_tests {
         log!("Bob orderbook "[bob_orderbook]);
         let asks = bob_orderbook["asks"].as_array().unwrap();
         assert_eq!(asks.len(), 1, "Bob MYCOIN/MYCOIN1 orderbook must have exactly 1 asks");
+    }
+
+    #[test]
+    fn test_maker_order_should_not_kick_start_and_appear_in_orderbook_if_balance_is_withdrawn() {
+        let (_ctx, coin, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
+        let coins = json! ([
+            {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+            {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
+        ]);
+        let mut bob_conf = json! ({
+            "gui": "nogui",
+            "netid": 9000,
+            "dht": "on",  // Enable DHT without delay.
+            "passphrase": format!("0x{}", hex::encode(bob_priv_key)),
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+        });
+        let mm_bob = MarketMakerIt::start(bob_conf.clone(), "pass".to_string(), None).unwrap();
+        let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
+
+        log!([block_on(enable_native(&mm_bob, "MYCOIN", &[]))]);
+        log!([block_on(enable_native(&mm_bob, "MYCOIN1", &[]))]);
+        let rc = block_on(mm_bob.rpc(json! ({
+            "userpass": mm_bob.userpass,
+            "method": "setprice",
+            "base": "MYCOIN",
+            "rel": "MYCOIN1",
+            "price": 1,
+            "max": true,
+        })))
+        .unwrap();
+        assert!(rc.0.is_success(), "!setprice: {}", rc.1);
+        let res: SetPriceResponse = json::from_str(&rc.1).unwrap();
+        let uuid = res.result.uuid;
+
+        // mm_bob using same DB dir that should kick start the order
+        bob_conf["dbdir"] = mm_bob.folder.join("DB").to_str().unwrap().into();
+        bob_conf["log"] = mm_bob.folder.join("mm2_dup.log").to_str().unwrap().into();
+        block_on(mm_bob.stop()).unwrap();
+
+        let withdraw = coin
+            .withdraw(WithdrawRequest::new_max(
+                "MYCOIN".to_string(),
+                "RRYmiZSDo3UdHHqj1rLKf8cbJroyv9NxXw".to_string(),
+            ))
+            .wait()
+            .unwrap();
+        coin.send_raw_tx(&hex::encode(&withdraw.tx_hex.0)).wait().unwrap();
+        coin.wait_for_confirmations(&withdraw.tx_hex.0, 1, false, (now_ms() / 1000) + 10, 1)
+            .wait()
+            .unwrap();
+
+        let mm_bob_dup = MarketMakerIt::start(bob_conf, "pass".to_string(), None).unwrap();
+        let (_bob_dup_dump_log, _bob_dup_dump_dashboard) = mm_dump(&mm_bob_dup.log_path);
+        log!([block_on(enable_native(&mm_bob_dup, "MYCOIN", &[]))]);
+        log!([block_on(enable_native(&mm_bob_dup, "MYCOIN1", &[]))]);
+
+        thread::sleep(Duration::from_secs(2));
+
+        log!("Get RICK/MORTY orderbook on Bob side");
+        let rc = block_on(mm_bob_dup.rpc(json! ({
+            "userpass": mm_bob_dup.userpass,
+            "method": "orderbook",
+            "base": "MYCOIN",
+            "rel": "MYCOIN1",
+        })))
+        .unwrap();
+        assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
+
+        let bob_orderbook: Json = json::from_str(&rc.1).unwrap();
+        log!("Bob orderbook "[bob_orderbook]);
+        let asks = bob_orderbook["asks"].as_array().unwrap();
+        assert!(asks.is_empty(), "Bob MYCOIN/MYCOIN1 orderbook must not have asks");
+
+        let rc = block_on(mm_bob_dup.rpc(json! ({
+            "userpass": mm_bob_dup.userpass,
+            "method": "my_orders",
+        })))
+        .unwrap();
+        assert!(rc.0.is_success(), "!my_orders: {}", rc.1);
+
+        let res: MyOrdersRpcResult = json::from_str(&rc.1).unwrap();
+        assert!(res.result.maker_orders.is_empty(), "Bob maker orders must be empty");
+
+        let order_path = mm_bob.folder.join(format!(
+            "DB/{}/ORDERS/MY/MAKER/{}.json",
+            hex::encode(rmd160_from_priv(bob_priv_key).take()),
+            uuid
+        ));
+
+        println!("Order path {}", order_path.display());
+        assert!(!order_path.exists());
     }
 
     #[test]
@@ -3164,7 +3256,7 @@ mod docker_tests {
 
     #[test]
     fn test_withdraw_not_sufficient_balance() {
-        let privkey = SecretKey::random(&mut rand4::thread_rng()).serialize();
+        let privkey = SecretKey::new(&mut rand6::thread_rng());
         let coins = json! ([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -3174,7 +3266,7 @@ mod docker_tests {
                 "gui": "nogui",
                 "netid": 9000,
                 "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(privkey)),
+                "passphrase": format!("0x{}", hex::encode(privkey.as_ref())),
                 "coins": coins,
                 "rpc_password": "pass",
                 "i_am_seed": true,
@@ -3215,7 +3307,7 @@ mod docker_tests {
 
         // fill the MYCOIN balance
         let balance = BigDecimal::from(1) / BigDecimal::from(2);
-        let (_ctx, coin) = utxo_coin_from_privkey("MYCOIN", &privkey);
+        let (_ctx, coin) = utxo_coin_from_privkey("MYCOIN", privkey.as_ref());
         fill_address(&coin, &coin.my_address().unwrap(), balance.clone(), 30);
 
         // txfee = 0.00001, amount = 0.5 => required = 0.50001

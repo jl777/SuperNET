@@ -18,7 +18,7 @@ pub trait RepresentH256 {
     fn h256(&self) -> hash::H256;
 }
 
-pub use primitives::{bigint, bytes, compact, hash};
+pub use primitives::{bytes, compact, hash, U256};
 
 pub use block::Block;
 pub use block_header::BlockHeader;
@@ -28,4 +28,4 @@ pub use transaction::{JoinSplit, OutPoint, ShieldedOutput, ShieldedSpend, Transa
 
 pub use read_and_hash::{HashedData, ReadAndHash};
 
-pub type ShortTransactionID = hash::H48;
+pub type ShortTransactionId = hash::H48;

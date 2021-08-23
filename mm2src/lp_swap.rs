@@ -92,7 +92,7 @@ use uuid::Uuid;
 #[path = "lp_swap/check_balance.rs"] mod check_balance;
 #[path = "lp_swap/trade_preimage.rs"] mod trade_preimage;
 
-pub use check_balance::check_other_coin_balance_for_swap;
+pub use check_balance::{check_other_coin_balance_for_swap, CheckBalanceError};
 pub use maker_swap::{calc_max_maker_vol, check_balance_for_maker_swap, maker_swap_trade_preimage, run_maker_swap,
                      stats_maker_swap_dir, MakerSavedSwap, MakerSwap, MakerTradePreimage, RunMakerSwapInput};
 use maker_swap::{stats_maker_swap_file_path, MakerSwapEvent};
@@ -276,12 +276,12 @@ pub enum SwapEvent {
     Taker(TakerSwapEvent),
 }
 
-impl Into<SwapEvent> for MakerSwapEvent {
-    fn into(self) -> SwapEvent { SwapEvent::Maker(self) }
+impl From<MakerSwapEvent> for SwapEvent {
+    fn from(maker_event: MakerSwapEvent) -> Self { SwapEvent::Maker(maker_event) }
 }
 
-impl Into<SwapEvent> for TakerSwapEvent {
-    fn into(self) -> SwapEvent { SwapEvent::Taker(self) }
+impl From<TakerSwapEvent> for SwapEvent {
+    fn from(taker_event: TakerSwapEvent) -> Self { SwapEvent::Taker(taker_event) }
 }
 
 struct SwapsContext {
@@ -331,7 +331,7 @@ impl SwapsContext {
 
 /// Get total amount of selected coin locked by all currently ongoing swaps
 pub fn get_locked_amount(ctx: &MmArc, coin: &str) -> MmNumber {
-    let swap_ctx = SwapsContext::from_ctx(&ctx).unwrap();
+    let swap_ctx = SwapsContext::from_ctx(ctx).unwrap();
     let swap_lock = swap_ctx.running_swaps.lock().unwrap();
 
     swap_lock
@@ -354,7 +354,7 @@ pub fn get_locked_amount(ctx: &MmArc, coin: &str) -> MmNumber {
 
 /// Get number of currently running swaps
 pub fn running_swaps_num(ctx: &MmArc) -> u64 {
-    let swap_ctx = SwapsContext::from_ctx(&ctx).unwrap();
+    let swap_ctx = SwapsContext::from_ctx(ctx).unwrap();
     let swaps = swap_ctx.running_swaps.lock().unwrap();
     swaps.iter().fold(0, |total, swap| match swap.upgrade() {
         Some(_) => total + 1,
@@ -364,7 +364,7 @@ pub fn running_swaps_num(ctx: &MmArc) -> u64 {
 
 /// Get total amount of selected coin locked by all currently ongoing swaps except the one with selected uuid
 fn get_locked_amount_by_other_swaps(ctx: &MmArc, except_uuid: &Uuid, coin: &str) -> MmNumber {
-    let swap_ctx = SwapsContext::from_ctx(&ctx).unwrap();
+    let swap_ctx = SwapsContext::from_ctx(ctx).unwrap();
     let swap_lock = swap_ctx.running_swaps.lock().unwrap();
 
     swap_lock
@@ -387,7 +387,7 @@ fn get_locked_amount_by_other_swaps(ctx: &MmArc, except_uuid: &Uuid, coin: &str)
 }
 
 pub fn active_swaps_using_coin(ctx: &MmArc, coin: &str) -> Result<Vec<Uuid>, String> {
-    let swap_ctx = try_s!(SwapsContext::from_ctx(&ctx));
+    let swap_ctx = try_s!(SwapsContext::from_ctx(ctx));
     let swaps = try_s!(swap_ctx.running_swaps.lock());
     let mut uuids = vec![];
     for swap in swaps.iter() {
@@ -401,7 +401,7 @@ pub fn active_swaps_using_coin(ctx: &MmArc, coin: &str) -> Result<Vec<Uuid>, Str
 }
 
 pub fn active_swaps(ctx: &MmArc) -> Result<Vec<Uuid>, String> {
-    let swap_ctx = try_s!(SwapsContext::from_ctx(&ctx));
+    let swap_ctx = try_s!(SwapsContext::from_ctx(ctx));
     let swaps = try_s!(swap_ctx.running_swaps.lock());
     let mut uuids = vec![];
     for swap in swaps.iter() {
@@ -424,14 +424,7 @@ impl SwapConfirmationsSettings {
     pub fn requires_notarization(&self) -> bool { self.maker_coin_nota || self.taker_coin_nota }
 }
 
-fn coin_with_4x_locktime(ticker: &str) -> bool {
-    match ticker {
-        "BCH" => true,
-        "BTG" => true,
-        "SBTC" => true,
-        _ => false,
-    }
-}
+fn coin_with_4x_locktime(ticker: &str) -> bool { matches!(ticker, "BCH" | "BTG" | "SBTC") }
 
 #[derive(Debug)]
 pub enum AtomicLocktimeVersion {
@@ -795,12 +788,12 @@ pub struct SwapError {
     error: String,
 }
 
-impl Into<SwapError> for String {
-    fn into(self) -> SwapError { SwapError { error: self } }
+impl From<String> for SwapError {
+    fn from(error: String) -> Self { SwapError { error } }
 }
 
-impl Into<SwapError> for &str {
-    fn into(self) -> SwapError { SwapError { error: self.into() } }
+impl From<&str> for SwapError {
+    fn from(e: &str) -> Self { SwapError { error: e.to_owned() } }
 }
 
 #[derive(Serialize)]
@@ -1197,7 +1190,7 @@ pub async fn active_swaps_rpc(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>
     let statuses = if req.include_status {
         let mut map = HashMap::new();
         for uuid in uuids.iter() {
-            let path = my_swap_file_path(&ctx, &uuid);
+            let path = my_swap_file_path(&ctx, uuid);
             let content = match slurp(&path) {
                 Ok(c) => c,
                 Err(e) => {

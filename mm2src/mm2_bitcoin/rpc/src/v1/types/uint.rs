@@ -1,4 +1,4 @@
-use primitives::bigint::U256 as GlobalU256;
+use primitives::U256 as GlobalU256;
 use serde;
 use serde::de::Unexpected;
 use std::fmt;
@@ -25,6 +25,7 @@ macro_rules! impl_uint {
             fn from_str(s: &str) -> Result<Self, Self::Err> { $other::from_str(s).map($name) }
         }
 
+        #[allow(clippy::from_over_into)]
         impl Into<$other> for $name {
             fn into(self) -> $other { self.0 }
         }
@@ -34,7 +35,7 @@ macro_rules! impl_uint {
             where
                 S: serde::Serializer,
             {
-                let as_hex = format!("{}", self.0.to_hex());
+                let as_hex = format!("{:02x}", self.0);
                 serializer.serialize_str(&as_hex)
             }
         }

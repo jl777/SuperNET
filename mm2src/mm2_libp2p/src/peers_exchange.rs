@@ -6,8 +6,8 @@ use libp2p::{multiaddr::{Multiaddr, Protocol},
                                 RequestResponseConfig, RequestResponseEvent, RequestResponseMessage},
              swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters},
              NetworkBehaviour, PeerId};
-use log::{error, info};
-use rand::{seq::SliceRandom, thread_rng};
+use log::{error, info, warn};
+use rand::seq::SliceRandom;
 use serde::{de::Deserializer, ser::Serializer, Deserialize, Serialize};
 use std::collections::HashSet;
 use std::{collections::{HashMap, VecDeque},
@@ -47,14 +47,14 @@ impl From<PeerId> for PeerIdSerde {
 
 impl Serialize for PeerIdSerde {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.clone().into_bytes().serialize(serializer)
+        self.0.clone().to_bytes().serialize(serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for PeerIdSerde {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let bytes: Vec<u8> = Deserialize::deserialize(deserializer)?;
-        let peer_id = PeerId::from_bytes(bytes).map_err(|_| serde::de::Error::custom("PeerId::from_bytes error"))?;
+        let peer_id = PeerId::from_bytes(&bytes).map_err(|_| serde::de::Error::custom("PeerId::from_bytes error"))?;
         Ok(PeerIdSerde(peer_id))
     }
 }
@@ -77,6 +77,8 @@ pub struct PeersExchange {
     #[behaviour(ignore)]
     known_peers: Vec<PeerId>,
     #[behaviour(ignore)]
+    reserved_peers: Vec<PeerId>,
+    #[behaviour(ignore)]
     events: VecDeque<NetworkBehaviourAction<RequestProtocol<PeersExchangeCodec>, ()>>,
     #[behaviour(ignore)]
     maintain_peers_interval: Interval,
@@ -94,6 +96,7 @@ impl PeersExchange {
         PeersExchange {
             request_response,
             known_peers: Vec::new(),
+            reserved_peers: Vec::new(),
             events: VecDeque::new(),
             maintain_peers_interval: Interval::new_at(
                 Instant::now() + Duration::from_secs(REQUEST_PEERS_INITIAL_DELAY),
@@ -105,7 +108,7 @@ impl PeersExchange {
 
     fn get_random_known_peers(&mut self, num: usize) -> HashMap<PeerIdSerde, PeerAddresses> {
         let mut result = HashMap::with_capacity(num);
-        let mut rng = thread_rng();
+        let mut rng = rand::thread_rng();
         let peer_ids = self.known_peers.choose_multiple(&mut rng, num).cloned();
         for peer_id in peer_ids {
             let addresses = self.request_response.addresses_of_peer(&peer_id).into_iter().collect();
@@ -120,12 +123,12 @@ impl PeersExchange {
     }
 
     fn forget_peer_addresses(&mut self, peer: &PeerId) {
-        for address in self.request_response.addresses_of_peer(&peer) {
-            self.request_response.remove_address(&peer, &address);
+        for address in self.request_response.addresses_of_peer(peer) {
+            self.request_response.remove_address(peer, &address);
         }
     }
 
-    pub fn add_peer_addresses(&mut self, peer: &PeerId, addresses: PeerAddresses) {
+    pub fn add_peer_addresses_to_known_peers(&mut self, peer: &PeerId, addresses: PeerAddresses) {
         if addresses.len() > 1 {
             return;
         }
@@ -135,12 +138,35 @@ impl PeersExchange {
                 return;
             }
         }
-        if !self.known_peers.contains(&peer) && !addresses.is_empty() {
-            self.known_peers.push(peer.clone());
+        if !self.known_peers.contains(peer) && !addresses.is_empty() {
+            self.known_peers.push(*peer);
         }
         let already_known = self.request_response.addresses_of_peer(peer);
         for address in addresses {
             if !already_known.contains(&address) {
+                self.request_response.add_address(peer, address);
+            }
+        }
+    }
+
+    pub fn add_peer_addresses_to_reserved_peers(&mut self, peer: &PeerId, addresses: PeerAddresses) {
+        if addresses.len() > 1 {
+            return;
+        }
+
+        for address in addresses.iter() {
+            if !self.validate_global_multiaddr(address) {
+                return;
+            }
+        }
+
+        if !self.reserved_peers.contains(&peer) && !addresses.is_empty() {
+            self.reserved_peers.push(*peer);
+        }
+
+        let already_reserved = self.request_response.addresses_of_peer(peer);
+        for address in addresses {
+            if !already_reserved.contains(&address) {
                 self.request_response.add_address(&peer, address);
             }
         }
@@ -148,7 +174,7 @@ impl PeersExchange {
 
     fn maintain_known_peers(&mut self) {
         if self.known_peers.len() > MAX_PEERS {
-            let mut rng = thread_rng();
+            let mut rng = rand::thread_rng();
             let to_remove_num = self.known_peers.len() - MAX_PEERS;
             self.known_peers.shuffle(&mut rng);
             let removed_peers: Vec<_> = self.known_peers.drain(..to_remove_num).collect();
@@ -160,7 +186,7 @@ impl PeersExchange {
     }
 
     fn request_known_peers_from_random_peer(&mut self) {
-        let mut rng = thread_rng();
+        let mut rng = rand::thread_rng();
         if let Some(from_peer) = self.known_peers.choose(&mut rng) {
             info!("Try to request {} peers from peer {}", DEFAULT_PEERS_NUM, from_peer);
             let request = PeersExchangeRequest::GetKnownPeers { num: DEFAULT_PEERS_NUM };
@@ -174,16 +200,18 @@ impl PeersExchange {
         mut filter: impl FnMut(&PeerId) -> bool,
     ) -> HashMap<PeerId, PeerAddresses> {
         let mut result = HashMap::with_capacity(num);
-        let mut rng = thread_rng();
+        let mut rng = rand::thread_rng();
         let peer_ids = self.known_peers.iter().filter(|peer| filter(*peer)).collect::<Vec<_>>();
         for peer_id in peer_ids.choose_multiple(&mut rng, num) {
             let addresses = self.request_response.addresses_of_peer(*peer_id).into_iter().collect();
-            result.insert((*peer_id).clone(), addresses);
+            result.insert(**peer_id, addresses);
         }
         result
     }
 
     pub fn is_known_peer(&self, peer: &PeerId) -> bool { self.known_peers.contains(peer) }
+
+    pub fn is_reserved_peer(&self, peer: &PeerId) -> bool { self.reserved_peers.contains(peer) }
 
     pub fn add_known_peer(&mut self, peer: PeerId) {
         if !self.is_known_peer(&peer) {
@@ -194,27 +222,21 @@ impl PeersExchange {
     fn validate_global_multiaddr(&self, address: &Multiaddr) -> bool {
         let mut components = address.iter();
         match components.next() {
-            Some(maybe_ip_v4) => match maybe_ip_v4 {
-                Protocol::Ip4(addr) => {
-                    if !addr.is_global() {
-                        return false;
-                    }
-                },
-                _ => return false,
+            Some(Protocol::Ip4(addr)) => {
+                if !addr.is_global() {
+                    return false;
+                }
             },
-            None => return false,
+            _ => return false,
         }
 
         match components.next() {
-            Some(maybe_ip_v4) => match maybe_ip_v4 {
-                Protocol::Tcp(port) => {
-                    if port != self.netid_port {
-                        return false;
-                    }
-                },
-                _ => return false,
+            Some(Protocol::Tcp(port)) => {
+                if port != self.netid_port {
+                    return false;
+                }
             },
-            None => return false,
+            _ => return false,
         }
 
         if components.next().is_some() {
@@ -272,7 +294,9 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeersExchangeRequest, Pee
                         let response = PeersExchangeResponse::KnownPeers {
                             peers: self.get_random_known_peers(num),
                         };
-                        self.request_response.send_response(channel, response);
+                        if let Err(_response) = self.request_response.send_response(channel, response) {
+                            warn!("Response channel has been closed already");
+                        }
                     },
                 },
                 RequestResponseMessage::Response { response, .. } => match response {
@@ -286,7 +310,10 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeersExchangeRequest, Pee
 
                         info!("Got peers {:?}", peers);
                         peers.into_iter().for_each(|(peer, addresses)| {
-                            self.add_peer_addresses(&peer.0, addresses);
+                            // reserved peers and known peers should not intersect leading to unintentional removal of reserved peers addresses
+                            if !self.is_reserved_peer(&peer.0) {
+                                self.add_peer_addresses_to_known_peers(&peer.0, addresses);
+                            }
                         });
                     },
                 },
@@ -309,6 +336,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeersExchangeRequest, Pee
                     error, peer
                 );
             },
+            RequestResponseEvent::ResponseSent { .. } => (),
         }
     }
 }

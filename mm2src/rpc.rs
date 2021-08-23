@@ -147,7 +147,7 @@ async fn process_json_request(ctx: MmArc, req_json: Json, client: SocketAddr) ->
 #[cfg(not(target_arch = "wasm32"))]
 async fn process_json_request(ctx: MmArc, req_json: Json, client: SocketAddr) -> Result<Response<Vec<u8>>, String> {
     if let Some(requests) = req_json.as_array() {
-        let response = try_s!(process_json_batch_requests(ctx, &requests, client).await);
+        let response = try_s!(process_json_batch_requests(ctx, requests, client).await);
         let res = try_s!(json::to_vec(&response));
         return Ok(try_s!(Response::builder().body(res)));
     }
@@ -187,7 +187,7 @@ async fn process_single_request(ctx: MmArc, req: Json, client: SocketAddr) -> Re
         Ok(response) => Ok(response),
         Err(e) => {
             // return always serialized response
-            return Ok(response_from_dispatcher_error(e, version, id));
+            Ok(response_from_dispatcher_error(e, version, id))
         },
     }
 }
@@ -257,55 +257,56 @@ pub extern "C" fn spawn_rpc(ctx_h: u32) {
     let ctx = MmArc::from_ffi_handle(ctx_h).expect("No context");
 
     let rpc_ip_port = ctx.rpc_ip_port().unwrap();
-    CORE.0.enter(|| {
-        let server = Server::try_bind(&rpc_ip_port).unwrap_or_else(|_| panic!("Can't bind on {}", rpc_ip_port));
-        let make_svc = make_service_fn(move |socket: &AddrStream| {
-            let remote_addr = socket.remote_addr();
-            async move {
-                Ok::<_, Infallible>(service_fn(move |req: Request<Body>| async move {
-                    let res = rpc_service(req, ctx_h, remote_addr).await;
-                    Ok::<_, Infallible>(res)
-                }))
+    // By entering the context, we tie `tokio::spawn` to this executor.
+    let _runtime_guard = CORE.0.enter();
+
+    let server = Server::try_bind(&rpc_ip_port).unwrap_or_else(|_| panic!("Can't bind on {}", rpc_ip_port));
+    let make_svc = make_service_fn(move |socket: &AddrStream| {
+        let remote_addr = socket.remote_addr();
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| async move {
+                let res = rpc_service(req, ctx_h, remote_addr).await;
+                Ok::<_, Infallible>(res)
+            }))
+        }
+    });
+
+    let (shutdown_tx, shutdown_rx) = futures::channel::oneshot::channel::<()>();
+    let mut shutdown_tx = Some(shutdown_tx);
+    ctx.on_stop(Box::new(move || {
+        if let Some(shutdown_tx) = shutdown_tx.take() {
+            info!("on_stop] firing shutdown_tx!");
+            if shutdown_tx.send(()).is_err() {
+                warn!("on_stop] shutdown_tx already closed");
             }
-        });
+            Ok(())
+        } else {
+            ERR!("on_stop callback called twice!")
+        }
+    }));
 
-        let (shutdown_tx, shutdown_rx) = futures::channel::oneshot::channel::<()>();
-        let mut shutdown_tx = Some(shutdown_tx);
-        ctx.on_stop(Box::new(move || {
-            if let Some(shutdown_tx) = shutdown_tx.take() {
-                info!("on_stop] firing shutdown_tx!");
-                if shutdown_tx.send(()).is_err() {
-                    warn!("on_stop] shutdown_tx already closed");
-                }
-                Ok(())
-            } else {
-                ERR!("on_stop callback called twice!")
-            }
-        }));
+    let server = server
+        .http1_half_close(false)
+        .serve(make_svc)
+        .with_graceful_shutdown(shutdown_rx.then(|_| futures::future::ready(())));
 
-        let server = server
-            .http1_half_close(false)
-            .serve(make_svc)
-            .with_graceful_shutdown(shutdown_rx.then(|_| futures::future::ready(())));
+    let server = server.then(|r| {
+        if let Err(err) = r {
+            error!("{}", err);
+        };
+        futures::future::ready(())
+    });
 
-        let server = server.then(|r| {
-            if let Err(err) = r {
-                error!("{}", err);
-            };
-            futures::future::ready(())
-        });
-
-        let rpc_ip_port = ctx.rpc_ip_port().unwrap();
-        CORE.0.spawn({
-            info!(
-                ">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{}  <<<<<<<<<",
-                rpc_ip_port.ip(),
-                rpc_ip_port.port(),
-                gstuff::now_ms() / 1000
-            );
-            let _ = ctx.rpc_started.pin(true);
-            server
-        });
+    let rpc_ip_port = ctx.rpc_ip_port().unwrap();
+    CORE.0.spawn({
+        info!(
+            ">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{}  <<<<<<<<<",
+            rpc_ip_port.ip(),
+            rpc_ip_port.port(),
+            gstuff::now_ms() / 1000
+        );
+        let _ = ctx.rpc_started.pin(true);
+        server
     });
 }
 

@@ -88,8 +88,8 @@ impl From<BigRational> for Fraction {
     }
 }
 
-impl Into<BigRational> for Fraction {
-    fn into(self) -> BigRational { BigRational::new(self.numer.into(), self.denom.into()) }
+impl From<Fraction> for BigRational {
+    fn from(fraction: Fraction) -> Self { BigRational::new(fraction.numer.into(), fraction.denom.into()) }
 }
 
 impl From<BigDecimal> for Fraction {
@@ -146,7 +146,7 @@ impl<'de> Deserialize<'de> for MmNumber {
     {
         let raw: Box<RawValue> = Deserialize::deserialize(deserializer)?;
 
-        if let Ok(dec) = BigDecimal::from_str(&raw.get().trim_matches('"')) {
+        if let Ok(dec) = BigDecimal::from_str(raw.get().trim_matches('"')) {
             return Ok(MmNumber(from_dec_to_ratio(&dec)));
         };
 

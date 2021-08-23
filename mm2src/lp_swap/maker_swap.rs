@@ -11,7 +11,6 @@ use super::{broadcast_my_swap_status, broadcast_swap_message_every, check_other_
 use crate::mm2::lp_network::subscribe_to_topic;
 use crate::mm2::lp_ordermatch::{MakerOrderBuilder, OrderConfirmationsSettings};
 use crate::mm2::MM_VERSION;
-use atomic::Atomic;
 use bigdecimal::BigDecimal;
 use bitcrypto::dhash160;
 use coins::{CanRefundHtlc, FeeApproxStage, FoundSwapTxSpend, MmCoinEnum, TradeFee, TradePreimageValue, TransactionEnum};
@@ -26,7 +25,8 @@ use rand::Rng;
 use rpc::v1::types::{Bytes as BytesJson, H160 as H160Json, H256 as H256Json, H264 as H264Json};
 use serde_json as json;
 use std::path::PathBuf;
-use std::sync::{atomic::Ordering, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use uuid::Uuid;
 
 pub fn stats_maker_swap_dir(ctx: &MmArc) -> PathBuf { ctx.dbdir().join("SWAPS").join("STATS").join("MAKER") }
@@ -137,6 +137,7 @@ pub struct MakerSwapData {
 pub struct MakerSwapMut {
     data: MakerSwapData,
     other_persistent_pub: H264,
+    #[allow(dead_code)]
     taker_fee: Option<TransactionIdentifier>,
     maker_payment: Option<TransactionIdentifier>,
     taker_payment: Option<TransactionIdentifier>,
@@ -154,10 +155,10 @@ pub struct MakerSwap {
     taker: bits256,
     uuid: Uuid,
     my_order_uuid: Option<Uuid>,
-    taker_payment_lock: Atomic<u64>,
-    taker_payment_confirmed: Atomic<bool>,
+    taker_payment_lock: AtomicU64,
+    taker_payment_confirmed: AtomicBool,
     errors: PaMutex<Vec<SwapError>>,
-    finished_at: Atomic<u64>,
+    finished_at: AtomicU64,
     mutable: RwLock<MakerSwapMut>,
     conf_settings: SwapConfirmationsSettings,
     payment_locktime: u64,
@@ -167,15 +168,6 @@ impl MakerSwap {
     fn w(&self) -> RwLockWriteGuard<MakerSwapMut> { self.mutable.write().unwrap() }
     fn r(&self) -> RwLockReadGuard<MakerSwapMut> { self.mutable.read().unwrap() }
 
-    #[cfg(target_arch = "wasm32")]
-    fn generate_secret(&self) -> [u8; 32] {
-        // TODO small rng uses now_ms() as seed which is completely insecure to generate the secret
-        // for swap, we must consider refactoring
-        let mut rng = common::small_rng();
-        rng.gen()
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
     fn generate_secret(&self) -> [u8; 32] {
         let mut rng = rand::thread_rng();
         rng.gen()
@@ -183,7 +175,7 @@ impl MakerSwap {
 
     fn wait_refund_until(&self) -> u64 { self.r().data.maker_payment_lock + 3700 }
 
-    fn apply_event(&self, event: MakerSwapEvent) -> Result<(), String> {
+    fn apply_event(&self, event: MakerSwapEvent) {
         match event {
             MakerSwapEvent::Started(data) => self.w().data = data,
             MakerSwapEvent::StartFailed(err) => self.errors.lock().push(err),
@@ -223,7 +215,6 @@ impl MakerSwap {
             MakerSwapEvent::MakerPaymentRefundFailed(err) => self.errors.lock().push(err),
             MakerSwapEvent::Finished => self.finished_at.store(now_ms() / 1000, Ordering::Relaxed),
         }
-        Ok(())
     }
 
     async fn handle_command(
@@ -268,10 +259,10 @@ impl MakerSwap {
             taker,
             uuid,
             my_order_uuid,
-            taker_payment_lock: Atomic::new(0),
+            taker_payment_lock: AtomicU64::new(0),
             errors: PaMutex::new(Vec::new()),
-            finished_at: Atomic::new(0),
-            taker_payment_confirmed: Atomic::new(false),
+            finished_at: AtomicU64::new(0),
+            taker_payment_confirmed: AtomicBool::new(false),
             conf_settings,
             payment_locktime,
             mutable: RwLock::new(MakerSwapMut {
@@ -794,7 +785,7 @@ impl MakerSwap {
 
     async fn confirm_taker_payment_spend(&self) -> Result<(Option<MakerSwapCommand>, Vec<MakerSwapEvent>), String> {
         // we should wait for only one confirmation to make sure our spend transaction is not failed
-        let confirmations = 1;
+        let confirmations = std::cmp::min(1, self.r().data.taker_payment_confirmations);
         let requires_nota = false;
         let wait_fut = self.taker_coin.wait_for_confirmations(
             &self.r().taker_payment_spend.clone().unwrap().tx_hex,
@@ -928,7 +919,7 @@ impl MakerSwap {
         );
         let command = saved.events.last().unwrap().get_command();
         for saved_event in saved.events {
-            try_s!(swap.apply_event(saved_event.event));
+            swap.apply_event(saved_event.event);
         }
         Ok((swap, command))
     }
@@ -1386,7 +1377,7 @@ impl RunMakerSwapInput {
     fn uuid(&self) -> &Uuid {
         match self {
             RunMakerSwapInput::StartNew(swap) => &swap.uuid,
-            RunMakerSwapInput::KickStart { swap_uuid, .. } => &swap_uuid,
+            RunMakerSwapInput::KickStart { swap_uuid, .. } => swap_uuid,
         }
     }
 }
@@ -1493,7 +1484,7 @@ pub async fn run_maker_swap(swap: RunMakerSwapInput, ctx: MmArc) {
                         )
                     }
                     status.status(swap_tags!(), &event.status_str());
-                    running_swap.apply_event(event).expect("!apply_event");
+                    running_swap.apply_event(event);
                 }
                 match res.0 {
                     Some(c) => {
@@ -1511,10 +1502,11 @@ pub async fn run_maker_swap(swap: RunMakerSwapInput, ctx: MmArc) {
         .fuse(),
     );
     let mut shutdown_fut = Box::pin(shutdown_rx.recv().fuse());
+    let do_nothing = (); // to fix https://rust-lang.github.io/rust-clippy/master/index.html#unused_unit
     select! {
-        swap = swap_fut => (), // swap finished normally
-        shutdown = shutdown_fut => log!("on_stop] swap " (swap_for_log.uuid) " stopped!"),
-        touch = touch_loop => unreachable!("Touch loop can not stop!"),
+        _swap = swap_fut => do_nothing, // swap finished normally
+        _shutdown = shutdown_fut => log!("on_stop] swap " (swap_for_log.uuid) " stopped!"),
+        _touch = touch_loop => unreachable!("Touch loop can not stop!"),
     };
 }
 
@@ -1577,7 +1569,7 @@ pub async fn maker_swap_trade_preimage(
     let rel_coin_ticker = rel_coin.ticker();
     let volume = if req.max {
         let balance = base_coin.my_spendable_balance().compat().await?;
-        calc_max_maker_vol(&ctx, &base_coin, &balance, FeeApproxStage::TradePreimage).await?
+        calc_max_maker_vol(ctx, &base_coin, &balance, FeeApproxStage::TradePreimage).await?
     } else {
         let threshold = base_coin.min_trading_vol().to_decimal();
         if req.volume.is_zero() {
@@ -2055,8 +2047,7 @@ mod maker_swap_tests {
         });
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
-        let (maker_swap, _) =
-            MakerSwap::load_from_saved(ctx.clone(), maker_coin, taker_coin, maker_saved_swap).unwrap();
+        let (maker_swap, _) = MakerSwap::load_from_saved(ctx, maker_coin, taker_coin, maker_saved_swap).unwrap();
 
         assert_eq!(unsafe { SWAP_CONTRACT_ADDRESS_CALLED }, 2);
         assert_eq!(
@@ -2087,8 +2078,7 @@ mod maker_swap_tests {
         });
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
-        let (maker_swap, _) =
-            MakerSwap::load_from_saved(ctx.clone(), maker_coin, taker_coin, maker_saved_swap).unwrap();
+        let (maker_swap, _) = MakerSwap::load_from_saved(ctx, maker_coin, taker_coin, maker_saved_swap).unwrap();
 
         assert_eq!(unsafe { SWAP_CONTRACT_ADDRESS_CALLED }, 1);
         let expected_addr = addr_from_str("0xa09ad3cd7e96586ebd05a2607ee56b56fb2db8fd").unwrap();

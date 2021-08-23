@@ -5,7 +5,7 @@ use futures::channel::{mpsc, oneshot};
 use futures::io::{AsyncRead, AsyncWrite};
 use futures::task::{Context, Poll};
 use futures::StreamExt;
-use libp2p::core::upgrade::{read_one, write_one};
+use libp2p::core::upgrade::{read_length_prefixed, write_length_prefixed};
 use libp2p::request_response::handler::RequestProtocol;
 use libp2p::request_response::{ProtocolName, ProtocolSupport, RequestId, RequestResponse, RequestResponseCodec,
                                RequestResponseConfig, RequestResponseEvent, RequestResponseMessage, ResponseChannel};
@@ -39,13 +39,13 @@ pub fn build_request_response_behaviour() -> RequestResponseBehaviour {
     let timeout_interval = Interval::new(Duration::from_secs(1));
 
     RequestResponseBehaviour {
-        tx,
         rx,
+        tx,
         pending_requests,
         events,
-        inner,
         timeout,
         timeout_interval,
+        inner,
     }
 }
 
@@ -88,7 +88,7 @@ pub struct RequestResponseBehaviour {
 impl RequestResponseBehaviour {
     pub fn sender(&self) -> RequestResponseSender { self.tx.clone() }
 
-    pub fn send_response(&mut self, ch: ResponseChannel<PeerResponse>, rs: PeerResponse) {
+    pub fn send_response(&mut self, ch: ResponseChannel<PeerResponse>, rs: PeerResponse) -> Result<(), PeerResponse> {
         self.inner.send_response(ch, rs)
     }
 
@@ -98,7 +98,7 @@ impl RequestResponseBehaviour {
         request: PeerRequest,
         response_tx: oneshot::Sender<PeerResponse>,
     ) -> RequestId {
-        let request_id = self.inner.send_request(&peer_id, request);
+        let request_id = self.inner.send_request(peer_id, request);
         let pending_request = PendingRequest {
             tx: response_tx,
             initiated_at: Instant::now(),
@@ -188,6 +188,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<PeerRequest, PeerResponse
                 self.process_response(request_id, err_response);
                 return;
             },
+            RequestResponseEvent::ResponseSent { .. } => return,
         };
 
         match message {
@@ -298,7 +299,7 @@ where
     T: AsyncRead + Unpin + Send,
     M: DeserializeOwned,
 {
-    match read_one(io, MAX_BUFFER_SIZE).await {
+    match read_length_prefixed(io, MAX_BUFFER_SIZE).await {
         Ok(data) => Ok(try_io!(decode_message(&data))),
         Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
     }
@@ -316,5 +317,5 @@ where
             "Try to send data size over maximum",
         ));
     }
-    write_one(io, data).await
+    write_length_prefixed(io, data).await
 }
