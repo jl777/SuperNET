@@ -297,10 +297,12 @@ pub fn run_lp_main(first_arg: Option<&str>, ctx_cb: &dyn Fn(u32)) -> Result<(), 
 
 #[cfg(not(target_arch = "wasm32"))]
 fn on_update_config(args: &[OsString]) -> Result<(), String> {
+    use common::fs::safe_slurp;
+
     let src_path = args.get(2).ok_or(ERRL!("Expect path to the source coins config."))?;
     let dst_path = args.get(3).ok_or(ERRL!("Expect destination path."))?;
 
-    let config = try_s!(common::safe_slurp(src_path));
+    let config = try_s!(safe_slurp(src_path));
     let mut config: Json = try_s!(json::from_slice(&config));
 
     let result = if config.is_array() {

@@ -964,8 +964,8 @@ fn test_cancel_by_single_coin() {
     let connection = Connection::open_in_memory().unwrap();
     let _ = ctx.sqlite_connection.pin(Mutex::new(connection));
 
-    delete_my_maker_order.mock_safe(|_, _, _| MockResult::Return(()));
-    delete_my_taker_order.mock_safe(|_, _, _| MockResult::Return(()));
+    delete_my_maker_order.mock_safe(|_, _, _| MockResult::Return(Box::new(futures01::future::ok(()))));
+    delete_my_taker_order.mock_safe(|_, _, _| MockResult::Return(Box::new(futures01::future::ok(()))));
 
     let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::Coin { ticker: "RICK".into() })).unwrap();
     block_on(rx.take(2).collect::<Vec<_>>());
@@ -985,8 +985,8 @@ fn test_cancel_by_pair() {
     let connection = Connection::open_in_memory().unwrap();
     let _ = ctx.sqlite_connection.pin(Mutex::new(connection));
 
-    delete_my_maker_order.mock_safe(|_, _, _| MockResult::Return(()));
-    delete_my_taker_order.mock_safe(|_, _, _| MockResult::Return(()));
+    delete_my_maker_order.mock_safe(|_, _, _| MockResult::Return(Box::new(futures01::future::ok(()))));
+    delete_my_taker_order.mock_safe(|_, _, _| MockResult::Return(Box::new(futures01::future::ok(()))));
 
     let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::Pair {
         base: "RICK".into(),
@@ -1010,8 +1010,8 @@ fn test_cancel_by_all() {
     let connection = Connection::open_in_memory().unwrap();
     let _ = ctx.sqlite_connection.pin(Mutex::new(connection));
 
-    delete_my_maker_order.mock_safe(|_, _, _| MockResult::Return(()));
-    delete_my_taker_order.mock_safe(|_, _, _| MockResult::Return(()));
+    delete_my_maker_order.mock_safe(|_, _, _| MockResult::Return(Box::new(futures01::future::ok(()))));
+    delete_my_taker_order.mock_safe(|_, _, _| MockResult::Return(Box::new(futures01::future::ok(()))));
 
     let (cancelled, _) = block_on(cancel_orders_by(&ctx, CancelBy::All)).unwrap();
     block_on(rx.take(3).collect::<Vec<_>>());

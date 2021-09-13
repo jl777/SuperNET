@@ -37,6 +37,12 @@ jobs:
           cat MM_VERSION
           cargo build --release --bin mm2
         displayName: 'Build MM2 Release'
+      # Build WASM with the debug symbols.
+      - bash: |
+          cargo clean -p mm2-libp2p -p mm2 --target=wasm32-unknown-unknown
+          wasm-pack build --dev --target web --out-dir target/target-wasm-debug
+        displayName: 'Build MM2 WASM Debug'
+        condition: eq( variables['Agent.OS'], 'Linux' )
       - bash: |
           cargo test --target wasm32-unknown-unknown --release --bin mm2
         displayName: 'Test MM2 WASM'
@@ -44,6 +50,8 @@ jobs:
         env:
           WASM_BINDGEN_TEST_TIMEOUT: 120
           GECKODRIVER: '/home/azureagent/wasm/geckodriver'
+          BOB_PASSPHRASE: $(${{ parameters.bob_passphrase }})
+          ALICE_PASSPHRASE: $(${{ parameters.alice_passphrase }})
       # Explicit --test-threads=16 makes testing process slightly faster on agents that have <16 CPU cores.
       # Always run tests on mm2.1 branch and PRs
       - bash: |
@@ -74,6 +82,11 @@ jobs:
       - bash: |
           zip upload/mm2-$(COMMIT_HASH)-$(Agent.OS)-Release target/release/mm2 -j
         displayName: 'Prepare release build upload Linux'
+        condition: eq( variables['Agent.OS'], 'Linux' )
+      - bash: |
+          cd target/target-wasm-debug/
+          zip ../../upload/mm2-$(COMMIT_HASH)-$(Agent.OS)-Wasm-Debug mm2_bg.wasm mm2.js snippets -r
+        displayName: 'Prepare debug WASM build upload Linux'
         condition: eq( variables['Agent.OS'], 'Linux' )
       - bash: |
           cd target/release

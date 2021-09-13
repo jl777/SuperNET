@@ -6,13 +6,13 @@ use common::mm_error::prelude::*;
 use common::{log, now_ms, HttpStatusCode};
 use derive_more::Display;
 use http::StatusCode;
-use mm2_libp2p::atomicdex_behaviour::parse_relay_address;
-use mm2_libp2p::{encode_message, PeerId};
+use mm2_libp2p::{encode_message, NetworkInfo, PeerId, RelayAddress, RelayAddressError};
 use serde_json::{self as json, Value as Json};
 use std::collections::{HashMap, HashSet};
 
-use crate::mm2::lp_network::{add_reserved_peer_addresses, lp_ports, request_peers, NetIdError, P2PRequest,
+use crate::mm2::lp_network::{add_reserved_peer_addresses, lp_network_ports, request_peers, NetIdError, P2PRequest,
                              ParseAddressError, PeerDecodedResponse};
+use std::str::FromStr;
 
 pub type NodeVersionResult<T> = Result<T, MmError<NodeVersionError>>;
 
@@ -53,6 +53,10 @@ impl From<NetIdError> for NodeVersionError {
 
 impl From<ParseAddressError> for NodeVersionError {
     fn from(e: ParseAddressError) -> Self { NodeVersionError::InvalidAddress(e.to_string()) }
+}
+
+impl From<RelayAddressError> for NodeVersionError {
+    fn from(e: RelayAddressError) -> Self { NodeVersionError::InvalidAddress(e.to_string()) }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -181,14 +185,22 @@ pub async fn start_version_stat_collection(ctx: MmArc, req: Json) -> NodeVersion
     let peers_addresses = select_peers_addresses_from_db(&ctx).map_to_mm(NodeVersionError::DatabaseError)?;
 
     let netid = ctx.conf["netid"].as_u64().unwrap_or(0) as u16;
-    let (_, pubport, _) = lp_ports(netid)?;
+    let network_info = if ctx.p2p_in_memory() {
+        NetworkInfo::InMemory
+    } else {
+        let network_ports = lp_network_ports(netid)?;
+        NetworkInfo::Distributed { network_ports }
+    };
 
     for (peer_id, address) in peers_addresses {
         let peer_id = peer_id
             .parse::<PeerId>()
             .map_to_mm(|e| NodeVersionError::PeerIdParseError(e.to_string()))?;
+
+        let relay_addr = RelayAddress::from_str(&address)?;
+        let multi_address = relay_addr.try_to_multiaddr(network_info)?;
+
         let mut addresses = HashSet::new();
-        let multi_address = parse_relay_address(address, pubport);
         addresses.insert(multi_address);
         add_reserved_peer_addresses(&ctx, peer_id, addresses);
     }

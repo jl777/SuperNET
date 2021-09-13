@@ -1555,10 +1555,12 @@ where
     let history = match coin.load_history_from_file(&ctx).compat().await {
         Ok(history) => history,
         Err(e) => {
-            ctx.log.log(
+            log_tag!(
+                ctx,
                 "",
-                &[&"tx_history", &coin.as_ref().conf.ticker],
-                &ERRL!("Error {} on 'load_history_from_file', stop the history loop", e),
+                "tx_history",
+                "coin" => coin.as_ref().conf.ticker;
+                fmt = "Error {} on 'load_history_from_file', stop the history loop", e
             );
             return;
         },
@@ -1577,8 +1579,7 @@ where
             let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
             let coins = coins_ctx.coins.lock().await;
             if !coins.contains_key(&coin.as_ref().conf.ticker) {
-                ctx.log
-                    .log("", &[&"tx_history", &coin.as_ref().conf.ticker], "Loop stopped");
+                log_tag!(ctx, "", "tx_history", "coin" => coin.as_ref().conf.ticker; fmt = "Loop stopped");
                 break;
             };
         }
@@ -1586,10 +1587,12 @@ where
         let actual_balance = match coin.my_balance().compat().await {
             Ok(actual_balance) => Some(actual_balance),
             Err(err) => {
-                ctx.log.log(
+                log_tag!(
+                    ctx,
                     "",
-                    &[&"tx_history", &coin.as_ref().conf.ticker],
-                    &ERRL!("Error {:?} on getting balance", err),
+                    "tx_history",
+                    "coin" => coin.as_ref().conf.ticker;
+                    fmt = "Error {:?} on getting balance", err
                 );
                 None
             },
@@ -1609,19 +1612,23 @@ where
         let tx_ids = match coin.request_tx_history(metrics).await {
             RequestTxHistoryResult::Ok(tx_ids) => tx_ids,
             RequestTxHistoryResult::Retry { error } => {
-                ctx.log.log(
+                log_tag!(
+                    ctx,
                     "",
-                    &[&"tx_history", &coin.as_ref().conf.ticker],
-                    &ERRL!("{}, retrying", error),
+                    "tx_history",
+                    "coin" => coin.as_ref().conf.ticker;
+                    fmt = "{}, retrying", error
                 );
                 Timer::sleep(10.).await;
                 continue;
             },
             RequestTxHistoryResult::HistoryTooLarge => {
-                ctx.log.log(
+                log_tag!(
+                    ctx,
                     "",
-                    &[&"tx_history", &coin.as_ref().conf.ticker],
-                    &ERRL!("Got `history too large`, stopping further attempts to retrieve it"),
+                    "tx_history",
+                    "coin" => coin.as_ref().conf.ticker;
+                    fmt = "Got `history too large`, stopping further attempts to retrieve it"
                 );
                 *coin.as_ref().history_sync_state.lock().unwrap() = HistorySyncState::Error(json!({
                     "code": HISTORY_TOO_LARGE_ERR_CODE,
@@ -1630,10 +1637,12 @@ where
                 break;
             },
             RequestTxHistoryResult::UnknownError(e) => {
-                ctx.log.log(
+                log_tag!(
+                    ctx,
                     "",
-                    &[&"tx_history", &coin.as_ref().conf.ticker],
-                    &ERRL!("{}, stopping futher attempts to retreive it", e),
+                    "tx_history",
+                    "coin" => coin.as_ref().conf.ticker;
+                    fmt = "{}, stopping futher attempts to retreive it", e
                 );
                 break;
             },
@@ -1674,10 +1683,12 @@ where
                             }
                             updated = true;
                         },
-                        Err(e) => ctx.log.log(
+                        Err(e) => log_tag!(
+                            ctx,
                             "",
-                            &[&"tx_history", &coin.as_ref().conf.ticker],
-                            &ERRL!("Error {:?} on getting the details of {:?}, skipping the tx", e, txid),
+                            "tx_history",
+                            "coin" => coin.as_ref().conf.ticker;
+                            fmt = "Error {:?} on getting the details of {:?}, skipping the tx", e, txid
                         ),
                     }
                 },
@@ -1702,14 +1713,12 @@ where
                     //     mm_counter!(ctx.metrics, "tx.history.update.kmd_rewards", 1);
                     //     match coin.update_kmd_rewards(e.get_mut(), &mut input_transactions).await {
                     //         Ok(()) => updated = true,
-                    //         Err(e) => ctx.log.log(
+                    //         Err(e) => log_tag!(
+                    //             ctx,
                     //             "😟",
-                    //             &[&"tx_history", &coin.as_ref().conf.ticker],
-                    //             &ERRL!(
-                    //                 "Error {:?} on updating the KMD rewards of {:?}, skipping the tx",
-                    //                 e,
-                    //                 txid
-                    //             ),
+                    //             "tx_history",
+                    //             "coin" => coin.as_ref().conf.ticker;
+                    //             fmt = "Error {:?} on updating the KMD rewards of {:?}, skipping the tx", e, txid
                     //         ),
                     //     }
                     // }
@@ -1729,10 +1738,12 @@ where
                     }
                 });
                 if let Err(e) = coin.save_history_to_file(&ctx, to_write).compat().await {
-                    ctx.log.log(
+                    log_tag!(
+                        ctx,
                         "",
-                        &[&"tx_history", &coin.as_ref().conf.ticker],
-                        &ERRL!("Error {} on 'save_history_to_file', stop the history loop", e),
+                        "tx_history",
+                        "coin" => coin.as_ref().conf.ticker;
+                        fmt = "Error {} on 'save_history_to_file', stop the history loop", e
                     );
                     return;
                 };
@@ -1741,10 +1752,12 @@ where
         *coin.as_ref().history_sync_state.lock().unwrap() = HistorySyncState::Finished;
 
         if success_iteration == 0 {
-            ctx.log.log(
+            log_tag!(
+                ctx,
                 "😅",
-                &[&"tx_history", &("coin", coin.as_ref().conf.ticker.clone().as_str())],
-                "history has been loaded successfully",
+                "tx_history",
+                "coin" => coin.as_ref().conf.ticker;
+                fmt = "history has been loaded successfully"
             );
         }
 

@@ -12,7 +12,6 @@ use common::jsonrpc_client::{JsonRpcClient, JsonRpcError, JsonRpcErrorType, Json
 use common::log::{error, info, warn};
 use common::mm_error::prelude::*;
 use common::mm_number::MmNumber;
-use common::wio::slurp_req;
 use common::{median, now_float, now_ms, OrdRange};
 use derive_more::Display;
 use futures::channel::oneshot as async_oneshot;
@@ -23,9 +22,7 @@ use futures::{select, StreamExt};
 use futures01::future::select_ok;
 use futures01::sync::{mpsc, oneshot};
 use futures01::{Future, Sink, Stream};
-use http::header::AUTHORIZATION;
 use http::Uri;
-use http::{Request, StatusCode};
 use keys::{Address, Type as ScriptType};
 #[cfg(test)] use mocktopus::macros::*;
 use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H256 as H256Json};
@@ -46,6 +43,8 @@ use std::time::Duration;
 cfg_native! {
     use futures::future::Either;
     use futures::io::Error;
+    use http::header::AUTHORIZATION;
+    use http::{Request, StatusCode};
     use std::pin::Pin;
     use std::task::{Context, Poll};
     use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader, ReadBuf};
@@ -518,7 +517,17 @@ impl JsonRpcClient for NativeClientImpl {
 
     fn client_info(&self) -> String { UtxoJsonRpcClientInfo::client_info(self) }
 
+    #[cfg(target_arch = "wasm32")]
+    fn transport(&self, _request: JsonRpcRequest) -> JsonRpcResponseFut {
+        Box::new(futures01::future::err(ERRL!(
+            "'NativeClientImpl' must be used in native mode only"
+        )))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     fn transport(&self, request: JsonRpcRequest) -> JsonRpcResponseFut {
+        use common::wio::slurp_req;
+
         let request_body = try_fus!(json::to_string(&request));
         // measure now only body length, because the `hyper` crate doesn't allow to get total HTTP packet length
         self.event_handlers.on_outgoing_request(request_body.as_bytes());

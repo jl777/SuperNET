@@ -299,8 +299,10 @@ pub extern "C" fn spawn_rpc(ctx_h: u32) {
 
     let rpc_ip_port = ctx.rpc_ip_port().unwrap();
     CORE.0.spawn({
-        info!(
-            ">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{}  <<<<<<<<<",
+        log_tag!(
+            ctx,
+            "😉";
+            fmt = ">>>>>>>>>> DEX stats {}:{} DEX stats API enabled at unixtime.{}  <<<<<<<<<",
             rpc_ip_port.ip(),
             rpc_ip_port.port(),
             gstuff::now_ms() / 1000
@@ -327,10 +329,15 @@ pub fn spawn_rpc(ctx_h: u32) {
         .expect("'127.0.0.1:1' must be valid socket address");
 
     let (request_tx, mut request_rx) = wasm_rpc::channel();
-    let ctx_c = ctx.clone();
+    let ctx_weak = ctx.weak();
     let fut = async move {
         while let Some((request_json, response_tx)) = request_rx.next().await {
-            let response = process_json_request(ctx_c.clone(), request_json, client).await;
+            let ctx = match MmArc::from_weak(&ctx_weak) {
+                Some(ctx) => ctx,
+                None => break,
+            };
+
+            let response = process_json_request(ctx, request_json, client).await;
             if let Err(e) = response_tx.send(response) {
                 error!("Response is not processed: {:?}", e);
             }
@@ -348,8 +355,10 @@ pub fn spawn_rpc(ctx_h: u32) {
         return;
     }
 
-    info!(
-        ">>>>>>>>>> DEX stats API enabled at unixtime.{}  <<<<<<<<<",
+    log_tag!(
+        ctx,
+        "😉";
+        fmt = ">>>>>>>>>> DEX stats API enabled at unixtime.{}  <<<<<<<<<",
         common::now_ms() / 1000
     );
 }

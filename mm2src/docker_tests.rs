@@ -8,6 +8,7 @@
 #![recursion_limit = "512"]
 
 #[cfg(test)] use docker_tests::docker_tests_runner;
+
 #[cfg(test)]
 #[macro_use]
 extern crate common;
@@ -98,12 +99,11 @@ mod docker_tests {
     use coins::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin};
     use coins::utxo::{coin_daemon_data_dir, dhash160, zcash_params_path, UtxoCoinFields, UtxoCommonOps};
     use coins::{FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, TransactionEnum, WithdrawRequest};
-    use common::for_tests::enable_electrum;
+    use common::for_tests::{enable_electrum, enable_native, mm_dump, new_mm2_temp_folder_path, MarketMakerIt};
+    use common::fs::file_lock::FileLock;
+    use common::mm_ctx::{MmArc, MmCtxBuilder};
     use common::mm_number::MmNumber;
     use common::{block_on, now_ms};
-    use common::{file_lock::FileLock,
-                 for_tests::{enable_native, mm_dump, new_mm2_temp_folder_path, MarketMakerIt},
-                 mm_ctx::{MmArc, MmCtxBuilder}};
     use futures01::Future;
     use keys::{KeyPair, Private};
     use primitives::hash::H160;
@@ -1209,7 +1209,7 @@ mod docker_tests {
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1","asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         ]);
-        let mut mm_bob = MarketMakerIt::start_with_envs(
+        let mut mm_bob = block_on(MarketMakerIt::start_with_envs(
             json! ({
                 "gui": "nogui",
                 "netid": 9000,
@@ -1222,12 +1222,12 @@ mod docker_tests {
             "pass".to_string(),
             None,
             &[("MYCOIN_FEE_DISCOUNT", "")],
-        )
+        ))
         .unwrap();
         let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
         block_on(mm_bob.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))).unwrap();
 
-        let mut mm_alice = MarketMakerIt::start_with_envs(
+        let mut mm_alice = block_on(MarketMakerIt::start_with_envs(
             json! ({
                 "gui": "nogui",
                 "netid": 9000,
@@ -1240,7 +1240,7 @@ mod docker_tests {
             "pass".to_string(),
             None,
             &[("MYCOIN_FEE_DISCOUNT", "")],
-        )
+        ))
         .unwrap();
         let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
         block_on(mm_alice.wait_for_log(22., |log| log.contains(">>>>>>>>> DEX stats "))).unwrap();

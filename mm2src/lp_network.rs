@@ -26,7 +26,7 @@ use futures::{channel::oneshot, lock::Mutex as AsyncMutex, StreamExt};
 use mm2_libp2p::atomicdex_behaviour::{AdexBehaviourCmd, AdexBehaviourEvent, AdexCmdTx, AdexEventRx, AdexResponse,
                                       AdexResponseChannel};
 use mm2_libp2p::peers_exchange::PeerAddresses;
-use mm2_libp2p::{decode_message, encode_message, GossipsubMessage, MessageId, PeerId, TOPIC_SEPARATOR};
+use mm2_libp2p::{decode_message, encode_message, GossipsubMessage, MessageId, NetworkPorts, PeerId, TOPIC_SEPARATOR};
 #[cfg(test)] use mocktopus::macros::*;
 use serde::de;
 use std::net::ToSocketAddrs;
@@ -132,7 +132,7 @@ async fn process_p2p_message(
                 }
             },
             Some(lp_swap::SWAP_PREFIX) => {
-                lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data);
+                lp_swap::process_msg(ctx.clone(), split.next().unwrap_or_default(), &message.data).await;
                 to_propagate = true;
             },
             None | Some(_) => (),
@@ -201,7 +201,7 @@ pub fn broadcast_p2p_msg(ctx: &MmArc, topics: Vec<String>, msg: Vec<u8>) {
 ///
 /// # Safety
 ///
-/// The function locks the [`MmCtx::p2p_ctx`] mutext.
+/// The function locks the [`MmCtx::p2p_ctx`] mutex.
 pub async fn subscribe_to_topic(ctx: &MmArc, topic: String) {
     let p2p_ctx = P2PContext::fetch_from_mm_arc(ctx);
     let cmd = AdexBehaviourCmd::Subscribe { topic };
@@ -428,4 +428,12 @@ pub fn lp_ports(netid: u16) -> Result<(u16, u16, u16), MmError<NetIdError>> {
         LP_RPCPORT
     };
     Ok((other_ports + 10, other_ports + 20, other_ports + 30))
+}
+
+pub fn lp_network_ports(netid: u16) -> Result<NetworkPorts, MmError<NetIdError>> {
+    let (_, network_port, network_ws_port) = lp_ports(netid)?;
+    Ok(NetworkPorts {
+        tcp: network_port,
+        ws: network_ws_port,
+    })
 }
