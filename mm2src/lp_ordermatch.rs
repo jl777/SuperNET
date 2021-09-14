@@ -2729,7 +2729,15 @@ async fn handle_timed_out_taker_orders(ctx: MmArc, ordermatch_ctx: &OrdermatchCo
         }
 
         // notify other peers
-        maker_order_created_p2p_notify(ctx.clone(), &maker_order).await;
+        if let Ok(Some((base, rel))) = find_pair(&ctx, &maker_order.base, &maker_order.rel).await {
+            maker_order_created_p2p_notify(
+                ctx.clone(),
+                &maker_order,
+                base.coin_protocol_info(),
+                rel.coin_protocol_info(),
+            )
+            .await;
+        }
     }
 
     *my_taker_orders = my_actual_taker_orders;
@@ -3788,8 +3796,13 @@ pub async fn set_price(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Strin
     let request_orderbook = false;
     try_s!(subscribe_to_orderbook_topic(&ctx, &new_order.base, &new_order.rel, request_orderbook).await);
     save_my_new_maker_order(ctx.clone(), &new_order).await;
-    maker_order_created_p2p_notify(ctx.clone(), &new_order, base_coin.coin_protocol_info(),
-                                   rel_coin.coin_protocol_info(),).await;
+    maker_order_created_p2p_notify(
+        ctx.clone(),
+        &new_order,
+        base_coin.coin_protocol_info(),
+        rel_coin.coin_protocol_info(),
+    )
+    .await;
     let rpc_result = MakerOrderForRpc::from(&new_order);
     let res = try_s!(json::to_vec(&json!({ "result": rpc_result })));
 
