@@ -27,6 +27,6 @@ If you have any question/want to report a bug/suggest an improvement feel free t
 
 ## Additional docs for developers
 
-[Contribution guide](./CONTRIBUTING.md)
-[Setting up the environment to run the full tests suite](./docs/DEV_ENVIRONMENT.md)
-[Git flow and general workflow](./docs/GIT_FLOW_AND_WORKING_PROCESS.md)
+[Contribution guide](./CONTRIBUTING.md)  
+[Setting up the environment to run the full tests suite](./docs/DEV_ENVIRONMENT.md)  
+[Git flow and general workflow](./docs/GIT_FLOW_AND_WORKING_PROCESS.md)  
