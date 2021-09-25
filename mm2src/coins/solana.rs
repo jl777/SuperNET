@@ -3,21 +3,36 @@ use crate::{BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractA
             TradePreimageValue, ValidateAddressResult, WithdrawFut, WithdrawRequest};
 use bigdecimal::BigDecimal;
 use common::mm_ctx::MmArc;
+use common::mm_ctx::MmWeak;
 use common::mm_error::MmError;
 use common::mm_number::MmNumber;
 use futures01::Future;
 use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
+use solana_client::rpc_client::RpcClient;
+use solana_sdk::signature::Keypair;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::ops::Deref;
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
 #[cfg(test)] mod solana_tests;
 
 /// pImpl idiom.
-#[derive(Debug)]
 pub struct SolanaCoinImpl {
     ticker: String,
+    coin_type: SolanaCoinType,
+    key_pair: Keypair,
+    client: RpcClient,
+    decimals: u8,
+    required_confirmations: AtomicU64,
+    ctx: MmWeak,
+    my_address: String,
+}
+
+impl Debug for SolanaCoinImpl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(format!("{}", self.ticker).as_str()) }
 }
 
 #[derive(Clone, Debug)]
@@ -27,12 +42,21 @@ impl Deref for SolanaCoin {
     fn deref(&self) -> &SolanaCoinImpl { &*self.0 }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum SolanaCoinType {
+    /// Solana itself or it's forks
+    Solana,
+    /// SPL token with smart contract address
+    /// https://spl.solana.com/
+    Spl { platform: String, token_addr: String },
+}
+
 #[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl MarketCoinOps for SolanaCoin {
     fn ticker(&self) -> &str { &self.ticker }
 
-    fn my_address(&self) -> Result<String, String> { unimplemented!() }
+    fn my_address(&self) -> Result<String, String> { Ok(self.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> { unimplemented!() }
 
