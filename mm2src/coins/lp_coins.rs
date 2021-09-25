@@ -95,6 +95,11 @@ use qrc20::{qrc20_coin_from_conf_and_request, Qrc20Coin, Qrc20FeeDetails};
 pub mod test_coin;
 pub use test_coin::TestCoin;
 
+#[doc(hidden)]
+#[allow(unused_variables)]
+pub mod solana;
+pub use solana::SolanaCoin;
+
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
@@ -903,6 +908,7 @@ pub enum MmCoinEnum {
     EthCoin(EthCoin),
     #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
     ZCoin(ZCoin),
+    SolanaCoin(SolanaCoin),
     Test(TestCoin),
 }
 
@@ -916,6 +922,10 @@ impl From<EthCoin> for MmCoinEnum {
 
 impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
+}
+
+impl From<SolanaCoin> for MmCoinEnum {
+    fn from(c: SolanaCoin) -> MmCoinEnum { MmCoinEnum::SolanaCoin(c) }
 }
 
 impl From<QtumCoin> for MmCoinEnum {
@@ -943,6 +953,7 @@ impl Deref for MmCoinEnum {
             #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
             MmCoinEnum::ZCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
+            MmCoinEnum::SolanaCoin(ref c) => c,
         }
     }
 }
