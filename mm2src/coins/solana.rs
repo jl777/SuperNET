@@ -1,23 +1,37 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::{BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, TradePreimageFut,
-            TradePreimageValue, ValidateAddressResult, WithdrawFut, WithdrawRequest};
+use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
+            TradePreimageFut, TradePreimageValue, ValidateAddressResult, WithdrawFut, WithdrawRequest};
 use bigdecimal::BigDecimal;
-use common::mm_ctx::MmArc;
-use common::mm_ctx::MmWeak;
-use common::mm_error::MmError;
-use common::mm_number::MmNumber;
+use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber};
+use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
 use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::signature::Keypair;
+use solana_client::{client_error::{ClientError, ClientErrorKind},
+                    rpc_client::RpcClient};
+use solana_sdk::signature::{Keypair, Signer};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::ops::Deref;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
 #[cfg(test)] mod solana_tests;
+
+impl From<ClientError> for BalanceError {
+    fn from(e: ClientError) -> Self {
+        match e.kind {
+            ClientErrorKind::Io(e) => BalanceError::Transport(e.to_string()),
+            ClientErrorKind::Reqwest(e) => BalanceError::Transport(e.to_string()),
+            ClientErrorKind::RpcError(e) => BalanceError::Transport(format!("{:?}", e)),
+            ClientErrorKind::SerdeJson(e) => BalanceError::InvalidResponse(e.to_string()),
+            ClientErrorKind::Custom(e) => BalanceError::Internal(e),
+            ClientErrorKind::SigningError(_)
+            | ClientErrorKind::TransactionError(_)
+            | ClientErrorKind::FaucetError(_) => BalanceError::Internal("not_reacheable".to_string()),
+        }
+    }
+}
 
 /// pImpl idiom.
 pub struct SolanaCoinImpl {
@@ -42,6 +56,19 @@ impl Deref for SolanaCoin {
     fn deref(&self) -> &SolanaCoinImpl { &*self.0 }
 }
 
+impl SolanaCoin {
+    fn my_balance_impl(&self) -> BalanceFut<u64> {
+        let coin = self.clone();
+        let fut = async move {
+            match coin.coin_type {
+                SolanaCoinType::Solana => Ok(coin.client.get_balance(&coin.key_pair.pubkey())?),
+                SolanaCoinType::Spl { .. } => MmError::err(BalanceError::Internal("not implemented_yet".to_string())),
+            }
+        };
+        Box::new(fut.boxed().compat())
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum SolanaCoinType {
     /// Solana itself or it's forks
@@ -58,7 +85,15 @@ impl MarketCoinOps for SolanaCoin {
 
     fn my_address(&self) -> Result<String, String> { Ok(self.my_address.clone()) }
 
-    fn my_balance(&self) -> BalanceFut<CoinBalance> { unimplemented!() }
+    fn my_balance(&self) -> BalanceFut<CoinBalance> {
+        let fut = self.my_balance_impl().and_then(move |result| {
+            Ok(solana_sdk::native_token::lamports_to_sol(result)).map(|spendable| CoinBalance {
+                spendable: BigDecimal::from(spendable),
+                unspendable: BigDecimal::from(0),
+            })
+        });
+        Box::new(fut)
+    }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> { unimplemented!() }
 

@@ -1,5 +1,7 @@
+use super::*;
 use crate::solana::SolanaCoin;
 use crate::solana::{SolanaCoinImpl, SolanaCoinType};
+use crate::MarketCoinOps;
 use base58::ToBase58;
 use bip39::Language;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
@@ -61,7 +63,6 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String) -> (MmArc, Sola
 
 mod tests {
     use super::*;
-    use crate::MarketCoinOps;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -106,5 +107,16 @@ mod tests {
             sol_coin.my_address().unwrap(),
             "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP"
         );
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn solana_my_balance() {
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+        );
+        let res = sol_coin.my_balance().wait().unwrap();
+        assert_eq!(res.spendable, BigDecimal::from(1.0));
     }
 }
