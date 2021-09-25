@@ -1,6 +1,7 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageValue, ValidateAddressResult, WithdrawFut, WithdrawRequest};
+use base58::ToBase58;
 use bigdecimal::BigDecimal;
 use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber};
 use futures::{FutureExt, TryFutureExt};
@@ -10,6 +11,7 @@ use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
 use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient};
+use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::ops::Deref;
@@ -31,6 +33,16 @@ impl From<ClientError> for BalanceError {
             | ClientErrorKind::FaucetError(_) => BalanceError::Internal("not_reacheable".to_string()),
         }
     }
+}
+
+pub struct SplTokenInfos {
+    ticker: String,
+    decimals: u8,
+    token_address: String,
+}
+
+lazy_static! {
+    static ref SPL_PROGRAM_ID: Pubkey = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA".parse().unwrap();
 }
 
 /// pImpl idiom.
@@ -75,7 +87,10 @@ enum SolanaCoinType {
     Solana,
     /// SPL token with smart contract address
     /// https://spl.solana.com/
-    Spl { platform: String, token_addr: String },
+    Spl {
+        platform: String,
+        token_addr: solana_sdk::pubkey::Pubkey,
+    },
 }
 
 #[mockable]
@@ -95,7 +110,12 @@ impl MarketCoinOps for SolanaCoin {
         Box::new(fut)
     }
 
-    fn base_coin_balance(&self) -> BalanceFut<BigDecimal> { unimplemented!() }
+    fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
+        let fut = self.my_balance_impl().and_then(move |result| {
+            Ok(solana_sdk::native_token::lamports_to_sol(result)).map(|spendable| BigDecimal::from(spendable))
+        });
+        Box::new(fut)
+    }
 
     fn send_raw_tx(&self, _tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> { unimplemented!() }
 
@@ -124,11 +144,15 @@ impl MarketCoinOps for SolanaCoin {
 
     fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> { unimplemented!() }
 
-    fn display_priv_key(&self) -> String { unimplemented!() }
+    fn display_priv_key(&self) -> String { self.key_pair.secret().to_bytes()[..].to_base58() }
 
-    fn min_tx_amount(&self) -> BigDecimal { unimplemented!() }
+    fn min_tx_amount(&self) -> BigDecimal { BigDecimal::from(0) }
 
-    fn min_trading_vol(&self) -> MmNumber { MmNumber::from("0.00777") }
+    fn min_trading_vol(&self) -> MmNumber {
+        // todo use a proper way for tokens, maybe an optional<String> ticker
+        let pow = self.decimals / 3;
+        MmNumber::from(1) / MmNumber::from(10u64.pow(pow as u32))
+    }
 }
 
 #[mockable]
@@ -289,7 +313,7 @@ impl MmCoin for SolanaCoin {
 
     fn withdraw(&self, _req: WithdrawRequest) -> WithdrawFut { unimplemented!() }
 
-    fn decimals(&self) -> u8 { unimplemented!() }
+    fn decimals(&self) -> u8 { self.decimals }
 
     fn convert_to_address(&self, _from: &str, _to_address_format: Json) -> Result<String, String> { unimplemented!() }
 

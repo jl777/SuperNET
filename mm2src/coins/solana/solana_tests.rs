@@ -50,7 +50,7 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String) -> (MmArc, Sola
 
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
         coin_type,
-        decimals: 18,
+        decimals: 8,
         my_address,
         key_pair,
         ticker,
@@ -63,6 +63,7 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String) -> (MmArc, Sola
 
 mod tests {
     use super::*;
+    use solana_client::rpc_request::TokenAccountsFilter;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -83,16 +84,26 @@ mod tests {
         }
 
         {
-            let fin = generate_key_pair_from_seed(
+            let key_pair = generate_key_pair_from_seed(
                 "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
             );
-            let public_address = fin.pubkey().to_string();
+            let public_address = key_pair.pubkey().to_string();
             assert_eq!(public_address.len(), 44);
             assert_eq!(public_address, "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP");
             let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
-            let balance = client.get_balance(&fin.pubkey()).expect("Expect to retrieve balance");
-            assert_eq!(solana_sdk::native_token::lamports_to_sol(balance), 1.0);
-            assert_eq!(balance, 1000000000);
+            let balance = client
+                .get_balance(&key_pair.pubkey())
+                .expect("Expect to retrieve balance");
+            assert_eq!(solana_sdk::native_token::lamports_to_sol(balance), 2.0);
+            assert_eq!(balance, 2000000000);
+
+            let token_accounts = client
+                .get_token_accounts_by_owner(&key_pair.pubkey(), TokenAccountsFilter::ProgramId(*SPL_PROGRAM_ID))
+                .expect("");
+            println!("{:?}", token_accounts);
+            let actual_token_pubkey = solana_sdk::pubkey::Pubkey::from_str(token_accounts[0].pubkey.as_str()).unwrap();
+            let amount = client.get_token_account_balance(&actual_token_pubkey).unwrap();
+            assert_eq!(amount.ui_amount_string.as_str(), "1");
         }
     }
 
@@ -107,6 +118,20 @@ mod tests {
             sol_coin.my_address().unwrap(),
             "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP"
         );
+
+        let (_, sol_spl_usdc_coin) = solana_coin_for_test(
+            SolanaCoinType::Spl {
+                platform: "SOL".to_string(),
+                token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
+                    .unwrap(),
+            },
+            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+        );
+
+        assert_eq!(
+            sol_spl_usdc_coin.my_address().unwrap(),
+            "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP"
+        );
     }
 
     #[test]
@@ -117,6 +142,6 @@ mod tests {
             "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
         );
         let res = sol_coin.my_balance().wait().unwrap();
-        assert_eq!(res.spendable, BigDecimal::from(1.0));
+        assert_eq!(res.spendable, BigDecimal::from(2.0));
     }
 }
