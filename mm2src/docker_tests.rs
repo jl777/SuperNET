@@ -99,8 +99,9 @@ mod docker_tests {
     use coins::utxo::rpc_clients::{UnspentInfo, UtxoRpcClientEnum, UtxoRpcClientOps};
     use coins::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_request, UtxoStandardCoin};
     use coins::utxo::{coin_daemon_data_dir, dhash160, zcash_params_path, UtxoCoinFields, UtxoCommonOps};
-    use coins::{FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, TransactionEnum, WithdrawRequest};
-    use common::for_tests::{enable_electrum, enable_native, mm_dump, new_mm2_temp_folder_path, MarketMakerIt};
+    use coins::{CoinProtocol, FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, TransactionEnum, WithdrawRequest};
+    use common::for_tests::{check_my_swap_status_amounts, enable_electrum, enable_native, mm_dump,
+                            new_mm2_temp_folder_path, MarketMakerIt};
     use common::fs::file_lock::FileLock;
     use common::mm_ctx::{MmArc, MmCtxBuilder};
     use common::mm_number::MmNumber;
