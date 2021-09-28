@@ -5,16 +5,18 @@ use base58::ToBase58;
 use bigdecimal::BigDecimal;
 use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber};
 use futures::{FutureExt, TryFutureExt};
-use futures01::Future;
+use futures01::{future::result, Future};
 use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
+use solana_client::rpc_request::TokenAccountsFilter;
 use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient};
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::{pubkey::Pubkey,
+                 signature::{Keypair, Signer}};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
@@ -35,15 +37,11 @@ impl From<ClientError> for BalanceError {
     }
 }
 
-pub struct SplTokenInfos {
+/*pub struct SplTokenInfos {
     ticker: String,
     decimals: u8,
     token_address: String,
-}
-
-lazy_static! {
-    static ref SPL_PROGRAM_ID: Pubkey = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA".parse().unwrap();
-}
+}*/
 
 /// pImpl idiom.
 pub struct SolanaCoinImpl {
@@ -69,12 +67,34 @@ impl Deref for SolanaCoin {
 }
 
 impl SolanaCoin {
-    fn my_balance_impl(&self) -> BalanceFut<u64> {
+    fn get_underlying_pubkey(&self) -> Pubkey {
+        let coin = self.clone();
+        match coin.coin_type {
+            SolanaCoinType::Solana => coin.key_pair.pubkey(),
+            SolanaCoinType::Spl { token_addr, .. } => token_addr,
+        }
+    }
+
+    fn my_balance_impl(&self) -> BalanceFut<f64> {
         let coin = self.clone();
         let fut = async move {
             match coin.coin_type {
-                SolanaCoinType::Solana => Ok(coin.client.get_balance(&coin.key_pair.pubkey())?),
-                SolanaCoinType::Spl { .. } => MmError::err(BalanceError::Internal("not implemented_yet".to_string())),
+                SolanaCoinType::Solana => {
+                    let res = coin.client.get_balance(&coin.key_pair.pubkey())?;
+                    Ok(solana_sdk::native_token::lamports_to_sol(res))
+                },
+                SolanaCoinType::Spl { .. } => {
+                    let token_accounts = coin.client.get_token_accounts_by_owner(
+                        &coin.key_pair.pubkey(),
+                        TokenAccountsFilter::Mint(coin.get_underlying_pubkey()),
+                    )?;
+                    if token_accounts.is_empty() {
+                        return Ok(0.0);
+                    }
+                    let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str()).unwrap();
+                    let amount = coin.client.get_token_account_balance(&actual_token_pubkey).unwrap();
+                    Ok(amount.ui_amount.unwrap_or(0.0))
+                },
             }
         };
         Box::new(fut.boxed().compat())
@@ -102,8 +122,8 @@ impl MarketCoinOps for SolanaCoin {
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
         let fut = self.my_balance_impl().and_then(move |result| {
-            Ok(solana_sdk::native_token::lamports_to_sol(result)).map(|spendable| CoinBalance {
-                spendable: BigDecimal::from(spendable),
+            Ok(CoinBalance {
+                spendable: BigDecimal::from(result),
                 unspendable: BigDecimal::from(0),
             })
         });
@@ -111,9 +131,9 @@ impl MarketCoinOps for SolanaCoin {
     }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
-        let fut = self.my_balance_impl().and_then(move |result| {
-            Ok(solana_sdk::native_token::lamports_to_sol(result)).map(|spendable| BigDecimal::from(spendable))
-        });
+        let fut = self
+            .my_balance_impl()
+            .and_then(move |result| Ok(BigDecimal::from(result)));
         Box::new(fut)
     }
 
@@ -142,17 +162,15 @@ impl MarketCoinOps for SolanaCoin {
 
     fn tx_enum_from_bytes(&self, _bytes: &[u8]) -> Result<TransactionEnum, String> { unimplemented!() }
 
-    fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> { unimplemented!() }
+    fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> {
+        Box::new(result(self.client.get_block_height()).map_err(|e| ERRL!("{}", e)))
+    }
 
     fn display_priv_key(&self) -> String { self.key_pair.secret().to_bytes()[..].to_base58() }
 
     fn min_tx_amount(&self) -> BigDecimal { BigDecimal::from(0) }
 
-    fn min_trading_vol(&self) -> MmNumber {
-        // todo use a proper way for tokens, maybe an optional<String> ticker
-        let pow = self.decimals / 3;
-        MmNumber::from(1) / MmNumber::from(10u64.pow(pow as u32))
-    }
+    fn min_trading_vol(&self) -> MmNumber { MmNumber::from("0.00777") }
 }
 
 #[mockable]

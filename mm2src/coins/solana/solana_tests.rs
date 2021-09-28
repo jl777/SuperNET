@@ -32,7 +32,7 @@ fn generate_key_pair_from_seed(seed: String) -> Keypair {
     solana_sdk::signature::keypair_from_seed(pair.to_bytes().as_ref()).unwrap()
 }
 
-fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String) -> (MmArc, SolanaCoin) {
+fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Option<String>) -> (MmArc, SolanaCoin) {
     let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
     let conf = json!({
         "coins":[
@@ -42,7 +42,7 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String) -> (MmArc, Sola
     let ctx = MmCtxBuilder::new().with_conf(conf.clone()).into_mm_arc();
     let ticker = match coin_type {
         SolanaCoinType::Solana => "SOL".to_string(),
-        SolanaCoinType::Spl { .. } => "USDC".to_string(),
+        SolanaCoinType::Spl { .. } => ticker_spl.unwrap_or("USDC".to_string()),
     };
 
     let key_pair = generate_key_pair_from_seed(seed);
@@ -97,8 +97,9 @@ mod tests {
             assert_eq!(solana_sdk::native_token::lamports_to_sol(balance), 2.0);
             assert_eq!(balance, 2000000000);
 
+            //  This will fetch all the balance from all tokens
             let token_accounts = client
-                .get_token_accounts_by_owner(&key_pair.pubkey(), TokenAccountsFilter::ProgramId(*SPL_PROGRAM_ID))
+                .get_token_accounts_by_owner(&key_pair.pubkey(), TokenAccountsFilter::ProgramId(spl_token::id()))
                 .expect("");
             println!("{:?}", token_accounts);
             let actual_token_pubkey = solana_sdk::pubkey::Pubkey::from_str(token_accounts[0].pubkey.as_str()).unwrap();
@@ -113,6 +114,7 @@ mod tests {
         let (_, sol_coin) = solana_coin_for_test(
             SolanaCoinType::Solana,
             "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            None,
         );
         assert_eq!(
             sol_coin.my_address().unwrap(),
@@ -126,6 +128,7 @@ mod tests {
                     .unwrap(),
             },
             "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            Some("USDC".to_string()),
         );
 
         assert_eq!(
@@ -140,8 +143,48 @@ mod tests {
         let (_, sol_coin) = solana_coin_for_test(
             SolanaCoinType::Solana,
             "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            None,
         );
         let res = sol_coin.my_balance().wait().unwrap();
         assert_eq!(res.spendable, BigDecimal::from(2.0));
+
+        let (_, sol_spl_usdc_coin) = solana_coin_for_test(
+            SolanaCoinType::Spl {
+                platform: "SOL".to_string(),
+                token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
+                    .unwrap(),
+            },
+            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            Some("USDC".to_string()),
+        );
+
+        let res = sol_spl_usdc_coin.my_balance().wait().unwrap();
+        assert_eq!(res.spendable, BigDecimal::from(1.0));
+
+        let (_, sol_spl_wsol_coin) = solana_coin_for_test(
+            SolanaCoinType::Spl {
+                platform: "SOL".to_string(),
+                token_addr: solana_sdk::pubkey::Pubkey::from_str("So11111111111111111111111111111111111111112")
+                    .unwrap(),
+            },
+            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            Some("WSOL".to_string()),
+        );
+        let res = sol_spl_wsol_coin.my_balance().wait().unwrap();
+        assert_eq!(res.spendable, BigDecimal::from(0.0));
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn solana_block_height() {
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            None,
+        );
+        let res = sol_coin.current_block().wait().unwrap();
+        println!("block is : {}", res);
+        assert!(res > 0);
+        //assert_eq!(res.spendable, BigDecimal::from(2.0));
     }
 }

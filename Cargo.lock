@@ -1037,6 +1037,7 @@ dependencies = [
  "sha3 0.8.2",
  "solana-client",
  "solana-sdk",
+ "spl-token",
  "tiny-bip39",
  "tokio",
  "tokio-rustls",
