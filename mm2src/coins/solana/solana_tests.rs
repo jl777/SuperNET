@@ -80,7 +80,6 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Opt
 
 mod tests {
     use super::*;
-    use solana_client::rpc_request::TokenAccountsFilter;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -210,5 +209,16 @@ mod tests {
         let res = sol_coin.current_block().wait().unwrap();
         println!("block is : {}", res);
         assert!(res > 0);
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn solana_validate_address() {
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
+        let res = sol_coin.validate_address("invalidaddressobviously");
+        assert_eq!(res.is_valid, false);
+        let res = sol_coin.validate_address("GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2");
+        assert_eq!(res.is_valid, true);
     }
 }

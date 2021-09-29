@@ -14,6 +14,7 @@ use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient};
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
+use std::convert::TryFrom;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::ops::Deref;
 use std::str::FromStr;
@@ -329,7 +330,19 @@ impl MmCoin for SolanaCoin {
 
     fn convert_to_address(&self, _from: &str, _to_address_format: Json) -> Result<String, String> { unimplemented!() }
 
-    fn validate_address(&self, _address: &str) -> ValidateAddressResult { unimplemented!() }
+    fn validate_address(&self, address: &str) -> ValidateAddressResult {
+        let result = solana_sdk::pubkey::Pubkey::try_from(address);
+        match result {
+            Ok(_) => ValidateAddressResult {
+                is_valid: true,
+                reason: None,
+            },
+            Err(err) => ValidateAddressResult {
+                is_valid: false,
+                reason: Some(format!("{:?}", err)),
+            },
+        }
+    }
 
     fn process_history_loop(&self, _ctx: MmArc) -> Box<dyn Future<Item = (), Error = ()> + Send> { unimplemented!() }
 
