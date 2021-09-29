@@ -5,10 +5,10 @@ use crate::MarketCoinOps;
 use base58::ToBase58;
 use bip39::Language;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
+use common::privkey::key_pair_from_seed;
 use ed25519_dalek_bip32::derivation_path::DerivationPath;
 use ed25519_dalek_bip32::ExtendedSecretKey;
 use solana_sdk::signature::Signer;
-use solana_sdk::signer::keypair::Keypair;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -64,6 +64,25 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Opt
 mod tests {
     use super::*;
     use solana_client::rpc_request::TokenAccountsFilter;
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn solana_keypair_from_secp() {
+        let key_pair =
+            key_pair_from_seed("shoot island position soft burden budget tooth cruel issue economy destroy above")
+                .unwrap();
+        let secret_key = ed25519_dalek::SecretKey::from_bytes(key_pair.private().secret.as_slice()).unwrap();
+        let public_key = ed25519_dalek::PublicKey::from(&secret_key);
+        let other_key_pair = ed25519_dalek::Keypair {
+            secret: secret_key,
+            public: public_key,
+        };
+        let solana_key_pair = solana_sdk::signature::keypair_from_seed(other_key_pair.to_bytes().as_ref()).unwrap();
+        assert_eq!(
+            "8DUA2gCvDQucSpjAM4dqveQjpD5VyXsHQC5wBBMSnCwp",
+            solana_key_pair.pubkey().to_string()
+        );
+    }
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
