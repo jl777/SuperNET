@@ -8,6 +8,7 @@ use common::mm_ctx::{MmArc, MmCtxBuilder};
 use common::privkey::key_pair_from_seed;
 use ed25519_dalek_bip32::derivation_path::DerivationPath;
 use ed25519_dalek_bip32::ExtendedSecretKey;
+use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::Signer;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -44,7 +45,12 @@ fn generate_key_pair_from_iguana_seed(seed: String) -> Keypair {
 }
 
 fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Option<String>) -> (MmArc, SolanaCoin) {
-    let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
+    let client = solana_client::rpc_client::RpcClient::new_with_commitment(
+        "https://api.testnet.solana.com/".parse().unwrap(),
+        CommitmentConfig {
+            commitment: CommitmentLevel::Finalized,
+        },
+    );
     let conf = json!({
         "coins":[
            {"coin":"SOL","name":"solana","protocol":{"type":"SOL"},"rpcport":80,"mm2":1}
