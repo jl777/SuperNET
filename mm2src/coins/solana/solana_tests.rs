@@ -32,6 +32,17 @@ fn generate_key_pair_from_seed(seed: String) -> Keypair {
     solana_sdk::signature::keypair_from_seed(pair.to_bytes().as_ref()).unwrap()
 }
 
+fn generate_key_pair_from_iguana_seed(seed: String) -> Keypair {
+    let key_pair = key_pair_from_seed(seed.as_str()).unwrap();
+    let secret_key = ed25519_dalek::SecretKey::from_bytes(key_pair.private().secret.as_slice()).unwrap();
+    let public_key = ed25519_dalek::PublicKey::from(&secret_key);
+    let other_key_pair = ed25519_dalek::Keypair {
+        secret: secret_key,
+        public: public_key,
+    };
+    solana_sdk::signature::keypair_from_seed(other_key_pair.to_bytes().as_ref()).unwrap()
+}
+
 fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Option<String>) -> (MmArc, SolanaCoin) {
     let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
     let conf = json!({
@@ -54,8 +65,8 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Opt
         my_address,
         key_pair,
         ticker,
-        ctx: ctx.weak(),
-        required_confirmations: 1.into(),
+        _ctx: ctx.weak(),
+        _required_confirmations: 1.into(),
         client,
     }));
     (ctx, solana_coin)
@@ -68,19 +79,17 @@ mod tests {
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_keypair_from_secp() {
-        let key_pair =
-            key_pair_from_seed("shoot island position soft burden budget tooth cruel issue economy destroy above")
-                .unwrap();
-        let secret_key = ed25519_dalek::SecretKey::from_bytes(key_pair.private().secret.as_slice()).unwrap();
-        let public_key = ed25519_dalek::PublicKey::from(&secret_key);
-        let other_key_pair = ed25519_dalek::Keypair {
-            secret: secret_key,
-            public: public_key,
-        };
-        let solana_key_pair = solana_sdk::signature::keypair_from_seed(other_key_pair.to_bytes().as_ref()).unwrap();
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let solana_key_pair = generate_key_pair_from_iguana_seed(bob_passphrase);
         assert_eq!(
-            "8DUA2gCvDQucSpjAM4dqveQjpD5VyXsHQC5wBBMSnCwp",
+            "GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2",
             solana_key_pair.pubkey().to_string()
+        );
+
+        let other_solana_keypair = generate_key_pair_from_iguana_seed("bob passphrase".to_string());
+        assert_eq!(
+            "B7KMMHyc3eYguUMneXRznY1NWh91HoVA2muVJetstYKE",
+            other_solana_keypair.pubkey().to_string()
         );
     }
 
@@ -204,6 +213,5 @@ mod tests {
         let res = sol_coin.current_block().wait().unwrap();
         println!("block is : {}", res);
         assert!(res > 0);
-        //assert_eq!(res.spendable, BigDecimal::from(2.0));
     }
 }

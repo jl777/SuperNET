@@ -37,12 +37,6 @@ impl From<ClientError> for BalanceError {
     }
 }
 
-/*pub struct SplTokenInfos {
-    ticker: String,
-    decimals: u8,
-    token_address: String,
-}*/
-
 /// pImpl idiom.
 pub struct SolanaCoinImpl {
     ticker: String,
@@ -50,8 +44,8 @@ pub struct SolanaCoinImpl {
     key_pair: Keypair,
     client: RpcClient,
     decimals: u8,
-    required_confirmations: AtomicU64,
-    ctx: MmWeak,
+    _required_confirmations: AtomicU64,
+    _ctx: MmWeak,
     my_address: String,
 }
 
