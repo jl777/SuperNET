@@ -62,7 +62,7 @@ fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Opt
         SolanaCoinType::Spl { .. } => ticker_spl.unwrap_or("USDC".to_string()),
     };
 
-    let key_pair = generate_key_pair_from_seed(seed);
+    let key_pair = generate_key_pair_from_iguana_seed(seed);
     let my_address = key_pair.pubkey().to_string();
 
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
@@ -118,18 +118,18 @@ mod tests {
         }
 
         {
-            let key_pair = generate_key_pair_from_seed(
-                "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
-            );
+            let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+            let key_pair = generate_key_pair_from_iguana_seed(bob_passphrase);
+
             let public_address = key_pair.pubkey().to_string();
             assert_eq!(public_address.len(), 44);
-            assert_eq!(public_address, "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP");
+            assert_eq!(public_address, "GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2");
             let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
             let balance = client
                 .get_balance(&key_pair.pubkey())
                 .expect("Expect to retrieve balance");
-            assert_eq!(solana_sdk::native_token::lamports_to_sol(balance), 2.0);
-            assert_eq!(balance, 2000000000);
+            assert_eq!(solana_sdk::native_token::lamports_to_sol(balance), 1.0);
+            assert_eq!(balance, 1000000000);
 
             //  This will fetch all the balance from all tokens
             let token_accounts = client
@@ -145,14 +145,11 @@ mod tests {
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_coin_creation() {
-        let (_, sol_coin) = solana_coin_for_test(
-            SolanaCoinType::Solana,
-            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
-            None,
-        );
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
         assert_eq!(
             sol_coin.my_address().unwrap(),
-            "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP"
+            "GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2"
         );
 
         let (_, sol_spl_usdc_coin) = solana_coin_for_test(
@@ -161,26 +158,23 @@ mod tests {
                 token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
                     .unwrap(),
             },
-            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            bob_passphrase.to_string(),
             Some("USDC".to_string()),
         );
 
         assert_eq!(
             sol_spl_usdc_coin.my_address().unwrap(),
-            "DJ8wwseey5LEoMeMWb3tLDLywK8SecyYcqdzoVw24QpP"
+            "GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2"
         );
     }
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_my_balance() {
-        let (_, sol_coin) = solana_coin_for_test(
-            SolanaCoinType::Solana,
-            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
-            None,
-        );
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
         let res = sol_coin.my_balance().wait().unwrap();
-        assert_eq!(res.spendable, BigDecimal::from(2.0));
+        assert_eq!(res.spendable, BigDecimal::from(1.0));
 
         let (_, sol_spl_usdc_coin) = solana_coin_for_test(
             SolanaCoinType::Spl {
@@ -188,7 +182,7 @@ mod tests {
                 token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
                     .unwrap(),
             },
-            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            bob_passphrase,
             Some("USDC".to_string()),
         );
 
@@ -211,11 +205,8 @@ mod tests {
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_block_height() {
-        let (_, sol_coin) = solana_coin_for_test(
-            SolanaCoinType::Solana,
-            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
-            None,
-        );
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
         let res = sol_coin.current_block().wait().unwrap();
         println!("block is : {}", res);
         assert!(res > 0);
