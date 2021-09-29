@@ -13,6 +13,20 @@ use solana_sdk::signature::Signer;
 use std::str::FromStr;
 use std::sync::Arc;
 
+pub enum SolanaNet {
+    Mainnet,
+    Testnet,
+    Devnet,
+}
+
+fn solana_net_to_url(net_type: SolanaNet) -> String {
+    match net_type {
+        SolanaNet::Mainnet => "https://api.mainnet-beta.solana.com".to_string(),
+        SolanaNet::Testnet => "https://api.testnet.solana.com/".to_string(),
+        SolanaNet::Devnet => "https://api.devnet.solana.com".to_string(),
+    }
+}
+
 fn generate_key_pair_from_seed(seed: String) -> Keypair {
     let derivation_path = DerivationPath::from_str("m/44'/501'/0'").unwrap();
     let mnemonic = bip39::Mnemonic::from_phrase(seed.as_str(), Language::English).unwrap();
@@ -44,13 +58,16 @@ fn generate_key_pair_from_iguana_seed(seed: String) -> Keypair {
     solana_sdk::signature::keypair_from_seed(other_key_pair.to_bytes().as_ref()).unwrap()
 }
 
-fn solana_coin_for_test(coin_type: SolanaCoinType, seed: String, ticker_spl: Option<String>) -> (MmArc, SolanaCoin) {
-    let client = solana_client::rpc_client::RpcClient::new_with_commitment(
-        "https://api.testnet.solana.com/".parse().unwrap(),
-        CommitmentConfig {
-            commitment: CommitmentLevel::Finalized,
-        },
-    );
+fn solana_coin_for_test(
+    coin_type: SolanaCoinType,
+    seed: String,
+    ticker_spl: Option<String>,
+    net_type: SolanaNet,
+) -> (MmArc, SolanaCoin) {
+    let url = solana_net_to_url(net_type);
+    let client = solana_client::rpc_client::RpcClient::new_with_commitment(url.parse().unwrap(), CommitmentConfig {
+        commitment: CommitmentLevel::Finalized,
+    });
     let conf = json!({
         "coins":[
            {"coin":"SOL","name":"solana","protocol":{"type":"SOL"},"rpcport":80,"mm2":1}
@@ -145,7 +162,12 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_coin_creation() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            bob_passphrase.to_string(),
+            None,
+            SolanaNet::Testnet,
+        );
         assert_eq!(
             sol_coin.my_address().unwrap(),
             "GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2"
@@ -159,6 +181,7 @@ mod tests {
             },
             bob_passphrase.to_string(),
             Some("USDC".to_string()),
+            SolanaNet::Testnet,
         );
 
         assert_eq!(
@@ -171,7 +194,12 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_my_balance() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            bob_passphrase.to_string(),
+            None,
+            SolanaNet::Testnet,
+        );
         let res = sol_coin.my_balance().wait().unwrap();
         assert_eq!(res.spendable, BigDecimal::from(1.0));
 
@@ -183,6 +211,7 @@ mod tests {
             },
             bob_passphrase.to_string(),
             Some("USDC".to_string()),
+            SolanaNet::Testnet,
         );
 
         let res = sol_spl_usdc_coin.my_balance().wait().unwrap();
@@ -196,6 +225,7 @@ mod tests {
             },
             bob_passphrase.to_string(),
             Some("WSOL".to_string()),
+            SolanaNet::Testnet,
         );
         let res = sol_spl_wsol_coin.my_balance().wait().unwrap();
         assert_eq!(res.spendable, BigDecimal::from(0.0));
@@ -205,7 +235,12 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_block_height() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            bob_passphrase.to_string(),
+            None,
+            SolanaNet::Testnet,
+        );
         let res = sol_coin.current_block().wait().unwrap();
         println!("block is : {}", res);
         assert!(res > 0);
@@ -215,7 +250,12 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_validate_address() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            bob_passphrase.to_string(),
+            None,
+            SolanaNet::Testnet,
+        );
 
         // invalid len
         let res = sol_coin.validate_address("invalidaddressobviously");
