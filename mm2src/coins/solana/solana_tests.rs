@@ -3,13 +3,17 @@ use crate::solana::SolanaCoin;
 use crate::solana::{SolanaCoinImpl, SolanaCoinType};
 use crate::MarketCoinOps;
 use base58::ToBase58;
+use bincode::{deserialize, serialize};
 use bip39::Language;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
 use common::privkey::key_pair_from_seed;
 use ed25519_dalek_bip32::derivation_path::DerivationPath;
 use ed25519_dalek_bip32::ExtendedSecretKey;
-use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
-use solana_sdk::signature::Signer;
+use hex::{FromHex, ToHex};
+use solana_sdk::{commitment_config::{CommitmentConfig, CommitmentLevel},
+                 message::Message,
+                 native_token::sol_to_lamports,
+                 signature::Signer};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -97,8 +101,7 @@ fn solana_coin_for_test(
 
 mod tests {
     use super::*;
-    use solana_sdk::message::Message;
-    use solana_sdk::native_token::sol_to_lamports;
+    use solana_sdk::transaction::Transaction;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -275,7 +278,7 @@ mod tests {
         assert_eq!(res.is_valid, false);
     }
 
-    /*#[test]
+    #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_test_a_transaction() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
@@ -286,7 +289,7 @@ mod tests {
             SolanaNet::Devnet,
         );
         let coin_balance = sol_coin.my_balance().wait().unwrap().spendable;
-        assert_eq!(coin_balance, BigDecimal::from(1.0));
+        //assert_eq!(coin_balance, BigDecimal::from(1.0));
         let (hash, fee_calculator) = sol_coin.client.get_recent_blockhash().unwrap();
         println!("{}", fee_calculator.lamports_per_signature);
         let tx = solana_sdk::system_transaction::transfer(
@@ -295,10 +298,16 @@ mod tests {
             sol_to_lamports(0.001),
             hash,
         );
-        println!("tx: {:?}", tx);
-        println!("{}", tx.is_signed());
-        let res = sol_coin.client.send_and_confirm_transaction(&tx).unwrap();
-        println!("{}", res.to_string());
+        let serialized_tx = serialize(&tx).unwrap();
+        let encoded_tx = hex::encode(&serialized_tx);
+        println!("{}", encoded_tx);
+        let decoded = hex::decode(encoded_tx).unwrap();
+        let deserialized_tx: Transaction = deserialize(&*decoded).unwrap();
+        println!("tx: {:?}", deserialized_tx);
+        println!("{}", deserialized_tx.is_signed());
+        assert_eq!(tx, deserialized_tx);
+        //let res = sol_coin.client.send_and_confirm_transaction(&tx).unwrap();
+        //println!("{}", res.to_string());
         //tx.sign(sol_coin.key_pair.sign_message())
-    }*/
+    }
 }

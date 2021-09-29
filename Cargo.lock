@@ -987,6 +987,7 @@ dependencies = [
  "base58 0.2.0",
  "base64 0.10.1",
  "bigdecimal",
+ "bincode",
  "bitcoin-cash-slp",
  "bitcrypto",
  "byteorder 1.4.3",
