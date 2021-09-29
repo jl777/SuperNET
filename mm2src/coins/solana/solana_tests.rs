@@ -97,6 +97,8 @@ fn solana_coin_for_test(
 
 mod tests {
     use super::*;
+    use solana_sdk::message::Message;
+    use solana_sdk::native_token::sol_to_lamports;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -272,4 +274,31 @@ mod tests {
         let res = sol_coin.validate_address("r8fraJXAe1cFU81mF7NhHTrUzXjZAJkQE1gUQ11riHn");
         assert_eq!(res.is_valid, false);
     }
+
+    /*#[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn solana_test_a_transaction() {
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let (_, sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Solana,
+            bob_passphrase.to_string(),
+            None,
+            SolanaNet::Devnet,
+        );
+        let coin_balance = sol_coin.my_balance().wait().unwrap().spendable;
+        assert_eq!(coin_balance, BigDecimal::from(1.0));
+        let (hash, fee_calculator) = sol_coin.client.get_recent_blockhash().unwrap();
+        println!("{}", fee_calculator.lamports_per_signature);
+        let tx = solana_sdk::system_transaction::transfer(
+            &sol_coin.key_pair,
+            &sol_coin.key_pair.pubkey(),
+            sol_to_lamports(0.001),
+            hash,
+        );
+        println!("tx: {:?}", tx);
+        println!("{}", tx.is_signed());
+        let res = sol_coin.client.send_and_confirm_transaction(&tx).unwrap();
+        println!("{}", res.to_string());
+        //tx.sign(sol_coin.key_pair.sign_message())
+    }*/
 }
