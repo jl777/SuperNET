@@ -333,9 +333,18 @@ impl MmCoin for SolanaCoin {
     fn validate_address(&self, address: &str) -> ValidateAddressResult {
         let result = solana_sdk::pubkey::Pubkey::try_from(address);
         match result {
-            Ok(_) => ValidateAddressResult {
-                is_valid: true,
-                reason: None,
+            Ok(pubkey) => {
+                return if pubkey.is_on_curve() {
+                    ValidateAddressResult {
+                        is_valid: true,
+                        reason: None,
+                    }
+                } else {
+                    ValidateAddressResult {
+                        is_valid: false,
+                        reason: Some("not_on_curve".to_string()),
+                    }
+                }
             },
             Err(err) => ValidateAddressResult {
                 is_valid: false,

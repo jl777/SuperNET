@@ -181,7 +181,7 @@ mod tests {
                 token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
                     .unwrap(),
             },
-            bob_passphrase,
+            bob_passphrase.to_string(),
             Some("USDC".to_string()),
         );
 
@@ -194,7 +194,7 @@ mod tests {
                 token_addr: solana_sdk::pubkey::Pubkey::from_str("So11111111111111111111111111111111111111112")
                     .unwrap(),
             },
-            "powder verify clutch illegal spider old grain curve robust fade twice sphere".to_string(),
+            bob_passphrase.to_string(),
             Some("WSOL".to_string()),
         );
         let res = sol_spl_wsol_coin.my_balance().wait().unwrap();
