@@ -216,9 +216,20 @@ mod tests {
     fn solana_validate_address() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
         let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, bob_passphrase.to_string(), None);
+
+        // invalid len
         let res = sol_coin.validate_address("invalidaddressobviously");
         assert_eq!(res.is_valid, false);
+
         let res = sol_coin.validate_address("GMtMFbuVgjDnzsBd3LLBfM4X8RyYcDGCM92tPq2PG6B2");
         assert_eq!(res.is_valid, true);
+
+        // Typo
+        let res = sol_coin.validate_address("Fr8fraJXAe1cFU81mF7NhHTrUzXjZAJkQE1gUQ11riH");
+        assert_eq!(res.is_valid, false);
+
+        // invalid len
+        let res = sol_coin.validate_address("r8fraJXAe1cFU81mF7NhHTrUzXjZAJkQE1gUQ11riHn");
+        assert_eq!(res.is_valid, false);
     }
 }

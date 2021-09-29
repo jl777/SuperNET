@@ -331,6 +331,12 @@ impl MmCoin for SolanaCoin {
     fn convert_to_address(&self, _from: &str, _to_address_format: Json) -> Result<String, String> { unimplemented!() }
 
     fn validate_address(&self, address: &str) -> ValidateAddressResult {
+        if address.len() != 44 {
+            return ValidateAddressResult {
+                is_valid: false,
+                reason: Some("Invalid address length".to_string()),
+            };
+        }
         let result = solana_sdk::pubkey::Pubkey::try_from(address);
         match result {
             Ok(pubkey) => {
