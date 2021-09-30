@@ -368,7 +368,7 @@ mod tests {
         instructions.push(instruction);
         let msg = Message::new(&instructions, Some(&auth_key));
         let signers = vec![&usdc_sol_coin.key_pair];
-        let mut transaction = Transaction::new(&signers, msg, hash);
+        let transaction = Transaction::new(&signers, msg, hash);
         println!("{:?}\n", transaction);
         println!("is_signed: {}", transaction.is_signed());
         let signature = usdc_sol_coin.client.send_transaction(&transaction).unwrap();

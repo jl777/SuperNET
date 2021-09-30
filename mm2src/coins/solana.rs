@@ -14,7 +14,9 @@ use serde_json::Value as Json;
 use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient,
                     rpc_request::TokenAccountsFilter};
+use solana_sdk::hash::Hash;
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
+use solana_sdk::pubkey::ParsePubkeyError;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
@@ -40,6 +42,10 @@ impl From<ClientError> for BalanceError {
             | ClientErrorKind::FaucetError(_) => BalanceError::Internal("not_reacheable".to_string()),
         }
     }
+}
+
+impl From<ParsePubkeyError> for WithdrawError {
+    fn from(e: ParsePubkeyError) -> Self { WithdrawError::InvalidAddress(format!("{:?}", e)) }
 }
 
 #[derive(Debug)]
@@ -80,7 +86,10 @@ pub struct SolanaFeeDetails {
     pub amount: BigDecimal,
 }
 
-async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
+async fn check_sufficient_balance(
+    coin: &SolanaCoin,
+    req: &WithdrawRequest,
+) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
     let my_balance = coin.my_balance().compat().await?.spendable;
     let to_send = if req.max {
         my_balance.clone()
@@ -94,8 +103,10 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
             required: &to_send - &my_balance,
         });
     }
+    Ok((to_send, my_balance))
+}
 
-    // will need to check for the fees
+async fn check_amount_too_low(coin: &SolanaCoin) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
     let base_balance = coin.base_coin_balance().compat().await?;
     let (hash, fee_calculator) = coin.client.get_recent_blockhash().unwrap();
     let sol_required = BigDecimal::from(lamports_to_sol(fee_calculator.lamports_per_signature));
@@ -105,8 +116,23 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
             threshold: &sol_required - &base_balance,
         });
     }
+    Ok((sol_required, hash))
+}
 
-    let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str()).unwrap();
+async fn withdraw_spl_token_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
+    let (to_send, my_balance) = check_sufficient_balance(&coin, &req).await?;
+    let (sol_required, hash) = check_amount_too_low(&coin).await?;
+
+    let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
+    let contract_key = coin.get_underlying_contract_pubkey();
+
+    unimplemented!()
+}
+
+async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
+    let (to_send, my_balance) = check_sufficient_balance(&coin, &req).await?;
+    let (sol_required, hash) = check_amount_too_low(&coin).await?;
+    let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let tx =
         solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(to_send.to_f64().unwrap()), hash);
     let serialized_tx = serialize(&tx).unwrap();
@@ -143,9 +169,7 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
     }
     match coin.coin_type {
         SolanaCoinType::Solana => withdraw_base_coin_impl(coin, req).await,
-        SolanaCoinType::Spl { .. } => {
-            unimplemented!()
-        },
+        SolanaCoinType::Spl { .. } => withdraw_spl_token_impl(coin, req).await,
     }
 }
 
