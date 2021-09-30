@@ -1,25 +1,28 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
-            TradePreimageFut, TradePreimageValue, ValidateAddressResult, WithdrawFut, WithdrawRequest};
+            TradePreimageFut, TradePreimageValue, TransactionDetails, ValidateAddressResult, WithdrawError,
+            WithdrawFut, WithdrawRequest, WithdrawResult};
 use base58::ToBase58;
-use bigdecimal::BigDecimal;
-use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber};
-use futures::{FutureExt, TryFutureExt};
+use bigdecimal::{BigDecimal, ToPrimitive};
+use bincode::serialize;
+use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber, now_ms};
+use futures::{compat::Future01CompatExt, FutureExt, TryFutureExt};
 use futures01::{future::result, Future};
 use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
-use solana_client::rpc_request::TokenAccountsFilter;
 use solana_client::{client_error::{ClientError, ClientErrorKind},
-                    rpc_client::RpcClient};
+                    rpc_client::RpcClient,
+                    rpc_request::TokenAccountsFilter};
+use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
-use std::convert::TryFrom;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
-use std::ops::Deref;
-use std::str::FromStr;
-use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
+use std::{convert::TryFrom,
+          fmt::{Debug, Formatter, Result as FmtResult},
+          ops::Deref,
+          str::FromStr,
+          sync::atomic::AtomicU64,
+          sync::Arc};
 
 #[cfg(test)] mod solana_tests;
 
@@ -46,7 +49,7 @@ pub struct SolanaCoinImpl {
     client: RpcClient,
     decimals: u8,
     _required_confirmations: AtomicU64,
-    _ctx: MmWeak,
+    ctx: MmWeak,
     my_address: String,
 }
 
@@ -61,6 +64,80 @@ impl Deref for SolanaCoin {
     fn deref(&self) -> &SolanaCoinImpl { &*self.0 }
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct SolanaFeeDetails {
+    pub amount: BigDecimal,
+}
+
+async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
+    let my_balance = coin.my_balance().compat().await?.spendable;
+    let to_send = if req.max {
+        my_balance.clone()
+    } else {
+        req.amount.clone()
+    };
+    if to_send > my_balance {
+        return MmError::err(WithdrawError::NotSufficientBalance {
+            coin: coin.ticker.clone(),
+            available: my_balance.clone(),
+            required: &to_send - &my_balance,
+        });
+    }
+
+    // will need to check for the fees
+    let base_balance = coin.base_coin_balance().compat().await?;
+    let (hash, fee_calculator) = coin.client.get_recent_blockhash().unwrap();
+    let sol_required = BigDecimal::from(lamports_to_sol(fee_calculator.lamports_per_signature));
+    if base_balance < sol_required {
+        return MmError::err(WithdrawError::AmountTooLow {
+            amount: base_balance.clone(),
+            threshold: &sol_required - &base_balance,
+        });
+    }
+
+    let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str()).unwrap();
+    let tx =
+        solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(to_send.to_f64().unwrap()), hash);
+    let serialized_tx = serialize(&tx).unwrap();
+    let encoded_tx = hex::encode(&serialized_tx);
+    let received_by_me = if req.to == coin.my_address {
+        to_send.clone()
+    } else {
+        0.into()
+    };
+    Ok(TransactionDetails {
+        tx_hex: encoded_tx.as_bytes().into(),
+        tx_hash: tx.signatures[0].as_ref().into(),
+        from: vec![coin.my_address.clone()],
+        to: vec![req.to],
+        total_amount: to_send.clone(),
+        spent_by_me: to_send.clone(),
+        received_by_me,
+        my_balance_change: &my_balance - &to_send,
+        block_height: 0,
+        timestamp: now_ms() / 1000,
+        fee_details: Some(SolanaFeeDetails { amount: sol_required }.into()),
+        coin: coin.ticker.clone(),
+        internal_id: vec![].into(),
+        kmd_rewards: None,
+    })
+}
+
+async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
+    let validate_address_result = coin.validate_address(req.to.as_str());
+    if !validate_address_result.is_valid {
+        return MmError::err(WithdrawError::InvalidAddress(
+            validate_address_result.reason.unwrap_or("Unknown".to_string()),
+        ));
+    }
+    match coin.coin_type {
+        SolanaCoinType::Solana => withdraw_base_coin_impl(coin, req).await,
+        SolanaCoinType::Spl { .. } => {
+            unimplemented!()
+        },
+    }
+}
+
 impl SolanaCoin {
     fn get_underlying_pubkey(&self) -> Pubkey {
         let coin = self.clone();
@@ -70,14 +147,21 @@ impl SolanaCoin {
         }
     }
 
-    fn my_balance_impl(&self) -> BalanceFut<f64> {
+    fn my_balance_impl(&self, force_base_coin: bool) -> BalanceFut<f64> {
         let coin = self.clone();
+        let base_coin_balance_functor = |coin: SolanaCoin| {
+            let res = coin.client.get_balance(&coin.key_pair.pubkey())?;
+            Ok(solana_sdk::native_token::lamports_to_sol(res))
+        };
+        if force_base_coin {
+            let fut = async move {
+                return base_coin_balance_functor(coin);
+            };
+            return Box::new(fut.boxed().compat());
+        }
         let fut = async move {
             match coin.coin_type {
-                SolanaCoinType::Solana => {
-                    let res = coin.client.get_balance(&coin.key_pair.pubkey())?;
-                    Ok(solana_sdk::native_token::lamports_to_sol(res))
-                },
+                SolanaCoinType::Solana => base_coin_balance_functor(coin),
                 SolanaCoinType::Spl { .. } => {
                     let token_accounts = coin.client.get_token_accounts_by_owner(
                         &coin.key_pair.pubkey(),
@@ -116,7 +200,7 @@ impl MarketCoinOps for SolanaCoin {
     fn my_address(&self) -> Result<String, String> { Ok(self.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
-        let fut = self.my_balance_impl().and_then(move |result| {
+        let fut = self.my_balance_impl(false).and_then(move |result| {
             Ok(CoinBalance {
                 spendable: BigDecimal::from(result),
                 unspendable: BigDecimal::from(0),
@@ -127,7 +211,7 @@ impl MarketCoinOps for SolanaCoin {
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
         let fut = self
-            .my_balance_impl()
+            .my_balance_impl(true)
             .and_then(move |result| Ok(BigDecimal::from(result)));
         Box::new(fut)
     }
@@ -324,7 +408,9 @@ impl SwapOps for SolanaCoin {
 impl MmCoin for SolanaCoin {
     fn is_asset_chain(&self) -> bool { unimplemented!() }
 
-    fn withdraw(&self, _req: WithdrawRequest) -> WithdrawFut { unimplemented!() }
+    fn withdraw(&self, req: WithdrawRequest) -> WithdrawFut {
+        Box::new(Box::pin(withdraw_impl(self.clone(), req)).compat())
+    }
 
     fn decimals(&self) -> u8 { self.decimals }
 

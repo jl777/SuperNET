@@ -104,6 +104,7 @@ pub use solana::SolanaCoin;
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 pub mod z_coin;
+use crate::solana::SolanaFeeDetails;
 use crate::utxo::UnsupportedAddr;
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 use z_coin::{z_coin_from_conf_and_request, ZCoin};
@@ -431,6 +432,7 @@ pub enum TxFeeDetails {
     Utxo(UtxoFeeDetails),
     Eth(EthTxFeeDetails),
     Qrc20(Qrc20FeeDetails),
+    Solana(SolanaFeeDetails),
 }
 
 /// Deserialize the TxFeeDetails as an untagged enum.
@@ -445,12 +447,14 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
             Utxo(UtxoFeeDetails),
             Eth(EthTxFeeDetails),
             Qrc20(Qrc20FeeDetails),
+            Solana(SolanaFeeDetails),
         }
 
         match Deserialize::deserialize(deserializer)? {
             TxFeeDetailsUnTagged::Utxo(f) => Ok(TxFeeDetails::Utxo(f)),
             TxFeeDetailsUnTagged::Eth(f) => Ok(TxFeeDetails::Eth(f)),
             TxFeeDetailsUnTagged::Qrc20(f) => Ok(TxFeeDetails::Qrc20(f)),
+            TxFeeDetailsUnTagged::Solana(f) => Ok(TxFeeDetails::Solana(f)),
         }
     }
 }
@@ -465,6 +469,10 @@ impl From<UtxoFeeDetails> for TxFeeDetails {
 
 impl From<Qrc20FeeDetails> for TxFeeDetails {
     fn from(qrc20_details: Qrc20FeeDetails) -> Self { TxFeeDetails::Qrc20(qrc20_details) }
+}
+
+impl From<SolanaFeeDetails> for TxFeeDetails {
+    fn from(solana_details: SolanaFeeDetails) -> Self { TxFeeDetails::Solana(solana_details) }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]

@@ -3,29 +3,25 @@ use crate::solana::SolanaCoin;
 use crate::solana::{SolanaCoinImpl, SolanaCoinType};
 use crate::MarketCoinOps;
 use base58::ToBase58;
-use bincode::{deserialize, serialize};
 use bip39::Language;
 use common::mm_ctx::{MmArc, MmCtxBuilder};
 use common::privkey::key_pair_from_seed;
 use ed25519_dalek_bip32::derivation_path::DerivationPath;
 use ed25519_dalek_bip32::ExtendedSecretKey;
-use hex::{FromHex, ToHex};
 use solana_sdk::{commitment_config::{CommitmentConfig, CommitmentLevel},
-                 message::Message,
-                 native_token::sol_to_lamports,
                  signature::Signer};
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub enum SolanaNet {
-    Mainnet,
+    //Mainnet,
     Testnet,
     Devnet,
 }
 
 fn solana_net_to_url(net_type: SolanaNet) -> String {
     match net_type {
-        SolanaNet::Mainnet => "https://api.mainnet-beta.solana.com".to_string(),
+        //SolanaNet::Mainnet => "https://api.mainnet-beta.solana.com".to_string(),
         SolanaNet::Testnet => "https://api.testnet.solana.com/".to_string(),
         SolanaNet::Devnet => "https://api.devnet.solana.com".to_string(),
     }
@@ -92,7 +88,7 @@ fn solana_coin_for_test(
         my_address,
         key_pair,
         ticker,
-        _ctx: ctx.weak(),
+        ctx: ctx.weak(),
         _required_confirmations: 1.into(),
         client,
     }));
@@ -101,7 +97,6 @@ fn solana_coin_for_test(
 
 mod tests {
     use super::*;
-    use solana_sdk::transaction::Transaction;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -280,7 +275,7 @@ mod tests {
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn solana_test_a_transaction() {
+    fn solana_test_transactions() {
         let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
         let (_, sol_coin) = solana_coin_for_test(
             SolanaCoinType::Solana,
@@ -288,7 +283,34 @@ mod tests {
             None,
             SolanaNet::Devnet,
         );
-        let coin_balance = sol_coin.my_balance().wait().unwrap().spendable;
+        let valid_tx_details = sol_coin
+            .withdraw(WithdrawRequest {
+                coin: "SOL".to_string(),
+                to: sol_coin.my_address.clone(),
+                amount: BigDecimal::from(0.0001),
+                max: false,
+                fee: None,
+            })
+            .wait()
+            .unwrap();
+        assert_eq!(valid_tx_details.total_amount, BigDecimal::from(0.0001));
+        assert_eq!(valid_tx_details.coin, "SOL".to_string());
+        assert_eq!(valid_tx_details.received_by_me, BigDecimal::from(0.0001));
+        assert_ne!(valid_tx_details.timestamp, 0);
+
+        let invalid_tx = sol_coin
+            .withdraw(WithdrawRequest {
+                coin: "SOL".to_string(),
+                to: sol_coin.my_address.clone(),
+                amount: BigDecimal::from(10),
+                max: false,
+                fee: None,
+            })
+            .wait();
+
+        // NotSufficientBalance
+        assert_eq!(invalid_tx.is_err(), true);
+        /*let coin_balance = sol_coin.my_balance().wait().unwrap().spendable;
         //assert_eq!(coin_balance, BigDecimal::from(1.0));
         let (hash, fee_calculator) = sol_coin.client.get_recent_blockhash().unwrap();
         println!("{}", fee_calculator.lamports_per_signature);
@@ -308,6 +330,6 @@ mod tests {
         assert_eq!(tx, deserialized_tx);
         //let res = sol_coin.client.send_and_confirm_transaction(&tx).unwrap();
         //println!("{}", res.to_string());
-        //tx.sign(sol_coin.key_pair.sign_message())
+        //tx.sign(sol_coin.key_pair.sign_message())*/
     }
 }
