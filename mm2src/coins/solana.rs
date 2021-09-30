@@ -42,6 +42,16 @@ impl From<ClientError> for BalanceError {
     }
 }
 
+#[derive(Debug)]
+pub enum AccountError {
+    NotFundedError(String),
+    Internal(ClientErrorKind),
+}
+
+impl From<ClientError> for AccountError {
+    fn from(e: ClientError) -> Self { AccountError::Internal(e.kind) }
+}
+
 /// pImpl idiom.
 pub struct SolanaCoinImpl {
     ticker: String,
@@ -140,11 +150,28 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 }
 
 impl SolanaCoin {
-    fn get_underlying_pubkey(&self) -> Pubkey {
+    fn get_underlying_contract_pubkey(&self) -> Pubkey {
         let coin = self.clone();
         match coin.coin_type {
             SolanaCoinType::Solana => coin.key_pair.pubkey(),
             SolanaCoinType::Spl { token_addr, .. } => token_addr,
+        }
+    }
+
+    fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
+        let coin = self.clone();
+        match coin.coin_type {
+            SolanaCoinType::Solana => Ok(coin.key_pair.pubkey()),
+            SolanaCoinType::Spl { .. } => {
+                let token_accounts = coin.client.get_token_accounts_by_owner(
+                    &coin.key_pair.pubkey(),
+                    TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
+                )?;
+                if token_accounts.is_empty() {
+                    return MmError::err(AccountError::NotFundedError("account_not_funded".to_string()));
+                }
+                Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str()).unwrap())
+            },
         }
     }
 
@@ -166,7 +193,7 @@ impl SolanaCoin {
                 SolanaCoinType::Spl { .. } => {
                     let token_accounts = coin.client.get_token_accounts_by_owner(
                         &coin.key_pair.pubkey(),
-                        TokenAccountsFilter::Mint(coin.get_underlying_pubkey()),
+                        TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
                     )?;
                     if token_accounts.is_empty() {
                         return Ok(0.0);
@@ -417,7 +444,7 @@ impl SwapOps for SolanaCoin {
 #[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl MmCoin for SolanaCoin {
-    fn is_asset_chain(&self) -> bool { unimplemented!() }
+    fn is_asset_chain(&self) -> bool { false }
 
     fn withdraw(&self, req: WithdrawRequest) -> WithdrawFut {
         Box::new(Box::pin(withdraw_impl(self.clone(), req)).compat())

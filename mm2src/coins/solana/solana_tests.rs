@@ -75,9 +75,9 @@ fn solana_coin_for_test(
         ]
     });
     let ctx = MmCtxBuilder::new().with_conf(conf.clone()).into_mm_arc();
-    let ticker = match coin_type {
-        SolanaCoinType::Solana => "SOL".to_string(),
-        SolanaCoinType::Spl { .. } => ticker_spl.unwrap_or("USDC".to_string()),
+    let (ticker, decimals) = match coin_type {
+        SolanaCoinType::Solana => ("SOL".to_string(), 8),
+        SolanaCoinType::Spl { .. } => (ticker_spl.unwrap_or("USDC".to_string()), 6),
     };
 
     let key_pair = generate_key_pair_from_iguana_seed(seed);
@@ -85,7 +85,7 @@ fn solana_coin_for_test(
 
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
         coin_type,
-        decimals: 8,
+        decimals,
         my_address,
         key_pair,
         ticker,
@@ -98,6 +98,9 @@ fn solana_coin_for_test(
 
 mod tests {
     use super::*;
+    use solana_sdk::message::Message;
+    use spl_associated_token_account::create_associated_token_account;
+    use spl_token::instruction::transfer;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -315,5 +318,60 @@ mod tests {
         let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
         let res = sol_coin.send_raw_tx(tx_str).wait();
         assert_eq!(res.is_err(), false);
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn solana_test_spl_transactions() {
+        let bob_passphrase = get_passphrase!(".env.seed", "BOB_PASSPHRASE").unwrap();
+        let (_, usdc_sol_coin) = solana_coin_for_test(
+            SolanaCoinType::Spl {
+                platform: "SOL".to_string(),
+                token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
+                    .unwrap(),
+            },
+            bob_passphrase.to_string(),
+            Some("USDC".to_string()),
+            SolanaNet::Testnet,
+        );
+        // AYJmtzc9D4KU6xsDzhKShFyYKUNXY622j9QoQEo4LfpX
+        let mut instructions = Vec::with_capacity(1);
+        let (hash, fee_calculator) = usdc_sol_coin.client.get_recent_blockhash().unwrap();
+        let contract_key = usdc_sol_coin.get_underlying_contract_pubkey();
+        let destination = solana_sdk::pubkey::Pubkey::from_str("4baJZ7Y7oZEVDo9VB7KcNNumvn7ypkPyRgtJ37buhVwU").unwrap();
+        let amount = spl_token::ui_amount_to_amount(0.0001, usdc_sol_coin.decimals);
+        let funding_address = usdc_sol_coin.get_pubkey().unwrap();
+        let auth_key = usdc_sol_coin.key_pair.pubkey();
+        let destination_token = spl_associated_token_account::get_associated_token_address(&destination, &contract_key);
+        let account_info = usdc_sol_coin.client.get_account(&destination_token);
+        if account_info.is_err() {
+            println!("account doesn't exist: {:?} - creating it", account_info.unwrap_err());
+            let instruction_creation = create_associated_token_account(&auth_key, &destination, &contract_key);
+            instructions.push(instruction_creation);
+        } else {
+            println!("account exist - ignore");
+        }
+        let result_instruction = transfer(
+            &spl_token::id(),
+            &funding_address,
+            &destination_token,
+            &auth_key,
+            &vec![],
+            amount,
+        );
+        println!("token_program_id: {}", &spl_token::id());
+        println!("source_pubkey: {}", &usdc_sol_coin.get_pubkey().unwrap());
+        println!("destination_pubkey: {}", &destination_token);
+        println!("authority_pubkey: {}\n", usdc_sol_coin.key_pair.pubkey());
+        assert_eq!(result_instruction.is_err(), false);
+        let instruction = result_instruction.unwrap();
+        instructions.push(instruction);
+        let msg = Message::new(&instructions, Some(&auth_key));
+        let signers = vec![&usdc_sol_coin.key_pair];
+        let mut transaction = Transaction::new(&signers, msg, hash);
+        println!("{:?}\n", transaction);
+        println!("is_signed: {}", transaction.is_signed());
+        let signature = usdc_sol_coin.client.send_transaction(&transaction).unwrap();
+        println!("{}", signature.to_string());
     }
 }
