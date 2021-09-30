@@ -10,6 +10,7 @@ use ed25519_dalek_bip32::derivation_path::DerivationPath;
 use ed25519_dalek_bip32::ExtendedSecretKey;
 use solana_sdk::{commitment_config::{CommitmentConfig, CommitmentLevel},
                  signature::Signer};
+use std::str;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -310,26 +311,9 @@ mod tests {
 
         // NotSufficientBalance
         assert_eq!(invalid_tx.is_err(), true);
-        /*let coin_balance = sol_coin.my_balance().wait().unwrap().spendable;
-        //assert_eq!(coin_balance, BigDecimal::from(1.0));
-        let (hash, fee_calculator) = sol_coin.client.get_recent_blockhash().unwrap();
-        println!("{}", fee_calculator.lamports_per_signature);
-        let tx = solana_sdk::system_transaction::transfer(
-            &sol_coin.key_pair,
-            &sol_coin.key_pair.pubkey(),
-            sol_to_lamports(0.001),
-            hash,
-        );
-        let serialized_tx = serialize(&tx).unwrap();
-        let encoded_tx = hex::encode(&serialized_tx);
-        println!("{}", encoded_tx);
-        let decoded = hex::decode(encoded_tx).unwrap();
-        let deserialized_tx: Transaction = deserialize(&*decoded).unwrap();
-        println!("tx: {:?}", deserialized_tx);
-        println!("{}", deserialized_tx.is_signed());
-        assert_eq!(tx, deserialized_tx);
-        //let res = sol_coin.client.send_and_confirm_transaction(&tx).unwrap();
-        //println!("{}", res.to_string());
-        //tx.sign(sol_coin.key_pair.sign_message())*/
+
+        let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
+        let res = sol_coin.send_raw_tx(tx_str).wait();
+        assert_eq!(res.is_err(), false);
     }
 }

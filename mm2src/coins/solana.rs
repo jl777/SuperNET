@@ -4,7 +4,7 @@ use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, Negotiat
             WithdrawFut, WithdrawRequest, WithdrawResult};
 use base58::ToBase58;
 use bigdecimal::{BigDecimal, ToPrimitive};
-use bincode::serialize;
+use bincode::{deserialize, serialize};
 use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber, now_ms};
 use futures::{compat::Future01CompatExt, FutureExt, TryFutureExt};
 use futures01::{future::result, Future};
@@ -15,6 +15,7 @@ use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient,
                     rpc_request::TokenAccountsFilter};
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
+use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
 use std::{convert::TryFrom,
@@ -216,7 +217,17 @@ impl MarketCoinOps for SolanaCoin {
         Box::new(fut)
     }
 
-    fn send_raw_tx(&self, _tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> { unimplemented!() }
+    fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
+        let decoded = try_fus!(hex::decode(tx));
+        let deserialized_tx: Transaction = try_fus!(deserialize(&*decoded));
+        let closure = |signature: solana_sdk::signature::Signature| Ok(signature.to_string());
+        Box::new(result(
+            self.client
+                .send_transaction(&deserialized_tx)
+                .map_err(|e| ERRL!("{}", e))
+                .and_then(closure),
+        ))
+    }
 
     fn wait_for_confirmations(
         &self,
