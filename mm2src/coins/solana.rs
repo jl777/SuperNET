@@ -15,11 +15,14 @@ use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient,
                     rpc_request::TokenAccountsFilter};
 use solana_sdk::hash::Hash;
+use solana_sdk::message::Message;
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
+use solana_sdk::program_error::ProgramError;
 use solana_sdk::pubkey::ParsePubkeyError;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
+use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           ops::Deref,
@@ -48,6 +51,10 @@ impl From<ParsePubkeyError> for WithdrawError {
     fn from(e: ParsePubkeyError) -> Self { WithdrawError::InvalidAddress(format!("{:?}", e)) }
 }
 
+impl From<ProgramError> for WithdrawError {
+    fn from(e: ProgramError) -> Self { WithdrawError::InvalidAddress(format!("{:?}", e)) }
+}
+
 #[derive(Debug)]
 pub enum AccountError {
     NotFundedError(String),
@@ -66,7 +73,7 @@ pub struct SolanaCoinImpl {
     client: RpcClient,
     decimals: u8,
     _required_confirmations: AtomicU64,
-    ctx: MmWeak,
+    _ctx: MmWeak,
     my_address: String,
 }
 
@@ -122,11 +129,54 @@ async fn check_amount_too_low(coin: &SolanaCoin) -> Result<(BigDecimal, Hash), M
 async fn withdraw_spl_token_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
     let (to_send, my_balance) = check_sufficient_balance(&coin, &req).await?;
     let (sol_required, hash) = check_amount_too_low(&coin).await?;
-
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let contract_key = coin.get_underlying_contract_pubkey();
-
-    unimplemented!()
+    let auth_key = coin.key_pair.pubkey();
+    let funding_address = coin.get_pubkey().unwrap();
+    let dest_token_address = get_associated_token_address(&system_destination_pubkey, &contract_key);
+    let mut instructions = Vec::with_capacity(1);
+    let account_info = coin.client.get_account(&dest_token_address);
+    if account_info.is_err() {
+        let instruction_creation = create_associated_token_account(&auth_key, &dest_token_address, &contract_key);
+        instructions.push(instruction_creation);
+    }
+    let raw_amount = req.amount.to_f64().unwrap_or_default();
+    let amount = spl_token::ui_amount_to_amount(raw_amount, coin.decimals);
+    let instruction_transfer = spl_token::instruction::transfer(
+        &spl_token::id(),
+        &funding_address,
+        &dest_token_address,
+        &auth_key,
+        &vec![],
+        amount,
+    )?;
+    instructions.push(instruction_transfer);
+    let msg = Message::new(&instructions, Some(&auth_key));
+    let signers = vec![&coin.key_pair];
+    let tx = Transaction::new(&signers, msg, hash);
+    let serialized_tx = serialize(&tx).unwrap();
+    let encoded_tx = hex::encode(&serialized_tx);
+    let received_by_me = if req.to == coin.my_address {
+        to_send.clone()
+    } else {
+        0.into()
+    };
+    Ok(TransactionDetails {
+        tx_hex: encoded_tx.as_bytes().into(),
+        tx_hash: tx.signatures[0].as_ref().into(),
+        from: vec![coin.my_address.clone()],
+        to: vec![req.to],
+        total_amount: to_send.clone(),
+        spent_by_me: to_send.clone(),
+        received_by_me,
+        my_balance_change: &my_balance - &to_send,
+        block_height: 0,
+        timestamp: now_ms() / 1000,
+        fee_details: Some(SolanaFeeDetails { amount: sol_required }.into()),
+        coin: coin.ticker.clone(),
+        internal_id: vec![].into(),
+        kmd_rewards: None,
+    })
 }
 
 async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
