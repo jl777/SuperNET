@@ -31,6 +31,7 @@ use std::{convert::TryFrom,
           sync::Arc};
 
 #[cfg(test)] mod solana_tests;
+mod solana_transaction_transfer;
 
 impl From<ClientError> for BalanceError {
     fn from(e: ClientError) -> Self {

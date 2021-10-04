@@ -87,6 +87,7 @@ tokio = { version = "1.7" }
 tokio-rustls = { version = "0.22.0" }
 webpki-roots = { version = "0.19.0" }
 solana-client = {version = "1.7.12", default-features = false}
+solana-transaction-status = "1.7.12"
 spl-token = {version = "3.2.0"}
 spl-associated-token-account = "1.0.3"
 zcash_client_backend = { git = "https://github.com/KomodoPlatform/librustzcash.git", optional = true }
