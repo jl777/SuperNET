@@ -28,7 +28,6 @@ serde_bytes = "0.11.5"
 sha2 = "0.9.0"
 void = "1.0"
 wasm-timer = "0.2.4"
-libp2p-noise = {git = "https://github.com/libp2p/rust-libp2p.git", rev = "c7abb6f"}
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.7", features = ["rt-multi-thread", "macros"] }
