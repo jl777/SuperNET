@@ -9,7 +9,7 @@ use common::for_tests::{check_my_swap_status, check_recent_swaps, check_stats_sw
 use common::mm_metrics::{MetricType, MetricsJson};
 use common::mm_number::{Fraction, MmNumber};
 use common::privkey::key_pair_from_seed;
-use http::StatusCode;
+use http::{HeaderMap, StatusCode};
 use num_rational::BigRational;
 use serde_json::{self as json, Value as Json};
 use std::collections::HashMap;
