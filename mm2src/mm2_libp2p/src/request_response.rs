@@ -9,7 +9,7 @@ use libp2p::core::upgrade::{read_length_prefixed, write_length_prefixed};
 use libp2p::request_response::handler::RequestProtocol;
 use libp2p::request_response::{ProtocolName, ProtocolSupport, RequestId, RequestResponse, RequestResponseCodec,
                                RequestResponseConfig, RequestResponseEvent, RequestResponseMessage, ResponseChannel};
-use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
+use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use libp2p::PeerId;
 use log::{debug, error, warn};
@@ -55,6 +55,10 @@ pub enum RequestResponseBehaviourEvent {
         request: PeerRequest,
         response_channel: ResponseChannel<PeerResponse>,
     },
+}
+
+impl From<RequestResponseEvent<PeerRequest, PeerResponse>> for RequestResponseBehaviourEvent {
+    fn from(_: RequestResponseEvent<PeerRequest, PeerResponse>) -> Self { Default::default() }
 }
 
 struct PendingRequest {
@@ -111,7 +115,7 @@ impl RequestResponseBehaviour {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<RequestProtocol<ReqResCodec>, RequestResponseBehaviourEvent>> {
+    ) -> Poll<NetworkBehaviourAction<RequestResponseBehaviourEvent, <Self as NetworkBehaviour>::ProtocolsHandler>> {
         // poll the `rx`
         match self.rx.poll_next_unpin(cx) {
             // received a request, forward it through the network and put to the `pending_requests`

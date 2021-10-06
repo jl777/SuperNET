@@ -70,8 +70,11 @@ pub enum PeersExchangeResponse {
     KnownPeers { peers: HashMap<PeerIdSerde, PeerAddresses> },
 }
 
+pub enum PeerRespVoid {}
+
 /// Behaviour that requests known peers list from other peers at random
 #[derive(NetworkBehaviour)]
+#[behaviour(out_event = "PeerRespVoid")]
 #[behaviour(poll_method = "poll")]
 pub struct PeersExchange {
     request_response: RequestResponse<PeersExchangeCodec>,
@@ -80,11 +83,15 @@ pub struct PeersExchange {
     #[behaviour(ignore)]
     reserved_peers: Vec<PeerId>,
     #[behaviour(ignore)]
-    events: VecDeque<NetworkBehaviourAction<RequestProtocol<PeersExchangeCodec>, ()>>,
+    events: VecDeque<NetworkBehaviourAction<PeerRespVoid, <Self as NetworkBehaviour>::ProtocolsHandler>>,
     #[behaviour(ignore)]
     maintain_peers_interval: Interval,
     #[behaviour(ignore)]
     network_info: NetworkInfo,
+}
+
+impl From<RequestResponseEvent<PeersExchangeRequest, PeersExchangeResponse>> for PeerRespVoid {
+    fn from(_: RequestResponseEvent<PeersExchangeRequest, PeersExchangeResponse>) -> Self { () as PeerRespVoid }
 }
 
 #[allow(clippy::new_without_default)]
@@ -277,7 +284,7 @@ impl PeersExchange {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<RequestProtocol<PeersExchangeCodec>, ()>> {
+    ) -> Poll<NetworkBehaviourAction<PeerRespVoid, <Self as NetworkBehaviour>::ProtocolsHandler>> {
         while let Poll::Ready(Some(())) = self.maintain_peers_interval.poll_next_unpin(cx) {
             self.maintain_known_peers();
         }
