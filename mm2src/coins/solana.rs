@@ -49,12 +49,31 @@ impl From<ClientError> for BalanceError {
     }
 }
 
+impl From<ParsePubkeyError> for BalanceError {
+    fn from(e: ParsePubkeyError) -> Self { BalanceError::Internal(format!("{:?}", e)) }
+}
+
+impl From<ClientError> for WithdrawError {
+    fn from(e: ClientError) -> Self {
+        match e.kind {
+            ClientErrorKind::Io(e) => WithdrawError::Transport(e.to_string()),
+            ClientErrorKind::Reqwest(e) => WithdrawError::Transport(e.to_string()),
+            ClientErrorKind::RpcError(e) => WithdrawError::Transport(format!("{:?}", e)),
+            ClientErrorKind::SerdeJson(e) => WithdrawError::InternalError(e.to_string()),
+            ClientErrorKind::Custom(e) => WithdrawError::InternalError(e),
+            ClientErrorKind::SigningError(_)
+            | ClientErrorKind::TransactionError(_)
+            | ClientErrorKind::FaucetError(_) => WithdrawError::InternalError("not_reacheable".to_string()),
+        }
+    }
+}
+
 impl From<ParsePubkeyError> for WithdrawError {
     fn from(e: ParsePubkeyError) -> Self { WithdrawError::InvalidAddress(format!("{:?}", e)) }
 }
 
 impl From<ProgramError> for WithdrawError {
-    fn from(e: ProgramError) -> Self { WithdrawError::InvalidAddress(format!("{:?}", e)) }
+    fn from(e: ProgramError) -> Self { WithdrawError::InternalError(format!("{:?}", e)) }
 }
 
 #[derive(Debug)]
@@ -66,6 +85,10 @@ pub enum AccountError {
 
 impl From<ClientError> for AccountError {
     fn from(e: ClientError) -> Self { AccountError::ClientError(e.kind) }
+}
+
+impl From<ParsePubkeyError> for AccountError {
+    fn from(e: ParsePubkeyError) -> Self { AccountError::ParsePubKeyError(format!("{:?}", e)) }
 }
 
 impl From<AccountError> for WithdrawError {
@@ -128,10 +151,7 @@ async fn check_sufficient_balance(
 
 async fn check_amount_too_low(coin: &SolanaCoin) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
     let base_balance = coin.base_coin_balance().compat().await?;
-    let (hash, fee_calculator) = coin
-        .client
-        .get_recent_blockhash()
-        .map_to_mm(|e| WithdrawError::Transport(format!("{:?}", e)))?;
+    let (hash, fee_calculator) = coin.client.get_recent_blockhash()?;
     let sol_required = BigDecimal::from(lamports_to_sol(fee_calculator.lamports_per_signature));
     if base_balance < sol_required {
         return MmError::err(WithdrawError::AmountTooLow {
@@ -264,8 +284,7 @@ impl SolanaCoin {
                 if token_accounts.is_empty() {
                     return MmError::err(AccountError::NotFundedError("account_not_funded".to_string()));
                 }
-                Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str())
-                    .map_to_mm(|e| AccountError::ParsePubKeyError(format!("{:?}", e)))?)
+                Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str())?)
             },
         }
     }
