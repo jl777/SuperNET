@@ -61,9 +61,11 @@ struct PendingRequest {
 }
 
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "RequestResponseBehaviourEvent")]
+#[behaviour(out_event = "RequestResponseBehaviourEvent", event_process = true)]
 #[behaviour(poll_method = "poll_event")]
 pub struct RequestResponseBehaviour {
+    /// The inner RequestResponse network behaviour.
+    inner: RequestResponse<Codec<Protocol, PeerRequest, PeerResponse>>,
     #[behaviour(ignore)]
     rx: RequestResponseReceiver,
     #[behaviour(ignore)]
@@ -79,8 +81,6 @@ pub struct RequestResponseBehaviour {
     /// Interval for request timeout check
     #[behaviour(ignore)]
     timeout_interval: Interval,
-    /// The inner RequestResponse network behaviour.
-    inner: RequestResponse<Codec<Protocol, PeerRequest, PeerResponse>>,
 }
 
 impl RequestResponseBehaviour {
@@ -109,7 +109,7 @@ impl RequestResponseBehaviour {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<RequestProtocol<ReqResCodec>, RequestResponseBehaviourEvent>> {
+    ) -> Poll<NetworkBehaviourAction<RequestResponseBehaviourEvent, <Self as NetworkBehaviour>::ProtocolsHandler>> {
         // poll the `rx`
         match self.rx.poll_next_unpin(cx) {
             // received a request, forward it through the network and put to the `pending_requests`

@@ -228,7 +228,9 @@ impl From<GossipsubEvent> for AdexBehaviourEvent {
 
 /// AtomicDEX libp2p Network behaviour implementation
 #[derive(NetworkBehaviour)]
+#[behaviour(event_process = true)]
 pub struct AtomicDexBehaviour {
+    floodsub: Floodsub,
     #[behaviour(ignore)]
     event_tx: Sender<AdexBehaviourEvent>,
     #[behaviour(ignore)]
@@ -237,7 +239,6 @@ pub struct AtomicDexBehaviour {
     cmd_rx: Receiver<AdexBehaviourCmd>,
     #[behaviour(ignore)]
     netid: u16,
-    floodsub: Floodsub,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
     peers_exchange: PeersExchange,
