@@ -5,6 +5,7 @@ use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, Negotiat
 use base58::ToBase58;
 use bigdecimal::{BigDecimal, ToPrimitive};
 use bincode::{deserialize, serialize};
+use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber, now_ms};
 use futures::{compat::Future01CompatExt, FutureExt, TryFutureExt};
 use futures01::{future::result, Future};
@@ -59,11 +60,22 @@ impl From<ProgramError> for WithdrawError {
 #[derive(Debug)]
 pub enum AccountError {
     NotFundedError(String),
-    Internal(ClientErrorKind),
+    ParsePubKeyError(String),
+    ClientError(ClientErrorKind),
 }
 
 impl From<ClientError> for AccountError {
-    fn from(e: ClientError) -> Self { AccountError::Internal(e.kind) }
+    fn from(e: ClientError) -> Self { AccountError::ClientError(e.kind) }
+}
+
+impl From<AccountError> for WithdrawError {
+    fn from(e: AccountError) -> Self {
+        match e {
+            AccountError::NotFundedError(_) => WithdrawError::ZeroBalanceToWithdrawMax,
+            AccountError::ParsePubKeyError(err) => WithdrawError::InternalError(err),
+            AccountError::ClientError(e) => WithdrawError::Transport(format!("{:?}", e)),
+        }
+    }
 }
 
 /// pImpl idiom.
@@ -116,7 +128,10 @@ async fn check_sufficient_balance(
 
 async fn check_amount_too_low(coin: &SolanaCoin) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
     let base_balance = coin.base_coin_balance().compat().await?;
-    let (hash, fee_calculator) = coin.client.get_recent_blockhash().unwrap();
+    let (hash, fee_calculator) = coin
+        .client
+        .get_recent_blockhash()
+        .map_to_mm(|e| WithdrawError::Transport(format!("{:?}", e)))?;
     let sol_required = BigDecimal::from(lamports_to_sol(fee_calculator.lamports_per_signature));
     if base_balance < sol_required {
         return MmError::err(WithdrawError::AmountTooLow {
@@ -133,7 +148,7 @@ async fn withdraw_spl_token_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.key_pair.pubkey();
-    let funding_address = coin.get_pubkey().unwrap();
+    let funding_address = coin.get_pubkey()?;
     let dest_token_address = get_associated_token_address(&system_destination_pubkey, &contract_key);
     let mut instructions = Vec::with_capacity(1);
     let account_info = coin.client.get_account(&dest_token_address);
@@ -155,7 +170,7 @@ async fn withdraw_spl_token_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let msg = Message::new(&instructions, Some(&auth_key));
     let signers = vec![&coin.key_pair];
     let tx = Transaction::new(&signers, msg, hash);
-    let serialized_tx = serialize(&tx).unwrap();
+    let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
         to_send.clone()
@@ -184,9 +199,13 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let (to_send, my_balance) = check_sufficient_balance(&coin, &req).await?;
     let (sol_required, hash) = check_amount_too_low(&coin).await?;
     let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
-    let tx =
-        solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(to_send.to_f64().unwrap()), hash);
-    let serialized_tx = serialize(&tx).unwrap();
+    let tx = solana_sdk::system_transaction::transfer(
+        &coin.key_pair,
+        &to,
+        sol_to_lamports(to_send.to_f64().unwrap_or_default()),
+        hash,
+    );
+    let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
         to_send.clone()
@@ -245,7 +264,8 @@ impl SolanaCoin {
                 if token_accounts.is_empty() {
                     return MmError::err(AccountError::NotFundedError("account_not_funded".to_string()));
                 }
-                Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str()).unwrap())
+                Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str())
+                    .map_to_mm(|e| AccountError::ParsePubKeyError(format!("{:?}", e)))?)
             },
         }
     }
@@ -271,8 +291,9 @@ impl SolanaCoin {
                     if token_accounts.is_empty() {
                         return Ok(0.0);
                     }
-                    let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str()).unwrap();
-                    let amount = coin.client.get_token_account_balance(&actual_token_pubkey).unwrap();
+                    let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
+                        .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
+                    let amount = coin.client.get_token_account_balance(&actual_token_pubkey)?;
                     Ok(amount.ui_amount.unwrap_or(0.0))
                 },
             }
