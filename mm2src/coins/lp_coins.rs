@@ -103,9 +103,10 @@ pub use test_coin::TestCoin;
 
 #[doc(hidden)]
 #[allow(unused_variables)]
+#[cfg(all(not(target_arch = "wasm32")))]
 pub mod solana;
-use crate::solana::SolanaFeeDetails;
-pub use solana::SolanaCoin;
+#[cfg(all(not(target_arch = "wasm32")))]
+pub use solana::{SolanaCoin, SolanaFeeDetails};
 
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
 
@@ -461,6 +462,7 @@ pub enum TxFeeDetails {
     Eth(EthTxFeeDetails),
     Qrc20(Qrc20FeeDetails),
     Slp(SlpFeeDetails),
+    #[cfg(all(not(target_arch = "wasm32")))]
     Solana(SolanaFeeDetails),
 }
 
@@ -476,6 +478,7 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
             Utxo(UtxoFeeDetails),
             Eth(EthTxFeeDetails),
             Qrc20(Qrc20FeeDetails),
+            #[cfg(all(not(target_arch = "wasm32")))]
             Solana(SolanaFeeDetails),
         }
 
@@ -483,6 +486,7 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
             TxFeeDetailsUnTagged::Utxo(f) => Ok(TxFeeDetails::Utxo(f)),
             TxFeeDetailsUnTagged::Eth(f) => Ok(TxFeeDetails::Eth(f)),
             TxFeeDetailsUnTagged::Qrc20(f) => Ok(TxFeeDetails::Qrc20(f)),
+            #[cfg(all(not(target_arch = "wasm32")))]
             TxFeeDetailsUnTagged::Solana(f) => Ok(TxFeeDetails::Solana(f)),
         }
     }
@@ -500,6 +504,7 @@ impl From<Qrc20FeeDetails> for TxFeeDetails {
     fn from(qrc20_details: Qrc20FeeDetails) -> Self { TxFeeDetails::Qrc20(qrc20_details) }
 }
 
+#[cfg(all(not(target_arch = "wasm32")))]
 impl From<SolanaFeeDetails> for TxFeeDetails {
     fn from(solana_details: SolanaFeeDetails) -> Self { TxFeeDetails::Solana(solana_details) }
 }
@@ -959,6 +964,7 @@ pub enum MmCoinEnum {
     ZCoin(ZCoin),
     Bch(BchCoin),
     SlpToken(SlpToken),
+    #[cfg(all(not(target_arch = "wasm32")))]
     SolanaCoin(SolanaCoin),
     Test(TestCoin),
 }
@@ -975,6 +981,7 @@ impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
 }
 
+#[cfg(all(not(target_arch = "wasm32")))]
 impl From<SolanaCoin> for MmCoinEnum {
     fn from(c: SolanaCoin) -> MmCoinEnum { MmCoinEnum::SolanaCoin(c) }
 }
@@ -1014,6 +1021,7 @@ impl Deref for MmCoinEnum {
             #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
             MmCoinEnum::ZCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
+            #[cfg(all(not(target_arch = "wasm32")))]
             MmCoinEnum::SolanaCoin(ref c) => c,
         }
     }
