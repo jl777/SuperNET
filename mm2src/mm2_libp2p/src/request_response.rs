@@ -6,10 +6,9 @@ use futures::io::{AsyncRead, AsyncWrite};
 use futures::task::{Context, Poll};
 use futures::StreamExt;
 use libp2p::core::upgrade::{read_length_prefixed, write_length_prefixed};
-use libp2p::request_response::handler::RequestProtocol;
 use libp2p::request_response::{ProtocolName, ProtocolSupport, RequestId, RequestResponse, RequestResponseCodec,
                                RequestResponseConfig, RequestResponseEvent, RequestResponseMessage, ResponseChannel};
-use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
+use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use libp2p::PeerId;
 use log::{debug, error, warn};
@@ -24,7 +23,6 @@ const MAX_BUFFER_SIZE: usize = 1024 * 1024 - 100;
 
 pub type RequestResponseReceiver = mpsc::UnboundedReceiver<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
 pub type RequestResponseSender = mpsc::UnboundedSender<(PeerId, PeerRequest, oneshot::Sender<PeerResponse>)>;
-type ReqResCodec = Codec<Protocol, PeerRequest, PeerResponse>;
 
 /// Build a request-response network behaviour.
 pub fn build_request_response_behaviour() -> RequestResponseBehaviour {

@@ -13,13 +13,12 @@ use futures::{channel::{mpsc::{channel, Receiver, Sender},
               future::{abortable, join_all, poll_fn, AbortHandle},
               Future, SinkExt, StreamExt};
 use libp2p::core::transport::Boxed as BoxedTransport;
-use libp2p::swarm::{IntoProtocolsHandler, NetworkBehaviour, ProtocolsHandler};
 use libp2p::{core::{ConnectedPoint, Multiaddr, Transport},
              identity,
              multiaddr::Protocol,
              noise,
              request_response::ResponseChannel,
-             swarm::{ExpandedSwarm, NetworkBehaviourEventProcess, Swarm},
+             swarm::{NetworkBehaviourEventProcess, Swarm},
              NetworkBehaviour, PeerId};
 use libp2p_floodsub::{Floodsub, FloodsubEvent, Topic as FloodsubTopic};
 use log::{debug, error, info};
@@ -455,13 +454,7 @@ impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBe
 }
 
 /// Custom types mapping the complex associated types of AtomicDexBehaviour to the ExpandedSwarm
-type AdexSwarmHandler = <<AtomicDexBehaviour as NetworkBehaviour>::ProtocolsHandler as IntoProtocolsHandler>::Handler;
-type AtomicDexSwarm = ExpandedSwarm<
-    AtomicDexBehaviour,
-    <AdexSwarmHandler as ProtocolsHandler>::InEvent,
-    <AdexSwarmHandler as ProtocolsHandler>::OutEvent,
-    <AtomicDexBehaviour as NetworkBehaviour>::ProtocolsHandler,
->;
+type AtomicDexSwarm = Swarm<AtomicDexBehaviour>;
 
 fn maintain_connection_to_relays(swarm: &mut AtomicDexSwarm, bootstrap_addresses: &[Multiaddr]) {
     let behaviour = swarm.behaviour();
