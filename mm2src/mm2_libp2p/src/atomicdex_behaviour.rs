@@ -687,11 +687,11 @@ fn start_gossipsub(
         let ping = AdexPing::new();
 
         let adex_behavior = AtomicDexBehaviour {
+            floodsub,
             event_tx,
             spawn_fn,
             cmd_rx,
             netid,
-            floodsub,
             gossipsub,
             request_response,
             peers_exchange,

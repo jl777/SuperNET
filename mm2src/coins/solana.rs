@@ -79,7 +79,7 @@ pub struct SolanaCoinImpl {
 }
 
 impl Debug for SolanaCoinImpl {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(format!("{}", self.ticker).as_str()) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(self.ticker.to_string().as_str()) }
 }
 
 #[derive(Clone, Debug)]
@@ -148,7 +148,7 @@ async fn withdraw_spl_token_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
         &funding_address,
         &dest_token_address,
         &auth_key,
-        &vec![],
+        &[],
         amount,
     )?;
     instructions.push(instruction_transfer);
@@ -215,7 +215,7 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
     let validate_address_result = coin.validate_address(req.to.as_str());
     if !validate_address_result.is_valid {
         return MmError::err(WithdrawError::InvalidAddress(
-            validate_address_result.reason.unwrap_or("Unknown".to_string()),
+            validate_address_result.reason.unwrap_or_else(|| "Unknown".to_string()),
         ));
     }
     match coin.coin_type {
@@ -257,9 +257,7 @@ impl SolanaCoin {
             Ok(solana_sdk::native_token::lamports_to_sol(res))
         };
         if force_base_coin {
-            let fut = async move {
-                return base_coin_balance_functor(coin);
-            };
+            let fut = async move { base_coin_balance_functor(coin) };
             return Box::new(fut.boxed().compat());
         }
         let fut = async move {
@@ -283,6 +281,8 @@ impl SolanaCoin {
     }
 }
 
+// TODO: construct the variant later.
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 enum SolanaCoinType {
     /// Solana itself or it's forks
@@ -540,7 +540,7 @@ impl MmCoin for SolanaCoin {
         let result = solana_sdk::pubkey::Pubkey::try_from(address);
         match result {
             Ok(pubkey) => {
-                return if pubkey.is_on_curve() {
+                if pubkey.is_on_curve() {
                     ValidateAddressResult {
                         is_valid: true,
                         reason: None,

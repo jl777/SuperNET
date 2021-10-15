@@ -1,4 +1,5 @@
-use common::mm_error::MmError;
+// TODO: Will be used later
+#[cfg(test)] use common::mm_error::MmError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SolanaTransactionTransfer {
@@ -79,12 +80,16 @@ pub struct Info {
     pub source: String,
 }
 
+// TODO: Will be used later
+#[cfg(test)]
 #[derive(Debug)]
 pub enum TransferInstructionError {
     NotAnyTransferInstruction,
     IsNotTransfer,
 }
 
+// TODO: Will be used later
+#[cfg(test)]
 impl SolanaTransactionTransfer {
     pub fn extract_first_transfer_instructions(&self) -> Result<Info, MmError<TransferInstructionError>> {
         if self.transaction.message.instructions.is_empty() {
