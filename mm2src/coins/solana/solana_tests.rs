@@ -1,7 +1,8 @@
 use super::*;
 use crate::solana::solana_transaction_transfer::SolanaTransactionTransfer;
+use crate::solana::spl::{SplToken, SplTokenConf};
 use crate::solana::SolanaCoin;
-use crate::solana::{SolanaCoinImpl, SolanaCoinType};
+use crate::solana::SolanaCoinImpl;
 use crate::MarketCoinOps;
 use base58::ToBase58;
 use bip39::Language;
@@ -62,12 +63,25 @@ fn generate_key_pair_from_iguana_seed(seed: String) -> Keypair {
     solana_sdk::signature::keypair_from_seed(other_key_pair.to_bytes().as_ref()).unwrap()
 }
 
-fn solana_coin_for_test(
-    coin_type: SolanaCoinType,
-    seed: String,
-    ticker_spl: Option<String>,
-    net_type: SolanaNet,
-) -> (MmArc, SolanaCoin) {
+fn spl_coin_for_test(
+    solana_coin: SolanaCoin,
+    ticker: String,
+    decimals: u8,
+    token_contract_address: Pubkey,
+) -> SplToken {
+    let spl_coin = SplToken {
+        conf: Arc::new(SplTokenConf {
+            decimals,
+            ticker,
+            token_contract_address,
+            required_confirmations: Default::default(),
+        }),
+        platform_coin: solana_coin,
+    };
+    spl_coin
+}
+
+fn solana_coin_for_test(seed: String, net_type: SolanaNet) -> (MmArc, SolanaCoin) {
     let url = solana_net_to_url(net_type);
     let client = solana_client::rpc_client::RpcClient::new_with_commitment(url.parse().unwrap(), CommitmentConfig {
         commitment: CommitmentLevel::Finalized,
@@ -78,16 +92,11 @@ fn solana_coin_for_test(
         ]
     });
     let ctx = MmCtxBuilder::new().with_conf(conf.clone()).into_mm_arc();
-    let (ticker, decimals) = match coin_type {
-        SolanaCoinType::Solana => ("SOL".to_string(), 8),
-        SolanaCoinType::Spl { .. } => (ticker_spl.unwrap_or("USDC".to_string()), 6),
-    };
-
+    let (ticker, decimals) = ("SOL".to_string(), 8);
     let key_pair = generate_key_pair_from_iguana_seed(seed);
     let my_address = key_pair.pubkey().to_string();
 
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
-        coin_type,
         decimals,
         my_address,
         key_pair,
@@ -163,21 +172,17 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_coin_creation() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, passphrase.clone(), None, SolanaNet::Testnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         assert_eq!(
             sol_coin.my_address().unwrap(),
             "FJktmyjV9aBHEShT4hfnLpr9ELywdwVtEL1w1rSWgbVf"
         );
 
-        let (_, sol_spl_usdc_coin) = solana_coin_for_test(
-            SolanaCoinType::Spl {
-                platform: "SOL".to_string(),
-                token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
-                    .unwrap(),
-            },
-            passphrase,
-            Some("USDC".to_string()),
-            SolanaNet::Testnet,
+        let sol_spl_usdc_coin = spl_coin_for_test(
+            sol_coin.clone(),
+            "USDC".to_string(),
+            6,
+            solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
         );
 
         assert_eq!(
@@ -190,33 +195,25 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_my_balance() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, passphrase.clone(), None, SolanaNet::Testnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let res = sol_coin.my_balance().wait().unwrap();
         assert_ne!(res.spendable, BigDecimal::from(0.0));
 
-        let (_, sol_spl_usdc_coin) = solana_coin_for_test(
-            SolanaCoinType::Spl {
-                platform: "SOL".to_string(),
-                token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
-                    .unwrap(),
-            },
-            passphrase.clone(),
-            Some("USDC".to_string()),
-            SolanaNet::Testnet,
+        let sol_spl_usdc_coin = spl_coin_for_test(
+            sol_coin.clone(),
+            "USDC".to_string(),
+            6,
+            solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
         );
 
         let res = sol_spl_usdc_coin.my_balance().wait().unwrap();
         assert_ne!(res.spendable, BigDecimal::from(0.0));
 
-        let (_, sol_spl_wsol_coin) = solana_coin_for_test(
-            SolanaCoinType::Spl {
-                platform: "SOL".to_string(),
-                token_addr: solana_sdk::pubkey::Pubkey::from_str("So11111111111111111111111111111111111111112")
-                    .unwrap(),
-            },
-            passphrase,
-            Some("WSOL".to_string()),
-            SolanaNet::Testnet,
+        let sol_spl_wsol_coin = spl_coin_for_test(
+            sol_coin.clone(),
+            "WSOL".to_string(),
+            8,
+            solana_sdk::pubkey::Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(),
         );
         let res = sol_spl_wsol_coin.my_balance().wait().unwrap();
         assert_eq!(res.spendable, BigDecimal::from(0.0));
@@ -226,7 +223,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_block_height() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, passphrase, None, SolanaNet::Testnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let res = sol_coin.current_block().wait().unwrap();
         println!("block is : {}", res);
         assert!(res > 0);
@@ -236,7 +233,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_validate_address() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, passphrase, None, SolanaNet::Testnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
 
         // invalid len
         let res = sol_coin.validate_address("invalidaddressobviously");
@@ -258,7 +255,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_test_transactions() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, passphrase, None, SolanaNet::Devnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
         let valid_tx_details = sol_coin
             .withdraw(WithdrawRequest {
                 coin: "SOL".to_string(),
@@ -296,15 +293,12 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_test_spl_transactions() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, usdc_sol_coin) = solana_coin_for_test(
-            SolanaCoinType::Spl {
-                platform: "SOL".to_string(),
-                token_addr: solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp")
-                    .unwrap(),
-            },
-            passphrase,
-            Some("USDC".to_string()),
-            SolanaNet::Testnet,
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
+        let usdc_sol_coin = spl_coin_for_test(
+            sol_coin.clone(),
+            "USDC".to_string(),
+            6,
+            solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
         );
         let valid_tx_details = usdc_sol_coin
             .withdraw(WithdrawRequest {
@@ -331,10 +325,10 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_test_tx_history() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(SolanaCoinType::Solana, passphrase, None, SolanaNet::Devnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
         let res = sol_coin
             .client
-            .get_signatures_for_address(&sol_coin.get_underlying_contract_pubkey())
+            .get_signatures_for_address(&sol_coin.get_pubkey().unwrap())
             .unwrap();
         println!("{:?}", res);
         let mut history = Vec::new();

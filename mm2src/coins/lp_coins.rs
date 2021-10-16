@@ -114,6 +114,7 @@ pub use solana::{SolanaCoin, SolanaFeeDetails};
 pub mod z_coin;
 
 use crate::qrc20::Qrc20ActivationParams;
+use crate::solana::spl::SplToken;
 use crate::utxo::bch::{bch_coin_from_conf_and_params, BchActivationParams, BchCoin};
 use crate::utxo::slp::{slp_addr_from_pubkey_str, SlpFeeDetails};
 use crate::utxo::{UnsupportedAddr, UtxoActivationParams};
@@ -966,6 +967,8 @@ pub enum MmCoinEnum {
     SlpToken(SlpToken),
     #[cfg(all(not(target_arch = "wasm32")))]
     SolanaCoin(SolanaCoin),
+    #[cfg(all(not(target_arch = "wasm32")))]
+    SplToken(SplToken),
     Test(TestCoin),
 }
 
@@ -984,6 +987,11 @@ impl From<TestCoin> for MmCoinEnum {
 #[cfg(all(not(target_arch = "wasm32")))]
 impl From<SolanaCoin> for MmCoinEnum {
     fn from(c: SolanaCoin) -> MmCoinEnum { MmCoinEnum::SolanaCoin(c) }
+}
+
+#[cfg(all(not(target_arch = "wasm32")))]
+impl From<SplToken> for MmCoinEnum {
+    fn from(c: SplToken) -> MmCoinEnum { MmCoinEnum::SplToken(c) }
 }
 
 impl From<QtumCoin> for MmCoinEnum {
@@ -1023,6 +1031,8 @@ impl Deref for MmCoinEnum {
             MmCoinEnum::Test(ref c) => c,
             #[cfg(all(not(target_arch = "wasm32")))]
             MmCoinEnum::SolanaCoin(ref c) => c,
+            #[cfg(all(not(target_arch = "wasm32")))]
+            MmCoinEnum::SplToken(ref c) => c,
         }
     }
 }
