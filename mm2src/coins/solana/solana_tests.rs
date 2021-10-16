@@ -4,6 +4,7 @@ use crate::solana::solana_common_tests::{generate_key_pair_from_iguana_seed, gen
 use crate::solana::solana_transaction_transfer::SolanaTransactionTransfer;
 use crate::MarketCoinOps;
 use base58::ToBase58;
+use solana_client::rpc_request::TokenAccountsFilter;
 use solana_sdk::{signature::Signature, signature::Signer};
 use solana_transaction_status::UiTransactionEncoding;
 use std::str;
@@ -168,9 +169,9 @@ mod tests {
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
         let res = sol_coin
             .client
-            .get_signatures_for_address(&sol_coin.get_pubkey().unwrap())
+            .get_signatures_for_address(&sol_coin.key_pair.pubkey())
             .unwrap();
-        println!("{:?}", res);
+        //println!("{:?}", res);
         let mut history = Vec::new();
         for cur in res.iter() {
             let signature = Signature::from_str(cur.signature.clone().as_str()).unwrap();
@@ -179,7 +180,7 @@ mod tests {
                 .get_transaction(&signature, UiTransactionEncoding::JsonParsed)
                 .unwrap();
             let str = serde_json::to_string(&res).unwrap();
-            println!("{}", str);
+            //println!("{}", str);
             let tx_solana_transfer: SolanaTransactionTransfer = serde_json::from_str(str.as_str()).unwrap();
             let tx_info = tx_solana_transfer.extract_first_transfer_instructions().unwrap();
             let tx = TransactionDetails {
@@ -203,8 +204,11 @@ mod tests {
                 internal_id: Default::default(),
                 kmd_rewards: None,
             };
+            println!("signature: {}", signature.to_string());
+            println!("tx: {}", serde_json::to_string(&tx).unwrap());
             history.push(tx);
         }
+
         println!("{}", serde_json::to_string(&history).unwrap());
     }
 }

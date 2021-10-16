@@ -18,8 +18,9 @@ use solana_sdk::hash::Hash;
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
 use solana_sdk::program_error::ProgramError;
 use solana_sdk::pubkey::ParsePubkeyError;
-use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::transaction::Transaction;
+use solana_sdk::{pubkey::Pubkey,
+                 signature::{Keypair, Signer}};
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           ops::Deref,
@@ -459,7 +460,7 @@ impl MmCoin for SolanaCoin {
                 reason: Some("Invalid address length".to_string()),
             };
         }
-        let result = solana_sdk::pubkey::Pubkey::try_from(address);
+        let result = Pubkey::try_from(address);
         match result {
             Ok(pubkey) => {
                 if pubkey.is_on_curve() {
