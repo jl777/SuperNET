@@ -28,8 +28,10 @@ use std::{convert::TryFrom,
           sync::atomic::AtomicU64,
           sync::Arc};
 
+#[cfg(test)] mod solana_common_tests;
 #[cfg(test)] mod solana_tests;
 mod solana_transaction_transfer;
+#[cfg(test)] mod spl_tests;
 
 pub mod spl;
 

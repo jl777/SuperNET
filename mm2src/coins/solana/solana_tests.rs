@@ -1,112 +1,13 @@
 use super::*;
+use crate::solana::solana_common_tests::{generate_key_pair_from_iguana_seed, generate_key_pair_from_seed,
+                                         solana_coin_for_test, SolanaNet};
 use crate::solana::solana_transaction_transfer::SolanaTransactionTransfer;
-use crate::solana::spl::{SplToken, SplTokenConf};
-use crate::solana::SolanaCoin;
-use crate::solana::SolanaCoinImpl;
 use crate::MarketCoinOps;
 use base58::ToBase58;
-use bip39::Language;
-use common::mm_ctx::{MmArc, MmCtxBuilder};
-use common::privkey::key_pair_from_seed;
-use ed25519_dalek_bip32::derivation_path::DerivationPath;
-use ed25519_dalek_bip32::ExtendedSecretKey;
-use solana_sdk::{commitment_config::{CommitmentConfig, CommitmentLevel},
-                 signature::Signature,
-                 signature::Signer};
+use solana_sdk::{signature::Signature, signature::Signer};
 use solana_transaction_status::UiTransactionEncoding;
 use std::str;
 use std::str::FromStr;
-use std::sync::Arc;
-
-pub enum SolanaNet {
-    //Mainnet,
-    Testnet,
-    Devnet,
-}
-
-fn solana_net_to_url(net_type: SolanaNet) -> String {
-    match net_type {
-        //SolanaNet::Mainnet => "https://api.mainnet-beta.solana.com".to_string(),
-        SolanaNet::Testnet => "https://api.testnet.solana.com/".to_string(),
-        SolanaNet::Devnet => "https://api.devnet.solana.com".to_string(),
-    }
-}
-
-fn generate_key_pair_from_seed(seed: String) -> Keypair {
-    let derivation_path = DerivationPath::from_str("m/44'/501'/0'").unwrap();
-    let mnemonic = bip39::Mnemonic::from_phrase(seed.as_str(), Language::English).unwrap();
-    let seed = bip39::Seed::new(&mnemonic, "");
-    let seed_bytes: &[u8] = seed.as_bytes();
-
-    let ext = ExtendedSecretKey::from_seed(seed_bytes)
-        .unwrap()
-        .derive(&derivation_path)
-        .unwrap();
-    let ref priv_key = ext.secret_key;
-    let pub_key = ext.public_key();
-    let pair = ed25519_dalek::Keypair {
-        secret: ext.secret_key,
-        public: pub_key,
-    };
-
-    solana_sdk::signature::keypair_from_seed(pair.to_bytes().as_ref()).unwrap()
-}
-
-fn generate_key_pair_from_iguana_seed(seed: String) -> Keypair {
-    let key_pair = key_pair_from_seed(seed.as_str()).unwrap();
-    let secret_key = ed25519_dalek::SecretKey::from_bytes(key_pair.private().secret.as_slice()).unwrap();
-    let public_key = ed25519_dalek::PublicKey::from(&secret_key);
-    let other_key_pair = ed25519_dalek::Keypair {
-        secret: secret_key,
-        public: public_key,
-    };
-    solana_sdk::signature::keypair_from_seed(other_key_pair.to_bytes().as_ref()).unwrap()
-}
-
-fn spl_coin_for_test(
-    solana_coin: SolanaCoin,
-    ticker: String,
-    decimals: u8,
-    token_contract_address: Pubkey,
-) -> SplToken {
-    let spl_coin = SplToken {
-        conf: Arc::new(SplTokenConf {
-            decimals,
-            ticker,
-            token_contract_address,
-            required_confirmations: Default::default(),
-        }),
-        platform_coin: solana_coin,
-    };
-    spl_coin
-}
-
-fn solana_coin_for_test(seed: String, net_type: SolanaNet) -> (MmArc, SolanaCoin) {
-    let url = solana_net_to_url(net_type);
-    let client = solana_client::rpc_client::RpcClient::new_with_commitment(url.parse().unwrap(), CommitmentConfig {
-        commitment: CommitmentLevel::Finalized,
-    });
-    let conf = json!({
-        "coins":[
-           {"coin":"SOL","name":"solana","protocol":{"type":"SOL"},"rpcport":80,"mm2":1}
-        ]
-    });
-    let ctx = MmCtxBuilder::new().with_conf(conf.clone()).into_mm_arc();
-    let (ticker, decimals) = ("SOL".to_string(), 8);
-    let key_pair = generate_key_pair_from_iguana_seed(seed);
-    let my_address = key_pair.pubkey().to_string();
-
-    let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
-        decimals,
-        my_address,
-        key_pair,
-        ticker,
-        _ctx: ctx.weak(),
-        _required_confirmations: 1.into(),
-        client,
-    }));
-    (ctx, solana_coin)
-}
 
 mod tests {
     use super::*;
@@ -177,18 +78,6 @@ mod tests {
             sol_coin.my_address().unwrap(),
             "FJktmyjV9aBHEShT4hfnLpr9ELywdwVtEL1w1rSWgbVf"
         );
-
-        let sol_spl_usdc_coin = spl_coin_for_test(
-            sol_coin.clone(),
-            "USDC".to_string(),
-            6,
-            solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
-        );
-
-        assert_eq!(
-            sol_spl_usdc_coin.my_address().unwrap(),
-            "FJktmyjV9aBHEShT4hfnLpr9ELywdwVtEL1w1rSWgbVf"
-        );
     }
 
     #[test]
@@ -198,25 +87,6 @@ mod tests {
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let res = sol_coin.my_balance().wait().unwrap();
         assert_ne!(res.spendable, BigDecimal::from(0.0));
-
-        let sol_spl_usdc_coin = spl_coin_for_test(
-            sol_coin.clone(),
-            "USDC".to_string(),
-            6,
-            solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
-        );
-
-        let res = sol_spl_usdc_coin.my_balance().wait().unwrap();
-        assert_ne!(res.spendable, BigDecimal::from(0.0));
-
-        let sol_spl_wsol_coin = spl_coin_for_test(
-            sol_coin.clone(),
-            "WSOL".to_string(),
-            8,
-            solana_sdk::pubkey::Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(),
-        );
-        let res = sol_spl_wsol_coin.my_balance().wait().unwrap();
-        assert_eq!(res.spendable, BigDecimal::from(0.0));
     }
 
     #[test]
@@ -287,36 +157,6 @@ mod tests {
         let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
         let res = sol_coin.send_raw_tx(tx_str).wait();
         assert_eq!(res.is_err(), false);
-    }
-
-    #[test]
-    #[cfg(not(target_arch = "wasm32"))]
-    fn solana_test_spl_transactions() {
-        let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
-        let usdc_sol_coin = spl_coin_for_test(
-            sol_coin.clone(),
-            "USDC".to_string(),
-            6,
-            solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
-        );
-        let valid_tx_details = usdc_sol_coin
-            .withdraw(WithdrawRequest {
-                coin: "USDC".to_string(),
-                to: "AYJmtzc9D4KU6xsDzhKShFyYKUNXY622j9QoQEo4LfpX".to_string(),
-                amount: BigDecimal::from_str("0.0001").unwrap(),
-                max: false,
-                fee: None,
-            })
-            .wait()
-            .unwrap();
-        assert_eq!(valid_tx_details.total_amount, BigDecimal::from(0.0001));
-        assert_eq!(valid_tx_details.coin, "USDC".to_string());
-        assert_ne!(valid_tx_details.timestamp, 0);
-        let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
-        let res = usdc_sol_coin.send_raw_tx(tx_str).wait();
-        assert_eq!(res.is_err(), false);
-        println!("{:?}", res);
     }
 
     // This test is just a unit test for brainstorming around tx_history for base_coin.
