@@ -13,8 +13,7 @@ use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
 use solana_client::{client_error::{ClientError, ClientErrorKind},
-                    rpc_client::RpcClient,
-                    rpc_request::TokenAccountsFilter};
+                    rpc_client::RpcClient};
 use solana_sdk::hash::Hash;
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
 use solana_sdk::program_error::ProgramError;

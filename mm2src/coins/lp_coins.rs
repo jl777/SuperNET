@@ -106,6 +106,8 @@ pub use test_coin::TestCoin;
 #[cfg(all(not(target_arch = "wasm32")))]
 pub mod solana;
 #[cfg(all(not(target_arch = "wasm32")))]
+pub use solana::spl::SplToken;
+#[cfg(all(not(target_arch = "wasm32")))]
 pub use solana::{SolanaCoin, SolanaFeeDetails};
 
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
@@ -114,7 +116,6 @@ pub use solana::{SolanaCoin, SolanaFeeDetails};
 pub mod z_coin;
 
 use crate::qrc20::Qrc20ActivationParams;
-use crate::solana::spl::SplToken;
 use crate::utxo::bch::{bch_coin_from_conf_and_params, BchActivationParams, BchCoin};
 use crate::utxo::slp::{slp_addr_from_pubkey_str, SlpFeeDetails};
 use crate::utxo::{UnsupportedAddr, UtxoActivationParams};
