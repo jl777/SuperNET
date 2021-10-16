@@ -141,11 +141,7 @@ async fn withdraw_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
 
 impl SplToken {
     fn rpc(&self) -> &RpcClient { &self.platform_coin.client }
-    fn get_underlying_contract_pubkey(&self) -> Pubkey {
-        let key = self.conf.token_contract_address.clone();
-        println!("{}", key.to_string());
-        key
-    }
+    fn get_underlying_contract_pubkey(&self) -> Pubkey { self.conf.token_contract_address }
 
     fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
         let coin = self.clone();

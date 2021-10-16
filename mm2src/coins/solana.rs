@@ -18,9 +18,8 @@ use solana_sdk::hash::Hash;
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
 use solana_sdk::program_error::ProgramError;
 use solana_sdk::pubkey::ParsePubkeyError;
+use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::transaction::Transaction;
-use solana_sdk::{pubkey::Pubkey,
-                 signature::{Keypair, Signer}};
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           ops::Deref,
@@ -207,8 +206,6 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 }
 
 impl SolanaCoin {
-    fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> { Ok(self.key_pair.pubkey()) }
-
     fn my_balance_impl(&self, force_base_coin: bool) -> BalanceFut<f64> {
         let coin = self.clone();
         let base_coin_balance_functor = |coin: SolanaCoin| {
