@@ -23,6 +23,7 @@ use solana_sdk::pubkey::ParsePubkeyError;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
+use std::sync::atomic::Ordering as AtomicOrdering;
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           ops::Deref,
@@ -166,14 +167,14 @@ pub async fn solana_coin_from_conf_and_params(
             commitment: params.confirmation_commitment,
         });
     let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
-    let key_pair = generate_from_keypair_from_slice(priv_key);
+    let key_pair = generate_keypair_from_slice(priv_key);
     let my_address = key_pair.pubkey().to_string();
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
         my_address,
         key_pair,
         ticker: ticker.to_string(),
         _ctx: ctx.weak(),
-        _required_confirmations: 1.into(),
+        required_confirmations: 1.into(),
         client,
         decimals,
     }));
@@ -186,7 +187,7 @@ pub struct SolanaCoinImpl {
     key_pair: Keypair,
     client: RpcClient,
     decimals: u8,
-    _required_confirmations: AtomicU64,
+    required_confirmations: AtomicU64,
     _ctx: MmWeak,
     my_address: String,
 }
@@ -582,7 +583,7 @@ impl MmCoin for SolanaCoin {
         unimplemented!()
     }
 
-    fn required_confirmations(&self) -> u64 { 1 }
+    fn required_confirmations(&self) -> u64 { self.required_confirmations.load(AtomicOrdering::Relaxed) }
 
     fn requires_notarization(&self) -> bool { false }
 
