@@ -91,7 +91,7 @@ pub fn solana_coin_for_test(seed: String, net_type: SolanaNet) -> (MmArc, Solana
         key_pair,
         ticker,
         _ctx: ctx.weak(),
-        _required_confirmations: 1.into(),
+        required_confirmations: 1.into(),
         client,
     }));
     (ctx, solana_coin)
