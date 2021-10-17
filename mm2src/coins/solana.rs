@@ -144,7 +144,7 @@ impl SolanaActivationParams {
     }
 }
 
-fn generate_from_keypair_from_slice(priv_key: &[u8]) -> Keypair {
+fn generate_keypair_from_slice(priv_key: &[u8]) -> Keypair {
     let secret_key = ed25519_dalek::SecretKey::from_bytes(priv_key).unwrap();
     let public_key = ed25519_dalek::PublicKey::from(&secret_key);
     let key_pair = ed25519_dalek::Keypair {
