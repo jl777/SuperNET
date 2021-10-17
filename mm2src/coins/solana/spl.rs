@@ -145,7 +145,7 @@ impl SplToken {
     fn rpc(&self) -> &RpcClient { &self.platform_coin.client }
     fn get_underlying_contract_pubkey(&self) -> Pubkey { self.conf.token_contract_address }
 
-    pub fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
+    fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
         let coin = self.clone();
         let token_accounts = coin.rpc().get_token_accounts_by_owner(
             &coin.platform_coin.key_pair.pubkey(),

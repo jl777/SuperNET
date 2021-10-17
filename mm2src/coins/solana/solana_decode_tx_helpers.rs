@@ -1,16 +1,3 @@
-// Example code that deserializes and serializes the model.
-// extern crate serde;
-// #[macro_use]
-// extern crate serde_derive;
-// extern crate serde_json;
-//
-// use generated_module::[object Object];
-//
-// fn main() {
-//     let json = r#"{"answer": 42}"#;
-//     let model: [object Object] = serde_json::from_str(&json).unwrap();
-// }
-
 extern crate serde_derive;
 
 use crate::{SolanaCoin, SolanaFeeDetails, TransactionDetails};
@@ -26,10 +13,11 @@ pub struct SolanaConfirmedTransaction {
     block_time: u64,
 }
 
+#[allow(dead_code)]
 impl SolanaConfirmedTransaction {
     pub fn extract_account_index(&self, address: String) -> usize {
-        // find the equivalent of index of in rust, and return result later
-        let mut idx = 0 as usize;
+        // find the equivalent of index_of(needle) in rust, and return result later
+        let mut idx = 0_usize;
         for account in self.transaction.message.account_keys.iter() {
             if account.pubkey == address {
                 return idx;
@@ -162,6 +150,7 @@ pub struct Instruction {
     parsed: Parsed,
 }
 
+#[allow(dead_code)]
 impl Instruction {
     pub fn is_solana_transfer(&self) -> bool {
         let is_system = match self.program {
@@ -176,6 +165,7 @@ impl Instruction {
         is_system && is_transfer && self.parsed.info.lamports.is_some()
     }
 
+    // Will be used later
     pub fn is_slp_transfer(&self) -> bool {
         let is_spl_token = match self.program {
             Program::SplToken => true,
