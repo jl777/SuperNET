@@ -108,7 +108,7 @@ pub mod solana;
 #[cfg(all(not(target_arch = "wasm32")))]
 pub use solana::spl::SplToken;
 #[cfg(all(not(target_arch = "wasm32")))]
-pub use solana::{SolanaCoin, SolanaFeeDetails};
+pub use solana::{solana_coin_from_conf_and_params, SolanaActivationParams, SolanaCoin, SolanaFeeDetails};
 
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
 
@@ -1095,6 +1095,8 @@ pub enum CoinProtocol {
     BCH {
         slp_prefix: String,
     },
+    #[cfg(all(not(target_arch = "wasm32")))]
+    SOLANA,
     #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
     ZHTLC,
 }
@@ -1337,6 +1339,12 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             let dbdir = ctx.dbdir();
             let params = try_s!(UtxoActivationParams::from_legacy_req(req));
             try_s!(z_coin_from_conf_and_params(ctx, ticker, &coins_en, params, secret, dbdir).await).into()
+        },
+        #[cfg(all(not(target_arch = "wasm32")))]
+        CoinProtocol::SOLANA => {
+            let params = try_s!(SolanaActivationParams::from_legacy_req(req));
+            let solana = try_s!(solana_coin_from_conf_and_params(ctx, ticker, &coins_en, params, secret).await);
+            solana.into()
         },
     };
 
@@ -1828,6 +1836,8 @@ pub fn address_by_coin_conf_and_pubkey_str(
         },
         #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
         CoinProtocol::ZHTLC => utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format),
+        #[cfg(all(not(target_arch = "wasm32")))]
+        CoinProtocol::SOLANA => unimplemented!(),
     }
 }
 

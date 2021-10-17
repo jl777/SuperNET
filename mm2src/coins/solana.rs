@@ -7,13 +7,15 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use bincode::{deserialize, serialize};
 use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber, now_ms};
+use derive_more::Display;
 use futures::{compat::Future01CompatExt, FutureExt, TryFutureExt};
 use futures01::{future::result, Future};
 use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
-use serde_json::Value as Json;
+use serde_json::{self as json, Value as Json};
 use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient};
+use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::hash::Hash;
 use solana_sdk::native_token::{lamports_to_sol, sol_to_lamports};
 use solana_sdk::program_error::ProgramError;
@@ -99,6 +101,83 @@ impl From<AccountError> for WithdrawError {
             AccountError::ClientError(e) => WithdrawError::Transport(format!("{:?}", e)),
         }
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SolanaActivationParams {
+    confirmation_commitment: CommitmentLevel,
+    client_url: String,
+}
+
+#[derive(Debug, Display)]
+pub enum SolanaFromLegacyReqErr {
+    InvalidCommitmentLevel(String),
+    InvalidClientParsing(json::Error),
+    ClientNoAvailableNodes(String),
+}
+
+impl SolanaActivationParams {
+    pub fn from_legacy_req(req: &Json) -> Result<Self, MmError<SolanaFromLegacyReqErr>> {
+        let solana_commitment =
+            json::from_value::<String>(req["commitment_level"].clone()).unwrap_or_else(|_| "Finalized".to_string());
+        let solana_client_urls = json::from_value::<Vec<String>>(req["urls"].clone())
+            .map_to_mm(SolanaFromLegacyReqErr::InvalidClientParsing)?;
+        if solana_client_urls.is_empty() {
+            return MmError::err(SolanaFromLegacyReqErr::ClientNoAvailableNodes(
+                "Enable request for SOLANA coin must have at least 1 node URL".to_string(),
+            ));
+        }
+        let commitment_level = match solana_commitment.as_str() {
+            "Finalized" => solana_sdk::commitment_config::CommitmentLevel::Finalized,
+            "Confirmed" => solana_sdk::commitment_config::CommitmentLevel::Confirmed,
+            "Processed" => solana_sdk::commitment_config::CommitmentLevel::Processed,
+            _ => {
+                return MmError::err(SolanaFromLegacyReqErr::InvalidCommitmentLevel(
+                    "Invalid commitment".to_string(),
+                ))
+            },
+        };
+        Ok(SolanaActivationParams {
+            confirmation_commitment: commitment_level,
+            client_url: solana_client_urls[0].clone(),
+        })
+    }
+}
+
+fn generate_from_keypair_from_slice(priv_key: &[u8]) -> Keypair {
+    let secret_key = ed25519_dalek::SecretKey::from_bytes(priv_key).unwrap();
+    let public_key = ed25519_dalek::PublicKey::from(&secret_key);
+    let key_pair = ed25519_dalek::Keypair {
+        secret: secret_key,
+        public: public_key,
+    };
+    solana_sdk::signature::keypair_from_seed(key_pair.to_bytes().as_ref()).unwrap()
+}
+
+pub async fn solana_coin_from_conf_and_params(
+    ctx: &MmArc,
+    ticker: &str,
+    conf: &Json,
+    params: SolanaActivationParams,
+    priv_key: &[u8],
+) -> Result<SolanaCoin, String> {
+    let client =
+        solana_client::rpc_client::RpcClient::new_with_commitment(params.client_url.clone(), CommitmentConfig {
+            commitment: params.confirmation_commitment,
+        });
+    let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
+    let key_pair = generate_from_keypair_from_slice(priv_key);
+    let my_address = key_pair.pubkey().to_string();
+    let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
+        my_address,
+        key_pair,
+        ticker: ticker.to_string(),
+        _ctx: ctx.weak(),
+        _required_confirmations: 1.into(),
+        client,
+        decimals,
+    }));
+    Ok(solana_coin)
 }
 
 /// pImpl idiom.
@@ -513,7 +592,7 @@ impl MmCoin for SolanaCoin {
 
     fn swap_contract_address(&self) -> Option<BytesJson> { unimplemented!() }
 
-    fn mature_confirmations(&self) -> Option<u32> { unimplemented!() }
+    fn mature_confirmations(&self) -> Option<u32> { None }
 
     fn coin_protocol_info(&self) -> Vec<u8> { Vec::new() }
 
