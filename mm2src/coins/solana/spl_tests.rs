@@ -18,6 +18,11 @@ mod tests {
             solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
         );
 
+        println!(
+            "underlying address: {}",
+            sol_spl_usdc_coin.get_pubkey().unwrap().to_string()
+        );
+        println!("address: {}", sol_spl_usdc_coin.my_address().unwrap());
         assert_eq!(
             sol_spl_usdc_coin.my_address().unwrap(),
             "FJktmyjV9aBHEShT4hfnLpr9ELywdwVtEL1w1rSWgbVf"

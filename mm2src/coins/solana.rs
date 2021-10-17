@@ -28,8 +28,8 @@ use std::{convert::TryFrom,
           sync::Arc};
 
 #[cfg(test)] mod solana_common_tests;
+mod solana_decode_tx_helpers;
 #[cfg(test)] mod solana_tests;
-mod solana_transaction_transfer;
 #[cfg(test)] mod spl_tests;
 
 pub mod spl;

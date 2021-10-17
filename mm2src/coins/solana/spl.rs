@@ -92,15 +92,17 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
     }
     let raw_amount = req.amount.to_f64().unwrap_or_default();
     let amount = spl_token::ui_amount_to_amount(raw_amount, coin.conf.decimals);
-    let instruction_transfer = spl_token::instruction::transfer(
+    let instruction_transfer_checked = spl_token::instruction::transfer_checked(
         &spl_token::id(),
         &funding_address,
+        &contract_key,
         &dest_token_address,
         &auth_key,
-        &[],
+        &[&auth_key],
         amount,
+        coin.conf.decimals,
     )?;
-    instructions.push(instruction_transfer);
+    instructions.push(instruction_transfer_checked);
     let msg = Message::new(&instructions, Some(&auth_key));
     let signers = vec![&coin.platform_coin.key_pair];
     let tx = Transaction::new(&signers, msg, hash);
@@ -143,7 +145,7 @@ impl SplToken {
     fn rpc(&self) -> &RpcClient { &self.platform_coin.client }
     fn get_underlying_contract_pubkey(&self) -> Pubkey { self.conf.token_contract_address }
 
-    fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
+    pub fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
         let coin = self.clone();
         let token_accounts = coin.rpc().get_token_accounts_by_owner(
             &coin.platform_coin.key_pair.pubkey(),

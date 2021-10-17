@@ -1,7 +1,6 @@
 use super::*;
 use crate::solana::solana_common_tests::{generate_key_pair_from_iguana_seed, generate_key_pair_from_seed,
                                          solana_coin_for_test, SolanaNet};
-use crate::solana::solana_transaction_transfer::SolanaTransactionTransfer;
 use crate::MarketCoinOps;
 use base58::ToBase58;
 use solana_client::rpc_request::TokenAccountsFilter;
@@ -12,6 +11,7 @@ use std::str::FromStr;
 
 mod tests {
     use super::*;
+    use crate::solana::solana_decode_tx_helpers::SolanaConfirmedTransaction;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -158,6 +158,7 @@ mod tests {
         let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
         let res = sol_coin.send_raw_tx(tx_str).wait();
         assert_eq!(res.is_err(), false);
+        //println!("{:?}", res);
     }
 
     // This test is just a unit test for brainstorming around tx_history for base_coin.
@@ -166,12 +167,11 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_test_tx_history() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
-        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let res = sol_coin
             .client
             .get_signatures_for_address(&sol_coin.key_pair.pubkey())
             .unwrap();
-        //println!("{:?}", res);
         let mut history = Vec::new();
         for cur in res.iter() {
             let signature = Signature::from_str(cur.signature.clone().as_str()).unwrap();
@@ -179,36 +179,12 @@ mod tests {
                 .client
                 .get_transaction(&signature, UiTransactionEncoding::JsonParsed)
                 .unwrap();
-            let str = serde_json::to_string(&res).unwrap();
-            //println!("{}", str);
-            let tx_solana_transfer: SolanaTransactionTransfer = serde_json::from_str(str.as_str()).unwrap();
-            let tx_info = tx_solana_transfer.extract_first_transfer_instructions().unwrap();
-            let tx = TransactionDetails {
-                tx_hex: Default::default(),
-                tx_hash: signature.as_ref().into(),
-                from: vec![tx_info.source],
-                to: vec![tx_info.destination],
-                total_amount: BigDecimal::from(lamports_to_sol(tx_info.lamports)),
-                spent_by_me: Default::default(),
-                received_by_me: Default::default(),
-                my_balance_change: Default::default(),
-                block_height: tx_solana_transfer.slot,
-                timestamp: tx_solana_transfer.block_time,
-                fee_details: Some(
-                    SolanaFeeDetails {
-                        amount: lamports_to_sol(tx_solana_transfer.meta.fee).into(),
-                    }
-                    .into(),
-                ),
-                coin: sol_coin.ticker.clone(),
-                internal_id: Default::default(),
-                kmd_rewards: None,
-            };
-            println!("signature: {}", signature.to_string());
-            println!("tx: {}", serde_json::to_string(&tx).unwrap());
-            history.push(tx);
+            println!("{}", serde_json::to_string(&res).unwrap());
+            let parsed = serde_json::to_value(&res).unwrap();
+            let tx_infos: SolanaConfirmedTransaction = serde_json::from_value(parsed).unwrap();
+            let mut txs = tx_infos.extract_solana_transactions(&sol_coin);
+            history.append(&mut txs);
         }
-
         println!("{}", serde_json::to_string(&history).unwrap());
     }
 }
