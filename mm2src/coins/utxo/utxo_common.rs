@@ -1537,7 +1537,7 @@ where
         spent_by_me: big_decimal_from_sat(data.spent_by_me as i64, decimals),
         received_by_me: big_decimal_from_sat(data.received_by_me as i64, decimals),
         my_balance_change: big_decimal_from_sat(data.received_by_me as i64 - data.spent_by_me as i64, decimals),
-        tx_hash: signed.hash().reversed().to_vec().into(),
+        tx_hash: format!("{:02x}", BytesJson(signed.hash().reversed().to_vec())),
         tx_hex,
         fee_details: Some(fee_details.into()),
         block_height: 0,
@@ -1635,7 +1635,7 @@ where
     };
     let mut history_map: HashMap<H256Json, TransactionDetails> = history
         .into_iter()
-        .map(|tx| (H256Json::from(tx.tx_hash.as_slice()), tx))
+        .map(|tx| (H256Json::from(tx.tx_hash.as_bytes()), tx))
         .collect();
 
     let mut success_iteration = 0i32;
@@ -2060,7 +2060,7 @@ where
         spent_by_me: big_decimal_from_sat_unsigned(spent_by_me, coin.as_ref().decimals),
         my_balance_change: big_decimal_from_sat(received_by_me as i64 - spent_by_me as i64, coin.as_ref().decimals),
         total_amount: big_decimal_from_sat_unsigned(input_amount, coin.as_ref().decimals),
-        tx_hash: tx.hash().reversed().to_vec().into(),
+        tx_hash: format!("{:02x}", BytesJson(tx.hash().reversed().to_vec())),
         tx_hex: verbose_tx.hex,
         fee_details: Some(UtxoFeeDetails { amount: fee }.into()),
         block_height: verbose_tx.height.unwrap_or(0),

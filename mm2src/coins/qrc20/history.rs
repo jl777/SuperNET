@@ -233,7 +233,7 @@ impl Qrc20Coin {
         receipt: TxReceipt,
         miner_fee: BigDecimal,
     ) -> Result<TxTransferMap, String> {
-        let tx_hash: H256Json = qtum_details.tx_hash.as_slice().into();
+        let tx_hash: H256Json = qtum_details.tx_hash.as_bytes().into();
         if qtum_tx.outputs.len() <= (receipt.output_index as usize) {
             return ERR!(
                 "Length of the transaction {:?} outputs less than output_index {}",

@@ -54,7 +54,7 @@ impl SolanaConfirmedTransaction {
                 let fee: BigDecimal = lamports_to_sol(self.meta.fee).into();
                 let tx = TransactionDetails {
                     tx_hex: Default::default(),
-                    tx_hash: self.transaction.signatures[0].as_bytes().into(),
+                    tx_hash: self.transaction.signatures[0].to_string(),
                     from: vec![instruction.parsed.info.source.clone()],
                     to: vec![instruction.parsed.info.destination.clone()],
                     total_amount: amount,

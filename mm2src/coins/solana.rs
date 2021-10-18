@@ -260,7 +260,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     };
     Ok(TransactionDetails {
         tx_hex: encoded_tx.as_bytes().into(),
-        tx_hash: tx.signatures[0].as_ref().into(),
+        tx_hash: tx.signatures[0].to_string(),
         from: vec![coin.my_address.clone()],
         to: vec![req.to],
         total_amount: to_send.clone(),
