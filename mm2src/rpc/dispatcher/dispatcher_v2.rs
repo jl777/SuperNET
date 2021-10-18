@@ -5,6 +5,7 @@ use crate::{mm2::lp_stats::{add_node_to_version_stat, remove_node_from_version_s
                             stop_version_stat_collection, update_version_stat_collection},
             mm2::lp_swap::trade_preimage_rpc,
             mm2::rpc::get_public_key::get_public_key};
+use coins::lightning::enable_lightning;
 use coins::withdraw;
 use common::log::{error, warn};
 use common::mm_ctx::MmArc;
@@ -88,6 +89,7 @@ fn auth(request: &MmRpcRequest, ctx: &MmArc) -> DispatcherResult<()> {
 async fn dispatcher(request: MmRpcRequest, ctx: MmArc) -> DispatcherResult<Response<Vec<u8>>> {
     match request.method.as_str() {
         "add_node_to_version_stat" => handle_mmrpc(ctx, request, add_node_to_version_stat).await,
+        "enable_lightning" => handle_mmrpc(ctx, request, enable_lightning).await,
         "get_public_key" => handle_mmrpc(ctx, request, get_public_key).await,
         "remove_node_from_version_stat" => handle_mmrpc(ctx, request, remove_node_from_version_stat).await,
         "start_simple_market_maker_bot" => handle_mmrpc(ctx, request, start_simple_market_maker_bot).await,
