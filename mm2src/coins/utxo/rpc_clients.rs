@@ -994,6 +994,9 @@ impl ElectrumBlockHeaderV12 {
             hash_utxo_root: None,
             prevout_stake: None,
             vch_block_sig_dlgt: None,
+            n_height: None,
+            n_nonce_u64: None,
+            mix_hash: None,
         };
         BlockHeader::hash(&block_header).into()
     }
