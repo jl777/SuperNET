@@ -1,13 +1,14 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::solana::{AccountError, SolanaFeeDetails};
+use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
             TradePreimageFut, TradePreimageValue, TransactionDetails, ValidateAddressResult, WithdrawError,
             WithdrawFut, WithdrawRequest, WithdrawResult};
+use async_trait::async_trait;
 use bigdecimal::{BigDecimal, ToPrimitive};
 use bincode::serialize;
 use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
-use futures::{compat::Future01CompatExt, FutureExt, TryFutureExt};
+use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
 use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
@@ -15,7 +16,6 @@ use serde_json::Value as Json;
 use solana_client::{rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
 use solana_sdk::hash::Hash;
 use solana_sdk::message::Message;
-use solana_sdk::native_token::lamports_to_sol;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey, signature::Signer};
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
@@ -43,42 +43,9 @@ impl Debug for SplToken {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(self.conf.ticker.to_string().as_str()) }
 }
 
-async fn check_sufficient_balance(
-    coin: &SplToken,
-    req: &WithdrawRequest,
-) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
-    let my_balance = coin.my_balance().compat().await?.spendable;
-    let to_send = if req.max {
-        my_balance.clone()
-    } else {
-        req.amount.clone()
-    };
-    if to_send > my_balance {
-        return MmError::err(WithdrawError::NotSufficientBalance {
-            coin: coin.conf.ticker.clone(),
-            available: my_balance.clone(),
-            required: &to_send - &my_balance,
-        });
-    }
-    Ok((to_send, my_balance))
-}
-
-async fn check_amount_too_low(coin: &SplToken) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
-    let base_balance = coin.platform_coin.base_coin_balance().compat().await?;
-    let (hash, fee_calculator) = coin.rpc().get_recent_blockhash()?;
-    let sol_required = BigDecimal::from(lamports_to_sol(fee_calculator.lamports_per_signature));
-    if base_balance < sol_required {
-        return MmError::err(WithdrawError::AmountTooLow {
-            amount: base_balance.clone(),
-            threshold: &sol_required - &base_balance,
-        });
-    }
-    Ok((sol_required, hash))
-}
-
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
-    let (to_send, my_balance) = check_sufficient_balance(&coin, &req).await?;
-    let (sol_required, hash) = check_amount_too_low(&coin).await?;
+    let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
+    let (sol_required, hash) = coin.check_amount_too_low().await?;
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.platform_coin.key_pair.pubkey();
@@ -141,8 +108,25 @@ async fn withdraw_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
     withdraw_spl_token_impl(coin, req).await
 }
 
-impl SplToken {
+impl SolanaCommonOps for SplToken {
     fn rpc(&self) -> &RpcClient { &self.platform_coin.client }
+}
+
+#[async_trait]
+impl SolanaAsyncCommonOps for SplToken {
+    async fn check_sufficient_balance(
+        &self,
+        req: &WithdrawRequest,
+    ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
+        solana_common::check_sufficient_balance(self, req).await
+    }
+
+    async fn check_amount_too_low(&self) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
+        solana_common::check_amount_too_low(self).await
+    }
+}
+
+impl SplToken {
     fn get_underlying_contract_pubkey(&self) -> Pubkey { self.conf.token_contract_address }
 
     fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
