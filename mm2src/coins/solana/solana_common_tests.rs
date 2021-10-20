@@ -63,7 +63,6 @@ pub fn spl_coin_for_test(
             decimals,
             ticker,
             token_contract_address,
-            required_confirmations: Default::default(),
         }),
         platform_coin: solana_coin,
     };
