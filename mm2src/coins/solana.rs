@@ -306,19 +306,22 @@ impl MarketCoinOps for SolanaCoin {
     fn my_address(&self) -> Result<String, String> { Ok(self.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
+        // bigdecimal-0.1.2/src/lib.rs:2396 (precision is decimals - 1)
+        let decimals = (self.decimals + 1) as u64;
         let fut = self.my_balance_impl(false).and_then(move |result| {
             Ok(CoinBalance {
-                spendable: BigDecimal::from(result),
-                unspendable: BigDecimal::from(0),
+                spendable: BigDecimal::from(result).with_prec(decimals),
+                unspendable: BigDecimal::from(0).with_prec(decimals),
             })
         });
         Box::new(fut)
     }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
+        let decimals = (self.decimals + 1) as u64;
         let fut = self
             .my_balance_impl(true)
-            .and_then(move |result| Ok(BigDecimal::from(result)));
+            .and_then(move |result| Ok(BigDecimal::from(result).with_prec(decimals)));
         Box::new(fut)
     }
 

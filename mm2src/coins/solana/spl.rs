@@ -22,7 +22,6 @@ use spl_associated_token_account::{create_associated_token_account, get_associat
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           str::FromStr,
-          sync::atomic::AtomicU64,
           sync::Arc};
 
 #[derive(Debug)]
@@ -30,7 +29,6 @@ pub struct SplTokenConf {
     pub decimals: u8,
     pub ticker: String,
     pub token_contract_address: Pubkey,
-    pub required_confirmations: AtomicU64,
 }
 
 #[derive(Clone)]
@@ -41,6 +39,17 @@ pub struct SplToken {
 
 impl Debug for SplToken {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(self.conf.ticker.to_string().as_str()) }
+}
+
+impl SplToken {
+    pub fn new(decimals: u8, ticker: String, token_address: Pubkey, platform_coin: SolanaCoin) -> SplToken {
+        let conf = Arc::new(SplTokenConf {
+            decimals,
+            ticker,
+            token_contract_address: token_address,
+        });
+        SplToken { conf, platform_coin }
+    }
 }
 
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
@@ -168,10 +177,11 @@ impl MarketCoinOps for SplToken {
     fn my_address(&self) -> Result<String, String> { Ok(self.platform_coin.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
+        let decimals = (self.decimals() + 1) as u64;
         let fut = self.my_balance_impl().and_then(move |result| {
             Ok(CoinBalance {
-                spendable: BigDecimal::from(result),
-                unspendable: BigDecimal::from(0),
+                spendable: BigDecimal::from(result).with_prec(decimals),
+                unspendable: BigDecimal::from(0).with_prec(decimals),
             })
         });
         Box::new(fut)
@@ -413,7 +423,7 @@ impl MmCoin for SplToken {
 
     fn swap_contract_address(&self) -> Option<BytesJson> { unimplemented!() }
 
-    fn mature_confirmations(&self) -> Option<u32> { unimplemented!() }
+    fn mature_confirmations(&self) -> Option<u32> { Some(1) }
 
     fn coin_protocol_info(&self) -> Vec<u8> { Vec::new() }
 
