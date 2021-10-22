@@ -305,8 +305,8 @@ impl MarketCoinOps for SolanaCoin {
         let decimals = (self.decimals + 1) as u64;
         let fut = self.my_balance_impl(false).and_then(move |result| {
             Ok(CoinBalance {
-                spendable: BigDecimal::from(result).with_prec(decimals),
-                unspendable: BigDecimal::from(0).with_prec(decimals),
+                spendable: result.with_prec(decimals),
+                unspendable: 0.into(),
             })
         });
         Box::new(fut)
@@ -316,7 +316,7 @@ impl MarketCoinOps for SolanaCoin {
         let decimals = (self.decimals + 1) as u64;
         let fut = self
             .my_balance_impl(true)
-            .and_then(move |result| Ok(BigDecimal::from(result).with_prec(decimals)));
+            .and_then(move |result| Ok(result.with_prec(decimals)));
         Box::new(fut)
     }
 
