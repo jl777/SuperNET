@@ -56,7 +56,7 @@ mod tests {
             let balance = client
                 .get_balance(&key_pair.pubkey())
                 .expect("Expect to retrieve balance");
-            assert_eq!(solana_sdk::native_token::lamports_to_sol(balance), 0.0);
+            assert_eq!(lamports_to_sol(balance), 0.0.into());
             assert_eq!(balance, 0);
 
             //  This will fetch all the balance from all tokens

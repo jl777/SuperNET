@@ -1,10 +1,11 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
+use crate::solana::solana_common::ui_amount_to_amount;
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
             TradePreimageFut, TradePreimageValue, TransactionDetails, ValidateAddressResult, WithdrawError,
             WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
-use bigdecimal::{BigDecimal, ToPrimitive};
+use bigdecimal::BigDecimal;
 use bincode::serialize;
 use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
@@ -66,8 +67,7 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
         let instruction_creation = create_associated_token_account(&auth_key, &dest_token_address, &contract_key);
         instructions.push(instruction_creation);
     }
-    let raw_amount = req.amount.to_f64().unwrap_or_default();
-    let amount = spl_token::ui_amount_to_amount(raw_amount, coin.conf.decimals);
+    let amount = ui_amount_to_amount(req.amount, coin.conf.decimals).unwrap();
     let instruction_transfer_checked = spl_token::instruction::transfer_checked(
         &spl_token::id(),
         &funding_address,
@@ -150,7 +150,7 @@ impl SplToken {
         Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str())?)
     }
 
-    fn my_balance_impl(&self) -> BalanceFut<f64> {
+    fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
         let coin = self.clone();
         let fut = async move {
             let token_accounts = coin.rpc().get_token_accounts_by_owner(
@@ -158,12 +158,12 @@ impl SplToken {
                 TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
             )?;
             if token_accounts.is_empty() {
-                return Ok(0.0);
+                return Ok(0.0.into());
             }
             let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
                 .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
             let amount = coin.rpc().get_token_account_balance(&actual_token_pubkey)?;
-            Ok(amount.ui_amount.unwrap_or(0.0))
+            Ok(BigDecimal::from_str(amount.amount.as_str()).map_to_mm(|e| BalanceError::Internal(e.to_string()))?)
         };
         Box::new(fut.boxed().compat())
     }
@@ -180,8 +180,8 @@ impl MarketCoinOps for SplToken {
         let decimals = (self.decimals() + 1) as u64;
         let fut = self.my_balance_impl().and_then(move |result| {
             Ok(CoinBalance {
-                spendable: BigDecimal::from(result).with_prec(decimals),
-                unspendable: BigDecimal::from(0).with_prec(decimals),
+                spendable: result,
+                unspendable: 0.into(),
             })
         });
         Box::new(fut)

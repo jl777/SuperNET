@@ -1,10 +1,11 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
+use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageValue, TransactionDetails, ValidateAddressResult, WithdrawError,
             WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
 use base58::ToBase58;
-use bigdecimal::{BigDecimal, ToPrimitive};
+use bigdecimal::BigDecimal;
 use bincode::{deserialize, serialize};
 use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber, now_ms};
@@ -18,7 +19,6 @@ use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient};
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::hash::Hash;
-use solana_sdk::native_token::sol_to_lamports;
 use solana_sdk::program_error::ProgramError;
 use solana_sdk::pubkey::ParsePubkeyError;
 use solana_sdk::transaction::Transaction;
@@ -245,12 +245,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
     let (sol_required, hash) = coin.check_amount_too_low().await?;
     let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
-    let tx = solana_sdk::system_transaction::transfer(
-        &coin.key_pair,
-        &to,
-        sol_to_lamports(to_send.to_f64().unwrap_or_default()),
-        hash,
-    );
+    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send).unwrap(), hash);
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
@@ -287,11 +282,11 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 }
 
 impl SolanaCoin {
-    fn my_balance_impl(&self, force_base_coin: bool) -> BalanceFut<f64> {
+    fn my_balance_impl(&self, force_base_coin: bool) -> BalanceFut<BigDecimal> {
         let coin = self.clone();
         let base_coin_balance_functor = |coin: SolanaCoin| {
             let res = coin.rpc().get_balance(&coin.key_pair.pubkey())?;
-            Ok(solana_sdk::native_token::lamports_to_sol(res))
+            Ok(lamports_to_sol(res))
         };
         let fut = async move { base_coin_balance_functor(coin) };
         Box::new(fut.boxed().compat())
