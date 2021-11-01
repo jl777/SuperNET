@@ -1355,7 +1355,7 @@ pub trait UtxoCoinBuilder {
     }
 
     fn address_format(&self) -> Result<UtxoAddressFormat, String> {
-        let format_from_req: Option<UtxoAddressFormat> = try_s!(json::from_value(self.req()["address_format"].clone()));
+        let format_from_req: Option<UtxoAddressFormat> = self.activation_params().address_format;
         let format_from_conf = try_s!(json::from_value::<Option<UtxoAddressFormat>>(
             self.conf()["address_format"].clone()
         ))

@@ -1152,6 +1152,8 @@ fn test_maker_order_was_updated() {
         conf_settings: None,
         changes_history: None,
         save_in_history: false,
+        base_orderbook_ticker: None,
+        rel_orderbook_ticker: None,
     };
     let mut update_msg = MakerOrderUpdated::new(maker_order.uuid);
     update_msg.with_new_price(BigRational::from_integer(2.into()));

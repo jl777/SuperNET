@@ -957,10 +957,7 @@ impl BalanceTradeFeeUpdatedHandler for BalanceUpdateOrdermatchHandler {
             if new_volume < order.available_amount() {
                 let mut update_msg = new_protocol::MakerOrderUpdated::new(order.uuid);
                 update_msg.with_new_max_volume(new_volume.to_ratio());
-                let base = order.base.to_owned();
-                let rel = order.rel.to_owned();
-
-                maker_order_updated_p2p_notify(ctx.clone(), &base, &rel, update_msg).await;
+                maker_order_updated_p2p_notify(ctx.clone(), order.orderbook_topic(), update_msg).await;
             }
 
             // return the order to [`OrdermatchContext::my_maker_orders`]
@@ -4029,7 +4026,7 @@ pub async fn create_maker_order(ctx: &MmArc, req: SetPriceReq) -> Result<MakerOr
         )
         .await
     );
-    save_my_new_maker_order(ctx.clone(), &new_order);
+    save_my_new_maker_order(ctx.clone(), &new_order).await;
     maker_order_created_p2p_notify(
         ctx.clone(),
         &new_order,
@@ -4206,8 +4203,8 @@ pub async fn update_maker_order(ctx: &MmArc, req: MakerOrderUpdateReq) -> Result
     ));
 
     let mut my_maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
-    let (rpc_result, topic) = match my_maker_orders.get_mut(&req.uuid) {
-        None => return ERR!("Order with UUID: {} has been deleted", req.uuid),
+    match my_maker_orders.get_mut(&req.uuid) {
+        None => ERR!("Order with UUID: {} has been deleted", req.uuid),
         Some(order) => {
             if order.matches.len() != matches.len() || !order.matches.keys().all(|k| matches.contains_key(k)) {
                 return ERR!("Order {} is being matched now, can't update", req.uuid);
@@ -4217,7 +4214,8 @@ pub async fn update_maker_order(ctx: &MmArc, req: MakerOrderUpdateReq) -> Result
             order.apply_updated(&update_msg);
             save_maker_order_on_update(ctx.clone(), order, new_change).await;
             update_msg.with_new_max_volume((new_volume - reserved_amount).into());
-            (MakerOrderForRpc::from(&*order), order.orderbook_topic())
+            maker_order_updated_p2p_notify(ctx.clone(), order.orderbook_topic(), update_msg).await;
+            Ok(order.clone())
         },
     }
 }
@@ -4227,7 +4225,6 @@ pub async fn update_maker_order_rpc(ctx: MmArc, req: Json) -> Result<Response<Ve
     let order = try_s!(update_maker_order(&ctx, req).await);
     let rpc_result = MakerOrderForRpc::from(&order);
     let res = try_s!(json::to_vec(&json!({ "result": rpc_result })));
-    maker_order_updated_p2p_notify(ctx.clone(), topic, update_msg).await;
 
     Ok(try_s!(Response::builder().body(res)))
 }

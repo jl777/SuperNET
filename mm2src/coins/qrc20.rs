@@ -3,11 +3,12 @@ use crate::qrc20::rpc_clients::{LogEntry, Qrc20ElectrumOps, Qrc20NativeOps, Qrc2
                                 ViewContractCallType};
 use crate::utxo::qtum::QtumBasedCoin;
 use crate::utxo::rpc_clients::{ElectrumClient, NativeClient, UnspentInfo, UtxoRpcClientEnum, UtxoRpcClientOps,
-                               UtxoRpcError, UtxoRpcResult};
-use crate::utxo::utxo_common::{self, big_decimal_from_sat, check_all_inputs_signed_by_pub};
-use crate::utxo::{qtum, sign_tx, ActualTxFee, AdditionalTxData, FeePolicy, GenerateTxError, GenerateTxResult,
-                  HistoryUtxoTx, HistoryUtxoTxMap, RecentlySpentOutPoints, UtxoAddressFormat, UtxoCoinBuilder,
-                  UtxoCoinFields, UtxoCommonOps, UtxoTx, VerboseTransactionFrom, UTXO_LOCK};
+                               UtxoRpcError, UtxoRpcFut, UtxoRpcResult};
+use crate::utxo::utxo_common::{self, big_decimal_from_sat, check_all_inputs_signed_by_pub, UtxoTxBuilder};
+use crate::utxo::{qtum, sign_tx, ActualTxFee, AdditionalTxData, BroadcastTxErr, FeePolicy, GenerateTxError,
+                  HistoryUtxoTx, HistoryUtxoTxMap, RecentlySpentOutPoints, UtxoActivationParams, UtxoAddressFormat,
+                  UtxoCoinBuilder, UtxoCoinFields, UtxoCommonOps, UtxoFromLegacyReqErr, UtxoTx, UtxoTxBroadcastOps,
+                  UtxoTxGenerationOps, VerboseTransactionFrom, UTXO_LOCK};
 use crate::{BalanceError, BalanceFut, CoinBalance, FeeApproxStage, FoundSwapTxSpend, HistorySyncState, MarketCoinOps,
             MmCoin, NegotiateSwapContractAddrErr, SwapOps, TradeFee, TradePreimageError, TradePreimageFut,
             TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionEnum, TransactionFut,

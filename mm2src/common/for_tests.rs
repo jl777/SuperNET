@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::executor::Timer;
 use crate::mm_ctx::MmArc;
 use crate::mm_metrics::{MetricType, MetricsJson};
-use crate::{now_float, now_ms, slurp};
+use crate::{now_float, now_ms};
 
 cfg_wasm32! {
     use crate::log::LogLevel;

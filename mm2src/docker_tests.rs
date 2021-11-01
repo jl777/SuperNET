@@ -3892,8 +3892,8 @@ mod docker_tests {
 
     #[test]
     fn test_ordermatch_custom_orderbook_ticker_both_on_maker() {
-        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
         let coins = json! ([
             {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
             {"coin":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -4017,8 +4017,8 @@ mod docker_tests {
 
     #[test]
     fn test_ordermatch_custom_orderbook_ticker_both_on_taker() {
-        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
 
         let coins = json! ([
             {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -4140,8 +4140,8 @@ mod docker_tests {
 
     #[test]
     fn test_ordermatch_custom_orderbook_ticker_mixed_case_one() {
-        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
 
         let coins = json! ([
             {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -4271,8 +4271,8 @@ mod docker_tests {
 
     #[test]
     fn test_ordermatch_custom_orderbook_ticker_mixed_case_two() {
-        let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
 
         let coins = json! ([
             {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},

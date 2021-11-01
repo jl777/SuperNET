@@ -3,10 +3,9 @@ use bigdecimal::BigDecimal;
 use common::block_on;
 use common::executor::Timer;
 use common::for_tests::{check_my_swap_status, check_recent_swaps, check_stats_swap_status,
-                        enable_electrum as enable_electrum_impl, enable_native as enable_native_impl, enable_qrc20,
-                        find_metrics_in_json, from_env_file, get_passphrase, mm_spat, new_mm2_temp_folder_path,
-                        wait_till_history_has_records, LocalStart, MarketMakerIt, RaiiDump, MAKER_ERROR_EVENTS,
-                        MAKER_SUCCESS_EVENTS, TAKER_ERROR_EVENTS, TAKER_SUCCESS_EVENTS};
+                        enable_native as enable_native_impl, enable_qrc20, find_metrics_in_json, from_env_file,
+                        mm_spat, wait_till_history_has_records, LocalStart, MarketMakerIt, RaiiDump,
+                        MAKER_ERROR_EVENTS, MAKER_SUCCESS_EVENTS, TAKER_ERROR_EVENTS, TAKER_SUCCESS_EVENTS};
 use common::mm_metrics::{MetricType, MetricsJson};
 use common::mm_number::{Fraction, MmNumber};
 use common::privkey::key_pair_from_seed;
@@ -8511,6 +8510,9 @@ fn test_enable_lightning() {
             "required_confirmations": 0,
             "protocol": {
                 "type": "UTXO"
+            },
+            "address_format": {
+                "format": "segwit",
             }
         }
     ]);
@@ -8539,9 +8541,6 @@ fn test_enable_lightning() {
         "coin": "tBTC",
         "servers": [{"url":"electrum1.cipig.net:10068"},{"url":"electrum2.cipig.net:10068"},{"url":"electrum3.cipig.net:10068"}],
         "mm2": 1,
-        "address_format": {
-            "format": "segwit",
-        },
     }))).unwrap();
     assert_eq!(
         electrum.0,

@@ -30,8 +30,8 @@ use std::str;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::mm2::database::init_and_migrate_db;
 use crate::mm2::lp_network::{lp_network_ports, p2p_event_process_loop, P2PContext};
-use crate::mm2::lp_ordermatch::{broadcast_maker_orders_keep_alive_loop, clean_memory_loop, lp_ordermatch_loop,
-                                orders_kick_start, BalanceUpdateOrdermatchHandler};
+use crate::mm2::lp_ordermatch::{broadcast_maker_orders_keep_alive_loop, clean_memory_loop, init_ordermatch_context,
+                                lp_ordermatch_loop, orders_kick_start, BalanceUpdateOrdermatchHandler};
 use crate::mm2::lp_swap::{running_swaps_num, swap_kick_starts};
 use crate::mm2::rpc::spawn_rpc;
 use crate::mm2::{MM_DATETIME, MM_VERSION};
