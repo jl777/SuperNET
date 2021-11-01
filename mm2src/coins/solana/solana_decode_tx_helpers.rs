@@ -1,6 +1,6 @@
 extern crate serde_derive;
 
-use crate::{SolanaCoin, SolanaFeeDetails, TransactionDetails};
+use crate::{SolanaCoin, SolanaFeeDetails, TransactionDetails, TransactionType};
 use bigdecimal::BigDecimal;
 use solana_sdk::native_token::lamports_to_sol;
 
@@ -67,6 +67,7 @@ impl SolanaConfirmedTransaction {
                     coin: solana_coin.ticker.clone(),
                     internal_id: Default::default(),
                     kmd_rewards: None,
+                    transaction_type: TransactionType::StandardTransfer,
                 };
                 transactions.push(tx);
             }

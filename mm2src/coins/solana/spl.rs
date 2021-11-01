@@ -2,8 +2,8 @@ use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, Trade
 use crate::solana::solana_common::ui_amount_to_amount;
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
-            TradePreimageFut, TradePreimageValue, TransactionDetails, ValidateAddressResult, WithdrawError,
-            WithdrawFut, WithdrawRequest, WithdrawResult};
+            TradePreimageFut, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
+            WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bincode::serialize;
@@ -104,6 +104,7 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
         coin: coin.conf.ticker.clone(),
         internal_id: vec![].into(),
         kmd_rewards: None,
+        transaction_type: TransactionType::StandardTransfer,
     })
 }
 
