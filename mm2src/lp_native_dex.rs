@@ -270,6 +270,7 @@ pub async fn lp_init(ctx: MmArc) -> Result<(), String> {
         try_s!(migrate_db(&ctx));
     }
 
+    try_s!(init_ordermatch_context(&ctx));
     try_s!(init_p2p(ctx.clone()).await);
 
     let balance_update_ordermatch_handler = BalanceUpdateOrdermatchHandler::new(ctx.clone());
