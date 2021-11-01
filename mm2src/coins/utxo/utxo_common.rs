@@ -300,6 +300,7 @@ pub struct UtxoTxBuilder<'a, T: AsRef<UtxoCoinFields> + UtxoTxGenerationOps> {
     sum_outputs_value: u64,
     tx_fee: u64,
     min_relay_fee: Option<u64>,
+    dust: Option<u64>,
 }
 
 impl<'a, T: AsRef<UtxoCoinFields> + UtxoTxGenerationOps> UtxoTxBuilder<'a, T> {
@@ -316,7 +317,13 @@ impl<'a, T: AsRef<UtxoCoinFields> + UtxoTxGenerationOps> UtxoTxBuilder<'a, T> {
             sum_outputs_value: 0,
             tx_fee: 0,
             min_relay_fee: None,
+            dust: None,
         }
+    }
+
+    pub fn with_dust(mut self, dust_amount: u64) -> Self {
+        self.dust = Some(dust_amount);
+        self
     }
 
     pub fn add_required_inputs(mut self, inputs: impl IntoIterator<Item = UnspentInfo>) -> Self {
@@ -435,14 +442,19 @@ impl<'a, T: AsRef<UtxoCoinFields> + UtxoTxGenerationOps> UtxoTxBuilder<'a, T> {
         }
     }
 
-    fn dust(&self) -> u64 { self.coin.as_ref().dust_amount }
+    fn dust(&self) -> u64 {
+        match self.dust {
+            Some(dust) => dust,
+            None => self.coin.as_ref().dust_amount,
+        }
+    }
 
     /// Generates unsigned transaction (TransactionInputSigner) from specified utxos and outputs.
     /// Sends the change (inputs amount - outputs amount) to "my_address"
     /// Also returns additional transaction data
     pub async fn build(mut self) -> GenerateTxResult {
         let coin = self.coin;
-        let dust: u64 = coin.as_ref().dust_amount;
+        let dust: u64 = self.dust();
         let change_script_pubkey = output_script(&coin.as_ref().my_address, ScriptType::P2PKH).to_bytes();
 
         let actual_tx_fee = match self.fee {
@@ -1545,6 +1557,7 @@ where
         internal_id: vec![].into(),
         timestamp: now_ms() / 1000,
         kmd_rewards: data.kmd_rewards,
+        transaction_type: Default::default(),
     })
 }
 
@@ -2068,6 +2081,7 @@ where
         internal_id: tx.hash().reversed().to_vec().into(),
         timestamp: verbose_tx.time.into(),
         kmd_rewards,
+        transaction_type: Default::default(),
     })
 }
 

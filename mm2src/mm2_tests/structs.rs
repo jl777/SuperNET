@@ -503,6 +503,13 @@ pub struct MaxTakerVolResponse {
     pub coin: String,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum TransactionType {
+    StakingDelegation,
+    RemoveDelegation,
+    StandardTransfer,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TransactionDetails {
@@ -519,6 +526,7 @@ pub struct TransactionDetails {
     pub fee_details: Json,
     pub coin: String,
     pub internal_id: String,
+    pub transaction_type: TransactionType,
 }
 
 #[derive(Debug, Deserialize)]

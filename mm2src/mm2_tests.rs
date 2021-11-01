@@ -4695,6 +4695,223 @@ fn test_convert_eth_address() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
+fn test_add_delegation_qtum() {
+    let coins = json!([{
+      "coin": "tQTUM",
+      "name": "qtumtest",
+      "fname": "Qtum test",
+      "rpcport": 13889,
+      "pubtype": 120,
+      "p2shtype": 110,
+      "wiftype": 239,
+      "segwit": true,
+      "txfee": 400000,
+      "mm2": 1,
+      "required_confirmations": 1,
+      "mature_confirmations": 2000,
+      "avg_blocktime": 0.53,
+      "protocol": {
+        "type": "QTUM"
+      }
+    }]);
+    let mm = MarketMakerIt::start(
+        json!({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var("BOB_TRADE_IP").ok(),
+            "rpcip": env::var("BOB_TRADE_IP").ok(),
+            "canbind": env::var("BOB_TRADE_PORT").ok().map(|s| s.parse::<i64>().unwrap()),
+            "passphrase": "asthma turtle lizard tone genuine tube hunt valley soap cloth urge alpha amazing frost faculty cycle mammal leaf normal bright topple avoid pulse buffalo",
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+        }),
+        "pass".into(),
+        match var("LOCAL_THREAD_MM") {
+            Ok(ref e) if e == "bob" => Some(local_start()),
+            _ => None,
+        },
+    )
+    .unwrap();
+
+    let json = block_on(enable_electrum(&mm, "tQTUM", false, &[
+        "electrum1.cipig.net:10071",
+        "electrum2.cipig.net:10071",
+        "electrum3.cipig.net:10071",
+    ]));
+    println!("{}", json.balance);
+
+    let rc = block_on(mm.rpc(json!({
+        "userpass": "pass",
+        "mmrpc": "2.0",
+        "method": "add_delegation",
+        "params": {
+            "coin": "tQTUM",
+            "staking_details": {
+                "type": "Qtum",
+                "address": "qcyBHeSct7Wr4mAw18iuQ1zW5mMFYmtmBE"
+            }
+        },
+        "id": 0
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «add_delegation» failed with status «{}»",
+        rc.0
+    );
+    let rc = block_on(mm.rpc(json!({
+        "userpass": "pass",
+        "mmrpc": "2.0",
+        "method": "add_delegation",
+        "params": {
+            "coin": "tQTUM",
+            "staking_details": {
+                "type": "Qtum",
+                "address": "fake_address"
+            }
+        },
+        "id": 0
+    })))
+    .unwrap();
+    assert!(
+        rc.0.is_client_error(),
+        "!add_delegation success but should be error: {}",
+        rc.1
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_remove_delegation_qtum() {
+    let coins = json!([{
+      "coin": "tQTUM",
+      "name": "qtumtest",
+      "fname": "Qtum test",
+      "rpcport": 13889,
+      "pubtype": 120,
+      "p2shtype": 110,
+      "wiftype": 239,
+      "segwit": true,
+      "txfee": 400000,
+      "mm2": 1,
+      "required_confirmations": 1,
+      "mature_confirmations": 2000,
+      "avg_blocktime": 0.53,
+      "protocol": {
+        "type": "QTUM"
+      }
+    }]);
+    let mm = MarketMakerIt::start(
+        json!({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var("BOB_TRADE_IP").ok(),
+            "rpcip": env::var("BOB_TRADE_IP").ok(),
+            "canbind": env::var("BOB_TRADE_PORT").ok().map(|s| s.parse::<i64>().unwrap()),
+            "passphrase": "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron",
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+        }),
+        "pass".into(),
+        match var("LOCAL_THREAD_MM") {
+            Ok(ref e) if e == "bob" => Some(local_start()),
+            _ => None,
+        },
+    )
+    .unwrap();
+
+    let json = block_on(enable_electrum(&mm, "tQTUM", false, &[
+        "electrum1.cipig.net:10071",
+        "electrum2.cipig.net:10071",
+        "electrum3.cipig.net:10071",
+    ]));
+    println!("{}", json.balance);
+
+    let rc = block_on(mm.rpc(json!({
+        "userpass": "pass",
+        "mmrpc": "2.0",
+        "method": "remove_delegation",
+        "params": {"coin": "tQTUM"},
+        "id": 0
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «remove_delegation» failed with status «{}»",
+        rc.0
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_get_staking_infos_qtum() {
+    let coins = json!([{
+      "coin": "tQTUM",
+      "name": "qtumtest",
+      "fname": "Qtum test",
+      "rpcport": 13889,
+      "pubtype": 120,
+      "p2shtype": 110,
+      "wiftype": 239,
+      "segwit": true,
+      "txfee": 400000,
+      "mm2": 1,
+      "required_confirmations": 1,
+      "mature_confirmations": 2000,
+      "avg_blocktime": 0.53,
+      "protocol": {
+        "type": "QTUM"
+      }
+    }]);
+    let mm = MarketMakerIt::start(
+        json!({
+            "gui": "nogui",
+            "netid": 9998,
+            "myipaddr": env::var("BOB_TRADE_IP").ok(),
+            "rpcip": env::var("BOB_TRADE_IP").ok(),
+            "canbind": env::var("BOB_TRADE_PORT").ok().map(|s| s.parse::<i64>().unwrap()),
+            "passphrase": "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron",
+            "coins": coins,
+            "rpc_password": "pass",
+            "i_am_seed": true,
+        }),
+        "pass".into(),
+        match var("LOCAL_THREAD_MM") {
+            Ok(ref e) if e == "bob" => Some(local_start()),
+            _ => None,
+        },
+    )
+        .unwrap();
+
+    let json = block_on(enable_electrum(&mm, "tQTUM", false, &[
+        "electrum1.cipig.net:10071",
+        "electrum2.cipig.net:10071",
+        "electrum3.cipig.net:10071",
+    ]));
+    println!("{}", json.balance);
+
+    let rc = block_on(mm.rpc(json!({
+        "userpass": "pass",
+        "mmrpc": "2.0",
+        "method": "get_staking_infos",
+        "params": {"coin": "tQTUM"},
+        "id": 0
+    })))
+    .unwrap();
+    assert_eq!(
+        rc.0,
+        StatusCode::OK,
+        "RPC «get_staking_infos» failed with status «{}»",
+        rc.0
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_convert_qrc20_address() {
     let passphrase = "cV463HpebE2djP9ugJry5wZ9st5cc6AbkHXGryZVPXMH1XJK8cVU";
     let coins = json! ([
@@ -4725,7 +4942,11 @@ fn test_convert_qrc20_address() {
     let _electrum = block_on(enable_qrc20(
         &mm,
         "QRC20",
-        &["95.217.83.126:10001"],
+        &[
+            "electrum1.cipig.net:10071",
+            "electrum2.cipig.net:10071",
+            "electrum3.cipig.net:10071",
+        ],
         "0xba8b71f3544b93e2f681f996da519a98ace0107a",
     ));
 
@@ -5242,7 +5463,11 @@ fn qrc20_activate_electrum() {
     let electrum_json = block_on(enable_qrc20(
         &mm,
         "QRC20",
-        &["95.217.83.126:10001"],
+        &[
+            "electrum1.cipig.net:10071",
+            "electrum2.cipig.net:10071",
+            "electrum3.cipig.net:10071",
+        ],
         "0xba8b71f3544b93e2f681f996da519a98ace0107a",
     ));
     assert_eq!(
@@ -5286,7 +5511,11 @@ fn test_qrc20_withdraw() {
     let electrum_json = block_on(enable_qrc20(
         &mm,
         "QRC20",
-        &["95.217.83.126:10001"],
+        &[
+            "electrum1.cipig.net:10071",
+            "electrum2.cipig.net:10071",
+            "electrum3.cipig.net:10071",
+        ],
         "0xba8b71f3544b93e2f681f996da519a98ace0107a",
     ));
     assert_eq!(
@@ -5362,7 +5591,11 @@ fn test_qrc20_withdraw_error() {
     let electrum_json = block_on(enable_qrc20(
         &mm,
         "QRC20",
-        &["95.217.83.126:10001"],
+        &[
+            "electrum1.cipig.net:10071",
+            "electrum2.cipig.net:10071",
+            "electrum3.cipig.net:10071",
+        ],
         "0xba8b71f3544b93e2f681f996da519a98ace0107a",
     ));
     let balance = electrum_json["balance"].as_str().unwrap();
