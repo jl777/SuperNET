@@ -8,11 +8,10 @@ use base58::ToBase58;
 use bigdecimal::BigDecimal;
 use bincode::{deserialize, serialize};
 use common::mm_error::prelude::MapToMmResult;
-use common::{mm_ctx::MmArc, mm_ctx::MmWeak, mm_error::MmError, mm_number::MmNumber, now_ms};
+use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
 use derive_more::Display;
 use futures::{FutureExt, TryFutureExt};
 use futures01::{future::result, Future};
-use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::{self as json, Value as Json};
 use solana_client::{client_error::{ClientError, ClientErrorKind},
@@ -188,7 +187,6 @@ pub async fn solana_coin_from_conf_and_params(
         my_address,
         key_pair,
         ticker: ticker.to_string(),
-        _ctx: ctx.weak(),
         required_confirmations: 1.into(),
         client,
         decimals,
@@ -203,7 +201,6 @@ pub struct SolanaCoinImpl {
     client: RpcClient,
     decimals: u8,
     required_confirmations: AtomicU64,
-    _ctx: MmWeak,
     my_address: String,
 }
 
@@ -245,7 +242,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
     let (sol_required, hash) = coin.check_amount_too_low().await?;
     let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
-    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send).unwrap(), hash);
+    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send)?, hash);
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
@@ -283,7 +280,7 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 }
 
 impl SolanaCoin {
-    fn my_balance_impl(&self, force_base_coin: bool) -> BalanceFut<BigDecimal> {
+    fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
         let coin = self.clone();
         let base_coin_balance_functor = |coin: SolanaCoin| {
             let res = coin.rpc().get_balance(&coin.key_pair.pubkey())?;
@@ -294,8 +291,6 @@ impl SolanaCoin {
     }
 }
 
-#[mockable]
-#[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl MarketCoinOps for SolanaCoin {
     fn ticker(&self) -> &str { &self.ticker }
 
@@ -304,7 +299,7 @@ impl MarketCoinOps for SolanaCoin {
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
         // bigdecimal-0.1.2/src/lib.rs:2396 (precision is decimals - 1)
         let decimals = (self.decimals + 1) as u64;
-        let fut = self.my_balance_impl(false).and_then(move |result| {
+        let fut = self.my_balance_impl().and_then(move |result| {
             Ok(CoinBalance {
                 spendable: result.with_prec(decimals),
                 unspendable: 0.into(),
@@ -318,7 +313,7 @@ impl MarketCoinOps for SolanaCoin {
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
         let decimals = (self.decimals + 1) as u64;
         let fut = self
-            .my_balance_impl(true)
+            .my_balance_impl()
             .and_then(move |result| Ok(result.with_prec(decimals)));
         Box::new(fut)
     }
@@ -369,7 +364,6 @@ impl MarketCoinOps for SolanaCoin {
     fn min_trading_vol(&self) -> MmNumber { MmNumber::from("0.00777") }
 }
 
-#[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl SwapOps for SolanaCoin {
     fn send_taker_fee(&self, _fee_addr: &[u8], amount: BigDecimal, _uuid: &[u8]) -> TransactionFut { unimplemented!() }
@@ -521,7 +515,6 @@ impl SwapOps for SolanaCoin {
     }
 }
 
-#[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl MmCoin for SolanaCoin {
     fn is_asset_chain(&self) -> bool { false }

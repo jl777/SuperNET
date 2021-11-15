@@ -209,7 +209,6 @@ pub enum Type {
     Transfer,
     #[serde(rename = "transferChecked")]
     TransferChecked,
-
     Unknown,
 }
 

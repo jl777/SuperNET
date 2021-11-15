@@ -11,7 +11,6 @@ use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
 use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
-use mocktopus::macros::*;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
 use solana_client::{rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
@@ -67,7 +66,7 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
         let instruction_creation = create_associated_token_account(&auth_key, &dest_token_address, &contract_key);
         instructions.push(instruction_creation);
     }
-    let amount = ui_amount_to_amount(req.amount, coin.conf.decimals).unwrap();
+    let amount = ui_amount_to_amount(req.amount, coin.conf.decimals)?;
     let instruction_transfer_checked = spl_token::instruction::transfer_checked(
         &spl_token::id(),
         &funding_address,
@@ -172,15 +171,12 @@ impl SplToken {
     }
 }
 
-#[mockable]
-#[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl MarketCoinOps for SplToken {
-    fn ticker(&self) -> &str { &self.conf.ticker.as_str() }
+    fn ticker(&self) -> &str { &self.conf.ticker }
 
     fn my_address(&self) -> Result<String, String> { Ok(self.platform_coin.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
-        let decimals = (self.decimals() + 1) as u64;
         let fut = self.my_balance_impl().and_then(move |result| {
             Ok(CoinBalance {
                 spendable: result,
@@ -230,7 +226,6 @@ impl MarketCoinOps for SplToken {
     fn min_trading_vol(&self) -> MmNumber { MmNumber::from("0.00777") }
 }
 
-#[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl SwapOps for SplToken {
     fn send_taker_fee(&self, _fee_addr: &[u8], amount: BigDecimal, _uuid: &[u8]) -> TransactionFut { unimplemented!() }
@@ -382,7 +377,6 @@ impl SwapOps for SplToken {
     }
 }
 
-#[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
 impl MmCoin for SplToken {
     fn is_asset_chain(&self) -> bool { false }

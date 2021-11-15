@@ -1,5 +1,5 @@
 use crate::solana::{SolanaAsyncCommonOps, SolanaCommonOps};
-use crate::{MarketCoinOps, WithdrawError, WithdrawRequest};
+use crate::{MarketCoinOps, NumConversError, WithdrawError, WithdrawRequest};
 use bigdecimal::ToPrimitive;
 use common::mm_error::MmError;
 use common::mm_number::BigDecimal;
@@ -9,10 +9,20 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 
 pub fn lamports_to_sol(lamports: u64) -> BigDecimal { BigDecimal::from(lamports) / BigDecimal::from(LAMPORTS_PER_SOL) }
 
-pub fn sol_to_lamports(sol: &BigDecimal) -> Option<u64> { (sol * BigDecimal::from(LAMPORTS_PER_SOL)).to_u64() }
+pub fn sol_to_lamports(sol: &BigDecimal) -> Result<u64, MmError<NumConversError>> {
+    let maybe_lamports = (sol * BigDecimal::from(LAMPORTS_PER_SOL)).to_u64();
+    match maybe_lamports {
+        None => MmError::err(NumConversError("Error when converting sol to lamports".to_string())),
+        Some(lamports) => Ok(lamports),
+    }
+}
 
-pub fn ui_amount_to_amount(ui_amount: BigDecimal, decimals: u8) -> Option<u64> {
-    (ui_amount * BigDecimal::from(10_u64.pow(decimals as u32))).to_u64()
+pub fn ui_amount_to_amount(ui_amount: BigDecimal, decimals: u8) -> Result<u64, MmError<NumConversError>> {
+    let maybe_amount = (ui_amount * BigDecimal::from(10_u64.pow(decimals as u32))).to_u64();
+    match maybe_amount {
+        None => MmError::err(NumConversError("Error when converting ui amount to amount".to_string())),
+        Some(amount) => Ok(amount),
+    }
 }
 
 pub fn amount_to_ui_amount(amount: u64, decimals: u8) -> BigDecimal {
