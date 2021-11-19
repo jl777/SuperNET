@@ -29,8 +29,8 @@ use common::{block_on, double_panic_crash};
 
 use gstuff::slurp;
 
-use lazy_static::lazy_static;
-use regex::Regex;
+#[cfg(not(test))] use lazy_static::lazy_static;
+#[cfg(not(test))] use regex::Regex;
 
 use serde::ser::Serialize;
 use serde_json::{self as json, Value as Json};
@@ -80,8 +80,9 @@ impl LpMainParams {
 }
 
 #[cfg(test)]
-pub fn password_policy(password: &str) -> (bool, &str) { (true, "") }
+pub fn password_policy(_password: &str) -> (bool, &str) { (true, "") }
 
+#[cfg(not(test))]
 pub fn password_policy(password: &str) -> (bool, &str) {
     lazy_static! {
         static ref REGEX_NUMBER: Regex = Regex::new(".*[0-9].*").unwrap();
