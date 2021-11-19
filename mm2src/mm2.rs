@@ -29,6 +29,9 @@ use common::{block_on, double_panic_crash};
 
 use gstuff::slurp;
 
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use serde::ser::Serialize;
 use serde_json::{self as json, Value as Json};
 
@@ -76,6 +79,37 @@ impl LpMainParams {
     }
 }
 
+#[cfg(test)]
+pub fn password_policy(password: &str) -> (bool, &str) { (true, "") }
+
+pub fn password_policy(password: &str) -> (bool, &str) {
+    lazy_static! {
+        static ref REGEX_NUMBER: Regex = Regex::new(".*[0-9].*").unwrap();
+        static ref REGEX_LOWERCASE: Regex = Regex::new(".*[a-z].*").unwrap();
+        static ref REGEX_UPPERCASE: Regex = Regex::new(".*[A-Z].*").unwrap();
+        static ref REGEX_SPECIFIC_CHARS: Regex = Regex::new(".*[*.!@#$%^&(){}:;'<>,.?/~`_+-=|].*").unwrap();
+    }
+    if password.contains("password") {
+        return (false, "contains the word password");
+    }
+    if password.len() < 8 || password.len() > 32 {
+        return (false, "password length should be between 8 and 32");
+    }
+    if !REGEX_NUMBER.is_match(password) {
+        return (false, "password should contains at least 1 digit");
+    }
+    if !REGEX_LOWERCASE.is_match(password) {
+        return (false, "password should contains at least 1 lowercase character");
+    }
+    if !REGEX_UPPERCASE.is_match(password) {
+        return (false, "password should contains at least 1 uppercase character");
+    }
+    if !REGEX_SPECIFIC_CHARS.is_match(password) {
+        return (false, "password should contains at least 1 specific character");
+    }
+    (true, "")
+}
+
 /// * `ctx_cb` - callback used to share the `MmCtx` ID with the call site.
 pub async fn lp_main(params: LpMainParams, ctx_cb: &dyn Fn(u32)) -> Result<(), String> {
     if let Err(e) = init_logger(params.filter) {
@@ -88,8 +122,15 @@ pub async fn lp_main(params: LpMainParams, ctx_cb: &dyn Fn(u32)) -> Result<(), S
             return ERR!("rpc_password must be string");
         }
 
+        let is_weak_password_accepted = conf["allow_weak_password"].as_bool() == Some(true);
+
         if conf["rpc_password"].as_str() == Some("") {
             return ERR!("rpc_password must not be empty");
+        }
+
+        let (valid, reason) = password_policy(conf["rpc_password"].as_str().unwrap());
+        if !is_weak_password_accepted && !valid {
+            return Err(format!("rpc_password doesn't respect password policy: {}", reason));
         }
     }
 
