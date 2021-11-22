@@ -27,10 +27,10 @@ use common::log::LogLevel;
 use common::mm_ctx::MmCtxBuilder;
 use common::{block_on, double_panic_crash};
 
+use derive_more::Display;
 use gstuff::slurp;
-
-#[cfg(not(test))] use lazy_static::lazy_static;
-#[cfg(not(test))] use regex::Regex;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 use serde::ser::Serialize;
 use serde_json::{self as json, Value as Json};
@@ -44,6 +44,7 @@ use std::str;
 #[path = "lp_native_dex.rs"] mod lp_native_dex;
 use self::lp_native_dex::lp_init;
 use coins::update_coins_config;
+use common::mm_error::MmError;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "database.rs"]
@@ -80,39 +81,107 @@ impl LpMainParams {
     }
 }
 
-#[cfg(test)]
-pub fn password_policy(_password: &str) -> (bool, &str) { (true, "") }
+#[derive(Debug, Display, PartialEq)]
+pub enum PasswordPolicyError {
+    #[display(fmt = "Password can't contain the word password")]
+    ContainsTheWordPassword,
+    #[display(fmt = "Password length should be between 8 and 32")]
+    PasswordLength,
+    #[display(fmt = "Password should contain at least 1 digit")]
+    PasswordMissDigit,
+    #[display(fmt = "Password should contain at least 1 lowercase character")]
+    PasswordMissLowercase,
+    #[display(fmt = "Password should contain at least 1 uppercase character")]
+    PasswordMissUppercase,
+    #[display(fmt = "Password should contain at least 1 special character")]
+    PasswordMissSpecialCharacter,
+    #[display(fmt = "Password can't contain the same character 3 times in a row")]
+    PasswordConsecutiveCharactersExceeded,
+}
 
-#[cfg(not(test))]
-pub fn password_policy(password: &str) -> (bool, &str) {
+pub fn password_policy(password: &str) -> Result<(), MmError<PasswordPolicyError>> {
     lazy_static! {
         static ref REGEX_NUMBER: Regex = Regex::new(".*[0-9].*").unwrap();
         static ref REGEX_LOWERCASE: Regex = Regex::new(".*[a-z].*").unwrap();
         static ref REGEX_UPPERCASE: Regex = Regex::new(".*[A-Z].*").unwrap();
-        static ref REGEX_SPECIFIC_CHARS: Regex = Regex::new(".*[*.!@#$%^&(){}:;'<>,.?/~`_+-=|].*").unwrap();
+        static ref REGEX_SPECIFIC_CHARS: Regex = Regex::new(".*[*.!@#$%^&(){}:;'<>,.?/~`_+\\-=|].*").unwrap();
     }
     if password.to_lowercase().contains("password") {
-        return (false, "contains the word password");
+        return MmError::err(PasswordPolicyError::ContainsTheWordPassword);
     }
     if password.len() < 8 || password.len() > 32 {
-        return (false, "password length should be between 8 and 32");
+        return MmError::err(PasswordPolicyError::PasswordLength);
     }
     if !REGEX_NUMBER.is_match(password) {
-        return (false, "password should contains at least 1 digit");
+        return MmError::err(PasswordPolicyError::PasswordMissDigit);
     }
     if !REGEX_LOWERCASE.is_match(password) {
-        return (false, "password should contains at least 1 lowercase character");
+        return MmError::err(PasswordPolicyError::PasswordMissLowercase);
     }
     if !REGEX_UPPERCASE.is_match(password) {
-        return (false, "password should contains at least 1 uppercase character");
+        return MmError::err(PasswordPolicyError::PasswordMissUppercase);
     }
     if !REGEX_SPECIFIC_CHARS.is_match(password) {
-        return (false, "password should contains at least 1 specific character");
+        return MmError::err(PasswordPolicyError::PasswordMissSpecialCharacter);
     }
     if !common::is_acceptable_input_on_repeated_characters(password, PASSWORD_MAXIMUM_CONSECUTIVE_CHARACTERS) {
-        return (false, "password can't contains 3 times the same number of characters");
+        return MmError::err(PasswordPolicyError::PasswordConsecutiveCharactersExceeded);
     }
-    (true, "")
+    Ok(())
+}
+
+#[test]
+fn check_password_policy() {
+    // Length
+    assert_eq!(
+        password_policy("123").unwrap_err().into_inner(),
+        PasswordPolicyError::PasswordLength
+    );
+
+    // Miss special character
+    assert_eq!(
+        password_policy("pass123worD").unwrap_err().into_inner(),
+        PasswordPolicyError::PasswordMissSpecialCharacter
+    );
+
+    // Miss digit
+    assert_eq!(
+        password_policy("SecretPassSoStrong$*").unwrap_err().into_inner(),
+        PasswordPolicyError::PasswordMissDigit
+    );
+
+    // Miss lowercase
+    assert_eq!(
+        password_policy("SECRETPASS-SOSTRONG123*").unwrap_err().into_inner(),
+        PasswordPolicyError::PasswordMissLowercase
+    );
+
+    // Miss uppercase
+    assert_eq!(
+        password_policy("secretpass-sostrong123*").unwrap_err().into_inner(),
+        PasswordPolicyError::PasswordMissUppercase
+    );
+
+    // Miss uppercase
+    assert_eq!(
+        password_policy("SecretPassSoStrong123*aaa").unwrap_err().into_inner(),
+        PasswordPolicyError::PasswordConsecutiveCharactersExceeded
+    );
+
+    // Contains Password uppercase
+    assert_eq!(
+        password_policy("Password123*$").unwrap_err().into_inner(),
+        PasswordPolicyError::ContainsTheWordPassword
+    );
+
+    // Contains Password lowercase
+    assert_eq!(
+        password_policy("Foopassword123*$").unwrap_err().into_inner(),
+        PasswordPolicyError::ContainsTheWordPassword
+    );
+
+    // Valid password
+    assert_eq!(password_policy("StrongPass123*").is_err(), false);
 }
 
 /// * `ctx_cb` - callback used to share the `MmCtx` ID with the call site.
@@ -133,9 +202,11 @@ pub async fn lp_main(params: LpMainParams, ctx_cb: &dyn Fn(u32)) -> Result<(), S
             return ERR!("rpc_password must not be empty");
         }
 
-        let (valid, reason) = password_policy(conf["rpc_password"].as_str().unwrap());
-        if !is_weak_password_accepted && !valid {
-            return Err(format!("rpc_password doesn't respect password policy: {}", reason));
+        if !is_weak_password_accepted && cfg!(not(test)) {
+            match password_policy(conf["rpc_password"].as_str().unwrap()) {
+                Ok(_) => {},
+                Err(err) => return Err(format!("{}", err)),
+            }
         }
     }
 
