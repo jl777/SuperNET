@@ -63,6 +63,7 @@ pub mod mm2_tests;
 const DEFAULT_LOG_FILTER: LogLevel = LogLevel::Info;
 pub const MM_DATETIME: &str = env!("MM_DATETIME");
 pub const MM_VERSION: &str = env!("MM_VERSION");
+pub const PASSWORD_MAXIMUM_CONSECUTIVE_CHARACTERS: usize = 3;
 
 pub struct LpMainParams {
     conf: Json,
@@ -90,7 +91,7 @@ pub fn password_policy(password: &str) -> (bool, &str) {
         static ref REGEX_UPPERCASE: Regex = Regex::new(".*[A-Z].*").unwrap();
         static ref REGEX_SPECIFIC_CHARS: Regex = Regex::new(".*[*.!@#$%^&(){}:;'<>,.?/~`_+-=|].*").unwrap();
     }
-    if password.contains("password") {
+    if password.to_lowercase().contains("password") {
         return (false, "contains the word password");
     }
     if password.len() < 8 || password.len() > 32 {
@@ -107,6 +108,9 @@ pub fn password_policy(password: &str) -> (bool, &str) {
     }
     if !REGEX_SPECIFIC_CHARS.is_match(password) {
         return (false, "password should contains at least 1 specific character");
+    }
+    if !common::is_acceptable_input_on_repeated_characters(password, PASSWORD_MAXIMUM_CONSECUTIVE_CHARACTERS) {
+        return (false, "password can't contains 3 times the same number of characters");
     }
     (true, "")
 }
