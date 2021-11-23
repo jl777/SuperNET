@@ -1,8 +1,8 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports};
-use crate::{BalanceError, BalanceFut, CoinBalancesWithTokens, FeeApproxStage, FoundSwapTxSpend,
-            NegotiateSwapContractAddrErr, TradePreimageFut, TradePreimageValue, TransactionDetails, TransactionType,
-            ValidateAddressResult, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
+use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
+            TradePreimageFut, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
+            WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
 use base58::ToBase58;
 use bigdecimal::BigDecimal;
@@ -307,8 +307,6 @@ impl MarketCoinOps for SolanaCoin {
         });
         Box::new(fut)
     }
-
-    fn get_balances_with_tokens(&self) -> BalanceFut<CoinBalancesWithTokens> { unimplemented!() }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
         let decimals = (self.decimals + 1) as u64;

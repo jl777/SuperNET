@@ -1,9 +1,9 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::solana::solana_common::ui_amount_to_amount;
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
-use crate::{BalanceError, BalanceFut, CoinBalancesWithTokens, FeeApproxStage, FoundSwapTxSpend,
-            NegotiateSwapContractAddrErr, SolanaCoin, TradePreimageFut, TradePreimageValue, TransactionDetails,
-            TransactionType, ValidateAddressResult, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
+use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
+            TradePreimageFut, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
+            WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bincode::serialize;
@@ -185,8 +185,6 @@ impl MarketCoinOps for SplToken {
         });
         Box::new(fut)
     }
-
-    fn get_balances_with_tokens(&self) -> BalanceFut<CoinBalancesWithTokens> { unimplemented!() }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> { self.platform_coin.base_coin_balance() }
 
