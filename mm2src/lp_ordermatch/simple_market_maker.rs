@@ -1,4 +1,4 @@
-use crate::mm2::lp_dispatcher::DispatcherContext;
+use crate::mm2::lp_dispatcher::{dispatch_lp_event, DispatcherContext};
 use crate::mm2::lp_ordermatch::lp_bot::{RunningState, StoppedState, StoppingState, TradingBotStarted,
                                         TradingBotStopped, TradingBotStopping, VolumeSettings};
 use crate::mm2::lp_ordermatch::{cancel_all_orders, CancelBy, TradingBotEvent};
@@ -276,10 +276,8 @@ pub async fn tear_down_bot(ctx: MmArc) {
     let mut state = simple_market_maker_bot_ctx.trading_bot_states.lock().await;
     if let TradingBotState::Stopped(ref mut stopped_state) = *state {
         let nb_orders = cancel_pending_orders(&ctx, &stopped_state.trading_bot_cfg.clone()).await;
-        let dispatcher_ctx = DispatcherContext::from_ctx(&ctx).unwrap();
-        let dispatcher = dispatcher_ctx.dispatcher.lock().await;
         let event: TradingBotEvent = TradingBotStopped { nb_orders }.into();
-        dispatcher.dispatch_async(ctx.clone(), event.into()).await;
+        dispatch_lp_event(ctx.clone(), event.into()).await;
         stopped_state.trading_bot_cfg.clear();
     }
 }
@@ -797,7 +795,7 @@ pub async fn start_simple_market_maker_bot(ctx: MmArc, req: StartSimpleMakerBotR
         TradingBotState::Stopping(_) => MmError::err(StartSimpleMakerBotError::CannotStartFromStopping),
         TradingBotState::Stopped(_) => {
             let dispatcher_ctx = DispatcherContext::from_ctx(&ctx).unwrap();
-            let mut dispatcher = dispatcher_ctx.dispatcher.lock().await;
+            let mut dispatcher = dispatcher_ctx.dispatcher.write().await;
             dispatcher.add_listener(simple_market_maker_bot_ctx.clone());
             let mut refresh_rate = req.bot_refresh_rate.unwrap_or(BOT_DEFAULT_REFRESH_RATE);
             if refresh_rate < BOT_DEFAULT_REFRESH_RATE {
@@ -828,8 +826,6 @@ pub async fn stop_simple_market_maker_bot(ctx: MmArc, _req: Json) -> StopSimpleM
         TradingBotState::Stopped(_) => MmError::err(StopSimpleMakerBotError::AlreadyStopped),
         TradingBotState::Stopping(_) => MmError::err(StopSimpleMakerBotError::AlreadyStopping),
         TradingBotState::Running(running_state) => {
-            let dispatcher_ctx = DispatcherContext::from_ctx(&ctx).unwrap();
-            let dispatcher = dispatcher_ctx.dispatcher.lock().await;
             let event: TradingBotEvent = TradingBotStopping {
                 bot_refresh_rate: running_state.bot_refresh_rate,
             }
@@ -839,7 +835,7 @@ pub async fn stop_simple_market_maker_bot(ctx: MmArc, _req: Json) -> StopSimpleM
             }
             .into();
             drop(state);
-            dispatcher.dispatch_async(ctx.clone(), event.into()).await;
+            dispatch_lp_event(ctx.clone(), event.into()).await;
             Ok(StopSimpleMakerBotRes {
                 result: "Success".to_string(),
             })
