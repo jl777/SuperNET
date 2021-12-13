@@ -6726,6 +6726,33 @@ fn test_update_maker_order_fail() {
         update_maker_order.1
     );
 
+    log!("Issue bob batch of 2 update maker order requests that should make the second request fail because the order state changed due to the first request");
+    let batch_json = json!([
+        {
+            "userpass": mm_bob.userpass,
+            "method": "update_maker_order",
+            "uuid": uuid,
+            "new_price": 3,
+            "volume_delta": 1,
+        },
+        {
+            "userpass": mm_bob.userpass,
+            "method": "update_maker_order",
+            "uuid": uuid,
+            "new_price": 2,
+            "volume_delta": 1,
+        },
+    ]);
+
+    let rc = block_on(mm_bob.rpc(batch_json)).unwrap();
+    assert!(rc.0.is_success(), "!batch: {}", rc.1);
+    log!((rc.1));
+    let responses = json::from_str::<Vec<Json>>(&rc.1).unwrap();
+    assert!(responses[1]["error"]
+        .as_str()
+        .unwrap()
+        .contains("Order state has changed after price/volume/balance checks. Please try to update the order again if it's still needed."));
+
     log!("Issue bob batch update maker order and cancel order request that should make update maker order fail because Order with UUID has been deleted");
     let batch_json = json!([
         {
@@ -6747,9 +6774,13 @@ fn test_update_maker_order_fail() {
     log!((rc.1));
     let responses = json::from_str::<Vec<Json>>(&rc.1).unwrap();
     if responses[1]["result"] == *"success" {
-        assert_eq!(responses[0].get("result"), None);
+        assert!(responses[0]["error"]
+            .as_str()
+            .unwrap()
+            .contains(&format!("Order with UUID: {} has been deleted", uuid)));
     }
 }
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn test_update_maker_order_after_matched() {
