@@ -258,7 +258,12 @@ impl BchCoin {
         Vec<UnspentInfo>,
         AsyncMutexGuard<'_, RecentlySpentOutPoints>,
     )> {
-        let (mut bch_unspents, recently_spent) = self.bch_unspents_for_spend(&self.as_ref().my_address).await?;
+        let my_address = self
+            .as_ref()
+            .derivation_method
+            .iguana_or_err()
+            .mm_err(|e| UtxoRpcError::Internal(e.to_string()))?;
+        let (mut bch_unspents, recently_spent) = self.bch_unspents_for_spend(my_address).await?;
         let (mut slp_unspents, standard_utxos) = (
             bch_unspents.slp.remove(token_id).unwrap_or_default(),
             bch_unspents.standard,
@@ -272,7 +277,12 @@ impl BchCoin {
         &self,
         token_id: &H256,
     ) -> UtxoRpcResult<(Vec<SlpUnspent>, Vec<UnspentInfo>)> {
-        let mut bch_unspents = self.bch_unspents_for_display(&self.as_ref().my_address).await?;
+        let my_address = self
+            .as_ref()
+            .derivation_method
+            .iguana_or_err()
+            .mm_err(|e| UtxoRpcError::Internal(e.to_string()))?;
+        let mut bch_unspents = self.bch_unspents_for_display(my_address).await?;
         let (mut slp_unspents, standard_utxos) = (
             bch_unspents.slp.remove(token_id).unwrap_or_default(),
             bch_unspents.standard,
@@ -291,7 +301,8 @@ impl BchCoin {
     }
 
     pub fn get_my_slp_address(&self) -> Result<CashAddress, String> {
-        let slp_address = self.as_ref().my_address.to_cashaddress(
+        let my_address = try_s!(self.as_ref().derivation_method.iguana_or_err());
+        let slp_address = my_address.to_cashaddress(
             &self.slp_prefix().to_string(),
             self.as_ref().conf.pub_addr_prefix,
             self.as_ref().conf.p2sh_addr_prefix,
@@ -326,8 +337,10 @@ pub async fn bch_coin_from_conf_and_params(
             slp_tokens_infos: slp_tokens_infos.clone(),
         }
     };
+    let priv_key_policy = PrivKeyBuildPolicy::PrivKey(priv_key);
     let coin: BchCoin = try_s!(
-        utxo_common::utxo_arc_from_conf_and_params(ctx, ticker, conf, params.utxo_params, priv_key, constructor).await
+        utxo_common::utxo_arc_from_conf_and_params(ctx, ticker, conf, params.utxo_params, priv_key_policy, constructor)
+            .await
     );
     Ok(coin)
 }
@@ -398,10 +411,12 @@ impl UtxoCommonOps for BchCoin {
 
     fn denominate_satoshis(&self, satoshi: i64) -> f64 { utxo_common::denominate_satoshis(&self.utxo_arc, satoshi) }
 
-    fn my_public_key(&self) -> &Public { self.utxo_arc.key_pair.public() }
+    fn my_public_key(&self) -> Result<&Public, MmError<DerivationMethodNotSupported>> {
+        utxo_common::my_public_key(self.as_ref())
+    }
 
     fn address_from_str(&self, address: &str) -> Result<Address, String> {
-        utxo_common::checked_address_from_str(&self.utxo_arc, address)
+        utxo_common::checked_address_from_str(self, address)
     }
 
     async fn get_current_mtp(&self) -> UtxoRpcResult<u32> {
@@ -488,8 +503,23 @@ impl UtxoCommonOps for BchCoin {
         utxo_common::p2sh_tx_locktime(self, &self.utxo_arc.conf.ticker, htlc_locktime).await
     }
 
+    fn addr_format(&self) -> &UtxoAddressFormat { utxo_common::addr_format(self) }
+
     fn addr_format_for_standard_scripts(&self) -> UtxoAddressFormat {
         utxo_common::addr_format_for_standard_scripts(self)
+    }
+
+    fn address_from_pubkey(&self, pubkey: &Public) -> Address {
+        let conf = &self.utxo_arc.conf;
+        let addr_format = self.addr_format().clone();
+        utxo_common::address_from_pubkey(
+            pubkey,
+            conf.pub_addr_prefix,
+            conf.pub_t_addr_prefix,
+            conf.checksum_type,
+            conf.bech32_hrp.clone(),
+            addr_format,
+        )
     }
 }
 
@@ -696,7 +726,8 @@ impl MarketCoinOps for BchCoin {
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
         let coin = self.clone();
         let fut = async move {
-            let bch_unspents = coin.bch_unspents_for_display(&coin.as_ref().my_address).await?;
+            let my_address = coin.as_ref().derivation_method.iguana_or_err()?;
+            let bch_unspents = coin.bch_unspents_for_display(my_address).await?;
             Ok(bch_unspents.platform_balance(coin.as_ref().decimals))
         };
         Box::new(fut.boxed().compat())
@@ -750,7 +781,7 @@ impl MarketCoinOps for BchCoin {
         utxo_common::current_block(&self.utxo_arc)
     }
 
-    fn display_priv_key(&self) -> String { utxo_common::display_priv_key(&self.utxo_arc) }
+    fn display_priv_key(&self) -> Result<String, String> { utxo_common::display_priv_key(&self.utxo_arc) }
 
     fn min_tx_amount(&self) -> BigDecimal { utxo_common::min_tx_amount(self.as_ref()) }
 
@@ -842,10 +873,10 @@ impl MmCoin for BchCoin {
 
     fn mature_confirmations(&self) -> Option<u32> { Some(self.utxo_arc.conf.mature_confirmations) }
 
-    fn coin_protocol_info(&self) -> Vec<u8> { utxo_common::coin_protocol_info(&self.utxo_arc) }
+    fn coin_protocol_info(&self) -> Vec<u8> { utxo_common::coin_protocol_info(self) }
 
     fn is_coin_protocol_supported(&self, info: &Option<Vec<u8>>) -> bool {
-        utxo_common::is_coin_protocol_supported(&self.utxo_arc, info)
+        utxo_common::is_coin_protocol_supported(self, info)
     }
 }
 
