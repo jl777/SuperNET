@@ -2700,7 +2700,7 @@ fn test_generate_tx_doge_fee() {
         .add_available_inputs(unspents)
         .add_outputs(outputs);
     let (_, data) = block_on(builder.build()).unwrap();
-    let expected_fee = 100000000;
+    let expected_fee = 1000000;
     assert_eq!(expected_fee, data.fee_amount);
 
     let unspents = vec![UnspentInfo {
@@ -2721,7 +2721,7 @@ fn test_generate_tx_doge_fee() {
         .add_available_inputs(unspents)
         .add_outputs(outputs);
     let (_, data) = block_on(builder.build()).unwrap();
-    let expected_fee = 200000000;
+    let expected_fee = 2000000;
     assert_eq!(expected_fee, data.fee_amount);
 
     let unspents = vec![UnspentInfo {
@@ -2742,7 +2742,7 @@ fn test_generate_tx_doge_fee() {
         .add_available_inputs(unspents)
         .add_outputs(outputs);
     let (_, data) = block_on(builder.build()).unwrap();
-    let expected_fee = 300000000;
+    let expected_fee = 3000000;
     assert_eq!(expected_fee, data.fee_amount);
 }
 

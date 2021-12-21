@@ -1582,7 +1582,7 @@ pub trait UtxoCoinBuilder {
         Ok(self.conf()["decimals"].as_u64().unwrap_or(8) as u8)
     }
 
-    async fn tx_fee(&self, rpc_client: &UtxoRpcClientEnum) -> Result<TxFee, String> {
+    async fn tx_fee(&self, rpc_client: &UtxoRpcClientEnum) -> Result<TxFee, MmError<UtxoCoinBuildError>> {
         let tx_fee = match self.conf()["txfee"].as_u64() {
             None => TxFee::FixedPerKb(1000),
             Some(0) => {

@@ -431,7 +431,6 @@ impl<'a, T: AsRef<UtxoCoinFields> + UtxoTxGenerationOps> UtxoTxBuilder<'a, T> {
         actual_tx_fee: &ActualTxFee,
     ) -> bool {
         self.tx_fee = match &actual_tx_fee {
-            ActualTxFee::Fixed(f) => *f,
             ActualTxFee::Dynamic(f) => {
                 let transaction = UtxoTx::from(self.tx.clone());
                 let v_size = tx_size_in_v_bytes(from_addr_format, &transaction);
