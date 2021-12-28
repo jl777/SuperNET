@@ -1,10 +1,16 @@
 use crate::prelude::*;
 use async_trait::async_trait;
+use coins::my_tx_history_v2::TxHistoryStorage;
+#[cfg(not(target_arch = "wasm32"))]
+use coins::sql_tx_history_storage::SqliteTxHistoryStorage;
 use coins::{lp_coinfind, CoinProtocol, CoinsContext, MmCoinEnum};
 use common::mm_ctx::MmArc;
 use common::mm_error::prelude::*;
+use common::mm_metrics::MetricsArc;
+use common::mm_number::BigDecimal;
 use common::{HttpStatusCode, NotSame, StatusCode};
 use derive_more::Display;
+use futures::future::AbortHandle;
 use ser_error_derive::SerializeErrorType;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value as Json;
@@ -125,11 +131,15 @@ where
     }
 }
 
+pub trait GetPlatformBalance {
+    fn get_platform_balance(&self) -> BigDecimal;
+}
+
 #[async_trait]
 pub trait PlatformWithTokensActivationOps: Into<MmCoinEnum> {
-    type ActivationRequest: Clone + Send + Sync;
+    type ActivationRequest: Clone + Send + Sync + TxHistoryEnabled;
     type PlatformProtocolInfo: TryFromCoinProtocol;
-    type ActivationResult;
+    type ActivationResult: GetPlatformBalance;
     type ActivationError: NotMmError;
 
     /// Initializes the platform coin itself
@@ -147,6 +157,13 @@ pub trait PlatformWithTokensActivationOps: Into<MmCoinEnum> {
     ) -> Vec<Box<dyn TokenAsMmCoinInitializer<PlatformCoin = Self, ActivationRequest = Self::ActivationRequest>>>;
 
     async fn get_activation_result(&self) -> Result<Self::ActivationResult, MmError<Self::ActivationError>>;
+
+    fn start_history_background_fetching(
+        &self,
+        metrics: MetricsArc,
+        storage: impl TxHistoryStorage + Send + 'static,
+        initial_balance: BigDecimal,
+    ) -> AbortHandle;
 }
 
 #[derive(Debug, Deserialize)]
@@ -286,6 +303,17 @@ where
     }
 
     let activation_result = platform_coin.get_activation_result().await?;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    if req.request.tx_history_enabled() {
+        let abort_handler = platform_coin.start_history_background_fetching(
+            ctx.metrics.clone(),
+            SqliteTxHistoryStorage(ctx.sqlite_connection.as_option().unwrap().clone()),
+            activation_result.get_platform_balance(),
+        );
+        ctx.abort_handlers.lock().unwrap().push(abort_handler);
+    }
+
     let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
     coins_ctx
         .add_platform_with_tokens(platform_coin.into(), mm_tokens)

@@ -39,7 +39,7 @@ pub enum Type {
     P2WSH,
 }
 
-#[derive(Clone, Debug, Display, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Display, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(tag = "format")]
 pub enum AddressFormat {
     /// Standard UTXO address format.
@@ -78,7 +78,7 @@ impl AddressFormat {
 
 // TODO add ScriptType field to this struct for easier use of output_script function
 /// `AddressHash` with prefix and t addr zcash prefix
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Address {
     /// The prefix of the address.
     pub prefix: u8,
@@ -188,7 +188,17 @@ impl fmt::Display for Address {
                     .to_string()
                     .fmt(f)
             },
-            _ => self.layout().to_base58().fmt(f),
+            AddressFormat::CashAddress {
+                network,
+                pub_addr_prefix,
+                p2sh_addr_prefix,
+            } => {
+                let cash_address = self
+                    .to_cashaddress(network, *pub_addr_prefix, *p2sh_addr_prefix)
+                    .expect("A valid address");
+                cash_address.encode().expect("A valid address").fmt(f)
+            },
+            AddressFormat::Standard => self.layout().to_base58().fmt(f),
         }
     }
 }

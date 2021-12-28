@@ -18,6 +18,7 @@
 //
 //  Copyright © 2017-2019 SuperNET. All rights reserved.
 //
+use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bitcrypto::sha256;
 use common::custom_futures::TimedAsyncMutex;
@@ -659,6 +660,7 @@ impl Deref for EthCoin {
     fn deref(&self) -> &EthCoinImpl { &*self.0 }
 }
 
+#[async_trait]
 impl SwapOps for EthCoin {
     fn send_taker_fee(&self, fee_addr: &[u8], amount: BigDecimal, _uuid: &[u8]) -> TransactionFut {
         let address = try_fus!(addr_from_raw_pubkey(fee_addr));
@@ -986,7 +988,7 @@ impl SwapOps for EthCoin {
         Box::new(fut.boxed().compat())
     }
 
-    fn search_for_swap_tx_spend_my(
+    async fn search_for_swap_tx_spend_my(
         &self,
         _time_lock: u32,
         _other_pub: &[u8],
@@ -999,7 +1001,7 @@ impl SwapOps for EthCoin {
         self.search_for_swap_tx_spend(tx, swap_contract_address, search_from_block)
     }
 
-    fn search_for_swap_tx_spend_other(
+    async fn search_for_swap_tx_spend_other(
         &self,
         _time_lock: u32,
         _other_pub: &[u8],

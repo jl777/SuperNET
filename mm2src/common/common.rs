@@ -166,8 +166,6 @@ pub mod fs;
 
 cfg_native! {
     pub use gstuff::{now_float, now_ms};
-    pub use rusqlite;
-
     #[cfg(not(windows))]
     use findshlibs::{IterationControl, Segment, SharedLibrary, TargetSharedLibrary};
     use libc::{free, malloc};
@@ -1080,8 +1078,7 @@ pub fn var(name: &str) -> Result<String, String> {
 #[cfg(target_arch = "wasm32")]
 pub fn var(_name: &str) -> Result<String, String> { ERR!("Environment variable not supported in WASM") }
 
-/// TODO make it wasm32 only
-/// #[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn block_on<F>(f: F) -> F::Output
 where
     F: Future03,
@@ -1092,7 +1089,26 @@ where
         log!("block_on at\n"(trace));
     }
 
-    futures::executor::block_on(f)
+    wio::CORE.0.block_on(f)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn block_on<F>(_f: F) -> F::Output
+where
+    F: Future03,
+{
+    panic!("block_on is not supported in WASM!");
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub async fn async_blocking<F, R>(blocking_fn: F) -> R
+where
+    F: FnOnce() -> R + Send + 'static,
+    R: Send + 'static,
+{
+    tokio::task::spawn_blocking(blocking_fn)
+        .await
+        .expect("spawn_blocking to succeed")
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -1366,7 +1382,7 @@ fn test_round_to() {
     assert_eq!(round_to(&BigDecimal::from(-0), 0), "0");
 }
 
-const fn ten() -> usize { 10 }
+pub const fn ten() -> usize { 10 }
 
 fn one() -> NonZeroUsize { NonZeroUsize::new(1).unwrap() }
 
@@ -1665,4 +1681,14 @@ fn test_is_acceptable_input_on_repeated_characters() {
         is_acceptable_input_on_repeated_characters("SuperStrongaaaPassword123*", 3),
         false
     );
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub enum PagingOptionsEnum<Id> {
+    FromId(Id),
+    PageNumber(NonZeroUsize),
+}
+
+impl<Id> Default for PagingOptionsEnum<Id> {
+    fn default() -> Self { PagingOptionsEnum::PageNumber(NonZeroUsize::new(1).expect("1 > 0")) }
 }

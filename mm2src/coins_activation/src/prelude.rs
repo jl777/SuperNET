@@ -5,6 +5,10 @@ use serde_derive::Serialize;
 use serde_json::{self as json, Value as Json};
 use std::collections::HashMap;
 
+pub trait TxHistoryEnabled {
+    fn tx_history_enabled(&self) -> bool;
+}
+
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "data")]
 pub enum DerivationMethod {
@@ -47,7 +51,7 @@ pub fn coin_conf_with_protocol<T: TryFromCoinProtocol>(
     ctx: &MmArc,
     coin: &str,
 ) -> Result<(Json, T), MmError<CoinConfWithProtocolError>> {
-    let conf = coin_conf(&ctx, coin);
+    let conf = coin_conf(ctx, coin);
     if conf.is_null() {
         return MmError::err(CoinConfWithProtocolError::ConfigIsNotFound(coin.into()));
     }

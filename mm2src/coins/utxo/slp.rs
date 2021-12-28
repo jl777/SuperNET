@@ -32,7 +32,7 @@ use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
 use hex::FromHexError;
 use keys::hash::H160;
-use keys::{Address, AddressHashEnum, CashAddrType, CashAddress, NetworkPrefix as CashAddrPrefix, Public};
+use keys::{AddressHashEnum, CashAddrType, CashAddress, NetworkPrefix as CashAddrPrefix, Public};
 use primitives::hash::H256;
 use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
 use script::bytes::Bytes;
@@ -750,16 +750,6 @@ impl SlpToken {
 
     pub fn token_id(&self) -> &H256 { &self.conf.token_id }
 
-    pub fn slp_address(&self, address: &Address) -> Result<CashAddress, String> {
-        let platform_conf = &self.platform_coin.as_ref().conf;
-        let slp_address = try_s!(address.to_cashaddress(
-            &self.slp_prefix().to_string(),
-            platform_conf.pub_addr_prefix,
-            platform_conf.p2sh_addr_prefix
-        ));
-        Ok(slp_address)
-    }
-
     fn platform_conf(&self) -> &UtxoCoinConf { &self.platform_coin.as_ref().conf }
 
     async fn my_balance_sat(&self) -> UtxoRpcResult<u64> {
@@ -787,19 +777,22 @@ impl SlpToken {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub struct SlpGenesisParams {
+    pub(super) token_ticker: String,
+    token_name: String,
+    token_document_url: String,
+    token_document_hash: Vec<u8>,
+    pub(super) decimals: Vec<u8>,
+    pub(super) mint_baton_vout: Option<u8>,
+    pub(super) initial_token_mint_quantity: u64,
+}
+
 /// https://slp.dev/specs/slp-token-type-1/#transaction-detail
 #[derive(Debug, Eq, PartialEq)]
 pub enum SlpTransaction {
     /// https://slp.dev/specs/slp-token-type-1/#genesis-token-genesis-transaction
-    Genesis {
-        token_ticker: String,
-        token_name: String,
-        token_document_url: String,
-        token_document_hash: Vec<u8>,
-        decimals: Vec<u8>,
-        mint_baton_vout: Option<u8>,
-        initial_token_mint_quantity: u64,
-    },
+    Genesis(SlpGenesisParams),
     /// https://slp.dev/specs/slp-token-type-1/#mint-extended-minting-transaction
     Mint {
         token_id: H256,
@@ -808,6 +801,15 @@ pub enum SlpTransaction {
     },
     /// https://slp.dev/specs/slp-token-type-1/#send-spend-transaction
     Send { token_id: H256, amounts: Vec<u64> },
+}
+
+impl SlpTransaction {
+    pub fn token_id(&self) -> Option<H256> {
+        match self {
+            SlpTransaction::Send { token_id, .. } | SlpTransaction::Mint { token_id, .. } => Some(*token_id),
+            SlpTransaction::Genesis(_) => None,
+        }
+    }
 }
 
 impl Deserializable for SlpTransaction {
@@ -852,7 +854,7 @@ impl Deserializable for SlpTransaction {
                 }
                 let initial_token_mint_quantity = u64::from_be_bytes(bytes.try_into().expect("length is 8 bytes"));
 
-                Ok(SlpTransaction::Genesis {
+                Ok(SlpTransaction::Genesis(SlpGenesisParams {
                     token_ticker,
                     token_name,
                     token_document_url,
@@ -860,7 +862,7 @@ impl Deserializable for SlpTransaction {
                     decimals,
                     mint_baton_vout,
                     initial_token_mint_quantity,
-                })
+                }))
             },
             SLP_MINT => {
                 let maybe_id: Vec<u8> = reader.read_list()?;
@@ -1050,8 +1052,8 @@ impl MarketCoinOps for SlpToken {
     fn ticker(&self) -> &str { &self.conf.ticker }
 
     fn my_address(&self) -> Result<String, String> {
-        let my_platform_address = try_s!(self.platform_coin.as_ref().derivation_method.iguana_or_err());
-        let slp_address = try_s!(self.slp_address(my_platform_address));
+        let my_address = try_s!(self.as_ref().derivation_method.iguana_or_err());
+        let slp_address = try_s!(self.platform_coin.slp_address(my_address));
         slp_address.encode()
     }
 
@@ -1121,6 +1123,7 @@ impl MarketCoinOps for SlpToken {
     fn min_trading_vol(&self) -> MmNumber { big_decimal_from_sat_unsigned(1, self.decimals()).into() }
 }
 
+#[async_trait]
 impl SwapOps for SlpToken {
     fn send_taker_fee(&self, fee_addr: &[u8], amount: BigDecimal, _uuid: &[u8]) -> TransactionFut {
         let coin = self.clone();
@@ -1349,7 +1352,7 @@ impl SwapOps for SlpToken {
         utxo_common::check_if_my_payment_sent(self.platform_coin.clone(), time_lock, other_pub, secret_hash)
     }
 
-    fn search_for_swap_tx_spend_my(
+    async fn search_for_swap_tx_spend_my(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -1367,9 +1370,10 @@ impl SwapOps for SlpToken {
             SLP_SWAP_VOUT,
             search_from_block,
         )
+        .await
     }
 
-    fn search_for_swap_tx_spend_other(
+    async fn search_for_swap_tx_spend_other(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -1387,6 +1391,7 @@ impl SwapOps for SlpToken {
             SLP_SWAP_VOUT,
             search_from_block,
         )
+        .await
     }
 
     fn extract_secret(&self, secret_hash: &[u8], spend_tx: &[u8]) -> Result<Vec<u8>, String> {
@@ -1751,7 +1756,7 @@ mod slp_tests {
         let slp_data = parse_slp_script(&script).unwrap();
         assert_eq!(slp_data.lokad_id, "SLP\0");
         let initial_token_mint_quantity = 1000_0000_0000u64;
-        let expected_transaction = SlpTransaction::Genesis {
+        let expected_transaction = SlpTransaction::Genesis(SlpGenesisParams {
             token_ticker: "ADEX".to_string(),
             token_name: "ADEX".to_string(),
             token_document_url: "".to_string(),
@@ -1759,7 +1764,7 @@ mod slp_tests {
             decimals: vec![8],
             mint_baton_vout: None,
             initial_token_mint_quantity,
-        };
+        });
 
         assert_eq!(expected_transaction, slp_data.transaction);
 
@@ -1769,7 +1774,7 @@ mod slp_tests {
         let slp_data = parse_slp_script(&script).unwrap();
         assert_eq!(slp_data.lokad_id, "SLP\0");
         let initial_token_mint_quantity = 10000000000000000u64;
-        let expected_transaction = SlpTransaction::Genesis {
+        let expected_transaction = SlpTransaction::Genesis(SlpGenesisParams {
             token_ticker: "USDT".to_string(),
             token_name: "Tether Ltd. US dollar backed tokens".to_string(),
             token_document_url: "https://tether.to/wp-content/uploads/2016/06/TetherWhitePaper.pdf".to_string(),
@@ -1778,7 +1783,7 @@ mod slp_tests {
             decimals: vec![8],
             mint_baton_vout: Some(2),
             initial_token_mint_quantity,
-        };
+        });
 
         assert_eq!(expected_transaction, slp_data.transaction);
 

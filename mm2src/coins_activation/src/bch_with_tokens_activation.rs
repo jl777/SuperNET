@@ -1,17 +1,22 @@
-use crate::platform_coin_with_tokens::{EnablePlatformCoinWithTokensError, PlatformWithTokensActivationOps,
-                                       RegisterTokenInfo, TokenActivationParams, TokenActivationRequest,
-                                       TokenAsMmCoinInitializer, TokenInitializer, TokenOf};
+use crate::platform_coin_with_tokens::*;
 use crate::prelude::*;
 use crate::slp_token_activation::SlpActivationRequest;
 use async_trait::async_trait;
+use coins::my_tx_history_v2::TxHistoryStorage;
 use coins::utxo::bch::{bch_coin_from_conf_and_params, BchActivationRequest, BchCoin, CashAddrPrefix};
+use coins::utxo::bch_and_slp_tx_history::bch_and_slp_history_loop;
 use coins::utxo::rpc_clients::UtxoRpcError;
 use coins::utxo::slp::{SlpProtocolConf, SlpToken};
 use coins::utxo::UtxoCommonOps;
 use coins::{CoinBalance, CoinProtocol, DerivationMethodNotSupported, MarketCoinOps, MmCoin, PrivKeyNotAllowed};
+use common::executor::spawn;
+use common::log::info;
 use common::mm_ctx::MmArc;
 use common::mm_error::prelude::*;
+use common::mm_metrics::MetricsArc;
+use common::mm_number::BigDecimal;
 use common::Future01CompatExt;
+use futures::future::{abortable, AbortHandle};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use std::collections::HashMap;
@@ -104,6 +109,10 @@ pub struct BchWithTokensActivationRequest {
     slp_tokens_requests: Vec<TokenActivationRequest<SlpActivationRequest>>,
 }
 
+impl TxHistoryEnabled for BchWithTokensActivationRequest {
+    fn tx_history_enabled(&self) -> bool { self.platform_request.utxo_params.tx_history }
+}
+
 pub struct BchProtocolInfo {
     slp_prefix: String,
 }
@@ -125,6 +134,16 @@ pub struct BchWithTokensActivationResult {
     current_block: u64,
     bch_addresses_infos: HashMap<String, CoinAddressInfo<CoinBalance>>,
     slp_addresses_infos: HashMap<String, CoinAddressInfo<TokenBalances>>,
+}
+
+impl GetPlatformBalance for BchWithTokensActivationResult {
+    fn get_platform_balance(&self) -> BigDecimal {
+        self.bch_addresses_infos
+            .iter()
+            .fold(BigDecimal::from(0), |total, (_, addr_info)| {
+                &total + &addr_info.balances.get_total()
+            })
+    }
 }
 
 #[derive(Debug)]
@@ -243,5 +262,26 @@ impl PlatformWithTokensActivationOps for BchCoin {
             balances: token_balances,
         });
         Ok(result)
+    }
+
+    fn start_history_background_fetching(
+        &self,
+        metrics: MetricsArc,
+        storage: impl TxHistoryStorage + Send + 'static,
+        initial_balance: BigDecimal,
+    ) -> AbortHandle {
+        let ticker = self.ticker().to_owned();
+        let (fut, abort_handle) = abortable(bch_and_slp_history_loop(
+            self.clone(),
+            storage,
+            metrics,
+            initial_balance,
+        ));
+        spawn(async move {
+            if let Err(e) = fut.await {
+                info!("bch_and_slp_history_loop stopped for {}, reason {}", ticker, e);
+            }
+        });
+        abort_handle
     }
 }

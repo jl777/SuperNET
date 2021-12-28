@@ -22,10 +22,11 @@
 #![cfg_attr(target_arch = "wasm32", allow(dead_code))]
 #![cfg_attr(target_arch = "wasm32", allow(unused_imports))]
 
+#[cfg(not(target_arch = "wasm32"))] use common::block_on;
 use common::crash_reports::init_crash_reports;
+use common::double_panic_crash;
 use common::log::LogLevel;
 use common::mm_ctx::MmCtxBuilder;
-use common::{block_on, double_panic_crash};
 
 use derive_more::Display;
 use gstuff::slurp;

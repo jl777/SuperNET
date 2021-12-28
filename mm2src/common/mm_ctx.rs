@@ -3,6 +3,7 @@ use crate::executor::Timer;
 use crate::log::{self, LogState};
 use crate::mm_metrics::{MetricsArc, MetricsOps};
 use crate::{bits256, small_rng};
+use futures::future::AbortHandle;
 use gstuff::Constructible;
 use keys::KeyPair;
 use primitives::hash::H160;
@@ -25,7 +26,7 @@ cfg_wasm32! {
 
 cfg_native! {
     use crate::mm_metrics::prometheus;
-    use rusqlite::Connection;
+    use db_common::sqlite::rusqlite::Connection;
     use std::net::{IpAddr, SocketAddr};
     use std::sync::MutexGuard;
 }
@@ -103,9 +104,10 @@ pub struct MmCtx {
     #[cfg(target_arch = "wasm32")]
     pub wasm_rpc: Constructible<WasmRpcSender>,
     #[cfg(not(target_arch = "wasm32"))]
-    pub sqlite_connection: Constructible<Mutex<Connection>>,
+    pub sqlite_connection: Constructible<Arc<Mutex<Connection>>>,
     pub mm_version: String,
     pub mm_init_ctx: Mutex<Option<Arc<dyn Any + 'static + Send + Sync>>>,
+    pub abort_handlers: Mutex<Vec<AbortHandle>>,
     #[cfg(target_arch = "wasm32")]
     pub db_namespace: DbNamespaceId,
 }
@@ -142,6 +144,7 @@ impl MmCtx {
             sqlite_connection: Constructible::default(),
             mm_version: "".into(),
             mm_init_ctx: Mutex::new(None),
+            abort_handlers: Mutex::new(Vec::new()),
             #[cfg(target_arch = "wasm32")]
             db_namespace: DbNamespaceId::Main,
         }
@@ -256,7 +259,7 @@ impl MmCtx {
         let sqlite_file_path = self.dbdir().join("MM2.db");
         log::debug!("Trying to open SQLite database file {}", sqlite_file_path.display());
         let connection = try_s!(Connection::open(sqlite_file_path));
-        try_s!(self.sqlite_connection.pin(Mutex::new(connection)));
+        try_s!(self.sqlite_connection.pin(Arc::new(Mutex::new(connection))));
         Ok(())
     }
 
@@ -295,6 +298,7 @@ pub struct MmArc(pub SharedRc<MmCtx>);
 
 // NB: Explicit `Send` and `Sync` marks here should become unnecessary later,
 // after we finish the initial port and replace the C values with the corresponding Rust alternatives.
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl Send for MmArc {}
 unsafe impl Sync for MmArc {}
 
@@ -312,6 +316,7 @@ impl Deref for MmArc {
 pub struct MmWeak(WeakRc<MmCtx>);
 
 // Same as `MmArc`.
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl Send for MmWeak {}
 unsafe impl Sync for MmWeak {}
 
@@ -363,6 +368,9 @@ impl MmArc {
 
     pub fn stop(&self) -> Result<(), String> {
         try_s!(self.stop.pin(true));
+        for handler in self.abort_handlers.lock().unwrap().drain(..) {
+            handler.abort();
+        }
         let mut stop_listeners = self.stop_listeners.lock().expect("Can't lock stop_listeners");
         // NB: It is important that we `drain` the `stop_listeners` rather than simply iterating over them
         // because otherwise there might be reference counting instances remaining in a listener

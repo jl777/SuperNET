@@ -20,11 +20,12 @@
 //
 
 pub mod bch;
-pub mod bchd_grpc;
-#[allow(clippy::large_enum_variant)]
+pub mod bch_and_slp_tx_history;
+mod bchd_grpc;
+#[allow(clippy::all)]
 #[rustfmt::skip]
 #[path = "utxo/pb.rs"]
-pub mod bchd_pb;
+mod bchd_pb;
 pub mod qtum;
 pub mod rpc_clients;
 pub mod slp;
@@ -632,6 +633,7 @@ impl UtxoCoinFields {
 }
 
 #[derive(Debug, Display)]
+#[allow(clippy::large_enum_variant)]
 pub enum BroadcastTxErr {
     /// RPC client error
     Rpc(UtxoRpcError),
@@ -873,7 +875,7 @@ pub enum RequestTxHistoryResult {
     Ok(Vec<(H256Json, u64)>),
     Retry { error: String },
     HistoryTooLarge,
-    UnknownError(String),
+    CriticalError(String),
 }
 
 pub enum VerboseTransactionFrom {
@@ -910,6 +912,7 @@ pub fn compressed_pub_key_from_priv_raw(raw_priv: &[u8], sum_type: ChecksumType)
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct UtxoFeeDetails {
+    pub coin: Option<String>,
     pub amount: BigDecimal,
 }
 

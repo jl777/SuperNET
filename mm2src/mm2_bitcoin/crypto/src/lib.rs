@@ -20,7 +20,7 @@ use std::hash::Hasher;
 /// GRS uses double groestl512
 /// SMART uses keccak
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ChecksumType {
     DSHA256,
     DGROESTL512,

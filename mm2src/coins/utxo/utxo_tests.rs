@@ -438,17 +438,16 @@ fn test_search_for_swap_tx_spend_electrum_was_spent() {
         .unwrap();
     let spend_tx = TransactionEnum::UtxoTx(deserialize(spend_tx_bytes.as_slice()).unwrap());
 
-    let found = coin
-        .search_for_swap_tx_spend_my(
-            1591928233,
-            &*coin.my_public_key().unwrap(),
-            &*dhash160(&secret),
-            &payment_tx_bytes,
-            0,
-            &None,
-        )
-        .unwrap()
-        .unwrap();
+    let found = block_on(coin.search_for_swap_tx_spend_my(
+        1591928233,
+        &*coin.my_public_key().unwrap(),
+        &*dhash160(&secret),
+        &payment_tx_bytes,
+        0,
+        &None,
+    ))
+    .unwrap()
+    .unwrap();
     assert_eq!(FoundSwapTxSpend::Spent(spend_tx), found);
 }
 
@@ -471,17 +470,16 @@ fn test_search_for_swap_tx_spend_electrum_was_refunded() {
         .unwrap();
     let refund_tx = TransactionEnum::UtxoTx(deserialize(refund_tx_bytes.as_slice()).unwrap());
 
-    let found = coin
-        .search_for_swap_tx_spend_my(
-            1591933469,
-            coin.as_ref().priv_key_policy.key_pair_or_err().unwrap().public(),
-            &secret,
-            &payment_tx_bytes,
-            0,
-            &None,
-        )
-        .unwrap()
-        .unwrap();
+    let found = block_on(coin.search_for_swap_tx_spend_my(
+        1591933469,
+        coin.as_ref().priv_key_policy.key_pair_or_err().unwrap().public(),
+        &secret,
+        &payment_tx_bytes,
+        0,
+        &None,
+    ))
+    .unwrap()
+    .unwrap();
     assert_eq!(FoundSwapTxSpend::Refunded(refund_tx), found);
 }
 
@@ -506,7 +504,7 @@ fn test_withdraw_impl_set_fixed_fee() {
     let coin = utxo_coin_for_test(UtxoRpcClientEnum::Native(client), None, false);
 
     let withdraw_req = WithdrawRequest {
-        amount: 1.into(),
+        amount: 1u64.into(),
         from: None,
         to: "RQq6fWoy8aGGMLjvRfMY5mBNVm2RQxJyLa".to_string(),
         coin: TEST_COIN_NAME.into(),
@@ -517,6 +515,7 @@ fn test_withdraw_impl_set_fixed_fee() {
     };
     let expected = Some(
         UtxoFeeDetails {
+            coin: Some(TEST_COIN_NAME.into()),
             amount: "0.1".parse().unwrap(),
         }
         .into(),
@@ -546,7 +545,7 @@ fn test_withdraw_impl_sat_per_kb_fee() {
     let coin = utxo_coin_for_test(UtxoRpcClientEnum::Native(client), None, false);
 
     let withdraw_req = WithdrawRequest {
-        amount: 1.into(),
+        amount: 1u64.into(),
         from: None,
         to: "RQq6fWoy8aGGMLjvRfMY5mBNVm2RQxJyLa".to_string(),
         coin: TEST_COIN_NAME.into(),
@@ -560,6 +559,7 @@ fn test_withdraw_impl_sat_per_kb_fee() {
     // 0.1 * 245 / 1000 ~ 0.0245
     let expected = Some(
         UtxoFeeDetails {
+            coin: Some(TEST_COIN_NAME.into()),
             amount: "0.0245".parse().unwrap(),
         }
         .into(),
@@ -604,12 +604,13 @@ fn test_withdraw_impl_sat_per_kb_fee_amount_equal_to_max() {
     // 0.1 * 211 / 1000 = 0.0211
     let expected_fee = Some(
         UtxoFeeDetails {
+            coin: Some(TEST_COIN_NAME.into()),
             amount: "0.0211".parse().unwrap(),
         }
         .into(),
     );
     assert_eq!(expected_fee, tx_details.fee_details);
-    let expected_balance_change = BigDecimal::from(-10);
+    let expected_balance_change = BigDecimal::from(-10i32);
     assert_eq!(expected_balance_change, tx_details.my_balance_change);
 }
 
@@ -649,12 +650,13 @@ fn test_withdraw_impl_sat_per_kb_fee_amount_equal_to_max_dust_included_to_fee() 
     // 0.1 * 211 / 1000 = 0.0211
     let expected_fee = Some(
         UtxoFeeDetails {
+            coin: Some(TEST_COIN_NAME.into()),
             amount: "0.0211".parse().unwrap(),
         }
         .into(),
     );
     assert_eq!(expected_fee, tx_details.fee_details);
-    let expected_balance_change = BigDecimal::from(-10);
+    let expected_balance_change = BigDecimal::from(-10i32);
     assert_eq!(expected_balance_change, tx_details.my_balance_change);
 }
 
@@ -712,7 +714,7 @@ fn test_withdraw_impl_sat_per_kb_fee_max() {
     let coin = utxo_coin_for_test(UtxoRpcClientEnum::Native(client), None, false);
 
     let withdraw_req = WithdrawRequest {
-        amount: 0.into(),
+        amount: 0u64.into(),
         from: None,
         to: "RQq6fWoy8aGGMLjvRfMY5mBNVm2RQxJyLa".to_string(),
         coin: TEST_COIN_NAME.into(),
@@ -726,6 +728,7 @@ fn test_withdraw_impl_sat_per_kb_fee_max() {
     // 0.1 * 211 / 1000 = 0.0211
     let expected = Some(
         UtxoFeeDetails {
+            coin: Some(TEST_COIN_NAME.into()),
             amount: "0.0211".parse().unwrap(),
         }
         .into(),
@@ -780,6 +783,7 @@ fn test_withdraw_kmd_rewards_impl(
         fee: None,
     };
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some("KMD".into()),
         amount: "0.00001".parse().unwrap(),
     });
     let tx_details = coin.withdraw(withdraw_req).wait().unwrap();
@@ -853,6 +857,7 @@ fn test_withdraw_rick_rewards_none() {
         fee: None,
     };
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some(TEST_COIN_NAME.into()),
         amount: "0.00001".parse().unwrap(),
     });
     let tx_details = coin.withdraw(withdraw_req).wait().unwrap();
@@ -2365,7 +2370,7 @@ fn test_find_output_spend_skips_conflicting_transactions() {
     static mut GET_RAW_TRANSACTION_BYTES_CALLED: usize = 0;
     NativeClientImpl::get_raw_transaction_bytes.mock_safe(move |_, txid| {
         unsafe { GET_RAW_TRANSACTION_BYTES_CALLED += 1 };
-        assert_eq!(txid, expected_txid);
+        assert_eq!(*txid, expected_txid);
         // no matter what we return here
         let bytes: BytesJson = hex::decode("0400008085202f890347d329798b508dc28ec99d8c6f6c7ced860a19a364e1bafe391cab89aeaac731020000006a47304402203ea8b380d0a7e64348869ef7c4c2bfa966fc7b148633003332fa8d0ab0c1bc5602202cc63fabdd2a6578c52d8f4f549069b16505f2ead48edc2b8de299be15aadf9a012102d8c948c6af848c588517288168faa397d6ba3ea924596d03d1d84f224b5123c2ffffffff1d1fd3a6b01710647a7f4a08c6de6075cb8e78d5069fa50f10c4a2a10ded2a95000000006a47304402203868945edc0f6dc2ee43d70a69ee4ec46ca188dc493173ce58924ba9bf6ee7a50220648ff99ce458ca72800758f6a1bd3800cd05ff9c3122f23f3653c25e09d22c79012102d8c948c6af848c588517288168faa397d6ba3ea924596d03d1d84f224b5123c2ffffffff7932150df8b4a1852b8b84b89b0d5322bf74665fb7f76a728369fd6895d3fd48000000006a4730440220127918c6f79c11f7f2376a6f3b750ed4c7103183181ad1218afcb2625ece9599022028c05e88d3a2f97cebd84a718cda33b62b48b18f16278fa8e531fd2155e61ee8012102d8c948c6af848c588517288168faa397d6ba3ea924596d03d1d84f224b5123c2ffffffff0329fd12000000000017a914cafb62e3e8bdb8db3735c39b92743ac6ebc9ef20870000000000000000166a14a7416b070c9bb98f4bafae55616f005a2a30bd6014b40c00000000001976a91450f4f098306f988d8843004689fae28c83ef16e888ac8cc5925f000000000000000000000000000000").unwrap().into();
         MockResult::Return(Box::new(futures01::future::ok(bytes)))
@@ -2641,6 +2646,7 @@ fn firo_lelantus_tx_details() {
     let tx_details = block_on(coin.tx_details_by_hash(&tx_hash, &mut map)).unwrap();
 
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some(TEST_COIN_NAME.into()),
         amount: "0.00003793".parse().unwrap(),
     });
     assert_eq!(Some(expected_fee), tx_details.fee_details);
@@ -2649,6 +2655,7 @@ fn firo_lelantus_tx_details() {
     let tx_details = block_on(coin.tx_details_by_hash(&tx_hash, &mut map)).unwrap();
 
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some(TEST_COIN_NAME.into()),
         amount: "0.00045778".parse().unwrap(),
     });
     assert_eq!(Some(expected_fee), tx_details.fee_details);
@@ -2872,6 +2879,7 @@ fn test_tx_details_kmd_rewards() {
     let tx_details = block_on(coin.tx_details_by_hash(&hash, &mut input_transactions)).expect("!tx_details_by_hash");
 
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some("KMD".into()),
         amount: BigDecimal::from_str("0.00001").unwrap(),
     });
     assert_eq!(tx_details.fee_details, Some(expected_fee));
@@ -2905,6 +2913,7 @@ fn test_tx_details_kmd_rewards_claimed_by_other() {
     let tx_details = block_on(coin.tx_details_by_hash(&hash, &mut input_transactions)).expect("!tx_details_by_hash");
 
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some("KMD".into()),
         amount: BigDecimal::from_str("0.00001").unwrap(),
     });
     assert_eq!(tx_details.fee_details, Some(expected_fee));
@@ -2932,6 +2941,7 @@ fn test_tx_details_bch_no_rewards() {
     let tx_details = block_on(coin.tx_details_by_hash(&hash, &mut input_transactions)).expect("!tx_details_by_hash");
 
     let expected_fee = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some(TEST_COIN_NAME.into()),
         amount: BigDecimal::from_str("0.00000452").unwrap(),
     });
     assert_eq!(tx_details.fee_details, Some(expected_fee));
@@ -2964,6 +2974,7 @@ fn test_update_kmd_rewards() {
     assert_eq!(tx_details.kmd_rewards, Some(expected_rewards));
 
     let expected_fee_details = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some("KMD".into()),
         amount: BigDecimal::from_str("0.00001").unwrap(),
     });
     assert_eq!(tx_details.fee_details, Some(expected_fee_details));
@@ -2995,6 +3006,7 @@ fn test_update_kmd_rewards_claimed_not_by_me() {
     assert_eq!(tx_details.kmd_rewards, Some(expected_rewards));
 
     let expected_fee_details = TxFeeDetails::Utxo(UtxoFeeDetails {
+        coin: Some("KMD".into()),
         amount: BigDecimal::from_str("0.00001").unwrap(),
     });
     assert_eq!(tx_details.fee_details, Some(expected_fee_details));

@@ -542,7 +542,7 @@ async fn sapling_state_cache_loop(coin: ZCoin) {
                 let mut cmus = Vec::new();
                 for hash in block.tx {
                     let tx = native_client
-                        .get_transaction_bytes(hash)
+                        .get_transaction_bytes(&hash)
                         .compat()
                         .await
                         .expect("Panic here to avoid storing invalid tree state to the DB");
@@ -707,6 +707,7 @@ impl MarketCoinOps for ZCoin {
     fn min_trading_vol(&self) -> MmNumber { utxo_common::min_trading_vol(self.as_ref()) }
 }
 
+#[async_trait]
 impl SwapOps for ZCoin {
     fn send_taker_fee(&self, _fee_addr: &[u8], amount: BigDecimal, uuid: &[u8]) -> TransactionFut {
         let selfi = self.clone();
@@ -984,7 +985,7 @@ impl SwapOps for ZCoin {
         utxo_common::check_if_my_payment_sent(self.clone(), time_lock, other_pub, secret_hash)
     }
 
-    fn search_for_swap_tx_spend_my(
+    async fn search_for_swap_tx_spend_my(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -1002,9 +1003,10 @@ impl SwapOps for ZCoin {
             utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
+        .await
     }
 
-    fn search_for_swap_tx_spend_other(
+    async fn search_for_swap_tx_spend_other(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -1022,6 +1024,7 @@ impl SwapOps for ZCoin {
             utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
+        .await
     }
 
     fn extract_secret(&self, secret_hash: &[u8], spend_tx: &[u8]) -> Result<Vec<u8>, String> {
@@ -1088,6 +1091,7 @@ impl MmCoin for ZCoin {
                 block_height: 0,
                 timestamp: 0,
                 fee_details: Some(TxFeeDetails::Utxo(UtxoFeeDetails {
+                    coin: Some(coin.utxo_arc.conf.ticker.clone()),
                     amount: big_decimal_from_sat_unsigned(data.fee_amount, coin.decimals()),
                 })),
                 coin: coin.ticker().to_owned(),

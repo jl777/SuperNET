@@ -3,7 +3,7 @@ use crate::TxFeeDetails;
 use bigdecimal::Zero;
 use chain::OutPoint;
 use common::mm_ctx::MmCtxBuilder;
-use common::DEX_FEE_ADDR_RAW_PUBKEY;
+use common::{block_on, DEX_FEE_ADDR_RAW_PUBKEY};
 use itertools::Itertools;
 use mocktopus::mocking::{MockResult, Mockable};
 

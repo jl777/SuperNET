@@ -146,7 +146,7 @@ impl Qrc20Coin {
                     }));
                     break;
                 },
-                RequestTxHistoryResult::UnknownError(e) => {
+                RequestTxHistoryResult::CriticalError(e) => {
                     ctx.log.log(
                         "😟",
                         &[&"tx_history", &self.utxo.conf.ticker],
@@ -175,8 +175,7 @@ impl Qrc20Coin {
             // `history_map` has been updated.
             let mut to_write: Vec<TransactionDetails> = history_map
                 .iter()
-                .map(|(_, value)| value)
-                .flatten()
+                .flat_map(|(_, value)| value)
                 .map(|(_tx_id, tx)| tx.clone())
                 .collect();
             to_write.sort_unstable_by(|a, b| {
@@ -207,7 +206,7 @@ impl Qrc20Coin {
 
         let miner_fee = {
             let total_qtum_fee = match qtum_details.fee_details {
-                Some(TxFeeDetails::Utxo(UtxoFeeDetails { ref amount })) => amount.clone(),
+                Some(TxFeeDetails::Utxo(UtxoFeeDetails { ref amount, .. })) => amount.clone(),
                 Some(ref fee) => return ERR!("Unexpected fee details {:?}", fee),
                 None => return ERR!("No Qtum fee details"),
             };
@@ -391,8 +390,7 @@ impl Qrc20Coin {
     ) -> bool {
         let need_update = history
             .iter()
-            .map(|(_, txs)| txs)
-            .flatten()
+            .flat_map(|(_, txs)| txs)
             .any(|(_, tx)| tx.should_update_timestamp() || tx.should_update_block_height());
         match last_balance {
             Some(last_balance) if last_balance == actual_balance && !need_update => {
@@ -828,6 +826,7 @@ fn is_transfer_event_log(log: &LogEntry) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common::block_on;
     use common::for_tests::find_metrics_in_json;
     use common::mm_metrics::{MetricType, MetricsJson, MetricsOps};
     use qrc20_tests::qrc20_coin_for_test;

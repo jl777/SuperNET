@@ -19,7 +19,6 @@
 
 #![allow(uncommon_codepoints)]
 #![feature(integer_atomics)]
-#![feature(associated_type_bounds)]
 #![feature(async_closure)]
 #![feature(hash_raw_entry)]
 
@@ -38,7 +37,7 @@ use common::mm_ctx::{from_ctx, MmArc, MmWeak};
 use common::mm_error::prelude::*;
 use common::mm_metrics::MetricsWeak;
 use common::mm_number::MmNumber;
-use common::{calc_total_pages, now_ms, HttpStatusCode};
+use common::{calc_total_pages, now_ms, ten, HttpStatusCode};
 use derive_more::Display;
 use futures::compat::Future01CompatExt;
 use futures::lock::Mutex as AsyncMutex;
@@ -102,12 +101,18 @@ use qrc20::{qrc20_coin_from_conf_and_params, Qrc20Coin, Qrc20FeeDetails};
 
 pub mod lightning;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod sql_tx_history_storage;
+
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
 pub use test_coin::TestCoin;
 
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
+
+#[cfg_attr(target_arch = "wasm32", allow(dead_code, unused_imports))]
+pub mod my_tx_history_v2;
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 pub mod z_coin;
@@ -232,6 +237,7 @@ pub enum NegotiateSwapContractAddrErr {
 }
 
 /// Swap operations (mostly based on the Hash/Time locked transactions implemented by coin wallets).
+#[async_trait]
 pub trait SwapOps {
     fn send_taker_fee(&self, fee_addr: &[u8], amount: BigDecimal, uuid: &[u8]) -> TransactionFut;
 
@@ -328,7 +334,7 @@ pub trait SwapOps {
         swap_contract_address: &Option<BytesJson>,
     ) -> Box<dyn Future<Item = Option<TransactionEnum>, Error = String> + Send>;
 
-    fn search_for_swap_tx_spend_my(
+    async fn search_for_swap_tx_spend_my(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -338,7 +344,7 @@ pub trait SwapOps {
         swap_contract_address: &Option<BytesJson>,
     ) -> Result<Option<FoundSwapTxSpend>, String>;
 
-    fn search_for_swap_tx_spend_other(
+    async fn search_for_swap_tx_spend_other(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -603,6 +609,7 @@ pub enum TransactionType {
     StakingDelegation,
     RemoveDelegation,
     StandardTransfer,
+    TokenTransfer(BytesJson),
 }
 
 impl Default for TransactionType {
@@ -648,6 +655,12 @@ pub struct TransactionDetails {
     transaction_type: TransactionType,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct BlockHeightAndTime {
+    height: u64,
+    timestamp: u64,
+}
+
 impl TransactionDetails {
     /// Whether the transaction details block height should be updated (when tx is confirmed)
     pub fn should_update_block_height(&self) -> bool {
@@ -691,6 +704,12 @@ pub struct TradeFee {
 pub struct CoinBalance {
     pub spendable: BigDecimal,
     pub unspendable: BigDecimal,
+}
+
+impl CoinBalance {
+    pub fn into_total(self) -> BigDecimal { self.spendable + self.unspendable }
+
+    pub fn get_total(&self) -> BigDecimal { &self.spendable + &self.unspendable }
 }
 
 /// The approximation is needed to cover the dynamic miner fee changing during a swap.
@@ -1266,7 +1285,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
         let my_address = self.my_address().unwrap_or_default();
         // BCH cash address format has colon after prefix, e.g. bitcoincash:
         // Colon can't be used in file names on Windows so it should be escaped
-        let my_address = my_address.replace(":", "_");
+        let my_address = my_address.replace(':', "_");
         ctx.dbdir()
             .join("TRANSACTIONS")
             .join(format!("{}_{}.json", self.ticker(), my_address))
@@ -1758,7 +1777,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             platform,
             contract_address,
         } => {
-            let params = try_s!(Qrc20ActivationParams::from_legacy_req(&req));
+            let params = try_s!(Qrc20ActivationParams::from_legacy_req(req));
             let contract_address = try_s!(qtum::contract_addr_from_str(contract_address));
 
             try_s!(
@@ -1768,7 +1787,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             .into()
         },
         CoinProtocol::BCH { slp_prefix } => {
-            let prefix = try_s!(CashAddrPrefix::from_str(&slp_prefix));
+            let prefix = try_s!(CashAddrPrefix::from_str(slp_prefix));
             let params = try_s!(BchActivationRequest::from_legacy_req(req));
 
             let bch = try_s!(bch_coin_from_conf_and_params(ctx, ticker, &coins_en, params, prefix, &secret).await);
@@ -1780,7 +1799,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             decimals,
             required_confirmations,
         } => {
-            let platform_coin = try_s!(lp_coinfind(ctx, &platform).await);
+            let platform_coin = try_s!(lp_coinfind(ctx, platform).await);
             let platform_coin = match platform_coin {
                 Some(MmCoinEnum::Bch(coin)) => coin,
                 Some(_) => return ERR!("Platform coin {} is not BCH", platform),
@@ -2041,8 +2060,6 @@ pub enum HistorySyncState {
     Error(Json),
     Finished,
 }
-
-fn ten() -> usize { 10 }
 
 #[derive(Deserialize)]
 struct MyTxHistoryRequest {
@@ -2350,7 +2367,7 @@ pub fn address_by_coin_conf_and_pubkey_str(
             utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format)
         },
         CoinProtocol::SLPTOKEN { platform, .. } => {
-            let platform_conf = coin_conf(&ctx, &platform);
+            let platform_conf = coin_conf(ctx, &platform);
             if platform_conf.is_null() {
                 return ERR!("platform {} conf is null", platform);
             }
@@ -2409,7 +2426,7 @@ where
     T: MmCoin + ?Sized,
 {
     let ticker = coin.ticker().to_owned();
-    let history_path = coin.tx_history_path(&ctx);
+    let history_path = coin.tx_history_path(ctx);
     let ctx = ctx.clone();
 
     let fut = async move {

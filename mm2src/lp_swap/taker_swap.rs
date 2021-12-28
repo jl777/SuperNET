@@ -20,7 +20,6 @@ use common::mm_error::prelude::*;
 use common::mm_number::MmNumber;
 use common::{bits256, now_ms, DEX_FEE_ADDR_RAW_PUBKEY};
 use futures::{compat::Future01CompatExt, select, FutureExt};
-use futures01::Future;
 use http::Response;
 use parking_lot::Mutex as PaMutex;
 use primitives::hash::H264;
@@ -1314,7 +1313,7 @@ impl TakerSwap {
         Ok((swap, command))
     }
 
-    pub fn recover_funds(&self) -> Result<RecoveredSwap, String> {
+    pub async fn recover_funds(&self) -> Result<RecoveredSwap, String> {
         if self.finished_at.load(Ordering::Relaxed) == 0 {
             return ERR!("Swap must be finished before recover funds attempt");
         }
@@ -1332,17 +1331,32 @@ impl TakerSwap {
             None => return ERR!("No info about maker payment, swap is not recoverable"),
         };
 
+        // have to do this because std::sync::RwLockReadGuard returned by r() is not Send,
+        // so it can't be used across await
+        let other_persistent_pub = self.r().other_persistent_pub;
+        let secret_hash = self.r().secret_hash.0;
+        let maker_coin_start_block = self.r().data.maker_coin_start_block;
+        let maker_coin_swap_contract_address = self.r().data.maker_coin_swap_contract_address.clone();
+
+        let taker_payment_lock = self.r().data.taker_payment_lock;
+        let taker_coin_start_block = self.r().data.taker_coin_start_block;
+        let taker_coin_swap_contract_address = self.r().data.taker_coin_swap_contract_address.clone();
+
         macro_rules! check_maker_payment_is_not_spent {
             // validate that maker payment is not spent
             () => {
-                match self.maker_coin.search_for_swap_tx_spend_other(
-                    self.maker_payment_lock.load(Ordering::Relaxed) as u32,
-                    &*self.r().other_persistent_pub,
-                    &self.r().secret_hash.0,
-                    &maker_payment,
-                    self.r().data.maker_coin_start_block,
-                    &self.r().data.maker_coin_swap_contract_address,
-                ) {
+                match self
+                    .maker_coin
+                    .search_for_swap_tx_spend_other(
+                        self.maker_payment_lock.load(Ordering::Relaxed) as u32,
+                        other_persistent_pub.as_slice(),
+                        &secret_hash,
+                        &maker_payment,
+                        maker_coin_start_block,
+                        &maker_coin_swap_contract_address,
+                    )
+                    .await
+                {
                     Ok(Some(FoundSwapTxSpend::Spent(tx))) => {
                         return ERR!(
                             "Maker payment was already spent by {} tx {:02x}",
@@ -1363,19 +1377,22 @@ impl TakerSwap {
             };
         }
 
-        let taker_payment = match &self.r().taker_payment {
+        let maybe_taker_payment = self.r().taker_payment.clone();
+        let taker_payment = match maybe_taker_payment {
             Some(tx) => tx.tx_hex.0.clone(),
             None => {
-                let maybe_sent = try_s!(self
-                    .taker_coin
-                    .check_if_my_payment_sent(
-                        self.r().data.taker_payment_lock as u32,
-                        &*self.r().other_persistent_pub,
-                        &self.r().secret_hash.0,
-                        self.r().data.taker_coin_start_block,
-                        &self.r().data.taker_coin_swap_contract_address,
-                    )
-                    .wait());
+                let maybe_sent = try_s!(
+                    self.taker_coin
+                        .check_if_my_payment_sent(
+                            taker_payment_lock as u32,
+                            other_persistent_pub.as_slice(),
+                            &secret_hash,
+                            taker_coin_start_block,
+                            &taker_coin_swap_contract_address,
+                        )
+                        .compat()
+                        .await
+                );
                 match maybe_sent {
                     Some(tx) => tx.tx_hex(),
                     None => return ERR!("Taker payment is not found, swap is not recoverable"),
@@ -1385,16 +1402,24 @@ impl TakerSwap {
 
         if self.r().taker_payment_spend.is_some() {
             check_maker_payment_is_not_spent!();
-            let transaction = try_s!(self
-                .maker_coin
-                .send_taker_spends_maker_payment(
-                    &maker_payment,
-                    self.maker_payment_lock.load(Ordering::Relaxed) as u32,
-                    &*self.r().other_persistent_pub,
-                    &self.r().secret.0,
-                    &self.r().data.maker_coin_swap_contract_address,
-                )
-                .wait());
+            // has to do this because std::sync::RwLockReadGuard returned by r() is not Send,
+            // so it can't be used across await
+            let other_persistent_pub = self.r().other_persistent_pub;
+            let secret = self.r().secret.0;
+            let maker_coin_swap_contract_address = self.r().data.maker_coin_swap_contract_address.clone();
+
+            let transaction = try_s!(
+                self.maker_coin
+                    .send_taker_spends_maker_payment(
+                        &maker_payment,
+                        self.maker_payment_lock.load(Ordering::Relaxed) as u32,
+                        other_persistent_pub.as_slice(),
+                        &secret,
+                        &maker_coin_swap_contract_address,
+                    )
+                    .compat()
+                    .await
+            );
 
             return Ok(RecoveredSwap {
                 action: RecoveredSwapAction::SpentOtherPayment,
@@ -1403,30 +1428,36 @@ impl TakerSwap {
             });
         }
 
-        let taker_payment_spend = try_s!(self.taker_coin.search_for_swap_tx_spend_my(
-            self.r().data.taker_payment_lock as u32,
-            &*self.r().other_persistent_pub,
-            &self.r().secret_hash.0,
-            &taker_payment,
-            self.r().data.taker_coin_start_block,
-            &self.r().data.taker_coin_swap_contract_address,
-        ));
+        let taker_payment_spend = try_s!(
+            self.taker_coin
+                .search_for_swap_tx_spend_my(
+                    taker_payment_lock as u32,
+                    other_persistent_pub.as_slice(),
+                    &secret_hash,
+                    &taker_payment,
+                    taker_coin_start_block,
+                    &taker_coin_swap_contract_address,
+                )
+                .await
+        );
 
         match taker_payment_spend {
             Some(spend) => match spend {
                 FoundSwapTxSpend::Spent(tx) => {
                     check_maker_payment_is_not_spent!();
                     let secret = try_s!(self.taker_coin.extract_secret(&self.r().secret_hash.0, &tx.tx_hex()));
-                    let transaction = try_s!(self
-                        .maker_coin
-                        .send_taker_spends_maker_payment(
-                            &maker_payment,
-                            self.maker_payment_lock.load(Ordering::Relaxed) as u32,
-                            &*self.r().other_persistent_pub,
-                            &secret,
-                            &self.r().data.maker_coin_swap_contract_address,
-                        )
-                        .wait());
+                    let transaction = try_s!(
+                        self.maker_coin
+                            .send_taker_spends_maker_payment(
+                                &maker_payment,
+                                self.maker_payment_lock.load(Ordering::Relaxed) as u32,
+                                other_persistent_pub.as_slice(),
+                                &secret,
+                                &maker_coin_swap_contract_address,
+                            )
+                            .compat()
+                            .await
+                    );
 
                     Ok(RecoveredSwap {
                         action: RecoveredSwapAction::SpentOtherPayment,
@@ -1447,16 +1478,18 @@ impl TakerSwap {
                     );
                 }
 
-                let transaction = try_s!(self
-                    .taker_coin
-                    .send_taker_refunds_payment(
-                        &taker_payment,
-                        self.r().data.taker_payment_lock as u32,
-                        &*self.r().other_persistent_pub,
-                        &self.r().secret_hash.0,
-                        &self.r().data.taker_coin_swap_contract_address,
-                    )
-                    .wait());
+                let transaction = try_s!(
+                    self.taker_coin
+                        .send_taker_refunds_payment(
+                            &taker_payment,
+                            taker_payment_lock as u32,
+                            other_persistent_pub.as_slice(),
+                            &secret_hash,
+                            &taker_coin_swap_contract_address,
+                        )
+                        .compat()
+                        .await
+                );
 
                 Ok(RecoveredSwap {
                     action: RecoveredSwapAction::RefundedMyPayment,
@@ -1839,7 +1872,7 @@ pub fn maker_payment_wait(swap_started_at: u64, payment_locktime: u64) -> u64 {
     swap_started_at + (payment_locktime * 2) / 5
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod taker_swap_tests {
     use super::*;
     use crate::mm2::lp_swap::{dex_fee_amount, get_locked_amount_by_other_swaps};
@@ -1847,8 +1880,8 @@ mod taker_swap_tests {
     use coins::utxo::UtxoTx;
     use coins::{FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, TestCoin};
     use common::mm_ctx::MmCtxBuilder;
-    use common::new_uuid;
     use common::privkey::key_pair_from_seed;
+    use common::{block_on, new_uuid};
     use mocktopus::mocking::*;
 
     fn eth_tx_for_test() -> SignedEthTx {
@@ -1885,11 +1918,12 @@ mod taker_swap_tests {
             unsafe { MAKER_PAYMENT_SPEND_CALLED = true };
             MockResult::Return(Box::new(futures01::future::ok(eth_tx_for_test().into())))
         });
-        TestCoin::search_for_swap_tx_spend_other.mock_safe(|_, _, _, _, _, _, _| MockResult::Return(Ok(None)));
+        TestCoin::search_for_swap_tx_spend_other
+            .mock_safe(|_, _, _, _, _, _, _| MockResult::Return(Box::pin(futures::future::ready(Ok(None)))));
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
-        let actual = taker_swap.recover_funds().unwrap();
+        let actual = block_on(taker_swap.recover_funds()).unwrap();
         let expected = RecoveredSwap {
             action: RecoveredSwapAction::SpentOtherPayment,
             coin: "ticker".to_string(),
@@ -1920,7 +1954,7 @@ mod taker_swap_tests {
         static mut TX_SPEND_CALLED: bool = false;
         TestCoin::search_for_swap_tx_spend_my.mock_safe(|_, _, _, _, _, _, _| {
             unsafe { TX_SPEND_CALLED = true };
-            MockResult::Return(Ok(None))
+            MockResult::Return(Box::pin(futures::future::ready(Ok(None))))
         });
 
         static mut TAKER_PAYMENT_REFUND_CALLED: bool = false;
@@ -1931,7 +1965,7 @@ mod taker_swap_tests {
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
-        let actual = taker_swap.recover_funds().unwrap();
+        let actual = block_on(taker_swap.recover_funds()).unwrap();
         let expected = RecoveredSwap {
             action: RecoveredSwapAction::RefundedMyPayment,
             coin: "ticker".to_string(),
@@ -1966,10 +2000,11 @@ mod taker_swap_tests {
         TestCoin::search_for_swap_tx_spend_my.mock_safe(|_, _, _, _, _, _, _| {
             unsafe { SEARCH_TX_SPEND_CALLED = true };
             let tx: UtxoTx = "0100000001de7aa8d29524906b2b54ee2e0281f3607f75662cbc9080df81d1047b78e21dbc00000000d7473044022079b6c50820040b1fbbe9251ced32ab334d33830f6f8d0bf0a40c7f1336b67d5b0220142ccf723ddabb34e542ed65c395abc1fbf5b6c3e730396f15d25c49b668a1a401209da937e5609680cb30bff4a7661364ca1d1851c2506fa80c443f00a3d3bf7365004c6b6304f62b0e5cb175210270e75970bb20029b3879ec76c4acd320a8d0589e003636264d01a7d566504bfbac6782012088a9142fb610d856c19fd57f2d0cffe8dff689074b3d8a882103f368228456c940ac113e53dad5c104cf209f2f102a409207269383b6ab9b03deac68ffffffff01d0dc9800000000001976a9146d9d2b554d768232320587df75c4338ecc8bf37d88ac40280e5c".into();
-            MockResult::Return(Ok(Some(FoundSwapTxSpend::Spent(tx.into()))))
+            MockResult::Return(Box::pin(futures::future::ready(Ok(Some(FoundSwapTxSpend::Spent(tx.into()))))))
         });
 
-        TestCoin::search_for_swap_tx_spend_other.mock_safe(|_, _, _, _, _, _, _| MockResult::Return(Ok(None)));
+        TestCoin::search_for_swap_tx_spend_other
+            .mock_safe(|_, _, _, _, _, _, _| MockResult::Return(Box::pin(futures::future::ready(Ok(None)))));
 
         static mut MAKER_PAYMENT_SPEND_CALLED: bool = false;
         TestCoin::send_taker_spends_maker_payment.mock_safe(|_, _, _, _, _, _| {
@@ -1979,7 +2014,7 @@ mod taker_swap_tests {
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
-        let actual = taker_swap.recover_funds().unwrap();
+        let actual = block_on(taker_swap.recover_funds()).unwrap();
         let expected = RecoveredSwap {
             action: RecoveredSwapAction::SpentOtherPayment,
             coin: "ticker".to_string(),
@@ -2006,7 +2041,7 @@ mod taker_swap_tests {
         static mut SEARCH_TX_SPEND_CALLED: bool = false;
         TestCoin::search_for_swap_tx_spend_my.mock_safe(|_, _, _, _, _, _, _| {
             unsafe { SEARCH_TX_SPEND_CALLED = true };
-            MockResult::Return(Ok(None))
+            MockResult::Return(Box::pin(futures::future::ready(Ok(None))))
         });
 
         static mut REFUND_CALLED: bool = false;
@@ -2017,7 +2052,7 @@ mod taker_swap_tests {
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
-        let actual = taker_swap.recover_funds().unwrap();
+        let actual = block_on(taker_swap.recover_funds()).unwrap();
         let expected = RecoveredSwap {
             action: RecoveredSwapAction::RefundedMyPayment,
             coin: "ticker".to_string(),
@@ -2043,13 +2078,13 @@ mod taker_swap_tests {
         static mut SEARCH_TX_SPEND_CALLED: bool = false;
         TestCoin::search_for_swap_tx_spend_my.mock_safe(|_, _, _, _, _, _, _| {
             unsafe { SEARCH_TX_SPEND_CALLED = true };
-            MockResult::Return(Ok(None))
+            MockResult::Return(Box::pin(futures::future::ready(Ok(None))))
         });
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
         taker_swap.w().data.taker_payment_lock = (now_ms() / 1000) - 3690;
-        assert!(taker_swap.recover_funds().is_err());
+        assert!(block_on(taker_swap.recover_funds()).is_err());
         assert!(unsafe { SEARCH_TX_SPEND_CALLED });
     }
 
@@ -2070,10 +2105,11 @@ mod taker_swap_tests {
         TestCoin::search_for_swap_tx_spend_my.mock_safe(|_, _, _, _, _, _, _| {
             unsafe { SEARCH_TX_SPEND_CALLED = true };
             let tx: UtxoTx = "0100000001de7aa8d29524906b2b54ee2e0281f3607f75662cbc9080df81d1047b78e21dbc00000000d7473044022079b6c50820040b1fbbe9251ced32ab334d33830f6f8d0bf0a40c7f1336b67d5b0220142ccf723ddabb34e542ed65c395abc1fbf5b6c3e730396f15d25c49b668a1a401209da937e5609680cb30bff4a7661364ca1d1851c2506fa80c443f00a3d3bf7365004c6b6304f62b0e5cb175210270e75970bb20029b3879ec76c4acd320a8d0589e003636264d01a7d566504bfbac6782012088a9142fb610d856c19fd57f2d0cffe8dff689074b3d8a882103f368228456c940ac113e53dad5c104cf209f2f102a409207269383b6ab9b03deac68ffffffff01d0dc9800000000001976a9146d9d2b554d768232320587df75c4338ecc8bf37d88ac40280e5c".into();
-            MockResult::Return(Ok(Some(FoundSwapTxSpend::Spent(tx.into()))))
+            MockResult::Return(Box::pin(futures::future::ready(Ok(Some(FoundSwapTxSpend::Spent(tx.into()))))))
         });
 
-        TestCoin::search_for_swap_tx_spend_other.mock_safe(|_, _, _, _, _, _, _| MockResult::Return(Ok(None)));
+        TestCoin::search_for_swap_tx_spend_other
+            .mock_safe(|_, _, _, _, _, _, _| MockResult::Return(Box::pin(futures::future::ready(Ok(None)))));
 
         static mut MAKER_PAYMENT_SPEND_CALLED: bool = false;
         TestCoin::send_taker_spends_maker_payment.mock_safe(|_, _, _, _, _, _| {
@@ -2083,7 +2119,7 @@ mod taker_swap_tests {
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
-        let actual = taker_swap.recover_funds().unwrap();
+        let actual = block_on(taker_swap.recover_funds()).unwrap();
         let expected = RecoveredSwap {
             action: RecoveredSwapAction::SpentOtherPayment,
             coin: "ticker".to_string(),
@@ -2109,7 +2145,7 @@ mod taker_swap_tests {
         let maker_coin = MmCoinEnum::Test(TestCoin::default());
         let taker_coin = MmCoinEnum::Test(TestCoin::default());
         let (taker_swap, _) = TakerSwap::load_from_saved(ctx, maker_coin, taker_coin, taker_saved_swap).unwrap();
-        assert!(taker_swap.recover_funds().is_err());
+        assert!(block_on(taker_swap.recover_funds()).is_err());
     }
 
     #[test]
