@@ -60,9 +60,8 @@ use uuid::Uuid;
 use crate::mm2::lp_network::{broadcast_p2p_msg, request_any_relay, request_one_peer, subscribe_to_topic, P2PRequest};
 use crate::mm2::lp_swap::{calc_max_maker_vol, check_balance_for_maker_swap, check_balance_for_taker_swap,
                           check_other_coin_balance_for_swap, insert_new_swap_to_db, is_pubkey_banned,
-                          lp_atomic_locktime, run_maker_swap, run_taker_swap, AtomicLocktimeVersion,
-                          CheckBalanceError, MakerSwap, RunMakerSwapInput, RunTakerSwapInput,
-                          SwapConfirmationsSettings, TakerSwap};
+                          lp_atomic_locktime, run_maker_swap, run_taker_swap, AtomicLocktimeVersion, MakerSwap,
+                          RunMakerSwapInput, RunTakerSwapInput, SwapConfirmationsSettings, TakerSwap};
 
 pub use best_orders::best_orders_rpc;
 use my_orders_storage::{delete_my_maker_order, delete_my_taker_order, save_maker_order_on_update,
@@ -322,6 +321,7 @@ async fn request_and_fill_orderbook(ctx: &MmArc, base: &str, rel: &str) -> Resul
     let ordermatch_ctx = OrdermatchContext::from_ctx(ctx).unwrap();
     let mut orderbook = ordermatch_ctx.orderbook.lock();
 
+    let my_pubkey = ctx.secp256k1_key_pair().public();
     let alb_pair = alb_ordered_pair(base, rel);
     for (pubkey, GetOrderbookPubkeyItem { orders, .. }) in pubkey_orders {
         let pubkey_bytes = match hex::decode(&pubkey) {
@@ -331,6 +331,10 @@ async fn request_and_fill_orderbook(ctx: &MmArc, base: &str, rel: &str) -> Resul
                 continue;
             },
         };
+        if pubkey_bytes.as_slice() == my_pubkey.as_ref() {
+            continue;
+        }
+
         if is_pubkey_banned(ctx, &pubkey_bytes[1..].into()) {
             log::warn!("Pubkey {} is banned", pubkey);
             continue;
@@ -936,39 +940,32 @@ impl BalanceTradeFeeUpdatedHandler for BalanceUpdateOrdermatchHandler {
         };
 
         let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-        let my_maker_orders = ordermatch_ctx.my_maker_orders.lock().clone();
-
-        for (uuid, order_mutex) in my_maker_orders {
-            let mut order = order_mutex.lock().await;
-            if order.base != coin.ticker() {
-                continue;
-            }
-
-            if new_volume < order.min_base_vol {
-                let removed_order_mutex = ordermatch_ctx.my_maker_orders.lock().remove(&uuid);
-                // This checks that the order hasn't been removed by another process
-                if removed_order_mutex.is_some() {
-                    // cancel the order
-                    maker_order_cancelled_p2p_notify(ctx.clone(), &order);
-                    delete_my_maker_order(
-                        ctx.clone(),
-                        order.clone(),
-                        MakerOrderCancellationReason::InsufficientBalance,
-                    )
-                    .compat()
-                    .await
-                    .ok();
-                    continue;
+        let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
+        *maker_orders = maker_orders
+            .drain()
+            .filter_map(|(uuid, mut order)| {
+                if order.base == coin.ticker() {
+                    if new_volume < order.min_base_vol {
+                        let ctx = ctx.clone();
+                        delete_my_maker_order(&ctx, &order, MakerOrderCancellationReason::InsufficientBalance);
+                        spawn(async move { maker_order_cancelled_p2p_notify(ctx, &order).await });
+                        None
+                    } else if new_volume < order.available_amount() {
+                        order.max_base_vol = &order.reserved_amount() + &new_volume;
+                        let mut update_msg = new_protocol::MakerOrderUpdated::new(order.uuid);
+                        update_msg.with_new_max_volume(order.available_amount().into());
+                        let topic = order.orderbook_topic();
+                        let ctx = ctx.clone();
+                        spawn(async move { maker_order_updated_p2p_notify(ctx, topic, update_msg).await });
+                        Some((uuid, order))
+                    } else {
+                        Some((uuid, order))
+                    }
+                } else {
+                    Some((uuid, order))
                 }
-            }
-
-            if new_volume < order.available_amount() {
-                let mut update_msg = new_protocol::MakerOrderUpdated::new(order.uuid);
-                update_msg.with_new_max_volume(new_volume.to_ratio());
-                order.apply_updated(&update_msg);
-                maker_order_updated_p2p_notify(ctx.clone(), order.orderbook_topic(), update_msg);
-            }
-        }
+            })
+            .collect();
     }
 }
 
@@ -1862,24 +1859,6 @@ impl MakerOrder {
         }
 
         self.updated_at = Some(now_ms());
-    }
-
-    async fn check_balance(
-        &self,
-        ctx: &MmArc,
-        base: &MmCoinEnum,
-        rel: &MmCoinEnum,
-    ) -> Result<(), MmError<CheckBalanceError>> {
-        check_balance_for_maker_swap(
-            ctx,
-            base,
-            rel,
-            self.available_amount(),
-            None,
-            None,
-            FeeApproxStage::OrderIssue,
-        )
-        .await
     }
 
     fn base_orderbook_ticker(&self) -> &str { self.base_orderbook_ticker.as_deref().unwrap_or(&self.base) }
@@ -2830,22 +2809,29 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     None => continue,
                 };
 
-                let order = order_mutex.lock().await;
-                if let Ok(Some((base, rel))) = find_pair(&ctx, &order.base, &order.rel).await {
-                    if let Err(e) = order.check_balance(&ctx, &base, &rel).await {
-                        log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
-                        let removed_order_mutex = ordermatch_ctx.my_maker_orders.lock().remove(&uuid);
-                        // This checks that the order hasn't been removed by another process
-                        if removed_order_mutex.is_some() {
-                            delete_my_maker_order(
-                                ctx.clone(),
-                                order.clone(),
-                                MakerOrderCancellationReason::InsufficientBalance,
-                            )
-                            .compat()
-                            .await
-                            .ok();
-                        }
+                    let current_balance = match base.my_spendable_balance().compat().await {
+                        Ok(b) => b,
+                        Err(e) => {
+                            log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
+                            to_cancel.push(*uuid);
+                            continue;
+                        },
+                    };
+                    let max_vol =
+                        match calc_max_maker_vol(&ctx, &base, &current_balance, FeeApproxStage::OrderIssue).await {
+                            Ok(max) => max,
+                            Err(e) => {
+                                log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
+                                to_cancel.push(*uuid);
+                                continue;
+                            },
+                        };
+                    if max_vol < order.available_amount() {
+                        order.max_base_vol = order.reserved_amount() + max_vol;
+                    }
+                    if order.available_amount() < order.min_base_vol {
+                        log::info!("Insufficient volume available for order {}, cancelling", uuid);
+                        to_cancel.push(*uuid);
                         continue;
                     }
 
@@ -2862,7 +2848,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                             rel.coin_protocol_info(),
                         );
                     }
-                }
+                    }
             }
         }
 
