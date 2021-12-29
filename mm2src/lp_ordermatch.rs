@@ -940,32 +940,39 @@ impl BalanceTradeFeeUpdatedHandler for BalanceUpdateOrdermatchHandler {
         };
 
         let ordermatch_ctx = OrdermatchContext::from_ctx(&ctx).unwrap();
-        let mut maker_orders = ordermatch_ctx.my_maker_orders.lock().await;
-        *maker_orders = maker_orders
-            .drain()
-            .filter_map(|(uuid, mut order)| {
-                if order.base == coin.ticker() {
-                    if new_volume < order.min_base_vol {
-                        let ctx = ctx.clone();
-                        delete_my_maker_order(&ctx, &order, MakerOrderCancellationReason::InsufficientBalance);
-                        spawn(async move { maker_order_cancelled_p2p_notify(ctx, &order).await });
-                        None
-                    } else if new_volume < order.available_amount() {
-                        order.max_base_vol = &order.reserved_amount() + &new_volume;
-                        let mut update_msg = new_protocol::MakerOrderUpdated::new(order.uuid);
-                        update_msg.with_new_max_volume(order.available_amount().into());
-                        let topic = order.orderbook_topic();
-                        let ctx = ctx.clone();
-                        spawn(async move { maker_order_updated_p2p_notify(ctx, topic, update_msg).await });
-                        Some((uuid, order))
-                    } else {
-                        Some((uuid, order))
-                    }
-                } else {
-                    Some((uuid, order))
+        let my_maker_orders = ordermatch_ctx.my_maker_orders.lock().clone();
+
+        for (uuid, order_mutex) in my_maker_orders {
+            let mut order = order_mutex.lock().await;
+            if order.base != coin.ticker() {
+                continue;
+            }
+
+            if new_volume < order.min_base_vol {
+                let removed_order_mutex = ordermatch_ctx.my_maker_orders.lock().remove(&uuid);
+                // This checks that the order hasn't been removed by another process
+                if removed_order_mutex.is_some() {
+                    // cancel the order
+                    maker_order_cancelled_p2p_notify(ctx.clone(), &order);
+                    delete_my_maker_order(
+                        ctx.clone(),
+                        order.clone(),
+                        MakerOrderCancellationReason::InsufficientBalance,
+                    )
+                    .compat()
+                    .await
+                    .ok();
+                    continue;
                 }
-            })
-            .collect();
+            }
+
+            if new_volume < order.available_amount() {
+                order.max_base_vol = &order.reserved_amount() + &new_volume;
+                let mut update_msg = new_protocol::MakerOrderUpdated::new(order.uuid);
+                update_msg.with_new_max_volume(order.available_amount().into());
+                maker_order_updated_p2p_notify(ctx.clone(), order.orderbook_topic(), update_msg);
+            }
+        }
     }
 }
 
@@ -2794,6 +2801,7 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
 
         {
             let mut missing_uuids = Vec::new();
+            let mut to_cancel = Vec::new();
             {
                 let orderbook = ordermatch_ctx.orderbook.lock();
                 for (uuid, _) in ordermatch_ctx.my_maker_orders.lock().iter() {
@@ -2809,46 +2817,66 @@ pub async fn lp_ordermatch_loop(ctx: MmArc) {
                     None => continue,
                 };
 
-                    let current_balance = match base.my_spendable_balance().compat().await {
-                        Ok(b) => b,
-                        Err(e) => {
-                            log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
-                            to_cancel.push(*uuid);
-                            continue;
-                        },
-                    };
-                    let max_vol =
-                        match calc_max_maker_vol(&ctx, &base, &current_balance, FeeApproxStage::OrderIssue).await {
-                            Ok(max) => max,
-                            Err(e) => {
-                                log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
-                                to_cancel.push(*uuid);
-                                continue;
-                            },
-                        };
-                    if max_vol < order.available_amount() {
-                        order.max_base_vol = order.reserved_amount() + max_vol;
-                    }
-                    if order.available_amount() < order.min_base_vol {
-                        log::info!("Insufficient volume available for order {}, cancelling", uuid);
-                        to_cancel.push(*uuid);
+                let mut order = order_mutex.lock().await;
+                let (base, rel) = match find_pair(&ctx, &order.base, &order.rel).await {
+                    Ok(Some(pair)) => pair,
+                    _ => continue,
+                };
+                let current_balance = match base.my_spendable_balance().compat().await {
+                    Ok(b) => b,
+                    Err(e) => {
+                        log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
+                        to_cancel.push(uuid);
                         continue;
-                    }
+                    },
+                };
+                let max_vol = match calc_max_maker_vol(&ctx, &base, &current_balance, FeeApproxStage::OrderIssue).await
+                {
+                    Ok(max) => max,
+                    Err(e) => {
+                        log::info!("Error {} on balance check to kickstart order {}, cancelling", e, uuid);
+                        to_cancel.push(uuid);
+                        continue;
+                    },
+                };
+                if max_vol < order.available_amount() {
+                    order.max_base_vol = order.reserved_amount() + max_vol;
+                }
+                if order.available_amount() < order.min_base_vol {
+                    log::info!("Insufficient volume available for order {}, cancelling", uuid);
+                    to_cancel.push(uuid);
+                    continue;
+                }
 
-                    let maker_orders = ordermatch_ctx.my_maker_orders.lock();
+                let maker_orders = ordermatch_ctx.my_maker_orders.lock();
 
-                    // notify other nodes only if maker order is still there keeping maker_orders locked during the operation
-                    if maker_orders.contains_key(&uuid) {
-                        let topic = order.orderbook_topic();
-                        subscribe_to_topic(&ctx, topic);
-                        maker_order_created_p2p_notify(
-                            ctx.clone(),
-                            &order,
-                            base.coin_protocol_info(),
-                            rel.coin_protocol_info(),
-                        );
-                    }
-                    }
+                // notify other nodes only if maker order is still there keeping maker_orders locked during the operation
+                if maker_orders.contains_key(&uuid) {
+                    let topic = order.orderbook_topic();
+                    subscribe_to_topic(&ctx, topic);
+                    maker_order_created_p2p_notify(
+                        ctx.clone(),
+                        &order,
+                        base.coin_protocol_info(),
+                        rel.coin_protocol_info(),
+                    );
+                }
+            }
+
+            for uuid in to_cancel {
+                let removed_order_mutex = ordermatch_ctx.my_maker_orders.lock().remove(&uuid);
+                // This checks that the order hasn't been removed by another process
+                if let Some(order_mutex) = removed_order_mutex {
+                    let order = order_mutex.lock().await;
+                    delete_my_maker_order(
+                        ctx.clone(),
+                        order.clone(),
+                        MakerOrderCancellationReason::InsufficientBalance,
+                    )
+                    .compat()
+                    .await
+                    .ok();
+                }
             }
         }
 

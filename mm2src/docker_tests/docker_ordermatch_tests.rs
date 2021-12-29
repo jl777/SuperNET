@@ -105,8 +105,8 @@ fn check_best_orders(
 
 #[test]
 fn test_ordermatch_custom_orderbook_ticker_both_on_maker() {
-    let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-    let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+    let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+    let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
     let coins = json! ([
         {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
         {"coin":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -229,8 +229,8 @@ fn test_ordermatch_custom_orderbook_ticker_both_on_maker() {
 
 #[test]
 fn test_ordermatch_custom_orderbook_ticker_both_on_taker() {
-    let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-    let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+    let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+    let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
 
     let coins = json! ([
         {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -352,8 +352,8 @@ fn test_ordermatch_custom_orderbook_ticker_both_on_taker() {
 
 #[test]
 fn test_ordermatch_custom_orderbook_ticker_mixed_case_one() {
-    let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-    let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+    let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+    let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
 
     let coins = json! ([
         {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -483,8 +483,8 @@ fn test_ordermatch_custom_orderbook_ticker_mixed_case_one() {
 
 #[test]
 fn test_ordermatch_custom_orderbook_ticker_mixed_case_two() {
-    let (_ctx, _, bob_priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
-    let (_ctx, _, alice_priv_key) = generate_coin_with_random_privkey("MYCOIN1", 2000.into());
+    let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+    let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
 
     let coins = json! ([
         {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -631,7 +631,7 @@ fn test_zombie_order_after_balance_reduce_and_mm_restart() {
     });
     let mm_seed = MarketMakerIt::start(seed_conf, "pass".to_string(), None).unwrap();
 
-    let (_ctx, _, priv_key) = generate_coin_with_random_privkey("MYCOIN", 1000.into());
+    let (_ctx, _, priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
     let mut conf = json! ({
         "gui": "nogui",
         "netid": 9000,
