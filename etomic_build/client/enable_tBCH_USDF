@@ -36,10 +36,10 @@ curl --url "http://127.0.0.1:7783" --data '{
     "slp_tokens_requests":[
       {
         "ticker":"USDF",
-        "required_confirmations": 4
+        "required_confirmations": 1
       }
     ],
-    "required_confirmations":5,
+    "required_confirmations": 1,
     "requires_notarization":false,
     "address_format":{
       "format":"cashaddress",

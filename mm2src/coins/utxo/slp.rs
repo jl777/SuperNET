@@ -1595,7 +1595,7 @@ impl MmCoin for SlpToken {
         Box::new(futures01::future::err(()))
     }
 
-    fn history_sync_status(&self) -> HistorySyncState { HistorySyncState::NotEnabled }
+    fn history_sync_status(&self) -> HistorySyncState { self.platform_coin.history_sync_status() }
 
     /// Get fee to be paid per 1 swap transaction
     fn get_trade_fee(&self) -> Box<dyn Future<Item = TradeFee, Error = String> + Send> {

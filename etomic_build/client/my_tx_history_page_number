@@ -2,12 +2,13 @@
 source userpass
 curl --url "http://127.0.0.1:7783" --data '{
   "userpass":"'$userpass'",
-  "method":"enable_slp",
+  "method":"my_tx_history",
   "mmrpc":"2.0",
-  "params":{
-    "ticker":"USDF",
-    "activation_params": {
-      "required_confirmations": 1
+  "params": {
+    "coin": "tBCH",
+    "limit": 2,
+    "paging_options": {
+      "PageNumber": 2
     }
   }
 }'
