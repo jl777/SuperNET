@@ -251,6 +251,7 @@ pub enum MyTxHistoryErrorV2 {
     StorageIsNotInitialized(String),
     StorageError(String),
     RpcError(String),
+    NotSupportedFor(String),
     #[cfg(target_arch = "wasm32")]
     NotSupportedInWasm,
 }
@@ -261,7 +262,8 @@ impl HttpStatusCode for MyTxHistoryErrorV2 {
             MyTxHistoryErrorV2::CoinIsNotActive(_) => StatusCode::PRECONDITION_REQUIRED,
             MyTxHistoryErrorV2::StorageIsNotInitialized(_)
             | MyTxHistoryErrorV2::StorageError(_)
-            | MyTxHistoryErrorV2::RpcError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            | MyTxHistoryErrorV2::RpcError(_)
+            | MyTxHistoryErrorV2::NotSupportedFor(_) => StatusCode::INTERNAL_SERVER_ERROR,
             #[cfg(target_arch = "wasm32")]
             MyTxHistoryErrorV2::NotSupportedInWasm => StatusCode::BAD_REQUEST,
         }
@@ -300,18 +302,18 @@ impl HistoryCoinType {
 }
 
 trait GetHistoryCoinType {
-    fn get_history_coin_type(&self) -> HistoryCoinType;
+    fn get_history_coin_type(&self) -> Option<HistoryCoinType>;
 }
 
 impl GetHistoryCoinType for MmCoinEnum {
-    fn get_history_coin_type(&self) -> HistoryCoinType {
+    fn get_history_coin_type(&self) -> Option<HistoryCoinType> {
         match self {
-            MmCoinEnum::Bch(bch) => HistoryCoinType::Coin(bch.ticker().to_owned()),
-            MmCoinEnum::SlpToken(token) => HistoryCoinType::Token {
+            MmCoinEnum::Bch(bch) => Some(HistoryCoinType::Coin(bch.ticker().to_owned())),
+            MmCoinEnum::SlpToken(token) => Some(HistoryCoinType::Token {
                 platform: token.platform_ticker().to_owned(),
                 token_id: token.token_id().take().to_vec().into(),
-            },
-            _ => unimplemented!(),
+            }),
+            _ => None,
         }
     }
 }
@@ -329,7 +331,10 @@ pub async fn my_tx_history_v2_rpc(
             )))?
             .clone(),
     );
-    let history_coin_type = coin.get_history_coin_type();
+    let history_coin_type = match coin.get_history_coin_type() {
+        Some(t) => t,
+        None => return MmError::err(MyTxHistoryErrorV2::NotSupportedFor(coin.ticker().to_owned())),
+    };
     let is_storage_init = tx_history_storage
         .is_initialized_for(history_coin_type.storage_ticker())
         .await?;

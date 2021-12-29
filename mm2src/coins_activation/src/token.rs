@@ -99,7 +99,7 @@ where
 
     let platform_coin = lp_coinfind_or_err(&ctx, token_protocol.platform_coin_ticker())
         .await
-        .mm_err(|_| EnableTokenError::PlatformCoinIsNotActivated(req.ticker.clone()))?;
+        .mm_err(|_| EnableTokenError::PlatformCoinIsNotActivated(token_protocol.platform_coin_ticker().to_owned()))?;
 
     let platform_coin = Token::PlatformCoin::try_from_mm_coin(platform_coin).or_mm_err(|| {
         EnableTokenError::UnsupportedPlatformCoin {
