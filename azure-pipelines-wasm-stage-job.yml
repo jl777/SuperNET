@@ -31,6 +31,7 @@ jobs:
           export TAG="$(git rev-parse --short=9 HEAD)"
           echo "##vso[task.setvariable variable=COMMIT_HASH]${TAG}"
         displayName: Setup ENV
+      # Build WASM.
       - bash: |
           rm -rf upload
           mkdir upload
@@ -39,39 +40,26 @@ jobs:
             echo $VERSION > MM_VERSION
           fi
           cat MM_VERSION
-          cargo build --release --features zhtlc
-        displayName: 'Build MM2 Release'
+          wasm-pack build --release --target web --out-dir target/target-wasm-release
+        displayName: 'Build MM2 WASM Release'
         condition: ne ( variables['Build.Reason'], 'PullRequest' )
         env:
           MANUAL_MM_VERSION: true
-      # Explicit --test-threads=16 makes testing process slightly faster on agents that have <16 CPU cores.
-      # Always run tests on mm2.1 branch and PRs
       - bash: |
-          cargo test --all -- --test-threads=16
-        displayName: 'Test MM2'
-        timeoutInMinutes: 22
+          cargo test --target wasm32-unknown-unknown --release --bin mm2
+        displayName: 'Test MM2 WASM'
         env:
+          WASM_BINDGEN_TEST_TIMEOUT: 120
+          GECKODRIVER: '/home/azureagent/wasm/geckodriver'
           BOB_PASSPHRASE: $(${{ parameters.bob_passphrase }})
-          BOB_USERPASS: $(${{ parameters.bob_userpass }})
           ALICE_PASSPHRASE: $(${{ parameters.alice_passphrase }})
-          ALICE_USERPASS: $(${{ parameters.alice_userpass }})
-          TELEGRAM_API_KEY: $(${{ parameters.telegram_api_key }})
-          RUST_LOG: debug
           MANUAL_MM_VERSION: true
         condition: or( eq( variables['Build.Reason'], 'PullRequest' ), eq( variables['Build.SourceBranchName'], 'mm2.1' ), eq( variables['Build.SourceBranchName'], 'dev' ) )
       - bash: |
-          zip upload/mm2-$(COMMIT_HASH)-$(Agent.OS)-Release target/release/mm2 target/release/libmm2.a -j
-        displayName: 'Prepare release build upload Linux'
-        condition: and ( eq( variables['Agent.OS'], 'Linux' ), ne ( variables['Build.Reason'], 'PullRequest' ) )
-      - bash: |
-          cd target/release
-          zip ../../upload/mm2-$(COMMIT_HASH)-$(Agent.OS)-Release mm2.dSYM mm2 libmm2.a -r
-        displayName: 'Prepare release build upload MacOS'
-        condition: and ( eq( variables['Agent.OS'], 'Darwin' ), ne ( variables['Build.Reason'], 'PullRequest' ) )
-      - powershell: |
-          7z a .\upload\mm2-$(COMMIT_HASH)-$(Agent.OS)-Release.zip .\target\release\mm2.exe .\target\release\mm2.lib .\target\release\*.dll "$Env:windir\system32\msvcr100.dll" "$Env:windir\system32\msvcp140.dll" "$Env:windir\system32\vcruntime140.dll"
-        displayName: 'Prepare release build upload Windows'
-        condition: and ( eq( variables['Agent.OS'], 'Windows_NT' ), ne ( variables['Build.Reason'], 'PullRequest' ) )
+          cd target/target-wasm-release/
+          zip ../../upload/mm2-$(COMMIT_HASH)-$(Agent.OS)-Wasm-Release mm2_bg.wasm mm2.js snippets -r
+        displayName: 'Prepare release WASM build upload Linux'
+        condition: ne ( variables['Build.Reason'], 'PullRequest' )
       # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/copy-files-over-ssh?view=vsts
       - task: CopyFilesOverSSH@0
         inputs:
