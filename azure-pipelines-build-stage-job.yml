@@ -58,7 +58,7 @@ jobs:
           then
             cargo test --all --target x86_64-apple-darwin -- --test-threads=16
           else
-            cargo test --all -- --test-threads=16
+            cargo test --all -- --test-threads=32
           fi
         displayName: 'Test MM2'
         timeoutInMinutes: 22
