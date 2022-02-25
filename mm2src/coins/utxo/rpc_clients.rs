@@ -12,7 +12,7 @@ use common::jsonrpc_client::{JsonRpcClient, JsonRpcError, JsonRpcErrorType, Json
                              JsonRpcRequest, JsonRpcResponse, JsonRpcResponseFut, RpcRes};
 use common::log::{error, info, warn};
 use common::mm_error::prelude::*;
-use common::mm_number::MmNumber;
+use common::mm_number::{BigInt, MmNumber};
 use common::{median, now_float, now_ms, OrdRange};
 use derive_more::Display;
 use futures::channel::oneshot as async_oneshot;
@@ -1143,8 +1143,8 @@ pub struct ElectrumTxHistoryItem {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ElectrumBalance {
-    confirmed: i64,
-    unconfirmed: i64,
+    pub(crate) confirmed: i128,
+    pub(crate) unconfirmed: i128,
 }
 
 fn sha_256(input: &[u8]) -> Vec<u8> {
@@ -1735,7 +1735,8 @@ impl UtxoRpcClientOps for ElectrumClient {
         let hash = electrum_script_hash(&output_script(&address, ScriptType::P2PKH));
         let hash_str = hex::encode(hash);
         Box::new(self.scripthash_get_balance(&hash_str).map(move |result| {
-            BigDecimal::from(result.confirmed + result.unconfirmed) / BigDecimal::from(10u64.pow(decimals as u32))
+            let balance_sat = BigInt::from(result.confirmed) + BigInt::from(result.unconfirmed);
+            BigDecimal::from(balance_sat) / BigDecimal::from(10u64.pow(decimals as u32))
         }))
     }
 
