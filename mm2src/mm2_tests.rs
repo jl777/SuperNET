@@ -1302,7 +1302,7 @@ async fn trade_base_rel_electrum(
     log!("Waiting 3 seconds for nodes to broadcast their swaps data..");
     Timer::sleep(3.).await;
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(all(not(target_arch = "wasm32"), not(feature = "zhtlc")))]
     for uuid in uuids.iter() {
         log!("Checking alice status..");
         check_stats_swap_status(&mm_alice, uuid, &MAKER_SUCCESS_EVENTS, &TAKER_SUCCESS_EVENTS).await;
@@ -1340,14 +1340,11 @@ async fn trade_base_rel_electrum(
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
-fn trade_test_electrum_and_eth_coins() {
-    let pairs: &[_] = if cfg!(feature = "zhtlc") {
-        &[("RICK", "ZOMBIE")]
-    } else {
-        &[("ETH", "JST")]
-    };
-    block_on(trade_base_rel_electrum(pairs, 1, 2, 0.1));
-}
+fn trade_test_electrum_and_eth_coins() { block_on(trade_base_rel_electrum(&[("ETH", "JST")], 1, 2, 0.1)); }
+
+#[test]
+#[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
+fn trade_test_electrum_rick_zombie() { block_on(trade_base_rel_electrum(&[("RICK", "ZOMBIE")], 1, 2, 0.1)); }
 
 #[wasm_bindgen_test]
 #[cfg(target_arch = "wasm32")]
