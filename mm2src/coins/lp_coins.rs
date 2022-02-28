@@ -63,6 +63,8 @@ use utxo_signer::with_key_pair::UtxoSignWithKeyPairError;
 use zcash_primitives::transaction::Transaction as ZTransaction;
 
 cfg_native! {
+    use crate::lightning::LightningCoin;
+    use crate::lightning::ln_conf::PlatformCoinConfirmations;
     use async_std::fs;
     use futures::AsyncWriteExt;
     use std::io;
@@ -103,7 +105,7 @@ pub mod hd_pubkey;
 pub mod hd_wallet;
 pub mod init_create_account;
 pub mod init_withdraw;
-pub mod lightning;
+#[cfg(not(target_arch = "wasm32"))] pub mod lightning;
 #[cfg_attr(target_arch = "wasm32", allow(dead_code, unused_imports))]
 pub mod my_tx_history_v2;
 pub mod qrc20;
@@ -128,7 +130,6 @@ pub mod utxo;
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 pub mod z_coin;
 
-use crate::lightning::LightningCoin;
 use eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, SignedEthTx};
 use hd_wallet::{HDAddress, HDAddressId};
 use init_create_account::{CreateAccountTaskManager, CreateAccountTaskManagerShared};
@@ -1443,11 +1444,12 @@ pub enum MmCoinEnum {
     ZCoin(ZCoin),
     Bch(BchCoin),
     SlpToken(SlpToken),
-    LightningCoin(LightningCoin),
     #[cfg(all(not(target_arch = "wasm32")))]
     SolanaCoin(SolanaCoin),
     #[cfg(all(not(target_arch = "wasm32")))]
     SplToken(SplToken),
+    #[cfg(not(target_arch = "wasm32"))]
+    LightningCoin(Box<LightningCoin>),
     Test(TestCoin),
 }
 
@@ -1489,8 +1491,9 @@ impl From<SlpToken> for MmCoinEnum {
     fn from(c: SlpToken) -> MmCoinEnum { MmCoinEnum::SlpToken(c) }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<LightningCoin> for MmCoinEnum {
-    fn from(c: LightningCoin) -> MmCoinEnum { MmCoinEnum::LightningCoin(c) }
+    fn from(c: LightningCoin) -> MmCoinEnum { MmCoinEnum::LightningCoin(Box::new(c)) }
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
@@ -1509,7 +1512,8 @@ impl Deref for MmCoinEnum {
             MmCoinEnum::EthCoin(ref c) => c,
             MmCoinEnum::Bch(ref c) => c,
             MmCoinEnum::SlpToken(ref c) => c,
-            MmCoinEnum::LightningCoin(ref c) => c,
+            #[cfg(not(target_arch = "wasm32"))]
+            MmCoinEnum::LightningCoin(ref c) => &**c,
             #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
             MmCoinEnum::ZCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
@@ -1703,10 +1707,11 @@ pub enum CoinProtocol {
     BCH {
         slp_prefix: String,
     },
+    #[cfg(not(target_arch = "wasm32"))]
     LIGHTNING {
         platform: String,
-        // Mainnet/Testnet/Signet/RegTest
         network: BlockchainNetwork,
+        confirmations: PlatformCoinConfirmations,
     },
     #[cfg(all(not(target_arch = "wasm32")))]
     SOLANA,
@@ -1964,6 +1969,8 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             let params = try_s!(UtxoActivationParams::from_legacy_req(req));
             try_s!(z_coin_from_conf_and_params(ctx, ticker, &coins_en, &params, &secret, dbdir).await).into()
         },
+        #[cfg(not(target_arch = "wasm32"))]
+        CoinProtocol::LIGHTNING { .. } => return ERR!("Lightning protocol is not supported by lp_coininit"),
         #[cfg(all(not(target_arch = "wasm32")))]
         CoinProtocol::SOLANA => {
             let params = try_s!(SolanaActivationParams::from_legacy_req(req));
@@ -1986,7 +1993,6 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             let token = SplToken::new(*decimals, ticker.into(), pubkey, platform_coin);
             token.into()
         },
-        proto => return ERR!("{:?} is not supported by lp_coininit", proto),
     };
 
     let register_params = RegisterCoinParams {
@@ -2550,6 +2556,7 @@ pub fn address_by_coin_conf_and_pubkey_str(
                 _ => ERR!("Platform protocol {:?} is not BCH", platform_protocol),
             }
         },
+        #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::LIGHTNING { .. } => {
             ERR!("address_by_coin_conf_and_pubkey_str is not implemented for lightning protocol yet!")
         },
