@@ -130,6 +130,7 @@ mod tests {
         let valid_tx_details = sol_coin
             .withdraw(WithdrawRequest {
                 coin: "SOL".to_string(),
+                from: None,
                 to: sol_coin.my_address.clone(),
                 amount: BigDecimal::from(0.0001),
                 max: false,
@@ -145,6 +146,7 @@ mod tests {
         let invalid_tx = sol_coin
             .withdraw(WithdrawRequest {
                 coin: "SOL".to_string(),
+                from: None,
                 to: sol_coin.my_address.clone(),
                 amount: BigDecimal::from(10),
                 max: false,

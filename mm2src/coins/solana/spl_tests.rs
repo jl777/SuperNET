@@ -64,6 +64,7 @@ mod tests {
         let valid_tx_details = usdc_sol_coin
             .withdraw(WithdrawRequest {
                 coin: "USDC".to_string(),
+                from: None,
                 to: "AYJmtzc9D4KU6xsDzhKShFyYKUNXY622j9QoQEo4LfpX".to_string(),
                 amount: BigDecimal::from_str("0.0001").unwrap(),
                 max: false,

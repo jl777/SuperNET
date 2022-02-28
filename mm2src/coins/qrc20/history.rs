@@ -146,7 +146,7 @@ impl Qrc20Coin {
                     }));
                     break;
                 },
-                RequestTxHistoryResult::UnknownError(e) => {
+                RequestTxHistoryResult::CriticalError(e) => {
                     ctx.log.log(
                         "😟",
                         &[&"tx_history", &self.utxo.conf.ticker],
@@ -175,8 +175,7 @@ impl Qrc20Coin {
             // `history_map` has been updated.
             let mut to_write: Vec<TransactionDetails> = history_map
                 .iter()
-                .map(|(_, value)| value)
-                .flatten()
+                .flat_map(|(_, value)| value)
                 .map(|(_tx_id, tx)| tx.clone())
                 .collect();
             to_write.sort_unstable_by(|a, b| {
@@ -207,7 +206,7 @@ impl Qrc20Coin {
 
         let miner_fee = {
             let total_qtum_fee = match qtum_details.fee_details {
-                Some(TxFeeDetails::Utxo(UtxoFeeDetails { ref amount })) => amount.clone(),
+                Some(TxFeeDetails::Utxo(UtxoFeeDetails { ref amount, .. })) => amount.clone(),
                 Some(ref fee) => return ERR!("Unexpected fee details {:?}", fee),
                 None => return ERR!("No Qtum fee details"),
             };
@@ -233,7 +232,9 @@ impl Qrc20Coin {
         receipt: TxReceipt,
         miner_fee: BigDecimal,
     ) -> Result<TxTransferMap, String> {
-        let tx_hash: H256Json = try_s!(H256Json::from_str(qtum_details.tx_hash.as_str()));
+        let my_address = try_s!(self.utxo.derivation_method.iguana_or_err());
+
+        let tx_hash: H256Json = qtum_details.tx_hash.as_bytes().into();
         if qtum_tx.outputs.len() <= (receipt.output_index as usize) {
             return ERR!(
                 "Length of the transaction {:?} outputs less than output_index {}",
@@ -288,17 +289,17 @@ impl Qrc20Coin {
             };
 
             // https://github.com/qtumproject/qtum-electrum/blob/v4.0.2/electrum/wallet.py#L2102
-            if from != self.utxo.my_address && to != self.utxo.my_address {
+            if from != *my_address && to != *my_address {
                 // address mismatch
                 continue;
             }
 
-            let spent_by_me = if from == self.utxo.my_address {
+            let spent_by_me = if from == *my_address {
                 total_amount.clone()
             } else {
                 0.into()
             };
-            let received_by_me = if to == self.utxo.my_address {
+            let received_by_me = if to == *my_address {
                 total_amount.clone()
             } else {
                 0.into()
@@ -307,16 +308,16 @@ impl Qrc20Coin {
             // do not inherit the block_height from qtum_tx (usually it is None)
             let block_height = receipt.block_number;
             let my_balance_change = &received_by_me - &spent_by_me;
-            let internal_id = TxInternalId::new(tx_hash.clone(), receipt.output_index, log_index as u64);
+            let internal_id = TxInternalId::new(tx_hash, receipt.output_index, log_index as u64);
 
             let from = if is_transferred_from_contract(&script_pubkey) {
-                qtum::display_as_contract_address(from)
+                try_s!(qtum::display_as_contract_address(from))
             } else {
                 try_s!(from.display_address())
             };
 
             let to = if is_transferred_to_contract(&script_pubkey) {
-                qtum::display_as_contract_address(to)
+                try_s!(qtum::display_as_contract_address(to))
             } else {
                 try_s!(to.display_address())
             };
@@ -389,8 +390,7 @@ impl Qrc20Coin {
     ) -> bool {
         let need_update = history
             .iter()
-            .map(|(_, txs)| txs)
-            .flatten()
+            .flat_map(|(_, txs)| txs)
             .any(|(_, tx)| tx.should_update_timestamp() || tx.should_update_block_height());
         match last_balance {
             Some(last_balance) if last_balance == actual_balance && !need_update => {
@@ -452,7 +452,7 @@ impl Qrc20Coin {
             }
             if tx.should_update_timestamp() {
                 if qtum_verbose.is_none() {
-                    qtum_verbose = get_verbose_transaction(self, ctx, tx_hash.clone()).await;
+                    qtum_verbose = get_verbose_transaction(self, ctx, *tx_hash).await;
                 }
                 if let Some(ref qtum_verbose) = qtum_verbose {
                     tx.timestamp = qtum_verbose.time as u64;
@@ -499,7 +499,7 @@ impl Qrc20Coin {
             // `transfer` details are not initialized for the `tx_hash`
             // or there is an error in cached `tx_hash_history`
             mm_counter!(ctx.metrics, "tx.history.request.count", 1, "coin" => self.utxo.conf.ticker.clone(), "method" => "transfer_details_by_hash");
-            let tx_hash_history = match self.transfer_details_by_hash(tx_hash.clone()).await {
+            let tx_hash_history = match self.transfer_details_by_hash(tx_hash).await {
                 Ok(d) => d,
                 Err(e) => {
                     ctx.log.log(
@@ -511,7 +511,7 @@ impl Qrc20Coin {
                 },
             };
 
-            if history_map.insert(tx_hash.clone(), tx_hash_history).is_some() {
+            if history_map.insert(tx_hash, tx_hash_history).is_some() {
                 ctx.log.log(
                     "😟",
                     &[&"tx_history", &self.utxo.conf.ticker],
@@ -549,7 +549,7 @@ impl Qrc20Coin {
                     return Ok(HistoryMapByHash::default());
                 },
             };
-            let tx_hash_history = history_map.entry(id.tx_hash.clone()).or_insert_with(HashMap::default);
+            let tx_hash_history = history_map.entry(id.tx_hash).or_insert_with(HashMap::default);
             if tx_hash_history.insert(id, tx).is_some() {
                 ctx.log.log(
                     "😟",
@@ -566,7 +566,9 @@ impl Qrc20Coin {
 
 pub struct TransferHistoryBuilder {
     coin: Qrc20Coin,
-    params: TransferHistoryParams,
+    from_block: u64,
+    address: Option<H160>,
+    token_address: H160,
 }
 
 struct TransferHistoryParams {
@@ -577,39 +579,62 @@ struct TransferHistoryParams {
 
 impl TransferHistoryBuilder {
     pub fn new(coin: Qrc20Coin) -> TransferHistoryBuilder {
-        let address = qtum::contract_addr_from_utxo_addr(coin.utxo.my_address.clone());
         let token_address = coin.contract_address;
-        let params = TransferHistoryParams {
+        TransferHistoryBuilder {
+            coin,
             from_block: 0,
-            address,
+            address: None,
             token_address,
-        };
-        TransferHistoryBuilder { coin, params }
+        }
     }
 
     #[allow(clippy::wrong_self_convention)]
     pub fn from_block(mut self, from_block: u64) -> TransferHistoryBuilder {
-        self.params.from_block = from_block;
+        self.from_block = from_block;
         self
     }
 
     pub fn address(mut self, address: H160) -> TransferHistoryBuilder {
-        self.params.address = address;
+        self.address = Some(address);
         self
     }
 
     #[allow(dead_code)]
     pub fn token_address(mut self, token_address: H160) -> TransferHistoryBuilder {
-        self.params.token_address = token_address;
+        self.token_address = token_address;
         self
     }
 
     pub async fn build(self) -> Result<Vec<TxReceipt>, MmError<UtxoRpcError>> {
-        self.coin.utxo.rpc_client.build(self.params).await
+        let params = self.build_params()?;
+        self.coin.utxo.rpc_client.build(params).await
     }
 
     pub async fn build_tx_idents(self) -> Result<Vec<(H256Json, u64)>, MmError<UtxoRpcError>> {
-        self.coin.utxo.rpc_client.build_tx_idents(self.params).await
+        let params = self.build_params()?;
+        self.coin.utxo.rpc_client.build_tx_idents(params).await
+    }
+
+    fn build_params(&self) -> Result<TransferHistoryParams, MmError<UtxoRpcError>> {
+        let address = match self.address {
+            Some(addr) => addr,
+            None => {
+                let my_address = self
+                    .coin
+                    .utxo
+                    .derivation_method
+                    .iguana_or_err()
+                    .mm_err(|e| UtxoRpcError::Internal(e.to_string()))?;
+                qtum::contract_addr_from_utxo_addr(my_address.clone())
+                    .mm_err(|e| UtxoRpcError::Internal(e.to_string()))?
+            },
+        };
+
+        Ok(TransferHistoryParams {
+            from_block: self.from_block,
+            address,
+            token_address: self.token_address,
+        })
     }
 }
 
@@ -706,7 +731,7 @@ impl BuildTransferHistory for NativeClient {
         while from_block <= block_count {
             let to_block = from_block + SEARCH_LOGS_STEP - 1;
             let mut receipts = self
-                .search_logs(from_block, Some(to_block), vec![token_address.clone()], topics.clone())
+                .search_logs(from_block, Some(to_block), vec![token_address], topics.clone())
                 .compat()
                 .await?;
 
@@ -801,6 +826,7 @@ fn is_transfer_event_log(log: &LogEntry) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common::block_on;
     use common::for_tests::find_metrics_in_json;
     use common::mm_metrics::{MetricType, MetricsJson, MetricsOps};
     use qrc20_tests::qrc20_coin_for_test;

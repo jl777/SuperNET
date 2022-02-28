@@ -11,12 +11,6 @@ use derive_more::Display;
 use ser_error_derive::SerializeErrorType;
 use serde_derive::{Deserialize, Serialize};
 
-pub trait TryPlatformCoinFromMmCoinEnum {
-    fn try_from_mm_coin(coin: MmCoinEnum) -> Option<Self>
-    where
-        Self: Sized;
-}
-
 pub trait TokenProtocolParams {
     fn platform_coin_ticker(&self) -> &str;
 }
@@ -29,7 +23,7 @@ pub trait TokenActivationOps: Into<MmCoinEnum> {
     type ActivationResult;
     type ActivationError: NotMmError;
 
-    async fn init_token(
+    async fn enable_token(
         ticker: String,
         platform_coin: Self::PlatformCoin,
         activation_params: Self::ActivationParams,
@@ -105,7 +99,7 @@ where
 
     let platform_coin = lp_coinfind_or_err(&ctx, token_protocol.platform_coin_ticker())
         .await
-        .mm_err(|_| EnableTokenError::PlatformCoinIsNotActivated(req.ticker.clone()))?;
+        .mm_err(|_| EnableTokenError::PlatformCoinIsNotActivated(token_protocol.platform_coin_ticker().to_owned()))?;
 
     let platform_coin = Token::PlatformCoin::try_from_mm_coin(platform_coin).or_mm_err(|| {
         EnableTokenError::UnsupportedPlatformCoin {
@@ -115,7 +109,7 @@ where
     })?;
 
     let (token, activation_result) =
-        Token::init_token(req.ticker, platform_coin, req.activation_params, token_protocol).await?;
+        Token::enable_token(req.ticker, platform_coin, req.activation_params, token_protocol).await?;
 
     let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
     coins_ctx

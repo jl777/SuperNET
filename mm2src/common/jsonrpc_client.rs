@@ -90,9 +90,9 @@ pub struct JsonRpcResponse {
 pub struct JsonRpcError {
     /// Additional member contains an instance info that implements the JsonRpcClient trait.
     /// The info is used in particular to supplement the error info.
-    client_info: String,
+    pub client_info: String,
     /// Source Rpc request.
-    request: JsonRpcRequest,
+    pub request: JsonRpcRequest,
     /// Error type.
     pub error: JsonRpcErrorType,
 }
@@ -105,6 +105,10 @@ pub enum JsonRpcErrorType {
     Parse(JsonRpcRemoteAddr, String),
     /// The JSON-RPC error returned from server
     Response(JsonRpcRemoteAddr, Json),
+}
+
+impl JsonRpcErrorType {
+    pub fn is_transport(&self) -> bool { matches!(*self, JsonRpcErrorType::Transport(_)) }
 }
 
 impl fmt::Display for JsonRpcError {

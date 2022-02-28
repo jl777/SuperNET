@@ -13,9 +13,9 @@ use bigdecimal::BigDecimal;
 use bitcrypto::{dhash160, ChecksumType};
 use coins::qrc20::rpc_clients::for_tests::Qrc20NativeWalletOps;
 use coins::qrc20::{qrc20_coin_from_conf_and_params, Qrc20ActivationParams, Qrc20Coin};
-use coins::utxo::qtum::{qtum_coin_from_conf_and_params, QtumBasedCoin, QtumCoin};
+use coins::utxo::qtum::{qtum_coin_with_priv_key, QtumBasedCoin, QtumCoin};
 use coins::utxo::rpc_clients::{NativeClient, UtxoRpcClientEnum, UtxoRpcClientOps};
-use coins::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_params, UtxoStandardCoin};
+use coins::utxo::utxo_standard::{utxo_standard_coin_with_priv_key, UtxoStandardCoin};
 use coins::utxo::{coin_daemon_data_dir, sat_from_big_decimal, zcash_params_path, UtxoActivationParams,
                   UtxoAddressFormat, UtxoCoinFields};
 use coins::MarketCoinOps;
@@ -23,7 +23,7 @@ use common::mm_ctx::{MmArc, MmCtxBuilder};
 use ethereum_types::H160 as H160Eth;
 use futures01::Future;
 use http::StatusCode;
-use keys::Address;
+use keys::{Address, AddressHashEnum};
 use primitives::hash::{H160, H256};
 use secp256k1::Secp256k1;
 use serde_json::{self as json, Value as Json};
@@ -49,7 +49,7 @@ pub static mut QORTY_TOKEN_ADDRESS: Option<H160Eth> = None;
 pub static mut QRC20_SWAP_CONTRACT_ADDRESS: Option<H160Eth> = None;
 pub static mut QTUM_CONF_PATH: Option<PathBuf> = None;
 
-pub const UTXO_ASSET_DOCKER_IMAGE: &str = "artempikulin/testblockchain";
+pub const UTXO_ASSET_DOCKER_IMAGE: &str = "artempikulin/testblockchain:multiarch";
 
 pub const QTUM_ADDRESS_LABEL: &str = "MM2_ADDRESS_LABEL";
 
@@ -63,13 +63,21 @@ pub trait CoinDockerOps {
         }
     }
 
-    fn wait_ready(&self) {
-        let timeout = now_ms() + 30000;
+    fn wait_ready(&self, expected_tx_version: i32) {
+        let timeout = now_ms() + 120000;
         loop {
             match self.rpc_client().get_block_count().wait() {
                 Ok(n) => {
                     if n > 1 {
-                        break;
+                        if let UtxoRpcClientEnum::Native(client) = self.rpc_client() {
+                            let hash = client.get_block_hash(n).wait().unwrap();
+                            let block = client.get_block(hash).wait().unwrap();
+                            let coinbase = client.get_verbose_transaction(&block.tx[0]).wait().unwrap();
+                            println!("Coinbase tx {:?} in block {}", coinbase, n);
+                            if coinbase.version == expected_tx_version {
+                                break;
+                            }
+                        }
                     }
                 },
                 Err(e) => log!([e]),
@@ -92,9 +100,9 @@ pub struct UtxoDockerNode<'a> {
 pub fn utxo_asset_docker_node<'a>(docker: &'a Cli, ticker: &'static str, port: u16) -> UtxoDockerNode<'a> {
     let args = vec![
         "-v".into(),
-        format!("{}:/data/.zcash-params", zcash_params_path().display()),
+        format!("{}:/root/.zcash-params", zcash_params_path().display()),
         "-p".into(),
-        format!("127.0.0.1:{}:{}", port, port).into(),
+        format!("{}:{}", port, port).into(),
     ];
     let image = GenericImage::new(UTXO_ASSET_DOCKER_IMAGE)
         .with_args(args)
@@ -204,7 +212,7 @@ pub fn qrc20_coin_from_privkey(ticker: &str, priv_key: &[u8]) -> (MmArc, Qrc20Co
         ticker,
         platform,
         &conf,
-        params,
+        &params,
         &priv_key,
         contract_address,
     ))
@@ -248,10 +256,7 @@ pub fn utxo_coin_from_privkey(ticker: &str, priv_key: &[u8]) -> (MmArc, UtxoStan
     let conf = json!({"asset":ticker,"txversion":4,"overwintered":1,"txfee":1000,"network":"regtest"});
     let req = json!({"method":"enable"});
     let params = UtxoActivationParams::from_legacy_req(&req).unwrap();
-    let coin = block_on(utxo_standard_coin_from_conf_and_params(
-        &ctx, ticker, &conf, params, priv_key,
-    ))
-    .unwrap();
+    let coin = block_on(utxo_standard_coin_with_priv_key(&ctx, ticker, &conf, &params, priv_key)).unwrap();
     import_address(&coin);
     (ctx, coin)
 }
@@ -289,7 +294,7 @@ pub fn fill_qrc20_address(coin: &Qrc20Coin, amount: BigDecimal, timeout: u64) {
     };
 
     let from_addr = get_address_by_label(coin, QTUM_ADDRESS_LABEL);
-    let to_addr = coin.my_addr_as_contract_addr();
+    let to_addr = coin.my_addr_as_contract_addr().unwrap();
     let satoshis = sat_from_big_decimal(&amount, coin.as_ref().decimals).expect("!sat_from_big_decimal");
 
     let hash = client
@@ -304,7 +309,7 @@ pub fn fill_qrc20_address(coin: &Qrc20Coin, amount: BigDecimal, timeout: u64) {
         .expect("!transfer_tokens")
         .txid;
 
-    let tx_bytes = client.get_transaction_bytes(hash).wait().unwrap();
+    let tx_bytes = client.get_transaction_bytes(&hash).wait().unwrap();
     log!({ "{:02x}", tx_bytes });
     coin.wait_for_confirmations(&tx_bytes, 1, false, timeout, 1)
         .wait()
@@ -353,14 +358,7 @@ pub fn generate_qtum_coin_with_random_privkey(
     let priv_key = SecretKey::new(&mut rand6::thread_rng());
     let ctx = MmCtxBuilder::new().into_mm_arc();
     let params = UtxoActivationParams::from_legacy_req(&req).unwrap();
-    let coin = block_on(qtum_coin_from_conf_and_params(
-        &ctx,
-        "QTUM",
-        &conf,
-        params,
-        priv_key.as_ref(),
-    ))
-    .unwrap();
+    let coin = block_on(qtum_coin_with_priv_key(&ctx, "QTUM", &conf, &params, priv_key.as_ref())).unwrap();
 
     let timeout = 30; // timeout if test takes more than 30 seconds to run
     let my_address = coin.my_address().expect("!my_address");
@@ -398,14 +396,7 @@ pub fn generate_segwit_qtum_coin_with_random_privkey(
     let priv_key = SecretKey::new(&mut rand6::thread_rng());
     let ctx = MmCtxBuilder::new().into_mm_arc();
     let params = UtxoActivationParams::from_legacy_req(&req).unwrap();
-    let coin = block_on(qtum_coin_from_conf_and_params(
-        &ctx,
-        "QTUM",
-        &conf,
-        params,
-        priv_key.as_ref(),
-    ))
-    .unwrap();
+    let coin = block_on(qtum_coin_with_priv_key(&ctx, "QTUM", &conf, &params, priv_key.as_ref())).unwrap();
 
     let timeout = 30; // timeout if test takes more than 30 seconds to run
     let my_address = coin.my_address().expect("!my_address");
@@ -426,7 +417,7 @@ where
     if let UtxoRpcClientEnum::Native(client) = &coin.as_ref().rpc_client {
         client.import_address(address, address, false).wait().unwrap();
         let hash = client.send_to_address(address, &amount).wait().unwrap();
-        let tx_bytes = client.get_transaction_bytes(hash).wait().unwrap();
+        let tx_bytes = client.get_transaction_bytes(&hash).wait().unwrap();
         coin.wait_for_confirmations(&tx_bytes, 1, false, timeout, 1)
             .wait()
             .unwrap();
@@ -736,7 +727,7 @@ pub fn get_balance(mm: &MarketMakerIt, coin: &str) -> MyBalanceResponse {
 pub fn utxo_burn_address() -> Address {
     Address {
         prefix: 60,
-        hash: H160::default(),
+        hash: AddressHashEnum::default_address_hash(),
         t_addr_prefix: 0,
         checksum_type: ChecksumType::DSHA256,
         hrp: None,

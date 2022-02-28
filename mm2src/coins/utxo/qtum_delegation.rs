@@ -2,12 +2,11 @@ use crate::qrc20::rpc_clients::Qrc20ElectrumOps;
 use crate::qrc20::script_pubkey::generate_contract_call_script_pubkey;
 use crate::qrc20::{contract_addr_into_rpc_format, ContractCallOutput, GenerateQrc20TxResult, Qrc20AbiError,
                    Qrc20FeeDetails, OUTPUT_QTUM_AMOUNT, QRC20_DUST, QRC20_GAS_LIMIT_DEFAULT, QRC20_GAS_PRICE_DEFAULT};
-use crate::utxo::qtum::{contract_addr_from_utxo_addr, QtumBasedCoin, QtumCoin, QtumDelegationOps,
-                        QtumDelegationRequest, QtumStakingInfosDetails};
+use crate::utxo::qtum::{QtumBasedCoin, QtumCoin, QtumDelegationOps, QtumDelegationRequest, QtumStakingInfosDetails};
 use crate::utxo::rpc_clients::UtxoRpcClientEnum;
 use crate::utxo::utxo_common::{big_decimal_from_sat_unsigned, UtxoTxBuilder};
-use crate::utxo::UTXO_LOCK;
-use crate::utxo::{qtum, sign_tx, utxo_common, Address, UtxoCommonOps};
+use crate::utxo::{qtum, utxo_common, Address, UtxoCommonOps};
+use crate::utxo::{PrivKeyNotAllowed, UTXO_LOCK};
 use crate::{DelegationError, DelegationFut, DelegationResult, MarketCoinOps, StakingInfos, StakingInfosError,
             StakingInfosFut, StakingInfosResult, TransactionDetails, TransactionType};
 use bigdecimal::Zero;
@@ -21,11 +20,12 @@ use ethabi::{Contract, Token};
 use ethereum_types::H160;
 use futures::compat::Future01CompatExt;
 use futures::{FutureExt, TryFutureExt};
-use keys::{AddressHash, Signature};
+use keys::{AddressHashEnum, Signature};
 use rpc::v1::types::Bytes as BytesJson;
 use script::Builder as ScriptBuilder;
 use serialization::serialize;
 use std::str::FromStr;
+use utxo_signer::with_key_pair::sign_tx;
 
 pub const QTUM_DELEGATION_STANDARD_FEE: u64 = 10;
 pub const QTUM_LOWER_BOUND_DELEGATION_AMOUNT: f64 = 100.0;
@@ -50,6 +50,8 @@ pub enum QtumStakingAbiError {
     AbiError(String),
     #[display(fmt = "Qtum POD error: {}", _0)]
     PodSigningError(String),
+    #[display(fmt = "Internal error: {}", _0)]
+    Internal(String),
 }
 
 impl From<Qrc20AbiError> for QtumStakingAbiError {
@@ -67,6 +69,18 @@ impl From<QtumStakingAbiError> for DelegationError {
 
 impl From<ethabi::Error> for QtumStakingAbiError {
     fn from(e: ethabi::Error) -> QtumStakingAbiError { QtumStakingAbiError::AbiError(e.to_string()) }
+}
+
+impl From<ethabi::Error> for DelegationError {
+    fn from(e: ethabi::Error) -> Self { DelegationError::from(QtumStakingAbiError::from(e)) }
+}
+
+impl From<Qrc20AbiError> for DelegationError {
+    fn from(e: Qrc20AbiError) -> Self { DelegationError::from(QtumStakingAbiError::from(e)) }
+}
+
+impl From<PrivKeyNotAllowed> for QtumStakingAbiError {
+    fn from(e: PrivKeyNotAllowed) -> Self { QtumStakingAbiError::Internal(e.to_string()) }
 }
 
 impl QtumDelegationOps for QtumCoin {
@@ -88,13 +102,12 @@ impl QtumDelegationOps for QtumCoin {
         Box::new(fut.boxed().compat())
     }
 
-    fn generate_pod(&self, addr_hash: AddressHash) -> Result<Signature, MmError<QtumStakingAbiError>> {
+    fn generate_pod(&self, addr_hash: AddressHashEnum) -> Result<Signature, MmError<DelegationError>> {
         let mut buffer = b"\x15Qtum Signed Message:\n\x28".to_vec();
         buffer.append(&mut addr_hash.to_string().into_bytes());
         let hashed = dhash256(&buffer);
-        let signature = self
-            .as_ref()
-            .key_pair
+        let key_pair = self.as_ref().priv_key_policy.key_pair_or_err()?;
+        let signature = key_pair
             .private()
             .sign_compact(&hashed)
             .map_to_mm(|e| QtumStakingAbiError::PodSigningError(e.to_string()))?;
@@ -104,17 +117,18 @@ impl QtumDelegationOps for QtumCoin {
 
 impl QtumCoin {
     async fn remove_delegation_impl(&self) -> DelegationResult {
-        if self.as_ref().my_address.addr_format.is_segwit() {
+        if self.addr_format().is_segwit() {
             return MmError::err(DelegationError::DelegationOpsNotSupported {
                 reason: "Qtum doesn't support delegation for segwit".to_string(),
             });
         }
         let delegation_output = self.remove_delegation_output(QRC20_GAS_LIMIT_DEFAULT, QRC20_GAS_PRICE_DEFAULT)?;
         let outputs = vec![delegation_output];
+        let my_address = self.my_address().map_to_mm(DelegationError::InternalError)?;
         Ok(self
             .generate_delegation_transaction(
                 outputs,
-                self.as_ref().my_address.to_string(),
+                my_address,
                 QRC20_GAS_LIMIT_DEFAULT,
                 TransactionType::RemoveDelegation,
             )
@@ -130,15 +144,15 @@ impl QtumCoin {
             },
             UtxoRpcClientEnum::Electrum(electrum) => electrum,
         };
-        let v = contract_addr_from_utxo_addr(utxo.my_address.clone());
-        let address = contract_addr_into_rpc_format(&v);
+        let address = self.my_addr_as_contract_addr()?;
+        let address_rpc = contract_addr_into_rpc_format(&address);
         let add_delegation_history = client
-            .blockchain_contract_event_get_history(&address, &contract_address, QTUM_ADD_DELEGATION_TOPIC)
+            .blockchain_contract_event_get_history(&address_rpc, &contract_address, QTUM_ADD_DELEGATION_TOPIC)
             .compat()
             .await
             .map_to_mm(|e| StakingInfosError::Transport(e.to_string()))?;
         let remove_delegation_history = client
-            .blockchain_contract_event_get_history(&address, &contract_address, QTUM_REMOVE_DELEGATION_TOPIC)
+            .blockchain_contract_event_get_history(&address_rpc, &contract_address, QTUM_REMOVE_DELEGATION_TOPIC)
             .compat()
             .await
             .map_to_mm(|e| StakingInfosError::Transport(e.to_string()))?;
@@ -189,8 +203,10 @@ impl QtumCoin {
 
     async fn get_delegation_infos_impl(&self) -> StakingInfosResult {
         let coin = self.as_ref();
+        let my_address = coin.derivation_method.iguana_or_err()?;
+
         let staker = self.am_i_currently_staking().await?;
-        let (unspents, _) = utxo_common::list_unspent_ordered(self, &coin.my_address).await?;
+        let (unspents, _) = self.list_unspent_ordered(my_address).await?;
         let lower_bound = QTUM_LOWER_BOUND_DELEGATION_AMOUNT.into();
         let mut amount = BigDecimal::zero();
         if staker.is_some() {
@@ -206,7 +222,7 @@ impl QtumCoin {
                 amount,
                 staker,
                 am_i_staking,
-                is_staking_supported: !coin.my_address.addr_format.is_segwit(),
+                is_staking_supported: !my_address.addr_format.is_segwit(),
             }
             .into(),
         };
@@ -214,7 +230,7 @@ impl QtumCoin {
     }
 
     async fn add_delegation_impl(&self, request: QtumDelegationRequest) -> DelegationResult {
-        if self.as_ref().my_address.addr_format.is_segwit() {
+        if self.addr_format().is_segwit() {
             return MmError::err(DelegationError::DelegationOpsNotSupported {
                 reason: "Qtum doesn't support delegation for segwit".to_string(),
             });
@@ -226,7 +242,7 @@ impl QtumCoin {
             Address::from_str(request.address.as_str()).map_to_mm(|e| DelegationError::AddressError(e.to_string()))?;
         let fee = request.fee.unwrap_or(QTUM_DELEGATION_STANDARD_FEE);
         let _utxo_lock = UTXO_LOCK.lock();
-        let staker_address_hex = qtum::contract_addr_from_utxo_addr(to_addr.clone());
+        let staker_address_hex = qtum::contract_addr_from_utxo_addr(to_addr.clone())?;
         let delegation_output = self.add_delegation_output(
             staker_address_hex,
             to_addr.hash,
@@ -236,10 +252,11 @@ impl QtumCoin {
         )?;
 
         let outputs = vec![delegation_output];
+        let my_address = self.my_address().map_to_mm(DelegationError::InternalError)?;
         Ok(self
             .generate_delegation_transaction(
                 outputs,
-                self.as_ref().my_address.to_string(),
+                my_address,
                 QRC20_GAS_LIMIT_DELEGATION,
                 TransactionType::StakingDelegation,
             )
@@ -254,7 +271,11 @@ impl QtumCoin {
         transaction_type: TransactionType,
     ) -> DelegationResult {
         let utxo = self.as_ref();
-        let (unspents, _) = self.ordered_mature_unspents(&utxo.my_address).await?;
+
+        let key_pair = utxo.priv_key_policy.key_pair_or_err()?;
+        let my_address = utxo.derivation_method.iguana_or_err()?;
+
+        let (unspents, _) = self.list_unspent_ordered(my_address).await?;
         let mut gas_fee = 0;
         let mut outputs = Vec::with_capacity(contract_outputs.len());
         for output in contract_outputs {
@@ -273,15 +294,14 @@ impl QtumCoin {
                 DelegationError::from_generate_tx_error(gen_tx_error, self.ticker().to_string(), utxo.decimals)
             })?;
 
-        let prev_script = ScriptBuilder::build_p2pkh(&utxo.my_address.hash);
+        let prev_script = ScriptBuilder::build_p2pkh(&my_address.hash);
         let signed = sign_tx(
             unsigned,
-            &utxo.key_pair,
+            key_pair,
             prev_script,
             utxo.conf.signature_version,
             utxo.conf.fork_id,
-        )
-        .map_to_mm(DelegationError::InternalError)?;
+        )?;
 
         let miner_fee = data.fee_amount + data.unused_change.unwrap_or_default();
         let generated_tx = GenerateQrc20TxResult {
@@ -298,7 +318,7 @@ impl QtumCoin {
             gas_price: QRC20_GAS_PRICE_DEFAULT,
             total_gas_fee: utxo_common::big_decimal_from_sat(generated_tx.gas_fee as i64, utxo.decimals),
         };
-        let my_address = self.my_address().map_to_mm(DelegationError::InternalError)?;
+        let my_address_string = self.my_address().map_to_mm(DelegationError::InternalError)?;
 
         let spent_by_me = utxo_common::big_decimal_from_sat(data.spent_by_me as i64, utxo.decimals);
         let qtum_amount = spent_by_me.clone();
@@ -308,7 +328,7 @@ impl QtumCoin {
         Ok(TransactionDetails {
             tx_hex: serialize(&generated_tx.signed).into(),
             tx_hash: format!("{:02x}", BytesJson(generated_tx.signed.hash().reversed().to_vec())),
-            from: vec![my_address],
+            from: vec![my_address_string],
             to: vec![to_address],
             total_amount: qtum_amount,
             spent_by_me,
@@ -341,11 +361,11 @@ impl QtumCoin {
     fn add_delegation_output(
         &self,
         to_addr: H160,
-        addr_hash: AddressHash,
+        addr_hash: AddressHashEnum,
         fee: u64,
         gas_limit: u64,
         gas_price: u64,
-    ) -> QtumStakingAbiResult<ContractCallOutput> {
+    ) -> Result<ContractCallOutput, MmError<DelegationError>> {
         let function: &ethabi::Function = QTUM_DELEGATE_CONTRACT.function("addDelegation")?;
         let pod = self.generate_pod(addr_hash)?;
         let params = function.encode_input(&[

@@ -1,9 +1,11 @@
 use super::*;
+use crate::mm2::lp_dispatcher::dispatch_lp_event;
+use crate::mm2::lp_dispatcher::StopCtxEvent;
 use common::crash_reports::init_crash_reports;
+use common::executor::spawn;
 use common::log::{register_callback, FfiCallback};
 use common::mm_ctx::MmArc;
-use common::now_float;
-use futures01::Future;
+use common::{block_on, now_float};
 use gstuff::any_to_str;
 use libc::c_char;
 use num_traits::FromPrimitive;
@@ -115,7 +117,7 @@ pub extern "C" fn mm2_test(torch: i32, log_cb: extern "C" fn(line: *const c_char
         };
         let conf = json::to_string(&ctx.conf).unwrap();
         let hy_res = mm2::rpc::lp_commands::stop(ctx);
-        let r = match hy_res.wait() {
+        let r = match block_on(hy_res) {
             Ok(r) => r,
             Err(err) => {
                 log!("mm2_test] !stop: "(err));
@@ -204,13 +206,14 @@ enum StopErr {
     Ok = 0,
     NotRunning = 1,
     ErrorStopping = 2,
+    StoppingAlready = 3,
 }
 
 /// Stop an MM2 instance or reset the static variables.
 #[no_mangle]
 pub extern "C" fn mm2_stop() -> i8 {
     // The log callback might be initialized already, so try to use the common logs.
-    use common::log::{error, warn};
+    use common::log::warn;
 
     if !LP_MAIN_RUNNING.load(Ordering::Relaxed) {
         return StopErr::NotRunning as i8;
@@ -233,11 +236,14 @@ pub extern "C" fn mm2_stop() -> i8 {
         },
     };
 
-    match ctx.stop() {
-        Ok(()) => StopErr::Ok as i8,
-        Err(e) => {
-            error!("mm2_stop] {}", e);
-            StopErr::ErrorStopping as i8
-        },
+    if ctx.is_stopping() {
+        return StopErr::StoppingAlready as i8;
     }
+
+    spawn(async move {
+        dispatch_lp_event(ctx.clone(), StopCtxEvent.into()).await;
+        let _ = ctx.stop();
+    });
+
+    StopErr::Ok as i8
 }

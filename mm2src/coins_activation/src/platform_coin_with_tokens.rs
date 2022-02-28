@@ -1,10 +1,16 @@
 use crate::prelude::*;
 use async_trait::async_trait;
+use coins::my_tx_history_v2::TxHistoryStorage;
+#[cfg(not(target_arch = "wasm32"))]
+use coins::sql_tx_history_storage::SqliteTxHistoryStorage;
 use coins::{lp_coinfind, CoinProtocol, CoinsContext, MmCoinEnum};
 use common::mm_ctx::MmArc;
 use common::mm_error::prelude::*;
+use common::mm_metrics::MetricsArc;
+use common::mm_number::BigDecimal;
 use common::{HttpStatusCode, NotSame, StatusCode};
 use derive_more::Display;
+use futures::future::AbortHandle;
 use ser_error_derive::SerializeErrorType;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value as Json;
@@ -38,7 +44,7 @@ pub trait TokenInitializer {
         platform_request: &<<Self::Token as TokenOf>::PlatformCoin as PlatformWithTokensActivationOps>::ActivationRequest,
     ) -> Vec<TokenActivationRequest<Self::TokenActivationRequest>>;
 
-    async fn init_tokens(
+    async fn enable_tokens(
         &self,
         params: Vec<TokenActivationParams<Self::TokenActivationRequest, Self::TokenProtocol>>,
     ) -> Result<Vec<Self::Token>, MmError<Self::InitTokensError>>;
@@ -51,7 +57,7 @@ pub trait TokenAsMmCoinInitializer: Send + Sync {
     type PlatformCoin;
     type ActivationRequest;
 
-    async fn init_tokens_as_mm_coins(
+    async fn enable_tokens_as_mm_coins(
         &self,
         ctx: MmArc,
         request: &Self::ActivationRequest,
@@ -99,7 +105,7 @@ where
     type PlatformCoin = <T::Token as TokenOf>::PlatformCoin;
     type ActivationRequest = <Self::PlatformCoin as PlatformWithTokensActivationOps>::ActivationRequest;
 
-    async fn init_tokens_as_mm_coins(
+    async fn enable_tokens_as_mm_coins(
         &self,
         ctx: MmArc,
         request: &Self::ActivationRequest,
@@ -117,7 +123,7 @@ where
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let tokens = self.init_tokens(token_params).await?;
+        let tokens = self.enable_tokens(token_params).await?;
         for token in tokens.iter() {
             self.platform_coin().register_token_info(token);
         }
@@ -125,15 +131,19 @@ where
     }
 }
 
+pub trait GetPlatformBalance {
+    fn get_platform_balance(&self) -> BigDecimal;
+}
+
 #[async_trait]
 pub trait PlatformWithTokensActivationOps: Into<MmCoinEnum> {
-    type ActivationRequest: Clone + Send + Sync;
+    type ActivationRequest: Clone + Send + Sync + TxHistoryEnabled;
     type PlatformProtocolInfo: TryFromCoinProtocol;
-    type ActivationResult;
+    type ActivationResult: GetPlatformBalance;
     type ActivationError: NotMmError;
 
     /// Initializes the platform coin itself
-    async fn init_platform_coin(
+    async fn enable_platform_coin(
         ctx: MmArc,
         ticker: String,
         coin_conf: Json,
@@ -147,6 +157,13 @@ pub trait PlatformWithTokensActivationOps: Into<MmCoinEnum> {
     ) -> Vec<Box<dyn TokenAsMmCoinInitializer<PlatformCoin = Self, ActivationRequest = Self::ActivationRequest>>>;
 
     async fn get_activation_result(&self) -> Result<Self::ActivationResult, MmError<Self::ActivationError>>;
+
+    fn start_history_background_fetching(
+        &self,
+        metrics: MetricsArc,
+        storage: impl TxHistoryStorage + Send + 'static,
+        initial_balance: BigDecimal,
+    ) -> AbortHandle;
 }
 
 #[derive(Debug, Deserialize)]
@@ -184,11 +201,15 @@ pub enum EnablePlatformCoinWithTokensError {
         ticker: String,
         protocol: CoinProtocol,
     },
-    #[display(fmt = "Error {} on platform coin {} creation", error, ticker)]
+    #[display(fmt = "Error on platform coin {} creation: {}", ticker, error)]
     PlatformCoinCreationError {
         ticker: String,
         error: String,
     },
+    #[display(fmt = "Private key is not allowed: {}", _0)]
+    PrivKeyNotAllowed(String),
+    #[display(fmt = "Derivation method is not supported: {}", _0)]
+    DerivationMethodNotSupported(String),
     Transport(String),
     Internal(String),
 }
@@ -234,6 +255,8 @@ impl HttpStatusCode for EnablePlatformCoinWithTokensError {
             EnablePlatformCoinWithTokensError::CoinProtocolParseError { .. }
             | EnablePlatformCoinWithTokensError::TokenProtocolParseError { .. }
             | EnablePlatformCoinWithTokensError::PlatformCoinCreationError { .. }
+            | EnablePlatformCoinWithTokensError::PrivKeyNotAllowed(_)
+            | EnablePlatformCoinWithTokensError::DerivationMethodNotSupported(_)
             | EnablePlatformCoinWithTokensError::Transport(_)
             | EnablePlatformCoinWithTokensError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
             EnablePlatformCoinWithTokensError::PlatformIsAlreadyActivated(_)
@@ -264,7 +287,7 @@ where
 
     let priv_key = &*ctx.secp256k1_key_pair().private().secret;
 
-    let platform_coin = Platform::init_platform_coin(
+    let platform_coin = Platform::enable_platform_coin(
         ctx.clone(),
         req.ticker,
         platform_conf,
@@ -275,11 +298,22 @@ where
     .await?;
     let mut mm_tokens = Vec::new();
     for initializer in platform_coin.token_initializers() {
-        let tokens = initializer.init_tokens_as_mm_coins(ctx.clone(), &req.request).await?;
+        let tokens = initializer.enable_tokens_as_mm_coins(ctx.clone(), &req.request).await?;
         mm_tokens.extend(tokens);
     }
 
     let activation_result = platform_coin.get_activation_result().await?;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    if req.request.tx_history_enabled() {
+        let abort_handler = platform_coin.start_history_background_fetching(
+            ctx.metrics.clone(),
+            SqliteTxHistoryStorage(ctx.sqlite_connection.as_option().unwrap().clone()),
+            activation_result.get_platform_balance(),
+        );
+        ctx.abort_handlers.lock().unwrap().push(abort_handler);
+    }
+
     let coins_ctx = CoinsContext::from_ctx(&ctx).unwrap();
     coins_ctx
         .add_platform_with_tokens(platform_coin.into(), mm_tokens)

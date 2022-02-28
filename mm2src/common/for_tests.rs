@@ -6,6 +6,7 @@ use rand::Rng;
 use serde_json::{self as json, Value as Json};
 use std::collections::HashMap;
 use std::net::IpAddr;
+use std::num::NonZeroUsize;
 use std::process::Child;
 use std::sync::Mutex;
 use uuid::Uuid;
@@ -13,7 +14,7 @@ use uuid::Uuid;
 use crate::executor::Timer;
 use crate::mm_ctx::MmArc;
 use crate::mm_metrics::{MetricType, MetricsJson};
-use crate::{now_float, now_ms};
+use crate::{now_float, now_ms, PagingOptionsEnum};
 
 cfg_wasm32! {
     use crate::log::LogLevel;
@@ -247,6 +248,7 @@ impl MarketMakerIt {
         local: Option<LocalStart>,
         envs: &[(&str, &str)],
     ) -> Result<MarketMakerIt, String> {
+        conf["allow_weak_password"] = true.into();
         let ip = try_s!(Self::myipaddr_from_conf(&mut conf));
         let folder = new_mm2_temp_folder_path(Some(ip));
         let db_dir = match conf["dbdir"].as_str() {
@@ -688,7 +690,7 @@ pub async fn common_wait_for_log_re(req: Bytes) -> Result<Vec<u8>, String> {
 #[cfg(not(target_arch = "wasm32"))]
 pub async fn wait_for_log_re(ctx: &MmArc, timeout_sec: f64, re_pred: &str) -> Result<(), String> {
     let re = try_s!(Regex::new(re_pred));
-    wait_for_log(&ctx, timeout_sec, |line| re.is_match(line)).await
+    wait_for_log(ctx, timeout_sec, |line| re.is_match(line)).await
 }
 
 /// Create RAII variables to the effect of dumping the log and the status dashboard at the end of the scope.
@@ -907,7 +909,36 @@ pub async fn enable_slp(mm: &MarketMakerIt, coin: &str) -> Json {
     json::from_str(&enable.1).unwrap()
 }
 
-pub async fn enable_bch_with_tokens(mm: &MarketMakerIt, platform_coin: &str, tokens: &[&str]) -> Json {
+#[derive(Serialize)]
+pub struct ElectrumRpcRequest {
+    pub url: String,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "rpc", content = "rpc_data")]
+pub enum UtxoRpcMode {
+    Native,
+    Electrum { servers: Vec<ElectrumRpcRequest> },
+}
+
+impl UtxoRpcMode {
+    pub fn electrum(servers: &[&str]) -> Self {
+        UtxoRpcMode::Electrum {
+            servers: servers
+                .iter()
+                .map(|url| ElectrumRpcRequest { url: url.to_string() })
+                .collect(),
+        }
+    }
+}
+
+pub async fn enable_bch_with_tokens(
+    mm: &MarketMakerIt,
+    platform_coin: &str,
+    tokens: &[&str],
+    mode: UtxoRpcMode,
+    tx_history: bool,
+) -> Json {
     let slp_requests: Vec<_> = tokens.iter().map(|ticker| json!({ "ticker": ticker })).collect();
 
     let enable = mm
@@ -919,16 +950,44 @@ pub async fn enable_bch_with_tokens(mm: &MarketMakerIt, platform_coin: &str, tok
                 "ticker": platform_coin,
                 "allow_slp_unsafe_conf": true,
                 "bchd_urls": [],
-                "mode": {
-                    "rpc": "Native",
-                },
+                "mode": mode,
+                "tx_history": tx_history,
                 "slp_tokens_requests": slp_requests,
             }
         }))
         .await
         .unwrap();
-    assert_eq!(enable.0, StatusCode::OK, "'enable_slp' failed: {}", enable.1);
+    assert_eq!(
+        enable.0,
+        StatusCode::OK,
+        "'enable_bch_with_tokens' failed: {}",
+        enable.1
+    );
     json::from_str(&enable.1).unwrap()
+}
+
+pub async fn my_tx_history_v2(
+    mm: &MarketMakerIt,
+    coin: &str,
+    limit: usize,
+    paging: Option<PagingOptionsEnum<String>>,
+) -> Json {
+    let paging = paging.unwrap_or(PagingOptionsEnum::PageNumber(NonZeroUsize::new(1).unwrap()));
+    let request = mm
+        .rpc(json! ({
+            "userpass": mm.userpass,
+            "method": "my_tx_history",
+            "mmrpc": "2.0",
+            "params": {
+                "coin": coin,
+                "limit": limit,
+                "paging_options": paging,
+            }
+        }))
+        .await
+        .unwrap();
+    assert_eq!(request.0, StatusCode::OK, "'my_tx_history' failed: {}", request.1);
+    json::from_str(&request.1).unwrap()
 }
 
 pub async fn enable_native_bch(mm: &MarketMakerIt, coin: &str, bchd_urls: &[&str]) -> Json {
@@ -945,6 +1004,25 @@ pub async fn enable_native_bch(mm: &MarketMakerIt, coin: &str, bchd_urls: &[&str
         .unwrap();
     assert_eq!(native.0, StatusCode::OK, "'enable' failed: {}", native.1);
     json::from_str(&native.1).unwrap()
+}
+
+pub async fn enable_lightning(mm: &MarketMakerIt, coin: &str) -> Json {
+    let enable = mm
+        .rpc(json! ({
+            "userpass": mm.userpass,
+            "method": "enable_lightning",
+            "mmrpc": "2.0",
+            "params": {
+                "ticker": coin,
+                "activation_params": {
+                    "name": "test-node"
+                }
+            }
+        }))
+        .await
+        .unwrap();
+    assert_eq!(enable.0, StatusCode::OK, "'enable_lightning' failed: {}", enable.1);
+    json::from_str(&enable.1).unwrap()
 }
 
 /// Use a separate (unique) temporary folder for each MM.

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::token::{EnableTokenError, TokenActivationOps, TokenProtocolParams, TryPlatformCoinFromMmCoinEnum};
+use crate::token::{EnableTokenError, TokenActivationOps, TokenProtocolParams};
 use async_trait::async_trait;
 use coins::utxo::bch::BchCoin;
 use coins::utxo::rpc_clients::UtxoRpcError;
@@ -71,6 +71,7 @@ pub struct SlpInitResult {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum SlpInitError {
     GetBalanceError(UtxoRpcError),
     MyAddressError(String),
@@ -84,7 +85,7 @@ impl TokenActivationOps for SlpToken {
     type ActivationResult = SlpInitResult;
     type ActivationError = SlpInitError;
 
-    async fn init_token(
+    async fn enable_token(
         ticker: String,
         platform_coin: Self::PlatformCoin,
         activation_params: Self::ActivationParams,

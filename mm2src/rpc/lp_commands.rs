@@ -29,9 +29,10 @@ use http::Response;
 use serde_json::{self as json, Value as Json};
 use std::borrow::Cow;
 
+use crate::mm2::lp_dispatcher::{dispatch_lp_event, StopCtxEvent};
 use crate::mm2::lp_ordermatch::{cancel_orders_by, CancelBy};
 use crate::mm2::lp_swap::active_swaps_using_coin;
-use crate::mm2::{MM_DATETIME, MM_VERSION};
+use crate::mm2::MmVersionResult;
 
 /// Attempts to disable the coin
 pub async fn disable_coin(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
@@ -190,7 +191,8 @@ pub async fn my_balance(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, Stri
     Ok(try_s!(Response::builder().body(res)))
 }
 
-pub fn stop(ctx: MmArc) -> HyRes {
+pub async fn stop(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
+    dispatch_lp_event(ctx.clone(), StopCtxEvent.into()).await;
     // Should delay the shutdown a bit in order not to trip the "stop" RPC call in unit tests.
     // Stopping immediately leads to the "stop" RPC call failing with the "errno 10054" sometimes.
     spawn(async move {
@@ -199,7 +201,11 @@ pub fn stop(ctx: MmArc) -> HyRes {
             error!("Error stopping MmCtx: {}", e);
         }
     });
-    rpc_response(200, r#"{"result": "success"}"#)
+    let res = json!({
+        "result": "success"
+    });
+    let res = try_s!(json::to_vec(&res));
+    Ok(try_s!(Response::builder().body(res)))
 }
 
 pub async fn sim_panic(req: Json) -> Result<Response<Vec<u8>>, String> {
@@ -232,22 +238,13 @@ pub async fn sim_panic(req: Json) -> Result<Response<Vec<u8>>, String> {
     Ok(try_s!(Response::builder().body(js)))
 }
 
-pub fn version() -> HyRes {
-    rpc_response(
-        200,
-        json! ({
-            "result": MM_VERSION,
-            "datetime": MM_DATETIME
-        })
-        .to_string(),
-    )
-}
+pub fn version() -> HyRes { rpc_response(200, MmVersionResult::new().to_json().to_string()) }
 
 pub async fn get_peers_info(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_peers_info;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.lock().await.clone();
+    let cmd_tx = ctx.cmd_tx.lock().clone();
     let result = get_peers_info(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -260,7 +257,7 @@ pub async fn get_gossip_mesh(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_gossip_mesh;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.lock().await.clone();
+    let cmd_tx = ctx.cmd_tx.lock().clone();
     let result = get_gossip_mesh(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -273,7 +270,7 @@ pub async fn get_gossip_peer_topics(ctx: MmArc) -> Result<Response<Vec<u8>>, Str
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_gossip_peer_topics;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.lock().await.clone();
+    let cmd_tx = ctx.cmd_tx.lock().clone();
     let result = get_gossip_peer_topics(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -286,7 +283,7 @@ pub async fn get_gossip_topic_peers(ctx: MmArc) -> Result<Response<Vec<u8>>, Str
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_gossip_topic_peers;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.lock().await.clone();
+    let cmd_tx = ctx.cmd_tx.lock().clone();
     let result = get_gossip_topic_peers(cmd_tx).await;
     let result = json!({
         "result": result,
@@ -299,7 +296,7 @@ pub async fn get_relay_mesh(ctx: MmArc) -> Result<Response<Vec<u8>>, String> {
     use crate::mm2::lp_network::P2PContext;
     use mm2_libp2p::atomicdex_behaviour::get_relay_mesh;
     let ctx = P2PContext::fetch_from_mm_arc(&ctx);
-    let cmd_tx = ctx.cmd_tx.lock().await.clone();
+    let cmd_tx = ctx.cmd_tx.lock().clone();
     let result = get_relay_mesh(cmd_tx).await;
     let result = json!({
         "result": result,

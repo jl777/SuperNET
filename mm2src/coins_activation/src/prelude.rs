@@ -1,11 +1,15 @@
-use coins::{coin_conf, CoinBalance, CoinProtocol};
+use coins::{coin_conf, CoinBalance, CoinProtocol, MmCoinEnum};
 use common::mm_ctx::MmArc;
 use common::mm_error::prelude::*;
 use serde_derive::Serialize;
 use serde_json::{self as json, Value as Json};
 use std::collections::HashMap;
 
-#[derive(Debug, Serialize)]
+pub trait TxHistoryEnabled {
+    fn tx_history_enabled(&self) -> bool;
+}
+
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", content = "data")]
 pub enum DerivationMethod {
     /// Legacy iguana's privkey derivation, used by default
@@ -15,7 +19,7 @@ pub enum DerivationMethod {
     HDWallet(String),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct CoinAddressInfo<Balance> {
     pub(crate) derivation_method: DerivationMethod,
     pub(crate) pubkey: String,
@@ -23,6 +27,12 @@ pub struct CoinAddressInfo<Balance> {
 }
 
 pub type TokenBalances = HashMap<String, CoinBalance>;
+
+pub trait TryPlatformCoinFromMmCoinEnum {
+    fn try_from_mm_coin(coin: MmCoinEnum) -> Option<Self>
+    where
+        Self: Sized;
+}
 
 pub trait TryFromCoinProtocol {
     fn try_from_coin_protocol(proto: CoinProtocol) -> Result<Self, MmError<CoinProtocol>>
@@ -41,7 +51,7 @@ pub fn coin_conf_with_protocol<T: TryFromCoinProtocol>(
     ctx: &MmArc,
     coin: &str,
 ) -> Result<(Json, T), MmError<CoinConfWithProtocolError>> {
-    let conf = coin_conf(&ctx, coin);
+    let conf = coin_conf(ctx, coin);
     if conf.is_null() {
         return MmError::err(CoinConfWithProtocolError::ConfigIsNotFound(coin.into()));
     }

@@ -2,8 +2,8 @@ use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, Trade
 use crate::solana::solana_common::ui_amount_to_amount;
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
-            TradePreimageFut, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
-            WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
+            TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
+            ValidateAddressResult, ValidatePaymentInput, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bincode::serialize;
@@ -11,6 +11,7 @@ use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
 use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
+use keys::KeyPair;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
 use solana_client::{rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
@@ -217,7 +218,7 @@ impl MarketCoinOps for SplToken {
 
     fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> { self.platform_coin.current_block() }
 
-    fn display_priv_key(&self) -> String { self.platform_coin.display_priv_key() }
+    fn display_priv_key(&self) -> Result<String, String> { self.platform_coin.display_priv_key() }
 
     fn min_tx_amount(&self) -> BigDecimal { BigDecimal::from(0) }
 
@@ -225,73 +226,80 @@ impl MarketCoinOps for SplToken {
 }
 
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
+#[async_trait]
 impl SwapOps for SplToken {
     fn send_taker_fee(&self, _fee_addr: &[u8], amount: BigDecimal, _uuid: &[u8]) -> TransactionFut { unimplemented!() }
 
     fn send_maker_payment(
         &self,
-        _time_lock: u32,
-        _taker_pub: &[u8],
-        _secret_hash: &[u8],
-        _amount: BigDecimal,
-        _swap_contract_address: &Option<BytesJson>,
+        time_lock: u32,
+        maker_pub: &[u8],
+        taker_pub: &[u8],
+        secret_hash: &[u8],
+        amount: BigDecimal,
+        swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
         unimplemented!()
     }
 
     fn send_taker_payment(
         &self,
-        _time_lock: u32,
-        _maker_pub: &[u8],
-        _secret_hash: &[u8],
-        _amount: BigDecimal,
-        _swap_contract_address: &Option<BytesJson>,
+        time_lock: u32,
+        taker_pub: &[u8],
+        maker_pub: &[u8],
+        secret_hash: &[u8],
+        amount: BigDecimal,
+        swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
         unimplemented!()
     }
 
     fn send_maker_spends_taker_payment(
         &self,
-        _taker_payment_tx: &[u8],
-        _time_lock: u32,
-        _taker_pub: &[u8],
-        _secret: &[u8],
-        _swap_contract_address: &Option<BytesJson>,
+        taker_payment_tx: &[u8],
+        time_lock: u32,
+        taker_pub: &[u8],
+        secret: &[u8],
+        htlc_privkey: &[u8],
+        swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
         unimplemented!()
     }
 
     fn send_taker_spends_maker_payment(
         &self,
-        _maker_payment_tx: &[u8],
-        _time_lock: u32,
-        _maker_pub: &[u8],
-        _secret: &[u8],
-        _swap_contract_address: &Option<BytesJson>,
+        maker_payment_tx: &[u8],
+        time_lock: u32,
+        maker_pub: &[u8],
+        secret: &[u8],
+        htlc_privkey: &[u8],
+        swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
         unimplemented!()
     }
 
     fn send_taker_refunds_payment(
         &self,
-        _taker_payment_tx: &[u8],
-        _time_lock: u32,
-        _maker_pub: &[u8],
-        _secret_hash: &[u8],
-        _swap_contract_address: &Option<BytesJson>,
+        taker_payment_tx: &[u8],
+        time_lock: u32,
+        maker_pub: &[u8],
+        secret_hash: &[u8],
+        htlc_privkey: &[u8],
+        swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
         unimplemented!()
     }
 
     fn send_maker_refunds_payment(
         &self,
-        _maker_payment_tx: &[u8],
-        _time_lock: u32,
-        _taker_pub: &[u8],
-        _secret_hash: &[u8],
-        _swap_contract_address: &Option<BytesJson>,
+        maker_payment_tx: &[u8],
+        time_lock: u32,
+        taker_pub: &[u8],
+        secret_hash: &[u8],
+        htlc_privkey: &[u8],
+        swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        unimplemented!()
+        todo!()
     }
 
     fn validate_fee(
@@ -306,42 +314,27 @@ impl SwapOps for SplToken {
         unimplemented!()
     }
 
-    fn validate_maker_payment(
-        &self,
-        _payment_tx: &[u8],
-        _time_lock: u32,
-        _maker_pub: &[u8],
-        _priv_bn_hash: &[u8],
-        _amount: BigDecimal,
-        _swap_contract_address: &Option<BytesJson>,
-    ) -> Box<dyn Future<Item = (), Error = String> + Send> {
+    fn validate_maker_payment(&self, input: ValidatePaymentInput) -> Box<dyn Future<Item = (), Error = String> + Send> {
         unimplemented!()
     }
 
-    fn validate_taker_payment(
-        &self,
-        _payment_tx: &[u8],
-        _time_lock: u32,
-        _taker_pub: &[u8],
-        _priv_bn_hash: &[u8],
-        _amount: BigDecimal,
-        _swap_contract_address: &Option<BytesJson>,
-    ) -> Box<dyn Future<Item = (), Error = String> + Send> {
+    fn validate_taker_payment(&self, input: ValidatePaymentInput) -> Box<dyn Future<Item = (), Error = String> + Send> {
         unimplemented!()
     }
 
     fn check_if_my_payment_sent(
         &self,
-        _time_lock: u32,
-        _other_pub: &[u8],
-        _secret_hash: &[u8],
-        _search_from_block: u64,
-        _swap_contract_address: &Option<BytesJson>,
+        time_lock: u32,
+        my_pub: &[u8],
+        other_pub: &[u8],
+        secret_hash: &[u8],
+        search_from_block: u64,
+        swap_contract_address: &Option<BytesJson>,
     ) -> Box<dyn Future<Item = Option<TransactionEnum>, Error = String> + Send> {
         unimplemented!()
     }
 
-    fn search_for_swap_tx_spend_my(
+    async fn search_for_swap_tx_spend_my(
         &self,
         _time_lock: u32,
         _other_pub: &[u8],
@@ -353,7 +346,7 @@ impl SwapOps for SplToken {
         unimplemented!()
     }
 
-    fn search_for_swap_tx_spend_other(
+    async fn search_for_swap_tx_spend_other(
         &self,
         _time_lock: u32,
         _other_pub: &[u8],
@@ -373,9 +366,12 @@ impl SwapOps for SplToken {
     ) -> Result<Option<BytesJson>, MmError<NegotiateSwapContractAddrErr>> {
         unimplemented!()
     }
+
+    fn get_htlc_key_pair(&self) -> KeyPair { todo!() }
 }
 
 #[allow(clippy::forget_ref, clippy::forget_copy, clippy::cast_ref_to_mut)]
+#[async_trait]
 impl MmCoin for SplToken {
     fn is_asset_chain(&self) -> bool { false }
 
@@ -396,17 +392,21 @@ impl MmCoin for SplToken {
     /// Get fee to be paid per 1 swap transaction
     fn get_trade_fee(&self) -> Box<dyn Future<Item = TradeFee, Error = String> + Send> { unimplemented!() }
 
-    fn get_sender_trade_fee(&self, _value: TradePreimageValue, _stage: FeeApproxStage) -> TradePreimageFut<TradeFee> {
+    async fn get_sender_trade_fee(
+        &self,
+        _value: TradePreimageValue,
+        _stage: FeeApproxStage,
+    ) -> TradePreimageResult<TradeFee> {
         unimplemented!()
     }
 
     fn get_receiver_trade_fee(&self, _stage: FeeApproxStage) -> TradePreimageFut<TradeFee> { unimplemented!() }
 
-    fn get_fee_to_send_taker_fee(
+    async fn get_fee_to_send_taker_fee(
         &self,
         _dex_fee_amount: BigDecimal,
         _stage: FeeApproxStage,
-    ) -> TradePreimageFut<TradeFee> {
+    ) -> TradePreimageResult<TradeFee> {
         unimplemented!()
     }
 

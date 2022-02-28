@@ -44,6 +44,10 @@ fn main() { unimplemented!() }
 /// rustfmt cannot resolve the module path within docker_tests.
 /// Specify the path manually outside the docker_tests.
 #[cfg(rustfmt)]
+#[path = "docker_tests/docker_ordermatch_tests.rs"]
+mod docker_ordermatch_tests;
+
+#[cfg(rustfmt)]
 #[path = "docker_tests/swaps_confs_settings_sync_tests.rs"]
 mod swaps_confs_settings_sync_tests;
 
@@ -82,6 +86,8 @@ mod docker_tests {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod docker_tests {
     #[rustfmt::skip]
+    mod docker_ordermatch_tests;
+    #[rustfmt::skip]
     mod docker_tests_common;
     #[rustfmt::skip]
     mod qrc20_tests;
@@ -103,7 +109,7 @@ mod docker_tests {
     use coins::utxo::slp::SlpToken;
     use coins::utxo::slp::{slp_genesis_output, SlpOutput};
     use coins::utxo::utxo_common::send_outputs_from_my_address;
-    use coins::utxo::utxo_standard::{utxo_standard_coin_from_conf_and_params, UtxoStandardCoin};
+    use coins::utxo::utxo_standard::{utxo_standard_coin_with_priv_key, UtxoStandardCoin};
     use coins::utxo::{dhash160, UtxoActivationParams, UtxoCommonOps};
     use coins::{CoinProtocol, FoundSwapTxSpend, MarketCoinOps, MmCoin, SwapOps, Transaction, TransactionEnum,
                 WithdrawRequest};
@@ -157,11 +163,11 @@ mod docker_tests {
             let qtum_ops = QtumDockerOps::new();
             let for_slp_ops = BchDockerOps::from_ticker("FORSLP");
 
-            utxo_ops.wait_ready();
-            utxo_ops1.wait_ready();
-            qtum_ops.wait_ready();
+            utxo_ops.wait_ready(4);
+            utxo_ops1.wait_ready(4);
+            qtum_ops.wait_ready(2);
             qtum_ops.initialize_contracts();
-            for_slp_ops.wait_ready();
+            for_slp_ops.wait_ready(4);
             for_slp_ops.initialize_slp();
 
             containers.push(utxo_node);
@@ -236,8 +242,8 @@ mod docker_tests {
             let ctx = MmCtxBuilder::new().into_mm_arc();
             let params = UtxoActivationParams::from_legacy_req(&req).unwrap();
 
-            let coin = block_on(utxo_standard_coin_from_conf_and_params(
-                &ctx, ticker, &conf, params, &priv_key,
+            let coin = block_on(utxo_standard_coin_with_priv_key(
+                &ctx, ticker, &conf, &params, &priv_key,
             ))
             .unwrap();
             UtxoAssetDockerOps { ctx, coin }
@@ -316,21 +322,22 @@ mod docker_tests {
             let slp_genesis_op_ret = slp_genesis_output("ADEXSLP", "ADEXSLP", None, None, 8, None, 1000000_00000000);
             let slp_genesis = TransactionOutput {
                 value: self.coin.as_ref().dust_amount,
-                script_pubkey: Builder::build_p2pkh(&self.coin.my_public_key().address_hash()).to_bytes(),
+                script_pubkey: Builder::build_p2pkh(&self.coin.my_public_key().unwrap().address_hash().into())
+                    .to_bytes(),
             };
 
             let mut bch_outputs = vec![slp_genesis_op_ret, slp_genesis];
             let mut slp_outputs = vec![];
 
             for _ in 0..18 {
-                let priv_key = *(SecretKey::new(&mut rand6::thread_rng()).as_ref());
-                let key_pair = key_pair_from_secret(priv_key).unwrap();
+                let priv_key = SecretKey::new(&mut rand6::thread_rng());
+                let key_pair = key_pair_from_secret(priv_key.as_ref()).unwrap();
                 let address_hash = key_pair.public().address_hash();
                 let address = Address {
                     prefix: self.coin.as_ref().conf.pub_addr_prefix,
                     t_addr_prefix: self.coin.as_ref().conf.pub_t_addr_prefix,
                     hrp: None,
-                    hash: address_hash.clone(),
+                    hash: address_hash.into(),
                     checksum_type: Default::default(),
                     addr_format: Default::default(),
                 };
@@ -340,7 +347,7 @@ mod docker_tests {
                     .wait()
                     .unwrap();
 
-                let script_pubkey = Builder::build_p2pkh(&address_hash);
+                let script_pubkey = Builder::build_p2pkh(&address_hash.into());
 
                 bch_outputs.push(TransactionOutput {
                     value: 1000_00000000,
@@ -351,7 +358,7 @@ mod docker_tests {
                     amount: 1000_00000000,
                     script_pubkey: script_pubkey.to_bytes(),
                 });
-                slp_privkeys.push(priv_key);
+                slp_privkeys.push(*priv_key.as_ref());
             }
 
             let slp_genesis_tx = send_outputs_from_my_address(self.coin.clone(), bch_outputs)
@@ -400,11 +407,12 @@ mod docker_tests {
     #[test]
     fn test_search_for_swap_tx_spend_native_was_refunded_taker() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
-        let (_ctx, coin, _) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, coin, privkey) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000u64.into());
+        let my_public_key = coin.my_public_key().unwrap();
 
         let time_lock = (now_ms() / 1000) as u32 - 3600;
         let tx = coin
-            .send_taker_payment(time_lock, &*coin.my_public_key(), &[0; 20], 1.into(), &None)
+            .send_taker_payment(time_lock, my_public_key, my_public_key, &[0; 20], 1u64.into(), &None)
             .wait()
             .unwrap();
 
@@ -413,7 +421,7 @@ mod docker_tests {
             .unwrap();
 
         let refund_tx = coin
-            .send_taker_refunds_payment(&tx.tx_hex(), time_lock, &*coin.my_public_key(), &[0; 20], &None)
+            .send_taker_refunds_payment(&tx.tx_hex(), time_lock, my_public_key, &[0; 20], &privkey, &None)
             .wait()
             .unwrap();
 
@@ -421,21 +429,28 @@ mod docker_tests {
             .wait()
             .unwrap();
 
-        let found = coin
-            .search_for_swap_tx_spend_my(time_lock, &*coin.my_public_key(), &[0; 20], &tx.tx_hex(), 0, &None)
-            .unwrap()
-            .unwrap();
+        let found = block_on(coin.search_for_swap_tx_spend_my(
+            time_lock,
+            &*coin.my_public_key().unwrap(),
+            &[0; 20],
+            &tx.tx_hex(),
+            0,
+            &None,
+        ))
+        .unwrap()
+        .unwrap();
         assert_eq!(FoundSwapTxSpend::Refunded(refund_tx), found);
     }
 
     #[test]
     fn test_search_for_swap_tx_spend_native_was_refunded_maker() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
-        let (_ctx, coin, _) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, coin, privkey) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000u64.into());
+        let my_public_key = coin.my_public_key().unwrap();
 
         let time_lock = (now_ms() / 1000) as u32 - 3600;
         let tx = coin
-            .send_maker_payment(time_lock, &*coin.my_public_key(), &[0; 20], 1.into(), &None)
+            .send_maker_payment(time_lock, my_public_key, my_public_key, &[0; 20], 1u64.into(), &None)
             .wait()
             .unwrap();
 
@@ -444,7 +459,7 @@ mod docker_tests {
             .unwrap();
 
         let refund_tx = coin
-            .send_maker_refunds_payment(&tx.tx_hex(), time_lock, &*coin.my_public_key(), &[0; 20], &None)
+            .send_maker_refunds_payment(&tx.tx_hex(), time_lock, my_public_key, &[0; 20], &privkey, &None)
             .wait()
             .unwrap();
 
@@ -452,22 +467,29 @@ mod docker_tests {
             .wait()
             .unwrap();
 
-        let found = coin
-            .search_for_swap_tx_spend_my(time_lock, &*coin.my_public_key(), &[0; 20], &tx.tx_hex(), 0, &None)
-            .unwrap()
-            .unwrap();
+        let found = block_on(coin.search_for_swap_tx_spend_my(
+            time_lock,
+            &*coin.my_public_key().unwrap(),
+            &[0; 20],
+            &tx.tx_hex(),
+            0,
+            &None,
+        ))
+        .unwrap()
+        .unwrap();
         assert_eq!(FoundSwapTxSpend::Refunded(refund_tx), found);
     }
 
     #[test]
     fn test_search_for_taker_swap_tx_spend_native_was_spent_by_maker() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
-        let (_ctx, coin, _) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, coin, privkey) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000u64.into());
         let secret = [0; 32];
+        let my_pubkey = coin.my_public_key().unwrap();
 
         let time_lock = (now_ms() / 1000) as u32 - 3600;
         let tx = coin
-            .send_taker_payment(time_lock, &*coin.my_public_key(), &*dhash160(&secret), 1.into(), &None)
+            .send_taker_payment(time_lock, my_pubkey, my_pubkey, &*dhash160(&secret), 1u64.into(), &None)
             .wait()
             .unwrap();
 
@@ -476,7 +498,7 @@ mod docker_tests {
             .unwrap();
 
         let spend_tx = coin
-            .send_maker_spends_taker_payment(&tx.tx_hex(), time_lock, &*coin.my_public_key(), &secret, &None)
+            .send_maker_spends_taker_payment(&tx.tx_hex(), time_lock, my_pubkey, &secret, &privkey, &None)
             .wait()
             .unwrap();
 
@@ -484,29 +506,29 @@ mod docker_tests {
             .wait()
             .unwrap();
 
-        let found = coin
-            .search_for_swap_tx_spend_my(
-                time_lock,
-                &*coin.my_public_key(),
-                &*dhash160(&secret),
-                &tx.tx_hex(),
-                0,
-                &None,
-            )
-            .unwrap()
-            .unwrap();
+        let found = block_on(coin.search_for_swap_tx_spend_my(
+            time_lock,
+            &*coin.my_public_key().unwrap(),
+            &*dhash160(&secret),
+            &tx.tx_hex(),
+            0,
+            &None,
+        ))
+        .unwrap()
+        .unwrap();
         assert_eq!(FoundSwapTxSpend::Spent(spend_tx), found);
     }
 
     #[test]
     fn test_search_for_maker_swap_tx_spend_native_was_spent_by_taker() {
         let timeout = (now_ms() / 1000) + 120; // timeout if test takes more than 120 seconds to run
-        let (_ctx, coin, _) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
+        let (_ctx, coin, privkey) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000u64.into());
         let secret = [0; 32];
+        let my_pubkey = coin.my_public_key().unwrap();
 
         let time_lock = (now_ms() / 1000) as u32 - 3600;
         let tx = coin
-            .send_maker_payment(time_lock, &*coin.my_public_key(), &*dhash160(&secret), 1.into(), &None)
+            .send_maker_payment(time_lock, my_pubkey, my_pubkey, &*dhash160(&secret), 1u64.into(), &None)
             .wait()
             .unwrap();
 
@@ -515,7 +537,7 @@ mod docker_tests {
             .unwrap();
 
         let spend_tx = coin
-            .send_taker_spends_maker_payment(&tx.tx_hex(), time_lock, &*coin.my_public_key(), &secret, &None)
+            .send_taker_spends_maker_payment(&tx.tx_hex(), time_lock, my_pubkey, &secret, &privkey, &None)
             .wait()
             .unwrap();
 
@@ -523,17 +545,16 @@ mod docker_tests {
             .wait()
             .unwrap();
 
-        let found = coin
-            .search_for_swap_tx_spend_my(
-                time_lock,
-                &*coin.my_public_key(),
-                &*dhash160(&secret),
-                &tx.tx_hex(),
-                0,
-                &None,
-            )
-            .unwrap()
-            .unwrap();
+        let found = block_on(coin.search_for_swap_tx_spend_my(
+            time_lock,
+            &*coin.my_public_key().unwrap(),
+            &*dhash160(&secret),
+            &tx.tx_hex(),
+            0,
+            &None,
+        ))
+        .unwrap()
+        .unwrap();
         assert_eq!(FoundSwapTxSpend::Spent(spend_tx), found);
     }
 
@@ -543,6 +564,7 @@ mod docker_tests {
         let (_ctx, coin, _) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
         fill_address(&coin, &coin.my_address().unwrap(), 2.into(), timeout);
         let secret = [0; 32];
+        let my_pubkey = coin.my_public_key().unwrap();
 
         let time_lock = (now_ms() / 1000) as u32 - 3600;
         let mut unspents = vec![];
@@ -551,7 +573,8 @@ mod docker_tests {
             let tx = coin
                 .send_maker_payment(
                     time_lock + i,
-                    &*coin.my_public_key(),
+                    my_pubkey,
+                    my_pubkey,
                     &*dhash160(&secret),
                     1.into(),
                     &coin.swap_contract_address(),
@@ -1858,19 +1881,29 @@ mod docker_tests {
     #[test]
     fn test_trade_preimage_not_sufficient_balance() {
         #[track_caller]
-        fn expect_not_sufficient_balance(res: &str, available: BigDecimal, required: BigDecimal) {
+        fn expect_not_sufficient_balance(
+            res: &str,
+            available: BigDecimal,
+            required: BigDecimal,
+            locked_by_swaps: Option<BigDecimal>,
+        ) {
             let actual: RpcErrorResponse<trade_preimage_error::NotSufficientBalance> = json::from_str(res).unwrap();
             assert_eq!(actual.error_type, "NotSufficientBalance");
             let expected = trade_preimage_error::NotSufficientBalance {
                 coin: "MYCOIN".to_owned(),
                 available,
                 required,
-                locked_by_swaps: Some(BigDecimal::from(0)),
+                locked_by_swaps,
             };
             assert_eq!(actual.error_data, Some(expected));
         }
 
         let priv_key = SecretKey::new(&mut rand6::thread_rng());
+        let fill_balance_functor = |amount: BigDecimal| {
+            let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", priv_key.as_ref());
+            let my_address = mycoin.my_address().expect("!my_address");
+            fill_address(&mycoin, &my_address, amount, 30);
+        };
 
         let coins = json!([
             {"coin":"MYCOIN","asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
@@ -1895,6 +1928,7 @@ mod docker_tests {
         log!([block_on(enable_native(&mm, "MYCOIN1", &[]))]);
         log!([block_on(enable_native(&mm, "MYCOIN", &[]))]);
 
+        fill_balance_functor(MmNumber::from("0.000015").to_decimal());
         // Try sell the max amount with the zero balance.
         let rc = block_on(mm.rpc(json!({
             "userpass": mm.userpass,
@@ -1910,10 +1944,10 @@ mod docker_tests {
         })))
         .unwrap();
         assert!(!rc.0.is_success(), "trade_preimage success, but should fail: {}", rc.1);
-        let available = BigDecimal::from(0);
+        let available = MmNumber::from("0.000015").to_decimal();
         // Required at least 0.00002 MYCOIN to pay the transaction_fee(0.00001) and to send a value not less than dust(0.00001).
         let required = MmNumber::from("0.00002").to_decimal();
-        expect_not_sufficient_balance(&rc.1, available, required);
+        expect_not_sufficient_balance(&rc.1, available, required, None);
 
         let rc = block_on(mm.rpc(json!({
             "userpass": mm.userpass,
@@ -1930,40 +1964,9 @@ mod docker_tests {
         .unwrap();
         assert!(!rc.0.is_success(), "trade_preimage success, but should fail: {}", rc.1);
         // Required 0.00001 MYCOIN to pay the transaction fee and the specified 0.1 volume.
-        let available = BigDecimal::from(0);
+        let available = MmNumber::from("0.000015").to_decimal();
         let required = MmNumber::from("0.10001").to_decimal();
-        expect_not_sufficient_balance(&rc.1, available, required);
-
-        let rc = block_on(mm.rpc(json!({
-            "userpass": mm.userpass,
-            "mmrpc": "2.0",
-            "method": "trade_preimage",
-            "params": {
-                "base": "MYCOIN",
-                "rel": "MYCOIN1",
-                "swap_method": "sell",
-                "price": 1,
-                "volume": 0.01,
-            },
-        })))
-        .unwrap();
-        assert!(!rc.0.is_success(), "trade_preimage success, but should fail: {}", rc.1);
-        let available = BigDecimal::from(0);
-        // `required = volume + fee_to_send_taker_payment + dex_fee + fee_to_send_dex_fee`,
-        // where `volume = 0.01`, `fee_to_send_taker_payment = fee_to_send_dex_fee = 0.00001`, `dex_fee = 0.0001`.
-        // Please note `dex_fee = 0.01 / 7770` < `min_dex_fee = 0.0001`, so `dex_fee = min_dex_fee = 0.0001`
-        let required = MmNumber::from("0.01") + MmNumber::from("0.00012");
-        expect_not_sufficient_balance(&rc.1, available, required.to_decimal());
-
-        // The max available value = balance (0.000015) - transaction_fee (0.00001) = 0.000005 that is less than dust (0.00001).
-        // In this case we have to receive the `NotSufficientBalance` error.
-        //
-        // vvv Fill the MYCOIN balance vvv
-
-        let low_balance = MmNumber::from("0.000015").to_decimal();
-        let (_ctx, mycoin) = utxo_coin_from_privkey("MYCOIN", priv_key.as_ref());
-        let my_address = mycoin.my_address().expect("!my_address");
-        fill_address(&mycoin, &my_address, low_balance.clone(), 30);
+        expect_not_sufficient_balance(&rc.1, available, required, None);
 
         let rc = block_on(mm.rpc(json!({
             "userpass": mm.userpass,
@@ -1980,10 +1983,33 @@ mod docker_tests {
         .unwrap();
         assert!(!rc.0.is_success(), "trade_preimage success, but should fail: {}", rc.1);
         // balance(0.000015)
-        let available = low_balance;
+        let available = MmNumber::from("0.000015").to_decimal();
         // balance(0.000015) + transaction_fee(0.00001)
         let required = MmNumber::from("0.00002").to_decimal();
-        expect_not_sufficient_balance(&rc.1, available, required);
+        expect_not_sufficient_balance(&rc.1, available, required, None);
+
+        fill_balance_functor(MmNumber::from("7.770085").to_decimal());
+        let rc = block_on(mm.rpc(json!({
+            "userpass": mm.userpass,
+            "mmrpc": "2.0",
+            "method": "trade_preimage",
+            "params": {
+                "base": "MYCOIN",
+                "rel": "MYCOIN1",
+                "swap_method": "sell",
+                "price": 1,
+                "volume": 7.77,
+            },
+        })))
+        .unwrap();
+        assert!(!rc.0.is_success(), "trade_preimage success, but should fail: {}", rc.1);
+        let available = MmNumber::from("7.7701").to_decimal();
+        // `required = volume + fee_to_send_taker_payment + dex_fee + fee_to_send_dex_fee`,
+        // where `volume = 7.77`, `fee_to_send_taker_payment = fee_to_send_dex_fee = 0.00001`, `dex_fee = 0.01`.
+        // Please note `dex_fee = 7.77 / 777` with dex_fee = 0.01
+        // required = 7.77 + 0.01 (dex_fee) + (0.0001 * 2) = 7.78002
+        let required = MmNumber::from("7.78002");
+        expect_not_sufficient_balance(&rc.1, available, required.to_decimal(), Some(BigDecimal::from(0)));
     }
 
     /// This test ensures that `trade_preimage` will not succeed on input that will fail on `buy/sell/setprice`.
@@ -3205,7 +3231,8 @@ mod docker_tests {
             .unwrap();
 
         thread::sleep(Duration::from_secs(2));
-        let (unspents, _) = block_on(coin.list_unspent_ordered(&coin.as_ref().my_address)).unwrap();
+        let (unspents, _) =
+            block_on(coin.list_unspent_ordered(&coin.as_ref().derivation_method.unwrap_iguana())).unwrap();
         assert_eq!(unspents.len(), 1);
     }
 
@@ -3262,7 +3289,8 @@ mod docker_tests {
             .unwrap();
 
         thread::sleep(Duration::from_secs(2));
-        let (unspents, _) = block_on(coin.list_unspent_ordered(&coin.as_ref().my_address)).unwrap();
+        let (unspents, _) =
+            block_on(coin.list_unspent_ordered(&coin.as_ref().derivation_method.unwrap_iguana())).unwrap();
         // 4 utxos are merged of 5 so the resulting unspents len must be 2
         assert_eq!(unspents.len(), 2);
     }
@@ -3784,617 +3812,6 @@ mod docker_tests {
 
         block_on(mm_bob.wait_for_log(22., |log| log.contains("Entering the maker_swap_loop MYCOIN/ETH"))).unwrap();
         block_on(mm_alice.wait_for_log(22., |log| log.contains("Entering the taker_swap_loop MYCOIN/ETH"))).unwrap();
-
-        block_on(mm_bob.stop()).unwrap();
-        block_on(mm_alice.stop()).unwrap();
-    }
-
-    fn check_asks_num(mm: &MarketMakerIt, base: &str, rel: &str, expected: usize) {
-        log!({"Get {}/{} orderbook", base, rel});
-        let rc = block_on(mm.rpc(json! ({
-            "userpass": mm.userpass,
-            "method": "orderbook",
-            "base": base,
-            "rel": rel,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
-        let orderbook: OrderbookResponse = json::from_str(&rc.1).unwrap();
-        log!("orderbook "[orderbook]);
-        assert_eq!(
-            orderbook.asks.len(),
-            expected,
-            "{}/{} orderbook must have exactly {} ask(s)",
-            base,
-            rel,
-            expected
-        );
-    }
-
-    fn check_bids_num(mm: &MarketMakerIt, base: &str, rel: &str, expected: usize) {
-        log!({"Get {}/{} orderbook", base, rel});
-        let rc = block_on(mm.rpc(json! ({
-            "userpass": mm.userpass,
-            "method": "orderbook",
-            "base": base,
-            "rel": rel,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!orderbook: {}", rc.1);
-        let orderbook: OrderbookResponse = json::from_str(&rc.1).unwrap();
-        log!("orderbook "[orderbook]);
-        assert_eq!(
-            orderbook.bids.len(),
-            expected,
-            "{}/{} orderbook must have exactly {} bid(s)",
-            base,
-            rel,
-            expected
-        );
-    }
-
-    fn check_orderbook_depth(mm: &MarketMakerIt, pairs: &[(&str, &str)], expected: &[(usize, usize)]) {
-        log!({"Get {:?} orderbook depth", pairs});
-        let rc = block_on(mm.rpc(json! ({
-            "userpass": mm.userpass,
-            "method": "orderbook_depth",
-            "pairs": pairs,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!orderbook_depth: {}", rc.1);
-        let orderbook_depth: OrderbookDepthResponse = json::from_str(&rc.1).unwrap();
-        log!("orderbook depth "[orderbook_depth]);
-        for (pair, expected_depth) in pairs.iter().zip(expected) {
-            let actual_depth = orderbook_depth
-                .result
-                .iter()
-                .find(|pair_with_depth| pair.0 == pair_with_depth.pair.0 && pair.1 == pair_with_depth.pair.1)
-                .unwrap_or_else(|| panic!("Orderbook depth result doesn't contain pair {:?}", pair));
-
-            assert_eq!(
-                actual_depth.depth.asks, expected_depth.0,
-                "expected {} asks for pair {:?}",
-                expected_depth.0, actual_depth.pair,
-            );
-            assert_eq!(
-                actual_depth.depth.bids, expected_depth.1,
-                "expected {} bids for pair {:?}",
-                expected_depth.1, actual_depth.pair,
-            );
-        }
-    }
-
-    fn check_best_orders(
-        mm: &MarketMakerIt,
-        action: &str,
-        for_coin: &str,
-        ticker_in_response: &str,
-        expected_num_orders: usize,
-    ) {
-        log!({"Get best orders for {}", for_coin});
-        let rc = block_on(mm.rpc(json! ({
-            "userpass": mm.userpass,
-            "method": "best_orders",
-            "coin": for_coin,
-            "action": action,
-            "volume": 1,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!best_orders: {}", rc.1);
-        let best_orders: BestOrdersResponse = json::from_str(&rc.1).unwrap();
-        let orders = best_orders
-            .result
-            .get(ticker_in_response)
-            .unwrap_or_else(|| panic!("No orders for ticker {}", ticker_in_response));
-
-        assert_eq!(orders.len(), expected_num_orders);
-    }
-
-    #[test]
-    fn test_ordermatch_custom_orderbook_ticker_both_on_maker() {
-        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
-        let coins = json! ([
-            {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN-Custom", "orderbook_ticker":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1-Custom", "orderbook_ticker":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-        ]);
-        let mut mm_bob = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(bob_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "i_am_seed": true,
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
-
-        let mut mm_alice = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "seednodes": vec![format!("{}", mm_bob.ip)],
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
-
-        log!([block_on(enable_native(&mm_bob, "MYCOIN-Custom", &[]))]);
-        log!([block_on(enable_native(&mm_bob, "MYCOIN1-Custom", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN1", &[]))]);
-        let rc = block_on(mm_bob.rpc(json! ({
-            "userpass": mm_bob.userpass,
-            "method": "setprice",
-            "base": "MYCOIN-Custom",
-            "rel": "MYCOIN1-Custom",
-            "price": 1,
-            "max": true,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!setprice: {}", rc.1);
-
-        let sell_result: SetPriceResponse = json::from_str(&rc.1).unwrap();
-        assert_eq!(sell_result.result.base, "MYCOIN-Custom");
-        assert_eq!(sell_result.result.rel, "MYCOIN1-Custom");
-        assert_eq!(sell_result.result.base_orderbook_ticker, Some("MYCOIN".to_owned()));
-        assert_eq!(sell_result.result.rel_orderbook_ticker, Some("MYCOIN1".to_owned()));
-
-        // check bob orders
-        check_asks_num(&mm_bob, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_bob, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_bob, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_bob, "MYCOIN1", "MYCOIN", 1);
-
-        // check multiple RPCs on alice side
-        check_best_orders(&mm_alice, "sell", "MYCOIN1", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "sell", "MYCOIN1-Custom", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN", "MYCOIN1", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN-Custom", "MYCOIN1", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        check_asks_num(&mm_alice, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_alice, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_alice, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_alice, "MYCOIN1", "MYCOIN", 1);
-
-        // check orderbook depth again after subscription to the topic
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        let rc = block_on(mm_alice.rpc(json! ({
-            "userpass": mm_alice.userpass,
-            "method": "buy",
-            "base": "MYCOIN",
-            "rel": "MYCOIN1",
-            "price": 1,
-            "volume": "999.99999",
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!buy: {}", rc.1);
-
-        block_on(mm_bob.wait_for_log(22., |log| {
-            log.contains("Entering the maker_swap_loop MYCOIN-Custom/MYCOIN1-Custom")
-        }))
-        .unwrap();
-        block_on(mm_alice.wait_for_log(22., |log| log.contains("Entering the taker_swap_loop MYCOIN/MYCOIN1")))
-            .unwrap();
-
-        block_on(mm_bob.stop()).unwrap();
-        block_on(mm_alice.stop()).unwrap();
-    }
-
-    #[test]
-    fn test_ordermatch_custom_orderbook_ticker_both_on_taker() {
-        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
-
-        let coins = json! ([
-            {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN-Custom", "orderbook_ticker":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1-Custom", "orderbook_ticker":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-        ]);
-        let mut mm_bob = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(bob_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "i_am_seed": true,
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
-
-        let mut mm_alice = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "seednodes": vec![format!("{}", mm_bob.ip)],
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
-
-        log!([block_on(enable_native(&mm_bob, "MYCOIN", &[]))]);
-        log!([block_on(enable_native(&mm_bob, "MYCOIN1", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN-Custom", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN1-Custom", &[]))]);
-        let rc = block_on(mm_bob.rpc(json! ({
-            "userpass": mm_bob.userpass,
-            "method": "setprice",
-            "base": "MYCOIN",
-            "rel": "MYCOIN1",
-            "price": 1,
-            "max": true,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!setprice: {}", rc.1);
-
-        // check orderbooks on bob side
-        check_asks_num(&mm_bob, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_bob, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_bob, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_bob, "MYCOIN1", "MYCOIN", 1);
-
-        // check multiple RPCs on alice side
-        check_best_orders(&mm_alice, "sell", "MYCOIN1", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "sell", "MYCOIN1-Custom", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN", "MYCOIN1", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN-Custom", "MYCOIN1", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        check_asks_num(&mm_alice, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_alice, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_alice, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_alice, "MYCOIN1", "MYCOIN", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        let rc = block_on(mm_alice.rpc(json! ({
-            "userpass": mm_alice.userpass,
-            "method": "buy",
-            "base": "MYCOIN-Custom",
-            "rel": "MYCOIN1-Custom",
-            "price": 1,
-            "volume": "999.99999",
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!buy: {}", rc.1);
-        let buy_result: BuyOrSellRpcResult = json::from_str(&rc.1).unwrap();
-        assert_eq!(buy_result.result.base, "MYCOIN-Custom");
-        assert_eq!(buy_result.result.rel, "MYCOIN1-Custom");
-        assert_eq!(buy_result.result.base_orderbook_ticker, Some("MYCOIN".to_owned()));
-        assert_eq!(buy_result.result.rel_orderbook_ticker, Some("MYCOIN1".to_owned()));
-
-        block_on(mm_bob.wait_for_log(22., |log| log.contains("Entering the maker_swap_loop MYCOIN/MYCOIN1"))).unwrap();
-        block_on(mm_alice.wait_for_log(22., |log| {
-            log.contains("Entering the taker_swap_loop MYCOIN-Custom/MYCOIN1-Custom")
-        }))
-        .unwrap();
-
-        block_on(mm_bob.stop()).unwrap();
-        block_on(mm_alice.stop()).unwrap();
-    }
-
-    #[test]
-    fn test_ordermatch_custom_orderbook_ticker_mixed_case_one() {
-        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
-
-        let coins = json! ([
-            {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN-Custom", "orderbook_ticker":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1-Custom", "orderbook_ticker":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-        ]);
-        let mut mm_bob = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(bob_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "i_am_seed": true,
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
-
-        let mut mm_alice = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "seednodes": vec![format!("{}", mm_bob.ip)],
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
-
-        log!([block_on(enable_native(&mm_bob, "MYCOIN-Custom", &[]))]);
-        log!([block_on(enable_native(&mm_bob, "MYCOIN1", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN1-Custom", &[]))]);
-        let rc = block_on(mm_bob.rpc(json! ({
-            "userpass": mm_bob.userpass,
-            "method": "setprice",
-            "base": "MYCOIN-Custom",
-            "rel": "MYCOIN1",
-            "price": 1,
-            "max": true,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!setprice: {}", rc.1);
-        let set_price: SetPriceResponse = json::from_str(&rc.1).unwrap();
-        assert_eq!(set_price.result.base, "MYCOIN-Custom");
-        assert_eq!(set_price.result.rel, "MYCOIN1");
-        assert_eq!(set_price.result.base_orderbook_ticker, Some("MYCOIN".to_owned()));
-        assert!(set_price.result.rel_orderbook_ticker.is_none());
-
-        // check orderbooks on bob side
-        check_asks_num(&mm_bob, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_bob, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_bob, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_bob, "MYCOIN1", "MYCOIN", 1);
-
-        // check multiple RPCs on alice side
-        check_best_orders(&mm_alice, "sell", "MYCOIN1", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "sell", "MYCOIN1-Custom", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN", "MYCOIN1", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN-Custom", "MYCOIN1", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        check_asks_num(&mm_alice, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_alice, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_alice, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_alice, "MYCOIN1", "MYCOIN", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        let rc = block_on(mm_alice.rpc(json! ({
-            "userpass": mm_alice.userpass,
-            "method": "buy",
-            "base": "MYCOIN",
-            "rel": "MYCOIN1-Custom",
-            "price": 1,
-            "volume": "999.99999",
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!buy: {}", rc.1);
-        let buy_result: BuyOrSellRpcResult = json::from_str(&rc.1).unwrap();
-        assert_eq!(buy_result.result.base, "MYCOIN");
-        assert_eq!(buy_result.result.rel, "MYCOIN1-Custom");
-        assert!(buy_result.result.base_orderbook_ticker.is_none());
-        assert_eq!(buy_result.result.rel_orderbook_ticker, Some("MYCOIN1".to_owned()));
-
-        block_on(mm_bob.wait_for_log(22., |log| {
-            log.contains("Entering the maker_swap_loop MYCOIN-Custom/MYCOIN1")
-        }))
-        .unwrap();
-        block_on(mm_alice.wait_for_log(22., |log| {
-            log.contains("Entering the taker_swap_loop MYCOIN/MYCOIN1-Custom")
-        }))
-        .unwrap();
-
-        block_on(mm_bob.stop()).unwrap();
-        block_on(mm_alice.stop()).unwrap();
-    }
-
-    #[test]
-    fn test_ordermatch_custom_orderbook_ticker_mixed_case_two() {
-        let (_ctx, _, bob_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN", 1000.into());
-        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 2000.into());
-
-        let coins = json! ([
-            {"coin":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN-Custom", "orderbook_ticker":"MYCOIN", "asset":"MYCOIN","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-            {"coin":"MYCOIN1-Custom", "orderbook_ticker":"MYCOIN1", "asset":"MYCOIN1","txversion":4,"overwintered":1,"txfee":1000,"protocol":{"type":"UTXO"}},
-        ]);
-        let mut mm_bob = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(bob_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "i_am_seed": true,
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_bob_dump_log, _bob_dump_dashboard) = mm_dump(&mm_bob.log_path);
-
-        let mut mm_alice = MarketMakerIt::start(
-            json! ({
-                "gui": "nogui",
-                "netid": 9000,
-                "dht": "on",  // Enable DHT without delay.
-                "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
-                "coins": coins,
-                "rpc_password": "pass",
-                "seednodes": vec![format!("{}", mm_bob.ip)],
-            }),
-            "pass".to_string(),
-            None,
-        )
-        .unwrap();
-        let (_alice_dump_log, _alice_dump_dashboard) = mm_dump(&mm_alice.log_path);
-
-        log!([block_on(enable_native(&mm_bob, "MYCOIN", &[]))]);
-        log!([block_on(enable_native(&mm_bob, "MYCOIN1-Custom", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN-Custom", &[]))]);
-        log!([block_on(enable_native(&mm_alice, "MYCOIN1", &[]))]);
-        let rc = block_on(mm_bob.rpc(json! ({
-            "userpass": mm_bob.userpass,
-            "method": "setprice",
-            "base": "MYCOIN",
-            "rel": "MYCOIN1-Custom",
-            "price": 1,
-            "max": true,
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!setprice: {}", rc.1);
-        let set_price: SetPriceResponse = json::from_str(&rc.1).unwrap();
-        assert_eq!(set_price.result.base, "MYCOIN");
-        assert_eq!(set_price.result.rel, "MYCOIN1-Custom");
-        assert!(set_price.result.base_orderbook_ticker.is_none());
-        assert_eq!(set_price.result.rel_orderbook_ticker, Some("MYCOIN1".to_owned()));
-
-        // check orderbooks on bob side
-        check_asks_num(&mm_bob, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_bob, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_bob, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_bob, "MYCOIN1", "MYCOIN", 1);
-
-        // check multiple RPCs on alice side
-        check_best_orders(&mm_alice, "sell", "MYCOIN1", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "sell", "MYCOIN1-Custom", "MYCOIN", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN", "MYCOIN1", 1);
-        check_best_orders(&mm_alice, "buy", "MYCOIN-Custom", "MYCOIN1", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        check_asks_num(&mm_alice, "MYCOIN-Custom", "MYCOIN1-Custom", 1);
-        check_asks_num(&mm_alice, "MYCOIN", "MYCOIN1", 1);
-        check_bids_num(&mm_alice, "MYCOIN1-Custom", "MYCOIN-Custom", 1);
-        check_bids_num(&mm_alice, "MYCOIN1", "MYCOIN", 1);
-
-        check_orderbook_depth(
-            &mm_alice,
-            &[
-                ("MYCOIN", "MYCOIN1"),
-                ("MYCOIN", "MYCOIN1-Custom"),
-                ("MYCOIN-Custom", "MYCOIN1"),
-                ("MYCOIN-Custom", "MYCOIN1-Custom"),
-            ],
-            &[(1, 0); 4],
-        );
-
-        let rc = block_on(mm_alice.rpc(json! ({
-            "userpass": mm_alice.userpass,
-            "method": "buy",
-            "base": "MYCOIN-Custom",
-            "rel": "MYCOIN1",
-            "price": 1,
-            "volume": "999.99999",
-        })))
-        .unwrap();
-        assert!(rc.0.is_success(), "!buy: {}", rc.1);
-        let buy_result: BuyOrSellRpcResult = json::from_str(&rc.1).unwrap();
-        assert_eq!(buy_result.result.base, "MYCOIN-Custom");
-        assert_eq!(buy_result.result.rel, "MYCOIN1");
-        assert_eq!(buy_result.result.base_orderbook_ticker, Some("MYCOIN".to_owned()));
-        assert!(buy_result.result.rel_orderbook_ticker.is_none());
-
-        block_on(mm_bob.wait_for_log(22., |log| {
-            log.contains("Entering the maker_swap_loop MYCOIN/MYCOIN1-Custom")
-        }))
-        .unwrap();
-        block_on(mm_alice.wait_for_log(22., |log| {
-            log.contains("Entering the taker_swap_loop MYCOIN-Custom/MYCOIN1")
-        }))
-        .unwrap();
 
         block_on(mm_bob.stop()).unwrap();
         block_on(mm_alice.stop()).unwrap();

@@ -1,17 +1,22 @@
-use crate::platform_coin_with_tokens::{EnablePlatformCoinWithTokensError, PlatformWithTokensActivationOps,
-                                       RegisterTokenInfo, TokenActivationParams, TokenActivationRequest,
-                                       TokenAsMmCoinInitializer, TokenInitializer, TokenOf};
+use crate::platform_coin_with_tokens::*;
 use crate::prelude::*;
 use crate::slp_token_activation::SlpActivationRequest;
 use async_trait::async_trait;
+use coins::my_tx_history_v2::TxHistoryStorage;
 use coins::utxo::bch::{bch_coin_from_conf_and_params, BchActivationRequest, BchCoin, CashAddrPrefix};
+use coins::utxo::bch_and_slp_tx_history::bch_and_slp_history_loop;
 use coins::utxo::rpc_clients::UtxoRpcError;
 use coins::utxo::slp::{SlpProtocolConf, SlpToken};
 use coins::utxo::UtxoCommonOps;
-use coins::{CoinBalance, CoinProtocol, MarketCoinOps, MmCoin};
+use coins::{CoinBalance, CoinProtocol, DerivationMethodNotSupported, MarketCoinOps, MmCoin, PrivKeyNotAllowed};
+use common::executor::spawn;
+use common::log::info;
 use common::mm_ctx::MmArc;
 use common::mm_error::prelude::*;
+use common::mm_metrics::MetricsArc;
+use common::mm_number::BigDecimal;
 use common::Future01CompatExt;
+use futures::future::{abortable, AbortHandle};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use std::collections::HashMap;
@@ -38,7 +43,7 @@ impl TokenInitializer for SlpTokenInitializer {
         platform_params.slp_tokens_requests.clone()
     }
 
-    async fn init_tokens(
+    async fn enable_tokens(
         &self,
         activation_params: Vec<TokenActivationParams<SlpActivationRequest, SlpProtocolConf>>,
     ) -> Result<Vec<SlpToken>, MmError<std::convert::Infallible>> {
@@ -85,6 +90,12 @@ impl From<BchWithTokensActivationError> for EnablePlatformCoinWithTokensError {
                     prefix, ticker, error
                 ))
             },
+            BchWithTokensActivationError::PrivKeyNotAllowed(e) => {
+                EnablePlatformCoinWithTokensError::PrivKeyNotAllowed(e)
+            },
+            BchWithTokensActivationError::DerivationMethodNotSupported(e) => {
+                EnablePlatformCoinWithTokensError::DerivationMethodNotSupported(e)
+            },
             BchWithTokensActivationError::Transport(e) => EnablePlatformCoinWithTokensError::Transport(e),
             BchWithTokensActivationError::Internal(e) => EnablePlatformCoinWithTokensError::Internal(e),
         }
@@ -96,6 +107,10 @@ pub struct BchWithTokensActivationRequest {
     #[serde(flatten)]
     platform_request: BchActivationRequest,
     slp_tokens_requests: Vec<TokenActivationRequest<SlpActivationRequest>>,
+}
+
+impl TxHistoryEnabled for BchWithTokensActivationRequest {
+    fn tx_history_enabled(&self) -> bool { self.platform_request.utxo_params.tx_history }
 }
 
 pub struct BchProtocolInfo {
@@ -121,6 +136,16 @@ pub struct BchWithTokensActivationResult {
     slp_addresses_infos: HashMap<String, CoinAddressInfo<TokenBalances>>,
 }
 
+impl GetPlatformBalance for BchWithTokensActivationResult {
+    fn get_platform_balance(&self) -> BigDecimal {
+        self.bch_addresses_infos
+            .iter()
+            .fold(BigDecimal::from(0), |total, (_, addr_info)| {
+                &total + &addr_info.balances.get_total()
+            })
+    }
+}
+
 #[derive(Debug)]
 pub enum BchWithTokensActivationError {
     PlatformCoinCreationError {
@@ -132,12 +157,24 @@ pub enum BchWithTokensActivationError {
         prefix: String,
         error: String,
     },
+    PrivKeyNotAllowed(String),
+    DerivationMethodNotSupported(String),
     Transport(String),
     Internal(String),
 }
 
 impl From<UtxoRpcError> for BchWithTokensActivationError {
     fn from(err: UtxoRpcError) -> Self { BchWithTokensActivationError::Transport(err.to_string()) }
+}
+
+impl From<DerivationMethodNotSupported> for BchWithTokensActivationError {
+    fn from(e: DerivationMethodNotSupported) -> Self {
+        BchWithTokensActivationError::DerivationMethodNotSupported(e.to_string())
+    }
+}
+
+impl From<PrivKeyNotAllowed> for BchWithTokensActivationError {
+    fn from(e: PrivKeyNotAllowed) -> Self { BchWithTokensActivationError::PrivKeyNotAllowed(e.to_string()) }
 }
 
 #[async_trait]
@@ -147,7 +184,7 @@ impl PlatformWithTokensActivationOps for BchCoin {
     type ActivationResult = BchWithTokensActivationResult;
     type ActivationError = BchWithTokensActivationError;
 
-    async fn init_platform_coin(
+    async fn enable_platform_coin(
         ctx: MmArc,
         ticker: String,
         platform_conf: Json,
@@ -187,7 +224,7 @@ impl PlatformWithTokensActivationOps for BchCoin {
     async fn get_activation_result(
         &self,
     ) -> Result<BchWithTokensActivationResult, MmError<BchWithTokensActivationError>> {
-        let my_address = &self.as_ref().my_address;
+        let my_address = self.as_ref().derivation_method.iguana_or_err()?;
         let my_slp_address = self
             .get_my_slp_address()
             .map_to_mm(BchWithTokensActivationError::Internal)?
@@ -215,15 +252,36 @@ impl PlatformWithTokensActivationOps for BchCoin {
             .bch_addresses_infos
             .insert(my_address.to_string(), CoinAddressInfo {
                 derivation_method: DerivationMethod::Iguana,
-                pubkey: self.my_public_key().to_string(),
+                pubkey: self.my_public_key()?.to_string(),
                 balances: bch_balance,
             });
 
         result.slp_addresses_infos.insert(my_slp_address, CoinAddressInfo {
             derivation_method: DerivationMethod::Iguana,
-            pubkey: self.my_public_key().to_string(),
+            pubkey: self.my_public_key()?.to_string(),
             balances: token_balances,
         });
         Ok(result)
+    }
+
+    fn start_history_background_fetching(
+        &self,
+        metrics: MetricsArc,
+        storage: impl TxHistoryStorage + Send + 'static,
+        initial_balance: BigDecimal,
+    ) -> AbortHandle {
+        let ticker = self.ticker().to_owned();
+        let (fut, abort_handle) = abortable(bch_and_slp_history_loop(
+            self.clone(),
+            storage,
+            metrics,
+            initial_balance,
+        ));
+        spawn(async move {
+            if let Err(e) = fut.await {
+                info!("bch_and_slp_history_loop stopped for {}, reason {}", ticker, e);
+            }
+        });
+        abort_handle
     }
 }

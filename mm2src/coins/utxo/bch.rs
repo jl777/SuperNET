@@ -1,14 +1,19 @@
 use super::*;
+use crate::my_tx_history_v2::{TxDetailsBuilder, TxHistoryStorage, TxHistoryStorageError};
 use crate::utxo::rpc_clients::UtxoRpcFut;
-use crate::utxo::slp::{parse_slp_script, SlpTokenInfo, SlpTransaction, SlpUnspent};
+use crate::utxo::slp::{parse_slp_script, ParseSlpScriptError, SlpGenesisParams, SlpTokenInfo, SlpTransaction,
+                       SlpUnspent};
+use crate::utxo::utxo_builder::{UtxoArcWithIguanaPrivKeyBuilder, UtxoCoinWithIguanaPrivKeyBuilder};
 use crate::utxo::utxo_common::big_decimal_from_sat_unsigned;
-use crate::{CanRefundHtlc, CoinBalance, CoinProtocol, NegotiateSwapContractAddrErr, SwapOps, TradePreimageValue,
-            ValidateAddressResult, WithdrawFut};
+use crate::{BlockHeightAndTime, CanRefundHtlc, CoinBalance, CoinProtocol, NegotiateSwapContractAddrErr, SwapOps,
+            TradePreimageValue, TransactionType, TxFeeDetails, ValidateAddressResult, ValidatePaymentInput,
+            WithdrawFut};
 use common::log::warn;
 use common::mm_metrics::MetricsArc;
 use common::mm_number::MmNumber;
 use derive_more::Display;
 use futures::{FutureExt, TryFutureExt};
+use itertools::Either as EitherIter;
 use keys::CashAddress;
 pub use keys::NetworkPrefix as CashAddrPrefix;
 use serde_json::{self as json, Value as Json};
@@ -21,7 +26,7 @@ pub struct BchActivationRequest {
     allow_slp_unsafe_conf: bool,
     bchd_urls: Vec<String>,
     #[serde(flatten)]
-    utxo_params: UtxoActivationParams,
+    pub utxo_params: UtxoActivationParams,
 }
 
 #[derive(Debug, Display)]
@@ -56,6 +61,7 @@ pub struct BchCoin {
     slp_tokens_infos: Arc<Mutex<HashMap<String, SlpTokenInfo>>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum IsSlpUtxoError {
     Rpc(UtxoRpcError),
     TxDeserialization(serialization::Error),
@@ -129,8 +135,51 @@ impl From<serialization::Error> for IsSlpUtxoError {
     fn from(err: serialization::Error) -> IsSlpUtxoError { IsSlpUtxoError::TxDeserialization(err) }
 }
 
+#[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
+pub enum GetTxDetailsError<E: TxHistoryStorageError> {
+    StorageError(E),
+    AddressesFromScriptError(String),
+    SlpTokenIdIsNotGenesisTx(H256),
+    TxDeserializationError(serialization::Error),
+    RpcError(UtxoRpcError),
+    ParseSlpScriptError(ParseSlpScriptError),
+    ToSlpAddressError(String),
+    InvalidSlpTransaction(H256),
+    AddressDerivationError(DerivationMethodNotSupported),
+}
+
+impl<E: TxHistoryStorageError> From<UtxoRpcError> for GetTxDetailsError<E> {
+    fn from(err: UtxoRpcError) -> Self { GetTxDetailsError::RpcError(err) }
+}
+
+impl<E: TxHistoryStorageError> From<E> for GetTxDetailsError<E> {
+    fn from(err: E) -> Self { GetTxDetailsError::StorageError(err) }
+}
+
+impl<E: TxHistoryStorageError> From<serialization::Error> for GetTxDetailsError<E> {
+    fn from(err: serialization::Error) -> Self { GetTxDetailsError::TxDeserializationError(err) }
+}
+
+impl<E: TxHistoryStorageError> From<ParseSlpScriptError> for GetTxDetailsError<E> {
+    fn from(err: ParseSlpScriptError) -> Self { GetTxDetailsError::ParseSlpScriptError(err) }
+}
+
+impl<E: TxHistoryStorageError> From<DerivationMethodNotSupported> for GetTxDetailsError<E> {
+    fn from(err: DerivationMethodNotSupported) -> Self { GetTxDetailsError::AddressDerivationError(err) }
+}
+
 impl BchCoin {
     pub fn slp_prefix(&self) -> &CashAddrPrefix { &self.slp_addr_prefix }
+
+    pub fn slp_address(&self, address: &Address) -> Result<CashAddress, String> {
+        let conf = &self.as_ref().conf;
+        address.to_cashaddress(
+            &self.slp_prefix().to_string(),
+            conf.pub_addr_prefix,
+            conf.p2sh_addr_prefix,
+        )
+    }
 
     pub fn bchd_urls(&self) -> &[String] { &self.bchd_urls }
 
@@ -185,15 +234,11 @@ impl BchCoin {
                                 None => result.add_standard(unspent),
                             }
                         },
-                        SlpTransaction::Genesis {
-                            initial_token_mint_quantity,
-                            mint_baton_vout,
-                            ..
-                        } => {
+                        SlpTransaction::Genesis(genesis) => {
                             if unspent.outpoint.index == 1 {
                                 let token_id = prev_tx.hash().reversed();
-                                result.add_slp(token_id, unspent, initial_token_mint_quantity);
-                            } else if Some(unspent.outpoint.index) == mint_baton_vout.map(|u| u as u32) {
+                                result.add_slp(token_id, unspent, genesis.initial_token_mint_quantity);
+                            } else if Some(unspent.outpoint.index) == genesis.mint_baton_vout.map(|u| u as u32) {
                                 result.add_slp_baton(unspent);
                             } else {
                                 result.add_standard(unspent);
@@ -258,7 +303,12 @@ impl BchCoin {
         Vec<UnspentInfo>,
         AsyncMutexGuard<'_, RecentlySpentOutPoints>,
     )> {
-        let (mut bch_unspents, recently_spent) = self.bch_unspents_for_spend(&self.as_ref().my_address).await?;
+        let my_address = self
+            .as_ref()
+            .derivation_method
+            .iguana_or_err()
+            .mm_err(|e| UtxoRpcError::Internal(e.to_string()))?;
+        let (mut bch_unspents, recently_spent) = self.bch_unspents_for_spend(my_address).await?;
         let (mut slp_unspents, standard_utxos) = (
             bch_unspents.slp.remove(token_id).unwrap_or_default(),
             bch_unspents.standard,
@@ -272,7 +322,12 @@ impl BchCoin {
         &self,
         token_id: &H256,
     ) -> UtxoRpcResult<(Vec<SlpUnspent>, Vec<UnspentInfo>)> {
-        let mut bch_unspents = self.bch_unspents_for_display(&self.as_ref().my_address).await?;
+        let my_address = self
+            .as_ref()
+            .derivation_method
+            .iguana_or_err()
+            .mm_err(|e| UtxoRpcError::Internal(e.to_string()))?;
+        let mut bch_unspents = self.bch_unspents_for_display(my_address).await?;
         let (mut slp_unspents, standard_utxos) = (
             bch_unspents.slp.remove(token_id).unwrap_or_default(),
             bch_unspents.standard,
@@ -291,12 +346,262 @@ impl BchCoin {
     }
 
     pub fn get_my_slp_address(&self) -> Result<CashAddress, String> {
-        let slp_address = self.as_ref().my_address.to_cashaddress(
+        let my_address = try_s!(self.as_ref().derivation_method.iguana_or_err());
+        let slp_address = my_address.to_cashaddress(
             &self.slp_prefix().to_string(),
             self.as_ref().conf.pub_addr_prefix,
             self.as_ref().conf.p2sh_addr_prefix,
         )?;
         Ok(slp_address)
+    }
+
+    async fn tx_from_storage_or_rpc<T: TxHistoryStorage>(
+        &self,
+        tx_hash: &H256Json,
+        storage: &T,
+    ) -> Result<UtxoTx, MmError<GetTxDetailsError<T::Error>>> {
+        let tx_hash_as_bytes = BytesJson::new(tx_hash.0.to_vec());
+        let tx_bytes = match storage.tx_bytes_from_cache(self.ticker(), &tx_hash_as_bytes).await? {
+            Some(tx_bytes) => tx_bytes,
+            None => {
+                let tx_bytes = self.as_ref().rpc_client.get_transaction_bytes(tx_hash).compat().await?;
+                storage
+                    .add_tx_to_cache(self.ticker(), &tx_hash_as_bytes, &tx_bytes)
+                    .await?;
+                tx_bytes
+            },
+        };
+        let tx = deserialize(tx_bytes.0.as_slice())?;
+        Ok(tx)
+    }
+
+    /// Returns multiple details by tx hash if token transfers also occurred in the transaction
+    pub async fn transaction_details_with_token_transfers<T: TxHistoryStorage>(
+        &self,
+        tx_hash: &H256Json,
+        block_height_and_time: Option<BlockHeightAndTime>,
+        storage: &T,
+    ) -> Result<Vec<TransactionDetails>, MmError<GetTxDetailsError<T::Error>>> {
+        let tx = self.tx_from_storage_or_rpc(tx_hash, storage).await?;
+
+        let bch_tx_details = self
+            .bch_tx_details(tx_hash, &tx, block_height_and_time, storage)
+            .await?;
+        let maybe_op_return: Script = tx.outputs[0].script_pubkey.clone().into();
+        if !(maybe_op_return.is_pay_to_public_key_hash()
+            || maybe_op_return.is_pay_to_public_key()
+            || maybe_op_return.is_pay_to_script_hash())
+        {
+            if let Ok(slp_details) = parse_slp_script(&maybe_op_return) {
+                let slp_tx_details = self
+                    .slp_tx_details(
+                        &tx,
+                        slp_details.transaction,
+                        block_height_and_time,
+                        bch_tx_details.fee_details.clone(),
+                        storage,
+                    )
+                    .await?;
+                return Ok(vec![bch_tx_details, slp_tx_details]);
+            }
+        }
+
+        Ok(vec![bch_tx_details])
+    }
+
+    async fn bch_tx_details<T: TxHistoryStorage>(
+        &self,
+        tx_hash: &H256Json,
+        tx: &UtxoTx,
+        height_and_time: Option<BlockHeightAndTime>,
+        storage: &T,
+    ) -> Result<TransactionDetails, MmError<GetTxDetailsError<T::Error>>> {
+        let my_address = self.as_ref().derivation_method.iguana_or_err()?;
+        let my_addresses = [my_address.clone()];
+        let mut tx_builder = TxDetailsBuilder::new(self.ticker().to_owned(), tx, height_and_time, my_addresses);
+        for output in &tx.outputs {
+            let addresses = match self.addresses_from_script(&output.script_pubkey.clone().into()) {
+                Ok(a) => a,
+                Err(_) => continue,
+            };
+
+            if addresses.is_empty() {
+                continue;
+            }
+
+            if addresses.len() != 1 {
+                let msg = format!(
+                    "{} tx {:02x} output script resulted into unexpected number of addresses",
+                    self.ticker(),
+                    tx_hash,
+                );
+                return MmError::err(GetTxDetailsError::AddressesFromScriptError(msg));
+            }
+
+            let amount = big_decimal_from_sat_unsigned(output.value, self.decimals());
+            for address in addresses {
+                tx_builder.transferred_to(address, &amount);
+            }
+        }
+
+        let mut total_input = 0;
+        for input in &tx.inputs {
+            let index = input.previous_output.index;
+            let prev_tx = self
+                .tx_from_storage_or_rpc(&input.previous_output.hash.reversed().into(), storage)
+                .await?;
+            let prev_script = prev_tx.outputs[index as usize].script_pubkey.clone().into();
+            let addresses = self
+                .addresses_from_script(&prev_script)
+                .map_to_mm(GetTxDetailsError::AddressesFromScriptError)?;
+            if addresses.len() != 1 {
+                let msg = format!(
+                    "{} tx {:02x} output script resulted into unexpected number of addresses",
+                    self.ticker(),
+                    tx_hash,
+                );
+                return MmError::err(GetTxDetailsError::AddressesFromScriptError(msg));
+            }
+
+            let prev_value = prev_tx.outputs[index as usize].value;
+            total_input += prev_value;
+            let amount = big_decimal_from_sat_unsigned(prev_value, self.decimals());
+            for address in addresses {
+                tx_builder.transferred_from(address, &amount);
+            }
+        }
+
+        let total_output = tx.outputs.iter().fold(0, |total, output| total + output.value);
+        let fee = Some(TxFeeDetails::Utxo(UtxoFeeDetails {
+            coin: Some(self.ticker().into()),
+            amount: big_decimal_from_sat_unsigned(total_input - total_output, self.decimals()),
+        }));
+        tx_builder.set_tx_fee(fee);
+        Ok(tx_builder.build())
+    }
+
+    async fn get_slp_genesis_params<T: TxHistoryStorage>(
+        &self,
+        token_id: H256,
+        storage: &T,
+    ) -> Result<SlpGenesisParams, MmError<GetTxDetailsError<T::Error>>> {
+        let token_genesis_tx = self.tx_from_storage_or_rpc(&token_id.into(), storage).await?;
+        let maybe_genesis_script: Script = token_genesis_tx.outputs[0].script_pubkey.clone().into();
+        let slp_details = parse_slp_script(&maybe_genesis_script)?;
+        match slp_details.transaction {
+            SlpTransaction::Genesis(params) => Ok(params),
+            _ => MmError::err(GetTxDetailsError::SlpTokenIdIsNotGenesisTx(token_id)),
+        }
+    }
+
+    async fn slp_transferred_amounts<T: TxHistoryStorage>(
+        &self,
+        utxo_tx: &UtxoTx,
+        slp_tx: SlpTransaction,
+        storage: &T,
+    ) -> Result<HashMap<usize, (CashAddress, BigDecimal)>, MmError<GetTxDetailsError<T::Error>>> {
+        let slp_amounts = match slp_tx {
+            SlpTransaction::Send { token_id, amounts } => {
+                let genesis_params = self.get_slp_genesis_params(token_id, storage).await?;
+                EitherIter::Left(
+                    amounts
+                        .into_iter()
+                        .map(move |amount| big_decimal_from_sat_unsigned(amount, genesis_params.decimals[0])),
+                )
+            },
+            SlpTransaction::Mint {
+                token_id,
+                additional_token_quantity,
+                ..
+            } => {
+                let slp_genesis_params = self.get_slp_genesis_params(token_id, storage).await?;
+                EitherIter::Right(std::iter::once(big_decimal_from_sat_unsigned(
+                    additional_token_quantity,
+                    slp_genesis_params.decimals[0],
+                )))
+            },
+            SlpTransaction::Genesis(genesis_params) => EitherIter::Right(std::iter::once(
+                big_decimal_from_sat_unsigned(genesis_params.initial_token_mint_quantity, genesis_params.decimals[0]),
+            )),
+        };
+
+        let mut result = HashMap::new();
+        for (i, amount) in slp_amounts.into_iter().enumerate() {
+            let output_index = i + 1;
+            match utxo_tx.outputs.get(output_index) {
+                Some(output) => {
+                    let addresses = self
+                        .addresses_from_script(&output.script_pubkey.clone().into())
+                        .map_to_mm(GetTxDetailsError::AddressesFromScriptError)?;
+                    if addresses.len() != 1 {
+                        let msg = format!(
+                            "{} tx {:?} output script resulted into unexpected number of addresses",
+                            self.ticker(),
+                            utxo_tx.hash().reversed(),
+                        );
+                        return MmError::err(GetTxDetailsError::AddressesFromScriptError(msg));
+                    }
+
+                    let slp_address = self
+                        .slp_address(&addresses[0])
+                        .map_to_mm(GetTxDetailsError::ToSlpAddressError)?;
+                    result.insert(output_index, (slp_address, amount));
+                },
+                None => return MmError::err(GetTxDetailsError::InvalidSlpTransaction(utxo_tx.hash().reversed())),
+            }
+        }
+        Ok(result)
+    }
+
+    async fn slp_tx_details<Storage: TxHistoryStorage>(
+        &self,
+        tx: &UtxoTx,
+        slp_tx: SlpTransaction,
+        height_and_time: Option<BlockHeightAndTime>,
+        tx_fee: Option<TxFeeDetails>,
+        storage: &Storage,
+    ) -> Result<TransactionDetails, MmError<GetTxDetailsError<Storage::Error>>> {
+        let token_id = match slp_tx.token_id() {
+            Some(id) => id,
+            None => tx.hash().reversed(),
+        };
+
+        let my_address = self.as_ref().derivation_method.iguana_or_err()?;
+        let slp_address = self
+            .slp_address(my_address)
+            .map_to_mm(GetTxDetailsError::ToSlpAddressError)?;
+        let addresses = [slp_address];
+
+        let mut slp_tx_details_builder =
+            TxDetailsBuilder::new(self.ticker().to_owned(), tx, height_and_time, addresses);
+        let slp_transferred_amounts = self.slp_transferred_amounts(tx, slp_tx, storage).await?;
+        for (_, (address, amount)) in slp_transferred_amounts {
+            slp_tx_details_builder.transferred_to(address, &amount);
+        }
+
+        for input in &tx.inputs {
+            let prev_tx = self
+                .tx_from_storage_or_rpc(&input.previous_output.hash.reversed().into(), storage)
+                .await?;
+            if let Ok(slp_tx_details) = parse_slp_script(&prev_tx.outputs[0].script_pubkey) {
+                let mut prev_slp_transferred = self
+                    .slp_transferred_amounts(&prev_tx, slp_tx_details.transaction, storage)
+                    .await?;
+                let i = input.previous_output.index as usize;
+                if let Some((address, amount)) = prev_slp_transferred.remove(&i) {
+                    slp_tx_details_builder.transferred_from(address, &amount);
+                }
+            }
+        }
+
+        slp_tx_details_builder.set_transaction_type(TransactionType::TokenTransfer(token_id.take().to_vec().into()));
+        slp_tx_details_builder.set_tx_fee(tx_fee);
+
+        Ok(slp_tx_details_builder.build())
+    }
+
+    pub async fn get_block_timestamp(&self, height: u64) -> Result<u64, MmError<UtxoRpcError>> {
+        self.as_ref().rpc_client.get_block_timestamp(height).await
     }
 }
 
@@ -326,8 +631,11 @@ pub async fn bch_coin_from_conf_and_params(
             slp_tokens_infos: slp_tokens_infos.clone(),
         }
     };
-    let coin: BchCoin = try_s!(
-        utxo_common::utxo_arc_from_conf_and_params(ctx, ticker, conf, params.utxo_params, priv_key, constructor).await
+
+    let coin = try_s!(
+        UtxoArcWithIguanaPrivKeyBuilder::new(ctx, ticker, conf, &params.utxo_params, priv_key, constructor)
+            .build()
+            .await
     );
     Ok(coin)
 }
@@ -372,7 +680,7 @@ impl UtxoTxBroadcastOps for BchCoin {
 #[async_trait]
 #[cfg_attr(test, mockable)]
 impl UtxoTxGenerationOps for BchCoin {
-    async fn get_tx_fee(&self) -> Result<ActualTxFee, JsonRpcError> { utxo_common::get_tx_fee(&self.utxo_arc).await }
+    async fn get_tx_fee(&self) -> UtxoRpcResult<ActualTxFee> { utxo_common::get_tx_fee(&self.utxo_arc).await }
 
     async fn calc_interest_if_required(
         &self,
@@ -398,10 +706,12 @@ impl UtxoCommonOps for BchCoin {
 
     fn denominate_satoshis(&self, satoshi: i64) -> f64 { utxo_common::denominate_satoshis(&self.utxo_arc, satoshi) }
 
-    fn my_public_key(&self) -> &Public { self.utxo_arc.key_pair.public() }
+    fn my_public_key(&self) -> Result<&Public, MmError<DerivationMethodNotSupported>> {
+        utxo_common::my_public_key(self.as_ref())
+    }
 
     fn address_from_str(&self, address: &str) -> Result<Address, String> {
-        utxo_common::checked_address_from_str(&self.utxo_arc, address)
+        utxo_common::checked_address_from_str(self, address)
     }
 
     async fn get_current_mtp(&self) -> UtxoRpcResult<u32> {
@@ -424,6 +734,7 @@ impl UtxoCommonOps for BchCoin {
         utxo_common::get_mut_verbose_transaction_from_map_or_rpc(self, tx_hash, utxo_tx_map).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn p2sh_spending_tx(
         &self,
         prev_transaction: UtxoTx,
@@ -432,6 +743,7 @@ impl UtxoCommonOps for BchCoin {
         script_data: Script,
         sequence: u32,
         lock_time: u32,
+        keypair: &KeyPair,
     ) -> Result<UtxoTx, String> {
         utxo_common::p2sh_spending_tx(
             self,
@@ -441,15 +753,23 @@ impl UtxoCommonOps for BchCoin {
             script_data,
             sequence,
             lock_time,
+            keypair,
         )
         .await
     }
 
-    async fn ordered_mature_unspents<'a>(
+    async fn list_all_unspent_ordered<'a>(
         &'a self,
         address: &Address,
     ) -> UtxoRpcResult<(Vec<UnspentInfo>, AsyncMutexGuard<'a, RecentlySpentOutPoints>)> {
-        self.list_unspent_ordered(address).await
+        utxo_common::list_all_unspent_ordered(self, address).await
+    }
+
+    async fn list_mature_unspent_ordered<'a>(
+        &'a self,
+        address: &Address,
+    ) -> UtxoRpcResult<(Vec<UnspentInfo>, AsyncMutexGuard<'a, RecentlySpentOutPoints>)> {
+        utxo_common::list_all_unspent_ordered(self, address).await
     }
 
     fn get_verbose_transaction_from_cache_or_rpc(&self, txid: H256Json) -> UtxoRpcFut<VerboseTransactionFrom> {
@@ -488,11 +808,27 @@ impl UtxoCommonOps for BchCoin {
         utxo_common::p2sh_tx_locktime(self, &self.utxo_arc.conf.ticker, htlc_locktime).await
     }
 
+    fn addr_format(&self) -> &UtxoAddressFormat { utxo_common::addr_format(self) }
+
     fn addr_format_for_standard_scripts(&self) -> UtxoAddressFormat {
         utxo_common::addr_format_for_standard_scripts(self)
     }
+
+    fn address_from_pubkey(&self, pubkey: &Public) -> Address {
+        let conf = &self.utxo_arc.conf;
+        let addr_format = self.addr_format().clone();
+        utxo_common::address_from_pubkey(
+            pubkey,
+            conf.pub_addr_prefix,
+            conf.pub_t_addr_prefix,
+            conf.checksum_type,
+            conf.bech32_hrp.clone(),
+            addr_format,
+        )
+    }
 }
 
+#[async_trait]
 impl SwapOps for BchCoin {
     fn send_taker_fee(&self, fee_addr: &[u8], amount: BigDecimal, _uuid: &[u8]) -> TransactionFut {
         utxo_common::send_taker_fee(self.clone(), fee_addr, amount)
@@ -501,23 +837,25 @@ impl SwapOps for BchCoin {
     fn send_maker_payment(
         &self,
         time_lock: u32,
+        maker_pub: &[u8],
         taker_pub: &[u8],
         secret_hash: &[u8],
         amount: BigDecimal,
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::send_maker_payment(self.clone(), time_lock, taker_pub, secret_hash, amount)
+        utxo_common::send_maker_payment(self.clone(), time_lock, maker_pub, taker_pub, secret_hash, amount)
     }
 
     fn send_taker_payment(
         &self,
         time_lock: u32,
+        taker_pub: &[u8],
         maker_pub: &[u8],
         secret_hash: &[u8],
         amount: BigDecimal,
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::send_taker_payment(self.clone(), time_lock, maker_pub, secret_hash, amount)
+        utxo_common::send_taker_payment(self.clone(), time_lock, taker_pub, maker_pub, secret_hash, amount)
     }
 
     fn send_maker_spends_taker_payment(
@@ -526,9 +864,17 @@ impl SwapOps for BchCoin {
         time_lock: u32,
         taker_pub: &[u8],
         secret: &[u8],
+        htlc_privkey: &[u8],
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::send_maker_spends_taker_payment(self.clone(), taker_payment_tx, time_lock, taker_pub, secret)
+        utxo_common::send_maker_spends_taker_payment(
+            self.clone(),
+            taker_payment_tx,
+            time_lock,
+            taker_pub,
+            secret,
+            htlc_privkey,
+        )
     }
 
     fn send_taker_spends_maker_payment(
@@ -537,31 +883,41 @@ impl SwapOps for BchCoin {
         time_lock: u32,
         maker_pub: &[u8],
         secret: &[u8],
+        htlc_privkey: &[u8],
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::send_taker_spends_maker_payment(self.clone(), maker_payment_tx, time_lock, maker_pub, secret)
+        utxo_common::send_taker_spends_maker_payment(
+            self.clone(),
+            maker_payment_tx,
+            time_lock,
+            maker_pub,
+            secret,
+            htlc_privkey,
+        )
     }
 
     fn send_taker_refunds_payment(
         &self,
-        taker_payment_tx: &[u8],
+        taker_tx: &[u8],
         time_lock: u32,
         maker_pub: &[u8],
         secret_hash: &[u8],
+        htlc_privkey: &[u8],
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::send_taker_refunds_payment(self.clone(), taker_payment_tx, time_lock, maker_pub, secret_hash)
+        utxo_common::send_taker_refunds_payment(self.clone(), taker_tx, time_lock, maker_pub, secret_hash, htlc_privkey)
     }
 
     fn send_maker_refunds_payment(
         &self,
-        maker_payment_tx: &[u8],
+        maker_tx: &[u8],
         time_lock: u32,
         taker_pub: &[u8],
         secret_hash: &[u8],
+        htlc_privkey: &[u8],
         _swap_contract_address: &Option<BytesJson>,
     ) -> TransactionFut {
-        utxo_common::send_maker_refunds_payment(self.clone(), maker_payment_tx, time_lock, taker_pub, secret_hash)
+        utxo_common::send_maker_refunds_payment(self.clone(), maker_tx, time_lock, taker_pub, secret_hash, htlc_privkey)
     }
 
     fn validate_fee(
@@ -588,42 +944,27 @@ impl SwapOps for BchCoin {
         )
     }
 
-    fn validate_maker_payment(
-        &self,
-        payment_tx: &[u8],
-        time_lock: u32,
-        maker_pub: &[u8],
-        priv_bn_hash: &[u8],
-        amount: BigDecimal,
-        _swap_contract_address: &Option<BytesJson>,
-    ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        utxo_common::validate_maker_payment(self, payment_tx, time_lock, maker_pub, priv_bn_hash, amount)
+    fn validate_maker_payment(&self, input: ValidatePaymentInput) -> Box<dyn Future<Item = (), Error = String> + Send> {
+        utxo_common::validate_maker_payment(self, input)
     }
 
-    fn validate_taker_payment(
-        &self,
-        payment_tx: &[u8],
-        time_lock: u32,
-        taker_pub: &[u8],
-        priv_bn_hash: &[u8],
-        amount: BigDecimal,
-        _swap_contract_address: &Option<BytesJson>,
-    ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        utxo_common::validate_taker_payment(self, payment_tx, time_lock, taker_pub, priv_bn_hash, amount)
+    fn validate_taker_payment(&self, input: ValidatePaymentInput) -> Box<dyn Future<Item = (), Error = String> + Send> {
+        utxo_common::validate_taker_payment(self, input)
     }
 
     fn check_if_my_payment_sent(
         &self,
         time_lock: u32,
+        my_pub: &[u8],
         other_pub: &[u8],
         secret_hash: &[u8],
         _search_from_block: u64,
         _swap_contract_address: &Option<BytesJson>,
     ) -> Box<dyn Future<Item = Option<TransactionEnum>, Error = String> + Send> {
-        utxo_common::check_if_my_payment_sent(self.clone(), time_lock, other_pub, secret_hash)
+        utxo_common::check_if_my_payment_sent(self.clone(), time_lock, my_pub, other_pub, secret_hash)
     }
 
-    fn search_for_swap_tx_spend_my(
+    async fn search_for_swap_tx_spend_my(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -641,9 +982,10 @@ impl SwapOps for BchCoin {
             utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
+        .await
     }
 
-    fn search_for_swap_tx_spend_other(
+    async fn search_for_swap_tx_spend_other(
         &self,
         time_lock: u32,
         other_pub: &[u8],
@@ -661,6 +1003,7 @@ impl SwapOps for BchCoin {
             utxo_common::DEFAULT_SWAP_VOUT,
             search_from_block,
         )
+        .await
     }
 
     fn extract_secret(&self, secret_hash: &[u8], spend_tx: &[u8]) -> Result<Vec<u8>, String> {
@@ -682,6 +1025,8 @@ impl SwapOps for BchCoin {
     ) -> Result<Option<BytesJson>, MmError<NegotiateSwapContractAddrErr>> {
         Ok(None)
     }
+
+    fn get_htlc_key_pair(&self) -> KeyPair { utxo_common::get_htlc_key_pair(self) }
 }
 
 fn total_unspent_value<'a>(unspents: impl IntoIterator<Item = &'a UnspentInfo>) -> u64 {
@@ -696,7 +1041,8 @@ impl MarketCoinOps for BchCoin {
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
         let coin = self.clone();
         let fut = async move {
-            let bch_unspents = coin.bch_unspents_for_display(&coin.as_ref().my_address).await?;
+            let my_address = coin.as_ref().derivation_method.iguana_or_err()?;
+            let bch_unspents = coin.bch_unspents_for_display(my_address).await?;
             Ok(bch_unspents.platform_balance(coin.as_ref().decimals))
         };
         Box::new(fut.boxed().compat())
@@ -750,7 +1096,7 @@ impl MarketCoinOps for BchCoin {
         utxo_common::current_block(&self.utxo_arc)
     }
 
-    fn display_priv_key(&self) -> String { utxo_common::display_priv_key(&self.utxo_arc) }
+    fn display_priv_key(&self) -> Result<String, String> { utxo_common::display_priv_key(&self.utxo_arc) }
 
     fn min_tx_amount(&self) -> BigDecimal { utxo_common::min_tx_amount(self.as_ref()) }
 
@@ -780,6 +1126,7 @@ impl UtxoStandardOps for BchCoin {
     }
 }
 
+#[async_trait]
 impl MmCoin for BchCoin {
     fn is_asset_chain(&self) -> bool { utxo_common::is_asset_chain(&self.utxo_arc) }
 
@@ -810,20 +1157,24 @@ impl MmCoin for BchCoin {
         utxo_common::get_trade_fee(self.clone())
     }
 
-    fn get_sender_trade_fee(&self, value: TradePreimageValue, stage: FeeApproxStage) -> TradePreimageFut<TradeFee> {
-        utxo_common::get_sender_trade_fee(self.clone(), value, stage)
+    async fn get_sender_trade_fee(
+        &self,
+        value: TradePreimageValue,
+        stage: FeeApproxStage,
+    ) -> TradePreimageResult<TradeFee> {
+        utxo_common::get_sender_trade_fee(self, value, stage).await
     }
 
     fn get_receiver_trade_fee(&self, _stage: FeeApproxStage) -> TradePreimageFut<TradeFee> {
         utxo_common::get_receiver_trade_fee(self.clone())
     }
 
-    fn get_fee_to_send_taker_fee(
+    async fn get_fee_to_send_taker_fee(
         &self,
         dex_fee_amount: BigDecimal,
         stage: FeeApproxStage,
-    ) -> TradePreimageFut<TradeFee> {
-        utxo_common::get_fee_to_send_taker_fee(self.clone(), dex_fee_amount, stage)
+    ) -> TradePreimageResult<TradeFee> {
+        utxo_common::get_fee_to_send_taker_fee(self, dex_fee_amount, stage).await
     }
 
     fn required_confirmations(&self) -> u64 { utxo_common::required_confirmations(&self.utxo_arc) }
@@ -842,10 +1193,10 @@ impl MmCoin for BchCoin {
 
     fn mature_confirmations(&self) -> Option<u32> { Some(self.utxo_arc.conf.mature_confirmations) }
 
-    fn coin_protocol_info(&self) -> Vec<u8> { utxo_common::coin_protocol_info(&self.utxo_arc) }
+    fn coin_protocol_info(&self) -> Vec<u8> { utxo_common::coin_protocol_info(self) }
 
     fn is_coin_protocol_supported(&self, info: &Option<Vec<u8>>) -> bool {
-        utxo_common::is_coin_protocol_supported(&self.utxo_arc, info)
+        utxo_common::is_coin_protocol_supported(self, info)
     }
 }
 
@@ -865,7 +1216,7 @@ pub fn tbch_coin_for_test() -> BchCoin {
         "method": "electrum",
         "coin": "BCH",
         "servers": [{"url":"blackie.c3-soft.com:60001"},{"url":"testnet.imaginary.cash:50001"},{"url":"tbch.loping.net:60001"},{"url":"electroncash.de:50003"}],
-        "bchd_urls": ["https://bchd-testnet.greyh.at:18335"],
+        "bchd_urls": ["https://bchd-testnet.electroncash.de:18335"],
         "allow_slp_unsafe_conf": false,
     });
 
@@ -911,4 +1262,111 @@ pub fn bch_coin_for_test() -> BchCoin {
         &*keypair.private().secret,
     ))
     .unwrap()
+}
+
+#[cfg(test)]
+mod bch_tests {
+    use super::*;
+    use crate::sql_tx_history_storage::SqliteTxHistoryStorage;
+    use crate::{TransactionType, TxFeeDetails};
+    use common::block_on;
+
+    fn init_storage_for(ticker: &str) -> impl TxHistoryStorage {
+        let storage = SqliteTxHistoryStorage::in_memory();
+        block_on(storage.init(ticker)).unwrap();
+        storage
+    }
+
+    #[test]
+    fn test_get_slp_genesis_params() {
+        let coin = tbch_coin_for_test();
+        let token_id = "bb309e48930671582bea508f9a1d9b491e49b69be3d6f372dc08da2ac6e90eb7".into();
+        let storage = init_storage_for(coin.ticker());
+
+        let slp_params = block_on(coin.get_slp_genesis_params(token_id, &storage)).unwrap();
+        assert_eq!("USDF", slp_params.token_ticker);
+        assert_eq!(4, slp_params.decimals[0]);
+    }
+
+    #[test]
+    fn test_plain_bch_tx_details() {
+        let coin = tbch_coin_for_test();
+        let storage = init_storage_for(coin.ticker());
+
+        let hash = "a8dcc3c6776e93e7bd21fb81551e853447c55e2d8ac141b418583bc8095ce390".into();
+        let tx = block_on(coin.tx_from_storage_or_rpc(&hash, &storage)).unwrap();
+
+        let details = block_on(coin.bch_tx_details(&hash, &tx, None, &storage)).unwrap();
+        let expected_total: BigDecimal = "0.11407782".parse().unwrap();
+        assert_eq!(expected_total, details.total_amount);
+
+        let expected_received: BigDecimal = "0.11405301".parse().unwrap();
+        assert_eq!(expected_received, details.received_by_me);
+
+        let expected_spent: BigDecimal = "0.11407782".parse().unwrap();
+        assert_eq!(expected_spent, details.spent_by_me);
+
+        let expected_balance_change: BigDecimal = "-0.00002481".parse().unwrap();
+        assert_eq!(expected_balance_change, details.my_balance_change);
+
+        let expected_from = vec!["bchtest:qzx0llpyp8gxxsmad25twksqnwd62xm3lsnnczzt66".to_owned()];
+        assert_eq!(expected_from, details.from);
+
+        let expected_to = vec![
+            "bchtest:qrhdt5adye8lc68upfj9fctfdgcd3aq9hctf8ft6md".to_owned(),
+            "bchtest:qzx0llpyp8gxxsmad25twksqnwd62xm3lsnnczzt66".to_owned(),
+        ];
+        assert_eq!(expected_to, details.to);
+
+        let expected_internal_id = BytesJson::from("a8dcc3c6776e93e7bd21fb81551e853447c55e2d8ac141b418583bc8095ce390");
+        assert_eq!(expected_internal_id, details.internal_id);
+
+        let expected_fee = Some(TxFeeDetails::Utxo(UtxoFeeDetails {
+            coin: Some("BCH".into()),
+            amount: "0.00001481".parse().unwrap(),
+        }));
+        assert_eq!(expected_fee, details.fee_details);
+
+        assert_eq!(coin.ticker(), details.coin);
+    }
+
+    #[test]
+    fn test_slp_tx_details() {
+        let coin = tbch_coin_for_test();
+        let storage = init_storage_for(coin.ticker());
+
+        let hash = "a8dcc3c6776e93e7bd21fb81551e853447c55e2d8ac141b418583bc8095ce390".into();
+        let tx = block_on(coin.tx_from_storage_or_rpc(&hash, &storage)).unwrap();
+
+        let slp_details = parse_slp_script(&tx.outputs[0].script_pubkey).unwrap();
+
+        let slp_tx_details = block_on(coin.slp_tx_details(&tx, slp_details.transaction, None, None, &storage)).unwrap();
+
+        let expected_total: BigDecimal = "6.2974".parse().unwrap();
+        assert_eq!(expected_total, slp_tx_details.total_amount);
+
+        let expected_spent: BigDecimal = "6.2974".parse().unwrap();
+        assert_eq!(expected_spent, slp_tx_details.spent_by_me);
+
+        let expected_received: BigDecimal = "5.2974".parse().unwrap();
+        assert_eq!(expected_received, slp_tx_details.received_by_me);
+
+        let expected_balance_change = BigDecimal::from(-1i32);
+        assert_eq!(expected_balance_change, slp_tx_details.my_balance_change);
+
+        let expected_from = vec!["slptest:qzx0llpyp8gxxsmad25twksqnwd62xm3lsg8lecug8".to_owned()];
+        assert_eq!(expected_from, slp_tx_details.from);
+
+        let expected_to = vec![
+            "slptest:qrhdt5adye8lc68upfj9fctfdgcd3aq9hcsaqj3dfs".to_owned(),
+            "slptest:qzx0llpyp8gxxsmad25twksqnwd62xm3lsg8lecug8".to_owned(),
+        ];
+        assert_eq!(expected_to, slp_tx_details.to);
+
+        let expected_tx_type =
+            TransactionType::TokenTransfer("bb309e48930671582bea508f9a1d9b491e49b69be3d6f372dc08da2ac6e90eb7".into());
+        assert_eq!(expected_tx_type, slp_tx_details.transaction_type);
+
+        assert_eq!(coin.ticker(), slp_tx_details.coin);
+    }
 }
