@@ -1976,7 +1976,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
             token_address,
             decimals,
         } => {
-            let platform_coin = try_s!(lp_coinfind(ctx, &platform).await);
+            let platform_coin = try_s!(lp_coinfind(ctx, platform).await);
             let platform_coin = match platform_coin {
                 Some(MmCoinEnum::SolanaCoin(coin)) => coin,
                 Some(_) => return ERR!("Platform coin {} is not SOL", platform),
