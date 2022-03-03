@@ -1,5 +1,6 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::solana::solana_common::ui_amount_to_amount;
+use crate::common::Future01CompatExt;
+use crate::solana::solana_common::{lamports_to_sol, ui_amount_to_amount};
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
@@ -15,7 +16,6 @@ use keys::KeyPair;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
 use solana_client::{rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
-use solana_sdk::hash::Hash;
 use solana_sdk::message::Message;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey, signature::Signer};
@@ -55,7 +55,7 @@ impl SplToken {
 
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
     let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
-    let (sol_required, hash) = coin.check_amount_too_low().await?;
+    let hash = coin.rpc().get_latest_blockhash()?;
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.platform_coin.key_pair.pubkey();
@@ -82,6 +82,15 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
     let msg = Message::new(&instructions, Some(&auth_key));
     let signers = vec![&coin.platform_coin.key_pair];
     let tx = Transaction::new(&signers, msg, hash);
+    let fees = coin.rpc().get_fee_for_message(tx.message())?;
+    let sol_required = lamports_to_sol(fees);
+    let base_balance = coin.base_coin_balance().compat().await?;
+    if base_balance < sol_required {
+        return MmError::err(WithdrawError::AmountTooLow {
+            amount: base_balance.clone(),
+            threshold: &sol_required - &base_balance,
+        });
+    }
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.platform_coin.my_address {
@@ -129,10 +138,6 @@ impl SolanaAsyncCommonOps for SplToken {
         req: &WithdrawRequest,
     ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
         solana_common::check_sufficient_balance(self, req).await
-    }
-
-    async fn check_amount_too_low(&self) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
-        solana_common::check_amount_too_low(self).await
     }
 }
 

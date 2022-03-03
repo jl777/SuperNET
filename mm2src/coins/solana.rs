@@ -1,4 +1,5 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
+use crate::common::Future01CompatExt;
 use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
@@ -18,7 +19,6 @@ use serde_json::{self as json, Value as Json};
 use solana_client::{client_error::{ClientError, ClientErrorKind},
                     rpc_client::RpcClient};
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
-use solana_sdk::hash::Hash;
 use solana_sdk::program_error::ProgramError;
 use solana_sdk::pubkey::ParsePubkeyError;
 use solana_sdk::transaction::Transaction;
@@ -48,8 +48,6 @@ pub trait SolanaAsyncCommonOps {
         &self,
         req: &WithdrawRequest,
     ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>>;
-
-    async fn check_amount_too_low(&self) -> Result<(BigDecimal, Hash), MmError<WithdrawError>>;
 }
 
 impl From<ClientError> for BalanceError {
@@ -228,10 +226,6 @@ impl SolanaAsyncCommonOps for SolanaCoin {
     ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
         solana_common::check_sufficient_balance(self, req).await
     }
-
-    async fn check_amount_too_low(&self) -> Result<(BigDecimal, Hash), MmError<WithdrawError>> {
-        solana_common::check_amount_too_low(self).await
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -241,9 +235,18 @@ pub struct SolanaFeeDetails {
 
 async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
     let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
-    let (sol_required, hash) = coin.check_amount_too_low().await?;
+    let base_balance = coin.base_coin_balance().compat().await?;
+    let hash = coin.rpc().get_latest_blockhash()?;
     let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send)?, hash);
+    let fees = coin.rpc().get_fee_for_message(tx.message())?;
+    let sol_required = lamports_to_sol(fees);
+    if base_balance < sol_required {
+        return MmError::err(WithdrawError::AmountTooLow {
+            amount: base_balance.clone(),
+            threshold: &sol_required - &base_balance,
+        });
+    }
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {

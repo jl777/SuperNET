@@ -4,7 +4,6 @@ use bigdecimal::ToPrimitive;
 use common::mm_error::MmError;
 use common::mm_number::BigDecimal;
 use futures::compat::Future01CompatExt;
-use solana_sdk::hash::Hash;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 
 pub fn lamports_to_sol(lamports: u64) -> BigDecimal { BigDecimal::from(lamports) / BigDecimal::from(LAMPORTS_PER_SOL) }
@@ -50,20 +49,4 @@ where
         });
     }
     Ok((to_send, my_balance))
-}
-
-pub async fn check_amount_too_low<T>(coin: &T) -> Result<(BigDecimal, Hash), MmError<WithdrawError>>
-where
-    T: SolanaCommonOps + SolanaAsyncCommonOps + MarketCoinOps,
-{
-    let base_balance = coin.base_coin_balance().compat().await?;
-    let (hash, fee_calculator) = coin.rpc().get_recent_blockhash()?;
-    let sol_required = lamports_to_sol(fee_calculator.lamports_per_signature);
-    if base_balance < sol_required {
-        return MmError::err(WithdrawError::AmountTooLow {
-            amount: base_balance.clone(),
-            threshold: &sol_required - &base_balance,
-        });
-    }
-    Ok((sol_required, hash))
 }

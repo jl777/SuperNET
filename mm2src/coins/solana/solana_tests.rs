@@ -42,7 +42,7 @@ mod tests {
             assert_eq!(public_address.len(), 44);
             assert_eq!(public_address, "2bUBiBNZyD29gP1oV6de7nxowMLoDBtopMMTGgMvjG5m");
             assert_eq!(priv_key, "F6czu7fdefbsCDH52JesQrBSJS5Sz25AkPLWFf8zUWhm");
-            let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
+            let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".to_string());
             let balance = client.get_balance(&fin.pubkey()).expect("Expect to retrieve balance");
             assert_eq!(balance, 0);
         }
@@ -52,7 +52,7 @@ mod tests {
             let public_address = key_pair.pubkey().to_string();
             assert_eq!(public_address.len(), 44);
             assert_eq!(public_address, "2jTgfhf98GosnKSCXjL5YSiEa3MLrmR42yy9kZZq1i2c");
-            let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".parse().unwrap());
+            let client = solana_client::rpc_client::RpcClient::new("https://api.testnet.solana.com/".to_string());
             let balance = client
                 .get_balance(&key_pair.pubkey())
                 .expect("Expect to retrieve balance");
