@@ -15,7 +15,7 @@ use futures01::Future;
 use keys::KeyPair;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::Value as Json;
-use solana_client::{rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
 use solana_sdk::message::Message;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey, signature::Signer};
@@ -55,14 +55,14 @@ impl SplToken {
 
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
     let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
-    let hash = coin.rpc().get_latest_blockhash()?;
+    let hash = coin.rpc().get_latest_blockhash().await?;
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.platform_coin.key_pair.pubkey();
-    let funding_address = coin.get_pubkey()?;
+    let funding_address = coin.get_pubkey().await?;
     let dest_token_address = get_associated_token_address(&system_destination_pubkey, &contract_key);
     let mut instructions = Vec::with_capacity(1);
-    let account_info = coin.rpc().get_account(&dest_token_address);
+    let account_info = coin.rpc().get_account(&dest_token_address).await;
     if account_info.is_err() {
         let instruction_creation = create_associated_token_account(&auth_key, &dest_token_address, &contract_key);
         instructions.push(instruction_creation);
@@ -82,7 +82,7 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
     let msg = Message::new(&instructions, Some(&auth_key));
     let signers = vec![&coin.platform_coin.key_pair];
     let tx = Transaction::new(&signers, msg, hash);
-    let fees = coin.rpc().get_fee_for_message(tx.message())?;
+    let fees = coin.rpc().get_fee_for_message(tx.message()).await?;
     let sol_required = lamports_to_sol(fees);
     let base_balance = coin.base_coin_balance().compat().await?;
     if base_balance < sol_required {
@@ -144,12 +144,15 @@ impl SolanaAsyncCommonOps for SplToken {
 impl SplToken {
     fn get_underlying_contract_pubkey(&self) -> Pubkey { self.conf.token_contract_address }
 
-    fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
+    async fn get_pubkey(&self) -> Result<Pubkey, MmError<AccountError>> {
         let coin = self.clone();
-        let token_accounts = coin.rpc().get_token_accounts_by_owner(
-            &coin.platform_coin.key_pair.pubkey(),
-            TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
-        )?;
+        let token_accounts = coin
+            .rpc()
+            .get_token_accounts_by_owner(
+                &coin.platform_coin.key_pair.pubkey(),
+                TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
+            )
+            .await?;
         if token_accounts.is_empty() {
             return MmError::err(AccountError::NotFundedError("account_not_funded".to_string()));
         }
@@ -159,16 +162,19 @@ impl SplToken {
     fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
         let coin = self.clone();
         let fut = async move {
-            let token_accounts = coin.rpc().get_token_accounts_by_owner(
-                &coin.platform_coin.key_pair.pubkey(),
-                TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
-            )?;
+            let token_accounts = coin
+                .rpc()
+                .get_token_accounts_by_owner(
+                    &coin.platform_coin.key_pair.pubkey(),
+                    TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
+                )
+                .await?;
             if token_accounts.is_empty() {
                 return Ok(0.0.into());
             }
             let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
                 .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
-            let amount = coin.rpc().get_token_account_balance(&actual_token_pubkey)?;
+            let amount = coin.rpc().get_token_account_balance(&actual_token_pubkey).await?;
             let balance =
                 BigDecimal::from_str(amount.amount.as_str()).map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
             Ok(balance)

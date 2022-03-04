@@ -4,14 +4,12 @@ use crate::solana::solana_common_tests::{generate_key_pair_from_iguana_seed, gen
 use crate::MarketCoinOps;
 use base58::ToBase58;
 use solana_client::rpc_request::TokenAccountsFilter;
-use solana_sdk::{signature::Signature, signature::Signer};
-use solana_transaction_status::UiTransactionEncoding;
+use solana_sdk::signature::Signer;
 use std::str;
 use std::str::FromStr;
 
 mod tests {
     use super::*;
-    use crate::solana::solana_decode_tx_helpers::SolanaConfirmedTransaction;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -81,21 +79,21 @@ mod tests {
         );
     }
 
-    #[test]
+    #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn solana_my_balance() {
+    async fn solana_my_balance() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
-        let res = sol_coin.my_balance().wait().unwrap();
+        let res = sol_coin.my_balance().compat().await.unwrap();
         assert_ne!(res.spendable, BigDecimal::from(0.0));
     }
 
-    #[test]
+    #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn solana_block_height() {
+    async fn solana_block_height() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
-        let res = sol_coin.current_block().wait().unwrap();
+        let res = sol_coin.current_block().compat().await.unwrap();
         println!("block is : {}", res);
         assert!(res > 0);
     }
@@ -122,9 +120,9 @@ mod tests {
         assert_eq!(res.is_valid, false);
     }
 
-    #[test]
+    #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn solana_test_transactions() {
+    async fn solana_test_transactions() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
         let valid_tx_details = sol_coin
@@ -136,7 +134,8 @@ mod tests {
                 max: false,
                 fee: None,
             })
-            .wait()
+            .compat()
+            .await
             .unwrap();
         assert_eq!(valid_tx_details.total_amount, BigDecimal::from(0.0001));
         assert_eq!(valid_tx_details.coin, "SOL".to_string());
@@ -152,27 +151,29 @@ mod tests {
                 max: false,
                 fee: None,
             })
-            .wait();
+            .compat()
+            .await;
 
         // NotSufficientBalance
         assert_eq!(invalid_tx.is_err(), true);
 
         let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
-        let res = sol_coin.send_raw_tx(tx_str).wait();
+        let res = sol_coin.send_raw_tx(tx_str).compat().await;
         assert_eq!(res.is_err(), false);
         //println!("{:?}", res);
     }
 
     // This test is just a unit test for brainstorming around tx_history for base_coin.
-    #[test]
+    /*#[tokio::test]
     #[ignore]
     #[cfg(not(target_arch = "wasm32"))]
-    fn solana_test_tx_history() {
+    async fn solana_test_tx_history() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let res = sol_coin
             .client
             .get_signatures_for_address(&sol_coin.key_pair.pubkey())
+            .await
             .unwrap();
         let mut history = Vec::new();
         for cur in res.iter() {
@@ -180,6 +181,7 @@ mod tests {
             let res = sol_coin
                 .client
                 .get_transaction(&signature, UiTransactionEncoding::JsonParsed)
+                .await
                 .unwrap();
             println!("{}", serde_json::to_string(&res).unwrap());
             let parsed = serde_json::to_value(&res).unwrap();
@@ -188,5 +190,5 @@ mod tests {
             history.append(&mut txs);
         }
         println!("{}", serde_json::to_string(&history).unwrap());
-    }
+    }*/
 }

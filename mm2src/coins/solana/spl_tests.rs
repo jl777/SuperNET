@@ -25,9 +25,9 @@ mod tests {
         );
     }
 
-    #[test]
+    #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn spl_my_balance() {
+    async fn spl_my_balance() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let sol_spl_usdc_coin = spl_coin_for_test(
@@ -37,7 +37,7 @@ mod tests {
             solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
         );
 
-        let res = sol_spl_usdc_coin.my_balance().wait().unwrap();
+        let res = sol_spl_usdc_coin.my_balance().compat().await.unwrap();
         assert_ne!(res.spendable, BigDecimal::from(0.0));
 
         let sol_spl_wsol_coin = spl_coin_for_test(
@@ -46,13 +46,13 @@ mod tests {
             8,
             solana_sdk::pubkey::Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(),
         );
-        let res = sol_spl_wsol_coin.my_balance().wait().unwrap();
+        let res = sol_spl_wsol_coin.my_balance().compat().await.unwrap();
         assert_eq!(res.spendable, BigDecimal::from(0.0));
     }
 
-    #[test]
+    #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn test_spl_transactions() {
+    async fn test_spl_transactions() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Testnet);
         let usdc_sol_coin = spl_coin_for_test(
@@ -70,13 +70,14 @@ mod tests {
                 max: false,
                 fee: None,
             })
-            .wait()
+            .compat()
+            .await
             .unwrap();
         assert_eq!(valid_tx_details.total_amount, BigDecimal::from(0.0001));
         assert_eq!(valid_tx_details.coin, "USDC".to_string());
         assert_ne!(valid_tx_details.timestamp, 0);
         let tx_str = from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
-        let res = usdc_sol_coin.send_raw_tx(tx_str).wait();
+        let res = usdc_sol_coin.send_raw_tx(tx_str).compat().await;
         assert_eq!(res.is_err(), false);
         println!("{:?}", res);
     }

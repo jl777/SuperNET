@@ -12,12 +12,12 @@ use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
 use derive_more::Display;
 use futures::{FutureExt, TryFutureExt};
-use futures01::{future::result, Future};
+use futures01::Future;
 use keys::KeyPair;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::{self as json, Value as Json};
 use solana_client::{client_error::{ClientError, ClientErrorKind},
-                    rpc_client::RpcClient};
+                    nonblocking::rpc_client::RpcClient};
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::program_error::ProgramError;
 use solana_sdk::pubkey::ParsePubkeyError;
@@ -175,10 +175,12 @@ pub async fn solana_coin_from_conf_and_params(
     params: SolanaActivationParams,
     priv_key: &[u8],
 ) -> Result<SolanaCoin, String> {
-    let client =
-        solana_client::rpc_client::RpcClient::new_with_commitment(params.client_url.clone(), CommitmentConfig {
+    let client = solana_client::nonblocking::rpc_client::RpcClient::new_with_commitment(
+        params.client_url.clone(),
+        CommitmentConfig {
             commitment: params.confirmation_commitment,
-        });
+        },
+    );
     let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
     let key_pair = generate_keypair_from_slice(priv_key);
     let my_address = key_pair.pubkey().to_string();
@@ -236,10 +238,10 @@ pub struct SolanaFeeDetails {
 async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
     let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
     let base_balance = coin.base_coin_balance().compat().await?;
-    let hash = coin.rpc().get_latest_blockhash()?;
+    let hash = coin.rpc().get_latest_blockhash().await?;
     let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send)?, hash);
-    let fees = coin.rpc().get_fee_for_message(tx.message())?;
+    let fees = coin.rpc().get_fee_for_message(tx.message()).await?;
     let sol_required = lamports_to_sol(fees);
     if base_balance < sol_required {
         return MmError::err(WithdrawError::AmountTooLow {
@@ -286,11 +288,10 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 impl SolanaCoin {
     fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
         let coin = self.clone();
-        let base_coin_balance_functor = |coin: SolanaCoin| {
-            let res = coin.rpc().get_balance(&coin.key_pair.pubkey())?;
+        let fut = async move {
+            let res = coin.rpc().get_balance(&coin.key_pair.pubkey()).await?;
             Ok(lamports_to_sol(res))
         };
-        let fut = async move { base_coin_balance_functor(coin) };
         Box::new(fut.boxed().compat())
     }
 }
@@ -321,15 +322,17 @@ impl MarketCoinOps for SolanaCoin {
     }
 
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
-        let decoded = try_fus!(hex::decode(tx));
-        let deserialized_tx: Transaction = try_fus!(deserialize(&*decoded));
-        let closure = |signature: solana_sdk::signature::Signature| Ok(signature.to_string());
-        Box::new(result(
-            self.rpc()
-                .send_transaction(&deserialized_tx)
-                .map_err(|e| ERRL!("{}", e))
-                .and_then(closure),
-        ))
+        let coin = self.clone();
+        let tx = tx.to_owned();
+        let fut = async move {
+            let bytes = hex::decode(tx).map_to_mm(|e| e).map_err(|e| format!("{:?}", e))?;
+            let tx: Transaction = deserialize(bytes.as_slice())
+                .map_to_mm(|e| e)
+                .map_err(|e| format!("{:?}", e))?;
+            let signature = coin.rpc().send_transaction(&tx).await.map_err(|e| format!("{:?}", e))?;
+            Ok(signature.to_string())
+        };
+        Box::new(fut.boxed().compat())
     }
 
     fn wait_for_confirmations(
@@ -356,7 +359,9 @@ impl MarketCoinOps for SolanaCoin {
     fn tx_enum_from_bytes(&self, _bytes: &[u8]) -> Result<TransactionEnum, String> { unimplemented!() }
 
     fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> {
-        Box::new(result(self.rpc().get_block_height()).map_err(|e| ERRL!("{}", e)))
+        let coin = self.clone();
+        let fut = async move { coin.rpc().get_block_height().await.map_err(|e| format!("{:?}", e)) };
+        Box::new(fut.boxed().compat())
     }
 
     fn display_priv_key(&self) -> Result<String, String> { Ok(self.key_pair.secret().to_bytes()[..].to_base58()) }
