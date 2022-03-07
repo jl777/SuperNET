@@ -1379,7 +1379,7 @@ async fn qrc20_withdraw(coin: Qrc20Coin, req: WithdrawRequest) -> WithdrawResult
         spent_by_me: qrc20_amount,
         received_by_me,
         my_balance_change,
-        tx_hash: signed.hash().reversed().to_vec().into(),
+        tx_hash: format!("{:02x}", BytesJson(signed.hash().reversed().to_vec())),
         tx_hex: serialize(&signed).into(),
         fee_details: Some(fee_details.into()),
         block_height: 0,

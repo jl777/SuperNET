@@ -681,7 +681,7 @@ pub struct TransactionDetails {
     /// Raw bytes of signed transaction in hexadecimal string, this should be sent as is to send_raw_transaction RPC to broadcast the transaction
     pub tx_hex: BytesJson,
     /// Transaction hash in hexadecimal format
-    tx_hash: BytesJson,
+    tx_hash: String,
     /// Coins are sent from these addresses
     from: Vec<String>,
     /// Coins are sent to these addresses

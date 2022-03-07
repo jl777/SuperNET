@@ -1575,7 +1575,7 @@ impl MmCoin for SlpToken {
             let details = TransactionDetails {
                 tx_hex: serialize(&signed).into(),
                 internal_id: tx_hash.clone(),
-                tx_hash,
+                tx_hash: format!("{:02x}", tx_hash),
                 from: vec![my_address_string],
                 to: vec![to_address],
                 total_amount,
