@@ -32,6 +32,19 @@ pub struct SplTokenConf {
     pub token_contract_address: Pubkey,
 }
 
+#[derive(Clone, Debug)]
+pub struct SplTokenInfo {
+    pub token_contract_address: Pubkey,
+    pub decimals: u8,
+}
+
+#[derive(Debug)]
+pub struct SplProtocolConf {
+    pub platform_coin_ticker: String,
+    pub decimals: u8,
+    pub token_contract_address: Pubkey,
+}
+
 #[derive(Clone)]
 pub struct SplToken {
     pub conf: Arc<SplTokenConf>,
@@ -50,6 +63,13 @@ impl SplToken {
             token_contract_address: token_address,
         });
         SplToken { conf, platform_coin }
+    }
+
+    pub fn get_info(&self) -> SplTokenInfo {
+        SplTokenInfo {
+            token_contract_address: self.conf.token_contract_address,
+            decimals: self.decimals(),
+        }
     }
 }
 

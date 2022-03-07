@@ -83,6 +83,7 @@ pub fn solana_coin_for_test(seed: String, net_type: SolanaNet) -> (MmArc, Solana
     let (ticker, decimals) = ("SOL".to_string(), 8);
     let key_pair = generate_key_pair_from_iguana_seed(seed);
     let my_address = key_pair.pubkey().to_string();
+    let spl_tokens_infos = Arc::new(Mutex::new(HashMap::new()));
 
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
         decimals,
@@ -91,6 +92,7 @@ pub fn solana_coin_for_test(seed: String, net_type: SolanaNet) -> (MmArc, Solana
         ticker,
         required_confirmations: 1.into(),
         client,
+        spl_tokens_infos,
     }));
     (ctx, solana_coin)
 }

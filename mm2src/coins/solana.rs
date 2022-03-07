@@ -1,6 +1,7 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::common::Future01CompatExt;
 use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports};
+use crate::solana::spl::SplTokenInfo;
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
             ValidateAddressResult, ValidatePaymentInput, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
@@ -16,6 +17,7 @@ use futures01::Future;
 use keys::KeyPair;
 use rpc::v1::types::Bytes as BytesJson;
 use serde_json::{self as json, Value as Json};
+use solana_client::rpc_request::TokenAccountsFilter;
 use solana_client::{client_error::{ClientError, ClientErrorKind},
                     nonblocking::rpc_client::RpcClient};
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
@@ -24,7 +26,10 @@ use solana_sdk::pubkey::ParsePubkeyError;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
+use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::atomic::Ordering as AtomicOrdering;
+use std::sync::Mutex;
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           ops::Deref,
@@ -117,7 +122,7 @@ impl From<AccountError> for WithdrawError {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SolanaActivationParams {
     confirmation_commitment: CommitmentLevel,
     client_url: String,
@@ -184,6 +189,7 @@ pub async fn solana_coin_from_conf_and_params(
     let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
     let key_pair = generate_keypair_from_slice(priv_key);
     let my_address = key_pair.pubkey().to_string();
+    let spl_tokens_infos = Arc::new(Mutex::new(HashMap::new()));
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
         my_address,
         key_pair,
@@ -191,6 +197,7 @@ pub async fn solana_coin_from_conf_and_params(
         required_confirmations: 1.into(),
         client,
         decimals,
+        spl_tokens_infos,
     }));
     Ok(solana_coin)
 }
@@ -203,6 +210,7 @@ pub struct SolanaCoinImpl {
     decimals: u8,
     required_confirmations: AtomicU64,
     my_address: String,
+    spl_tokens_infos: Arc<Mutex<HashMap<String, SplTokenInfo>>>,
 }
 
 impl Debug for SolanaCoinImpl {
@@ -286,6 +294,33 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 }
 
 impl SolanaCoin {
+    pub async fn my_balance_spl(&self, infos: &SplTokenInfo) -> Result<CoinBalance, MmError<BalanceError>> {
+        let token_accounts = self
+            .rpc()
+            .get_token_accounts_by_owner(
+                &self.key_pair.pubkey(),
+                TokenAccountsFilter::Mint(infos.token_contract_address),
+            )
+            .await?;
+        if token_accounts.is_empty() {
+            return Ok(CoinBalance {
+                spendable: Default::default(),
+                unspendable: Default::default(),
+            });
+        }
+        let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
+            .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
+        let amount = self.rpc().get_token_account_balance(&actual_token_pubkey).await?;
+        let balance =
+            BigDecimal::from_str(amount.amount.as_str()).map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
+        Ok(CoinBalance {
+            spendable: balance,
+            unspendable: Default::default(),
+        })
+    }
+
+    pub fn my_pubkey(&self) -> String { self.0.key_pair.pubkey().to_string() }
+
     fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
         let coin = self.clone();
         let fut = async move {
@@ -293,6 +328,15 @@ impl SolanaCoin {
             Ok(lamports_to_sol(res))
         };
         Box::new(fut.boxed().compat())
+    }
+
+    pub fn add_spl_token_info(&self, ticker: String, info: SplTokenInfo) {
+        self.spl_tokens_infos.lock().unwrap().insert(ticker, info);
+    }
+
+    pub fn get_spl_tokens_infos(&self) -> HashMap<String, SplTokenInfo> {
+        let guard = self.spl_tokens_infos.lock().unwrap();
+        (*guard).clone()
     }
 }
 
