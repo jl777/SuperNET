@@ -1,6 +1,6 @@
-use crate::platform_coin_with_tokens::{GetPlatformBalance, PlatformWithTokensActivationOps, RegisterTokenInfo,
-                                       TokenActivationParams, TokenActivationRequest, TokenAsMmCoinInitializer,
-                                       TokenInitializer, TokenOf};
+use crate::platform_coin_with_tokens::{EnablePlatformCoinWithTokensError, GetPlatformBalance,
+                                       PlatformWithTokensActivationOps, RegisterTokenInfo, TokenActivationParams,
+                                       TokenActivationRequest, TokenAsMmCoinInitializer, TokenInitializer, TokenOf};
 use crate::prelude::*;
 use crate::prelude::{CoinAddressInfo, TokenBalances, TryFromCoinProtocol, TxHistoryEnabled};
 use crate::spl_token_activation::SplActivationRequest;
@@ -102,6 +102,24 @@ pub enum SolanaWithTokensActivationError {
     GetBalanceError(BalanceError),
     Transport(String),
     Internal(String),
+}
+
+impl From<SolanaWithTokensActivationError> for EnablePlatformCoinWithTokensError {
+    fn from(e: SolanaWithTokensActivationError) -> Self {
+        match e {
+            SolanaWithTokensActivationError::PlatformCoinCreationError { ticker, error } => {
+                EnablePlatformCoinWithTokensError::PlatformCoinCreationError { ticker, error }
+            },
+            SolanaWithTokensActivationError::UnableToRetrieveMyAddress(e) => {
+                EnablePlatformCoinWithTokensError::Internal(e)
+            },
+            SolanaWithTokensActivationError::GetBalanceError(e) => {
+                EnablePlatformCoinWithTokensError::Internal(format!("{:?}", e))
+            },
+            SolanaWithTokensActivationError::Transport(e) => EnablePlatformCoinWithTokensError::Transport(e),
+            SolanaWithTokensActivationError::Internal(e) => EnablePlatformCoinWithTokensError::Internal(e),
+        }
+    }
 }
 
 impl From<BalanceError> for SolanaWithTokensActivationError {

@@ -16,7 +16,7 @@ use coins::utxo::bch::BchCoin;
 use coins::utxo::qtum::QtumCoin;
 use coins::utxo::slp::SlpToken;
 use coins::utxo::utxo_standard::UtxoStandardCoin;
-use coins::{add_delegation, get_staking_infos, remove_delegation, withdraw};
+use coins::{add_delegation, get_staking_infos, remove_delegation, withdraw, SolanaCoin};
 use coins_activation::{enable_l2, enable_platform_coin_with_tokens, enable_token, init_standalone_coin,
                        init_standalone_coin_status, init_standalone_coin_user_action};
 use common::log::{error, warn};
@@ -164,6 +164,9 @@ async fn dispatcher_v2(request: MmRpcRequest, ctx: MmArc) -> DispatcherResult<Re
             "list_payments" => handle_mmrpc(ctx, request, list_payments).await,
             "open_channel" => handle_mmrpc(ctx, request, open_channel).await,
             "send_payment" => handle_mmrpc(ctx, request, send_payment).await,
+            "enable_solana_with_tokens" => {
+                handle_mmrpc(ctx, request, enable_platform_coin_with_tokens::<SolanaCoin>).await
+            },
             _ => MmError::err(DispatcherError::NoSuchMethod),
         },
         #[cfg(target_arch = "wasm32")]
