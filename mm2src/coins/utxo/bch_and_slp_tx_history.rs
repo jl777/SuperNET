@@ -217,7 +217,7 @@ impl<T: TxHistoryStorage> State for UpdatingUnconfirmedTxes<T> {
                     let found = self
                         .all_tx_ids_with_height
                         .iter()
-                        .find(|(hash, _)| hash.0.as_ref() == tx.tx_hash.as_bytes());
+                        .find(|(hash, _)| hash.0.as_ref() == tx.tx_hash.as_slice());
                     match found {
                         Some((_, height)) => {
                             if *height > 0 {

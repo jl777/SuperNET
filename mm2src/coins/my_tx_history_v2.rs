@@ -198,7 +198,7 @@ impl<'a, Addr: Clone + DisplayAddress + Eq + std::hash::Hash, Tx: Transaction> T
         TransactionDetails {
             coin: self.coin,
             tx_hex: self.tx.tx_hex().into(),
-            tx_hash: format!("{:02x}", tx_hash),
+            tx_hash,
             from,
             to,
             total_amount: self.total_amount,

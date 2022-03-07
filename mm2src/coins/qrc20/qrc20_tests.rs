@@ -457,7 +457,7 @@ fn test_transfer_details_by_hash() {
     let (_id, actual) = it.next().unwrap();
     let expected = TransactionDetails {
         tx_hex: tx_hex.clone(),
-        tx_hash: format!("{:02x}", BytesJson(tx_hash_bytes.clone())),
+        tx_hash: tx_hash_bytes.clone().into(),
         from: vec!["qXxsj5RtciAby9T7m98AgAATL4zTi4UwDG".into()],
         to: vec!["qKVvtDqpnFGDxsDzck5jmLwdnD2jRH6aM8".into()],
         total_amount: BigDecimal::from_str("0.003").unwrap(),
@@ -481,7 +481,7 @@ fn test_transfer_details_by_hash() {
     let (_id, actual) = it.next().unwrap();
     let expected = TransactionDetails {
         tx_hex: tx_hex.clone(),
-        tx_hash: format!("{:02x}", BytesJson(tx_hash_bytes.clone())),
+        tx_hash: tx_hash_bytes.clone().into(),
         from: vec!["qKVvtDqpnFGDxsDzck5jmLwdnD2jRH6aM8".into()],
         to: vec!["qXxsj5RtciAby9T7m98AgAATL4zTi4UwDG".into()],
         total_amount: BigDecimal::from_str("0.00295").unwrap(),
@@ -505,7 +505,7 @@ fn test_transfer_details_by_hash() {
     let (_id, actual) = it.next().unwrap();
     let expected = TransactionDetails {
         tx_hex: tx_hex.clone(),
-        tx_hash: format!("{:02x}", BytesJson(tx_hash_bytes.clone())),
+        tx_hash: tx_hash_bytes.clone().into(),
         from: vec!["qXxsj5RtciAby9T7m98AgAATL4zTi4UwDG".into()],
         to: vec!["qKVvtDqpnFGDxsDzck5jmLwdnD2jRH6aM8".into()],
         total_amount: BigDecimal::from_str("0.003").unwrap(),
@@ -529,7 +529,7 @@ fn test_transfer_details_by_hash() {
     let (_id, actual) = it.next().unwrap();
     let expected = TransactionDetails {
         tx_hex: tx_hex.clone(),
-        tx_hash: format!("{:02x}", BytesJson(tx_hash_bytes.clone())),
+        tx_hash: tx_hash_bytes.clone().into(),
         from: vec!["qKVvtDqpnFGDxsDzck5jmLwdnD2jRH6aM8".into()],
         to: vec!["qXxsj5RtciAby9T7m98AgAATL4zTi4UwDG".into()],
         total_amount: BigDecimal::from_str("0.00295").unwrap(),
@@ -553,7 +553,7 @@ fn test_transfer_details_by_hash() {
     let (_id, actual) = it.next().unwrap();
     let expected = TransactionDetails {
         tx_hex: tx_hex.clone(),
-        tx_hash: format!("{:02x}", BytesJson(tx_hash_bytes.clone())),
+        tx_hash: tx_hash_bytes.clone().into(),
         from: vec!["qKVvtDqpnFGDxsDzck5jmLwdnD2jRH6aM8".into()],
         to: vec!["qXxsj5RtciAby9T7m98AgAATL4zTi4UwDG".into()],
         total_amount: BigDecimal::from_str("0.00005000").unwrap(),

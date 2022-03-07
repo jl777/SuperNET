@@ -5,7 +5,6 @@ use crate::MarketCoinOps;
 use base58::ToBase58;
 use solana_client::rpc_request::TokenAccountsFilter;
 use solana_sdk::signature::Signer;
-use std::str;
 use std::str::FromStr;
 
 mod tests {
@@ -141,6 +140,11 @@ mod tests {
         assert_eq!(valid_tx_details.coin, "SOL".to_string());
         assert_eq!(valid_tx_details.received_by_me, BigDecimal::from(0.0001));
         assert_ne!(valid_tx_details.timestamp, 0);
+        let hash = valid_tx_details.tx_hash.to_base58();
+        let jsonify = serde_json::to_value(&valid_tx_details).unwrap();
+        let hash_str = jsonify.get("tx_hash").unwrap().as_str().unwrap();
+        let expected_hash = hex::decode(hash_str.as_bytes()).unwrap().to_base58();
+        assert_eq!(hash, expected_hash);
 
         let invalid_tx = sol_coin
             .withdraw(WithdrawRequest {
@@ -157,10 +161,9 @@ mod tests {
         // NotSufficientBalance
         assert_eq!(invalid_tx.is_err(), true);
 
-        let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
-        let res = sol_coin.send_raw_tx(tx_str).compat().await;
-        assert_eq!(res.is_err(), false);
-        //println!("{:?}", res);
+        let tx_str = std::str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
+        let res = sol_coin.send_raw_tx(tx_str).compat().await.unwrap();
+        assert_eq!(res, expected_hash);
     }
 
     // This test is just a unit test for brainstorming around tx_history for base_coin.
