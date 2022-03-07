@@ -33,16 +33,14 @@ impl TryFromCoinProtocol for SplProtocolConf {
         match proto {
             CoinProtocol::SPLTOKEN {
                 platform,
-                token_address,
+                token_contract_address,
                 decimals,
             } => {
-                let token_contract_address =
-                    solana_sdk::pubkey::Pubkey::from_str(token_address.as_str()).map_to_mm(|_e| {
-                        CoinProtocol::SPLTOKEN {
-                            platform: platform.clone(),
-                            token_address: token_address.clone(),
-                            decimals,
-                        }
+                let token_contract_address = solana_sdk::pubkey::Pubkey::from_str(token_contract_address.as_str())
+                    .map_to_mm(|_e| CoinProtocol::SPLTOKEN {
+                        platform: platform.clone(),
+                        token_contract_address: token_contract_address.clone(),
+                        decimals,
                     })?;
                 Ok(SplProtocolConf {
                     platform_coin_ticker: platform,

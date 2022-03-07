@@ -38,7 +38,7 @@ impl TokenInitializer for SplTokenInitializer {
     fn tokens_requests_from_platform_request(
         platform_params: &SolanaWithTokensActivationRequest,
     ) -> Vec<TokenActivationRequest<Self::TokenActivationRequest>> {
-        platform_params.slp_tokens_requests.clone()
+        platform_params.spl_tokens_requests.clone()
     }
 
     async fn enable_tokens(
@@ -71,7 +71,7 @@ impl RegisterTokenInfo<SplToken> for SolanaCoin {
 pub struct SolanaWithTokensActivationRequest {
     #[serde(flatten)]
     platform_request: SolanaActivationParams,
-    slp_tokens_requests: Vec<TokenActivationRequest<SplActivationRequest>>,
+    spl_tokens_requests: Vec<TokenActivationRequest<SplActivationRequest>>,
 }
 
 impl TxHistoryEnabled for SolanaWithTokensActivationRequest {
@@ -148,22 +148,17 @@ impl PlatformWithTokensActivationOps for SolanaCoin {
     type ActivationError = SolanaWithTokensActivationError;
 
     async fn enable_platform_coin(
-        ctx: MmArc,
+        _ctx: MmArc,
         ticker: String,
         platform_conf: Json,
         activation_request: Self::ActivationRequest,
         _protocol_conf: Self::PlatformProtocolInfo,
         priv_key: &[u8],
     ) -> Result<Self, MmError<Self::ActivationError>> {
-        let platform_coin = solana_coin_from_conf_and_params(
-            &ctx,
-            &ticker,
-            &platform_conf,
-            activation_request.platform_request,
-            priv_key,
-        )
-        .await
-        .map_to_mm(|error| SolanaWithTokensActivationError::PlatformCoinCreationError { ticker, error })?;
+        let platform_coin =
+            solana_coin_from_conf_and_params(&ticker, &platform_conf, activation_request.platform_request, priv_key)
+                .await
+                .map_to_mm(|error| SolanaWithTokensActivationError::PlatformCoinCreationError { ticker, error })?;
         Ok(platform_coin)
     }
 

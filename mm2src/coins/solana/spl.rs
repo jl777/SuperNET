@@ -195,8 +195,8 @@ impl SplToken {
             let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
                 .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
             let amount = coin.rpc().get_token_account_balance(&actual_token_pubkey).await?;
-            let balance =
-                BigDecimal::from_str(amount.amount.as_str()).map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
+            let balance = BigDecimal::from_str(amount.ui_amount_string.as_str())
+                .map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
             Ok(balance)
         };
         Box::new(fut.boxed().compat())

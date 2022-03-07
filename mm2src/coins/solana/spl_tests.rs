@@ -39,6 +39,7 @@ mod tests {
 
         let res = sol_spl_usdc_coin.my_balance().compat().await.unwrap();
         assert_ne!(res.spendable, BigDecimal::from(0.0));
+        assert!(res.spendable < 10.0.into());
 
         let sol_spl_wsol_coin = spl_coin_for_test(
             sol_coin.clone(),

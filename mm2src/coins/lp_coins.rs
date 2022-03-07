@@ -1718,7 +1718,7 @@ pub enum CoinProtocol {
     #[cfg(all(not(target_arch = "wasm32")))]
     SPLTOKEN {
         platform: String,
-        token_address: String,
+        token_contract_address: String,
         decimals: u8,
     },
     #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
@@ -1974,13 +1974,13 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
         #[cfg(all(not(target_arch = "wasm32")))]
         CoinProtocol::SOLANA => {
             let params = try_s!(SolanaActivationParams::from_legacy_req(req));
-            let solana = try_s!(solana_coin_from_conf_and_params(ctx, ticker, &coins_en, params, &secret).await);
+            let solana = try_s!(solana_coin_from_conf_and_params(ticker, &coins_en, params, &secret).await);
             solana.into()
         },
         #[cfg(all(not(target_arch = "wasm32")))]
         CoinProtocol::SPLTOKEN {
             platform,
-            token_address,
+            token_contract_address,
             decimals,
         } => {
             let platform_coin = try_s!(lp_coinfind(ctx, platform).await);
@@ -1989,7 +1989,7 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
                 Some(_) => return ERR!("Platform coin {} is not SOL", platform),
                 None => return ERR!("Platform coin {} is not activated", platform),
             };
-            let pubkey = try_s!(solana_sdk::pubkey::Pubkey::from_str(token_address.as_str()));
+            let pubkey = try_s!(solana_sdk::pubkey::Pubkey::from_str(token_contract_address.as_str()));
             let token = SplToken::new(*decimals, ticker.into(), pubkey, platform_coin);
             token.into()
         },

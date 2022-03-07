@@ -174,7 +174,6 @@ fn generate_keypair_from_slice(priv_key: &[u8]) -> Keypair {
 }
 
 pub async fn solana_coin_from_conf_and_params(
-    ctx: &MmArc,
     ticker: &str,
     conf: &Json,
     params: SolanaActivationParams,
@@ -311,8 +310,8 @@ impl SolanaCoin {
         let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
             .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
         let amount = self.rpc().get_token_account_balance(&actual_token_pubkey).await?;
-        let balance =
-            BigDecimal::from_str(amount.amount.as_str()).map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
+        let balance = BigDecimal::from_str(amount.ui_amount_string.as_str())
+            .map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
         Ok(CoinBalance {
             spendable: balance,
             unspendable: Default::default(),
