@@ -12,6 +12,7 @@ use bincode::{deserialize, serialize};
 use common::mm_error::prelude::MapToMmResult;
 use common::{mm_ctx::MmArc, mm_error::MmError, mm_number::MmNumber, now_ms};
 use derive_more::Display;
+use ed25519_dalek::SignatureError;
 use futures::{FutureExt, TryFutureExt};
 use futures01::Future;
 use keys::KeyPair;
@@ -136,14 +137,27 @@ pub enum SolanaFromLegacyReqErr {
     ClientNoAvailableNodes(String),
 }
 
-fn generate_keypair_from_slice(priv_key: &[u8]) -> Keypair {
-    let secret_key = ed25519_dalek::SecretKey::from_bytes(priv_key).unwrap();
+#[derive(Debug, Display)]
+pub enum KeyPairCreationError {
+    #[display(fmt = "Signature error: {}", _0)]
+    SignatureError(ed25519_dalek::SignatureError),
+    #[display(fmt = "KeyPairFromSeed error: {}", _0)]
+    KeyPairFromSeed(String),
+}
+
+impl From<ed25519_dalek::SignatureError> for KeyPairCreationError {
+    fn from(e: SignatureError) -> Self { KeyPairCreationError::SignatureError(e) }
+}
+
+fn generate_keypair_from_slice(priv_key: &[u8]) -> Result<Keypair, MmError<KeyPairCreationError>> {
+    let secret_key = ed25519_dalek::SecretKey::from_bytes(priv_key)?;
     let public_key = ed25519_dalek::PublicKey::from(&secret_key);
     let key_pair = ed25519_dalek::Keypair {
         secret: secret_key,
         public: public_key,
     };
-    solana_sdk::signature::keypair_from_seed(key_pair.to_bytes().as_ref()).unwrap()
+    solana_sdk::signature::keypair_from_seed(key_pair.to_bytes().as_ref())
+        .map_to_mm(|e| KeyPairCreationError::KeyPairFromSeed(e.to_string()))
 }
 
 pub async fn solana_coin_from_conf_and_params(
@@ -159,7 +173,7 @@ pub async fn solana_coin_from_conf_and_params(
         },
     );
     let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
-    let key_pair = generate_keypair_from_slice(priv_key);
+    let key_pair = try_s!(generate_keypair_from_slice(priv_key));
     let my_address = key_pair.pubkey().to_string();
     let spl_tokens_infos = Arc::new(Mutex::new(HashMap::new()));
     let solana_coin = SolanaCoin(Arc::new(SolanaCoinImpl {
