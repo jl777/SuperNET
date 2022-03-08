@@ -431,7 +431,6 @@ impl Qrc20Coin {
 
         let mut updated = false;
         for (id, tx) in transfer_map {
-            println!("{:02x} {:?} {:?} - {}", id.tx_hash, id.tx_hash, tx_hash, tx.tx_hash);
             if id.tx_hash != *tx_hash {
                 ctx.log.log(
                     "😟",

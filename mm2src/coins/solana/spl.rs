@@ -2,9 +2,9 @@ use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, Trade
 use crate::common::Future01CompatExt;
 use crate::solana::solana_common::{lamports_to_sol, ui_amount_to_amount, SufficientBalanceError};
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
-use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
-            TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
-            ValidateAddressResult, ValidatePaymentInput, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
+use crate::{BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin, TradePreimageFut,
+            TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
+            ValidatePaymentInput, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bincode::serialize;
@@ -57,7 +57,7 @@ pub struct SplToken {
 }
 
 impl Debug for SplToken {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(self.conf.ticker.to_string().as_str()) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(&*self.conf.ticker) }
 }
 
 impl SplToken {
@@ -88,7 +88,7 @@ impl SplToken {
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
     let (to_send, my_balance) = coin.check_sufficient_balance(req.max, req.amount.clone()).await?;
     let hash = coin.rpc().get_latest_blockhash().await?;
-    let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
+    let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(&*req.to)?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.platform_coin.key_pair.pubkey();
     let funding_address = coin.get_pubkey().await?;
@@ -150,7 +150,7 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
 }
 
 async fn withdraw_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
-    let validate_address_result = coin.validate_address(req.to.as_str());
+    let validate_address_result = coin.validate_address(&*req.to);
     if !validate_address_result.is_valid {
         return MmError::err(WithdrawError::InvalidAddress(
             validate_address_result.reason.unwrap_or_else(|| "Unknown".to_string()),
@@ -189,28 +189,18 @@ impl SplToken {
         if token_accounts.is_empty() {
             return MmError::err(AccountError::NotFundedError("account_not_funded".to_string()));
         }
-        Ok(Pubkey::from_str(token_accounts[0].pubkey.as_str())?)
+        Ok(Pubkey::from_str(&*token_accounts[0].pubkey)?)
     }
 
-    fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
+    fn my_balance_impl(&self) -> BalanceFut<CoinBalance> {
         let coin = self.clone();
         let fut = async move {
-            let token_accounts = coin
-                .rpc()
-                .get_token_accounts_by_owner(
-                    &coin.platform_coin.key_pair.pubkey(),
-                    TokenAccountsFilter::Mint(coin.get_underlying_contract_pubkey()),
-                )
-                .await?;
-            if token_accounts.is_empty() {
-                return Ok(0.0.into());
-            }
-            let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
-                .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
-            let amount = coin.rpc().get_token_account_balance(&actual_token_pubkey).await?;
-            let balance = BigDecimal::from_str(amount.ui_amount_string.as_str())
-                .map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
-            Ok(balance)
+            coin.platform_coin
+                .my_balance_spl(&SplTokenInfo {
+                    token_contract_address: coin.conf.token_contract_address,
+                    decimals: coin.conf.decimals,
+                })
+                .await
         };
         Box::new(fut.boxed().compat())
     }
@@ -222,12 +212,7 @@ impl MarketCoinOps for SplToken {
     fn my_address(&self) -> Result<String, String> { Ok(self.platform_coin.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
-        let fut = self.my_balance_impl().and_then(move |result| {
-            Ok(CoinBalance {
-                spendable: result,
-                unspendable: 0.into(),
-            })
-        });
+        let fut = self.my_balance_impl().and_then(Ok);
         Box::new(fut)
     }
 

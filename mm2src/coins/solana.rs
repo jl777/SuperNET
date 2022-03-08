@@ -200,7 +200,7 @@ pub struct SolanaCoinImpl {
 }
 
 impl Debug for SolanaCoinImpl {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(self.ticker.to_string().as_str()) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { f.write_str(&*self.ticker) }
 }
 
 #[derive(Clone, Debug)]
@@ -234,7 +234,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let (to_send, my_balance) = coin.check_sufficient_balance(req.max, req.amount).await?;
     let base_balance = coin.base_coin_balance().compat().await?;
     let hash = coin.rpc().get_latest_blockhash().await?;
-    let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
+    let to = solana_sdk::pubkey::Pubkey::try_from(&*req.to)?;
     let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send)?, hash);
     let fees = coin.rpc().get_fee_for_message(tx.message()).await?;
     let sol_required = lamports_to_sol(fees);
@@ -271,7 +271,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
 }
 
 async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
-    let validate_address_result = coin.validate_address(req.to.as_str());
+    let validate_address_result = coin.validate_address(&*req.to);
     if !validate_address_result.is_valid {
         return MmError::err(WithdrawError::InvalidAddress(
             validate_address_result.reason.unwrap_or_else(|| "Unknown".to_string()),
@@ -295,11 +295,11 @@ impl SolanaCoin {
                 unspendable: Default::default(),
             });
         }
-        let actual_token_pubkey = Pubkey::from_str(token_accounts[0].pubkey.as_str())
-            .map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
+        let actual_token_pubkey =
+            Pubkey::from_str(&*token_accounts[0].pubkey).map_err(|e| BalanceError::Internal(format!("{:?}", e)))?;
         let amount = self.rpc().get_token_account_balance(&actual_token_pubkey).await?;
-        let balance = BigDecimal::from_str(amount.ui_amount_string.as_str())
-            .map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
+        let balance =
+            BigDecimal::from_str(&*amount.ui_amount_string).map_to_mm(|e| BalanceError::Internal(e.to_string()))?;
         Ok(CoinBalance {
             spendable: balance,
             unspendable: Default::default(),
