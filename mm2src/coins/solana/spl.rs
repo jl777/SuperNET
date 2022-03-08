@@ -26,6 +26,11 @@ use std::{convert::TryFrom,
           sync::Arc};
 
 #[derive(Debug)]
+pub enum SplTokenCreationError {
+    InvalidPubkey(String),
+}
+
+#[derive(Debug)]
 pub struct SplTokenConf {
     pub decimals: u8,
     pub ticker: String,
@@ -42,7 +47,7 @@ pub struct SplTokenInfo {
 pub struct SplProtocolConf {
     pub platform_coin_ticker: String,
     pub decimals: u8,
-    pub token_contract_address: Pubkey,
+    pub token_contract_address: String,
 }
 
 #[derive(Clone)]
@@ -56,13 +61,20 @@ impl Debug for SplToken {
 }
 
 impl SplToken {
-    pub fn new(decimals: u8, ticker: String, token_address: Pubkey, platform_coin: SolanaCoin) -> SplToken {
+    pub fn new(
+        decimals: u8,
+        ticker: String,
+        token_address: String,
+        platform_coin: SolanaCoin,
+    ) -> Result<SplToken, MmError<SplTokenCreationError>> {
+        let token_contract_address = solana_sdk::pubkey::Pubkey::from_str(&token_address)
+            .map_err(|e| MmError::new(SplTokenCreationError::InvalidPubkey(format!("{:?}", e))))?;
         let conf = Arc::new(SplTokenConf {
             decimals,
             ticker,
-            token_contract_address: token_address,
+            token_contract_address,
         });
-        SplToken { conf, platform_coin }
+        Ok(SplToken { conf, platform_coin })
     }
 
     pub fn get_info(&self) -> SplTokenInfo {

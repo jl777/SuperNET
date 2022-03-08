@@ -136,34 +136,6 @@ pub enum SolanaFromLegacyReqErr {
     ClientNoAvailableNodes(String),
 }
 
-impl SolanaActivationParams {
-    pub fn from_legacy_req(req: &Json) -> Result<Self, MmError<SolanaFromLegacyReqErr>> {
-        let solana_commitment =
-            json::from_value::<String>(req["commitment_level"].clone()).unwrap_or_else(|_| "Finalized".to_string());
-        let solana_client_urls = json::from_value::<Vec<String>>(req["urls"].clone())
-            .map_to_mm(SolanaFromLegacyReqErr::InvalidClientParsing)?;
-        if solana_client_urls.is_empty() {
-            return MmError::err(SolanaFromLegacyReqErr::ClientNoAvailableNodes(
-                "Enable request for SOLANA coin must have at least 1 node URL".to_string(),
-            ));
-        }
-        let commitment_level = match solana_commitment.as_str() {
-            "Finalized" => solana_sdk::commitment_config::CommitmentLevel::Finalized,
-            "Confirmed" => solana_sdk::commitment_config::CommitmentLevel::Confirmed,
-            "Processed" => solana_sdk::commitment_config::CommitmentLevel::Processed,
-            _ => {
-                return MmError::err(SolanaFromLegacyReqErr::InvalidCommitmentLevel(
-                    "Invalid commitment".to_string(),
-                ))
-            },
-        };
-        Ok(SolanaActivationParams {
-            confirmation_commitment: commitment_level,
-            client_url: solana_client_urls[0].clone(),
-        })
-    }
-}
-
 fn generate_keypair_from_slice(priv_key: &[u8]) -> Keypair {
     let secret_key = ed25519_dalek::SecretKey::from_bytes(priv_key).unwrap();
     let public_key = ed25519_dalek::PublicKey::from(&secret_key);
@@ -319,8 +291,6 @@ impl SolanaCoin {
             unspendable: Default::default(),
         })
     }
-
-    pub fn my_pubkey(&self) -> String { self.0.key_pair.pubkey().to_string() }
 
     fn my_balance_impl(&self) -> BalanceFut<BigDecimal> {
         let coin = self.clone();

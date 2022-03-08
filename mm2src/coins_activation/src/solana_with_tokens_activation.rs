@@ -45,18 +45,18 @@ impl TokenInitializer for SplTokenInitializer {
         &self,
         activation_params: Vec<TokenActivationParams<SplActivationRequest, SplProtocolConf>>,
     ) -> Result<Vec<SplToken>, MmError<std::convert::Infallible>> {
-        let tokens = activation_params
-            .into_iter()
-            .map(|params| {
-                SplToken::new(
-                    params.protocol.decimals,
-                    params.ticker,
-                    params.protocol.token_contract_address,
-                    self.platform_coin.clone(),
-                )
-            })
-            .collect();
-
+        let mut tokens = Vec::new();
+        for param in activation_params.into_iter() {
+            match SplToken::new(
+                param.protocol.decimals,
+                param.ticker,
+                param.protocol.token_contract_address,
+                self.platform_coin.clone(),
+            ) {
+                Ok(token) => tokens.push(token),
+                Err(_) => continue,
+            }
+        }
         Ok(tokens)
     }
 
@@ -199,13 +199,13 @@ impl PlatformWithTokensActivationOps for SolanaCoin {
             .solana_addresses_infos
             .insert(my_address.clone(), CoinAddressInfo {
                 derivation_method: DerivationMethod::Iguana,
-                pubkey: self.my_pubkey(),
+                pubkey: my_address.clone(),
                 balances: solana_balance,
             });
 
-        result.spl_addresses_infos.insert(my_address, CoinAddressInfo {
+        result.spl_addresses_infos.insert(my_address.clone(), CoinAddressInfo {
             derivation_method: DerivationMethod::Iguana,
-            pubkey: self.my_pubkey(),
+            pubkey: my_address,
             balances: token_balances,
         });
         Ok(result)
