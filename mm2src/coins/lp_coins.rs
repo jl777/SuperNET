@@ -183,7 +183,7 @@ pub enum PrivKeyNotAllowed {
     HardwareWalletNotSupported,
 }
 
-#[derive(Debug, Display, PartialEq)]
+#[derive(Debug, Display, PartialEq, Serialize)]
 pub enum DerivationMethodNotSupported {
     #[display(fmt = "HD wallets are not supported")]
     HdWalletNotSupported,
@@ -1973,25 +1973,11 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
         CoinProtocol::LIGHTNING { .. } => return ERR!("Lightning protocol is not supported by lp_coininit"),
         #[cfg(all(not(target_arch = "wasm32")))]
         CoinProtocol::SOLANA => {
-            let params = try_s!(SolanaActivationParams::from_legacy_req(req));
-            let solana = try_s!(solana_coin_from_conf_and_params(ticker, &coins_en, params, &secret).await);
-            solana.into()
+            return ERR!("Solana protocol is not supported by lp_coininit - use enable_solana_with_tokens instead")
         },
         #[cfg(all(not(target_arch = "wasm32")))]
-        CoinProtocol::SPLTOKEN {
-            platform,
-            token_contract_address,
-            decimals,
-        } => {
-            let platform_coin = try_s!(lp_coinfind(ctx, platform).await);
-            let platform_coin = match platform_coin {
-                Some(MmCoinEnum::SolanaCoin(coin)) => coin,
-                Some(_) => return ERR!("Platform coin {} is not SOL", platform),
-                None => return ERR!("Platform coin {} is not activated", platform),
-            };
-            let pubkey = try_s!(solana_sdk::pubkey::Pubkey::from_str(token_contract_address.as_str()));
-            let token = SplToken::new(*decimals, ticker.into(), pubkey, platform_coin);
-            token.into()
+        CoinProtocol::SPLTOKEN { .. } => {
+            return ERR!("SplToken protocol is not supported by lp_coininit - use enable_spl instead")
         },
     };
 

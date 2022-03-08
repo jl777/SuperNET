@@ -3,7 +3,8 @@
 use crate::prelude::*;
 use async_trait::async_trait;
 use coins::utxo::rpc_clients::UtxoRpcError;
-use coins::{lp_coinfind, lp_coinfind_or_err, CoinProtocol, CoinsContext, MmCoinEnum};
+use coins::{lp_coinfind, lp_coinfind_or_err, BalanceError, CoinProtocol, CoinsContext, DerivationMethodNotSupported,
+            MmCoinEnum};
 use common::mm_ctx::MmArc;
 use common::mm_error::prelude::*;
 use common::{HttpStatusCode, NotSame, StatusCode};
@@ -55,6 +56,8 @@ pub enum EnableTokenError {
         platform_coin_ticker: String,
         token_ticker: String,
     },
+    #[display(fmt = "{}", _0)]
+    DerivationMethodNotSupported(DerivationMethodNotSupported),
     Transport(String),
     Internal(String),
 }
@@ -72,6 +75,16 @@ impl From<CoinConfWithProtocolError> for EnableTokenError {
             CoinConfWithProtocolError::UnexpectedProtocol { ticker, protocol } => {
                 EnableTokenError::UnexpectedTokenProtocol { ticker, protocol }
             },
+        }
+    }
+}
+
+impl From<BalanceError> for EnableTokenError {
+    fn from(e: BalanceError) -> Self {
+        match e {
+            BalanceError::Transport(e) | BalanceError::InvalidResponse(e) => EnableTokenError::Transport(e),
+            BalanceError::DerivationMethodNotSupported(e) => EnableTokenError::DerivationMethodNotSupported(e),
+            BalanceError::Internal(e) => EnableTokenError::Internal(e),
         }
     }
 }
@@ -141,6 +154,7 @@ impl HttpStatusCode for EnableTokenError {
             | EnableTokenError::UnexpectedTokenProtocol { .. } => StatusCode::BAD_REQUEST,
             EnableTokenError::TokenProtocolParseError { .. }
             | EnableTokenError::UnsupportedPlatformCoin { .. }
+            | EnableTokenError::DerivationMethodNotSupported(_)
             | EnableTokenError::Transport(_)
             | EnableTokenError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }

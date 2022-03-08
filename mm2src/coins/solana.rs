@@ -1,6 +1,6 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::common::Future01CompatExt;
-use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports};
+use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports, SufficientBalanceError};
 use crate::solana::spl::SplTokenInfo;
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
@@ -51,8 +51,9 @@ pub trait SolanaCommonOps {
 pub trait SolanaAsyncCommonOps {
     async fn check_sufficient_balance(
         &self,
-        req: &WithdrawRequest,
-    ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>>;
+        max: bool,
+        amount: BigDecimal,
+    ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>>;
 }
 
 impl From<ClientError> for BalanceError {
@@ -231,9 +232,10 @@ impl SolanaCommonOps for SolanaCoin {
 impl SolanaAsyncCommonOps for SolanaCoin {
     async fn check_sufficient_balance(
         &self,
-        req: &WithdrawRequest,
-    ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
-        solana_common::check_sufficient_balance(self, req).await
+        max: bool,
+        amount: BigDecimal,
+    ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
+        solana_common::check_sufficient_balance(self, max, amount).await
     }
 }
 
@@ -243,7 +245,7 @@ pub struct SolanaFeeDetails {
 }
 
 async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
-    let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
+    let (to_send, my_balance) = coin.check_sufficient_balance(req.max, req.amount).await?;
     let base_balance = coin.base_coin_balance().compat().await?;
     let hash = coin.rpc().get_latest_blockhash().await?;
     let to = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;

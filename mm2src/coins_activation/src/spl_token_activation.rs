@@ -1,5 +1,5 @@
 use crate::prelude::{TryFromCoinProtocol, TryPlatformCoinFromMmCoinEnum};
-use crate::token::{TokenActivationOps, TokenProtocolParams};
+use crate::token::{EnableTokenError, TokenActivationOps, TokenProtocolParams};
 use async_trait::async_trait;
 use coins::solana::spl::SplProtocolConf;
 use coins::{BalanceError, CoinBalance, CoinProtocol, MarketCoinOps, MmCoinEnum, SolanaCoin, SplToken};
@@ -69,6 +69,15 @@ pub struct SplInitResult {
 pub enum SplInitError {
     GetBalanceError(BalanceError),
     MyAddressError(String),
+}
+
+impl From<SplInitError> for EnableTokenError {
+    fn from(err: SplInitError) -> Self {
+        match err {
+            SplInitError::GetBalanceError(rpc_err) => rpc_err.into(),
+            SplInitError::MyAddressError(e) => EnableTokenError::Internal(e),
+        }
+    }
 }
 
 #[async_trait]

@@ -1,6 +1,6 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::common::Future01CompatExt;
-use crate::solana::solana_common::{lamports_to_sol, ui_amount_to_amount};
+use crate::solana::solana_common::{lamports_to_sol, ui_amount_to_amount, SufficientBalanceError};
 use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
@@ -74,7 +74,7 @@ impl SplToken {
 }
 
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
-    let (to_send, my_balance) = coin.check_sufficient_balance(&req).await?;
+    let (to_send, my_balance) = coin.check_sufficient_balance(req.max, req.amount.clone()).await?;
     let hash = coin.rpc().get_latest_blockhash().await?;
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(req.to.as_str())?;
     let contract_key = coin.get_underlying_contract_pubkey();
@@ -155,9 +155,10 @@ impl SolanaCommonOps for SplToken {
 impl SolanaAsyncCommonOps for SplToken {
     async fn check_sufficient_balance(
         &self,
-        req: &WithdrawRequest,
-    ) -> Result<(BigDecimal, BigDecimal), MmError<WithdrawError>> {
-        solana_common::check_sufficient_balance(self, req).await
+        max: bool,
+        amount: BigDecimal,
+    ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
+        solana_common::check_sufficient_balance(self, max, amount).await
     }
 }
 

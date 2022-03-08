@@ -16,7 +16,7 @@ use coins::utxo::bch::BchCoin;
 use coins::utxo::qtum::QtumCoin;
 use coins::utxo::slp::SlpToken;
 use coins::utxo::utxo_standard::UtxoStandardCoin;
-use coins::{add_delegation, get_staking_infos, remove_delegation, withdraw, SolanaCoin};
+use coins::{add_delegation, get_staking_infos, remove_delegation, withdraw};
 use coins_activation::{enable_l2, enable_platform_coin_with_tokens, enable_token, init_standalone_coin,
                        init_standalone_coin_status, init_standalone_coin_user_action};
 use common::log::{error, warn};
@@ -34,6 +34,7 @@ cfg_native! {
     use coins::lightning::{close_channel, connect_to_lightning_node, generate_invoice, get_channel_details,
         get_claimable_balances, get_payment_details, list_channels, list_payments, open_channel,
         send_payment, LightningCoin};
+    use coins::{SolanaCoin, SplToken};
 }
 
 pub async fn process_single_request(
@@ -167,6 +168,7 @@ async fn dispatcher_v2(request: MmRpcRequest, ctx: MmArc) -> DispatcherResult<Re
             "enable_solana_with_tokens" => {
                 handle_mmrpc(ctx, request, enable_platform_coin_with_tokens::<SolanaCoin>).await
             },
+            "enable_spl" => handle_mmrpc(ctx, request, enable_token::<SplToken>).await,
             _ => MmError::err(DispatcherError::NoSuchMethod),
         },
         #[cfg(target_arch = "wasm32")]
