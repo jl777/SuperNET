@@ -94,6 +94,8 @@ mod docker_tests {
     #[rustfmt::skip]
     mod slp_tests;
     #[rustfmt::skip]
+    mod solana_tests;
+    #[rustfmt::skip]
     mod swaps_confs_settings_sync_tests;
     #[rustfmt::skip]
     mod swaps_file_lock_tests;
