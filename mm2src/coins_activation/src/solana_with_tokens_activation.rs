@@ -1,12 +1,13 @@
 use crate::platform_coin_with_tokens::{EnablePlatformCoinWithTokensError, GetPlatformBalance,
-                                       PlatformWithTokensActivationOps, RegisterTokenInfo, TokenActivationParams,
-                                       TokenActivationRequest, TokenAsMmCoinInitializer, TokenInitializer, TokenOf};
+                                       InitTokensAsMmCoinsError, PlatformWithTokensActivationOps, RegisterTokenInfo,
+                                       TokenActivationParams, TokenActivationRequest, TokenAsMmCoinInitializer,
+                                       TokenInitializer, TokenOf};
 use crate::prelude::*;
 use crate::prelude::{CoinAddressInfo, TokenBalances, TryFromCoinProtocol, TxHistoryEnabled};
 use crate::spl_token_activation::SplActivationRequest;
 use async_trait::async_trait;
 use coins::my_tx_history_v2::TxHistoryStorage;
-use coins::solana::spl::SplProtocolConf;
+use coins::solana::spl::{SplProtocolConf, SplTokenCreationError};
 use coins::{solana_coin_from_conf_and_params, BalanceError, CoinBalance, CoinProtocol, MarketCoinOps,
             SolanaActivationParams, SolanaCoin, SplToken};
 use common::mm_ctx::MmArc;
@@ -33,7 +34,7 @@ impl TokenInitializer for SplTokenInitializer {
     type Token = SplToken;
     type TokenActivationRequest = SplActivationRequest;
     type TokenProtocol = SplProtocolConf;
-    type InitTokensError = std::convert::Infallible;
+    type InitTokensError = SplTokenCreationError;
 
     fn tokens_requests_from_platform_request(
         platform_params: &SolanaWithTokensActivationRequest,
@@ -44,18 +45,15 @@ impl TokenInitializer for SplTokenInitializer {
     async fn enable_tokens(
         &self,
         activation_params: Vec<TokenActivationParams<SplActivationRequest, SplProtocolConf>>,
-    ) -> Result<Vec<SplToken>, MmError<std::convert::Infallible>> {
+    ) -> Result<Vec<SplToken>, MmError<Self::InitTokensError>> {
         let mut tokens = Vec::new();
         for param in activation_params.into_iter() {
-            match SplToken::new(
+            tokens.push(SplToken::new(
                 param.protocol.decimals,
                 param.ticker,
                 param.protocol.token_contract_address,
                 self.platform_coin.clone(),
-            ) {
-                Ok(token) => tokens.push(token),
-                Err(_) => continue,
-            }
+            )?)
         }
         Ok(tokens)
     }
@@ -136,6 +134,14 @@ impl TryFromCoinProtocol for SolanaProtocolInfo {
         match proto {
             CoinProtocol::SOLANA {} => Ok(SolanaProtocolInfo {}),
             protocol => MmError::err(protocol),
+        }
+    }
+}
+
+impl From<SplTokenCreationError> for InitTokensAsMmCoinsError {
+    fn from(error: SplTokenCreationError) -> Self {
+        match error {
+            SplTokenCreationError::InvalidPubkey(e) => InitTokensAsMmCoinsError::InvalidPubkey(e),
         }
     }
 }
