@@ -10,6 +10,9 @@ use std::str::FromStr;
 
 mod tests {
     use super::*;
+    use crate::solana::solana_decode_tx_helpers::SolanaConfirmedTransaction;
+    use solana_sdk::signature::Signature;
+    use solana_transaction_status::UiTransactionEncoding;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -27,6 +30,7 @@ mod tests {
         );
     }
 
+    // Research tests
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn solana_prerequisites() {
@@ -164,7 +168,7 @@ mod tests {
     }
 
     // This test is just a unit test for brainstorming around tx_history for base_coin.
-    /*#[tokio::test]
+    #[tokio::test]
     #[ignore]
     #[cfg(not(target_arch = "wasm32"))]
     async fn solana_test_tx_history() {
@@ -190,5 +194,5 @@ mod tests {
             history.append(&mut txs);
         }
         println!("{}", serde_json::to_string(&history).unwrap());
-    }*/
+    }
 }

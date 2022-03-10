@@ -167,7 +167,7 @@ impl Instruction {
     }
 
     // Will be used later
-    pub fn is_slp_transfer(&self) -> bool {
+    pub fn is_spl_transfer(&self) -> bool {
         let is_spl_token = match self.program {
             Program::SplToken => true,
             Program::System => return false,
