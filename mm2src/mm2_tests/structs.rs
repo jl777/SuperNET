@@ -649,6 +649,14 @@ pub struct EnableSlpResponse {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct EnableSplResponse {
+    pub balances: HashMap<String, CoinBalance>,
+    pub token_contract_address: String,
+    pub platform_coin: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(tag = "type", content = "data")]
 pub enum DerivationMethod {
     Iguana,
