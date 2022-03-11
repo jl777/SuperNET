@@ -118,11 +118,11 @@ pub use test_coin::TestCoin;
 
 #[doc(hidden)]
 #[allow(unused_variables)]
-#[cfg(all(not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod solana;
-#[cfg(all(not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 pub use solana::spl::SplToken;
-#[cfg(all(not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 pub use solana::{solana_coin_from_conf_and_params, SolanaActivationParams, SolanaCoin, SolanaFeeDetails};
 
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
@@ -601,7 +601,7 @@ pub enum TxFeeDetails {
     Eth(EthTxFeeDetails),
     Qrc20(Qrc20FeeDetails),
     Slp(SlpFeeDetails),
-    #[cfg(all(not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     Solana(SolanaFeeDetails),
 }
 
@@ -617,7 +617,7 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
             Utxo(UtxoFeeDetails),
             Eth(EthTxFeeDetails),
             Qrc20(Qrc20FeeDetails),
-            #[cfg(all(not(target_arch = "wasm32")))]
+            #[cfg(not(target_arch = "wasm32"))]
             Solana(SolanaFeeDetails),
         }
 
@@ -625,7 +625,7 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
             TxFeeDetailsUnTagged::Utxo(f) => Ok(TxFeeDetails::Utxo(f)),
             TxFeeDetailsUnTagged::Eth(f) => Ok(TxFeeDetails::Eth(f)),
             TxFeeDetailsUnTagged::Qrc20(f) => Ok(TxFeeDetails::Qrc20(f)),
-            #[cfg(all(not(target_arch = "wasm32")))]
+            #[cfg(not(target_arch = "wasm32"))]
             TxFeeDetailsUnTagged::Solana(f) => Ok(TxFeeDetails::Solana(f)),
         }
     }
@@ -643,7 +643,7 @@ impl From<Qrc20FeeDetails> for TxFeeDetails {
     fn from(qrc20_details: Qrc20FeeDetails) -> Self { TxFeeDetails::Qrc20(qrc20_details) }
 }
 
-#[cfg(all(not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 impl From<SolanaFeeDetails> for TxFeeDetails {
     fn from(solana_details: SolanaFeeDetails) -> Self { TxFeeDetails::Solana(solana_details) }
 }
@@ -1444,9 +1444,9 @@ pub enum MmCoinEnum {
     ZCoin(ZCoin),
     Bch(BchCoin),
     SlpToken(SlpToken),
-    #[cfg(all(not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     SolanaCoin(SolanaCoin),
-    #[cfg(all(not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     SplToken(SplToken),
     #[cfg(not(target_arch = "wasm32"))]
     LightningCoin(Box<LightningCoin>),
@@ -1465,12 +1465,12 @@ impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
 }
 
-#[cfg(all(not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 impl From<SolanaCoin> for MmCoinEnum {
     fn from(c: SolanaCoin) -> MmCoinEnum { MmCoinEnum::SolanaCoin(c) }
 }
 
-#[cfg(all(not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 impl From<SplToken> for MmCoinEnum {
     fn from(c: SplToken) -> MmCoinEnum { MmCoinEnum::SplToken(c) }
 }
@@ -1517,9 +1517,9 @@ impl Deref for MmCoinEnum {
             #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
             MmCoinEnum::ZCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
-            #[cfg(all(not(target_arch = "wasm32")))]
+            #[cfg(not(target_arch = "wasm32"))]
             MmCoinEnum::SolanaCoin(ref c) => c,
-            #[cfg(all(not(target_arch = "wasm32")))]
+            #[cfg(not(target_arch = "wasm32"))]
             MmCoinEnum::SplToken(ref c) => c,
         }
     }
@@ -1713,9 +1713,9 @@ pub enum CoinProtocol {
         network: BlockchainNetwork,
         confirmations: PlatformCoinConfirmations,
     },
-    #[cfg(all(not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     SOLANA,
-    #[cfg(all(not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     SPLTOKEN {
         platform: String,
         token_contract_address: String,
@@ -1971,11 +1971,11 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
         },
         #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::LIGHTNING { .. } => return ERR!("Lightning protocol is not supported by lp_coininit"),
-        #[cfg(all(not(target_arch = "wasm32")))]
+        #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::SOLANA => {
             return ERR!("Solana protocol is not supported by lp_coininit - use enable_solana_with_tokens instead")
         },
-        #[cfg(all(not(target_arch = "wasm32")))]
+        #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::SPLTOKEN { .. } => {
             return ERR!("SplToken protocol is not supported by lp_coininit - use enable_spl instead")
         },
@@ -2548,9 +2548,9 @@ pub fn address_by_coin_conf_and_pubkey_str(
         },
         #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
         CoinProtocol::ZHTLC => utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format),
-        #[cfg(all(not(target_arch = "wasm32")))]
+        #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::SOLANA => unimplemented!(),
-        #[cfg(all(not(target_arch = "wasm32")))]
+        #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::SPLTOKEN { .. } => unimplemented!(),
     }
 }

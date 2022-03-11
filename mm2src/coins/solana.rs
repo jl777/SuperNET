@@ -172,7 +172,7 @@ pub async fn solana_coin_from_conf_and_params(
             commitment: params.confirmation_commitment,
         },
     );
-    let decimals = conf["decimals"].as_u64().unwrap_or(8) as u8;
+    let decimals = conf["decimals"].as_u64().unwrap_or(9) as u8;
     let key_pair = try_s!(generate_keypair_from_slice(priv_key));
     let my_address = key_pair.pubkey().to_string();
     let spl_tokens_infos = Arc::new(Mutex::new(HashMap::new()));
@@ -332,7 +332,7 @@ impl MarketCoinOps for SolanaCoin {
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
         // bigdecimal-0.1.2/src/lib.rs:2396 (precision is decimals - 1)
-        let decimals = (self.decimals + 1) as u64;
+        let decimals = (self.decimals) as u64;
         let fut = self.my_balance_impl().and_then(move |result| {
             Ok(CoinBalance {
                 spendable: result.with_prec(decimals),
@@ -343,7 +343,7 @@ impl MarketCoinOps for SolanaCoin {
     }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
-        let decimals = (self.decimals + 1) as u64;
+        let decimals = (self.decimals) as u64;
         let fut = self
             .my_balance_impl()
             .and_then(move |result| Ok(result.with_prec(decimals)));
