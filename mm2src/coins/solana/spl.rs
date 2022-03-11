@@ -1,7 +1,7 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
 use crate::common::Future01CompatExt;
 use crate::solana::solana_common::{lamports_to_sol, ui_amount_to_amount, SufficientBalanceError};
-use crate::solana::{solana_common, AccountError, SolanaAsyncCommonOps, SolanaCommonOps, SolanaFeeDetails};
+use crate::solana::{solana_common, AccountError, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin, TradePreimageFut,
             TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
             ValidatePaymentInput, WithdrawError, WithdrawFut, WithdrawRequest, WithdrawResult};
@@ -159,12 +159,9 @@ async fn withdraw_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
     withdraw_spl_token_impl(coin, req).await
 }
 
+#[async_trait]
 impl SolanaCommonOps for SplToken {
     fn rpc(&self) -> &RpcClient { &self.platform_coin.client }
-}
-
-#[async_trait]
-impl SolanaAsyncCommonOps for SplToken {
     async fn check_sufficient_balance(
         &self,
         max: bool,

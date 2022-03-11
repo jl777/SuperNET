@@ -44,12 +44,10 @@ mod solana_decode_tx_helpers;
 pub mod spl;
 #[cfg(test)] mod spl_tests;
 
+#[async_trait]
 pub trait SolanaCommonOps {
     fn rpc(&self) -> &RpcClient;
-}
 
-#[async_trait]
-pub trait SolanaAsyncCommonOps {
     async fn check_sufficient_balance(
         &self,
         max: bool,
@@ -210,12 +208,9 @@ impl Deref for SolanaCoin {
     fn deref(&self) -> &SolanaCoinImpl { &*self.0 }
 }
 
+#[async_trait]
 impl SolanaCommonOps for SolanaCoin {
     fn rpc(&self) -> &RpcClient { &self.client }
-}
-
-#[async_trait]
-impl SolanaAsyncCommonOps for SolanaCoin {
     async fn check_sufficient_balance(
         &self,
         max: bool,

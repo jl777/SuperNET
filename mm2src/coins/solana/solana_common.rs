@@ -1,4 +1,4 @@
-use crate::solana::{SolanaAsyncCommonOps, SolanaCommonOps};
+use crate::solana::SolanaCommonOps;
 use crate::{BalanceError, DerivationMethodNotSupported, MarketCoinOps, NumConversError, WithdrawError};
 use bigdecimal::ToPrimitive;
 use common::mm_error::MmError;
@@ -89,7 +89,7 @@ pub async fn check_sufficient_balance<T>(
     amount: BigDecimal,
 ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>>
 where
-    T: SolanaCommonOps + SolanaAsyncCommonOps + MarketCoinOps,
+    T: SolanaCommonOps + MarketCoinOps,
 {
     let my_balance = coin.my_balance().compat().await?.spendable;
     let to_send = if max { my_balance.clone() } else { amount.clone() };
