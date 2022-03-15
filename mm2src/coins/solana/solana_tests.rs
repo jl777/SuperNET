@@ -1,4 +1,5 @@
 use super::*;
+use crate::common::Future01CompatExt;
 use crate::solana::solana_common_tests::{generate_key_pair_from_iguana_seed, generate_key_pair_from_seed,
                                          solana_coin_for_test, SolanaNet};
 use crate::MarketCoinOps;
@@ -126,6 +127,84 @@ mod tests {
 
     #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
+    async fn solana_transaction_simulations() {
+        let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
+        let valid_tx_details = sol_coin
+            .withdraw(WithdrawRequest {
+                coin: "SOL".to_string(),
+                from: None,
+                to: sol_coin.my_address.clone(),
+                amount: BigDecimal::from(0.0001),
+                max: false,
+                fee: None,
+            })
+            .compat()
+            .await
+            .unwrap();
+        assert_eq!(valid_tx_details.spent_by_me, BigDecimal::from_str("0.000105").unwrap());
+        assert_eq!(
+            valid_tx_details.received_by_me,
+            BigDecimal::from_str("0.000095").unwrap()
+        );
+        assert_eq!(valid_tx_details.total_amount, BigDecimal::from_str("0.000105").unwrap());
+        assert_eq!(
+            valid_tx_details.my_balance_change,
+            BigDecimal::from_str("-0.00001").unwrap()
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn solana_transaction_simulations_not_enough_for_fees() {
+        let passphrase = "non existent passphrase".to_string();
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
+        let invalid_tx_details = sol_coin
+            .withdraw(WithdrawRequest {
+                coin: "SOL".to_string(),
+                from: None,
+                to: sol_coin.my_address.clone(),
+                amount: BigDecimal::from(1),
+                max: false,
+                fee: None,
+            })
+            .compat()
+            .await;
+        assert!(invalid_tx_details.is_err());
+    }
+
+    #[tokio::test]
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn solana_transaction_simulations_max() {
+        let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
+        let valid_tx_details = sol_coin
+            .withdraw(WithdrawRequest {
+                coin: "SOL".to_string(),
+                from: None,
+                to: sol_coin.my_address.clone(),
+                amount: BigDecimal::from(0),
+                max: true,
+                fee: None,
+            })
+            .compat()
+            .await
+            .unwrap();
+        let balance = sol_coin.my_balance().compat().await.unwrap().spendable;
+        assert_eq!(
+            valid_tx_details.my_balance_change,
+            BigDecimal::from_str("-0.000005").unwrap()
+        );
+        assert_eq!(valid_tx_details.total_amount, balance);
+        assert_eq!(valid_tx_details.spent_by_me, balance);
+        assert_eq!(
+            valid_tx_details.received_by_me,
+            balance - BigDecimal::from_str("0.000005").unwrap()
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(not(target_arch = "wasm32"))]
     async fn solana_test_transactions() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
@@ -141,9 +220,7 @@ mod tests {
             .compat()
             .await
             .unwrap();
-        assert_eq!(valid_tx_details.total_amount, BigDecimal::from(0.0001));
-        assert_eq!(valid_tx_details.coin, "SOL".to_string());
-        assert_eq!(valid_tx_details.received_by_me, BigDecimal::from(0.0001));
+        println!("{:?}", valid_tx_details);
         assert_ne!(valid_tx_details.timestamp, 0);
 
         let invalid_tx = sol_coin

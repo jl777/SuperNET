@@ -20,6 +20,8 @@ pub enum SufficientBalanceError {
         available: BigDecimal,
         required: BigDecimal,
     },
+    #[display(fmt = "The amount {} is too small, required at least {}", amount, threshold)]
+    AmountTooLow { amount: BigDecimal, threshold: BigDecimal },
     #[display(fmt = "{}", _0)]
     DerivationMethodNotSupported(DerivationMethodNotSupported),
     #[display(fmt = "Invalid response: {}", _0)]
@@ -57,6 +59,9 @@ impl From<SufficientBalanceError> for WithdrawError {
                 WithdrawError::Transport(e)
             },
             SufficientBalanceError::Internal(e) => WithdrawError::InternalError(e),
+            SufficientBalanceError::AmountTooLow { amount, threshold } => {
+                WithdrawError::AmountTooLow { amount, threshold }
+            },
         }
     }
 }
@@ -87,10 +92,20 @@ pub async fn check_sufficient_balance<T>(
     coin: &T,
     max: bool,
     amount: BigDecimal,
-) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>>
+    fees: u64,
+) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>>
 where
     T: SolanaCommonOps + MarketCoinOps,
 {
+    let base_balance = coin.base_coin_balance().compat().await?;
+    let sol_required = lamports_to_sol(fees);
+    if base_balance < sol_required {
+        return MmError::err(SufficientBalanceError::AmountTooLow {
+            amount: base_balance.clone(),
+            threshold: &sol_required - &base_balance,
+        });
+    }
+
     let my_balance = coin.my_balance().compat().await?.spendable;
     let to_send = if max { my_balance.clone() } else { amount.clone() };
     if to_send > my_balance {
@@ -100,5 +115,5 @@ where
             required: &to_send - &my_balance,
         });
     }
-    Ok((to_send, my_balance))
+    Ok((to_send, my_balance, sol_required))
 }

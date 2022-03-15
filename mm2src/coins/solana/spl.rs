@@ -1,6 +1,5 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::common::Future01CompatExt;
-use crate::solana::solana_common::{lamports_to_sol, ui_amount_to_amount, SufficientBalanceError};
+use crate::solana::solana_common::{ui_amount_to_amount, SufficientBalanceError};
 use crate::solana::{solana_common, AccountError, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin, TradePreimageFut,
             TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
@@ -86,8 +85,8 @@ impl SplToken {
 }
 
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
-    let (to_send, my_balance) = coin.check_sufficient_balance(req.max, req.amount.clone()).await?;
-    let hash = coin.rpc().get_latest_blockhash().await?;
+    let (hash, fees) = coin.platform_coin.estimate_withdraw_fees().await?;
+    let (to_send, my_balance, sol_required) = coin.check_sufficient_balance(req.max, req.amount.clone(), fees).await?;
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(&*req.to)?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.platform_coin.key_pair.pubkey();
@@ -114,15 +113,6 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
     let msg = Message::new(&instructions, Some(&auth_key));
     let signers = vec![&coin.platform_coin.key_pair];
     let tx = Transaction::new(&signers, msg, hash);
-    let fees = coin.rpc().get_fee_for_message(tx.message()).await?;
-    let sol_required = lamports_to_sol(fees);
-    let base_balance = coin.base_coin_balance().compat().await?;
-    if base_balance < sol_required {
-        return MmError::err(WithdrawError::AmountTooLow {
-            amount: base_balance.clone(),
-            threshold: &sol_required - &base_balance,
-        });
-    }
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.platform_coin.my_address {
@@ -166,8 +156,9 @@ impl SolanaCommonOps for SplToken {
         &self,
         max: bool,
         amount: BigDecimal,
-    ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
-        solana_common::check_sufficient_balance(self, max, amount).await
+        fees: u64,
+    ) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
+        solana_common::check_sufficient_balance(self, max, amount, fees).await
     }
 }
 

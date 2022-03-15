@@ -1,5 +1,4 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::common::Future01CompatExt;
 use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports, SufficientBalanceError};
 use crate::solana::spl::SplTokenInfo;
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
@@ -44,6 +43,8 @@ mod solana_decode_tx_helpers;
 pub mod spl;
 #[cfg(test)] mod spl_tests;
 
+pub const SOLANA_DEFAULT_DECIMALS: u64 = 9;
+
 #[async_trait]
 pub trait SolanaCommonOps {
     fn rpc(&self) -> &RpcClient;
@@ -52,7 +53,8 @@ pub trait SolanaCommonOps {
         &self,
         max: bool,
         amount: BigDecimal,
-    ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>>;
+        fees: u64,
+    ) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>>;
 }
 
 impl From<ClientError> for BalanceError {
@@ -170,7 +172,7 @@ pub async fn solana_coin_from_conf_and_params(
             commitment: params.confirmation_commitment,
         },
     );
-    let decimals = conf["decimals"].as_u64().unwrap_or(9) as u8;
+    let decimals = conf["decimals"].as_u64().unwrap_or(SOLANA_DEFAULT_DECIMALS) as u8;
     let key_pair = try_s!(generate_keypair_from_slice(priv_key));
     let my_address = key_pair.pubkey().to_string();
     let spl_tokens_infos = Arc::new(Mutex::new(HashMap::new()));
@@ -215,8 +217,9 @@ impl SolanaCommonOps for SolanaCoin {
         &self,
         max: bool,
         amount: BigDecimal,
-    ) -> Result<(BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
-        solana_common::check_sufficient_balance(self, max, amount).await
+        fees: u64,
+    ) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
+        solana_common::check_sufficient_balance(self, max, amount, fees).await
     }
 }
 
@@ -226,35 +229,32 @@ pub struct SolanaFeeDetails {
 }
 
 async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
-    let (to_send, my_balance) = coin.check_sufficient_balance(req.max, req.amount).await?;
-    let base_balance = coin.base_coin_balance().compat().await?;
-    let hash = coin.rpc().get_latest_blockhash().await?;
+    let (hash, fees) = coin.estimate_withdraw_fees().await?;
+    let (to_send, my_balance, sol_required) = coin.check_sufficient_balance(req.max, req.amount.clone(), fees).await?;
+    let lamports_to_send = if req.max {
+        sol_to_lamports(&my_balance)? - sol_to_lamports(&sol_required)?
+    } else {
+        sol_to_lamports(&req.amount)?
+    };
     let to = solana_sdk::pubkey::Pubkey::try_from(&*req.to)?;
-    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, sol_to_lamports(&to_send)?, hash);
-    let fees = coin.rpc().get_fee_for_message(tx.message()).await?;
-    let sol_required = lamports_to_sol(fees);
-    if base_balance < sol_required {
-        return MmError::err(WithdrawError::AmountTooLow {
-            amount: base_balance.clone(),
-            threshold: &sol_required - &base_balance,
-        });
-    }
+    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, lamports_to_send, hash);
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
-        to_send.clone()
+        &to_send - &sol_required
     } else {
         0.into()
     };
+    let spent_by_me = if req.max { to_send } else { &to_send + &sol_required };
     Ok(TransactionDetails {
         tx_hex: encoded_tx.as_bytes().into(),
         tx_hash: tx.signatures[0].to_string(),
         from: vec![coin.my_address.clone()],
         to: vec![req.to],
-        total_amount: to_send.clone(),
-        spent_by_me: to_send.clone(),
+        total_amount: spent_by_me.clone(),
+        my_balance_change: &received_by_me - &spent_by_me,
+        spent_by_me,
         received_by_me,
-        my_balance_change: &my_balance - &to_send,
         block_height: 0,
         timestamp: now_ms() / 1000,
         fee_details: Some(SolanaFeeDetails { amount: sol_required }.into()),
@@ -276,6 +276,13 @@ async fn withdraw_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult
 }
 
 impl SolanaCoin {
+    pub async fn estimate_withdraw_fees(&self) -> Result<(solana_sdk::hash::Hash, u64), MmError<ClientError>> {
+        let hash = self.rpc().get_latest_blockhash().await?;
+        let to = self.key_pair.pubkey();
+        let tx = solana_sdk::system_transaction::transfer(&self.key_pair, &to, 10, hash);
+        let fees = self.rpc().get_fee_for_message(tx.message()).await?;
+        Ok((hash, fees))
+    }
     pub async fn my_balance_spl(&self, infos: &SplTokenInfo) -> Result<CoinBalance, MmError<BalanceError>> {
         let token_accounts = self
             .rpc()
@@ -326,8 +333,7 @@ impl MarketCoinOps for SolanaCoin {
     fn my_address(&self) -> Result<String, String> { Ok(self.my_address.clone()) }
 
     fn my_balance(&self) -> BalanceFut<CoinBalance> {
-        // bigdecimal-0.1.2/src/lib.rs:2396 (precision is decimals - 1)
-        let decimals = (self.decimals) as u64;
+        let decimals = self.decimals as u64;
         let fut = self.my_balance_impl().and_then(move |result| {
             Ok(CoinBalance {
                 spendable: result.with_prec(decimals),
@@ -338,7 +344,7 @@ impl MarketCoinOps for SolanaCoin {
     }
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
-        let decimals = (self.decimals) as u64;
+        let decimals = self.decimals as u64;
         let fut = self
             .my_balance_impl()
             .and_then(move |result| Ok(result.with_prec(decimals)));

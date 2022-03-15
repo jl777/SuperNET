@@ -1,4 +1,5 @@
 use super::*;
+use crate::common::Future01CompatExt;
 use crate::{solana::solana_common_tests::solana_coin_for_test,
             solana::solana_common_tests::{spl_coin_for_test, SolanaNet}};
 use std::{str::from_utf8, str::FromStr};
