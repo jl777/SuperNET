@@ -152,6 +152,9 @@ async fn withdraw_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
 #[async_trait]
 impl SolanaCommonOps for SplToken {
     fn rpc(&self) -> &RpcClient { &self.platform_coin.client }
+
+    fn is_token(&self) -> bool { true }
+
     async fn check_sufficient_balance(
         &self,
         max: bool,

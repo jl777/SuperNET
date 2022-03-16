@@ -108,11 +108,16 @@ where
 
     let my_balance = coin.my_balance().compat().await?.spendable;
     let to_send = if max { my_balance.clone() } else { amount.clone() };
-    if to_send > my_balance {
+    let to_check = if !max && !coin.is_token() {
+        &to_send + &sol_required
+    } else {
+        to_send.clone()
+    };
+    if to_check > my_balance {
         return MmError::err(SufficientBalanceError::NotSufficientBalance {
             coin: coin.ticker().to_string(),
             available: my_balance.clone(),
-            required: &to_send - &my_balance,
+            required: &to_check - &my_balance,
         });
     }
     Ok((to_send, my_balance, sol_required))

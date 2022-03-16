@@ -49,6 +49,8 @@ pub const SOLANA_DEFAULT_DECIMALS: u64 = 9;
 pub trait SolanaCommonOps {
     fn rpc(&self) -> &RpcClient;
 
+    fn is_token(&self) -> bool;
+
     async fn check_sufficient_balance(
         &self,
         max: bool,
@@ -213,6 +215,9 @@ impl Deref for SolanaCoin {
 #[async_trait]
 impl SolanaCommonOps for SolanaCoin {
     fn rpc(&self) -> &RpcClient { &self.client }
+
+    fn is_token(&self) -> bool { false }
+
     async fn check_sufficient_balance(
         &self,
         max: bool,
