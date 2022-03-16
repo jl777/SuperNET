@@ -35,7 +35,7 @@ use hex::FromHexError;
 use keys::hash::H160;
 use keys::{AddressHashEnum, CashAddrType, CashAddress, KeyPair, NetworkPrefix as CashAddrPrefix, Public};
 use primitives::hash::H256;
-use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash, H256 as H256Json};
 use script::bytes::Bytes;
 use script::{Builder as ScriptBuilder, Opcode, Script, TransactionInputSigner};
 use serde_json::Value as Json;
@@ -1575,7 +1575,7 @@ impl MmCoin for SlpToken {
             let details = TransactionDetails {
                 tx_hex: serialize(&signed).into(),
                 internal_id: tx_hash.clone(),
-                tx_hash: format!("{:02x}", tx_hash),
+                tx_hash: tx_hash.to_tx_hash(),
                 from: vec![my_address_string],
                 to: vec![to_address],
                 total_amount,

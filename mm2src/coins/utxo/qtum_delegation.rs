@@ -21,7 +21,7 @@ use ethereum_types::H160;
 use futures::compat::Future01CompatExt;
 use futures::{FutureExt, TryFutureExt};
 use keys::{AddressHashEnum, Signature};
-use rpc::v1::types::Bytes as BytesJson;
+use rpc::v1::types::ToTxHash;
 use script::Builder as ScriptBuilder;
 use serialization::serialize;
 use std::str::FromStr;
@@ -327,7 +327,7 @@ impl QtumCoin {
 
         Ok(TransactionDetails {
             tx_hex: serialize(&generated_tx.signed).into(),
-            tx_hash: format!("{:02x}", BytesJson(generated_tx.signed.hash().reversed().to_vec())),
+            tx_hash: generated_tx.signed.hash().reversed().to_vec().to_tx_hash(),
             from: vec![my_address_string],
             to: vec![to_address],
             total_amount: qtum_amount,

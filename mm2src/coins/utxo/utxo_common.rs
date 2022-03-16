@@ -28,7 +28,7 @@ use futures01::future::Either;
 use keys::bytes::Bytes;
 use keys::{Address, AddressFormat as UtxoAddressFormat, AddressHashEnum, Public, SegwitAddress, Type as ScriptType};
 use primitives::hash::H512;
-use rpc::v1::types::{Bytes as BytesJson, TransactionInputEnum, H256 as H256Json};
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash, TransactionInputEnum, H256 as H256Json};
 use script::{Builder, Opcode, Script, ScriptAddress, TransactionInputSigner, UnsignedTransactionInput};
 use secp256k1::{PublicKey, Signature};
 use serde_json::{self as json};
@@ -2299,7 +2299,7 @@ where
         spent_by_me: big_decimal_from_sat_unsigned(spent_by_me, coin.as_ref().decimals),
         my_balance_change: big_decimal_from_sat(received_by_me as i64 - spent_by_me as i64, coin.as_ref().decimals),
         total_amount: big_decimal_from_sat_unsigned(input_amount, coin.as_ref().decimals),
-        tx_hash: format!("{:02x}", BytesJson(tx.hash().reversed().to_vec())),
+        tx_hash: tx.hash().reversed().to_vec().to_tx_hash(),
         tx_hex: verbose_tx.hex,
         fee_details: Some(fee_details.into()),
         block_height: verbose_tx.height.unwrap_or(0),

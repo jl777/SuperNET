@@ -29,7 +29,7 @@ use futures01::Future;
 use keys::hash::H256;
 use keys::{KeyPair, Public};
 use primitives::bytes::Bytes;
-use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H256 as H256Json};
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash, Transaction as RpcTransaction, H256 as H256Json};
 use rusqlite::types::Type;
 use rusqlite::{Connection, Error as SqliteError, Row, ToSql, NO_PARAMS};
 use script::{Builder as ScriptBuilder, Opcode, Script, TransactionInputSigner};
@@ -1183,7 +1183,7 @@ impl MmCoin for ZCoin {
 
             Ok(TransactionDetails {
                 tx_hex: tx_bytes.into(),
-                tx_hash: format!("{:02x}", BytesJson(tx_hash.clone())),
+                tx_hash: tx_hash.to_tx_hash(),
                 from: vec![coin.z_fields.my_z_addr_encoded.clone()],
                 to: vec![req.to],
                 total_amount: big_decimal_from_sat_unsigned(data.spent_by_me, coin.decimals()),
