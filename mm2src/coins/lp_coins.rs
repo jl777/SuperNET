@@ -2549,9 +2549,9 @@ pub fn address_by_coin_conf_and_pubkey_str(
         #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
         CoinProtocol::ZHTLC => utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format),
         #[cfg(not(target_arch = "wasm32"))]
-        CoinProtocol::SOLANA => unimplemented!(),
-        #[cfg(not(target_arch = "wasm32"))]
-        CoinProtocol::SPLTOKEN { .. } => unimplemented!(),
+        CoinProtocol::SOLANA | CoinProtocol::SPLTOKEN { .. } => {
+            ERR!("Solana pubkey is the public address - you do not need to use this rpc call.")
+        },
     }
 }
 

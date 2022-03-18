@@ -28,12 +28,10 @@ use solana_sdk::{pubkey::Pubkey,
                  signature::{Keypair, Signer}};
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::atomic::Ordering as AtomicOrdering;
 use std::sync::Mutex;
 use std::{convert::TryFrom,
           fmt::{Debug, Formatter, Result as FmtResult},
           ops::Deref,
-          sync::atomic::AtomicU64,
           sync::Arc};
 
 pub mod solana_common;
@@ -182,7 +180,6 @@ pub async fn solana_coin_from_conf_and_params(
         my_address,
         key_pair,
         ticker: ticker.to_string(),
-        required_confirmations: 1.into(),
         client,
         decimals,
         spl_tokens_infos,
@@ -196,7 +193,6 @@ pub struct SolanaCoinImpl {
     key_pair: Keypair,
     client: RpcClient,
     decimals: u8,
-    required_confirmations: AtomicU64,
     my_address: String,
     spl_tokens_infos: Arc<Mutex<HashMap<String, SplTokenInfo>>>,
 }
@@ -618,7 +614,7 @@ impl MmCoin for SolanaCoin {
         unimplemented!()
     }
 
-    fn required_confirmations(&self) -> u64 { self.required_confirmations.load(AtomicOrdering::Relaxed) }
+    fn required_confirmations(&self) -> u64 { 1 }
 
     fn requires_notarization(&self) -> bool { false }
 

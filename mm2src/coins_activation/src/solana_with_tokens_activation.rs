@@ -46,15 +46,17 @@ impl TokenInitializer for SplTokenInitializer {
         &self,
         activation_params: Vec<TokenActivationParams<SplActivationRequest, SplProtocolConf>>,
     ) -> Result<Vec<SplToken>, MmError<Self::InitTokensError>> {
-        let mut tokens = Vec::new();
-        for param in activation_params.into_iter() {
-            tokens.push(SplToken::new(
-                param.protocol.decimals,
-                param.ticker,
-                param.protocol.token_contract_address,
-                self.platform_coin.clone(),
-            )?)
-        }
+        let tokens = activation_params
+            .into_iter()
+            .map(|param| {
+                SplToken::new(
+                    param.protocol.decimals,
+                    param.ticker,
+                    param.protocol.token_contract_address,
+                    self.platform_coin.clone(),
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(tokens)
     }
 

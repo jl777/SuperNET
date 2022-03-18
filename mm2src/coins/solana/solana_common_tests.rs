@@ -90,7 +90,6 @@ pub fn solana_coin_for_test(seed: String, net_type: SolanaNet) -> (MmArc, Solana
         my_address,
         key_pair,
         ticker,
-        required_confirmations: 1.into(),
         client,
         spl_tokens_infos,
     }));
