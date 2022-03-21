@@ -12,8 +12,10 @@ use std::str::FromStr;
 mod tests {
     use super::*;
     use crate::solana::solana_decode_tx_helpers::SolanaConfirmedTransaction;
+    use num_traits::Zero;
     use solana_sdk::signature::Signature;
     use solana_transaction_status::UiTransactionEncoding;
+    use std::ops::Neg;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -130,28 +132,26 @@ mod tests {
     async fn solana_transaction_simulations() {
         let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
+        let request_amount: BigDecimal = 0.0001.into();
         let valid_tx_details = sol_coin
             .withdraw(WithdrawRequest {
                 coin: "SOL".to_string(),
                 from: None,
                 to: sol_coin.my_address.clone(),
-                amount: BigDecimal::from(0.0001),
+                amount: request_amount.clone(),
                 max: false,
                 fee: None,
             })
             .compat()
             .await
             .unwrap();
-        assert_eq!(valid_tx_details.spent_by_me, BigDecimal::from_str("0.000105").unwrap());
-        assert_eq!(
-            valid_tx_details.received_by_me,
-            BigDecimal::from_str("0.000095").unwrap()
-        );
-        assert_eq!(valid_tx_details.total_amount, BigDecimal::from_str("0.000105").unwrap());
-        assert_eq!(
-            valid_tx_details.my_balance_change,
-            BigDecimal::from_str("-0.00001").unwrap()
-        );
+        let (_, fees) = sol_coin.estimate_withdraw_fees().await.unwrap();
+        let sol_required = lamports_to_sol(fees);
+        let expected_spent_by_me = &request_amount + &sol_required;
+        assert_eq!(valid_tx_details.spent_by_me, expected_spent_by_me);
+        assert_eq!(valid_tx_details.received_by_me, request_amount);
+        assert_eq!(valid_tx_details.total_amount, request_amount);
+        assert_eq!(valid_tx_details.my_balance_change, sol_required.neg());
     }
 
     #[tokio::test]
@@ -232,16 +232,10 @@ mod tests {
             .await
             .unwrap();
         let balance = sol_coin.my_balance().compat().await.unwrap().spendable;
-        assert_eq!(
-            valid_tx_details.my_balance_change,
-            BigDecimal::from_str("-0.000005").unwrap()
-        );
+        assert_eq!(valid_tx_details.my_balance_change, BigDecimal::zero());
         assert_eq!(valid_tx_details.total_amount, balance);
         assert_eq!(valid_tx_details.spent_by_me, balance);
-        assert_eq!(
-            valid_tx_details.received_by_me,
-            balance - BigDecimal::from_str("0.000005").unwrap()
-        );
+        assert_eq!(valid_tx_details.received_by_me, balance);
     }
 
     #[tokio::test]

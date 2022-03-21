@@ -245,12 +245,12 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
-        &res.to_send - &res.sol_required
+        res.to_send.clone()
     } else {
         0.into()
     };
     let spent_by_me = if req.max {
-        res.to_send
+        res.to_send.clone()
     } else {
         &res.to_send + &res.sol_required
     };
@@ -259,7 +259,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
         tx_hash: tx.signatures[0].to_string(),
         from: vec![coin.my_address.clone()],
         to: vec![req.to],
-        total_amount: spent_by_me.clone(),
+        total_amount: res.to_send.clone(),
         my_balance_change: &received_by_me - &spent_by_me,
         spent_by_me,
         received_by_me,
