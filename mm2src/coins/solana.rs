@@ -1,5 +1,5 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports, PrepareTransferData, SufficientBalanceError};
+use crate::solana::solana_common::{lamports_to_sol, PrepareTransferData, SufficientBalanceError};
 use crate::solana::spl::SplTokenInfo;
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
@@ -235,25 +235,17 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let res = coin
         .check_balance_and_prepare_transfer(req.max, req.amount.clone(), fees)
         .await?;
-    let lamports_to_send = if req.max {
-        sol_to_lamports(&res.my_balance)? - sol_to_lamports(&res.sol_required)?
-    } else {
-        sol_to_lamports(&req.amount)?
-    };
     let to = solana_sdk::pubkey::Pubkey::try_from(&*req.to)?;
-    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, lamports_to_send, hash);
+    let tx = solana_sdk::system_transaction::transfer(&coin.key_pair, &to, res.lamports_to_send, hash);
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
+    let total_amount = lamports_to_sol(res.lamports_to_send);
     let received_by_me = if req.to == coin.my_address {
-        res.to_send.clone()
+        total_amount.clone()
     } else {
         0.into()
     };
-    let spent_by_me = if req.max {
-        res.to_send.clone()
-    } else {
-        &res.to_send + &res.sol_required
-    };
+    let spent_by_me = &total_amount + &res.sol_required;
     Ok(TransactionDetails {
         tx_hex: encoded_tx.as_bytes().into(),
         tx_hash: tx.signatures[0].to_string(),

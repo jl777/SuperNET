@@ -12,7 +12,6 @@ use std::str::FromStr;
 mod tests {
     use super::*;
     use crate::solana::solana_decode_tx_helpers::SolanaConfirmedTransaction;
-    use num_traits::Zero;
     use solana_sdk::signature::Signature;
     use solana_transaction_status::UiTransactionEncoding;
     use std::ops::Neg;
@@ -232,10 +231,13 @@ mod tests {
             .await
             .unwrap();
         let balance = sol_coin.my_balance().compat().await.unwrap().spendable;
-        assert_eq!(valid_tx_details.my_balance_change, BigDecimal::zero());
+        let (_, fees) = sol_coin.estimate_withdraw_fees().await.unwrap();
+        let sol_required = lamports_to_sol(fees);
+        assert_eq!(valid_tx_details.my_balance_change, sol_required.clone().neg());
         assert_eq!(valid_tx_details.total_amount, balance);
         assert_eq!(valid_tx_details.spent_by_me, balance);
-        assert_eq!(valid_tx_details.received_by_me, balance);
+        assert_eq!(valid_tx_details.received_by_me, &balance - &sol_required);
+        println!("{:?}", valid_tx_details);
     }
 
     #[tokio::test]

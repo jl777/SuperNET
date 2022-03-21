@@ -34,6 +34,10 @@ pub enum SufficientBalanceError {
     Internal(String),
 }
 
+impl From<NumConversError> for SufficientBalanceError {
+    fn from(e: NumConversError) -> Self { SufficientBalanceError::Internal(e.to_string()) }
+}
+
 impl From<BalanceError> for SufficientBalanceError {
     fn from(e: BalanceError) -> Self {
         match e {
@@ -75,6 +79,7 @@ pub struct PrepareTransferData {
     pub to_send: BigDecimal,
     pub my_balance: BigDecimal,
     pub sol_required: BigDecimal,
+    pub lamports_to_send: u64,
 }
 
 pub fn lamports_to_sol(lamports: u64) -> BigDecimal { BigDecimal::from(lamports) / BigDecimal::from(LAMPORTS_PER_SOL) }
@@ -138,9 +143,21 @@ where
             required: &to_check - &my_balance,
         });
     }
+
+    let lamports_to_send = if !coin.is_token() {
+        if max {
+            sol_to_lamports(&my_balance)? - sol_to_lamports(&sol_required)?
+        } else {
+            sol_to_lamports(&amount)?
+        }
+    } else {
+        0_u64
+    };
+
     Ok(PrepareTransferData {
         to_send,
         my_balance,
         sol_required,
+        lamports_to_send,
     })
 }

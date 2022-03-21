@@ -6,6 +6,7 @@ use std::{str::from_utf8, str::FromStr};
 
 mod tests {
     use super::*;
+    use std::ops::Neg;
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
@@ -63,19 +64,22 @@ mod tests {
             6,
             solana_sdk::pubkey::Pubkey::from_str("CpMah17kQEL2wqyMKt3mZBdTnZbkbfx4nqmQMFDP5vwp").unwrap(),
         );
+        let withdraw_amount = BigDecimal::from_str("0.0001").unwrap();
         let valid_tx_details = usdc_sol_coin
             .withdraw(WithdrawRequest {
                 coin: "USDC".to_string(),
                 from: None,
                 to: "AYJmtzc9D4KU6xsDzhKShFyYKUNXY622j9QoQEo4LfpX".to_string(),
-                amount: BigDecimal::from_str("0.0001").unwrap(),
+                amount: withdraw_amount.clone(),
                 max: false,
                 fee: None,
             })
             .compat()
             .await
             .unwrap();
-        assert_eq!(valid_tx_details.total_amount, BigDecimal::from(0.0001));
+        println!("{:?}", valid_tx_details);
+        assert_eq!(valid_tx_details.total_amount, withdraw_amount);
+        assert_eq!(valid_tx_details.my_balance_change, withdraw_amount.neg());
         assert_eq!(valid_tx_details.coin, "USDC".to_string());
         assert_ne!(valid_tx_details.timestamp, 0);
         let tx_str = from_utf8(&*valid_tx_details.tx_hex.0).unwrap();

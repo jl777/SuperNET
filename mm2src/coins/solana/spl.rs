@@ -129,8 +129,8 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
         to: vec![req.to],
         total_amount: res.to_send.clone(),
         spent_by_me: res.to_send.clone(),
+        my_balance_change: &received_by_me - &res.to_send,
         received_by_me,
-        my_balance_change: &res.my_balance - &res.to_send,
         block_height: 0,
         timestamp: now_ms() / 1000,
         fee_details: Some(
