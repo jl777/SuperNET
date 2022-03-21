@@ -156,6 +156,34 @@ mod tests {
 
     #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
+    async fn solana_transaction_simulations_amount_to_low() {
+        let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
+        let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
+        let invalid_tx_details = sol_coin
+            .withdraw(WithdrawRequest {
+                coin: "SOL".to_string(),
+                from: None,
+                to: sol_coin.my_address.clone(),
+                amount: BigDecimal::from_str("0.000001").unwrap(),
+                max: false,
+                fee: None,
+            })
+            .compat()
+            .await;
+        let error = invalid_tx_details.unwrap_err();
+        let (_, fees) = sol_coin.estimate_withdraw_fees().await.unwrap();
+        let sol_required = lamports_to_sol(fees);
+        match error.into_inner() {
+            WithdrawError::AmountTooLow { amount, threshold } => {
+                assert_eq!(amount, BigDecimal::from_str("0.000001").unwrap());
+                assert_eq!(threshold, &sol_required - &amount);
+            },
+            e @ _ => panic!("Unexpected err {:?}", e),
+        };
+    }
+
+    #[tokio::test]
+    #[cfg(not(target_arch = "wasm32"))]
     async fn solana_transaction_simulations_not_enough_for_fees() {
         let passphrase = "non existent passphrase".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
@@ -170,7 +198,20 @@ mod tests {
             })
             .compat()
             .await;
-        assert!(invalid_tx_details.is_err());
+        let error = invalid_tx_details.unwrap_err();
+        let (_, fees) = sol_coin.estimate_withdraw_fees().await.unwrap();
+        let sol_required = lamports_to_sol(fees);
+        match error.into_inner() {
+            WithdrawError::NotSufficientBalance {
+                coin,
+                available,
+                required,
+            } => {
+                assert_eq!(available, 0.into());
+                assert_eq!(required, sol_required);
+            },
+            e @ _ => panic!("Unexpected err {:?}", e),
+        };
     }
 
     #[tokio::test]
@@ -221,23 +262,6 @@ mod tests {
             .await
             .unwrap();
         println!("{:?}", valid_tx_details);
-        assert_ne!(valid_tx_details.timestamp, 0);
-
-        let invalid_tx = sol_coin
-            .withdraw(WithdrawRequest {
-                coin: "SOL".to_string(),
-                from: None,
-                to: sol_coin.my_address.clone(),
-                amount: BigDecimal::from(10),
-                max: false,
-                fee: None,
-            })
-            .compat()
-            .await;
-
-        // NotSufficientBalance
-        assert_eq!(invalid_tx.is_err(), true);
-
         let tx_str = str::from_utf8(&*valid_tx_details.tx_hex.0).unwrap();
         let res = sol_coin.send_raw_tx(tx_str).compat().await;
         assert_eq!(res.is_err(), false);

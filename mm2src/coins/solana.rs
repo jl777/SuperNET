@@ -1,5 +1,5 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports, SufficientBalanceError};
+use crate::solana::solana_common::{lamports_to_sol, sol_to_lamports, PrepareTransferData, SufficientBalanceError};
 use crate::solana::spl::SplTokenInfo;
 use crate::{BalanceError, BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr,
             TradePreimageFut, TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType,
@@ -42,6 +42,7 @@ pub mod spl;
 #[cfg(test)] mod spl_tests;
 
 pub const SOLANA_DEFAULT_DECIMALS: u64 = 9;
+pub const LAMPORTS_DUMMY_AMOUNT: u64 = 10;
 
 #[async_trait]
 pub trait SolanaCommonOps {
@@ -49,12 +50,12 @@ pub trait SolanaCommonOps {
 
     fn is_token(&self) -> bool;
 
-    async fn check_sufficient_balance(
+    async fn check_balance_and_prepare_transfer(
         &self,
         max: bool,
         amount: BigDecimal,
         fees: u64,
-    ) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>>;
+    ) -> Result<PrepareTransferData, MmError<SufficientBalanceError>>;
 }
 
 impl From<ClientError> for BalanceError {
@@ -214,13 +215,13 @@ impl SolanaCommonOps for SolanaCoin {
 
     fn is_token(&self) -> bool { false }
 
-    async fn check_sufficient_balance(
+    async fn check_balance_and_prepare_transfer(
         &self,
         max: bool,
         amount: BigDecimal,
         fees: u64,
-    ) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
-        solana_common::check_sufficient_balance(self, max, amount, fees).await
+    ) -> Result<PrepareTransferData, MmError<SufficientBalanceError>> {
+        solana_common::check_balance_and_prepare_transfer(self, max, amount, fees).await
     }
 }
 
@@ -231,9 +232,11 @@ pub struct SolanaFeeDetails {
 
 async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> WithdrawResult {
     let (hash, fees) = coin.estimate_withdraw_fees().await?;
-    let (to_send, my_balance, sol_required) = coin.check_sufficient_balance(req.max, req.amount.clone(), fees).await?;
+    let res = coin
+        .check_balance_and_prepare_transfer(req.max, req.amount.clone(), fees)
+        .await?;
     let lamports_to_send = if req.max {
-        sol_to_lamports(&my_balance)? - sol_to_lamports(&sol_required)?
+        sol_to_lamports(&res.my_balance)? - sol_to_lamports(&res.sol_required)?
     } else {
         sol_to_lamports(&req.amount)?
     };
@@ -242,11 +245,15 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.my_address {
-        &to_send - &sol_required
+        &res.to_send - &res.sol_required
     } else {
         0.into()
     };
-    let spent_by_me = if req.max { to_send } else { &to_send + &sol_required };
+    let spent_by_me = if req.max {
+        res.to_send
+    } else {
+        &res.to_send + &res.sol_required
+    };
     Ok(TransactionDetails {
         tx_hex: encoded_tx.as_bytes().into(),
         tx_hash: tx.signatures[0].to_string(),
@@ -258,7 +265,12 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
         received_by_me,
         block_height: 0,
         timestamp: now_ms() / 1000,
-        fee_details: Some(SolanaFeeDetails { amount: sol_required }.into()),
+        fee_details: Some(
+            SolanaFeeDetails {
+                amount: res.sol_required,
+            }
+            .into(),
+        ),
         coin: coin.ticker.clone(),
         internal_id: vec![].into(),
         kmd_rewards: None,
@@ -280,7 +292,8 @@ impl SolanaCoin {
     pub async fn estimate_withdraw_fees(&self) -> Result<(solana_sdk::hash::Hash, u64), MmError<ClientError>> {
         let hash = self.rpc().get_latest_blockhash().await?;
         let to = self.key_pair.pubkey();
-        let tx = solana_sdk::system_transaction::transfer(&self.key_pair, &to, 10, hash);
+
+        let tx = solana_sdk::system_transaction::transfer(&self.key_pair, &to, LAMPORTS_DUMMY_AMOUNT, hash);
         let fees = self.rpc().get_fee_for_message(tx.message()).await?;
         Ok((hash, fees))
     }

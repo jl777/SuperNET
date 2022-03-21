@@ -71,6 +71,12 @@ impl From<SufficientBalanceError> for WithdrawError {
     }
 }
 
+pub struct PrepareTransferData {
+    pub to_send: BigDecimal,
+    pub my_balance: BigDecimal,
+    pub sol_required: BigDecimal,
+}
+
 pub fn lamports_to_sol(lamports: u64) -> BigDecimal { BigDecimal::from(lamports) / BigDecimal::from(LAMPORTS_PER_SOL) }
 
 pub fn sol_to_lamports(sol: &BigDecimal) -> Result<u64, MmError<NumConversError>> {
@@ -93,30 +99,38 @@ pub fn amount_to_ui_amount(amount: u64, decimals: u8) -> BigDecimal {
     BigDecimal::from(amount) / BigDecimal::from(10_u64.pow(decimals as u32))
 }
 
-pub async fn check_sufficient_balance<T>(
+pub async fn check_balance_and_prepare_transfer<T>(
     coin: &T,
     max: bool,
     amount: BigDecimal,
     fees: u64,
-) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>>
+) -> Result<PrepareTransferData, MmError<SufficientBalanceError>>
 where
     T: SolanaCommonOps + MarketCoinOps,
 {
     let base_balance = coin.base_coin_balance().compat().await?;
     let sol_required = lamports_to_sol(fees);
     if base_balance < sol_required {
+        return MmError::err(SufficientBalanceError::NotSufficientBalance {
+            coin: coin.ticker().to_string(),
+            available: base_balance.clone(),
+            required: &sol_required - &base_balance,
+        });
+    }
+
+    if amount < sol_required && !coin.is_token() {
         return MmError::err(SufficientBalanceError::AmountTooLow {
-            amount: base_balance.clone(),
-            threshold: &sol_required - &base_balance,
+            amount: amount.clone(),
+            threshold: &sol_required - &amount,
         });
     }
 
     let my_balance = coin.my_balance().compat().await?.spendable;
     let to_send = if max { my_balance.clone() } else { amount.clone() };
-    let to_check = if !max && !coin.is_token() {
-        &to_send + &sol_required
-    } else {
+    let to_check = if max || coin.is_token() {
         to_send.clone()
+    } else {
+        &to_send + &sol_required
     };
     if to_check > my_balance {
         return MmError::err(SufficientBalanceError::NotSufficientBalance {
@@ -125,5 +139,9 @@ where
             required: &to_check - &my_balance,
         });
     }
-    Ok((to_send, my_balance, sol_required))
+    Ok(PrepareTransferData {
+        to_send,
+        my_balance,
+        sol_required,
+    })
 }

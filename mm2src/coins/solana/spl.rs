@@ -1,5 +1,5 @@
 use super::{CoinBalance, HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionEnum, TransactionFut};
-use crate::solana::solana_common::{ui_amount_to_amount, SufficientBalanceError};
+use crate::solana::solana_common::{ui_amount_to_amount, PrepareTransferData, SufficientBalanceError};
 use crate::solana::{solana_common, AccountError, SolanaCommonOps, SolanaFeeDetails};
 use crate::{BalanceFut, FeeApproxStage, FoundSwapTxSpend, NegotiateSwapContractAddrErr, SolanaCoin, TradePreimageFut,
             TradePreimageResult, TradePreimageValue, TransactionDetails, TransactionType, ValidateAddressResult,
@@ -86,7 +86,9 @@ impl SplToken {
 
 async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> WithdrawResult {
     let (hash, fees) = coin.platform_coin.estimate_withdraw_fees().await?;
-    let (to_send, my_balance, sol_required) = coin.check_sufficient_balance(req.max, req.amount.clone(), fees).await?;
+    let res = coin
+        .check_balance_and_prepare_transfer(req.max, req.amount.clone(), fees)
+        .await?;
     let system_destination_pubkey = solana_sdk::pubkey::Pubkey::try_from(&*req.to)?;
     let contract_key = coin.get_underlying_contract_pubkey();
     let auth_key = coin.platform_coin.key_pair.pubkey();
@@ -116,7 +118,7 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
     let serialized_tx = serialize(&tx).map_to_mm(|e| WithdrawError::InternalError(e.to_string()))?;
     let encoded_tx = hex::encode(&serialized_tx);
     let received_by_me = if req.to == coin.platform_coin.my_address {
-        to_send.clone()
+        res.to_send.clone()
     } else {
         0.into()
     };
@@ -125,13 +127,18 @@ async fn withdraw_spl_token_impl(coin: SplToken, req: WithdrawRequest) -> Withdr
         tx_hash: tx.signatures[0].to_string(),
         from: vec![coin.platform_coin.my_address.clone()],
         to: vec![req.to],
-        total_amount: to_send.clone(),
-        spent_by_me: to_send.clone(),
+        total_amount: res.to_send.clone(),
+        spent_by_me: res.to_send.clone(),
         received_by_me,
-        my_balance_change: &my_balance - &to_send,
+        my_balance_change: &res.my_balance - &res.to_send,
         block_height: 0,
         timestamp: now_ms() / 1000,
-        fee_details: Some(SolanaFeeDetails { amount: sol_required }.into()),
+        fee_details: Some(
+            SolanaFeeDetails {
+                amount: res.sol_required,
+            }
+            .into(),
+        ),
         coin: coin.conf.ticker.clone(),
         internal_id: vec![].into(),
         kmd_rewards: None,
@@ -155,13 +162,13 @@ impl SolanaCommonOps for SplToken {
 
     fn is_token(&self) -> bool { true }
 
-    async fn check_sufficient_balance(
+    async fn check_balance_and_prepare_transfer(
         &self,
         max: bool,
         amount: BigDecimal,
         fees: u64,
-    ) -> Result<(BigDecimal, BigDecimal, BigDecimal), MmError<SufficientBalanceError>> {
-        solana_common::check_sufficient_balance(self, max, amount, fees).await
+    ) -> Result<PrepareTransferData, MmError<SufficientBalanceError>> {
+        solana_common::check_balance_and_prepare_transfer(self, max, amount, fees).await
     }
 }
 
