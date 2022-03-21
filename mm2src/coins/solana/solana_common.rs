@@ -1,5 +1,5 @@
 use crate::solana::SolanaCommonOps;
-use crate::{BalanceError, DerivationMethodNotSupported, MarketCoinOps, NumConversError, WithdrawError};
+use crate::{BalanceError, MarketCoinOps, NumConversError, UnexpectedDerivationMethod, WithdrawError};
 use bigdecimal::ToPrimitive;
 use common::mm_error::MmError;
 use common::mm_number::BigDecimal;
@@ -23,7 +23,9 @@ pub enum SufficientBalanceError {
     #[display(fmt = "The amount {} is too small, required at least {}", amount, threshold)]
     AmountTooLow { amount: BigDecimal, threshold: BigDecimal },
     #[display(fmt = "{}", _0)]
-    DerivationMethodNotSupported(DerivationMethodNotSupported),
+    UnexpectedDerivationMethod(UnexpectedDerivationMethod),
+    #[display(fmt = "Wallet storage error: {}", _0)]
+    WalletStorageError(String),
     #[display(fmt = "Invalid response: {}", _0)]
     InvalidResponse(String),
     #[display(fmt = "Transport: {}", _0)]
@@ -37,8 +39,9 @@ impl From<BalanceError> for SufficientBalanceError {
         match e {
             BalanceError::Transport(e) => SufficientBalanceError::Transport(e),
             BalanceError::InvalidResponse(e) => SufficientBalanceError::InvalidResponse(e),
-            BalanceError::DerivationMethodNotSupported(e) => SufficientBalanceError::DerivationMethodNotSupported(e),
+            BalanceError::UnexpectedDerivationMethod(e) => SufficientBalanceError::UnexpectedDerivationMethod(e),
             BalanceError::Internal(e) => SufficientBalanceError::Internal(e),
+            BalanceError::WalletStorageError(e) => SufficientBalanceError::WalletStorageError(e),
         }
     }
 }
@@ -54,11 +57,13 @@ impl From<SufficientBalanceError> for WithdrawError {
                 available,
                 required,
             },
-            SufficientBalanceError::DerivationMethodNotSupported(e) => WithdrawError::from(e),
+            SufficientBalanceError::UnexpectedDerivationMethod(e) => WithdrawError::from(e),
             SufficientBalanceError::InvalidResponse(e) | SufficientBalanceError::Transport(e) => {
                 WithdrawError::Transport(e)
             },
-            SufficientBalanceError::Internal(e) => WithdrawError::InternalError(e),
+            SufficientBalanceError::Internal(e) | SufficientBalanceError::WalletStorageError(e) => {
+                WithdrawError::InternalError(e)
+            },
             SufficientBalanceError::AmountTooLow { amount, threshold } => {
                 WithdrawError::AmountTooLow { amount, threshold }
             },
