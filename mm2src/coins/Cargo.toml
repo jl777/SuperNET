@@ -56,7 +56,7 @@ lightning-invoice = "0.12.0"
 metrics = "0.12"
 mocktopus = "0.7.0"
 num-traits = "0.2"
-parking_lot = { version = "0.11", features = ["nightly"] }
+parking_lot = { version = "0.12.0", features = ["nightly"] }
 primitives = { path = "../mm2_bitcoin/primitives" }
 prost = "0.8"
 rand = { version = "0.7", features = ["std", "small_rng"] }
@@ -73,6 +73,7 @@ serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order", "raw_value"] }
 serialization = { path = "../mm2_bitcoin/serialization" }
 serialization_derive = { path = "../mm2_bitcoin/serialization_derive" }
+spv_validation = { path = "../mm2_bitcoin/spv_validation" }
 sha2 = "0.8"
 sha3 = "0.8"
 utxo_signer = { path = "utxo_signer" }

@@ -1025,7 +1025,7 @@ impl Into<BlockHeaderNonce> for ElectrumNonce {
 
 #[derive(Debug, Deserialize)]
 pub struct ElectrumBlockHeadersRes {
-    count: u64,
+    pub count: u64,
     pub hex: BytesJson,
     #[allow(dead_code)]
     max: u64,
@@ -1044,8 +1044,8 @@ pub struct ElectrumBlockHeaderV12 {
 }
 
 impl ElectrumBlockHeaderV12 {
-    pub fn hash(&self) -> H256Json {
-        let block_header = BlockHeader {
+    fn as_block_header(&self) -> BlockHeader {
+        BlockHeader {
             version: self.version as u32,
             previous_header_hash: self.prev_block_hash.into(),
             merkle_root_hash: self.merkle_root.into(),
@@ -1064,7 +1064,17 @@ impl ElectrumBlockHeaderV12 {
             n_height: None,
             n_nonce_u64: None,
             mix_hash: None,
-        };
+        }
+    }
+
+    pub fn as_hex(&self) -> String {
+        let block_header = self.as_block_header();
+        let serialized = serialize(&block_header);
+        hex::encode(serialized)
+    }
+
+    pub fn hash(&self) -> H256Json {
+        let block_header = self.as_block_header();
         BlockHeader::hash(&block_header).into()
     }
 }
@@ -1656,6 +1666,49 @@ impl ElectrumClient {
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-block-headers
     pub fn blockchain_block_headers(&self, start_height: u64, count: NonZeroU64) -> RpcRes<ElectrumBlockHeadersRes> {
         rpc_func!(self, "blockchain.block.headers", start_height, count)
+    }
+
+    pub fn retrieve_last_headers(
+        &self,
+        blocks_limit_to_check: NonZeroU64,
+        block_height: u64,
+    ) -> UtxoRpcFut<(HashMap<u64, BlockHeader>, Vec<BlockHeader>)> {
+        let (from, count) = {
+            let from = if block_height < blocks_limit_to_check.get() {
+                0
+            } else {
+                block_height - blocks_limit_to_check.get()
+            };
+            (from, blocks_limit_to_check)
+        };
+        Box::new(
+            self.blockchain_block_headers(from, count)
+                .map_to_mm_fut(UtxoRpcError::from)
+                .and_then(move |headers| {
+                    let (block_registry, block_headers) = {
+                        if headers.count == 0 {
+                            return MmError::err(UtxoRpcError::Internal("No headers available".to_string()));
+                        }
+                        let len = CompactInteger::from(headers.count);
+                        let mut serialized = serialize(&len).take();
+                        serialized.extend(headers.hex.0.into_iter());
+                        let mut reader = Reader::new_with_coin_variant(serialized.as_slice(), CoinVariant::Standard);
+                        let maybe_block_headers = reader.read_list::<BlockHeader>();
+                        let block_headers = match maybe_block_headers {
+                            Ok(headers) => headers,
+                            Err(e) => return MmError::err(UtxoRpcError::InvalidResponse(format!("{:?}", e))),
+                        };
+                        let mut block_registry: HashMap<u64, BlockHeader> = HashMap::new();
+                        let mut starting_height = from;
+                        for block_header in &block_headers {
+                            block_registry.insert(starting_height, block_header.clone());
+                            starting_height += 1;
+                        }
+                        (block_registry, block_headers)
+                    };
+                    Ok((block_registry, block_headers))
+                }),
+        )
     }
 
     /// https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-get-merkle

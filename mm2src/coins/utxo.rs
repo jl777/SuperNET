@@ -29,12 +29,11 @@ mod bchd_pb;
 pub mod qtum;
 pub mod rpc_clients;
 pub mod slp;
+pub mod utxo_block_header_storage;
 pub mod utxo_builder;
 pub mod utxo_common;
 pub mod utxo_standard;
 pub mod utxo_withdraw;
-
-#[cfg(not(target_arch = "wasm32"))] pub mod tx_cache;
 
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
@@ -69,6 +68,7 @@ use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H256 as 
 use script::{Builder, Script, SignatureVersion, TransactionInputSigner};
 use serde_json::{self as json, Value as Json};
 use serialization::{serialize, serialize_with_flags, SERIALIZE_TRANSACTION_WITNESS};
+use spv_validation::types::SPVError;
 use std::array::TryFromSliceError;
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
@@ -95,6 +95,13 @@ use super::{BalanceError, BalanceFut, BalanceResult, CoinsContext, DerivationMet
 use crate::coin_balance::{EnableCoinScanPolicy, HDAddressBalanceScanner};
 use crate::hd_wallet::{HDAccountOps, HDAccountsMutex, HDAddress, HDWalletCoinOps, HDWalletOps, InvalidBip44ChainError};
 use crate::hd_wallet_storage::{HDAccountStorageItem, HDWalletCoinStorage, HDWalletStorageError, HDWalletStorageResult};
+use crate::utxo::utxo_block_header_storage::BlockHeaderStorageError;
+use utxo_block_header_storage::BlockHeaderStorage;
+#[cfg(not(target_arch = "wasm32"))] pub mod tx_cache;
+#[cfg(target_arch = "wasm32")]
+pub mod utxo_indexedb_block_header_storage;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod utxo_sql_block_header_storage;
 
 #[cfg(test)] pub mod utxo_tests;
 #[cfg(target_arch = "wasm32")] pub mod utxo_wasm_tests;
@@ -510,6 +517,7 @@ pub struct UtxoCoinFields {
     pub history_sync_state: Mutex<HistorySyncState>,
     /// Path to the TX cache directory
     pub tx_cache_directory: Option<PathBuf>,
+    pub block_headers_storage: Option<BlockHeaderStorage>,
     /// The cache of recently send transactions used to track the spent UTXOs and replace them with new outputs
     /// The daemon needs some time to update the listunspent list for address which makes it return already spent UTXOs
     /// This cache helps to prevent UTXO reuse in such cases
@@ -543,6 +551,56 @@ pub enum UnsupportedAddr {
 
 impl From<UnsupportedAddr> for WithdrawError {
     fn from(e: UnsupportedAddr) -> Self { WithdrawError::InvalidAddress(e.to_string()) }
+}
+
+#[derive(Debug)]
+pub enum GetTxHeightError {
+    HeightNotFound,
+}
+
+impl From<GetTxHeightError> for SPVError {
+    fn from(e: GetTxHeightError) -> Self {
+        match e {
+            GetTxHeightError::HeightNotFound => SPVError::InvalidHeight,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum GetBlockHeaderError {
+    StorageError(BlockHeaderStorageError),
+    RpcError(JsonRpcError),
+    SerializationError(serialization::Error),
+    InvalidResponse(String),
+    SPVError(SPVError),
+    NativeNotSupported(String),
+    Internal(String),
+}
+
+impl From<JsonRpcError> for GetBlockHeaderError {
+    fn from(err: JsonRpcError) -> Self { GetBlockHeaderError::RpcError(err) }
+}
+
+impl From<UtxoRpcError> for GetBlockHeaderError {
+    fn from(e: UtxoRpcError) -> Self {
+        match e {
+            UtxoRpcError::Transport(e) | UtxoRpcError::ResponseParseError(e) => GetBlockHeaderError::RpcError(e),
+            UtxoRpcError::InvalidResponse(e) => GetBlockHeaderError::InvalidResponse(e),
+            UtxoRpcError::Internal(e) => GetBlockHeaderError::Internal(e),
+        }
+    }
+}
+
+impl From<SPVError> for GetBlockHeaderError {
+    fn from(e: SPVError) -> Self { GetBlockHeaderError::SPVError(e) }
+}
+
+impl From<serialization::Error> for GetBlockHeaderError {
+    fn from(err: serialization::Error) -> Self { GetBlockHeaderError::SerializationError(err) }
+}
+
+impl From<BlockHeaderStorageError> for GetBlockHeaderError {
+    fn from(err: BlockHeaderStorageError) -> Self { GetBlockHeaderError::StorageError(err) }
 }
 
 impl UtxoCoinFields {
@@ -1032,6 +1090,14 @@ pub struct UtxoMergeParams {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UtxoBlockHeaderVerificationParams {
+    pub difficulty_check: bool,
+    pub constant_difficulty: bool,
+    pub blocks_limit_to_check: NonZeroU64,
+    pub check_every: f64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UtxoActivationParams {
     pub mode: UtxoRpcMode,
     pub utxo_merge_params: Option<UtxoMergeParams>,
@@ -1053,6 +1119,7 @@ pub enum UtxoFromLegacyReqErr {
     UnexpectedMethod,
     InvalidElectrumServers(json::Error),
     InvalidMergeParams(json::Error),
+    InvalidBlockHeaderVerificationParams(json::Error),
     InvalidRequiredConfs(json::Error),
     InvalidRequiresNota(json::Error),
     InvalidAddressFormat(json::Error),
