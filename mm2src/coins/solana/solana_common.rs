@@ -119,7 +119,7 @@ where
         return MmError::err(SufficientBalanceError::NotSufficientBalance {
             coin: coin.ticker().to_string(),
             available: base_balance.clone(),
-            required: &sol_required - &base_balance,
+            required: sol_required.clone(),
         });
     }
 
@@ -127,8 +127,8 @@ where
     let to_send = if max { my_balance.clone() } else { amount.clone() };
     if to_send < sol_required && !coin.is_token() {
         return MmError::err(SufficientBalanceError::AmountTooLow {
-            amount: to_send.clone(),
-            threshold: &sol_required - &to_send,
+            amount: to_send,
+            threshold: sol_required.clone(),
         });
     }
     let to_check = if max || coin.is_token() {
@@ -139,8 +139,8 @@ where
     if to_check > my_balance {
         return MmError::err(SufficientBalanceError::NotSufficientBalance {
             coin: coin.ticker().to_string(),
-            available: my_balance.clone(),
-            required: &to_check - &my_balance,
+            available: my_balance,
+            required: to_check,
         });
     }
 

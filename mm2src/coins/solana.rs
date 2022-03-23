@@ -251,7 +251,7 @@ async fn withdraw_base_coin_impl(coin: SolanaCoin, req: WithdrawRequest) -> With
         tx_hash: tx.signatures[0].to_string(),
         from: vec![coin.my_address.clone()],
         to: vec![req.to],
-        total_amount: res.to_send.clone(),
+        total_amount: spent_by_me.clone(),
         my_balance_change: &received_by_me - &spent_by_me,
         spent_by_me,
         received_by_me,

@@ -149,7 +149,7 @@ mod tests {
         let expected_spent_by_me = &request_amount + &sol_required;
         assert_eq!(valid_tx_details.spent_by_me, expected_spent_by_me);
         assert_eq!(valid_tx_details.received_by_me, request_amount);
-        assert_eq!(valid_tx_details.total_amount, request_amount);
+        assert_eq!(valid_tx_details.total_amount, expected_spent_by_me);
         assert_eq!(valid_tx_details.my_balance_change, sol_required.neg());
     }
 
@@ -175,7 +175,7 @@ mod tests {
         match error.into_inner() {
             WithdrawError::AmountTooLow { amount, threshold } => {
                 assert_eq!(amount, BigDecimal::from_str("0.000001").unwrap());
-                assert_eq!(threshold, &sol_required - &amount);
+                assert_eq!(threshold, sol_required);
             },
             e @ _ => panic!("Unexpected err {:?}", e),
         };
