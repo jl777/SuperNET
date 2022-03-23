@@ -88,7 +88,7 @@ num-rational = { version = "0.2", features = ["serde", "bigint", "bigint-std"] }
 num-traits = "0.2"
 rpc = { path = "mm2src/mm2_bitcoin/rpc" }
 rpc_task = { path = "mm2src/rpc_task" }
-parking_lot = { version = "0.11", features = ["nightly"] }
+parking_lot = { version = "0.12.0", features = ["nightly"] }
 parity-util-mem = "0.9"
 # AP: portfolio RPCs are not documented and not used as of now
 # so the crate is disabled to speed up the entire removal of C code
@@ -110,6 +110,7 @@ ser_error = { path = "mm2src/derives/ser_error" }
 ser_error_derive = { path = "mm2src/derives/ser_error_derive" }
 serialization = { path = "mm2src/mm2_bitcoin/serialization" }
 serialization_derive = { path = "mm2src/mm2_bitcoin/serialization_derive" }
+spv_validation = { path = "mm2src/mm2_bitcoin/spv_validation" }
 sp-runtime-interface = { version = "3.0.0", default-features = false, features = ["disable_target_static_assertions"] }
 sp-trie = { version = "3.0", default-features = false }
 
@@ -124,6 +125,7 @@ wasm-bindgen = { version = "0.2.50", features = ["serde-serialize", "nightly"] }
 wasm-bindgen-futures = { version = "0.4.1" }
 wasm-bindgen-test = { version = "0.3.1" }
 web-sys = { version = "0.3.55", features = ["console"] }
+instant = {version = "0.1.12", features = ["wasm-bindgen"]}
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = { version = "1" }

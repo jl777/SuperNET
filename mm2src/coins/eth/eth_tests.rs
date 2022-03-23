@@ -1210,7 +1210,7 @@ fn polygon_check_if_my_payment_sent() {
     let request = json!({
         "method": "enable",
         "coin": "MATIC",
-        "urls": ["https://polygon-rpc.com"],
+        "urls": ["https://polygon-mainnet.g.alchemy.com/v2/9YYl6iMLmXXLoflMPHnMTC4Dcm2L2tFH"],
         "swap_contract_address": "0x9130b257d37a52e52f21054c4da3450c72f595ce",
     });
 

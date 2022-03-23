@@ -849,7 +849,7 @@ impl Gossipsub {
                 .collect();
             let mut prunes: Vec<GossipsubControlAction> = to_prune
                 .remove(peer)
-                .unwrap_or_else(Vec::new)
+                .unwrap_or_default()
                 .iter()
                 .map(|topic_hash| GossipsubControlAction::Prune {
                     topic_hash: topic_hash.clone(),
@@ -1042,12 +1042,10 @@ impl Gossipsub {
         }
     }
 
-    pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
-        self.mesh.get(topic).cloned().unwrap_or_else(Vec::new)
-    }
+    pub fn get_mesh_peers(&self, topic: &TopicHash) -> Vec<PeerId> { self.mesh.get(topic).cloned().unwrap_or_default() }
 
     pub fn get_topic_peers(&self, topic: &TopicHash) -> Vec<PeerId> {
-        self.topic_peers.get(topic).cloned().unwrap_or_else(Vec::new)
+        self.topic_peers.get(topic).cloned().unwrap_or_default()
     }
 
     pub fn get_num_peers(&self) -> usize { self.peer_topics.len() }
