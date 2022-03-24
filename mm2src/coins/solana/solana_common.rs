@@ -125,12 +125,6 @@ where
 
     let my_balance = coin.my_balance().compat().await?.spendable;
     let to_send = if max { my_balance.clone() } else { amount.clone() };
-    if to_send < sol_required && !coin.is_token() {
-        return MmError::err(SufficientBalanceError::AmountTooLow {
-            amount: to_send,
-            threshold: sol_required.clone(),
-        });
-    }
     let to_check = if max || coin.is_token() {
         to_send.clone()
     } else {

@@ -155,8 +155,8 @@ mod tests {
 
     #[tokio::test]
     #[cfg(not(target_arch = "wasm32"))]
-    async fn solana_transaction_simulations_amount_to_low() {
-        let passphrase = "federal stay trigger hour exist success game vapor become comfort action phone bright ill target wild nasty crumble dune close rare fabric hen iron".to_string();
+    async fn solana_transaction_zero_balance() {
+        let passphrase = "fake passphrase".to_string();
         let (_, sol_coin) = solana_coin_for_test(passphrase.clone(), SolanaNet::Devnet);
         let invalid_tx_details = sol_coin
             .withdraw(WithdrawRequest {
@@ -173,9 +173,8 @@ mod tests {
         let (_, fees) = sol_coin.estimate_withdraw_fees().await.unwrap();
         let sol_required = lamports_to_sol(fees);
         match error.into_inner() {
-            WithdrawError::AmountTooLow { amount, threshold } => {
-                assert_eq!(amount, BigDecimal::from_str("0.000001").unwrap());
-                assert_eq!(threshold, sol_required);
+            WithdrawError::NotSufficientBalance { required, .. } => {
+                assert_eq!(required, sol_required);
             },
             e @ _ => panic!("Unexpected err {:?}", e),
         };
