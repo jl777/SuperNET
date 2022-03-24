@@ -1098,6 +1098,13 @@ impl MarketCoinOps for EthCoin {
         )
     }
 
+    fn base_coin_ticker(&self) -> &str {
+        match &self.coin_type {
+            EthCoinType::Eth => self.ticker(),
+            EthCoinType::Erc20 { platform, .. } => platform,
+        }
+    }
+
     fn send_raw_tx(&self, mut tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         if tx.starts_with("0x") {
             tx = &tx[2..];
