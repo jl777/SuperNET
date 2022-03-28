@@ -1055,6 +1055,7 @@ impl ElectrumBlockHeaderV12 {
             nonce: self.nonce.clone().into(),
             solution: None,
             aux_pow: None,
+            prog_pow: None,
             mtp_pow: None,
             is_verus: false,
             hash_state_root: None,
