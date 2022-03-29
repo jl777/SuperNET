@@ -671,7 +671,7 @@ impl MarketCoinOps for QtumCoin {
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> { utxo_common::base_coin_balance(self) }
 
-    fn base_coin_ticker(&self) -> &str { self.ticker() }
+    fn platform_ticker(&self) -> &str { self.ticker() }
 
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         utxo_common::send_raw_tx(&self.utxo_arc, tx)

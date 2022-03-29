@@ -117,7 +117,7 @@ where
     let sol_required = lamports_to_sol(fees);
     if base_balance < sol_required {
         return MmError::err(SufficientBalanceError::NotSufficientBalance {
-            coin: coin.base_coin_ticker().to_string(),
+            coin: coin.platform_ticker().to_string(),
             available: base_balance.clone(),
             required: sol_required.clone(),
         });

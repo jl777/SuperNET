@@ -216,7 +216,7 @@ impl MarketCoinOps for SplToken {
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> { self.platform_coin.base_coin_balance() }
 
-    fn base_coin_ticker(&self) -> &str { self.platform_coin.ticker() }
+    fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
 
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         self.platform_coin.send_raw_tx(tx)

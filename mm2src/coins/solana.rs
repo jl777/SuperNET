@@ -357,7 +357,7 @@ impl MarketCoinOps for SolanaCoin {
         Box::new(fut)
     }
 
-    fn base_coin_ticker(&self) -> &str { self.ticker() }
+    fn platform_ticker(&self) -> &str { self.ticker() }
 
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         let coin = self.clone();

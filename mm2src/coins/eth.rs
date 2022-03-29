@@ -1098,7 +1098,7 @@ impl MarketCoinOps for EthCoin {
         )
     }
 
-    fn base_coin_ticker(&self) -> &str {
+    fn platform_ticker(&self) -> &str {
         match &self.coin_type {
             EthCoinType::Eth => self.ticker(),
             EthCoinType::Erc20 { platform, .. } => platform,

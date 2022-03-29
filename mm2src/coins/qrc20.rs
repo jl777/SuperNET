@@ -1051,7 +1051,7 @@ impl MarketCoinOps for Qrc20Coin {
         Box::new(utxo_common::my_balance(self.clone()).map(|CoinBalance { spendable, .. }| spendable))
     }
 
-    fn base_coin_ticker(&self) -> &str { &self.0.platform }
+    fn platform_ticker(&self) -> &str { &self.0.platform }
 
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         utxo_common::send_raw_tx(&self.utxo, tx)

@@ -754,7 +754,7 @@ impl SlpToken {
 
     pub fn platform_decimals(&self) -> u8 { self.platform_coin.as_ref().decimals }
 
-    pub fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
+    //pub fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
 
     pub fn platform_dust_dec(&self) -> BigDecimal {
         big_decimal_from_sat_unsigned(self.platform_dust(), self.platform_decimals())
@@ -1081,7 +1081,7 @@ impl MarketCoinOps for SlpToken {
         Box::new(self.platform_coin.my_balance().map(|res| res.spendable))
     }
 
-    fn base_coin_ticker(&self) -> &str { self.platform_coin.ticker() }
+    fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
 
     /// Receives raw transaction bytes in hexadecimal format as input and returns tx hash in hexadecimal format
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
