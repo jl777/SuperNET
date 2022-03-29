@@ -140,7 +140,7 @@ mod message_service_tests {
     #[test]
     fn test_send_message_service() {
         if let Ok(api_key) = var("TELEGRAM_API_KEY") {
-            let chat_registry: ChatIdRegistry = vec![("RustTestChatId".to_string(), "586216033".to_string())]
+            let chat_registry: ChatIdRegistry = vec![("RustTestChatId".to_string(), "-645728650".to_string())]
                 .into_iter()
                 .collect();
             let tg_client = TgClient::new(api_key, None, chat_registry);
