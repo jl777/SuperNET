@@ -754,8 +754,6 @@ impl SlpToken {
 
     pub fn platform_decimals(&self) -> u8 { self.platform_coin.as_ref().decimals }
 
-    //pub fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
-
     pub fn platform_dust_dec(&self) -> BigDecimal {
         big_decimal_from_sat_unsigned(self.platform_dust(), self.platform_decimals())
     }
