@@ -387,6 +387,8 @@ impl MarketCoinOps for LightningCoin {
         Box::new(self.platform_coin().my_balance().map(|res| res.spendable))
     }
 
+    fn platform_ticker(&self) -> &str { self.platform_fields.platform_coin.ticker() }
+
     fn send_raw_tx(&self, _tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         Box::new(futures01::future::err(
             MmError::new(

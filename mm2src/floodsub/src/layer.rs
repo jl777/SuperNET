@@ -23,8 +23,7 @@ use crate::topic::Topic;
 use crate::FloodsubConfig;
 use cuckoofilter::CuckooFilter;
 use libp2p_core::{connection::ConnectionId, Multiaddr, PeerId};
-use libp2p_swarm::{NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, OneShotHandler, PollParameters,
-                   ProtocolsHandler};
+use libp2p_swarm::{NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, OneShotHandler, PollParameters};
 use smallvec::SmallVec;
 use std::collections::hash_map::{DefaultHasher, HashMap};
 use std::task::{Context, Poll};
@@ -33,7 +32,8 @@ use std::{collections::VecDeque, iter};
 /// Network behaviour that handles the floodsub protocol.
 pub struct Floodsub {
     /// Events that need to be yielded to the outside when polling.
-    events: VecDeque<NetworkBehaviourAction<FloodsubRpc, FloodsubEvent>>,
+    events:
+        VecDeque<NetworkBehaviourAction<FloodsubEvent, OneShotHandler<FloodsubProtocol, FloodsubRpc, InnerMessage>>>,
 
     config: FloodsubConfig,
 
@@ -324,7 +324,7 @@ impl NetworkBehaviour for Floodsub {
         &mut self,
         _: &mut Context<'_>,
         _: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<<Self::ProtocolsHandler as ProtocolsHandler>::InEvent, Self::OutEvent>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         if let Some(event) = self.events.pop_front() {
             return Poll::Ready(event);
         }
@@ -334,6 +334,7 @@ impl NetworkBehaviour for Floodsub {
 }
 
 /// Transmission between the `OneShotHandler` and the `FloodsubHandler`.
+#[derive(Debug)]
 pub enum InnerMessage {
     /// We received an RPC from a remote.
     Rx(FloodsubRpc),

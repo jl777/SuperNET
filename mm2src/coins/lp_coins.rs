@@ -116,6 +116,17 @@ pub mod sql_tx_history_storage;
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
+pub use test_coin::TestCoin;
+
+#[doc(hidden)]
+#[allow(unused_variables)]
+#[cfg(not(target_arch = "wasm32"))]
+pub mod solana;
+#[cfg(not(target_arch = "wasm32"))]
+pub use solana::spl::SplToken;
+#[cfg(not(target_arch = "wasm32"))]
+pub use solana::{solana_coin_from_conf_and_params, SolanaActivationParams, SolanaCoin, SolanaFeeDetails};
+
 #[cfg(target_arch = "wasm32")] pub mod tx_history_db;
 pub mod utxo;
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
@@ -140,8 +151,6 @@ use utxo::UtxoActivationParams;
 use utxo::{BlockchainNetwork, GenerateTxError, UtxoFeeDetails, UtxoTx};
 #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
 use z_coin::{z_coin_from_conf_and_params, ZCoin};
-
-pub use test_coin::TestCoin;
 
 pub type BalanceResult<T> = Result<T, MmError<BalanceError>>;
 pub type BalanceFut<T> = Box<dyn Future<Item = T, Error = MmError<BalanceError>> + Send>;
@@ -176,7 +185,7 @@ pub enum PrivKeyNotAllowed {
     HardwareWalletNotSupported,
 }
 
-#[derive(Debug, Display, PartialEq)]
+#[derive(Debug, Display, PartialEq, Serialize)]
 pub enum UnexpectedDerivationMethod {
     #[display(fmt = "Iguana private key is unavailable")]
     IguanaPrivKeyUnavailable,
@@ -408,6 +417,7 @@ pub trait MarketCoinOps {
 
     /// Base coin balance for tokens, e.g. ETH balance in ERC20 case
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal>;
+    fn platform_ticker(&self) -> &str;
 
     /// Receives raw transaction bytes in hexadecimal format as input and returns tx hash in hexadecimal format
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send>;
@@ -597,6 +607,8 @@ pub enum TxFeeDetails {
     Eth(EthTxFeeDetails),
     Qrc20(Qrc20FeeDetails),
     Slp(SlpFeeDetails),
+    #[cfg(not(target_arch = "wasm32"))]
+    Solana(SolanaFeeDetails),
 }
 
 /// Deserialize the TxFeeDetails as an untagged enum.
@@ -611,12 +623,16 @@ impl<'de> Deserialize<'de> for TxFeeDetails {
             Utxo(UtxoFeeDetails),
             Eth(EthTxFeeDetails),
             Qrc20(Qrc20FeeDetails),
+            #[cfg(not(target_arch = "wasm32"))]
+            Solana(SolanaFeeDetails),
         }
 
         match Deserialize::deserialize(deserializer)? {
             TxFeeDetailsUnTagged::Utxo(f) => Ok(TxFeeDetails::Utxo(f)),
             TxFeeDetailsUnTagged::Eth(f) => Ok(TxFeeDetails::Eth(f)),
             TxFeeDetailsUnTagged::Qrc20(f) => Ok(TxFeeDetails::Qrc20(f)),
+            #[cfg(not(target_arch = "wasm32"))]
+            TxFeeDetailsUnTagged::Solana(f) => Ok(TxFeeDetails::Solana(f)),
         }
     }
 }
@@ -631,6 +647,11 @@ impl From<UtxoFeeDetails> for TxFeeDetails {
 
 impl From<Qrc20FeeDetails> for TxFeeDetails {
     fn from(qrc20_details: Qrc20FeeDetails) -> Self { TxFeeDetails::Qrc20(qrc20_details) }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl From<SolanaFeeDetails> for TxFeeDetails {
+    fn from(solana_details: SolanaFeeDetails) -> Self { TxFeeDetails::Solana(solana_details) }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -666,7 +687,7 @@ pub struct TransactionDetails {
     /// Raw bytes of signed transaction in hexadecimal string, this should be sent as is to send_raw_transaction RPC to broadcast the transaction
     pub tx_hex: BytesJson,
     /// Transaction hash in hexadecimal format
-    tx_hash: BytesJson,
+    tx_hash: String,
     /// Coins are sent from these addresses
     from: Vec<String>,
     /// Coins are sent to these addresses
@@ -1433,6 +1454,10 @@ pub enum MmCoinEnum {
     Bch(BchCoin),
     SlpToken(SlpToken),
     #[cfg(not(target_arch = "wasm32"))]
+    SolanaCoin(SolanaCoin),
+    #[cfg(not(target_arch = "wasm32"))]
+    SplToken(SplToken),
+    #[cfg(not(target_arch = "wasm32"))]
     LightningCoin(Box<LightningCoin>),
     Test(TestCoin),
 }
@@ -1447,6 +1472,16 @@ impl From<EthCoin> for MmCoinEnum {
 
 impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl From<SolanaCoin> for MmCoinEnum {
+    fn from(c: SolanaCoin) -> MmCoinEnum { MmCoinEnum::SolanaCoin(c) }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl From<SplToken> for MmCoinEnum {
+    fn from(c: SplToken) -> MmCoinEnum { MmCoinEnum::SplToken(c) }
 }
 
 impl From<QtumCoin> for MmCoinEnum {
@@ -1491,6 +1526,10 @@ impl Deref for MmCoinEnum {
             #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
             MmCoinEnum::ZCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
+            #[cfg(not(target_arch = "wasm32"))]
+            MmCoinEnum::SolanaCoin(ref c) => c,
+            #[cfg(not(target_arch = "wasm32"))]
+            MmCoinEnum::SplToken(ref c) => c,
         }
     }
 }
@@ -1690,6 +1729,14 @@ pub enum CoinProtocol {
         platform: String,
         network: BlockchainNetwork,
         confirmations: PlatformCoinConfirmations,
+    },
+    #[cfg(not(target_arch = "wasm32"))]
+    SOLANA,
+    #[cfg(not(target_arch = "wasm32"))]
+    SPLTOKEN {
+        platform: String,
+        token_contract_address: String,
+        decimals: u8,
     },
     #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
     ZHTLC,
@@ -1941,6 +1988,14 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
         },
         #[cfg(not(target_arch = "wasm32"))]
         CoinProtocol::LIGHTNING { .. } => return ERR!("Lightning protocol is not supported by lp_coininit"),
+        #[cfg(not(target_arch = "wasm32"))]
+        CoinProtocol::SOLANA => {
+            return ERR!("Solana protocol is not supported by lp_coininit - use enable_solana_with_tokens instead")
+        },
+        #[cfg(not(target_arch = "wasm32"))]
+        CoinProtocol::SPLTOKEN { .. } => {
+            return ERR!("SplToken protocol is not supported by lp_coininit - use enable_spl instead")
+        },
     };
 
     let register_params = RegisterCoinParams {
@@ -2510,6 +2565,10 @@ pub fn address_by_coin_conf_and_pubkey_str(
         },
         #[cfg(all(not(target_arch = "wasm32"), feature = "zhtlc"))]
         CoinProtocol::ZHTLC => utxo::address_by_conf_and_pubkey_str(coin, conf, pubkey, addr_format),
+        #[cfg(not(target_arch = "wasm32"))]
+        CoinProtocol::SOLANA | CoinProtocol::SPLTOKEN { .. } => {
+            ERR!("Solana pubkey is the public address - you do not need to use this rpc call.")
+        },
     }
 }
 

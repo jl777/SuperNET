@@ -27,7 +27,7 @@ use crate::topic::{Topic, TopicHash};
 use common::time_cache::{Entry as TimeCacheEntry, TimeCache};
 use futures::prelude::*;
 use libp2p_core::{connection::ConnectionId, ConnectedPoint, Multiaddr, PeerId};
-use libp2p_swarm::{NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters, ProtocolsHandler};
+use libp2p_swarm::{IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters};
 use log::{debug, error, info, trace, warn};
 use rand::seq::SliceRandom;
 use smallvec::SmallVec;
@@ -46,7 +46,7 @@ pub struct Gossipsub {
     config: GossipsubConfig,
 
     /// Events that need to be yielded to the outside when polling.
-    events: VecDeque<NetworkBehaviourAction<Arc<GossipsubRpc>, GossipsubEvent>>,
+    events: VecDeque<NetworkBehaviourAction<GossipsubEvent, GossipsubHandler, Arc<GossipsubRpc>>>,
 
     /// Pools non-urgent control messages between heartbeats.
     control_pool: HashMap<PeerId, Vec<GossipsubControlAction>>,
@@ -1349,6 +1349,7 @@ impl NetworkBehaviour for Gossipsub {
         peer_id: &PeerId,
         disconnected_conn_id: &ConnectionId,
         disconnected_point: &ConnectedPoint,
+        _: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
         let mut clean = false;
 
@@ -1417,7 +1418,7 @@ impl NetworkBehaviour for Gossipsub {
         &mut self,
         cx: &mut Context,
         _: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<<Self::ProtocolsHandler as ProtocolsHandler>::InEvent, Self::OutEvent>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         if let Some(event) = self.events.pop_front() {
             // clone send event reference if others references are present
             match event {
@@ -1444,11 +1445,19 @@ impl NetworkBehaviour for Gossipsub {
                 NetworkBehaviourAction::GenerateEvent(e) => {
                     return Poll::Ready(NetworkBehaviourAction::GenerateEvent(e));
                 },
-                NetworkBehaviourAction::DialAddress { address } => {
-                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
+                NetworkBehaviourAction::DialAddress { address, handler } => {
+                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address, handler });
                 },
-                NetworkBehaviourAction::DialPeer { peer_id, condition } => {
-                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
+                NetworkBehaviourAction::DialPeer {
+                    peer_id,
+                    condition,
+                    handler,
+                } => {
+                    return Poll::Ready(NetworkBehaviourAction::DialPeer {
+                        peer_id,
+                        condition,
+                        handler,
+                    });
                 },
                 NetworkBehaviourAction::ReportObservedAddr { address, score } => {
                     return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score });

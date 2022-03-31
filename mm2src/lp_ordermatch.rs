@@ -998,6 +998,13 @@ impl BalanceTradeFeeUpdatedHandler for BalanceUpdateOrdermatchHandler {
             Some(ctx) => ctx,
             None => return,
         };
+        if coin.wallet_only(&ctx) {
+            log::warn!(
+                "coin: {} is wallet only, skip BalanceTradeFeeUpdatedHandler",
+                coin.ticker()
+            );
+            return;
+        }
         // Get the max maker available volume to check if the wallet balances are sufficient for the issued maker orders.
         // Note although the maker orders are issued already, but they are not matched yet, so pass the `OrderIssue` stage.
         let new_volume = match calc_max_maker_vol(&ctx, coin, new_balance, FeeApproxStage::OrderIssue).await {

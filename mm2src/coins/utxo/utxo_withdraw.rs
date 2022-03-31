@@ -16,6 +16,7 @@ use crypto::trezor::{TrezorError, TrezorProcessingError};
 use crypto::{Bip32Error, CryptoCtx, CryptoInitError, DerivationPath, HardwareWalletArc, HwError, HwProcessingError,
              HwWalletType};
 use keys::{Public as PublicKey, Type as ScriptType};
+use rpc::v1::types::ToTxHash;
 use rpc_task::RpcTaskError;
 use script::{Builder, Script, SignatureVersion, TransactionInputSigner};
 use serialization::{serialize, serialize_with_flags, SERIALIZE_TRANSACTION_WITNESS};
@@ -214,7 +215,7 @@ where
             spent_by_me: big_decimal_from_sat(data.spent_by_me as i64, decimals),
             received_by_me: big_decimal_from_sat(data.received_by_me as i64, decimals),
             my_balance_change: big_decimal_from_sat(data.received_by_me as i64 - data.spent_by_me as i64, decimals),
-            tx_hash: signed.hash().reversed().to_vec().into(),
+            tx_hash: signed.hash().reversed().to_vec().to_tx_hash(),
             tx_hex,
             fee_details: Some(fee_details.into()),
             block_height: 0,

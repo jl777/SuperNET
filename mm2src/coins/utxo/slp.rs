@@ -35,7 +35,7 @@ use hex::FromHexError;
 use keys::hash::H160;
 use keys::{AddressHashEnum, CashAddrType, CashAddress, KeyPair, NetworkPrefix as CashAddrPrefix, Public};
 use primitives::hash::H256;
-use rpc::v1::types::{Bytes as BytesJson, H256 as H256Json};
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash, H256 as H256Json};
 use script::bytes::Bytes;
 use script::{Builder as ScriptBuilder, Opcode, Script, TransactionInputSigner};
 use serde_json::Value as Json;
@@ -754,8 +754,6 @@ impl SlpToken {
 
     pub fn platform_decimals(&self) -> u8 { self.platform_coin.as_ref().decimals }
 
-    pub fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
-
     pub fn platform_dust_dec(&self) -> BigDecimal {
         big_decimal_from_sat_unsigned(self.platform_dust(), self.platform_decimals())
     }
@@ -1080,6 +1078,8 @@ impl MarketCoinOps for SlpToken {
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> {
         Box::new(self.platform_coin.my_balance().map(|res| res.spendable))
     }
+
+    fn platform_ticker(&self) -> &str { self.platform_coin.ticker() }
 
     /// Receives raw transaction bytes in hexadecimal format as input and returns tx hash in hexadecimal format
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
@@ -1586,7 +1586,7 @@ impl MmCoin for SlpToken {
             let details = TransactionDetails {
                 tx_hex: serialize(&signed).into(),
                 internal_id: tx_hash.clone(),
-                tx_hash,
+                tx_hash: tx_hash.to_tx_hash(),
                 from: vec![my_address_string],
                 to: vec![to_address],
                 total_amount,

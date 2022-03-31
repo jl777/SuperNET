@@ -399,7 +399,7 @@ mod tests {
 
         // check that our subscriptions are sent to each of the peers
         // collect all the SendEvents
-        let send_events: Vec<&NetworkBehaviourAction<Arc<GossipsubRpc>, GossipsubEvent>> = gs
+        let send_events: Vec<&NetworkBehaviourAction<GossipsubEvent, GossipsubHandler, Arc<GossipsubRpc>>> = gs
             .events
             .iter()
             .filter(|e| match e {

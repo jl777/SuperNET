@@ -37,7 +37,7 @@ use futures01::Future;
 use keys::bytes::Bytes as ScriptBytes;
 use keys::{Address as UtxoAddress, Address, KeyPair, Public};
 #[cfg(test)] use mocktopus::macros::*;
-use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H160 as H160Json, H256 as H256Json};
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash, Transaction as RpcTransaction, H160 as H160Json, H256 as H256Json};
 use script::{Builder as ScriptBuilder, Opcode, Script, TransactionInputSigner};
 use script_pubkey::generate_contract_call_script_pubkey;
 use serde_json::{self as json, Value as Json};
@@ -1051,6 +1051,8 @@ impl MarketCoinOps for Qrc20Coin {
         Box::new(utxo_common::my_balance(self.clone()).map(|CoinBalance { spendable, .. }| spendable))
     }
 
+    fn platform_ticker(&self) -> &str { &self.0.platform }
+
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         utxo_common::send_raw_tx(&self.utxo, tx)
     }
@@ -1377,7 +1379,7 @@ async fn qrc20_withdraw(coin: Qrc20Coin, req: WithdrawRequest) -> WithdrawResult
         spent_by_me: qrc20_amount,
         received_by_me,
         my_balance_change,
-        tx_hash: signed.hash().reversed().to_vec().into(),
+        tx_hash: signed.hash().reversed().to_vec().to_tx_hash(),
         tx_hex: serialize(&signed).into(),
         fee_details: Some(fee_details.into()),
         block_height: 0,

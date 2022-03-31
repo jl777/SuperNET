@@ -29,7 +29,7 @@ use futures01::Future;
 use keys::hash::H256;
 use keys::{KeyPair, Public};
 use primitives::bytes::Bytes;
-use rpc::v1::types::{Bytes as BytesJson, Transaction as RpcTransaction, H256 as H256Json};
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash, Transaction as RpcTransaction, H256 as H256Json};
 use rusqlite::types::Type;
 use rusqlite::{Connection, Error as SqliteError, Row, ToSql, NO_PARAMS};
 use script::{Builder as ScriptBuilder, Opcode, Script, TransactionInputSigner};
@@ -727,6 +727,8 @@ impl MarketCoinOps for ZCoin {
 
     fn base_coin_balance(&self) -> BalanceFut<BigDecimal> { utxo_common::base_coin_balance(self) }
 
+    fn platform_ticker(&self) -> &str { self.ticker() }
+
     fn send_raw_tx(&self, tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
         utxo_common::send_raw_tx(self.as_ref(), tx)
     }
@@ -1183,7 +1185,7 @@ impl MmCoin for ZCoin {
 
             Ok(TransactionDetails {
                 tx_hex: tx_bytes.into(),
-                tx_hash: tx_hash.clone().into(),
+                tx_hash: tx_hash.to_tx_hash(),
                 from: vec![coin.z_fields.my_z_addr_encoded.clone()],
                 to: vec![req.to],
                 total_amount: big_decimal_from_sat_unsigned(data.spent_by_me, coin.decimals()),

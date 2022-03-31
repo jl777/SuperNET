@@ -144,7 +144,7 @@ fn build_node() -> (Multiaddr, Swarm<Gossipsub>) {
         .multiplex(yamux::YamuxConfig::default())
         .boxed();
 
-    let peer_id = public_key.clone().into_peer_id();
+    let peer_id = public_key.clone().to_peer_id();
 
     // NOTE: The graph of created nodes can be disconnected from the mesh point of view as nodes
     // can reach their d_lo value and not add other nodes to their mesh. To speed up this test, we
@@ -164,7 +164,7 @@ fn build_node() -> (Multiaddr, Swarm<Gossipsub>) {
     let mut addr: Multiaddr = Protocol::Memory(port).into();
     swarm.listen_on(addr.clone()).unwrap();
 
-    addr = addr.with(libp2p_core::multiaddr::Protocol::P2p(public_key.into_peer_id().into()));
+    addr = addr.with(libp2p_core::multiaddr::Protocol::P2p(public_key.to_peer_id().into()));
 
     (addr, swarm)
 }

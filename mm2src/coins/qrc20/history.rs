@@ -233,8 +233,7 @@ impl Qrc20Coin {
         miner_fee: BigDecimal,
     ) -> Result<TxTransferMap, String> {
         let my_address = try_s!(self.utxo.derivation_method.iguana_or_err());
-
-        let tx_hash: H256Json = qtum_details.tx_hash.as_slice().into();
+        let tx_hash: H256Json = try_s!(H256Json::from_str(&qtum_details.tx_hash));
         if qtum_tx.outputs.len() <= (receipt.output_index as usize) {
             return ERR!(
                 "Length of the transaction {:?} outputs less than output_index {}",

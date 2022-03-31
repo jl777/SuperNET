@@ -14,13 +14,12 @@ use futures::{channel::{mpsc::{channel, Receiver, Sender},
               Future, SinkExt, StreamExt};
 use futures_rustls::rustls;
 use libp2p::core::transport::Boxed as BoxedTransport;
-use libp2p::swarm::{IntoProtocolsHandler, NetworkBehaviour, ProtocolsHandler};
 use libp2p::{core::{ConnectedPoint, Multiaddr, Transport},
              identity,
              multiaddr::Protocol,
              noise,
              request_response::ResponseChannel,
-             swarm::{ExpandedSwarm, NetworkBehaviourEventProcess, Swarm},
+             swarm::{NetworkBehaviourEventProcess, Swarm},
              NetworkBehaviour, PeerId};
 use libp2p_floodsub::{Floodsub, FloodsubEvent, Topic as FloodsubTopic};
 use log::{debug, error, info};
@@ -230,7 +229,9 @@ impl From<GossipsubEvent> for AdexBehaviourEvent {
 
 /// AtomicDEX libp2p Network behaviour implementation
 #[derive(NetworkBehaviour)]
+#[behaviour(event_process = true)]
 pub struct AtomicDexBehaviour {
+    floodsub: Floodsub,
     #[behaviour(ignore)]
     event_tx: Sender<AdexBehaviourEvent>,
     #[behaviour(ignore)]
@@ -239,7 +240,6 @@ pub struct AtomicDexBehaviour {
     cmd_rx: Receiver<AdexBehaviourCmd>,
     #[behaviour(ignore)]
     netid: u16,
-    floodsub: Floodsub,
     gossipsub: Gossipsub,
     request_response: RequestResponseBehaviour,
     peers_exchange: PeersExchange,
@@ -456,13 +456,7 @@ impl NetworkBehaviourEventProcess<RequestResponseBehaviourEvent> for AtomicDexBe
 }
 
 /// Custom types mapping the complex associated types of AtomicDexBehaviour to the ExpandedSwarm
-type AdexSwarmHandler = <<AtomicDexBehaviour as NetworkBehaviour>::ProtocolsHandler as IntoProtocolsHandler>::Handler;
-type AtomicDexSwarm = ExpandedSwarm<
-    AtomicDexBehaviour,
-    <AdexSwarmHandler as ProtocolsHandler>::InEvent,
-    <AdexSwarmHandler as ProtocolsHandler>::OutEvent,
-    <AtomicDexBehaviour as NetworkBehaviour>::ProtocolsHandler,
->;
+type AtomicDexSwarm = Swarm<AtomicDexBehaviour>;
 
 fn maintain_connection_to_relays(swarm: &mut AtomicDexSwarm, bootstrap_addresses: &[Multiaddr]) {
     let behaviour = swarm.behaviour();
@@ -712,11 +706,11 @@ fn start_gossipsub(
         let ping = AdexPing::new();
 
         let adex_behavior = AtomicDexBehaviour {
+            floodsub,
             event_tx,
             spawn_fn,
             cmd_rx,
             netid,
-            floodsub,
             gossipsub,
             request_response,
             peers_exchange,

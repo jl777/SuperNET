@@ -645,7 +645,7 @@ async fn withdraw_impl(ctx: MmArc, coin: EthCoin, req: WithdrawRequest) -> Withd
         spent_by_me,
         received_by_me,
         tx_hex: bytes.into(),
-        tx_hash: signed.tx_hash(),
+        tx_hash: format!("{:02x}", signed.tx_hash()),
         block_height: 0,
         fee_details: Some(fee_details.into()),
         coin: coin.ticker.clone(),
@@ -1096,6 +1096,13 @@ impl MarketCoinOps for EthCoin {
             self.eth_balance()
                 .and_then(move |result| Ok(u256_to_big_decimal(result, 18)?)),
         )
+    }
+
+    fn platform_ticker(&self) -> &str {
+        match &self.coin_type {
+            EthCoinType::Eth => self.ticker(),
+            EthCoinType::Erc20 { platform, .. } => platform,
+        }
     }
 
     fn send_raw_tx(&self, mut tx: &str) -> Box<dyn Future<Item = String, Error = String> + Send> {
@@ -1715,7 +1722,7 @@ impl EthCoin {
                     coin: self.ticker.clone(),
                     fee_details: fee_details.map(|d| d.into()),
                     block_height: trace.block_number,
-                    tx_hash: BytesJson(raw.hash.to_vec()),
+                    tx_hash: format!("{:02x}", BytesJson(raw.hash.to_vec())),
                     tx_hex: BytesJson(rlp::encode(&raw)),
                     internal_id,
                     timestamp: block.timestamp.into(),
@@ -2090,7 +2097,7 @@ impl EthCoin {
                     coin: self.ticker.clone(),
                     fee_details: fee_details.map(|d| d.into()),
                     block_height: block_number.into(),
-                    tx_hash: BytesJson(raw.hash.to_vec()),
+                    tx_hash: format!("{:02x}", BytesJson(raw.hash.to_vec())),
                     tx_hex: BytesJson(rlp::encode(&raw)),
                     internal_id: BytesJson(internal_id.to_vec()),
                     timestamp: block.timestamp.into(),

@@ -11,7 +11,7 @@ use common::{calc_total_pages, ten, HttpStatusCode, NotSame, PagingOptionsEnum, 
 use derive_more::Display;
 use futures::compat::Future01CompatExt;
 use keys::{Address, CashAddress};
-use rpc::v1::types::Bytes as BytesJson;
+use rpc::v1::types::{Bytes as BytesJson, ToTxHash};
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -198,7 +198,7 @@ impl<'a, Addr: Clone + DisplayAddress + Eq + std::hash::Hash, Tx: Transaction> T
         TransactionDetails {
             coin: self.coin,
             tx_hex: self.tx.tx_hex().into(),
-            tx_hash,
+            tx_hash: tx_hash.to_tx_hash(),
             from,
             to,
             total_amount: self.total_amount,

@@ -3,8 +3,8 @@ use crate::NetworkInfo;
 use futures::StreamExt;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::{multiaddr::{Multiaddr, Protocol},
-             request_response::{handler::RequestProtocol, ProtocolName, ProtocolSupport, RequestResponse,
-                                RequestResponseConfig, RequestResponseEvent, RequestResponseMessage},
+             request_response::{ProtocolName, ProtocolSupport, RequestResponse, RequestResponseConfig,
+                                RequestResponseEvent, RequestResponseMessage},
              swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters},
              NetworkBehaviour, PeerId};
 use log::{error, info, warn};
@@ -72,7 +72,7 @@ pub enum PeersExchangeResponse {
 
 /// Behaviour that requests known peers list from other peers at random
 #[derive(NetworkBehaviour)]
-#[behaviour(poll_method = "poll")]
+#[behaviour(poll_method = "poll", event_process = true)]
 pub struct PeersExchange {
     request_response: RequestResponse<PeersExchangeCodec>,
     #[behaviour(ignore)]
@@ -80,7 +80,7 @@ pub struct PeersExchange {
     #[behaviour(ignore)]
     reserved_peers: Vec<PeerId>,
     #[behaviour(ignore)]
-    events: VecDeque<NetworkBehaviourAction<RequestProtocol<PeersExchangeCodec>, ()>>,
+    events: VecDeque<NetworkBehaviourAction<(), <Self as NetworkBehaviour>::ProtocolsHandler>>,
     #[behaviour(ignore)]
     maintain_peers_interval: Interval,
     #[behaviour(ignore)]
@@ -279,7 +279,7 @@ impl PeersExchange {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<RequestProtocol<PeersExchangeCodec>, ()>> {
+    ) -> Poll<NetworkBehaviourAction<(), <Self as NetworkBehaviour>::ProtocolsHandler>> {
         while let Poll::Ready(Some(())) = self.maintain_peers_interval.poll_next_unpin(cx) {
             self.maintain_known_peers();
         }
