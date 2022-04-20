@@ -4,7 +4,8 @@ use crate::mm2::rpc::rate_limiter::{process_rate_limit, RateLimitContext};
 use crate::{mm2::lp_stats::{add_node_to_version_stat, remove_node_from_version_stat, start_version_stat_collection,
                             stop_version_stat_collection, update_version_stat_collection},
             mm2::lp_swap::trade_preimage_rpc,
-            mm2::rpc::get_public_key::get_public_key};
+            mm2::rpc::get_public_key::get_public_key,
+            mm2::rpc::get_public_key_hash::get_public_key_hash};
 use coins::withdraw;
 use common::log::{error, warn};
 use common::mm_ctx::MmArc;
@@ -94,6 +95,7 @@ async fn dispatcher(request: MmRpcRequest, ctx: MmArc) -> DispatcherResult<Respo
     match request.method.as_str() {
         "add_node_to_version_stat" => handle_mmrpc(ctx, request, add_node_to_version_stat).await,
         "get_public_key" => handle_mmrpc(ctx, request, get_public_key).await,
+        "get_public_key_hash" => handle_mmrpc(ctx, request, get_public_key_hash).await,
         "remove_node_from_version_stat" => handle_mmrpc(ctx, request, remove_node_from_version_stat).await,
         "start_version_stat_collection" => handle_mmrpc(ctx, request, start_version_stat_collection).await,
         "stop_version_stat_collection" => handle_mmrpc(ctx, request, stop_version_stat_collection).await,
