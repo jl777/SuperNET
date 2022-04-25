@@ -263,3 +263,15 @@ fn init_db(sql: &Connection) -> Result<(), SqliteError> {
 
     sql.execute_batch(INIT_ZOMBIE_TABLES_STMT).map(|_| ())
 }
+
+fn query_processed_height(conn: &Connection) -> Result<u32, SqliteError> {
+    const QUERY_BLOCK_STMT: &str = "SELECT COUNT(height) FROM zombie_height";
+
+    conn.query_row(QUERY_BLOCK_STMT, NO_PARAMS, |row: &Row<'_>| Ok(row.get(0)?))
+}
+
+fn insert_block_height(conn: &Connection, height: u32) -> Result<(), SqliteError> {
+    const INSERT_HEIGHT_STMT: &str = "INSERT INTO zombie_height (height) VALUES (?1);";
+    let h = height.to_sql()?;
+    conn.execute(INSERT_HEIGHT_STMT, &[h]).map(|_| ())
+}
