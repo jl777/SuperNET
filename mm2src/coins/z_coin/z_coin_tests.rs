@@ -250,3 +250,16 @@ impl TryFrom<&Row<'_>> for ZombieTransactionInfo {
         })
     }
 }
+
+fn init_db(sql: &Connection) -> Result<(), SqliteError> {
+    const INIT_ZOMBIE_TABLES_STMT: &str = "
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS zombie_height (height INTEGER NOT NULL PRIMARY KEY);
+        CREATE TABLE IF NOT EXISTS zombie_tx_info (
+        id INTEGER NOT NULL PRIMARY KEY,
+        amount INTEGER NOT NULL,
+        tx_hash VARCHAR(255) NOT NULL);
+        COMMIT;";
+
+    sql.execute_batch(INIT_ZOMBIE_TABLES_STMT).map(|_| ())
+}
