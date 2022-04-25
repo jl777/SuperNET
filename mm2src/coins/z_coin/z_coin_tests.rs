@@ -228,3 +228,25 @@ fn zombie_coin_validate_dex_fee() {
         .wait()
         .unwrap();
 }
+
+struct ZombieTransactionInfo {
+    shielded_index: u32,
+    amount: u32,
+    tx_hash: String,
+}
+
+impl TryFrom<&Row<'_>> for ZombieTransactionInfo {
+    type Error = SqliteError;
+
+    fn try_from(row: &Row<'_>) -> Result<ZombieTransactionInfo, SqliteError> {
+        let index = row.get(0)?;
+        let amount = row.get(1)?;
+        let hash = row.get(2)?;
+
+        Ok(ZombieTransactionInfo {
+            shielded_index: index,
+            amount,
+            tx_hash: hash,
+        })
+    }
+}
