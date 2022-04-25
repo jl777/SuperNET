@@ -5,6 +5,9 @@ use common::mm_ctx::MmCtxBuilder;
 use common::now_ms;
 use std::time::Duration;
 use zcash_client_backend::encoding::decode_extended_spending_key;
+use zcash_primitives::consensus::BlockHeight;
+use zcash_primitives::sapling::keys::OutgoingViewingKey;
+use zcash_primitives::sapling::note_encryption::try_sapling_output_recovery;
 
 #[test]
 fn zombie_coin_send_and_refund_maker_payment() {
@@ -298,3 +301,90 @@ fn query_latest_shielded_index(conn: &Connection) -> Result<u32, SqliteError> {
         Ok(row.get(0)?)
     })
 }
+
+const DEX_FEE_OVK: OutgoingViewingKey = OutgoingViewingKey([7; 32]);
+async fn scan_zombie_recoverable_transactions_impl() {
+    let conf = json!({
+        "coin": "ZOMBIE",
+        "asset": "ZOMBIE",
+        "fname": "ZOMBIE (TESTCOIN)",
+        "txversion": 4i16,
+        "overwintered": 1i16,
+        "mm2": 1i16,
+    });
+
+    let req = json!({
+        "method": "enable",
+        "coin": "ZOMBIE"
+    });
+
+    let ctx = MmCtxBuilder::default().into_mm_arc();
+    let priv_key = [1; 32];
+    let z_key = decode_extended_spending_key(z_mainnet_constants::HRP_SAPLING_EXTENDED_SPENDING_KEY, "secret-extended-key-main1q0k2ga2cqqqqpq8m8j6yl0say83cagrqp53zqz54w38ezs8ly9ly5ptamqwfpq85u87w0df4k8t2lwyde3n9v0gcr69nu4ryv60t0kfcsvkr8h83skwqex2nf0vr32794fmzk89cpmjptzc22lgu5wfhhp8lgf3f5vn2l3sge0udvxnm95k6dtxj2jwlfyccnum7nz297ecyhmd5ph526pxndww0rqq0qly84l635mec0x4yedf95hzn6kcgq8yxts26k98j9g32kjc8y83fe").unwrap().unwrap();
+
+    let db_dir = PathBuf::from("./for_tests");
+    let params = UtxoActivationParams::from_legacy_req(&req).unwrap();
+    let coin = z_coin_from_conf_and_params_with_z_key(&ctx, "ZOMBIE", &conf, &params, &priv_key, db_dir, z_key)
+        .await
+        .unwrap();
+
+    let native_client = match coin.rpc_client() {
+        UtxoRpcClientEnum::Native(n) => n,
+        _ => unimplemented!("Implemented only for native client"),
+    };
+    init_db(&coin.sqlite_conn()).expect("Creation should not fail");
+    let current_block = match coin.rpc_client().get_block_count().compat().await {
+        Ok(b) => b,
+        Err(e) => {
+            panic!("Error {} on getting block count", e);
+        },
+    };
+
+    let mut processed_height = query_processed_height(&coin.sqlite_conn()).expect("Count should not fail") as u64 + 1;
+    let count = query_count_tbl_zombie_tx_info(&coin.sqlite_conn()).expect("Count should not fail");
+    let mut shielded_index = if count > 0 {
+        query_latest_shielded_index(&coin.sqlite_conn()).expect("Count shuld not fail") as u64 + 1
+    } else {
+        0
+    };
+    while processed_height <= current_block {
+        let block = match native_client.get_block_by_height(processed_height).await {
+            Ok(b) => b,
+            Err(e) => {
+                log::error!("Error {} on getting block", e);
+                Timer::sleep(1.).await;
+                continue;
+            },
+        };
+        for hash in block.tx {
+            let tx_bytes = native_client
+                .get_transaction_bytes(&hash)
+                .compat()
+                .await
+                .expect("Panic here to avoid storing invalid tree state to the DB");
+            let tx = ZTransaction::read(tx_bytes.as_slice()).unwrap();
+            for shielded_out in tx.shielded_outputs.iter() {
+                shielded_index += 1;
+                if let Some((note, _, _)) = try_sapling_output_recovery(
+                    &ARRRConsensusParams {},
+                    BlockHeight::from_u32(processed_height as u32),
+                    &DEX_FEE_OVK,
+                    shielded_out,
+                ) {
+                    let info = ZombieTransactionInfo {
+                        shielded_index: shielded_index as u32,
+                        amount: note.value as u32,
+                        tx_hash: format!("{:02x}", hash),
+                    };
+                    insert_tx_info(&coin.sqlite_conn(), info).expect("Insertion should not fail");
+                }
+            }
+        }
+        insert_block_height(&coin.sqlite_conn(), processed_height as u32).expect("Insertion should not fail");
+        processed_height += 1;
+    }
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn scan_zombie_recoverable_transactions() { block_on(scan_zombie_recoverable_transactions_impl()); }
