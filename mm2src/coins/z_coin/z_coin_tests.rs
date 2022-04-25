@@ -275,3 +275,26 @@ fn insert_block_height(conn: &Connection, height: u32) -> Result<(), SqliteError
     let h = height.to_sql()?;
     conn.execute(INSERT_HEIGHT_STMT, &[h]).map(|_| ())
 }
+
+fn query_count_tbl_zombie_tx_info(conn: &Connection) -> Result<u32, SqliteError> {
+    const QUERY_COUNT_STMT: &str = "SELECT COUNT(id) FROM zombie_tx_info";
+
+    conn.query_row(QUERY_COUNT_STMT, NO_PARAMS, |row: &Row<'_>| Ok(row.get(0)?))
+}
+
+fn insert_tx_info(conn: &Connection, info: ZombieTransactionInfo) -> Result<(), SqliteError> {
+    const INSERT_TX_INFO_STMT: &str = "INSERT INTO zombie_tx_info (id, amount, tx_hash) VALUES (?1, ?2, ?3);";
+    let index = info.shielded_index.to_sql()?;
+    let amount = info.amount.to_sql()?;
+    let tx_hash = info.tx_hash.to_sql()?;
+
+    conn.execute(INSERT_TX_INFO_STMT, &[index, amount, tx_hash]).map(|_| ())
+}
+
+fn query_latest_shielded_index(conn: &Connection) -> Result<u32, SqliteError> {
+    const QUERY_LATEST_SHIELDED_INDEX_STMT: &str = "SELECT id FROM zombie_tx_info ORDER BY id desc LIMIT 1";
+
+    conn.query_row(QUERY_LATEST_SHIELDED_INDEX_STMT, NO_PARAMS, |row: &Row<'_>| {
+        Ok(row.get(0)?)
+    })
+}
