@@ -8417,6 +8417,43 @@ fn test_get_public_key() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
+fn test_get_public_key_hash() {
+    let coins = json!([
+        {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"protocol":{"type":"UTXO"}},
+    ]);
+
+    let mm = MarketMakerIt::start(
+        json!({
+            "gui": "nogui",
+            "netid": 9998,
+            "passphrase": "bob passphrase",
+            "rpc_password": "password",
+            "coins": coins,
+            "i_am_seed": true,
+        }),
+        "password".into(),
+        None,
+    )
+    .unwrap();
+    let (_dump_log, _dump_dashboard) = mm.mm_dump();
+    log!({"Log path: {}", mm.log_path.display()});
+    let resp = block_on(mm.rpc(json!({
+                 "userpass": "password",
+                 "mmrpc": "2.0",
+                 "method": "get_public_key_hash",
+                 "params": {},
+                 "id": 0})))
+    .unwrap();
+
+    // Must be 200
+    assert_eq!(resp.0, StatusCode::OK);
+    let v: RpcV2Response<GetPublicKeyHashResult> = serde_json::from_str(&*resp.1).unwrap();
+    // Public key hash must be "b506088aa2a3b4bb1da3a29bf00ce1a550ea1df9"
+    assert_eq!(v.result.public_key_hash, "b506088aa2a3b4bb1da3a29bf00ce1a550ea1df9")
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_get_orderbook_with_same_orderbook_ticker() {
     let coins = json!([
         {"coin":"RICK","asset":"RICK","rpcport":8923,"txversion":4,"protocol":{"type":"UTXO"}},
