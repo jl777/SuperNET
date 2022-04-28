@@ -1706,6 +1706,7 @@ checksum = "72aa14c04dfae8dd7d8a2b1cb7ca2152618cd01336dbfe704b8dcbf8d41dbd69"
 name = "db_common"
 version = "0.1.0"
 dependencies = [
+ "hex 0.4.2",
  "log 0.4.14",
  "rusqlite",
  "sql-builder",
@@ -3751,21 +3752,22 @@ dependencies = [
 
 [[package]]
 name = "lightning"
-version = "0.0.104"
+version = "0.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0113e6b5a55b7ead30fb0a992b787e69a0551fa15b7eed93c99490eb018ab793"
+checksum = "a10e7439623b293d000fc875627704210d8d0ff5b7badbb689f2a3d51afc618f"
 dependencies = [
  "bitcoin",
- "hex 0.3.2",
+ "hex 0.4.2",
  "regex 0.1.80",
  "secp256k1",
 ]
 
 [[package]]
 name = "lightning-background-processor"
-version = "0.0.104"
+version = "0.0.105"
 dependencies = [
  "bitcoin",
+ "db_common",
  "lightning",
  "lightning-invoice",
  "lightning-persister",
@@ -3773,9 +3775,9 @@ dependencies = [
 
 [[package]]
 name = "lightning-invoice"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2531e38818b3872b9acbcc3ff499f93962d2ff23ee0d05fc386ef70b993a38a0"
+checksum = "ce661ad7182c2b258d1506e264095d2b4c71436a91b72834d7fb87b7e92e06c0"
 dependencies = [
  "bech32",
  "bitcoin_hashes",
@@ -3786,9 +3788,9 @@ dependencies = [
 
 [[package]]
 name = "lightning-net-tokio"
-version = "0.0.104"
+version = "0.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1851ab90c2739929526c56e06d6b07def4508bfce70f190757fde2de648d1d9c"
+checksum = "e6eb1bcdf0a29baccb13d514e4a8761c9d8038ffd107f27e45182f0177f5e007"
 dependencies = [
  "bitcoin",
  "lightning",
@@ -3797,15 +3799,20 @@ dependencies = [
 
 [[package]]
 name = "lightning-persister"
-version = "0.0.104"
+version = "0.0.105"
 dependencies = [
  "async-trait",
  "bitcoin",
  "common",
+ "db_common",
+ "derive_more",
+ "hex 0.4.2",
  "libc",
  "lightning",
  "parking_lot 0.12.0",
+ "rand 0.7.3",
  "secp256k1",
+ "serde",
  "serde_json",
  "winapi 0.3.9",
 ]

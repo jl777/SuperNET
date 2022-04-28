@@ -96,6 +96,51 @@ macro_rules! try_f {
     };
 }
 
+macro_rules! ok_or_continue_after_sleep {
+    ($e:expr, $delay: ident) => {
+        match $e {
+            Ok(res) => res,
+            Err(e) => {
+                error!("error {:?}", e);
+                Timer::sleep($delay).await;
+                continue;
+            },
+        }
+    };
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+macro_rules! ok_or_retry_after_sleep {
+    ($e:expr, $delay: ident) => {
+        loop {
+            match $e {
+                Ok(res) => break res,
+                Err(e) => {
+                    error!("error {:?}", e);
+                    Timer::sleep($delay).await;
+                    continue;
+                },
+            }
+        }
+    };
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+macro_rules! ok_or_retry_after_sleep_sync {
+    ($e:expr, $delay: ident) => {
+        loop {
+            match $e {
+                Ok(res) => break res,
+                Err(e) => {
+                    error!("error {:?}", e);
+                    std::thread::sleep(core::time::Duration::from_secs($delay));
+                    continue;
+                },
+            }
+        }
+    };
+}
+
 pub mod coin_balance;
 #[doc(hidden)]
 #[cfg(test)]
@@ -1494,6 +1539,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 }
 
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum MmCoinEnum {
     UtxoCoin(UtxoStandardCoin),
     QtumCoin(QtumCoin),
@@ -1508,7 +1554,7 @@ pub enum MmCoinEnum {
     #[cfg(not(target_arch = "wasm32"))]
     SplToken(SplToken),
     #[cfg(not(target_arch = "wasm32"))]
-    LightningCoin(Box<LightningCoin>),
+    LightningCoin(LightningCoin),
     Test(TestCoin),
 }
 
@@ -1552,7 +1598,7 @@ impl From<SlpToken> for MmCoinEnum {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl From<LightningCoin> for MmCoinEnum {
-    fn from(c: LightningCoin) -> MmCoinEnum { MmCoinEnum::LightningCoin(Box::new(c)) }
+    fn from(c: LightningCoin) -> MmCoinEnum { MmCoinEnum::LightningCoin(c) }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1572,7 +1618,7 @@ impl Deref for MmCoinEnum {
             MmCoinEnum::Bch(ref c) => c,
             MmCoinEnum::SlpToken(ref c) => c,
             #[cfg(not(target_arch = "wasm32"))]
-            MmCoinEnum::LightningCoin(ref c) => &**c,
+            MmCoinEnum::LightningCoin(ref c) => c,
             #[cfg(not(target_arch = "wasm32"))]
             MmCoinEnum::ZCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,

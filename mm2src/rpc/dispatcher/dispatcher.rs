@@ -33,7 +33,7 @@ use std::net::SocketAddr;
 
 cfg_native! {
     use coins::lightning::{close_channel, connect_to_lightning_node, generate_invoice, get_channel_details,
-        get_claimable_balances, get_payment_details, list_channels, list_payments, open_channel,
+        get_claimable_balances, get_payment_details, list_closed_channels_by_filter, list_open_channels_by_filter, list_payments_by_filter, open_channel,
         send_payment, LightningCoin};
     use coins::{SolanaCoin, SplToken};
     use coins::z_coin::ZCoin;
@@ -170,8 +170,9 @@ async fn dispatcher_v2(request: MmRpcRequest, ctx: MmArc) -> DispatcherResult<Re
             "init_z_coin" => handle_mmrpc(ctx, request, init_standalone_coin::<ZCoin>).await,
             "init_z_coin_status" => handle_mmrpc(ctx, request, init_standalone_coin_status::<ZCoin>).await,
             "init_z_coin_user_action" => handle_mmrpc(ctx, request, init_standalone_coin_user_action::<ZCoin>).await,
-            "list_channels" => handle_mmrpc(ctx, request, list_channels).await,
-            "list_payments" => handle_mmrpc(ctx, request, list_payments).await,
+            "list_closed_channels_by_filter" => handle_mmrpc(ctx, request, list_closed_channels_by_filter).await,
+            "list_open_channels_by_filter" => handle_mmrpc(ctx, request, list_open_channels_by_filter).await,
+            "list_payments_by_filter" => handle_mmrpc(ctx, request, list_payments_by_filter).await,
             "open_channel" => handle_mmrpc(ctx, request, open_channel).await,
             "send_payment" => handle_mmrpc(ctx, request, send_payment).await,
             "enable_solana_with_tokens" => {
