@@ -1044,7 +1044,7 @@ pub enum TradePreimageValue {
     UpperBound(BigDecimal),
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, PartialEq)]
 pub enum TradePreimageError {
     #[display(
         fmt = "Not enough {} to preimage the trade: available {}, required at least {}",
