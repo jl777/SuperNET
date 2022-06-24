@@ -1372,7 +1372,7 @@ fn test_cashaddresses_in_tx_details_by_hash() {
     let fut = async {
         let mut input_transactions = HistoryUtxoTxMap::new();
         let tx_details = coin.tx_details_by_hash(&hash, &mut input_transactions).await.unwrap();
-        log!([tx_details]);
+        log!("{:?}", tx_details);
 
         assert!(tx_details
             .from
@@ -1494,7 +1494,7 @@ fn test_unavailable_electrum_proto_version() {
     ))
     .err()
     .unwrap();
-    log!("Error: "(error));
+    log!("Error: {}", error);
     assert!(error.contains("There are no Electrums with the required protocol version"));
 }
 
@@ -2491,7 +2491,7 @@ fn test_get_sender_trade_fee_dynamic_tx_fee() {
     .expect("!get_sender_trade_fee");
 
     let value_without_fee = &my_balance - &fee1.amount.to_decimal();
-    log!("value_without_fee "(value_without_fee));
+    log!("value_without_fee {}", value_without_fee);
     let fee2 = block_on(coin.get_sender_trade_fee(
         TradePreimageValue::Exact(value_without_fee),
         FeeApproxStage::WithoutApprox,
@@ -3331,7 +3331,7 @@ fn test_split_qtum() {
     let script: Script = output_script(p2pkh_address, ScriptType::P2PKH);
     let key_pair = coin.as_ref().priv_key_policy.key_pair_or_err().unwrap();
     let (unspents, _) = block_on(coin.get_mature_unspent_ordered_list(p2pkh_address)).expect("Unspent list is empty");
-    log!("Mature unspents vec = "[unspents.mature]);
+    log!("Mature unspents vec = {:?}", unspents.mature);
     let outputs = vec![
         TransactionOutput {
             value: 100_000_000,
@@ -3345,7 +3345,7 @@ fn test_split_qtum() {
     let (unsigned, data) = block_on(builder.build()).unwrap();
     // fee_amount must be higher than the minimum fee
     assert!(data.fee_amount > 400_000);
-    log!("Unsigned tx = "[unsigned]);
+    log!("Unsigned tx = {:?}", unsigned);
     let signature_version = match p2pkh_address.addr_format {
         UtxoAddressFormat::Segwit => SignatureVersion::WitnessV0,
         _ => coin.as_ref().conf.signature_version,
@@ -3359,9 +3359,9 @@ fn test_split_qtum() {
         coin.as_ref().conf.fork_id,
     )
     .unwrap();
-    log!("Signed tx = "[signed]);
+    log!("Signed tx = {:?}", signed);
     let res = block_on(coin.broadcast_tx(&signed)).unwrap();
-    log!("Res = "[res]);
+    log!("Res = {:?}", res);
 }
 
 /// `QtumCoin` hasn't to check UTXO maturity if `check_utxo_maturity` is `false`.
