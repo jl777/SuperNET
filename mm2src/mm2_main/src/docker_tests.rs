@@ -696,7 +696,7 @@ mod docker_tests {
         .unwrap();
         assert!(send_raw.0.is_success(), "!send_raw: {}", send_raw.1);
 
-        thread::sleep(Duration::from_secs(12));
+        thread::sleep(Duration::from_secs(32));
 
         log!("Get MYCOIN/MYCOIN1 orderbook");
         let rc = block_on(mm_bob.rpc(&json! ({
@@ -832,7 +832,7 @@ mod docker_tests {
         .unwrap();
         assert!(send_raw.0.is_success(), "!send_raw: {}", send_raw.1);
 
-        thread::sleep(Duration::from_secs(12));
+        thread::sleep(Duration::from_secs(32));
 
         log!("Get MYCOIN/MYCOIN1 orderbook on Bob side");
         let rc = block_on(mm_bob.rpc(&json! ({
@@ -984,7 +984,7 @@ mod docker_tests {
         .unwrap();
         assert!(send_raw.0.is_success(), "!send_raw: {}", send_raw.1);
 
-        thread::sleep(Duration::from_secs(12));
+        thread::sleep(Duration::from_secs(32));
 
         log!("Get MYCOIN/MYCOIN1 orderbook on Bob side");
         let rc = block_on(mm_bob.rpc(&json! ({
