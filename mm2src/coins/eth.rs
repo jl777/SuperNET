@@ -48,7 +48,6 @@ use secp256k1::PublicKey;
 use serde_json::{self as json, Value as Json};
 use serialization::{CompactInteger, Serializable, Stream};
 use sha3::{Digest, Keccak256};
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::path::PathBuf;
@@ -1782,15 +1781,6 @@ impl EthCoin {
                 };
 
                 existing_history.push(details);
-                existing_history.sort_unstable_by(|a, b| {
-                    if a.block_height == 0 {
-                        Ordering::Less
-                    } else if b.block_height == 0 {
-                        Ordering::Greater
-                    } else {
-                        b.block_height.cmp(&a.block_height)
-                    }
-                });
 
                 if let Err(e) = self.save_history_to_file(ctx, existing_history.clone()).compat().await {
                     ctx.log.log(
@@ -2157,15 +2147,7 @@ impl EthCoin {
                 };
 
                 existing_history.push(details);
-                existing_history.sort_unstable_by(|a, b| {
-                    if a.block_height == 0 {
-                        Ordering::Less
-                    } else if b.block_height == 0 {
-                        Ordering::Greater
-                    } else {
-                        b.block_height.cmp(&a.block_height)
-                    }
-                });
+
                 if let Err(e) = self.save_history_to_file(ctx, existing_history).compat().await {
                     ctx.log.log(
                         "",

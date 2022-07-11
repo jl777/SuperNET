@@ -2052,6 +2052,7 @@ where
             return;
         },
     };
+
     let mut history_map: HashMap<H256Json, TransactionDetails> = history
         .into_iter()
         .filter_map(|tx| {
@@ -2139,8 +2140,23 @@ where
         };
 
         // Remove transactions in the history_map that are not in the requested transaction list anymore
+        let history_length = history_map.len();
         let requested_ids: HashSet<H256Json> = tx_ids.iter().map(|x| x.0).collect();
         history_map.retain(|hash, _| requested_ids.contains(hash));
+
+        if history_map.len() < history_length {
+            let to_write: Vec<TransactionDetails> = history_map.iter().map(|(_, value)| value.clone()).collect();
+            if let Err(e) = coin.save_history_to_file(&ctx, to_write).compat().await {
+                log_tag!(
+                    ctx,
+                    "",
+                    "tx_history",
+                    "coin" => coin.as_ref().conf.ticker;
+                    fmt = "Error {} on 'save_history_to_file', stop the history loop", e
+                );
+                return;
+            };
+        }
 
         let mut transactions_left = if tx_ids.len() > history_map.len() {
             *coin.as_ref().history_sync_state.lock().unwrap() = HistorySyncState::InProgress(json!({
@@ -2206,18 +2222,7 @@ where
                 },
             }
             if updated {
-                let mut to_write: Vec<TransactionDetails> =
-                    history_map.iter().map(|(_, value)| value.clone()).collect();
-                // the transactions with block_height == 0 are the most recent so we need to separately handle them while sorting
-                to_write.sort_unstable_by(|a, b| {
-                    if a.block_height == 0 {
-                        Ordering::Less
-                    } else if b.block_height == 0 {
-                        Ordering::Greater
-                    } else {
-                        b.block_height.cmp(&a.block_height)
-                    }
-                });
+                let to_write: Vec<TransactionDetails> = history_map.iter().map(|(_, value)| value.clone()).collect();
                 if let Err(e) = coin.save_history_to_file(&ctx, to_write).compat().await {
                     log_tag!(
                         ctx,
