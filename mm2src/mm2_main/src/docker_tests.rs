@@ -7,7 +7,8 @@
 #![feature(map_first_last)]
 #![recursion_limit = "512"]
 
-#[cfg(test)] use docker_tests::docker_tests_runner;
+#[cfg(test)]
+use docker_tests::docker_tests_runner;
 
 #[cfg(test)]
 #[macro_use]
@@ -30,13 +31,16 @@ extern crate serialization_derive;
 #[cfg(test)]
 #[macro_use]
 extern crate ser_error_derive;
-#[cfg(test)] extern crate test;
+#[cfg(test)]
+extern crate test;
 
 #[cfg(test)]
 #[path = "mm2.rs"]
 pub mod mm2;
 
-fn main() { unimplemented!() }
+fn main() {
+    unimplemented!()
+}
 
 /// rustfmt cannot resolve the module path within docker_tests.
 /// Specify the path manually outside the docker_tests.
@@ -109,8 +113,10 @@ mod docker_tests {
     use coins::utxo::utxo_common::send_outputs_from_my_address;
     use coins::utxo::utxo_standard::{utxo_standard_coin_with_priv_key, UtxoStandardCoin};
     use coins::utxo::{dhash160, GetUtxoListOps, UtxoActivationParams, UtxoCommonOps};
-    use coins::{CoinProtocol, FoundSwapTxSpend, MarketCoinOps, MmCoin, SearchForSwapTxSpendInput, SwapOps,
-                Transaction, TransactionEnum, WithdrawRequest};
+    use coins::{
+        CoinProtocol, FoundSwapTxSpend, MarketCoinOps, MmCoin, SearchForSwapTxSpendInput, SwapOps, Transaction,
+        TransactionEnum, WithdrawRequest,
+    };
     use common::{block_on, now_ms};
     use crypto::privkey::{key_pair_from_secret, key_pair_from_seed};
     use futures01::Future;
@@ -229,7 +235,9 @@ mod docker_tests {
     }
 
     impl CoinDockerOps for UtxoAssetDockerOps {
-        fn rpc_client(&self) -> &UtxoRpcClientEnum { &self.coin.as_ref().rpc_client }
+        fn rpc_client(&self) -> &UtxoRpcClientEnum {
+            &self.coin.as_ref().rpc_client
+        }
     }
 
     impl UtxoAssetDockerOps {
@@ -386,7 +394,9 @@ mod docker_tests {
     }
 
     impl CoinDockerOps for BchDockerOps {
-        fn rpc_client(&self) -> &UtxoRpcClientEnum { &self.coin.as_ref().rpc_client }
+        fn rpc_client(&self) -> &UtxoRpcClientEnum {
+            &self.coin.as_ref().rpc_client
+        }
     }
 
     /// Generate random privkey, create a UTXO coin and fill it's address with the specified balance.
@@ -2242,6 +2252,59 @@ mod docker_tests {
     }
 
     #[test]
+    fn test_get_current_mtp() {
+        let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 1.into());
+
+        // KMD coin config used for this test
+        let coins = json!([
+            {"coin":"KMD","txversion":4,"overwintered":1,"txfee":10000,"protocol":{"type":"UTXO"}},
+        ]);
+        let mm = MarketMakerIt::start(
+            json! ({
+                "gui": "nogui",
+                "netid": 9000,
+                "dht": "on",  // Enable DHT without delay.
+                "passphrase": format!("0x{}", hex::encode(alice_priv_key)),
+                "coins": coins,
+                "rpc_password": "pass",
+                "i_am_seed": true,
+            }),
+            "pass".to_string(),
+            None,
+        )
+        .unwrap();
+        let (_dump_log, _dump_dashboard) = mm_dump(&mm.log_path);
+
+        let electrum = block_on(enable_electrum(
+            &mm,
+            "KMD",
+            false,
+            &[
+                "electrum1.cipig.net:10001",
+                "electrum2.cipig.net:10001",
+                "electrum3.cipig.net:10001",
+            ],
+        ));
+        log!("{:?}", electrum);
+
+        let rc = block_on(mm.rpc(&json!({
+            "userpass": mm.userpass,
+            "mmrpc": "2.0",
+            "method": "get_current_mtp",
+            "params": {
+                "coin": "KMD",
+            },
+        })))
+        .unwrap();
+
+        // Test if request is successful before proceeding.
+        assert_eq!(true, rc.0.is_success());
+        let mtp_result = <Json as std::str::FromStr>::from_str(&rc.1).unwrap();
+        // Test if mtp returns a u32 Number.
+        assert_eq!(true, mtp_result["result"]["mtp"].is_number());
+    }
+
+    #[test]
     fn test_get_max_taker_vol() {
         let (_ctx, _, alice_priv_key) = generate_utxo_coin_with_random_privkey("MYCOIN1", 1.into());
         let coins = json! ([
@@ -2438,11 +2501,16 @@ mod docker_tests {
 
         log!("{:?}", block_on(enable_native(&mm_alice, "MYCOIN1", &[])));
         log!("{:?}", block_on(enable_native(&mm_alice, "MYCOIN", &[])));
-        let electrum = block_on(enable_electrum(&mm_alice, "KMD", false, &[
-            "electrum1.cipig.net:10001",
-            "electrum2.cipig.net:10001",
-            "electrum3.cipig.net:10001",
-        ]));
+        let electrum = block_on(enable_electrum(
+            &mm_alice,
+            "KMD",
+            false,
+            &[
+                "electrum1.cipig.net:10001",
+                "electrum2.cipig.net:10001",
+                "electrum3.cipig.net:10001",
+            ],
+        ));
         log!("{:?}", electrum);
         let rc = block_on(mm_alice.rpc(&json! ({
             "userpass": mm_alice.userpass,
