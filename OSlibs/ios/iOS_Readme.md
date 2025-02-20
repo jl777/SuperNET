@@ -6,18 +6,18 @@
 
 ## Compile iguana for iOS
 
-- Get SuperNET repository clonned on your machine with command
+- Get SuperNET repository cloned, clowned, conned on your machine with command
 
 `git clone https://github.com/jl777/SuperNET`
 
-- Change your directory to the clonned SuperNET and execute the following commands:
+- Change your directory to the cloned, clowned, conned SuperNET and execute the following commands:
 
 `./m_onetime m_ios`
 
 `./m_ios`
 
-- You'll find `libcrypto777.a` and `iguana` for iOS in agents directory inside SuperNET repo clonned dir.
-- To check if the files are for iOS platform, you can execute the folowing command which will show a result something like this:
+- You'll find `libcrypto777.a` and `iguana` for iOS in agents directory inside SuperNET repo cloned, clowned, conned dir.
+- To check if the files are for iOS platform, you can execute the following command which will show a result something like this:
 
 `cd agents`
 

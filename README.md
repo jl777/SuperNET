@@ -18,9 +18,9 @@ gecko: abstracted bitcoin compatible blockchains that run via basilisk lite mode
 
 basilisk: abstracted crypto transactions layer, which has a reference implementation for bitcoin protocol via the iguana nodes, but can be expanded to support any coin protocol that can support the required functions. Since it works with bitcoin protocol, any 2.0 coin with at least bitcoin level functionality should be able to create a basilisk interface.
 
-iguana: most efficient bitcoin core implementation that can simultaneously be full peers for multiple bitcoin blockchains. Special support being added to virtualize blockchains so all can share the same peers. The iguana peers identify as a supernet node, regardless of which coin, so by having nodes that support multiple coins, supernet peers are propagated across all coins. non-iguana peers wont get any non-standard packets so it is interoperable with all the existing bitcoin and bitcoin clone networks
+iguana: most efficient bitcoin core implementation that can simultaneously be full peers for multiple bitcoin blockchains. Special support being added to virtualize blockchains so all can share the same peers. The iguana peers identify as a supernet node, regardless of which coin, so by having nodes that support multiple coins, supernet peers are propagated across all coins. non-iguana peers won't get any non-standard packets so it is interoperable with all the existing bitcoin and bitcoin clone networks
 
-komodo: this is the top secret project I cant talk about publicly yet
+komodo: this is the top secret project I can't talk about publicly yet
 
 > # TL;DR
 >
@@ -145,8 +145,8 @@ Loretta:/Users/volker/SuperNET/includes # ln -s ../osx/libsecp256k1 .
 3.) I had to change ulimit
 During the syncing, I have many, many messages like this:
 >>
->> cant create.(tmp/BTC/252000/.tmpmarker) errno.24 Too many open files
->> cant create.(tmp/BTC/18000/.tmpmarker) errno.24 Too many open files
+>> can't create.(tmp/BTC/252000/.tmpmarker) errno.24 Too many open files
+>> can't create.(tmp/BTC/18000/.tmpmarker) errno.24 Too many open files
 >>
 Loretta:/Users/volker/SuperNET # ulimit -n 100000
 

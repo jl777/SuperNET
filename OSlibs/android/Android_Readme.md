@@ -26,7 +26,7 @@ source set_android_env.sh
 
 `echo $AR`
 
-- If getting output your Android NDK developement environment is set temporarily in terminal window in which you executed the set_android_env.sh script.
+- If getting output your Android NDK development environment is set temporarily in terminal window in which you executed the set_android_env.sh script.
 
 
 ## Compile iguana for android
